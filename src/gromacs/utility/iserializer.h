@@ -96,14 +96,16 @@ class ISerializer
                 doBool(&(values[i]));
             }
         }
-        void doCharArray(char *values, int elements)
+        // Char, UChar and RVec have vector specializations that can be
+        // used instead of the default looping.
+        virtual void doCharArray(char *values, int elements)
         {
             for (int i = 0; i < elements; i++)
             {
                 doChar(&(values[i]));
             }
         }
-        void doUCharArray(unsigned char *values, int elements)
+        virtual void doUCharArray(unsigned char *values, int elements)
         {
             for (int i = 0; i < elements; i++)
             {
@@ -166,7 +168,7 @@ class ISerializer
                 doIvec(&(values[i]));
             }
         }
-        void doRvecArray(rvec *values, int elements)
+        virtual void doRvecArray(rvec *values, int elements)
         {
             for (int i = 0; i < elements; i++)
             {

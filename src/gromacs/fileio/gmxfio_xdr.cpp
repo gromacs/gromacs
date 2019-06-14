@@ -52,14 +52,14 @@
 /* Enumerated for data types in files */
 enum {
     eioREAL, eioFLOAT, eioDOUBLE, eioINT, eioINT32, eioINT64,
-    eioUCHAR, eioCHAR, eioNUCHAR, eioUSHORT,
+    eioUCHAR, eioCHAR, eioNCHAR, eioNUCHAR, eioUSHORT,
     eioRVEC, eioNRVEC, eioIVEC, eioSTRING, eioNR
 };
 
 static const char *eioNames[eioNR] =
 {
     "REAL", "FLOAT", "DOUBLE", "INT", "INT32", "INT64",
-    "UCHAR", "CHAR", "NUCHAR", "USHORT",
+    "UCHAR", "CHAR", "NCHAR", "NUCHAR", "USHORT",
     "RVEC", "NRVEC", "IVEC", "STRING"
 };
 
@@ -92,12 +92,12 @@ XDR *gmx_fio_getxdr(t_fileio *fio)
 /* check the number of items given against the type */
 static void gmx_fio_check_nitem(int eio, int nitem, const char *file, int line)
 {
-    if ((nitem != 1) && !((eio == eioNRVEC) || (eio == eioNUCHAR)))
+    if ((nitem != 1) && !((eio == eioNRVEC) || (eio == eioNUCHAR) || (eio == eioNCHAR)))
     {
         gmx_fatal(FARGS,
-                  "nitem (%d) may differ from 1 only for %s or %s, not   for %s"
+                  "nitem (%d) may differ from 1 only for %s, %s or %s, not   for %s"
                   "(%s, %d)", nitem, eioNames[eioNUCHAR], eioNames[eioNRVEC],
-                  eioNames[eio], file, line);
+                  eioNames[eioNCHAR], eioNames[eio], file, line);
     }
 }
 
@@ -118,7 +118,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
                        const char *desc, const char *srcfile, int line)
 {
     unsigned char   ucdum, *ucptr;
-    char            cdum;
+    char            cdum, *cptr;
     bool_t          res = 0;
     float           fvec[DIM];
     double          dvec[DIM];
@@ -237,13 +237,17 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
                 *static_cast<char *>(item) = cdum;
             }
             break;
+        case eioNCHAR:
+            cptr = static_cast<char *>(item);
+            res  = xdr_vector(fio->xdr, cptr, nitem,
+                              static_cast<unsigned int>(sizeof(char)),
+                              reinterpret_cast<xdrproc_t>(xdr_char));
+            break;
         case eioNUCHAR:
             ucptr = static_cast<unsigned char *>(item);
-            res   = 1;
-            for (j = 0; (j < nitem) && res; j++)
-            {
-                res = xdr_u_char(fio->xdr, &(ucptr[j]));
-            }
+            res   = xdr_vector(fio->xdr, reinterpret_cast<char *>(ucptr), nitem,
+                               static_cast<unsigned int>(sizeof(unsigned char)),
+                               reinterpret_cast<xdrproc_t>(xdr_u_char));
             break;
         case eioUSHORT:
             if (item && !fio->bRead)
@@ -665,6 +669,15 @@ gmx_bool gmx_fio_ndoe_uchar(t_fileio *fio, unsigned char *item, int n,
     return ret;
 }
 
+gmx_bool gmx_fio_ndoe_char(t_fileio *fio, char *item,  int n,
+                           const char *desc, const char *srcfile, int line)
+{
+    gmx_bool ret = TRUE;
+    gmx_fio_lock(fio);
+    ret = ret && do_xdr(fio, item, n, eioNCHAR, desc, srcfile, line);
+    gmx_fio_unlock(fio);
+    return ret;
+}
 
 
 gmx_bool gmx_fio_ndoe_ushort(t_fileio *fio, unsigned short *item, int n,
@@ -800,6 +813,21 @@ void FileIOXdrSerializer::doIvec(ivec *value)
 void FileIOXdrSerializer::doRvec(rvec *value)
 {
     gmx_fio_do_rvec(fio_, *value);
+}
+
+void FileIOXdrSerializer::doCharArray(char *values, int elements)
+{
+    gmx_fio_ndo_char(fio_, values, elements);
+}
+
+void FileIOXdrSerializer::doUCharArray(unsigned char *values, int elements)
+{
+    gmx_fio_ndo_uchar(fio_, values, elements);
+}
+
+void FileIOXdrSerializer::doRvecArray(rvec *values, int elements)
+{
+    gmx_fio_ndo_rvec(fio_, values, elements);
 }
 
 void FileIOXdrSerializer::doString(std::string *value)
