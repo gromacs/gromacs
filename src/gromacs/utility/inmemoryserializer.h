@@ -45,6 +45,7 @@
 
 #include <vector>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/iserializer.h"
 
@@ -84,7 +85,7 @@ class InMemorySerializer : public ISerializer
 class InMemoryDeserializer : public ISerializer
 {
     public:
-        explicit InMemoryDeserializer(const std::vector<char> &buffer, bool sourceIsDouble);
+        explicit InMemoryDeserializer(ArrayRef<const char> buffer, bool sourceIsDouble);
         ~InMemoryDeserializer() override;
 
         //! Get if the source data was written in double precsion

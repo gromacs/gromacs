@@ -55,6 +55,7 @@
 struct gmx_mtop_t;
 struct t_commrec;
 struct t_inputrec;
+struct PartialDeserializedTprFile;
 class t_state;
 
 //! Convenience wrapper for gmx_bcast of a single value.
@@ -109,7 +110,9 @@ void nblock_abc(const t_commrec *cr, int numElements, std::vector<T> *v)
 void broadcastStateWithoutDynamics(const t_commrec *cr, t_state *state);
 
 //! \brief Broadcast inputrec and mtop and allocate node-specific settings
-void init_parallel(t_commrec *cr, t_inputrec *inputrec,
-                   gmx_mtop_t *mtop);
+void init_parallel(t_commrec                  *cr,
+                   t_inputrec                 *inputrec,
+                   gmx_mtop_t                 *mtop,
+                   PartialDeserializedTprFile *partialDeserializedTpr);
 
 #endif

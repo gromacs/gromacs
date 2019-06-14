@@ -39,7 +39,10 @@
 
 #include <cstdio>
 
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -88,6 +91,25 @@ struct TpxFileHeader
     int     fileVersion = 0;
     //! File generation.
     int     fileGeneration = 0;
+    //! If the tpr file was written in double precision.
+    bool    isDouble = false;
+};
+
+/*! \brief
+ * Contains the partly deserialized contents of a TPR file.
+ *
+ * Convenience struct that holds a fully deserialized TPR file header,
+ * and the body of the TPR file as char buffer that can be deserialized
+ * independently from the header.
+ */
+struct PartialDeserializedTprFile
+{
+    //! The file header.
+    TpxFileHeader     header;
+    //! The file body.
+    std::vector<char> body;
+    //! Flag for PBC needed by legacy implementation.
+    int               ePBC = -1;
 };
 
 /*
@@ -118,9 +140,51 @@ void write_tpx_state(const char *fn,
 /* Write a file, and close it again.
  */
 
-void read_tpx_state(const char *fn,
-                    t_inputrec *ir, t_state *state,
-                    gmx_mtop_t *mtop);
+/*! \brief
+ * Complete deserialization of TPR file into the individual data structures.
+ *
+ * If \p state is nullptr, only populates ir and mtop.
+ *
+ * \param[in] partialDeserializedTpr Struct with header and char buffer needed to populate system.
+ * \param[out] ir Input rec to populate.
+ * \param[out] state System state variables to populate.
+ * \param[out] x Separate vector for coordinates, deprecated.
+ * \param[out] v Separate vector for velocities, deprecated.
+ * \param[out] mtop Global topology to populate.
+ *
+ * \returns PBC flag.
+ */
+int completeTprDeserialization(PartialDeserializedTprFile *partialDeserializedTpr,
+                               t_inputrec                 *ir,
+                               t_state                    *state,
+                               rvec                       *x,
+                               rvec                       *v,
+                               gmx_mtop_t                 *mtop);
+
+//! Overload for final TPR deserialization when not using state vectors.
+int completeTprDeserialization(PartialDeserializedTprFile *partialDeserializedTpr,
+                               t_inputrec                 *ir,
+                               gmx_mtop_t                 *mtop);
+
+/*! \brief
+ * Read a file to set up a simulation and close it after reading.
+ *
+ * Main function used to initialize simulations. Reads the input \p fn
+ * to populate the \p state, \p ir and \p mtop needed to run a simulations.
+ *
+ * This function returns the partial deserialized TPR file
+ * that can then be communicated to set up non-master nodes to run simulations.
+ *
+ * \param[in] fn Input file name.
+ * \param[out] ir Input parameters to be set, or nullptr.
+ * \param[out] state State variables for the simulation.
+ * \param[out] mtop Global simulation topolgy.
+ * \returns Struct with header and body in char vector.
+ */
+PartialDeserializedTprFile read_tpx_state(const char *fn,
+                                          t_inputrec *ir,
+                                          t_state    *state,
+                                          gmx_mtop_t *mtop);
 
 /*! \brief
  * Read a file and close it again.

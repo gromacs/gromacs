@@ -696,15 +696,18 @@ int Mdrunner::mdrunner()
     t_inputrec              *inputrec = nullptr;
     std::unique_ptr<t_state> globalState;
 
+    auto                     partialDeserializedTpr = std::make_unique<PartialDeserializedTprFile>();
+
     if (SIMMASTER(cr))
     {
         /* Only the master rank has the global state */
         globalState = std::make_unique<t_state>();
 
-        /* Read (nearly) all data required for the simulation */
-        read_tpx_state(ftp2fn(efTPR, filenames.size(), filenames.data()),
-                       &inputrecInstance, globalState.get(), &mtop);
-        inputrec = &inputrecInstance;
+        /* Read (nearly) all data required for the simulation
+         * and keep the partly serialized tpr contents to send to other ranks later
+         */
+        *partialDeserializedTpr = read_tpx_state(ftp2fn(efTPR, filenames.size(), filenames.data()), &inputrecInstance, globalState.get(), &mtop);
+        inputrec                = &inputrecInstance;
     }
 
     /* Check and update the hardware options for internal consistency */
@@ -766,9 +769,10 @@ int Mdrunner::mdrunner()
         {
             inputrec = &inputrecInstance;
         }
-        init_parallel(cr, inputrec, &mtop);
+        init_parallel(cr, inputrec, &mtop, partialDeserializedTpr.get());
     }
-    GMX_RELEASE_ASSERT(inputrec != nullptr, "All range should have a valid inputrec now");
+    GMX_RELEASE_ASSERT(inputrec != nullptr, "All ranks should have a valid inputrec now");
+    partialDeserializedTpr.reset(nullptr);
 
     // Now each rank knows the inputrec that SIMMASTER read and used,
     // and (if applicable) cr->nnodes has been assigned the number of

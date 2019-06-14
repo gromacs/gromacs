@@ -191,7 +191,7 @@ void InMemorySerializer::doString(std::string *value)
 class InMemoryDeserializer::Impl
 {
     public:
-        explicit Impl(const std::vector<char> &buffer, bool sourceIsDouble)
+        explicit Impl(ArrayRef<const char> buffer, bool sourceIsDouble)
             : buffer_(buffer), sourceIsDouble_(sourceIsDouble), pos_(0)
         {
         }
@@ -210,12 +210,12 @@ class InMemoryDeserializer::Impl
             pos_  += size;
         }
 
-        const std::vector<char> &buffer_;
+        ArrayRef<const char>     buffer_;
         bool                     sourceIsDouble_;
         size_t                   pos_;
 };
 
-InMemoryDeserializer::InMemoryDeserializer(const std::vector<char> &buffer, bool sourceIsDouble)
+InMemoryDeserializer::InMemoryDeserializer(ArrayRef<const char> buffer, bool sourceIsDouble)
     : impl_(new Impl(buffer, sourceIsDouble))
 {
 }
