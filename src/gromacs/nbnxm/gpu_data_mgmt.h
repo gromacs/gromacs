@@ -52,7 +52,6 @@
 #include "gpu_types.h"
 #include "locality.h"
 
-struct nonbonded_verlet_group_t;
 struct NbnxnPairlistGpu;
 struct nbnxn_atomdata_t;
 struct PairlistParams;
