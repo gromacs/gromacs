@@ -81,9 +81,10 @@ class DomdecCuda
         /*! \brief
          * GPU halo exchange of force buffer
          * \param [inout] d_f_ptr   pointer to force buffer in GPU memory
-         * \param [in] streamNonLocal       CUDA stream to be used for buffer packing operation
+         * \param [inout] fshift    force shift array
+         * \param [in] stream       CUDA stream to be used for buffer packing operation
          */
-        void applyFHaloExchange(rvec gmx_unused *d_f_ptr, void gmx_unused *streamNonLocal);
+        void applyFHaloExchange(rvec gmx_unused *d_f_ptr, rvec gmx_unused *fshift, void gmx_unused *stream);
 
 
     private:

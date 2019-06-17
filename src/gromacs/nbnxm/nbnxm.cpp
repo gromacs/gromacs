@@ -269,6 +269,11 @@ void* nonbonded_verlet_t::get_gpu_xrvec()
     return Nbnxm::nbnxn_get_gpu_xrvec(gpu_nbv);
 }
 
+void* nonbonded_verlet_t::get_gpu_frvec()
+{
+    return Nbnxm::nbnxn_get_gpu_frvec(gpu_nbv);
+}
+
 void nonbonded_verlet_t::wait_x_on_device()
 {
     Nbnxm::nbnxn_wait_x_on_device(gpu_nbv);
@@ -294,4 +299,9 @@ void nonbonded_verlet_t::sendXToPmeCudaDirect(void *sendPtr, int sendSize, int p
     Nbnxm::nbnxmSendXToPmeCudaDirect(gpu_nbv, sendPtr, sendSize, pmeRank, stream);
 }
 
+void nonbonded_verlet_t::launch_clear_f_on_gpu(Nbnxm::AtomLocality locality)
+{
+    Nbnxm::nbnxn_launch_clear_f_on_gpu(locality, pairSearch_->gridSet(),
+                                       gpu_nbv);
+}
 /*! \endcond */

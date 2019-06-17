@@ -705,7 +705,7 @@ void gmx::Simulator::do_md()
     const DDBalanceRegionHandler ddBalanceRegionHandler(cr);
 
 
-    if (DOMAINDECOMP(cr) && c_enableGpuDD)
+    if (DOMAINDECOMP(cr) && havePPDomainDecomposition(cr) && c_enableGpuDD)
     {
         cr->dd->ddGpu = new DomdecCuda(cr->dd);
     }

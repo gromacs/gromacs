@@ -143,6 +143,14 @@ enum class GpuBufferOpsAccumulateForce
     Null   // GPU buffer ops are not in use, so this object is not applicable
 };
 
+/*! \brief Switch for whether to accumulate force */
+enum class BufferOpsAccumulateForce
+{
+    True,
+    False,
+    Null
+};
+
 
 namespace gmx
 {
@@ -276,8 +284,17 @@ struct nonbonded_verlet_t
         //! return GPU pointer to pme force in rvec format
         void* get_gpu_fpmervec();
 
+        //! return GPU pointer to f in rvec format
+        void* get_gpu_frvec();
+
         //! return GPU pointer to x in rvec format
         void* get_gpu_xrvec();
+
+        //! return pointer to GPU stream for given locality
+        void* get_gpu_stream(Nbnxm::AtomLocality locality);
+
+        //! launch call to clear force buffer on GPU for given locality
+        void launch_clear_f_on_gpu(Nbnxm::AtomLocality locality);
 
         //! \brief sync on coordinate copy to device
         void wait_x_on_device();
@@ -286,9 +303,6 @@ struct nonbonded_verlet_t
          * \param[in] interactionLocality  Interaction locality for stream to be synced
          */
         void stream_wait_x_on_device(Nbnxm::InteractionLocality interactionLocality);
-
-        //! return GPU pointer to x in rvec format
-        void* get_gpu_stream(Nbnxm::AtomLocality locality);
 
         //! Set a flag that pointer to remote PME coordinate buffer requires reset
         void setResetRemotePmeXPtr(bool value);

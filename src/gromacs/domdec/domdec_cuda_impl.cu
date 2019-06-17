@@ -111,17 +111,22 @@ __global__ void packSendBufKernel(rvec                      *dataPacked,
 
 
 /*! \brief unpack non-local force data buffer on the GPU using pre-populated "map" containing index information
- * \param[out] data        full array of position values
- * \param[in]  dataPacked  packed array of position values to be transferred
+ * \param[out] data        full array of force values
+ * \param[out] fshift      force shift buffer
+ * \param[in]  dataPacked  packed array of force values to be transferred
  * \param[in]  map         array of indices defining mapping from full to packed array
  * \param[in]  mapSize     number of elements in map array
  */
+template <bool accumulateShiftForces>
 __global__ void unpackRecvBufKernel(rvec                *data,
+                                    float3              *fshift,
                                     const rvec          *dataPacked,
                                     const int           *map,
                                     const int            mapSize);
 
+template <bool accumulateShiftForces>
 __global__ void unpackRecvBufKernel(rvec                *data,
+                                    float3              *fshift,
                                     const rvec          *dataPacked,
                                     const int           *map,
                                     const int            mapSize)
@@ -134,6 +139,23 @@ __global__ void unpackRecvBufKernel(rvec                *data,
     if (threadIndex < mapSize)
     {
         *dataDest += *dataSrc;
+    }
+
+    if (accumulateShiftForces)
+    {
+        //Atomically add source data float3 element to force shift buffer.
+        //Stage through shared memory for performance
+        __shared__ float3 tmpFshift;
+        tmpFshift = make_float3(0.0f);
+        __syncthreads();
+        //each thread in this block updates shared memory float3
+        atomicAdd(&tmpFshift, *dataSrc);
+        __syncthreads();
+        //first thread in block adds shared memory float3 to global float3
+        if (threadIdx.x == 0)
+        {
+            atomicAdd(fshift, tmpFshift);
+        }
     }
 
     return;
@@ -246,12 +268,12 @@ void DomdecCuda::Impl::applyXHaloExchange(rvec* d_x_ptr, void *streamNonLocal_pt
     return;
 }
 
-void DomdecCuda::Impl::applyFHaloExchange(rvec* d_f_ptr, void *streamNonLocal_ptr)
+void DomdecCuda::Impl::applyFHaloExchange(rvec* d_f_ptr, rvec *fshift, void *stream_ptr)
 {
 
-    haloDataTransfer(d_f_ptr, streamNonLocal_ptr, HaloXorF::HaloF);
+    haloDataTransfer(d_f_ptr, stream_ptr, HaloXorF::HaloF);
 
-    cudaStream_t       streamNonLocal = (cudaStream_t) streamNonLocal_ptr;
+    cudaStream_t       stream = (cudaStream_t) stream_ptr;
 
     KernelLaunchConfig config;
     config.blockSize[0]     = c_threadsPerBlock;
@@ -261,21 +283,37 @@ void DomdecCuda::Impl::applyFHaloExchange(rvec* d_f_ptr, void *streamNonLocal_pt
     config.gridSize[1]      = 1;
     config.gridSize[2]      = 1;
     config.sharedMemorySize = 0;
-    config.stream           = streamNonLocal;
+    config.stream           = stream;
 
     rvec            *d_f        = d_f_ptr;
     const rvec      *recvBuf    = d_recvBuf_;
     const int       *indexMap   = d_indexMap_;
     const int        size       = fRecvSize_;
 
-    auto             kernelFn = unpackRecvBufKernel;
+    auto             kernelFn = bShiftForcesNeedPbc_ ? unpackRecvBufKernel<true> : unpackRecvBufKernel<false>;
 
-    const auto       kernelArgs   = prepareGpuKernelArguments(kernelFn, config, &d_f,
+
+    ivec    vis;
+    clear_ivec(vis);
+    vis[0] = 1;
+    int    is          = IVEC2IS(vis);
+    rvec** d_fShiftPtr = static_cast<rvec**> (static_cast<void*> (&d_fShift_));
+
+    if (bShiftForcesNeedPbc_)     // update shift force buffer if required
+    {
+        copyToDeviceBuffer(d_fShiftPtr, &fshift[is], 0, 1, stream, GpuApiCallBehavior::Async, nullptr);
+    }
+
+    const auto       kernelArgs   = prepareGpuKernelArguments(kernelFn, config, &d_f, &d_fShift_,
                                                               &recvBuf, &indexMap,
                                                               &size);
 
     launchGpuKernel(kernelFn, config, nullptr, "Domdec GPU Apply F Halo Exchange", kernelArgs);
 
+    if (bShiftForcesNeedPbc_)
+    {
+        copyFromDeviceBuffer(&fshift[is], d_fShiftPtr, 0, 1, stream, GpuApiCallBehavior::Async, nullptr);
+    }
 }
 
 
@@ -459,6 +497,8 @@ DomdecCuda::Impl::Impl(gmx_domdec_t *dd)
     allocateDeviceBuffer(&d_sendBuf_, size, nullptr);
     allocateDeviceBuffer(&d_recvBuf_, size, nullptr);
 
+    allocateDeviceBuffer(&d_fShift_, 1, nullptr);
+
     sendRankX_       = dd->neighbor[0][1]; //rank to send data to for X
     recvRankX_       = dd->neighbor[0][0]; //rank to recv data from for X
     sendRankF_       = dd->neighbor[0][0]; //rank to send data to for F
@@ -479,7 +519,7 @@ DomdecCuda::Impl::~Impl()
     freeDeviceBuffer(&d_indexMap_);
     freeDeviceBuffer(&d_sendBuf_);
     freeDeviceBuffer(&d_recvBuf_);
-
+    freeDeviceBuffer(&d_fShift_);
     delete haloDataTransferLaunched_;
 }
 
@@ -500,9 +540,9 @@ void DomdecCuda::applyXHaloExchange(rvec* d_x_ptr, void *streamNonLocal_ptr)
     impl_->applyXHaloExchange(d_x_ptr, streamNonLocal_ptr);
 }
 
-void DomdecCuda::applyFHaloExchange(rvec* d_f_ptr, void *streamNonLocal_ptr)
+void DomdecCuda::applyFHaloExchange(rvec* d_f_ptr, rvec *fshift, void *streamNonLocal_ptr)
 {
-    impl_->applyFHaloExchange(d_f_ptr, streamNonLocal_ptr);
+    impl_->applyFHaloExchange(d_f_ptr, fshift, streamNonLocal_ptr);
 }
 
 } //namespace gmx

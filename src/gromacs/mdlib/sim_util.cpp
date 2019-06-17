@@ -883,6 +883,7 @@ void do_force(FILE                                     *fplog,
     // TODO consider all possible combinations of triggers, and how to combine optimally in each case.
     const BufferOpsUseGpu useGpuXBufOps = (c_enableGpuBufOps && bUseGPU && (GMX_GPU == GMX_GPU_CUDA)) ?
         BufferOpsUseGpu::True : BufferOpsUseGpu::False;;
+
     // GPU Force buffer ops are disabled on virial steps, because the virial calc is not yet ported to GPU
     const BufferOpsUseGpu useGpuFBufOps = (c_enableGpuBufOps && bUseGPU && (GMX_GPU == GMX_GPU_CUDA))
         && !(flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) ?
@@ -1037,7 +1038,9 @@ void do_force(FILE                                     *fplog,
                            flags);
     }
 
-    SendXFromGpu sendXFromGpu = c_enableGpuPmePpComms && !bNS ?
+    bool                   haveCpuForces      = (ppForceWorkload->haveSpecialForces || ppForceWorkload->haveCpuListedForceWork);
+
+    SendXFromGpu           sendXFromGpu = c_enableGpuPmePpComms && !bNS ?
         SendXFromGpu::True : SendXFromGpu::False;
 
     /* do local pair search */
@@ -1147,8 +1150,10 @@ void do_force(FILE                                     *fplog,
         launchPmeGpuFftAndGather(fr->pmedata, wcycle, copyPmeForceBack);
     }
 
-    gmx::DomdecCuda* ddGpu = nullptr;
-    if (bUseGPU && c_enableGpuDD && havePPDomainDecomposition(cr))
+    // with useGpuDD, halo exchange communications for X and F will occur directly to/from GPU memory spaces
+    bool             useGpuDD = c_enableGpuDD && bUseGPU && (GMX_GPU == GMX_GPU_CUDA) && DOMAINDECOMP(cr) && havePPDomainDecomposition(cr) && c_enableGpuPmePpComms;
+    gmx::DomdecCuda* ddGpu    = nullptr;
+    if (useGpuDD && havePPDomainDecomposition(cr))
     {
         ddGpu = cr->dd->ddGpu;
     }
@@ -1171,7 +1176,7 @@ void do_force(FILE                                     *fplog,
             wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_NONLOCAL);
             wallcycle_stop(wcycle, ewcNS);
 
-            if (bUseGPU && c_enableGpuDD)
+            if (bUseGPU && useGpuDD)
             {
                 rvec* d_x    = static_cast<rvec *> (nbv->get_gpu_xrvec());
                 void* stream = nbv->get_gpu_stream(Nbnxm::AtomLocality::NonLocal);
@@ -1180,7 +1185,7 @@ void do_force(FILE                                     *fplog,
         }
         else
         {
-            if (c_enableGpuDD)
+            if (useGpuDD)
             {
                 rvec* d_x    = static_cast<rvec *> (nbv->get_gpu_xrvec());
                 void* stream = nbv->get_gpu_stream(Nbnxm::AtomLocality::NonLocal);
@@ -1397,8 +1402,8 @@ void do_force(FILE                                     *fplog,
                          flags, &forceOut.forceWithVirial, enerd,
                          ed, bNS);
 
-    bool                   haveCpuForces      = (ppForceWorkload->haveSpecialForces || ppForceWorkload->haveCpuListedForceWork);
 
+    bool                   useGpuDDF = useGpuDD && (useGpuFBufOps == BufferOpsUseGpu::True);
     // Will store the amount of cycles spent waiting for the GPU that
     // will be later used in the DLB accounting.
     float cycles_wait_gpu = 0;
@@ -1425,7 +1430,7 @@ void do_force(FILE                                     *fplog,
                 wallcycle_stop(wcycle, ewcFORCE);
             }
 
-            if (useGpuFBufOps == BufferOpsUseGpu::True && haveCpuForces)
+            if (useGpuFBufOps == BufferOpsUseGpu::True && (haveCpuForces || !useGpuDDF) )
             {
                 nbv->launch_copy_f_to_gpu(forceOut.f, Nbnxm::AtomLocality::NonLocal);
             }
@@ -1436,9 +1441,9 @@ void do_force(FILE                                     *fplog,
                 haveCpuForces ? GpuBufferOpsAccumulateForce::True :
                 GpuBufferOpsAccumulateForce::False;
             nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::NonLocal,
-                                          forceOut.f, pme_gpu_get_device_f(fr->pmedata),
-                                          useGpuFBufOps, accumulateForce, wcycle);
-            if (useGpuFBufOps == BufferOpsUseGpu::True)
+                                          forceOut.f, pme_gpu_get_device_f(fr->pmedata), useGpuFBufOps, accumulateForce, wcycle);
+
+            if (useGpuFBufOps == BufferOpsUseGpu::True && !useGpuDDF)
             {
                 nbv->launch_copy_f_from_gpu(forceOut.f, Nbnxm::AtomLocality::NonLocal);
             }
@@ -1462,11 +1467,18 @@ void do_force(FILE                                     *fplog,
 
         if (bDoForces)
         {
-            if (useGpuFBufOps == BufferOpsUseGpu::True)
+            if (useGpuDDF)
             {
+                nbv->launch_clear_f_on_gpu(Nbnxm::AtomLocality::Local);
+                rvec* d_f    = static_cast<rvec *> (nbv->get_gpu_frvec());
+                void* stream = nbv->get_gpu_stream(Nbnxm::AtomLocality::Local);
                 nbv->wait_stream_gpu(Nbnxm::AtomLocality::NonLocal);
+                ddGpu->applyFHaloExchange(d_f, fr->fshift, stream);
             }
-            dd_move_f(cr->dd, force.unpaddedArrayRef(), fr->fshift, wcycle);
+            else
+            {
+                dd_move_f(cr->dd, force.unpaddedArrayRef(), fr->fshift, wcycle);
+            }
         }
     }
 
@@ -1556,7 +1568,7 @@ void do_force(FILE                                     *fplog,
     if (bUseOrEmulGPU && !alternateGpuWait)
     {
 
-        if (useGpuFBufOps == BufferOpsUseGpu::True && (haveCpuForces || DOMAINDECOMP(cr)))
+        if (useGpuFBufOps == BufferOpsUseGpu::True && (haveCpuForces || (DOMAINDECOMP(cr) && !useGpuDDF)))
         {
             nbv->launch_copy_f_to_gpu(forceOut.f, Nbnxm::AtomLocality::Local);
         }
@@ -1576,6 +1588,7 @@ void do_force(FILE                                     *fplog,
         {
             pmeFptr = nbv->get_gpu_fpmervec();
         }
+
         nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
                                       forceOut.f, pmeFptr,
                                       useGpuFBufOps, accumulateForce, wcycle);

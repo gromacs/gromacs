@@ -82,7 +82,7 @@ void DomdecCuda::applyXHaloExchange(rvec gmx_unused *d_x_ptr, void gmx_unused *s
 
 
 /*!\brief apply F halo exchange stub. */
-void DomdecCuda::applyFHaloExchange(rvec gmx_unused *d_f_ptr, void gmx_unused *streamNonLocal)
+void DomdecCuda::applyFHaloExchange(rvec gmx_unused *d_f_ptr, rvec gmx_unused *fshift, void gmx_unused *stream)
 {
     GMX_ASSERT(false, "A CPU stub for Domdec GPU F halo exchange was called insted of the correct implementation.");
 }

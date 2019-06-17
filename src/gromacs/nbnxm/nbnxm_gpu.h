@@ -326,6 +326,10 @@ void* nbnxn_get_gpu_xrvec(gmx_nbnxn_gpu_t     gmx_unused *nb) CUDA_FUNC_TERM_WIT
  * \param[in] nb                   The nonbonded data GPU structure
  */
 CUDA_FUNC_QUALIFIER
+void* nbnxn_get_gpu_frvec(gmx_nbnxn_gpu_t     gmx_unused *gpu_nbv) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
+
+/*! \brief sync on coordinate copy to device*/
+CUDA_FUNC_QUALIFIER
 void nbnxn_wait_x_on_device(gmx_nbnxn_gpu_t     gmx_unused *nb) CUDA_FUNC_TERM
 
 /*! \brief sync input stream on coordinate copy to device
@@ -365,6 +369,10 @@ void nbnxmSendXToPmeCudaDirect(gmx_nbnxn_gpu_t gmx_unused *nb, void gmx_unused *
 CUDA_FUNC_QUALIFIER
 void* nbnxn_get_gpu_xrvec(gmx_nbnxn_gpu_t     gmx_unused *gpu_nbv,
                           Nbnxm::AtomLocality gmx_unused  locality) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
+
+/*! \brief launch call to clear force buffer on GPU for given locality */
+CUDA_FUNC_QUALIFIER
+void nbnxn_launch_clear_f_on_gpu(const AtomLocality  atomLocality, const Nbnxm::GridSet    gmx_unused &gridSet, gmx_nbnxn_gpu_t         gmx_unused *nb) CUDA_FUNC_TERM
 
 } // namespace Nbnxm
 

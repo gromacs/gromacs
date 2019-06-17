@@ -985,6 +985,22 @@ void nbnxn_launch_copy_f_from_gpu(const AtomLocality               atomLocality,
     return;
 }
 
+void nbnxn_launch_clear_f_on_gpu(const AtomLocality               atomLocality,
+                                 const Nbnxm::GridSet            &gridSet,
+                                 gmx_nbnxn_gpu_t                 *nb)
+{
+    cudaStream_t         stream  = atomLocality == AtomLocality::Local ?
+        nb->stream[InteractionLocality::Local] : nb->stream[InteractionLocality::NonLocal];
+
+    int                  atomStart = 0, nAtoms = 0;
+
+    nbnxn_get_atom_range(atomLocality, gridSet, &atomStart, &nAtoms);
+
+    rvec       *ptr  = reinterpret_cast<rvec *> (nb->frvec[atomStart]);
+    cudaMemsetAsync(ptr, 0, nAtoms*sizeof(rvec), stream);
+    return;
+}
+
 void nbnxmRecvFFromPmeCudaDirect(gmx_nbnxn_gpu_t *gpu_nbv, void *recvPtr, int recvSize,
                                  int pmeRank)
 {
@@ -1056,6 +1072,11 @@ void nbnxmSendXToPmeCudaDirect(gmx_nbnxn_gpu_t *gpu_nbv, void *sendPtr, int send
 void* nbnxn_get_gpu_xrvec(gmx_nbnxn_gpu_t *gpu_nbv)
 {
     return static_cast<void *> (gpu_nbv->xrvec);
+}
+
+void* nbnxn_get_gpu_frvec(gmx_nbnxn_gpu_t *gpu_nbv)
+{
+    return static_cast<void *> (gpu_nbv->frvec);
 }
 
 void nbnxn_wait_x_on_device(gmx_nbnxn_gpu_t *nb)
