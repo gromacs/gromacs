@@ -80,6 +80,7 @@ gmx_add_gtest_executable(
     ${exename}
     # files with code for tests
     minimize.cpp
+    nonbonded_bench.cpp
     normalmodes.cpp
     rerun.cpp
     simple_mdrun.cpp

@@ -212,6 +212,7 @@ void GridSet::putOnGrid(const matrix                    box,
     gridSetData_.cells.resize(atomEnd);
 
     const int nthread = gmx_omp_nthreads_get(emntPairsearch);
+    GMX_ASSERT(nthread > 0, "We expect the OpenMP thread count to be set");
 
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for (int thread = 0; thread < nthread; thread++)

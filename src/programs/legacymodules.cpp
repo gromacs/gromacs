@@ -69,6 +69,7 @@
 #include "gromacs/tools/tune_pme.h"
 
 #include "mdrun/mdrun_main.h"
+#include "mdrun/nonbonded_bench.h"
 #include "view/view.h"
 
 namespace
@@ -195,6 +196,11 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
 
     registerModuleNoNice(manager, &gmx::gmx_mdrun, "mdrun",
                          "Perform a simulation, do a normal mode analysis or an energy minimization");
+
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
+            manager, gmx::NonbondedBenchmarkInfo::name,
+            gmx::NonbondedBenchmarkInfo::shortDescription,
+            &gmx::NonbondedBenchmarkInfo::create);
 
     gmx::ICommandLineOptionsModule::registerModuleFactory(
             manager, gmx::InsertMoleculesInfo::name(),
