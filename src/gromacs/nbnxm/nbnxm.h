@@ -276,7 +276,7 @@ struct nonbonded_verlet_t
                                      const interaction_const_t  &ic,
                                      int                         forceFlags,
                                      int                         clearF,
-                                     t_forcerec                 *fr,
+                                     const t_forcerec           &fr,
                                      gmx_enerdata_t             *enerd,
                                      t_nrnb                     *nrnb);
 

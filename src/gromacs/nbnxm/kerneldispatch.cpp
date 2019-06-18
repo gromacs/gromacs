@@ -454,7 +454,7 @@ nonbonded_verlet_t::dispatchNonbondedKernel(Nbnxm::InteractionLocality iLocality
                                             const interaction_const_t &ic,
                                             int                        forceFlags,
                                             int                        clearF,
-                                            t_forcerec                *fr,
+                                            const t_forcerec          &fr,
                                             gmx_enerdata_t            *enerd,
                                             t_nrnb                    *nrnb)
 {
@@ -469,11 +469,11 @@ nonbonded_verlet_t::dispatchNonbondedKernel(Nbnxm::InteractionLocality iLocality
                              kernelSetup(),
                              nbat.get(),
                              ic,
-                             fr->shift_vec,
+                             fr.shift_vec,
                              forceFlags,
                              clearF,
                              enerd->grpp.ener[egCOULSR].data(),
-                             fr->bBHAM ?
+                             fr.bBHAM ?
                              enerd->grpp.ener[egBHAMSR].data() :
                              enerd->grpp.ener[egLJSR].data());
             break;
@@ -485,13 +485,13 @@ nonbonded_verlet_t::dispatchNonbondedKernel(Nbnxm::InteractionLocality iLocality
         case Nbnxm::KernelType::Cpu8x8x8_PlainC:
             nbnxn_kernel_gpu_ref(pairlistSet.gpuList(),
                                  nbat.get(), &ic,
-                                 fr->shift_vec,
+                                 fr.shift_vec,
                                  forceFlags,
                                  clearF,
                                  nbat->out[0].f,
-                                 fr->fshift[0],
+                                 nbat->out[0].fshift.data(),
                                  enerd->grpp.ener[egCOULSR].data(),
-                                 fr->bBHAM ?
+                                 fr.bBHAM ?
                                  enerd->grpp.ener[egBHAMSR].data() :
                                  enerd->grpp.ener[egLJSR].data());
             break;

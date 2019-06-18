@@ -350,7 +350,7 @@ static void do_nb_verlet(t_forcerec                       *fr,
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
     }
 
-    nbv->dispatchNonbondedKernel(ilocality, *ic, flags, clearF, fr, enerd, nrnb);
+    nbv->dispatchNonbondedKernel(ilocality, *ic, flags, clearF, *fr, enerd, nrnb);
 
     if (!nbv->useGpu())
     {
@@ -1354,6 +1354,12 @@ void do_force(FILE                                     *fplog,
 
             nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::NonLocal,
                                           forceOut.f, wcycle);
+
+            if (fr->nbv->emulateGpu() && (flags & GMX_FORCE_VIRIAL))
+            {
+                nbnxn_atomdata_add_nbat_fshift_to_fshift(nbv->nbat.get(),
+                                                         fr->fshift);
+            }
         }
     }
 
