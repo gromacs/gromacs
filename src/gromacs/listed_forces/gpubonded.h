@@ -61,7 +61,7 @@ struct t_idef;
 struct t_inputrec;
 
 /*! \brief The number on bonded function types supported on GPUs */
-static constexpr int nFtypesOnGpu = 8;
+static constexpr int numFTypesOnGpu = 8;
 
 namespace gmx
 {
@@ -73,7 +73,7 @@ namespace gmx
  * \note The function types in the list are ordered on increasing value.
  * \note Currently bonded are only supported with CUDA, not with OpenCL.
  */
-constexpr std::array<int, nFtypesOnGpu> ftypesOnGpu =
+constexpr std::array<int, numFTypesOnGpu> fTypesOnGpu =
 {
     F_BONDS,
     F_ANGLES,

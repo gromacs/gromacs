@@ -58,9 +58,9 @@ namespace gmx
 //! Returns whether there are any interactions in ilists suitable for a GPU.
 static bool someInteractionsCanRunOnGpu(const InteractionLists &ilists)
 {
-    for (int ftype : ftypesOnGpu)
+    for (int fType : fTypesOnGpu)
     {
-        if (!ilists[ftype].iatoms.empty())
+        if (!ilists[fType].iatoms.empty())
         {
             // Perturbation is not implemented in the GPU bonded
             // kernels. If all the interactions were actually

@@ -76,13 +76,13 @@ typedef struct {
 
 /*! \brief Divides listed interactions over threads
  *
- * This routine attempts to divide all interactions of the ntype bondeds
+ * This routine attempts to divide all interactions of the numType bondeds
  * types stored in ild over the threads such that each thread has roughly
  * equal load and different threads avoid touching the same atoms as much
  * as possible.
  */
 static void divide_bondeds_by_locality(bonded_threading_t *bt,
-                                       int                 ntype,
+                                       int                 numType,
                                        const ilist_data_t *ild)
 {
     int nat_tot, nat_sum;
@@ -90,10 +90,10 @@ static void divide_bondeds_by_locality(bonded_threading_t *bt,
     int at_ind[F_NRE]; /* index of the first atom of the interaction at ind */
     int f, t;
 
-    assert(ntype <= F_NRE);
+    assert(numType <= F_NRE);
 
     nat_tot = 0;
-    for (f = 0; f < ntype; f++)
+    for (f = 0; f < numType; f++)
     {
         /* Sum #bondeds*#atoms_per_bond over all bonded types */
         nat_tot  += ild[f].il->nr/(ild[f].nat + 1)*ild[f].nat;
@@ -108,7 +108,7 @@ static void divide_bondeds_by_locality(bonded_threading_t *bt,
     /* Loop over the end bounds of the nthreads threads to determine
      * which interactions threads 0 to nthreads shall calculate.
      *
-     * NOTE: The cost of these combined loops is #interactions*ntype.
+     * NOTE: The cost of these combined loops is #interactions*numType.
      * This code is running single threaded (difficult to parallelize
      * over threads). So the relative cost of this function increases
      * linearly with the number of threads. Since the inner-most loop
@@ -146,14 +146,14 @@ static void divide_bondeds_by_locality(bonded_threading_t *bt,
 
             /* Find out which of the types has the lowest atom index */
             f_min = 0;
-            for (f = 1; f < ntype; f++)
+            for (f = 1; f < numType; f++)
             {
                 if (at_ind[f] < at_ind[f_min])
                 {
                     f_min = f;
                 }
             }
-            assert(f_min >= 0 && f_min < ntype);
+            assert(f_min >= 0 && f_min < numType);
 
             /* Assign the interaction with the lowest atom index (of type
              * index f_min) to thread t-1 by increasing ind.
@@ -177,13 +177,13 @@ static void divide_bondeds_by_locality(bonded_threading_t *bt,
         }
 
         /* Store the bonded end boundaries (at index t) for thread t-1 */
-        for (f = 0; f < ntype; f++)
+        for (f = 0; f < numType; f++)
         {
             bt->workDivision.setBound(ild[f].ftype, t, ind[f]);
         }
     }
 
-    for (f = 0; f < ntype; f++)
+    for (f = 0; f < numType; f++)
     {
         assert(ind[f] == ild[f].il->nr);
     }
@@ -211,29 +211,29 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
     assert(bt->nthreads > 0);
 
     bt->haveBondeds      = false;
-    int    ntype         = 0;
-    size_t ftypeGpuIndex = 0;
-    for (int ftype = 0; ftype < F_NRE; ftype++)
+    int    numType       = 0;
+    size_t fTypeGpuIndex = 0;
+    for (int fType = 0; fType < F_NRE; fType++)
     {
-        if (!ftype_is_bonded_potential(ftype))
+        if (!ftype_is_bonded_potential(fType))
         {
             continue;
         }
 
-        const t_ilist &il                     = idef.il[ftype];
+        const t_ilist &il                     = idef.il[fType];
         int            nrToAssignToCpuThreads = il.nr;
 
         if (useGpuForBondeds &&
-            ftypeGpuIndex < gmx::ftypesOnGpu.size() &&
-            gmx::ftypesOnGpu[ftypeGpuIndex] == ftype)
+            fTypeGpuIndex < gmx::fTypesOnGpu.size() &&
+            gmx::fTypesOnGpu[fTypeGpuIndex] == fType)
         {
-            ftypeGpuIndex++;
+            fTypeGpuIndex++;
 
             /* Perturbation is not implemented in the GPU bonded kernels.
              * But instead of doing all on the CPU, we could do only
              * the actually perturbed interactions on the CPU.
              */
-            if (!ftypeHasPerturbedEntries(idef, ftype))
+            if (!ftypeHasPerturbedEntries(idef, fType))
             {
                 /* We will assign this interaction type to the GPU */
                 nrToAssignToCpuThreads = 0;
@@ -250,23 +250,23 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
             /* No interactions, avoid all the integer math below */
             for (int t = 0; t <= bt->nthreads; t++)
             {
-                bt->workDivision.setBound(ftype, t, 0);
+                bt->workDivision.setBound(fType, t, 0);
             }
         }
-        else if (bt->nthreads <= bt->max_nthread_uniform || ftype == F_DISRES)
+        else if (bt->nthreads <= bt->max_nthread_uniform || fType == F_DISRES)
         {
             /* On up to 4 threads, load balancing the bonded work
              * is more important than minimizing the reduction cost.
              */
 
-            const int stride = 1 + NRAL(ftype);
+            const int stride = 1 + NRAL(fType);
 
             for (int t = 0; t <= bt->nthreads; t++)
             {
                 /* Divide equally over the threads */
                 int nr_t = (((nrToAssignToCpuThreads/stride)*t)/bt->nthreads)*stride;
 
-                if (ftype == F_DISRES)
+                if (fType == F_DISRES)
                 {
                     /* Ensure that distance restraint pairs with the same label
                      * end up on the same thread.
@@ -279,27 +279,27 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
                     }
                 }
 
-                bt->workDivision.setBound(ftype, t, nr_t);
+                bt->workDivision.setBound(fType, t, nr_t);
             }
         }
         else
         {
-            /* Add this ftype to the list to be distributed */
-            int nat          = NRAL(ftype);
-            ild[ntype].ftype = ftype;
-            ild[ntype].il    = &il;
-            ild[ntype].nat   = nat;
+            /* Add this fType to the list to be distributed */
+            int nat          = NRAL(fType);
+            ild[numType].ftype = fType;
+            ild[numType].il    = &il;
+            ild[numType].nat   = nat;
 
             /* The first index for the thread division is always 0 */
-            bt->workDivision.setBound(ftype, 0, 0);
+            bt->workDivision.setBound(fType, 0, 0);
 
-            ntype++;
+            numType++;
         }
     }
 
-    if (ntype > 0)
+    if (numType > 0)
     {
-        divide_bondeds_by_locality(bt, ntype, ild);
+        divide_bondeds_by_locality(bt, numType, ild);
     }
 
     if (debug)
