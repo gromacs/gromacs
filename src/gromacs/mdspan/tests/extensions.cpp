@@ -126,4 +126,71 @@ TEST(MdSpanExtension, SlicingEqualsView3D)
     EXPECT_EQ(span[1][1][1], span(1, 1, 1));
 }
 
+TEST(MdSpanExtension, additionWorks)
+{
+    std::array<int, 2 * 2 * 2>           arr1 = {{-4, -3, -2, -1, 0, 1, 2, 3}};
+    std::array<int, 2 * 2 * 2>           arr2 = {{1, 1, 1, 1, 1, 1, 1, 1}};
+    basic_mdspan<int, extents<2, 2, 2> > span1 {
+        arr1.data()
+    };
+    basic_mdspan<int, extents<2, 2, 2> > span2 {
+        arr2.data()
+    };
+
+    auto              result = addElementwise(span1, span2);
+    EXPECT_EQ(result[0][0][1], -2);
+    EXPECT_EQ(result[0][1][0], -1);
+    EXPECT_EQ(result[1][0][0],  1);
+}
+
+TEST(MdSpanExtension, subtractionWorks)
+{
+    std::array<int, 2 * 2 * 2>           arr1 = {{-4, -3, -2, -1, 0, 1, 2, 3}};
+    std::array<int, 2 * 2 * 2>           arr2 = {{1, 1, 1, 1, 1, 1, 1, 1}};
+    basic_mdspan<int, extents<2, 2, 2> > span1 {
+        arr1.data()
+    };
+    basic_mdspan<int, extents<2, 2, 2> > span2 {
+        arr2.data()
+    };
+
+    auto              result = subtractElementwise(span1, span2);
+    EXPECT_EQ(result[0][0][1], -4);
+    EXPECT_EQ(result[0][1][0], -3);
+    EXPECT_EQ(result[1][0][0], -1);
+}
+
+TEST(MdSpanExtension, multiplicationWorks)
+{
+    std::array<int, 2 * 2 * 2>           arr1 = {{-4, -3, -2, -1, 0, 1, 2, 3}};
+    std::array<int, 2 * 2 * 2>           arr2 = {{2, 2, 2, 2, 2, 2, 2, }};
+    basic_mdspan<int, extents<2, 2, 2> > span1 {
+        arr1.data()
+    };
+    basic_mdspan<int, extents<2, 2, 2> > span2 {
+        arr2.data()
+    };
+
+    auto              result = multiplyElementwise(span1, span2);
+    EXPECT_EQ(result[0][0][1], -6);
+    EXPECT_EQ(result[0][1][0], -4);
+    EXPECT_EQ(result[1][0][0],  0);
+}
+
+TEST(MdSpanExtension, divisionWorks)
+{
+    std::array<float, 2 * 2 * 2>           arr1 = {{-4, -3, -2, -1, 0, 1, 2, 3}};
+    std::array<float, 2 * 2 * 2>           arr2 = {{2, 2, 2, 2, 2, 2, 2, 2, }};
+    basic_mdspan<float, extents<2, 2, 2> > span1 {
+        arr1.data()
+    };
+    basic_mdspan<float, extents<2, 2, 2> > span2 {
+        arr2.data()
+    };
+
+    auto              result = divideElementwise(span1, span2);
+    EXPECT_EQ(result[0][0][1], -1.5);
+    EXPECT_EQ(result[0][1][0], -1);
+    EXPECT_EQ(result[1][0][0],    0);
+}
 } // namespace gmx

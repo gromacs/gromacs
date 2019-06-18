@@ -44,6 +44,9 @@
 #ifndef GMX_MDSPAN_EXTENSIONS_H_
 #define GMX_MDSPAN_EXTENSIONS_H_
 
+#include <algorithm>
+#include <functional>
+
 #include "gromacs/mdspan/mdspan.h"
 
 namespace gmx
@@ -79,6 +82,46 @@ end(const BasicMdspan &basicMdspan)
 
 //! Convenience type for often-used three dimensional extents
 using dynamicExtents3D = extents<dynamic_extent, dynamic_extent, dynamic_extent>;
+
+//! Elementwise addition
+template <class BasicMdspan>
+constexpr BasicMdspan addElementwise(const BasicMdspan &span1, const BasicMdspan &span2)
+{
+    BasicMdspan result(span1);
+    std::transform(begin(span1), end(span1), begin(span2),
+                   begin(result), std::plus<typename BasicMdspan::element_type>());
+    return result;
+}
+
+//! Elementwise subtraction - left minus right
+template <class BasicMdspan>
+constexpr BasicMdspan subtractElementwise(const BasicMdspan &span1, const BasicMdspan &span2)
+{
+    BasicMdspan result(span1);
+    std::transform(begin(span1), end(span1), begin(span2),
+                   begin(result), std::minus<typename BasicMdspan::element_type>());
+    return result;
+}
+
+//! Elementwise multiplication
+template <class BasicMdspan>
+constexpr BasicMdspan multiplyElementwise(const BasicMdspan &span1, const BasicMdspan &span2)
+{
+    BasicMdspan result(span1);
+    std::transform(begin(span1), end(span1), begin(span2),
+                   begin(result), std::multiplies<typename BasicMdspan::element_type>());
+    return result;
+}
+
+//! Elementwise division - left / right
+template <class BasicMdspan>
+constexpr BasicMdspan divideElementwise(const BasicMdspan &span1, const BasicMdspan &span2)
+{
+    BasicMdspan result(span1);
+    std::transform(begin(span1), end(span1), begin(span2),
+                   begin(result), std::divides<typename BasicMdspan::element_type>());
+    return result;
+}
 
 }      // namespace gmx
 
