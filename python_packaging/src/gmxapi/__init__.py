@@ -34,12 +34,23 @@
 
 """gmxapi Python package for GROMACS."""
 
-__all__ = ['commandline_operation', 'exceptions', 'logger', 'operation']
+__all__ = ['commandline_operation',
+           'concatenate_lists',
+           'function_wrapper',
+           'join_arrays',
+           'logger',
+           'make_constant',
+           'ndarray',
+           '__version__']
 
-import os
+from ._logging import logger
+from .version import __version__
 
-from gmxapi import exceptions
-from gmxapi import operation
-from gmxapi._logging import logger
-from gmxapi.commandline import commandline_operation
-from gmxapi import _gmxapi
+# Import utilities
+from .operation import computed_result, function_wrapper
+# Import public types
+from .datamodel import NDArray
+# Import the public operations
+from .datamodel import ndarray
+from .operation import concatenate_lists, join_arrays, make_constant
+from .commandline import commandline_operation

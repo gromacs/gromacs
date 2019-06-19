@@ -42,8 +42,8 @@ import pytest
 from gmxapi.version import has_feature
 
 
-@pytest.mark.skipif(not has_feature('fr2'),
-                    reason="Feature level not met.")
+@pytest.mark.skipif(not has_feature('fr2') or has_feature('fr4'),
+                    reason="Feature level not met or is superseded.")
 def test_fr2():
     """FR2: Output proxy establishes execution dependency.
 

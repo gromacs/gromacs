@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #
 # This file is part of the GROMACS molecular simulation package.
 #
@@ -52,7 +51,7 @@ class ImmediateResultTestCase(unittest.TestCase):
     """Test data model and data flow for basic operations."""
 
     def test_scalar(self):
-        operation = gmx.operation.make_constant(42)
+        operation = gmx.make_constant(42)
         assert isinstance(operation.dtype, type)
         assert operation.dtype == int
         assert operation.result() == 42
@@ -60,59 +59,30 @@ class ImmediateResultTestCase(unittest.TestCase):
     def test_list(self):
         list_a = [1, 2, 3]
 
-        # TODO: (FR4) test input validation
-        list_result = gmx.operation.concatenate_lists(sublists=[list_a])
-        # TODO: (FR4) should be NDArray
-        assert list_result.dtype == type(list_a)
+        # TODO: test input validation
+        list_result = gmx.concatenate_lists(sublists=[list_a])
+        assert list_result.dtype == gmx.datamodel.NDArray
         # Note: this is specifically for the built-in tuple type.
         # Equality comparison may work differently for different sequence types.
         assert tuple(list_result.result()) == tuple(list_a)
         assert len(list_result.result()) == len(list_a)
 
-        list_result = gmx.operation.concatenate_lists([list_a, list_a])
+        list_result = gmx.concatenate_lists([list_a, list_a])
         assert len(list_result.result()) == len(list_a) * 2
         assert tuple(list_result.result()) == tuple(list_a + list_a)
 
-        list_b = gmx.operation.make_constant([42])
+        list_b = gmx.ndarray([42])
 
-        list_result = gmx.operation.concatenate_lists(sublists=[list_b])
+        list_result = gmx.concatenate_lists(sublists=[list_b])
         assert list_result.result()[0] == 42
 
-        list_result = gmx.operation.append_list(list_a, list_b)
+        list_result = gmx.join_arrays(front=list_a, back=list_b)
         assert len(list_result.result()) == len(list_a) + 1
         assert tuple(list_result.result()) == tuple(list(list_a) + [42])
 
 
 class OperationPipelineTestCase(unittest.TestCase):
     """Test dependent sequence of operations."""
-
-    def test_operation_dependence(self):
-        """Confirm that dependent operations are only executed after their dependencies.
-
-        In a sequence of two operations, write a two-line file one line at a time.
-        Use a user-provided filename as a parameter to each operation.
-        """
-        with tempfile.TemporaryDirectory() as directory:
-            fh, filename = tempfile.mkstemp(dir=directory)
-            os.close(fh)
-
-            line1 = 'first line'
-            subcommand = ' '.join(['echo', '"{}"'.format(line1), '>>', filename])
-            commandline = ['-c', subcommand]
-            filewriter1 = commandline_operation('bash', arguments=commandline)
-
-            line2 = 'second line'
-            subcommand = ' '.join(['echo', '"{}"'.format(line2), '>>', filename])
-            commandline = ['-c', subcommand]
-            filewriter2 = commandline_operation('bash', arguments=commandline, input=filewriter1)
-
-            filewriter2.run()
-            # Check that the file has the two expected lines
-            with open(filename, 'r') as fh:
-                lines = [text.rstrip() for text in fh]
-            assert len(lines) == 2
-            assert lines[0] == line1
-            assert lines[1] == line2
 
     def test_data_dependence(self):
         """Confirm that data dependencies correctly establish resolvable execution dependencies.
