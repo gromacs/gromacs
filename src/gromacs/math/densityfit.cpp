@@ -64,6 +64,8 @@ class DensitySimilarityMeasureImpl
         virtual density gradient(density comparedDensity) = 0;
         //! \copydoc DensitySimilarityMeasure::gradient(density comparedDensity)
         virtual float similarity(density comparedDensity) = 0;
+        //! clone to allow copy operations
+        virtual std::unique_ptr<DensitySimilarityMeasureImpl> clone() = 0;
 };
 DensitySimilarityMeasureImpl::~DensitySimilarityMeasureImpl() = default;
 
@@ -81,8 +83,11 @@ class DensitySimilarityInnerProduct final : public DensitySimilarityMeasureImpl
         DensitySimilarityInnerProduct(density referenceDensity);
         //! The gradient for the inner product similarity measure is the reference density divided by the number of voxels
         density gradient(density comparedDensity) override;
+        //! Clone this
+        std::unique_ptr<DensitySimilarityMeasureImpl> clone() override;
         //! The similarity between reference density and compared density
         float similarity(density comparedDensity) override;
+    private:
         //! A view on the reference density
         const density referenceDensity_;
         //! Stores the gradient of the similarity measure in memory
@@ -125,6 +130,11 @@ DensitySimilarityMeasure::density DensitySimilarityInnerProduct::gradient(densit
     return gradient_.asConstView();
 }
 
+std::unique_ptr<DensitySimilarityMeasureImpl> DensitySimilarityInnerProduct::clone()
+{
+    return std::make_unique<DensitySimilarityInnerProduct>(referenceDensity_);
+}
+
 }   // namespace
 
 
@@ -153,5 +163,20 @@ float DensitySimilarityMeasure::similarity(density comparedDensity)
 }
 
 DensitySimilarityMeasure::~DensitySimilarityMeasure()  = default;
+
+DensitySimilarityMeasure::DensitySimilarityMeasure(const DensitySimilarityMeasure &other)
+    : impl_(other.impl_->clone())
+{
+}
+
+DensitySimilarityMeasure &DensitySimilarityMeasure::operator=(const DensitySimilarityMeasure &other)
+{
+    impl_ = other.impl_->clone();
+    return *this;
+}
+
+DensitySimilarityMeasure::DensitySimilarityMeasure(DensitySimilarityMeasure &&) noexcept = default;
+
+DensitySimilarityMeasure &DensitySimilarityMeasure::operator=(DensitySimilarityMeasure &&) noexcept = default;
 
 } // namespace gmx

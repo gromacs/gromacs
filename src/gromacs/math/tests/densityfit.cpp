@@ -118,6 +118,23 @@ TEST(DensitySimilarityTest, SimilarityThrowsIfDensitiesDontMatch)
     EXPECT_THROW(measure.similarity(comparedDensity.asConstView()), RangeError);
 }
 
+TEST(DensitySimilarityTest, CopiedMeasureInnerProductIsCorrect)
+{
+    MultiDimArray<std::vector<float>, dynamicExtents3D> referenceDensity(3, 3, 3);
+    std::iota(begin(referenceDensity), end(referenceDensity), 0);
+
+    DensitySimilarityMeasure measure(DensitySimilarityMeasureMethod::innerProduct, referenceDensity.asConstView());
+
+    DensitySimilarityMeasure copiedMeasure = measure;
+    MultiDimArray<std::vector<float>, dynamicExtents3D> comparedDensity(3, 3, 3);
+    std::iota(begin(comparedDensity), end(comparedDensity), -18);
+
+    // 0*(-18) + 1*(-17) .. + 26 * 8 / Number elements
+    const float expectedSimilarity = -117.0 / comparedDensity.asConstView().mapping().required_span_size();
+    EXPECT_FLOAT_EQ(expectedSimilarity, copiedMeasure.similarity(comparedDensity.asConstView()));
+}
+
+
 } // namespace test
 
 } // namespace gmx

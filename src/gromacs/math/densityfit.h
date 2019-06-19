@@ -86,6 +86,15 @@ class DensitySimilarityMeasure
          */
         DensitySimilarityMeasure(DensitySimilarityMeasureMethod method, density referenceDensity);
         ~DensitySimilarityMeasure();
+        //! Copy constructor
+        DensitySimilarityMeasure(const DensitySimilarityMeasure &other);
+        //! Copy assignment
+        DensitySimilarityMeasure &operator=(const DensitySimilarityMeasure &other);
+        //! Move constructor
+        DensitySimilarityMeasure(DensitySimilarityMeasure &&other) noexcept;
+        //! Move assignment
+        DensitySimilarityMeasure &operator=(DensitySimilarityMeasure &&other) noexcept;
+
         /*! \brief Derivative of the density similarity measure at all voxels.
          * \param[in] comparedDensity the variable density
          * \returns density similarity measure derivative
