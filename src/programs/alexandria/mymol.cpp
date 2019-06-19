@@ -630,7 +630,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
             topology_->atoms.atom[natom].q      =
                 topology_->atoms.atom[natom].qB = q;
 
-            t_atoms_set_resinfo(&(topology_->atoms), natom, symtab_, molProp()->getMolname().c_str(), 1, ' ', 1, ' ');
+            t_atoms_set_resinfo(&(topology_->atoms), natom, symtab_, ((cai->ResidueName().c_str() != nullptr) ? cai->ResidueName().c_str() : molProp()->getMolname().c_str()), 1, ' ', 1, ' ');
             topology_->atoms.atomname[natom]        = put_symtab(symtab_, cai->getName().c_str());
             topology_->atoms.atom[natom].atomnumber = gmx_atomprop_atomnumber(ap, cai->getName().c_str());
 

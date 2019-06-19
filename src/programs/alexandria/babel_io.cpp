@@ -66,15 +66,19 @@
 #endif
 #include <openbabel/atom.h>
 #include <openbabel/babelconfig.h>
+#include <openbabel/bond.h>
+#include <openbabel/data.h>
 #include <openbabel/data_utilities.h>
 #include <openbabel/elements.h>
 #include <openbabel/forcefield.h>
+#include <openbabel/generic.h>
+#include <openbabel/math/vector3.h>
 #include <openbabel/mol.h>
 #include <openbabel/obconversion.h>
 #include <openbabel/obiter.h>
 #include <openbabel/obmolecformat.h>
 #include <openbabel/residue.h>
-#include <openbabel/math/vector3.h>
+
 #ifdef KOKO
 #ifndef HAVE_SYS_TIME_H
 #define HAVE_SYS_TIME_H KOKO
@@ -232,10 +236,10 @@ void readBabel(const char          *g09,
     OpenBabel::OBBondIterator  OBbi;
     OpenBabel::OBBond         *OBb;
     OpenBabel::OBPairData     *OBpd;
-    OpenBabel::OBPcharge      *OBpc;
-    OpenBabel::OBVectorData   *dipole;
-    OpenBabel::OBMatrixData   *quadrupole;
-    OpenBabel::OBMatrixData   *pol_tensor;
+    OpenBabel::OBPcharge      *OBpc       = new OpenBabel::OBPcharge();
+    OpenBabel::OBVectorData   *dipole     = new OpenBabel::OBVectorData;
+    OpenBabel::OBMatrixData   *quadrupole = new OpenBabel::OBMatrixData;
+    OpenBabel::OBMatrixData   *pol_tensor = new OpenBabel::OBMatrixData;
     OpenBabel::OBFreeGrid     *esp;
     std::vector<alexandria::ElectrostaticPotential> espv;
 
@@ -470,7 +474,7 @@ void readBabel(const char          *g09,
             OpenBabel::OBPairData *type = (OpenBabel::OBPairData*) atom->GetData("FFAtomType");
             if (nullptr == type)
             {
-                gmx_fatal(FARGS, "Cannot find %s atom type for atom %s",
+                gmx_fatal(FARGS, "Cannot find %s atom type for atom %d",
                           forcefield.c_str(), static_cast<int>(atom->GetIdx()));
             }
             if (nullptr != debug)
@@ -482,6 +486,7 @@ void readBabel(const char          *g09,
             
             ca.SetUnit(unit2string(eg2cPm));
             ca.SetCoords(A2PM(atom->x()), A2PM(atom->y()), A2PM(atom->z()));
+            ca.SetResidue(atom->GetResidue()->GetName());
 
             if (inputformat == einfGaussian)
             {   

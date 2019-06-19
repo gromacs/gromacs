@@ -208,6 +208,7 @@ CommunicationStatus CalcAtom::Receive(t_commrec *cr, int src)
     {
         gmx_recv_str(cr, src, &name_);
         gmx_recv_str(cr, src, &obType_);
+        gmx_recv_str(cr, src, &residueName_);
         atomID_ = gmx_recv_int(cr, src);
         gmx_recv_str(cr, src, &unit_);
         x_      = gmx_recv_double(cr, src);
@@ -243,6 +244,7 @@ CommunicationStatus CalcAtom::Send(t_commrec *cr, int dest)
     {
         gmx_send_str(cr, dest, &name_);
         gmx_send_str(cr, dest, &obType_);
+        gmx_send_str(cr, dest, &residueName_);
         gmx_send_int(cr, dest, atomID_);
         gmx_send_str(cr, dest, &unit_);
         gmx_send_double(cr, dest, x_);

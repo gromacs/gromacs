@@ -982,7 +982,7 @@ using  AtomicChargeConstIterator = typename std::vector<AtomicCharge>::const_ite
 class CalcAtom
 {
     private:
-        std::string               name_, obType_, unit_;
+        std::string               name_, obType_, unit_, residueName_;
         double                    x_, y_, z_;
         int                       atomID_;
         std::vector<AtomicCharge> q_;
@@ -993,7 +993,7 @@ class CalcAtom
         //! Constructor initiating the name, type and atomid
         CalcAtom(const char *name, const char *obtype, int atomid)
         {
-            name_.assign(name); obType_.assign(obtype); atomID_ = atomid;
+            name_.assign(name); obType_.assign(obtype); atomID_ = atomid; residueName_.assign(nullptr);
         };
 
         //! Constructor initiating the name, type and atomid
@@ -1026,9 +1026,15 @@ class CalcAtom
 
         //! Return the unit of the coordinates of the atom
         const std::string &getUnit() const { return unit_; }
+        
+        //! Return the name of residue 
+        const std::string &ResidueName() const { return residueName_; }
 
         //! Set the unit of the coordinates of the atom
         void SetUnit(std::string unit);
+        
+         //! Set the residue name for the atom
+        void SetResidue(std::string residueName) {residueName_ = residueName;}
 
         //! Set the unit of the coordinates of the atom
         void SetUnit(const char *unit) { std::string s(unit); SetUnit(s); }
