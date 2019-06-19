@@ -100,9 +100,10 @@ void bonds_gpu(const int i, float *vtot_loc, const int numBonds,
 {
     if (i < numBonds)
     {
-        int type = d_forceatoms[3*i];
-        int ai   = d_forceatoms[3*i + 1];
-        int aj   = d_forceatoms[3*i + 2];
+        int3  bondData = *(int3 *)(d_forceatoms + 3 * i);
+        int   type     = bondData.x;
+        int   ai       = bondData.y;
+        int   aj       = bondData.z;
 
         /* dx = xi - xj, corrected for periodic boundary conditions. */
         fvec  dx;
@@ -168,10 +169,11 @@ void angles_gpu(const int i, float *vtot_loc, const int numBonds,
 {
     if (i < numBonds)
     {
-        int   type = d_forceatoms[4*i];
-        int   ai   = d_forceatoms[4*i + 1];
-        int   aj   = d_forceatoms[4*i + 2];
-        int   ak   = d_forceatoms[4*i + 3];
+        int4  angleData = *(int4 *)(d_forceatoms + 4 * i);
+        int   type      = angleData.x;
+        int   ai        = angleData.y;
+        int   aj        = angleData.z;
+        int   ak        = angleData.w;
 
         fvec  r_ij;
         fvec  r_kj;
@@ -241,10 +243,11 @@ void urey_bradley_gpu(const int i, float *vtot_loc, const int numBonds,
 {
     if (i < numBonds)
     {
-        int   type  = d_forceatoms[4*i];
-        int   ai    = d_forceatoms[4*i+1];
-        int   aj    = d_forceatoms[4*i+2];
-        int   ak    = d_forceatoms[4*i+3];
+        int4  ubData = *(int4 *)(d_forceatoms + 4 * i);
+        int   type   = ubData.x;
+        int   ai     = ubData.y;
+        int   aj     = ubData.z;
+        int   ak     = ubData.w;
 
         float th0A  = d_forceparams[type].u_b.thetaA*DEG2RAD;
         float kthA  = d_forceparams[type].u_b.kthetaA;
@@ -661,7 +664,7 @@ void  idihs_gpu(const int i, float *vtot_loc, const int numBonds,
 template <bool calcVir, bool calcEner>
 __device__
 void pairs_gpu(const int i, const int numBonds,
-               const t_iatom iatoms[], const t_iparams iparams[],
+               const t_iatom d_forceatoms[], const t_iparams iparams[],
                const float4 gm_xq[], fvec gm_f[], fvec sm_fShiftLoc[],
                const PbcAiuc pbcAiuc,
                const float scale_factor,
@@ -669,13 +672,14 @@ void pairs_gpu(const int i, const int numBonds,
 {
     if (i <  numBonds)
     {
-        int   itype = iatoms[3*i];
-        int   ai    = iatoms[3*i + 1];
-        int   aj    = iatoms[3*i + 2];
+        int3  pairData = *(int3 *)(d_forceatoms + 3 * i);
+        int   type     = pairData.x;
+        int   ai       = pairData.y;
+        int   aj       = pairData.z;
 
         float qq    = gm_xq[ai].w*gm_xq[aj].w;
-        float c6    = iparams[itype].lj14.c6A;
-        float c12   = iparams[itype].lj14.c12A;
+        float c6    = iparams[type].lj14.c6A;
+        float c12   = iparams[type].lj14.c12A;
 
         /* Do we need to apply full periodic boundary conditions? */
         fvec  dr;
