@@ -51,15 +51,45 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 
-void
-gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
-                          rvec * gmx_restrict              xx,
-                          rvec * gmx_restrict              ff,
-                          t_forcerec * gmx_restrict        fr,
-                          const t_mdatoms * gmx_restrict   mdatoms,
-                          nb_kernel_data_t * gmx_restrict  kernel_data,
-                          t_nrnb * gmx_restrict            nrnb)
+
+//! Enum for templating the soft-core treatment in the kernel
+enum class SoftCoreTreatment
 {
+    None,    //!< No soft-core
+    RPower6, //!< Soft-core with r-power = 6
+    RPower48 //!< Soft-core with r-power = 48
+};
+
+//! Most treatments are fine with float in mixed-precision mode.
+template <SoftCoreTreatment softCoreTreatment>
+struct SoftCoreReal
+{
+    //! Real type for soft-core calculations
+    using Real = real;
+};
+
+//! This treatment requires double precision for some computations.
+template <>
+struct SoftCoreReal<SoftCoreTreatment::RPower48>
+{
+    //! Real type for soft-core calculations
+    using Real = double;
+};
+
+//! Templated free-energy non-bonded kernel
+template<SoftCoreTreatment softCoreTreatment>
+static void
+nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
+                      rvec * gmx_restrict              xx,
+                      rvec * gmx_restrict              ff,
+                      t_forcerec * gmx_restrict        fr,
+                      const t_mdatoms * gmx_restrict   mdatoms,
+                      nb_kernel_data_t * gmx_restrict  kernel_data,
+                      t_nrnb * gmx_restrict            nrnb)
+{
+    using SCReal = typename SoftCoreReal<softCoreTreatment>::Real;
+
+    constexpr bool useSoftCore = (softCoreTreatment != SoftCoreTreatment::None);
 
 #define  STATE_A  0
 #define  STATE_B  1
@@ -67,8 +97,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     int           i, n, ii, is3, ii3, k, nj0, nj1, jnr, j3, ggid;
     real          shX, shY, shZ;
     real          tx, ty, tz, Fscal;
-    double        FscalC[NSTATES], FscalV[NSTATES];  /* Needs double for sc_power==48 */
-    double        Vcoul[NSTATES], Vvdw[NSTATES];     /* Needs double for sc_power==48 */
+    SCReal        FscalC[NSTATES], FscalV[NSTATES];  /* Needs double for sc_power==48 */
+    SCReal        Vcoul[NSTATES], Vvdw[NSTATES];     /* Needs double for sc_power==48 */
     real          rinv6, r, rtC, rtV;
     real          iqA, iqB;
     real          qq[NSTATES], vctot;
@@ -78,11 +108,11 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     real          dx, dy, dz, rsq, rinv;
     real          c6[NSTATES], c12[NSTATES], c6grid;
     real          LFC[NSTATES], LFV[NSTATES], DLF[NSTATES];
-    double        dvdl_coul, dvdl_vdw;
+    SCReal        dvdl_coul, dvdl_vdw;
     real          lfac_coul[NSTATES], dlfac_coul[NSTATES], lfac_vdw[NSTATES], dlfac_vdw[NSTATES];
-    real          sigma6[NSTATES], alpha_vdw_eff, alpha_coul_eff, sigma2_def, sigma2_min;
-    double        rp, rpm2, rC, rV, rinvC, rpinvC, rinvV, rpinvV; /* Needs double for sc_power==48 */
-    real          sigma2[NSTATES], sigma_pow[NSTATES];
+    real          sigma6[NSTATES], alpha_vdw_eff, alpha_coul_eff;
+    SCReal        rp, rpm2, rC, rV, rinvC, rpinvC, rinvV, rpinvV; /* Needs double for sc_power==48 */
+    real          sigma_pow[NSTATES];
     int           do_tab, tab_elemsize = 0;
     int           n0, n1C, n1V, nnn;
     real          Y, F, Fp, Geps, Heps2, epsC, eps2C, epsV, eps2V, VV, FF;
@@ -105,7 +135,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     real          facel, krf, crf;
     const real *  chargeA;
     const real *  chargeB;
-    real          sigma6_min, sigma6_def, lam_power, sc_r_power;
+    real          sigma6_min, sigma6_def, lam_power;
     real          alpha_coul, alpha_vdw, lambda_coul, lambda_vdw;
     real          sh_lj_ewald;
     const real *  nbfp, *nbfp_grid;
@@ -132,7 +162,6 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     const real    one         = 1.0;
     const real    two         = 2.0;
     const real    six         = 6.0;
-    const real    fourtyeight = 48.0;
 
     /* Extract pointer to non-bonded interaction constants */
     const interaction_const_t *ic = fr->ic;
@@ -168,7 +197,6 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     alpha_coul          = fr->sc_alphacoul;
     alpha_vdw           = fr->sc_alphavdw;
     lam_power           = fr->sc_power;
-    sc_r_power          = fr->sc_r_power;
     sigma6_def          = fr->sc_sigma6_def;
     sigma6_min          = fr->sc_sigma6_min;
     bDoForces           = ((kernel_data->flags & GMX_NONBONDED_DO_FORCE) != 0);
@@ -274,6 +302,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     DLF[STATE_A] = -1;
     DLF[STATE_B] = 1;
 
+    constexpr real sc_r_power = (softCoreTreatment == SoftCoreTreatment::RPower48 ? 48.0_real : 6.0_real);
     for (i = 0; i < NSTATES; i++)
     {
         lfac_coul[i]  = (lam_power == 2 ? (1-LFC[i])*(1-LFC[i]) : (1-LFC[i]));
@@ -281,9 +310,6 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
         lfac_vdw[i]   = (lam_power == 2 ? (1-LFV[i])*(1-LFV[i]) : (1-LFV[i]));
         dlfac_vdw[i]  = DLF[i]*lam_power/sc_r_power*(lam_power == 2 ? (1-LFV[i]) : 1);
     }
-    /* precalculate */
-    sigma2_def = std::cbrt(sigma6_def);
-    sigma2_min = std::cbrt(sigma6_min);
 
     /* Ewald (not PME) table is special (icoul==enbcoulFEWALD) */
 
@@ -365,23 +391,27 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                 r            = 0;
             }
 
-            if (sc_r_power == six)
+            if (softCoreTreatment == SoftCoreTreatment::None)
             {
-                rpm2             = rsq*rsq;  /* r4 */
-                rp               = rpm2*rsq; /* r6 */
+                /* The soft-core power p will not affect the results
+                 * with not using soft-core, so we use power of 0 which gives
+                 * the simplest math and cheapest code.
+                 */
+                rpm2         = rinv*rinv;
+                rp           = 1;
             }
-            else if (sc_r_power == fourtyeight)
+            if (softCoreTreatment == SoftCoreTreatment::RPower6)
             {
-                rp               = rsq*rsq*rsq; /* r6 */
-                rp               = rp*rp;       /* r12 */
-                rp               = rp*rp;       /* r24 */
-                rp               = rp*rp;       /* r48 */
-                rpm2             = rp/rsq;      /* r46 */
+                rpm2         = rsq*rsq;  /* r4 */
+                rp           = rpm2*rsq; /* r6 */
             }
-            else
+            if (softCoreTreatment == SoftCoreTreatment::RPower48)
             {
-                rp             = std::pow(r, sc_r_power);  /* not currently supported as input, but can handle it */
-                rpm2           = rp/rsq;
+                rp           = rsq*rsq*rsq; /* r6 */
+                rp           = rp*rp;       /* r12 */
+                rp           = rp*rp;       /* r24 */
+                rp           = rp*rp;       /* r48 */
+                rpm2         = rp/rsq;      /* r46 */
             }
 
             Fscal = 0;
@@ -400,50 +430,47 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                 for (i = 0; i < NSTATES; i++)
                 {
                     c12[i]             = nbfp[tj[i]+1];
-                    if ((c6[i] > 0) && (c12[i] > 0))
+                    if (useSoftCore)
                     {
-                        /* c12 is stored scaled with 12.0 and c6 is scaled with 6.0 - correct for this */
-                        sigma6[i]       = half*c12[i]/c6[i];
-                        sigma2[i]       = std::cbrt(sigma6[i]);
-                        /* should be able to get rid of cbrt call eventually.  Will require agreement on
-                           what data to store externally.  Can't be fixed without larger scale changes, so not 4.6 */
-                        if (sigma6[i] < sigma6_min)   /* for disappearing coul and vdw with soft core at the same time */
+                        if ((c6[i] > 0) && (c12[i] > 0))
                         {
-                            sigma6[i] = sigma6_min;
-                            sigma2[i] = sigma2_min;
+                            /* c12 is stored scaled with 12.0 and c6 is scaled with 6.0 - correct for this */
+                            sigma6[i]       = half*c12[i]/c6[i];
+                            if (sigma6[i] < sigma6_min)   /* for disappearing coul and vdw with soft core at the same time */
+                            {
+                                sigma6[i] = sigma6_min;
+                            }
                         }
-                    }
-                    else
-                    {
-                        sigma6[i]       = sigma6_def;
-                        sigma2[i]       = sigma2_def;
-                    }
-                    if (sc_r_power == six)
-                    {
-                        sigma_pow[i]    = sigma6[i];
-                    }
-                    else if (sc_r_power == fourtyeight)
-                    {
-                        sigma_pow[i]    = sigma6[i]*sigma6[i];       /* sigma^12 */
-                        sigma_pow[i]    = sigma_pow[i]*sigma_pow[i]; /* sigma^24 */
-                        sigma_pow[i]    = sigma_pow[i]*sigma_pow[i]; /* sigma^48 */
-                    }
-                    else
-                    {    /* not really supported as input, but in here for testing the general case*/
-                        sigma_pow[i]    = std::pow(sigma2[i], sc_r_power/2);
+                        else
+                        {
+                            sigma6[i]       = sigma6_def;
+                        }
+                        if (softCoreTreatment == SoftCoreTreatment::RPower6)
+                        {
+                            sigma_pow[i]    = sigma6[i];
+                        }
+                        else
+                        {
+                            sigma_pow[i]    = sigma6[i]*sigma6[i];       /* sigma^12 */
+                            sigma_pow[i]    = sigma_pow[i]*sigma_pow[i]; /* sigma^24 */
+                            sigma_pow[i]    = sigma_pow[i]*sigma_pow[i]; /* sigma^48 */
+                        }
                     }
                 }
 
-                /* only use softcore if one of the states has a zero endstate - softcore is for avoiding infinities!*/
-                if ((c12[STATE_A] > 0) && (c12[STATE_B] > 0))
+                if (useSoftCore)
                 {
-                    alpha_vdw_eff    = 0;
-                    alpha_coul_eff   = 0;
-                }
-                else
-                {
-                    alpha_vdw_eff    = alpha_vdw;
-                    alpha_coul_eff   = alpha_coul;
+                    /* only use softcore if one of the states has a zero endstate - softcore is for avoiding infinities!*/
+                    if ((c12[STATE_A] > 0) && (c12[STATE_B] > 0))
+                    {
+                        alpha_vdw_eff    = 0;
+                        alpha_coul_eff   = 0;
+                    }
+                    else
+                    {
+                        alpha_vdw_eff    = alpha_vdw;
+                        alpha_coul_eff   = alpha_coul;
+                    }
                 }
 
                 for (i = 0; i < NSTATES; i++)
@@ -457,13 +484,26 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                     if ( (qq[i] != 0) || (c6[i] != 0) || (c12[i] != 0) )
                     {
                         /* this section has to be inside the loop because of the dependence on sigma_pow */
-                        rpinvC         = one/(alpha_coul_eff*lfac_coul[i]*sigma_pow[i]+rp);
-                        rinvC          = std::pow(rpinvC, one/sc_r_power);
-                        rC             = one/rinvC;
+                        if (useSoftCore)
+                        {
+                            rpinvC     = one/(alpha_coul_eff*lfac_coul[i]*sigma_pow[i]+rp);
+                            rinvC      = std::pow(rpinvC, one/sc_r_power);
+                            rC         = one/rinvC;
 
-                        rpinvV         = one/(alpha_vdw_eff*lfac_vdw[i]*sigma_pow[i]+rp);
-                        rinvV          = std::pow(rpinvV, one/sc_r_power);
-                        rV             = one/rinvV;
+                            rpinvV     = one/(alpha_vdw_eff*lfac_vdw[i]*sigma_pow[i]+rp);
+                            rinvV      = std::pow(rpinvV, one/sc_r_power);
+                            rV         = one/rinvV;
+                        }
+                        else
+                        {
+                            rpinvC     = 1;
+                            rinvC      = rinv;
+                            rC         = r;
+
+                            rpinvV     = 1;
+                            rinvV      = rinv;
+                            rV         = r;
+                        }
 
                         if (do_tab)
                         {
@@ -552,14 +592,14 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                             {
                                 case GMX_NBKERNEL_VDW_LENNARDJONES:
                                     /* cutoff LJ */
-                                    if (sc_r_power == six)
+                                    if (softCoreTreatment == SoftCoreTreatment::RPower6)
                                     {
-                                        rinv6            = rpinvV;
+                                        rinv6        = rpinvV;
                                     }
                                     else
                                     {
-                                        rinv6            = rinvV*rinvV;
-                                        rinv6            = rinv6*rinv6*rinv6;
+                                        rinv6        = rinvV*rinvV;
+                                        rinv6        = rinv6*rinv6*rinv6;
                                     }
                                     Vvdw6            = c6[i]*rinv6;
                                     Vvdw12           = c12[i]*rinv6*rinv6;
@@ -598,7 +638,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     break;
 
                                 case GMX_NBKERNEL_VDW_LJEWALD:
-                                    if (sc_r_power == six)
+                                    if (softCoreTreatment == SoftCoreTreatment::RPower6)
                                     {
                                         rinv6            = rpinvV;
                                     }
@@ -659,11 +699,19 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                     vctot         += LFC[i]*Vcoul[i];
                     vvtot         += LFV[i]*Vvdw[i];
 
-                    Fscal         += LFC[i]*FscalC[i]*rpm2;
-                    Fscal         += LFV[i]*FscalV[i]*rpm2;
+                    Fscal     += LFC[i]*FscalC[i]*rpm2;
+                    Fscal     += LFV[i]*FscalV[i]*rpm2;
 
-                    dvdl_coul     += Vcoul[i]*DLF[i] + LFC[i]*alpha_coul_eff*dlfac_coul[i]*FscalC[i]*sigma_pow[i];
-                    dvdl_vdw      += Vvdw[i]*DLF[i] + LFV[i]*alpha_vdw_eff*dlfac_vdw[i]*FscalV[i]*sigma_pow[i];
+                    if (useSoftCore)
+                    {
+                        dvdl_coul += Vcoul[i]*DLF[i] + LFC[i]*alpha_coul_eff*dlfac_coul[i]*FscalC[i]*sigma_pow[i];
+                        dvdl_vdw  += Vvdw[i]*DLF[i] + LFV[i]*alpha_vdw_eff*dlfac_vdw[i]*FscalV[i]*sigma_pow[i];
+                    }
+                    else
+                    {
+                        dvdl_coul += Vcoul[i]*DLF[i];
+                        dvdl_vdw  += Vvdw[i]*DLF[i];
+                    }
                 }
             }
             else if (icoul == GMX_NBKERNEL_ELEC_REACTIONFIELD)
@@ -848,4 +896,30 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
      */
 #pragma omp atomic
     inc_nrnb(nrnb, eNR_NBKERNEL_FREE_ENERGY, nlist->nri*12 + nlist->jindex[n]*150);
+}
+
+void gmx_nb_free_energy_kernel(const t_nblist   *nlist,
+                               rvec             *xx,
+                               rvec             *ff,
+                               t_forcerec       *fr,
+                               const t_mdatoms  *mdatoms,
+                               nb_kernel_data_t *kernel_data,
+                               t_nrnb           *nrnb)
+{
+    if (fr->sc_alphacoul == 0 && fr->sc_alphavdw == 0)
+    {
+        nb_free_energy_kernel<SoftCoreTreatment::None>(nlist, xx, ff, fr, mdatoms, kernel_data, nrnb);
+    }
+    else if (fr->sc_r_power == 6.0_real)
+    {
+        nb_free_energy_kernel<SoftCoreTreatment::RPower6>(nlist, xx, ff, fr, mdatoms, kernel_data, nrnb);
+    }
+    else if (fr->sc_r_power == 48.0_real)
+    {
+        nb_free_energy_kernel<SoftCoreTreatment::RPower48>(nlist, xx, ff, fr, mdatoms, kernel_data, nrnb);
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(false, "Unsupported soft-core r-power");
+    }
 }
