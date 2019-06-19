@@ -77,7 +77,7 @@ struct SoftCoreReal<SoftCoreTreatment::RPower48>
 };
 
 //! Templated free-energy non-bonded kernel
-template<SoftCoreTreatment softCoreTreatment>
+template<SoftCoreTreatment softCoreTreatment, bool scLambdasOrAlphasDiffer>
 static void
 nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                       rvec * gmx_restrict              xx,
@@ -469,9 +469,19 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                             rinvC      = std::pow(rpinvC, one/sc_r_power);
                             rC         = one/rinvC;
 
-                            rpinvV     = one/(alpha_vdw_eff*lfac_vdw[i]*sigma_pow[i]+rp);
-                            rinvV      = std::pow(rpinvV, one/sc_r_power);
-                            rV         = one/rinvV;
+                            if (scLambdasOrAlphasDiffer)
+                            {
+                                rpinvV = one/(alpha_vdw_eff*lfac_vdw[i]*sigma_pow[i]+rp);
+                                rinvV  = std::pow(rpinvV, one/sc_r_power);
+                                rV     = one/rinvV;
+                            }
+                            else
+                            {
+                                /* We can avoid one expensive pow and one / operation */
+                                rpinvV = rpinvC;
+                                rinvV  = rinvC;
+                                rV     = rC;
+                            }
                         }
                         else
                         {
@@ -783,15 +793,23 @@ void gmx_nb_free_energy_kernel(const t_nblist   *nlist,
 {
     if (fr->sc_alphacoul == 0 && fr->sc_alphavdw == 0)
     {
-        nb_free_energy_kernel<SoftCoreTreatment::None>(nlist, xx, ff, fr, mdatoms, kernel_data, nrnb);
+        nb_free_energy_kernel<SoftCoreTreatment::None, false>(nlist, xx, ff, fr, mdatoms, kernel_data, nrnb);
     }
     else if (fr->sc_r_power == 6.0_real)
     {
-        nb_free_energy_kernel<SoftCoreTreatment::RPower6>(nlist, xx, ff, fr, mdatoms, kernel_data, nrnb);
+        if (kernel_data->lambda[efptCOUL] == kernel_data->lambda[efptVDW] &&
+            fr->sc_alphacoul == fr->sc_alphavdw)
+        {
+            nb_free_energy_kernel<SoftCoreTreatment::RPower6, false>(nlist, xx, ff, fr, mdatoms, kernel_data, nrnb);
+        }
+        else
+        {
+            nb_free_energy_kernel<SoftCoreTreatment::RPower6, true>(nlist, xx, ff, fr, mdatoms, kernel_data, nrnb);
+        }
     }
     else if (fr->sc_r_power == 48.0_real)
     {
-        nb_free_energy_kernel<SoftCoreTreatment::RPower48>(nlist, xx, ff, fr, mdatoms, kernel_data, nrnb);
+        nb_free_energy_kernel<SoftCoreTreatment::RPower48, true>(nlist, xx, ff, fr, mdatoms, kernel_data, nrnb);
     }
     else
     {
