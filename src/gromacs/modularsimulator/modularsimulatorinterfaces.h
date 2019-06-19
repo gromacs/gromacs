@@ -57,8 +57,18 @@
 #include <functional>
 #include <memory>
 
+#include "gromacs/utility/basedefinitions.h"
+
+struct gmx_mdoutf;
+
 namespace gmx
 {
+template <class Signaller> class SignallerBuilder;
+class NeighborSearchSignaller;
+class LastStepSignaller;
+class LoggingSignaller;
+class EnergySignaller;
+
 //! \addtogroup module_modularsimulator
 //! \{
 
@@ -138,6 +148,174 @@ class ISignaller
 typedef std::function<void(Step, Time)> SignallerCallback;
 //! Pointer to the function type that can be registered to signallers for callback
 typedef std::unique_ptr<SignallerCallback> SignallerCallbackPtr;
+
+/*! \libinternal
+ * \brief Interface for clients of the NeighborSearchSignaller
+ *
+ * Defining registerNSCallback allows clients to register an arbitrary callback
+ * for notification by the signaller.
+ */
+class INeighborSearchSignallerClient
+{
+    public:
+        //! @cond
+        // (doxygen doesn't like these...)
+        //! Allow builder of NeighborSearchSignaller to ask for callback registration
+        friend class SignallerBuilder<NeighborSearchSignaller>;
+        //! @endcond
+        //! Standard virtual destructor
+        virtual ~INeighborSearchSignallerClient() = default;
+
+    protected:
+        //! Return callback to NeighborSearchSignaller
+        virtual SignallerCallbackPtr registerNSCallback() = 0;
+};
+
+/*! \libinternal
+ * \brief Interface for clients of the LastStepSignaller
+ *
+ * Defining registerLastStepCallback allows clients to register an arbitrary callback
+ * for notification by the signaller.
+ */
+class ILastStepSignallerClient
+{
+    public:
+        //! @cond
+        // (doxygen doesn't like these...)
+        //! Allow builder of LastStepSignaller to ask for callback registration
+        friend class SignallerBuilder<LastStepSignaller>;
+        //! @endcond
+        //! Standard virtual destructor
+        virtual ~ILastStepSignallerClient() = default;
+
+    protected:
+        //! Return callback to LastStepSignaller
+        virtual SignallerCallbackPtr registerLastStepCallback() = 0;
+};
+
+/*! \libinternal
+ * \brief Interface for clients of the LoggingSignaller
+ *
+ * Defining registerLoggingCallback allows clients to register an arbitrary callback
+ * for notification by the signaller.
+ */
+class ILoggingSignallerClient
+{
+    public:
+        //! @cond
+        // (doxygen doesn't like these...)
+        //! Allow builder of LoggingSignaller to ask for callback registration
+        friend class SignallerBuilder<LoggingSignaller>;
+        //! @endcond
+        //! Standard virtual destructor
+        virtual ~ILoggingSignallerClient() = default;
+
+    protected:
+        //! Return callback to LoggingSignaller
+        virtual SignallerCallbackPtr registerLoggingCallback() = 0;
+};
+
+//! The energy events signalled by the EnergySignaller
+enum class EnergySignallerEvent
+{
+    energyCalculationStep,
+    virialCalculationStep,
+    freeEnergyCalculationStep
+};
+
+/*! \libinternal
+ * \brief Interface for clients of the EnergySignaller
+ *
+ * Defining registerEnergyCallback allows clients to register an arbitrary callback
+ * for notification by the signaller for every EnergySignallerEvent separately.
+ */
+class IEnergySignallerClient
+{
+    public:
+        //! @cond
+        // (doxygen doesn't like these...)
+        //! Allow builder of EnergySignaller to ask for callback registration
+        friend class SignallerBuilder<EnergySignaller>;
+        //! @endcond
+        //! Standard virtual destructor
+        virtual ~IEnergySignallerClient() = default;
+
+    protected:
+        //! Return callback to EnergySignaller
+        virtual SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent) = 0;
+};
+
+//! The trajectory writing events
+enum class TrajectoryEvent
+{
+    stateWritingStep,
+    energyWritingStep
+};
+
+/*! \libinternal
+ * \brief Interface for signaller clients of the TrajectoryElement
+ *
+ * Defining registerTrajectorySignallerCallback allows clients to register an arbitrary
+ * callback for notification by the signaller for every TrajectoryEvent separately.
+ */
+class ITrajectorySignallerClient
+{
+    public:
+        //! @cond
+        // (doxygen doesn't like these...)
+        //! Allow builder of TrajectoryElement to ask for callback registration
+        friend class TrajectoryElementBuilder;
+        //! @endcond
+        //! Standard virtual destructor
+        virtual ~ITrajectorySignallerClient() = default;
+
+    protected:
+        //! Return callback to TrajectoryElement
+        virtual SignallerCallbackPtr
+            registerTrajectorySignallerCallback(TrajectoryEvent) = 0;
+};
+
+/*! \typedef ITrajectoryWriterCallback
+ * \brief Function type for trajectory writing clients
+ *
+ * Trajectory writing clients are given a pointer to the output file handler,
+ * allowing them to write their own trajectory contribution
+ */
+typedef std::function<void(gmx_mdoutf*, Step, Time)> ITrajectoryWriterCallback;
+//! Pointer to the function type for trajectory writing clients
+typedef std::unique_ptr<ITrajectoryWriterCallback> ITrajectoryWriterCallbackPtr;
+
+/*! \libinternal
+ * \brief Interface for writer clients of the TrajectoryElement
+ *
+ * Defining registerTrajectoryWriterCallback allows clients to register an arbitrary
+ * callback called by the TrajectoryElement when trajectory writing happens.
+ *
+ * Setup and teardown methods allow clients to perform tasks with a valid output pointer.
+ * These functions have a standard implementation to allow clients not to implement
+ * them if no setup / teardown is needed.
+ */
+class ITrajectoryWriterClient
+{
+    public:
+        //! @cond
+        // (doxygen doesn't like these...)
+        //! Allow TrajectoryElement to ask for callback registration
+        friend class TrajectoryElement;
+        //! @endcond
+        //! Standard virtual destructor
+        virtual ~ITrajectoryWriterClient() = default;
+
+    protected:
+        //! Setup method with valid output pointer.
+        virtual void trajectoryWriterSetup(gmx_mdoutf *outf) = 0;
+        //! Teardown method with valid output pointer.
+        virtual void trajectoryWriterTeardown(gmx_mdoutf *outf) = 0;
+
+        //! Return callback to TrajectoryElement
+        virtual ITrajectoryWriterCallbackPtr
+            registerTrajectoryWriterCallback(TrajectoryEvent) = 0;
+};
 
 //! /}
 }      // namespace gmx

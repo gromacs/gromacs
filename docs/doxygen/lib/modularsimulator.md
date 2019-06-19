@@ -315,3 +315,45 @@ deprecating from do_md for GROMACS 2020)
 * Ensemble-averaged restraints
 * Time-averaged restraints
 * Freeze, deform, cos-acceleration
+
+## Signallers and elements
+
+The current implementation of the modular simulator consists of
+the following signallers and elements:
+
+### Signallers
+
+All signallers have a list of pointers to clients, objects that
+implement a respective interface and get notified of events the
+signaller is communicating.
+
+* `NeighborSearchSignaller`: Informs its clients whether the
+  current step is a neighbor-searching step.
+* `LastStepSignaller`: Informs its clients when the current step
+  is the last step of the simulation.
+* `LoggingSignaller`: Informs its clients whether output to the
+  log file is written in the current step.
+* `EnergySignaller`: Informs its clients about energy related
+  special steps, namely energy calculation steps, virial
+  calculation steps, and free energy calculation steps.
+* `TrajectoryElement`: Informs its clients if writing to
+  trajectory (state [x/v/f] and/or energy) is planned for the
+  current step. Note that the `TrajectoryElement` is not a
+  pure signaller, but also implements the `ISimulatorElement`
+  interface (see section "Simulator Elements" below).
+
+### Simulator Elements
+
+#### `TrajectoryElement`
+The `TrajectoryElement` is a special element, as it
+is both implementing the `ISimulatorElement` and the `ISignaller`
+interfaces. During the signaller phase, it is signalling its
+_signaller clients_ that the trajectory will be written at the
+end of the current step. During the simulator run phase, it is
+calling its _trajectory clients_ (which do not necessarily need
+to be identical with the signaller clients), passing them a valid
+output pointer and letting them write to trajectory. Unlike the
+legacy implementation, the trajectory element itself knows nothing
+about the data that is written to file - it is only responsible
+to inform clients about trajectory steps, and providing a valid
+file pointer to the objects that need to write to trajectory.

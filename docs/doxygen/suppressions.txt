@@ -53,3 +53,6 @@ src/gmxpre.h: warning: includes non-local file as "swindirect.h"
 # TODO: resolve definitions, update testing heuristics, and activate policy checks
 # for src/api/cpp files.
 src/api/cpp/*: *
+
+# doxygen has problems with the template construct in this file
+src/gromacs/modularsimulator/signallers.h: error: build: is documented, but does not have brief description

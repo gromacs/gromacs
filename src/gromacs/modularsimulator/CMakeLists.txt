@@ -31,3 +31,12 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
+
+file(GLOB MODULARSIMULATOR_SOURCES *.cpp)
+
+add_library(modularsimulator OBJECT ${MODULARSIMULATOR_SOURCES})
+gmx_target_compile_options(modularsimulator)
+target_compile_definitions(modularsimulator PRIVATE HAVE_CONFIG_H)
+
+list(APPEND libgromacs_object_library_dependencies modularsimulator)
+set(libgromacs_object_library_dependencies ${libgromacs_object_library_dependencies} PARENT_SCOPE)
