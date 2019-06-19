@@ -65,6 +65,10 @@ from contextlib import contextmanager
 from gmxapi import exceptions
 
 
+# Encapsulate the description of a data output.
+Output = collections.namedtuple('Output', ('name', 'dtype', 'done', 'data'))
+
+
 class ImmediateResult(object):
     """Data handle for a simple result.
 
@@ -174,54 +178,131 @@ def computed_result(function):
     return new_function
 
 
-@computed_result
-def append_list(a: list = (), b: list = ()):
-    """Operation that consumes two lists and produces a concatenated single list."""
-    # TODO: (FR4) Returned list should be an NDArray.
-    if isinstance(a, (str, bytes)) or isinstance(b, (str, bytes)):
-        raise exceptions.ValueError('Input must be a pair of lists.')
-    try:
-        list_a = list(a)
-    except TypeError:
-        list_a = list([a])
-    try:
-        list_b = list(b)
-    except TypeError:
-        list_b = list([b])
-    return list_a + list_b
+class DataProxyBase(object):
+    """Limited interface to managed resources.
 
+    Inherit from DataProxy to specialize an interface to an ``instance``.
+    In the derived class, either do not define ``__init__`` or be sure to
+    initialize the super class (DataProxy) with an instance of the object
+    to be proxied.
 
-def concatenate_lists(sublists: list = ()):
-    """Combine data sources into a single list.
-
-    A trivial data flow restructuring operation
+    Acts as an owning handle to ``instance``, preventing the reference count
+    of ``instance`` from going to zero for the lifetime of the proxy object.
     """
-    if isinstance(sublists, (str, bytes)):
-        raise exceptions.ValueError('Input must be a list of lists.')
-    if len(sublists) == 0:
-        return []
-    else:
-        return append_list(sublists[0], concatenate_lists(sublists[1:]))
+
+    def __init__(self, instance):
+        self._instance = instance
 
 
-@computed_result
-def make_constant(value):
-    """Provide a predetermined value at run time.
+class Publisher(object):
+    """Data descriptor for write access to a specific named data resource.
 
-    This is a trivial operation that provides a (typed) value, primarily for
-    internally use to manage gmxapi data flow.
+    For a wrapped function receiving an ``output`` argument, provides the
+    accessors for an attribute on the object passed as ``output``. Maps
+    read and write access by the wrapped function to appropriate details of
+    the resource manager.
 
-    Accepts a value of any type. The object returned has a definite type and
-    provides same interface as other gmxapi outputs. Additional constraints or
-    guarantees on data type may appear in future versions.
+    Used internally to implement settable attributes on PublishingDataProxy.
+    Allows PublishingDataProxy to be dynamically defined in the scope of the
+    operation.function_wrapper closure. Each named output is represented by
+    an instance of Publisher in the PublishingDataProxy class definition for
+    the operation.
+
+    Ref: https://docs.python.org/3/reference/datamodel.html#implementing-descriptors
+
+    Collaborations:
+    Relies on implementation details of ResourceManager.
     """
-    # TODO: (FR4+) Manage type compatibility with gmxapi data interfaces.
-    return type(value)(value)
+    def __init__(self, name, dtype):
+        self.name = name
+        self.dtype = dtype
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            # Access through class attribute of owner class
+            return self
+        resource_manager = instance._instance
+        return getattr(resource_manager._data, self.name)
+
+    def __set__(self, instance, value):
+        resource_manager = instance._instance
+        resource_manager.set_result(self.name, value)
+
+    def __repr__(self):
+        return 'Publisher(name={}, dtype={})'.format(self.name, self.dtype.__qualname__)
+
+
+class ResultGetter(object):
+    """Fetch data to the caller's Context.
+
+    Returns an object of the concrete type specified according to
+    the operation that produces this Result.
+    """
+
+    def __init__(self, resource_manager, name, dtype):
+        self.resource_manager = resource_manager
+        self.name = name
+        self.dtype = dtype
+
+    def __call__(self):
+        self.resource_manager.update_output()
+        assert self.resource_manager._data[self.name].done
+        # Return ownership of concrete data
+        return self.resource_manager._data[self.name].data
+
+
+class Future(object):
+    def __init__(self, resource_manager, name, dtype):
+        self.name = name
+        if not isinstance(dtype, type):
+            raise exceptions.ValueError('dtype argument must specify a type.')
+        self.dtype = dtype
+        # This abstraction anticipates that a Future might not retain a strong
+        # reference to the resource_manager, but only to a facility that can resolve
+        # the result() call. Additional aspects of the Future interface can be
+        # developed without coupling to a specific concept of the resource manager.
+        self._result = ResultGetter(resource_manager, name, dtype)
+
+    def result(self):
+        return self._result()
+
+    def __getitem__(self, item):
+        """Get a more limited view on the Future."""
+
+        # TODO: Strict definition of outputs and output types can let us validate this earlier.
+        #  We need AssociativeArray and NDArray so that we can type the elements.
+        #  Allowing a Future with None type is a hack.
+        def result():
+            return self.result()[item]
+
+        future = collections.namedtuple('Future', ('dtype', 'result'))(None, result)
+        return future
+
+
+class OutputDescriptor(object):
+    """Read-only data descriptor for proxied output access.
+
+    Knows how to get a Future from the resource manager.
+    """
+
+    def __init__(self, name, dtype):
+        self.name = name
+        self.dtype = dtype
+
+    def __get__(self, proxy, owner):
+        if proxy is None:
+            # Access through class attribute of owner class
+            return self
+        return proxy._instance.future(name=self.name, dtype=self.dtype)
 
 
 # In the longer term, Contexts could provide metaclasses that allow transformation or dispatching
 # of the basic aspects of the operation protocols between Contexts or from a result handle into a
 # new context, based on some attribute or behavior in the result handle.
+
+
+# Encapsulate the description of the input data flow.
+PyFuncInput = collections.namedtuple('Input', ('args', 'kwargs', 'dependencies'))
 
 # TODO: For outputs, distinguish between "results" and "events".
 #  Both are published to the resource manager in the same way, but the relationship
@@ -263,64 +344,6 @@ def function_wrapper(output=None):
     # dynamically define several classes that support the operation to be
     # created by the returned decorator.
 
-    # Encapsulate the description of the input data flow.
-    PyFuncInput = collections.namedtuple('Input', ('args', 'kwargs', 'dependencies'))
-
-    # Encapsulate the description of a data output.
-    Output = collections.namedtuple('Output', ('name', 'dtype', 'done', 'data'))
-
-    class Publisher(object):
-        """Data descriptor for write access to a specific named data resource.
-
-        For a wrapped function receiving an ``output`` argument, provides the
-        accessors for an attribute on the object passed as ``output``. Maps
-        read and write access by the wrapped function to appropriate details of
-        the resource manager.
-
-        Used internally to implement settable attributes on PublishingDataProxy.
-        Allows PublishingDataProxy to be dynamically defined in the scope of the
-        operation.function_wrapper closure. Each named output is represented by
-        an instance of Publisher in the PublishingDataProxy class definition for
-        the operation.
-
-        Ref: https://docs.python.org/3/reference/datamodel.html#implementing-descriptors
-
-        Collaborations:
-        Relies on implementation details of ResourceManager.
-        """
-        def __init__(self, name, dtype):
-            self.name = name
-            self.dtype = dtype
-
-        def __get__(self, instance, owner):
-            if instance is None:
-                # Access through class attribute of owner class
-                return self
-            resource_manager = instance._instance
-            return getattr(resource_manager._data, self.name)
-
-        def __set__(self, instance, value):
-            resource_manager = instance._instance
-            resource_manager.set_result(self.name, value)
-
-        def __repr__(self):
-            return 'Publisher(name={}, dtype={})'.format(self.name, self.dtype.__qualname__)
-
-    class DataProxyBase(object):
-        """Limited interface to managed resources.
-
-        Inherit from DataProxy to specialize an interface to an ``instance``.
-        In the derived class, either do not define ``__init__`` or be sure to
-        initialize the super class (DataProxy) with an instance of the object
-        to be proxied.
-
-        Acts as an owning handle to ``instance``, preventing the reference count
-        of ``instance`` from going to zero for the lifetime of the proxy object.
-        """
-
-        def __init__(self, instance):
-            self._instance = instance
-
     # Dynamically define a type for the PublishingDataProxy using a descriptor for each attribute.
     # TODO: Encapsulate this bit of script in a metaclass definition.
     namespace = {}
@@ -329,67 +352,6 @@ def function_wrapper(output=None):
     namespace['__doc__'] = "Handler for write access to the `output` of an operation.\n\n" + \
                            "Acts as a sort of PublisherCollection."
     PublishingDataProxy = type('PublishingDataProxy', (DataProxyBase,), namespace)
-
-    class ResultGetter(object):
-        """Fetch data to the caller's Context.
-
-        Returns an object of the concrete type specified according to
-        the operation that produces this Result.
-        """
-
-        def __init__(self, resource_manager, name, dtype):
-            self.resource_manager = resource_manager
-            self.name = name
-            self.dtype = dtype
-
-        def __call__(self):
-            self.resource_manager.update_output()
-            assert self.resource_manager._data[self.name].done
-            # Return ownership of concrete data
-            return self.resource_manager._data[self.name].data
-
-    class Future(object):
-        def __init__(self, resource_manager, name, dtype):
-            self.name = name
-            if not isinstance(dtype, type):
-                raise exceptions.ValueError('dtype argument must specify a type.')
-            self.dtype = dtype
-            # This abstraction anticipates that a Future might not retain a strong
-            # reference to the resource_manager, but only to a facility that can resolve
-            # the result() call. Additional aspects of the Future interface can be
-            # developed without coupling to a specific concept of the resource manager.
-            self._result = ResultGetter(resource_manager, name, dtype)
-
-        def result(self):
-            return self._result()
-
-        def __getitem__(self, item):
-            """Get a more limited view on the Future."""
-
-            # TODO: Strict definition of outputs and output types can let us validate this earlier.
-            #  We need AssociativeArray and NDArray so that we can type the elements.
-            #  Allowing a Future with None type is a hack.
-            def result():
-                return self.result()[item]
-
-            future = collections.namedtuple('Future', ('dtype', 'result'))(None, result)
-            return future
-
-    class OutputDescriptor(object):
-        """Read-only data descriptor for proxied output access.
-
-        Knows how to get a Future from the resource manager.
-        """
-
-        def __init__(self, name, dtype):
-            self.name = name
-            self.dtype = dtype
-
-        def __get__(self, proxy, owner):
-            if proxy is None:
-                # Access through class attribute of owner class
-                return self
-            return proxy._instance.future(name=self.name, dtype=self.dtype)
 
     class OutputDataProxy(DataProxyBase):
         """Handler for read access to the `output` member of an operation handle.
@@ -807,3 +769,48 @@ def function_wrapper(output=None):
         return factory
 
     return decorator
+
+
+@computed_result
+def append_list(a: list = (), b: list = ()):
+    """Operation that consumes two lists and produces a concatenated single list."""
+    # TODO: (FR4) Returned list should be an NDArray.
+    if isinstance(a, (str, bytes)) or isinstance(b, (str, bytes)):
+        raise exceptions.ValueError('Input must be a pair of lists.')
+    try:
+        list_a = list(a)
+    except TypeError:
+        list_a = list([a])
+    try:
+        list_b = list(b)
+    except TypeError:
+        list_b = list([b])
+    return list_a + list_b
+
+
+def concatenate_lists(sublists: list = ()):
+    """Combine data sources into a single list.
+
+    A trivial data flow restructuring operation
+    """
+    if isinstance(sublists, (str, bytes)):
+        raise exceptions.ValueError('Input must be a list of lists.')
+    if len(sublists) == 0:
+        return []
+    else:
+        return append_list(sublists[0], concatenate_lists(sublists[1:]))
+
+
+@computed_result
+def make_constant(value):
+    """Provide a predetermined value at run time.
+
+    This is a trivial operation that provides a (typed) value, primarily for
+    internally use to manage gmxapi data flow.
+
+    Accepts a value of any type. The object returned has a definite type and
+    provides same interface as other gmxapi outputs. Additional constraints or
+    guarantees on data type may appear in future versions.
+    """
+    # TODO: (FR4+) Manage type compatibility with gmxapi data interfaces.
+    return type(value)(value)
