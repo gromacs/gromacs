@@ -1641,6 +1641,40 @@ class OperationHandle(object):
         self.__resource_manager.update_output()
 
 
+class OperationDirector(object):
+    """Direct the construction of an operation node in the gmxapi.operation module Context.
+
+    Collaboration: used by OperationDetails.operation_director, which
+    will likely dispatch to different implementations depending on
+    requirements of work or context.
+    """
+
+    def __init__(self,
+                 *args,
+                 operation_details,
+                 context,
+                 label=None,
+                 **kwargs):
+        self.operation_details = operation_details
+        self.args = args
+        self.kwargs = kwargs
+        self.label = label
+
+    def __call__(self):
+        # Check for the ability to instantiate operations.
+        if self.operation_details is None:
+            raise exceptions.UsageError('Missing details needed for operation node.')
+
+        data_source_collection = self.operation_details.signature().bind(*self.args, **self.kwargs)
+        input_sink = SinkTerminal(self.operation_details.signature())
+        input_sink.update(data_source_collection)
+        edge = DataEdge(data_source_collection, input_sink)
+
+        manager = ResourceManager(source=edge, operation=self.operation_details())
+        handle = OperationHandle(resource_manager=manager)
+        return handle
+
+
 # TODO: For outputs, distinguish between "results" and "events".
 #  Both are published to the resource manager in the same way, but the relationship
 #  with subscribers is potentially different.
@@ -1815,17 +1849,10 @@ def function_wrapper(output: dict = None):
                 # each annotated with relevant traits. E.g.:
                 # https://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins
                 """
-                data_source_collection = cls.signature().bind(*args, **kwargs)
-                input_sink = SinkTerminal(cls.signature())
-                input_sink.update(data_source_collection)
-                edge = DataEdge(data_source_collection, input_sink)
+                construct = OperationDirector(*args, operation_details=cls, context=context, label=label, **kwargs)
+                return construct()
 
-                manager = ResourceManager(source=edge, operation=cls())
-                handle = OperationHandle(resource_manager=manager)
-                return handle
-
-
-    # TODO: (FR4) Update annotations with gmxapi data types. E.g. return -> Future.
+        # TODO: (FR4) Update annotations with gmxapi data types. E.g. return -> Future.
         @functools.wraps(function)
         def helper(*args, context=None, **kwargs):
             # Description of the Operation input (and output) occurs in the
