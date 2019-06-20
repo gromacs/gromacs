@@ -1078,6 +1078,9 @@ class OperationDetailsBase(abc.ABC):
         if isinstance(context, ModuleContext):
             construct = OperationDirector(*args, operation_details=cls, context=context, label=label, **kwargs)
             return construct()
+        elif isinstance(context, SubgraphContext):
+            construct = OperationDirector(*args, operation_details=cls, context=context, label=label, **kwargs)
+            return construct()
         else:
             raise exceptions.ApiError('Cannot dispatch operation_director for context {}'.format(context))
 
@@ -1889,6 +1892,22 @@ class OperationHandle(AbstractOperation):
         self.__resource_manager.update_output()
 
 
+class OperationPlaceholder(AbstractOperation):
+    """Placeholder for Operation handle during subgraph definition."""
+
+    def __init__(self, subgraph_resource_manager):
+        ...
+
+    def run(self):
+        raise exceptions.UsageError('This placeholder operation handle is not in an executable context.')
+
+    @property
+    def output(self):
+        """Allow subgraph components to be connected without instantiating actual operations."""
+        if not isinstance(current_context(), SubgraphContext):
+            raise exceptions.UsageError('Invalid access to subgraph internals.')
+
+
 class NodeBuilder(abc.ABC):
     """Add an operation node to be managed by a Context."""
 
@@ -2327,6 +2346,568 @@ def function_wrapper(output: dict = None):
     return decorator
 
 
+class GraphVariableDescriptor(object):
+    def __init__(self, name: str = None, dtype=None, default=None):
+        self.name = name
+        self.dtype = dtype
+        self.default = default
+        self.state = None
+
+    @property
+    def internal_name(self):
+        try:
+            return '_' + self.name
+        except TypeError:
+            return None
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            # Access is through the class attribute of the owning class.
+            # Allows the descriptor itself to be inspected or reconfigured after
+            # class definition.
+            # TODO: There is probably some usage checking that can be performed here.
+            return self
+        try:
+            value = getattr(instance, self.internal_name)
+        except AttributeError:
+            value = self.default
+            # Lazily initialize the instance value from the class default.
+            if value is not None:
+                try:
+                    setattr(instance, self.internal_name, value)
+                except Exception as e:
+                    message = 'Could not assign default value to {} attribute of {}'.format(
+                        self.internal_name,
+                        instance)
+                    raise exceptions.ApiError(message) from e
+        return value
+
+    # Implementation note: If we have a version of the descriptor class with no `__set__` method,
+    # it is a non-data descriptor that can be overridden by a data descriptor on an instance.
+    # This could be one way to handle the polymorphism associated with state changes.
+    def __set__(self, instance, value):
+        if instance._editing:
+            # Update the internal connections defining the subgraph.
+            setattr(instance, self.internal_name, value)
+        else:
+            raise AttributeError('{} not assignable on {}'.format(self.name, instance))
+
+
+class GraphMeta(type):
+    """Meta-class for gmxapi data flow graphs and subgraphs.
+
+    Used to implement ``subgraph`` as GraphMeta.__new__(...).
+    Also allows subgraphs to be defined as Python class definitions by inheriting
+    from Subgraph or by using the ``metaclass=GraphMeta`` hint in the class
+    statement arguments.
+
+    The Python class creation protocol allows Subgraphs to be defined in as follows.
+
+    See the Subgraph class documentation for customization of instances through
+    the Python context manager protocol.
+    """
+    _prepare_keywords = ('variables',)
+
+    # TODO: Python 3.7.2 introduces typing.OrderedDict
+    # In practice, we are using collections.OrderedDict, but we should use the generic
+    # ABC from the typing module to avoid being overly restrictive with type hints.
+    try:
+        from typing import OrderedDict
+    except ImportError:
+        from collections import OrderedDict
+
+    @classmethod
+    def __prepare__(mcs, name, bases, variables: OrderedDict = None, **kwargs):
+        """Prepare the class namespace.
+
+        Keyword Args:
+              variables: mapping of persistent graph variables to type / default value (optional)
+        """
+        # Python runs this before executing the class body of Subgraph or its
+        # subclasses. This is our chance to handle key word arguments given in the
+        # class declaration.
+
+        if kwargs is not None:
+            for keyword in kwargs:
+                raise exceptions.UsageError('Unexpected key word argument: {}'.format(keyword))
+
+        namespace = collections.OrderedDict()
+
+        if variables is not None:
+            if isinstance(variables, collections.abc.Mapping):
+                for name, value in variables.items():
+                    if isinstance(value, type):
+                        dtype = value
+                        if hasattr(value, 'default'):
+                            default = value.default
+                        else:
+                            default = None
+                    else:
+                        default = value
+                        if hasattr(default, 'dtype'):
+                            dtype = default.dtype
+                        else:
+                            dtype = type(default)
+                    namespace[name] = GraphVariableDescriptor(name, default=default, dtype=dtype)
+                    # Note: we are not currently using the hook used by `inspect`
+                    # to annotate with the class that defined the attribute.
+                    # namespace[name].__objclass__ = mcs
+                    assert not hasattr(namespace[name], '__objclass__')
+            else:
+                raise exceptions.ValueError('"variables" must be a mapping of graph variables to types or defaults.')
+
+        return namespace
+
+    def __new__(cls, name, bases, namespace, **kwargs):
+        for key in kwargs:
+            if key not in GraphMeta._prepare_keywords:
+                raise exceptions.ApiError('Unexpected class creation keyword: {}'.format(key))
+        return type.__new__(cls, name, bases, namespace)
+
+    # TODO: This is keyword argument stripping is not necessary in more recent Python versions.
+    # When Python minimum required version is increased, check if we can remove this.
+    def __init__(cls, name, bases, namespace, **kwargs):
+        for key in kwargs:
+            if key not in GraphMeta._prepare_keywords:
+                raise exceptions.ApiError('Unexpected class initialization keyword: {}'.format(key))
+        super().__init__(name, bases, namespace)
+
+
+class SubgraphNodeBuilder(NodeBuilder):
+    def __init__(self, context: 'SubgraphContext', label=None):
+        self.context = context
+        self.label = label
+        self.operation_details = None
+        # self.input_sink = SinkTerminal(operation._input_signature_description)
+        self.sources = DataSourceCollection()
+
+    def add_resource_factory(self, factory):
+        self.factory = factory
+
+    def add_operation_details(self, operation: typing.Type['OperationDetailsBase']):
+        self.operation_details = operation
+
+    def add_input(self, name: str, source):
+        # Inspect inputs.
+        #  * Are they from outside the subgraph?
+        #  * Subgraph variables?
+        #  * Subgraph internal nodes?
+        # Inputs from outside the subgraph are (provisionally) subgraph inputs.
+        # Inputs that are subgraph variables or subgraph internal nodes mark operations that will need to be re-run.
+        # For first implementation, let all operations be recreated, but we need to
+        # manage the right input proxies.
+        # For zeroeth implementation, try just tracking the entities that need a reset() method called.
+        if hasattr(source, 'reset'):
+            self.context.add_resetter(source.reset)
+        elif hasattr(source, '_reset'):
+            self.context.add_resetter(source._reset)
+        self.sources[name] = source
+
+    def build(self) -> OperationPlaceholder:
+        """Get a reference to the internal node in the subgraph definition.
+
+        In the SubgraphContext, these handles cannot represent uniquely identifiable
+        results. They are placeholders for relative positions in graphs that are
+        not defined until the the subgraph is being executed.
+
+        Such references should be tracked and invalidated when exiting the
+        subgraph context. Within the subgraph context, they are used to establish
+        the recipe for updating the subgraph's outputs or persistent data during
+        execution.
+        """
+        # Placeholder handles in the subgraph definition don't have real resource managers.
+        # Check for the ability to instantiate operations.
+        if self.operation_details is None:
+            raise exceptions.UsageError('Missing details needed for operation node.')
+
+        input_sink = SinkTerminal(self.operation_details._input_signature_description)
+        input_sink.update(self.sources)
+        edge = DataEdge(self.sources, input_sink)
+        # TODO: Fingerprinting: Each operation instance has unique output based on the unique input.
+        #            input_data_fingerprint = edge.fingerprint()
+
+        # Set up output proxy.
+        uid = self.operation_details.make_uid(edge)
+        # TODO: ResourceManager should fetch the relevant factories from the Context
+        #  instead of getting an OperationDetails instance.
+        manager = ResourceManager(source=edge, operation=self.operation_details())
+        self.context.work_graph[uid] = manager
+        handle = OperationHandle(self.context.work_graph[uid])
+        handle.node_uid = uid
+        # handle = OperationPlaceholder()
+        return handle
+
+
+class SubgraphContext(Context):
+    """Provide a Python context manager in which to set up a graph of operations.
+
+    Allows operations to be configured without adding nodes to the global execution
+    context.
+    """
+
+    def __init__(self):
+        self.labels = {}
+        self.resetters = set()
+        self.work_graph = collections.OrderedDict()
+
+    def node_builder(self, label=None) -> NodeBuilder:
+        if label is not None:
+            if label in self.labels:
+                raise exceptions.ValueError('Label {} is already in use.'.format(label))
+            else:
+                # The builder should update the labeled node when it is done.
+                self.labels[label] = None
+
+        return SubgraphNodeBuilder(context=weakref.proxy(self), label=label)
+
+    def add_resetter(self, function):
+        assert callable(function)
+        self.resetters.add(function)
+
+
+class Subgraph(object, metaclass=GraphMeta):
+    """
+
+    When subclassing from Subgraph, aspects of the subgraph's data ports can be
+    specified with keyword arguments in the class statement. Example::
+
+        >>> class MySubgraph(Subgraph, variables={'int_with_default': 1, 'boolData': bool}): pass
+        ...
+
+    Keyword Args:
+        variables: Mapping to declare the types of variables with optional default values.
+
+    Execution model:
+        Subgraph execution must follow a well-defined protocol in order to sensibly
+        resolve data Futures at predictable points. Note that subgraphs act as operations
+        that can be automatically redefined at run time (in limited cases), such as
+        to automatically form iteration chains to implement "while" loops. We refer
+        to one copy / iteration / generation of a subgraph as an "element" below.
+
+        When a subgraph element begins execution, each of its variables with an
+        "updated" state from the previous iteration has the "updated" state moved
+        to the new element's "initial" state, and the "updated" state is voided.
+
+        Subgraph.next() appends an element of the subgraph to the chain. Subsequent
+        calls to Subgraph.run() bring the new outputs up to date (and then call next()).
+        Thus, for a subgraph with an output called ``is_converged``, calling
+        ``while (not subgraph.is_converged): subgraph.run()`` has the desired effect,
+        but is likely suboptimal for execution. Instead use the gmxapi while_loop.
+
+        If the subgraph is not currently executing, it can be in one of two states:
+        "editing" or "ready". In the "ready" state, class and instance Variables
+        cannot be assigned, but can be read through the data descriptors. In this
+        state, the descriptors only have a single state.
+
+        If "editing," variables on the class object can be assigned to update the
+        data flow defined for the subgraph. While "editing", reading or writing
+        instance Variables is undefined behavior.
+
+        When "editing" begins, each variable is readable as a proxy to the "initial"
+        state in an element. Assignments while "editing" put variables in temporary
+        states accessible only during editing.
+        When "editing" finishes, the "updated" output data source of each
+        variable for the element is set, if appropriate.
+
+        # TODO: Use a get_context to allow operation factories or accessors to mark
+        #  references for update/annotation when exiting the 'with' block.
+    """
+
+
+class SubgraphBuilder(object):
+    """Helper for defining new Subgraphs.
+
+    Manages a Python context in which to define a new Subgraph type. Can be used
+    in a Python ``with`` construct exactly once to provide the Subgraph class body.
+    When the ``with`` block is exited (or ``build()`` is called explicitly), a
+    new type instance becomes available. Subsequent calls to SubgraphBuilder.__call__(self, ...)
+    are dispatched to the Subgraph constructor.
+
+    Outside of the ``with`` block, read access to data members is proxied to
+    descriptors on the built Subgraph.
+
+    Instances of SubgraphBuilder are returned by the ``subgraph()`` utility function.
+    """
+
+    def __init__(self, variables):
+        self.__dict__.update({'variables': variables,
+                              '_staging': collections.OrderedDict(),
+                              '_editing': False,
+                              '_subgraph_context': None,
+                              '_subgraph_instance': None,
+                              '_fused_operation': None,
+                              '_factory': None})
+        # Return a placeholder that we can update during iteration.
+        # Long term, this is probably implemented with data descriptors
+        # that will be moved to a new Subgraph type object.
+        for name in self.variables:
+            if not isinstance(self.variables[name], Future):
+                self.variables[name] = gmx.make_constant(self.variables[name])
+
+        # class MySubgraph(Subgraph, variables=variables):
+        #     pass
+        #
+        # self._subgraph_instance = MySubgraph()
+
+    def __getattr__(self, item):
+        if self._editing:
+            if item in self.variables:
+                if item in self._staging:
+                    logger.debug('Read access to intermediate value of subgraph variable {}'.format(item))
+                    return self._staging[item]
+                else:
+                    logger.debug('Read access to subgraph variable {}'.format(item))
+                    return self.variables[item]
+            else:
+                raise AttributeError('Invalid attribute: {}'.format(item))
+        else:
+            # TODO: this is not quite the described interface...
+            return lambda obj: obj.values[item]
+
+    def __setattr__(self, key, value):
+        """Part of the builder interface."""
+        if key in self.__dict__:
+            self.__dict__[key] = value
+        else:
+            if self._editing:
+                self.add_update(key, value)
+            else:
+                raise exceptions.UsageError('Subgraph is not in an editable state.')
+
+    def add_update(self, key, value):
+        """Add a variable update to the internal subgraph."""
+        if key not in self.variables:
+            raise AttributeError('No such attribute: {}'.format(key))
+        if not self._editing:
+            raise exceptions.UsageError('Subgraph is not in an editable state.')
+        # Else, stage the potential final value for the iteration.
+        logger.debug('Staging subgraph update {} = {}'.format(key, value))
+        # Return a placeholder that we can update during iteration.
+        # Long term, this is probably implemented with data descriptors
+        # that will be moved to a new Subgraph type object.
+        if not isinstance(value, Future):
+            value = gmx.make_constant(value)
+        self._staging[key] = value
+        self._staging.move_to_end(key)
+
+    def __enter__(self):
+        """Enter a Context managed by the subgraph to capture operation additions.
+
+        Allows the internal data flow of the subgraph to be defined in the same
+        manner as the default work graph while the Python context manager is active.
+
+        The subgraph Context is activated when entering a ``with`` block and
+        finalized at the end of the block.
+        """
+        # While editing the subgraph in the SubgraphContext, we need __get__ and __set__
+        # data descriptor access on the Subgraph subclass type, but outside of the
+        # context manager, the descriptor should be non-writable and more opaque,
+        # while the instance should be readable, but not writable.
+        self.__dict__['_editing'] = True
+        # TODO: this probably needs to be configured with variables...
+        self.__dict__['_subgraph_context'] = SubgraphContext()
+        push_context(self._subgraph_context)
+        return self
+
+    def build(self):
+        """Build the subgraph by defining some new operations.
+
+        Examine the subgraph variables. Variables with handles to data sources
+        in the SubgraphContext represent work that needs to be executed on
+        a subgraph execution or iteration. Variables with handles to data sources
+        outside of the subgraph represent work that needs to be executed once
+        on only the first iteration to initialize the subgraph.
+
+        Construct a factory for the fused operation that performs the work to
+        update the variables on a single iteration.
+
+        Construct a factory for the fused operation that performs the work to
+        update the variables on subsequent iterations and which will be fed
+        the outputs of a previous iteration. Both of the generated operations
+        have the same output signature.
+
+        Construct and wrap the generator function to recursively append work
+        to the graph and update until condition is satisfied.
+
+        TODO: Explore how to drop work from the graph once there are no more
+         references to its output, including check-point machinery.
+        """
+        logger.debug('Finalizing subgraph definition.')
+        inputs = collections.OrderedDict()
+        for key, value in self.variables.items():
+            # TODO: What if we don't want to provide default values?
+            inputs[key] = value
+
+        updates = self._staging
+
+        class Subgraph(object):
+            def __init__(self, input_futures, update_sources):
+                self.values = collections.OrderedDict([(key, value.result()) for key, value in input_futures.items()])
+                logger.debug('subgraph initialized with {}'.format(
+                    ', '.join(['{}: {}'.format(key, value) for key, value in self.values.items()])))
+                self.futures = collections.OrderedDict([(key, value) for key, value in input_futures.items()])
+                self.update_sources = collections.OrderedDict([(key, value) for key, value in update_sources.items()])
+                logger.debug('Subgraph updates staged:')
+                for update, source in self.update_sources.items():
+                    logger.debug('    {} = {}'.format(update, source))
+
+            def run(self):
+                for name in self.update_sources:
+                    result = self.update_sources[name].result()
+                    logger.debug('Update: {} = {}'.format(name, result))
+                    self.values[name] = result
+                # Replace the data sources in the futures.
+                for name in self.update_sources:
+                    self.futures[name].resource_manager = gmx.make_constant(self.values[name]).resource_manager
+                for name in self.update_sources:
+                    self.update_sources[name]._reset()
+
+        subgraph = Subgraph(inputs, updates)
+
+        return lambda subgraph=subgraph: subgraph
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """End the Subgraph editing session and finalize the Subgraph build.
+
+        After exiting, this instance forwards __call__() to a factory for an
+        operation that carries out the work in the subgraph with inputs bound
+        in the current context as defined by ``variables``.
+        """
+        self._factory = self.build()
+
+        context = pop_context()
+        assert context is self._subgraph_context
+        self.__dict__['_editing'] = False
+        # Returning False causes exceptions in the `with` block to be reraised.
+        # Remember to switch this to return True if we want to transform or suppress
+        # such an exception (we probably do).
+        if exc_type is not None:
+            logger.error('Got exception {} while editing subgraph {}.'.format(exc_val, self))
+            logger.debug('Subgraph exception traceback: \n{}'.format(exc_tb))
+        return False
+
+    def __call__(self):
+        # TODO: After build() has been called, this should dispatch to a factory
+        #  that returns an OperationHandle.
+        return self._factory()
+
+
+def while_loop(*, operation, condition, max_iteration=10):
+    """Generate and run a chain of operations such that condition evaluates True.
+
+    Returns and operation instance that acts like a single node in the current
+    work graph, but which is a proxy to the operation at the end of a dynamically generated chain
+    of operations. At run time, condition is evaluated for the last element in
+    the current chain. If condition evaluates False, the chain is extended and
+    the next element is executed. When condition evaluates True, the object
+    returned by ``while_loop`` becomes a proxy for the last element in the chain.
+
+    Equivalent to calling operation.while(condition), where available.
+
+    Arguments:
+        operation: a callable that produces an instance of an operation when called with no arguments.
+        condition: a callable that accepts an object (returned by ``operation``) that returns a boolean.
+        max_iteration: execute the loop no more than this many times (default 10)
+
+    Warning:
+        *max_iteration* is provided in part to minimize the cost of bugs in early
+        versions of this software. The default value may be changed or
+        removed on short notice.
+
+    Warning:
+        The protocol by which ``while_loop`` interacts with ``operation`` and ``condition``
+        is very unstable right now. Please refer to this documentation when installing new
+        versions of the package.
+
+    Protocol:
+        Warning:
+            This protocol will be changed before the 0.1 API is finalized.
+
+        When called, ``while_loop`` calls ``operation`` without arguments
+        and captures the return value captured as ``_operation``.
+        The object produced by ``operation()`` must have a ``reset``,
+        a ``run`` method, and an ``output`` attribute.
+
+        This is inspected
+        to determine the output data proxy for the operation produced by the call
+        to ``while_loop``. When that operation is called, it does the equivalent of
+
+            while(condition(self._operation)):
+                self._operation.reset()
+                self._operation.run()
+
+        Then, the output data proxy of ``self`` is updated with the results from
+        self._operation.output.
+
+    """
+    # In the first implementation, Subgraph is NOT and OperationHandle.
+    # if not isinstance(obj, AbstractOperationHandle):
+    #     raise exceptions.UsageError(
+    #     '"operation" key word argument must be a callable that produces an Operation handle.')
+    # outputs = {}
+    # for name, descriptor in obj.output.items():
+    #     outputs[name] = descriptor._dtype
+
+    # 1. Get the initial inputs.
+    # 2. Initialize the subgraph with the initial inputs.
+    # 3. Run the subgraph.
+    # 4. Get the outputs.
+    # 5. Initialize the subgraph with the outputs.
+    # 6. Go to 3 if condition is not met.
+
+    obj = operation()
+    assert hasattr(obj, 'values')
+    outputs = collections.OrderedDict([(key, type(value)) for key, value in obj.values.items()])
+
+    @function_wrapper(output=outputs)
+    def run_loop(output: OutputCollectionDescription):
+        iteration = 0
+        obj = operation()
+        logger.debug('Created object {}'.format(obj))
+        logger.debug(', '.join(['{}: {}'.format(key, obj.values[key]) for key in obj.values]))
+        logger.debug('Condition: {}'.format(condition(obj)))
+        while (condition(obj)):
+            logger.debug('Running iteration {}'.format(iteration))
+            obj.run()
+            logger.debug(
+                ', '.join(['{}: {}'.format(key, obj.values[key]) for key in obj.values]))
+            logger.debug('Condition: {}'.format(condition(obj)))
+            iteration += 1
+            if iteration > max_iteration:
+                break
+        for name in outputs:
+            setattr(output, name, obj.values[name])
+
+        return obj
+
+    return run_loop
+
+
+def subgraph(variables=None):
+    """Allow operations to be configured in a sub-context.
+
+    The object returned functions as a Python context manager. When entering the
+    context manager (the beginning of the ``with`` block), the object has an
+    attribute for each of the named ``variables``. Reading from these variables
+    gets a proxy for the initial value or its update from a previous loop iteration.
+    At the end of the ``with`` block, any values or data flows assigned to these
+    attributes become the output for an iteration.
+
+    After leaving the ``with`` block, the variables are no longer assignable, but
+    can be called as bound methods to get the current value of a variable.
+
+    When the object is run, operations bound to the variables are ``reset`` and
+    run to update the variables.
+    """
+    # Implementation note:
+    # A Subgraph (type) has a subgraph context associated with it. The subgraph's
+    # ability to capture operation additions is implemented in terms of the
+    # subgraph context.
+    logger.debug('Declare a new subgraph with variables {}'.format(variables))
+
+    return SubgraphBuilder(variables)
+
+
 @computed_result
 def join_arrays(*, front: datamodel.NDArray = (), back: datamodel.NDArray = ()) -> datamodel.NDArray:
     """Operation that consumes two sequences and produces a concatenated single sequence.
@@ -2383,3 +2964,20 @@ def make_constant(value: Scalar) -> Future:
     description = ResultDescription(dtype=dtype, width=1)
     future = Future(source, 'data', description=description)
     return future
+
+
+def logical_not(value: bool):
+    """Boolean negation.
+
+    If the argument is a gmxapi compatible Data or Future object, a new View or
+    Future is created that proxies the boolean opposite of the input.
+
+    If the argument is a callable, logical_not returns a wrapper function that
+    returns a Future for the logical opposite of the callable's result.
+    """
+    # TODO: Small data transformations like this don't need to be formal Operations.
+    # This could be essentially a data annotation that affects the resolver in a
+    # DataEdge. As an API detail, coding for different Contexts and optimizations
+    # within those Context implementations could be simplified.
+    operation = function_wrapper(output={'data': bool})(lambda data=bool(): not bool(data))
+    return operation(data=value).output.data

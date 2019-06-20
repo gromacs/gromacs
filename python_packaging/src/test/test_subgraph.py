@@ -32,32 +32,37 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-"""gmxapi Python package for GROMACS."""
+import gmxapi as gmx
 
-__all__ = ['commandline_operation',
-           'concatenate_lists',
-           'function_wrapper',
-           'join_arrays',
-           'logger',
-           'logical_not',
-           'make_constant',
-           'ndarray',
-           'subgraph',
-           'while_loop',
-           '__version__']
 
-from ._logging import logger
-from .version import __version__
+@gmx.function_wrapper(output={'data': float})
+def add_float(a: float, b: float) -> float:
+    return a + b
 
-# Import utilities
-from .operation import computed_result, function_wrapper
-# Import public types
-from .datamodel import NDArray
-# Import the public operations
-from .datamodel import ndarray
-from .operation import concatenate_lists, join_arrays, logical_not, make_constant
-from .commandline import commandline_operation
-# TODO: decide where this lives
-from .operation import subgraph
-# TODO: decide where this lives
-from .operation import while_loop
+
+@gmx.function_wrapper(output={'data': bool})
+def less_than(lhs: float, rhs: float) -> bool:
+    return lhs < rhs
+
+
+def test_subgraph_function():
+    subgraph = gmx.subgraph(variables={'float_with_default': 1.0, 'bool_data': True})
+    with subgraph:
+        # Define the update for float_with_default to come from an add_float operation.
+        subgraph.float_with_default = add_float(subgraph.float_with_default, 1.).output.data
+        subgraph.bool_data = less_than(lhs=subgraph.float_with_default, rhs=6.).output.data
+    operation_instance = subgraph()
+    operation_instance.run()
+    assert operation_instance.values['float_with_default'] == 2.
+
+    loop = gmx.while_loop(operation=subgraph, condition=subgraph.bool_data)
+    handle = loop()
+    assert handle.output.float_with_default.result() == 6
+
+
+def test_local_tools_and_assumptions():
+    const = gmx.make_constant(1.)
+    assert add_float(const, const).output.data.result() == 2
+    assert gmx.logical_not(less_than(const, const).output.data).result()
+    # Note: It may not be safe to assume that keyword argument order (lhs, rhs) is preserved.
+    assert less_than(const, add_float(const, const).output.data).output.data.result()
