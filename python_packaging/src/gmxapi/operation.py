@@ -1003,6 +1003,36 @@ class OperationDetailsBase(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
+    def make_uid(cls, input: 'DataEdge') -> str:
+        """The unique identity of an operation node tags the output with respect to the input.
+
+        Combines information on the Operation details and the input to uniquely
+        identify the Operation node.
+
+        Arguments:
+            input : A (collection of) data source(s) that can provide Fingerprints.
+
+        Used internally by the Context to manage ownership of data sources, to
+        locate resources for nodes in work graphs, and to manage serialization,
+        deserialization, and checkpointing of the work graph.
+
+        The UID is a detail of the generic Operation that _should_ be independent
+        of the Context details to allow the framework to manage when and where
+        an operation is executed.
+
+        TODO: We probably don't want to allow Operations to single-handedly determine their
+         own uniqueness, but they probably should participate in the determination with the Context.
+
+        TODO: Context implementations should be allowed to optimize handling of
+         equivalent operations in different sessions or work graphs, but we do not
+         yet guarantee that UIDs are globally unique!
+
+        To be refined...
+        """
+        ...
+
+    @classmethod
+    @abc.abstractmethod
     def resource_director(cls, *, input, output: PublishingDataProxyType) -> Resources:
         """a Director factory that helps build the Session Resources for the function.
 
@@ -1017,7 +1047,7 @@ class OperationDetailsBase(abc.ABC):
         ...
 
     @classmethod
-    def operation_director(cls, *args, context, label=None, **kwargs) -> AbstractOperation:
+    def operation_director(cls, *args, context: 'Context', label=None, **kwargs) -> AbstractOperation:
         """Dispatching Director for adding a work node.
 
         A Director for input of a particular sort knows how to reconcile
@@ -1042,8 +1072,14 @@ class OperationDetailsBase(abc.ABC):
         # each annotated with relevant traits. E.g.:
         # https://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins
         """
-        construct = OperationDirector(*args, operation_details=cls, context=context, label=label, **kwargs)
-        return construct()
+        if not isinstance(context, Context):
+            raise exceptions.UsageError('Context instance needed for dispatch.')
+        # TODO: use Context characteristics rather than isinstance checks.
+        if isinstance(context, ModuleContext):
+            construct = OperationDirector(*args, operation_details=cls, context=context, label=label, **kwargs)
+            return construct()
+        else:
+            raise exceptions.ApiError('Cannot dispatch operation_director for context {}'.format(context))
 
 
 # TODO: Implement observer pattern for edge->node data flow.
@@ -1853,6 +1889,149 @@ class OperationHandle(AbstractOperation):
         self.__resource_manager.update_output()
 
 
+class NodeBuilder(abc.ABC):
+    """Add an operation node to be managed by a Context."""
+
+    @abc.abstractmethod
+    def build(self) -> AbstractOperation:
+        ...
+
+    @abc.abstractmethod
+    def add_input(self, name: str, source):
+        ...
+
+    @abc.abstractmethod
+    def add_resource_factory(self, factory):
+        # The factory function takes input in the form the Context will provide it
+        # and produces a resource object that will be passed to the callable that
+        # implements the operation.
+        assert callable(factory)
+        ...
+
+    @abc.abstractmethod
+    def add_operation_details(self, operation: typing.Type['OperationDetailsBase']):
+        # TODO: This can be decomposed into the appropriate set of factory functions
+        #  as they become clear.
+        assert hasattr(operation, '_input_signature_description')
+        assert hasattr(operation, 'make_uid')
+
+
+class Context(abc.ABC):
+    """API Context.
+
+    All gmxapi data and operations are owned by a Context instance. The Context
+    manages the details of how work is run and how data is managed.
+
+    Context implementations are not required to inherit from gmxapi.context.Context,
+    but this class definition serves to specify the current Context API.
+    """
+
+    @abc.abstractmethod
+    def node_builder(self, label=None) -> NodeBuilder:
+        ...
+
+
+# TODO: Add required components to NodeBuilder ABC:
+#  * input_signature_description
+#  * ability to make_uid
+#  * operation_director
+#  * whatever ResourceManager _actually_ needs (instead of operation_details instance)
+class ModuleNodeBuilder(NodeBuilder):
+    """Builder for work nodes in gmxapi.operation.ModuleContext."""
+
+    def __init__(self, context: 'ModuleContext', label=None):
+        self.context = context
+        self.label = label
+        self.operation_details = None
+        self.sources = DataSourceCollection()
+
+    def add_operation_details(self, operation: typing.Type['OperationDetailsBase']):
+        # TODO: This can be decomposed into the appropriate set of factory functions as they become clear.
+        assert hasattr(operation, 'signature')
+        assert hasattr(operation, 'make_uid')
+        self.operation_details = operation
+
+    def add_input(self, name, source):
+        # TODO: We can move some input checking here as the data model matures.
+        self.sources[name] = source
+
+    def add_resource_factory(self, factory):
+        self.resource_factory = factory
+
+    def build(self) -> AbstractOperation:
+        # Check for the ability to instantiate operations.
+        if self.operation_details is None:
+            raise exceptions.UsageError('Missing details needed for operation node.')
+
+        assert issubclass(self.operation_details, OperationDetailsBase)
+        input_sink = SinkTerminal(self.operation_details.signature())
+        input_sink.update(self.sources)
+        edge = DataEdge(self.sources, input_sink)
+        # TODO: Fingerprinting: Each operation instance has unique output based on the unique input.
+        #            input_data_fingerprint = edge.fingerprint()
+
+        # Set up output proxy.
+        uid = self.operation_details.make_uid(edge)
+        # TODO: ResourceManager should fetch the relevant factories from the Context
+        #  instead of getting an OperationDetails instance.
+        manager = ResourceManager(source=edge, operation=self.operation_details())
+        self.context.work_graph[uid] = manager
+        handle = OperationHandle(self.context.work_graph[uid])
+        handle.node_uid = uid
+        return handle
+
+
+class ModuleContext(Context):
+    """Context implementation for the gmxapi.operation module.
+
+    """
+    __version__ = 0
+
+    def __init__(self):
+        self.work_graph = dict()
+        self.operations = dict()
+        self.labels = dict()
+
+    def node_builder(self, label=None) -> NodeBuilder:
+        """Get a builder for a new work node to add an operation in this context."""
+        if label is not None:
+            if label in self.labels:
+                raise exceptions.ValueError('Label {} is already in use.'.format(label))
+            else:
+                # The builder should update the labeled node when it is done.
+                self.labels[label] = None
+
+        return ModuleNodeBuilder(context=weakref.proxy(self), label=label)
+
+
+# Context stack.
+__current_context = [ModuleContext()]
+
+
+def current_context() -> Context:
+    """Get a reference to the currently active Context.
+
+    The imported gmxapi.context module maintains some state for the convenience
+    of the scripting environment. Internally, all gmxapi activity occurs under
+    the management of an API Context, explicitly or implicitly. Some actions or
+    code constructs will generate separate contexts or sub-contexts. This utility
+    command retrieves a reference to the currently active Context.
+    """
+    return __current_context[-1]
+
+
+def push_context(context) -> Context:
+    """Enter a sub-context by pushing a context to the global context stack.
+    """
+    __current_context.append(context)
+    return current_context()
+
+
+def pop_context() -> Context:
+    """Exit the current Context by popping it from the stack."""
+    return __current_context.pop()
+
+
 class OperationDirector(object):
     """Direct the construction of an operation node in the gmxapi.operation module Context.
 
@@ -1864,27 +2043,37 @@ class OperationDirector(object):
     def __init__(self,
                  *args,
                  operation_details: typing.Type[OperationDetailsBase],
-                 context,
+                 context: Context,
                  label=None,
                  **kwargs):
         self.operation_details = operation_details
+        if not isinstance(context, Context):
+            raise exceptions.UsageError('Client context must be provided when adding an operation.')
+        self.context = weakref.proxy(context)
         self.args = args
         self.kwargs = kwargs
         self.label = label
 
     def __call__(self) -> AbstractOperation:
-        # Check for the ability to instantiate operations.
-        if self.operation_details is None:
-            raise exceptions.UsageError('Missing details needed for operation node.')
+        cls = self.operation_details
+        try:
+            context = self.context
+        except ReferenceError as e:
+            context = None
+        if context is None:
+            # Bug: This should not be possible.
+            raise exceptions.ProtocolError('Operation director could not access its context.')
+        builder = context.node_builder(label=self.label)
+        # TODO: Figure out what interface really needs to be passed and enforce it.
+        # Currently this class uses OperationDetailsBase.signature and .resource_director.
+        # Ref Node_builder subclasses for additional required interface.
+        builder.add_operation_details(cls)
 
-        assert issubclass(self.operation_details, OperationDetailsBase)
-        data_source_collection = self.operation_details.signature().bind(*self.args, **self.kwargs)
-        input_sink = SinkTerminal(self.operation_details.signature())
-        input_sink.update(data_source_collection)
-        edge = DataEdge(data_source_collection, input_sink)
-
-        manager = ResourceManager(source=edge, operation=self.operation_details())
-        handle = OperationHandle(resource_manager=manager)
+        data_source_collection = cls.signature().bind(*self.args, **self.kwargs)
+        for name, source in data_source_collection.items():
+            builder.add_input(name, source)
+        builder.add_resource_factory(cls.resource_director)
+        handle = builder.build()
         return handle
 
 
@@ -2026,6 +2215,41 @@ def function_wrapper(output: dict = None):
                 self._runner(resources)
 
             @classmethod
+            def make_uid(cls, input):
+                """The unique identity of an operation node tags the output with respect to the input.
+
+                Combines information on the Operation details and the input to uniquely
+                identify the Operation node.
+
+                Arguments:
+                    input : A (collection of) data source(s) that can provide Fingerprints.
+
+                Used internally by the Context to manage ownership of data sources, to
+                locate resources for nodes in work graphs, and to manage serialization,
+                deserialization, and checkpointing of the work graph.
+
+                The UID is a detail of the generic Operation that _should_ be independent
+                of the Context details to allow the framework to manage when and where
+                an operation is executed.
+
+                Design notes on further refinement:
+                    TODO: Operations should not single-handedly determine their own uniqueness
+                    (but they should participate in the determination with the Context).
+
+                    Context implementations should be allowed to optimize handling of
+                    equivalent operations in different sessions or work graphs, but we do not
+                    yet TODO: guarantee that UIDs are globally unique!
+
+                    The UID should uniquely indicate an operation node based on that node's input.
+                    We need input fingerprinting to identify equivalent nodes in a work graph
+                    or distinguish nodes across work graphs.
+
+                """
+                uid = str(cls.__basename) + str(cls.__last_uid)
+                cls.__last_uid += 1
+                return uid
+
+            @classmethod
             def resource_director(cls,
                                   *,
                                   input=None,
@@ -2067,6 +2291,12 @@ def function_wrapper(output: dict = None):
             # yet instantiated.
             # Inspection of the offered input occurs when this factory is called,
             # and OperationDetails, ResourceManager, and Operation are instantiated.
+
+            # This operation factory is specialized for the default package Context.
+            if context is None:
+                context = current_context()
+            else:
+                raise exceptions.ApiError('Non-default context handling not implemented.')
 
             # This calls a dispatching function that may not be able to reconcile the input
             # and Context capabilities. This is the place to handle various exceptions for
