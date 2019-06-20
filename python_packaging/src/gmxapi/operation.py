@@ -694,7 +694,54 @@ def define_publishing_data_proxy(output_description) -> typing.Type[DataProxyBas
     return PublishingDataProxy
 
 
-class StaticSourceManager(object):
+class SourceResource(abc.ABC):
+    """Resource Manager for a data provider.
+
+    Supports Future instances in a particular context.
+    """
+
+    # Note: ResourceManager members not yet included:
+    # future(), _data, set_result.
+
+    OutputDataProxyType = typing.TypeVar('OutputDataProxyType', bound=DataProxyBase)
+
+    # This might not belong here. Maybe separate out for a OperationHandleManager?
+    @abc.abstractmethod
+    def data(self) -> OutputDataProxyType:
+        """Get the output data proxy."""
+        # Warning: this should probably be renamed, but "output_data_proxy" is already
+        # a member in at least one derived class.
+        ...
+
+    @abc.abstractmethod
+    def is_done(self, name: str) -> bool:
+        return False
+
+    @abc.abstractmethod
+    def get(self, name: str) -> OutputData:
+        ...
+
+    @abc.abstractmethod
+    def update_output(self):
+        """Bring the _data member up to date and local."""
+        pass
+
+    @abc.abstractmethod
+    def reset(self):
+        """Recursively reinitialize resources.
+
+        Set the resource manager to its initialized state.
+        All outputs are marked not "done".
+        All inputs supporting the interface have ``_reset()`` called on them.
+        """
+
+    @abc.abstractmethod
+    def width(self) -> int:
+        """Ensemble width of the managed resources."""
+        ...
+
+
+class StaticSourceManager(SourceResource):
     """Provide the resource manager interface for local static data.
 
     Allow data transformations on the proxied resource.
@@ -779,7 +826,7 @@ class StaticSourceManager(object):
         pass
 
 
-class ProxyResourceManager(object):
+class ProxyResourceManager(SourceResource):
     """Act as a resource manager for data managed by another resource manager.
 
     Allow data transformations on the proxied resource.
@@ -839,6 +886,32 @@ class ProxyResourceManager(object):
         raise exceptions.ApiError('ProxyResourceManager cannot yet manage a full OutputDataProxy.')
 
 
+class AbstractOperation(abc.ABC):
+    """Client interface to an operation instance (graph node)."""
+    OutputDataProxyType = typing.TypeVar('OutputDataProxyType', bound=DataProxyBase)
+
+    @abc.abstractmethod
+    def run(self):
+        """Assert execution of an operation.
+
+        After calling run(), the operation results are guaranteed to be available
+        in the local context.
+        """
+
+    @property
+    @abc.abstractmethod
+    def output(self) -> OutputDataProxyType:
+        """Get a proxy collection to the output of the operation.
+
+        Developer note: The 'output' property exists to isolate the namespace of
+        output data from other operation handle attributes and we should consider
+        whether it is actually necessary or helpful. To facilitate its possible
+        future removal, do not enrich its interface beyond that of a collection
+        of OutputDescriptor attributes.
+        """
+        ...
+
+
 class OperationDetailsBase(abc.ABC):
     """Abstract base class for Operation details in this module's Python Context.
 
@@ -896,14 +969,14 @@ class OperationDetailsBase(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def publishing_data_proxy(self, *, instance, client_id) -> PublishingDataProxyType:
+    def publishing_data_proxy(self, *, instance: SourceResource, client_id) -> PublishingDataProxyType:
         """Factory for Operation output publishing resources.
 
         Used internally when the operation is run with resources provided by instance."""
         ...
 
     @abc.abstractmethod
-    def output_data_proxy(self, instance) -> OutputDataProxyType:
+    def output_data_proxy(self, instance: SourceResource) -> OutputDataProxyType:
         """Get an object that can provide Futures for output data managed by instance."""
         ...
 
@@ -944,7 +1017,7 @@ class OperationDetailsBase(abc.ABC):
         ...
 
     @classmethod
-    def operation_director(cls, *args, context, label=None, **kwargs):
+    def operation_director(cls, *args, context, label=None, **kwargs) -> AbstractOperation:
         """Dispatching Director for adding a work node.
 
         A Director for input of a particular sort knows how to reconcile
@@ -1003,7 +1076,7 @@ class Future(object):
     Currently abstraction is handled through SourceResource subclassing.
     """
 
-    def __init__(self, resource_manager, name: str, description: ResultDescription):
+    def __init__(self, resource_manager: SourceResource, name: str, description: ResultDescription):
         self.name = name
         if not isinstance(description, ResultDescription):
             raise exceptions.ValueError('Need description of requested data.')
@@ -1076,13 +1149,18 @@ class Future(object):
 class OutputDescriptor(ProxyDataDescriptor):
     """Read-only data descriptor for proxied output access.
 
-    Knows how to get a Future from the resource manager.
+    Knows how to get a Future from a ResourceManager instance.
     """
+    # TODO: Reconcile the internal implementation details with the visibility and
+    #  usages of this class.
 
     def __get__(self, proxy: DataProxyBase, owner):
         if proxy is None:
             # Access through class attribute of owner class
             return self
+        if not isinstance(proxy._resource_instance, ResourceManager):
+            raise exceptions.ApiError(
+                'Data descriptor implementation assumes availability of a ResourceManager instance.')
         result_description = ResultDescription(dtype=self._dtype, width=proxy.ensemble_width)
         return proxy._resource_instance.future(name=self._name, description=result_description)
 
@@ -1296,7 +1374,7 @@ class DataEdge(object):
         return results
 
 
-class ResourceManager(object):
+class ResourceManager(SourceResource):
     """Provides data publication and subscription services.
 
         Owns the data published by the operation implementation or served to consumers.
@@ -1706,7 +1784,7 @@ def wrapped_function_runner(function, output_description: OutputCollectionDescri
                                     output_description=OutputCollectionDescription(data=return_type))
 
 
-class OperationHandle(object):
+class OperationHandle(AbstractOperation):
     """Dynamically defined Operation handle.
 
     Define a gmxapi Operation for the functionality being wrapped by the enclosing code.
@@ -1718,7 +1796,7 @@ class OperationHandle(object):
     data flow for output Futures, which may depend on the execution context.
     """
 
-    def __init__(self, resource_manager):
+    def __init__(self, resource_manager: SourceResource):
         """Initialization defines the unique input requirements of a work graph node.
 
         Initialization parameters map to the parameters of the wrapped function with
@@ -1794,7 +1872,7 @@ class OperationDirector(object):
         self.kwargs = kwargs
         self.label = label
 
-    def __call__(self):
+    def __call__(self) -> AbstractOperation:
         # Check for the ability to instantiate operations.
         if self.operation_details is None:
             raise exceptions.UsageError('Missing details needed for operation node.')
@@ -1919,7 +1997,7 @@ def function_wrapper(output: dict = None):
 
             def publishing_data_proxy(self,
                                       *,
-                                      instance: ResourceManager,
+                                      instance: SourceResource,
                                       client_id: int) -> _publishing_data_proxy_type:
                 """Factory for Operation output publishing resources.
 
@@ -1928,11 +2006,11 @@ def function_wrapper(output: dict = None):
                 Overrides OperationDetailsBase.publishing_data_proxy() to provide an
                 implementation for the bound operation.
                 """
-                assert isinstance(instance, ResourceManager)
+                assert isinstance(instance, SourceResource)
                 return self._publishing_data_proxy_type(instance=instance, client_id=client_id)
 
-            def output_data_proxy(self, instance: ResourceManager) -> _output_data_proxy_type:
-                assert isinstance(instance, ResourceManager)
+            def output_data_proxy(self, instance: SourceResource) -> _output_data_proxy_type:
+                assert isinstance(instance, SourceResource)
                 return self._output_data_proxy_type(instance=instance)
 
             def __call__(self, resources: PyFunctionRunnerResources):
