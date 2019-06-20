@@ -386,8 +386,8 @@ CommunicationStatus ListedForce::Receive(const t_commrec *cr, int src)
         gmx_recv_str(cr, src, &params_);
         refValue_  = gmx_recv_double(cr, src);
         sigma_     = gmx_recv_double(cr, src);
-        ntrain_    = static_cast<size_t>(gmx_recv_double(cr, src));
-        bondOrder_ = static_cast<size_t>(gmx_recv_double(cr, src));
+        ntrain_    = static_cast<size_t>(gmx_recv_int(cr, src));
+        bondOrder_ = static_cast<size_t>(gmx_recv_int(cr, src));
         natom      = gmx_recv_int(cr, src);
 
         for (auto n = 0; n < natom; n++)

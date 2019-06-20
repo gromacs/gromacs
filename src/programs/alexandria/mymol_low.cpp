@@ -345,8 +345,8 @@ immStatus updatePlist(const Poldata             &pd,
                         {
                             if (debug)
                             {
-                                fprintf(debug, "Could not find bond information for %s - %s\n",
-                                        aai.c_str(), aaj.c_str());
+                                fprintf(debug, "Could not find bond information for %s - %s with bondorder of %zu\n",
+                                        aai.c_str(), aaj.c_str(), bondOrder);
                             }
                             return immNotSupportedBond;
                         }
@@ -354,8 +354,7 @@ immStatus updatePlist(const Poldata             &pd,
                     }
                     else
                     {
-                        gmx_fatal(FARGS, "Unsupported atom types: %d, %d!\n",
-                                  pwi->a[0], pwi->a[1]);
+                        gmx_fatal(FARGS, "Unsupported atom types: %d, %d!\n", pwi->a[0], pwi->a[1]);
                     }
                 }
             }
@@ -387,8 +386,6 @@ immStatus updatePlist(const Poldata             &pd,
                         }
                         else if (!bBASTAT)
                         {
-                            printf("Could not find angle information for %s - %s - %s\n",
-                                   aai.c_str(), aaj.c_str(), aak.c_str());
                             if (debug)
                             {
                                 fprintf(debug, "Could not find angle information for %s - %s - %s\n",
@@ -399,8 +396,7 @@ immStatus updatePlist(const Poldata             &pd,
                     }
                     else
                     {
-                        gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d!\n",
-                                  b->a[0], b->a[1], b->a[2]);
+                        gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d!\n", b->a[0], b->a[1], b->a[2]);
                     }
                 }
             }

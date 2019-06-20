@@ -614,8 +614,7 @@ void MolGen::Read(FILE            *fp,
                         mymol.eSupp_ = eSupportRemote;
                         if (nullptr != debug)
                         {
-                            fprintf(debug, "Going to send %s to cpu %d\n",
-                                    mpi->getMolname().c_str(), dest);
+                            fprintf(debug, "Going to send %s to cpu %d\n", mpi->getMolname().c_str(), dest);
                         }
                         gmx_send_int(cr_, dest, 1);
                         CommunicationStatus cs = mpi->Send(cr_, dest);
