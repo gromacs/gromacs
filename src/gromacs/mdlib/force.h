@@ -68,7 +68,7 @@ namespace gmx
 class Awh;
 class ForceWithVirial;
 class ImdSession;
-class PpForceWorkload;
+class MdScheduleWorkload;
 class MDLogger;
 }
 
@@ -95,7 +95,7 @@ void do_force(FILE                                     *log,
               gmx::ArrayRef<real>                       lambda,
               t_graph                                  *graph,
               t_forcerec                               *fr,
-              gmx::PpForceWorkload                     *ppForceWorkload,
+              gmx::MdScheduleWorkload                  *mdScheduleWork,
               const gmx_vsite_t                        *vsite,
               rvec                                      mu_tot,
               double                                    t,

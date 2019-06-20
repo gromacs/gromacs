@@ -72,7 +72,7 @@ namespace gmx
 enum class StartingBehavior;
 class BoxDeformation;
 class Constraints;
-class PpForceWorkload;
+class MdScheduleWorkload;
 class IMDOutputProvider;
 class ImdSession;
 class MDLogger;

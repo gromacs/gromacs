@@ -61,7 +61,7 @@ namespace gmx
 {
 class Constraints;
 class ImdSession;
-class PpForceWorkload;
+class MdScheduleWorkload;
 }
 
 /* Initialization function, also predicts the initial shell postions.
@@ -101,7 +101,7 @@ void relax_shell_flexcon(FILE                                     *log,
                          t_graph                                  *graph,
                          gmx_shellfc_t                            *shfc,
                          t_forcerec                               *fr,
-                         gmx::PpForceWorkload                     *ppForceWorkload,
+                         gmx::MdScheduleWorkload                  *mdScheduleWork,
                          double                                    t,
                          rvec                                      mu_tot,
                          const gmx_vsite_t                        *vsite,

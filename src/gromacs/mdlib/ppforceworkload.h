@@ -46,6 +46,35 @@ namespace gmx
 {
 
 /*! \libinternal
+ * \brief Data structure to map force flags to booleans that have the role of
+ *  directing per-step tasks undertaken by a PP rank.
+ *
+ * Note that the contents of this class have a lifetime of a single step and
+ * are expected to be set every step.
+ *
+ */
+class ForceFlags
+{
+    public:
+        //! Whether the state has changed, always set unless TPI is used.
+        bool stateChanged = false;
+        //! Whether the box might have changed
+        bool haveDynamicBox = false;
+        //! Whether neighbor searching needs to be done this step
+        bool doNeighborSearch = false;
+        //! Whether virial needs to be computed this step
+        bool computeVirial = false;
+        //! Whether energies need to be computed this step this step
+        bool computeEnergy = false;
+        //! Whether (any) forces need to be computed this step, not only energies
+        bool computeForces = false;
+        //! Whether nonbonded forces need to be computed this step
+        bool computeNonbondedForces = false;
+        //! Whether listed forces need to be computed this step
+        bool computeListedForces = false;
+};
+
+/*! \libinternal
  * \brief Manage what force calculation work is required each step.
  *
  * An object of this type is updated every neighbour search stage to
@@ -60,7 +89,10 @@ namespace gmx
  * \todo Add more responsibilities, including whether GPUs are in use,
  * whether there is PME work, whether DD is active, whether NB
  * local/nonlocal regions have work, whether forces/virial/energy are
- * required. */
+ * required.
+ *
+ * TODO rename
+ */
 class PpForceWorkload
 {
     public:
@@ -68,13 +100,22 @@ class PpForceWorkload
         bool haveGpuBondedWork = false;
         //! Whether this MD step has bonded work to run on he CPU.
         bool haveCpuBondedWork = false;
-        //! Whether this MD step has listed forces bonded work to run on he CPU.
+        //! Whether this MD step has restraints work to run on he CPU.
         bool haveRestraintsWork = false;
         //! Whether this MD step has listed forces work to run on he CPU.
         //  Note: currently this is haveCpuBondedWork | haveRestraintsWork
         bool haveCpuListedForceWork = false;
         //! Whether this MD step has special forces on the CPU.
         bool haveSpecialForces = false;
+};
+
+class MdScheduleWorkload
+{
+    public:
+        //! Force schedule workload descriptor constant for an nstlist range
+        gmx::PpForceWorkload forceWork;
+        //! Force flags changing per-step
+        gmx::ForceFlags      forceFlags;
 };
 
 } // namespace gmx

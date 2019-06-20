@@ -754,45 +754,45 @@ class EnergyEvaluator
                  tensor vir, tensor pres,
                  int64_t count, gmx_bool bFirst);
         //! Handles logging (deprecated).
-        FILE                 *fplog;
+        FILE                    *fplog;
         //! Handles logging.
-        const gmx::MDLogger  &mdlog;
+        const gmx::MDLogger     &mdlog;
         //! Handles communication.
-        const t_commrec      *cr;
+        const t_commrec         *cr;
         //! Coordinates multi-simulations.
-        const gmx_multisim_t *ms;
+        const gmx_multisim_t    *ms;
         //! Holds the simulation topology.
-        gmx_mtop_t           *top_global;
+        gmx_mtop_t              *top_global;
         //! Holds the domain topology.
-        gmx_localtop_t       *top;
+        gmx_localtop_t          *top;
         //! User input options.
-        t_inputrec           *inputrec;
+        t_inputrec              *inputrec;
         //! The Interactive Molecular Dynamics session.
-        gmx::ImdSession      *imdSession;
+        gmx::ImdSession         *imdSession;
         //! The pull work object.
-        pull_t               *pull_work;
+        pull_t                  *pull_work;
         //! Manages flop accounting.
-        t_nrnb               *nrnb;
+        t_nrnb                  *nrnb;
         //! Manages wall cycle accounting.
-        gmx_wallcycle_t       wcycle;
+        gmx_wallcycle_t          wcycle;
         //! Coordinates global reduction.
-        gmx_global_stat_t     gstat;
+        gmx_global_stat_t        gstat;
         //! Handles virtual sites.
-        gmx_vsite_t          *vsite;
+        gmx_vsite_t             *vsite;
         //! Handles constraints.
-        gmx::Constraints     *constr;
+        gmx::Constraints        *constr;
         //! Handles strange things.
-        t_fcdata             *fcd;
+        t_fcdata                *fcd;
         //! Molecular graph for SHAKE.
-        t_graph              *graph;
+        t_graph                 *graph;
         //! Per-atom data for this domain.
-        gmx::MDAtoms         *mdAtoms;
+        gmx::MDAtoms            *mdAtoms;
         //! Handles how to calculate the forces.
-        t_forcerec           *fr;
+        t_forcerec              *fr;
         //! Schedule of force-calculation work each step for this task.
-        gmx::PpForceWorkload *ppForceWorkload;
+        gmx::MdScheduleWorkload *mdScheduleWork;
         //! Stores the computed energies.
-        gmx_enerdata_t       *enerd;
+        gmx_enerdata_t          *enerd;
 };
 
 void
@@ -849,7 +849,7 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
              count, nrnb, wcycle, top,
              ems->s.box, ems->s.x.arrayRefWithPadding(), &ems->s.hist,
              ems->f.arrayRefWithPadding(), force_vir, mdAtoms->mdatoms(), enerd, fcd,
-             ems->s.lambda, graph, fr, ppForceWorkload, vsite, mu_tot, t, nullptr,
+             ems->s.lambda, graph, fr, mdScheduleWork, vsite, mu_tot, t, nullptr,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
              (bNS ? GMX_FORCE_NS : 0),
@@ -1137,7 +1137,7 @@ LegacySimulator::do_cg()
         top_global, &top,
         inputrec, imdSession, pull_work, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
-        mdAtoms, fr, ppForceWorkload, enerd
+        mdAtoms, fr, mdScheduleWork, enerd
     };
     /* Call the force routine and some auxiliary (neighboursearching etc.) */
     /* do_force always puts the charge groups in the box and shifts again
@@ -1817,7 +1817,7 @@ LegacySimulator::do_lbfgs()
         top_global, &top,
         inputrec, imdSession, pull_work, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
-        mdAtoms, fr, ppForceWorkload, enerd
+        mdAtoms, fr, mdScheduleWork, enerd
     };
     energyEvaluator.run(&ems, mu_tot, vir, pres, -1, TRUE);
 
@@ -2477,7 +2477,7 @@ LegacySimulator::do_steep()
         top_global, &top,
         inputrec, imdSession, pull_work, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
-        mdAtoms, fr, ppForceWorkload, enerd
+        mdAtoms, fr, mdScheduleWork, enerd
     };
 
     /**** HERE STARTS THE LOOP ****
@@ -2782,7 +2782,7 @@ LegacySimulator::do_nm()
         top_global, &top,
         inputrec, imdSession, pull_work, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
-        mdAtoms, fr, ppForceWorkload, enerd
+        mdAtoms, fr, mdScheduleWork, enerd
     };
     energyEvaluator.run(&state_work, mu_tot, vir, pres, -1, TRUE);
     cr->nnodes = nnodes;
@@ -2869,7 +2869,7 @@ LegacySimulator::do_nm()
                                         graph,
                                         shellfc,
                                         fr,
-                                        ppForceWorkload,
+                                        mdScheduleWork,
                                         t,
                                         mu_tot,
                                         vsite,

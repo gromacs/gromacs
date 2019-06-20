@@ -61,11 +61,14 @@ struct t_idef;
 struct t_inputrec;
 struct gmx_wallcycle;
 
-/*! \brief The number on bonded function types supported on GPUs */
-static constexpr int numFTypesOnGpu = 8;
 
 namespace gmx
 {
+
+class ForceFlags;
+
+/*! \brief The number on bonded function types supported on GPUs */
+static constexpr int numFTypesOnGpu = 8;
 
 /*! \brief List of all bonded function types supported on GPUs
  *
@@ -134,9 +137,9 @@ class GpuBonded
          * assigned to the GPU */
         bool haveInteractions() const;
         /*! \brief Launches bonded kernel on a GPU */
-        void launchKernel(const t_forcerec *fr,
-                          int               forceFlags,
-                          const matrix      box);
+        void launchKernel(const t_forcerec      *fr,
+                          const gmx::ForceFlags &forceFlags,
+                          const matrix           box);
         /*! \brief Launches the transfer of computed bonded energies. */
         void launchEnergyTransfer();
         /*! \brief Waits on the energy transfer, and accumulates bonded energies to \c enerd. */

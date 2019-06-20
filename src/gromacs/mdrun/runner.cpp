@@ -1490,10 +1490,8 @@ int Mdrunner::mdrunner()
 
         // TODO This is not the right place to manage the lifetime of
         // this data structure, but currently it's the easiest way to
-        // make it work. Later, it should probably be made/updated
-        // after the workload for the lifetime of a PP domain is
-        // understood.
-        PpForceWorkload ppForceWorkload;
+        // make it work.
+        MdScheduleWorkload mdScheduleWork;
 
         GMX_ASSERT(stopHandlerBuilder_, "Runner must provide StopHandlerBuilder to simulator.");
         SimulatorBuilder simulatorBuilder;
@@ -1516,7 +1514,7 @@ int Mdrunner::mdrunner()
                     mdAtoms.get(), &nrnb, wcycle, fr,
                     &enerd,
                     &ekind,
-                    &ppForceWorkload,
+                    &mdScheduleWork,
                     replExParams,
                     membed,
                     walltime_accounting,

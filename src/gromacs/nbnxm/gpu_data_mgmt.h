@@ -99,7 +99,7 @@ void gpu_upload_shiftvec(gmx_nbnxn_gpu_t gmx_unused               *nb,
 /** Clears GPU outputs: nonbonded force, shift force and energy. */
 GPU_FUNC_QUALIFIER
 void gpu_clear_outputs(gmx_nbnxn_gpu_t gmx_unused *nb,
-                       int              gmx_unused flags) GPU_FUNC_TERM;
+                       bool            gmx_unused  computeVirial) GPU_FUNC_TERM;
 
 /** Frees all GPU resources used for the nonbonded calculations. */
 GPU_FUNC_QUALIFIER

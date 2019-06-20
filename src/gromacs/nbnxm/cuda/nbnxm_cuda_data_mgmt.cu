@@ -623,12 +623,13 @@ static void nbnxn_cuda_clear_e_fshift(gmx_nbnxn_cuda_t *nb)
     CU_RET_ERR(stat, "cudaMemsetAsync on e_el falied");
 }
 
-void gpu_clear_outputs(gmx_nbnxn_cuda_t *nb, int flags)
+void gpu_clear_outputs(gmx_nbnxn_cuda_t *nb,
+                       bool              computeVirial)
 {
     nbnxn_cuda_clear_f(nb, nb->atdat->natoms);
     /* clear shift force array and energies if the outputs were
        used in the current step */
-    if (flags & GMX_FORCE_VIRIAL)
+    if (computeVirial)
     {
         nbnxn_cuda_clear_e_fshift(nb);
     }
