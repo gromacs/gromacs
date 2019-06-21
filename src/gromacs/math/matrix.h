@@ -34,7 +34,7 @@
  */
 /*! \libinternal
  * \file
- * \brief Declares special case of 3x3 matrix frequently used.
+ * \brief Declares special case of 3x3 matrix frequently used, and associated functions.
  *
  * \author Christian Blau <cblau@gwdg.de>
  * \ingroup module_math
@@ -62,6 +62,15 @@ using BasicMatrix3x3 = MultiDimArray<std::array<ElementType, 3*3>, extents <3, 3
  * \note will replace the C-style real[3][3] "matrix"
  */
 using Matrix3x3 = BasicMatrix3x3<real>;
+
+//! Determinant of a 3x3 matrix
+template <class ElementType>
+ElementType determinant(const BasicMatrix3x3<ElementType> matrix)
+{
+    return (  matrix(0, 0)*(matrix(1, 1)*matrix(2, 2)-matrix(2, 1)*matrix(1, 2))
+              -matrix(1, 0)*(matrix(0, 1)*matrix(2, 2)-matrix(2, 1)*matrix(0, 2))
+              +matrix(2, 0)*(matrix(0, 1)*matrix(1, 2)-matrix(1, 1)*matrix(0, 2)));
+}
 
 } // namespace gmx
 
