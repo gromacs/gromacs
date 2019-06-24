@@ -47,6 +47,15 @@ The image should be tagged according to the functionality it is intended to demo
 
 ## Running
 
+**Warning:** The `--rm` flag tells Docker to remove the container after the
+process completes. This prevents unnamed containers from consuming more disk
+space on the host with each `run`.
+
+Alternatively, replace `--rm` with `--name containername` to save a named copy
+of the container and consider using `commit`ing snapshots of the container.
+
+Refer to Docker documentation for details.
+
 ### ci.dockerfile
 
 The `entrypoint.sh` script activates the python venv and wraps commands in a `bash` `exec`.
@@ -82,6 +91,12 @@ easy access to a Jupyter notebook server running in the docker container's
 `testing` user home directory.
 
     docker run --rm -ti -p 8888:8888 gmxapi/notebook
+
+Note that, when run with `--rm`, changes made to files in the container will be
+lost when `docker run` completes.
+To preserve work in a notebook run this way,
+download the `ipynb` through theJupyter web interface
+(such as when updating the examples in the repository).
 
 ## Automation
 
