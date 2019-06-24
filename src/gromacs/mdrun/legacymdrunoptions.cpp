@@ -136,7 +136,7 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char **argv, ArrayRef<co
         }
     }
 
-    hw_opt.thread_affinity = nenum(thread_aff_opt_choices);
+    hw_opt.threadAffinity = static_cast<ThreadAffinity>(nenum(thread_aff_opt_choices));
 
     // now check for a multi-simulation
     ArrayRef<const std::string> multidir = opt2fnsIfOptionSet("-multidir",

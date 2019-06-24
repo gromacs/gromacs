@@ -76,7 +76,7 @@ ThreadAffinityTestHelper::ThreadAffinityTestHelper()
 #if GMX_MPI
     cr_->mpi_comm_mysim = MPI_COMM_WORLD;
 #endif
-    hwOpt_.thread_affinity     = threadaffAUTO;
+    hwOpt_.threadAffinity      = ThreadAffinity::Auto;
     hwOpt_.totNumThreadsIsAuto = false;
     physicalNodeId_            = 0;
 }

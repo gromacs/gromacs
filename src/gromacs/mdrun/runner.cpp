@@ -1184,7 +1184,7 @@ int Mdrunner::mdrunner()
                                   *hwinfo->hardwareTopology,
                                   physicalNodeComm, mdlog);
 
-    if (hw_opt.thread_affinity != threadaffOFF)
+    if (hw_opt.threadAffinity != ThreadAffinity::Off)
     {
         /* Before setting affinity, check whether the affinity has changed
          * - which indicates that probably the OpenMP library has changed it

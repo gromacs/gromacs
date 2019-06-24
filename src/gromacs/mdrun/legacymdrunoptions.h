@@ -144,7 +144,7 @@ class LegacyMdrunOptions
         { nullptr, "interleave", "pp_pme", "cartesian", nullptr };
         const char       *dddlb_opt_choices[static_cast<int>(DlbOption::Count)+1] =
         { nullptr, "auto", "no", "yes", nullptr };
-        const char       *thread_aff_opt_choices[threadaffNR+1] =
+        const char       *thread_aff_opt_choices[static_cast<int>(ThreadAffinity::Count) + 1] =
         { nullptr, "auto", "on", "off", nullptr };
         const char       *nbpu_opt_choices[5] =
         { nullptr, "auto", "cpu", "gpu", nullptr };

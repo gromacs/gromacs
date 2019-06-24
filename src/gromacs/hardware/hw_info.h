@@ -92,8 +92,13 @@ struct gmx_hw_info_t
 
 
 /* The options for the thread affinity setting, default: auto */
-enum {
-    threadaffSEL, threadaffAUTO, threadaffON, threadaffOFF, threadaffNR
+enum class ThreadAffinity
+{
+    Select,
+    Auto,
+    On,
+    Off,
+    Count
 };
 
 /*! \internal \brief Threading and GPU options, can be set automatically or by the user
@@ -108,25 +113,25 @@ enum {
 struct gmx_hw_opt_t
 {
     //! Total number of threads requested (thread-MPI + OpenMP).
-    int           nthreads_tot = 0;
+    int            nthreads_tot = 0;
     //! Number of thread-MPI threads requested.
-    int           nthreads_tmpi = 0;
+    int            nthreads_tmpi = 0;
     //! Number of OpenMP threads requested.
-    int           nthreads_omp = 0;
+    int            nthreads_omp = 0;
     //! Number of OpenMP threads to use on PME_only ranks.
-    int           nthreads_omp_pme = 0;
+    int            nthreads_omp_pme = 0;
     //! Thread affinity switch, see enum above.
-    int           thread_affinity = threadaffSEL;
+    ThreadAffinity threadAffinity = ThreadAffinity::Select;
     //! Logical core pinning stride.
-    int           core_pinning_stride = 0;
+    int            core_pinning_stride = 0;
     //! Logical core pinning offset.
-    int           core_pinning_offset = 0;
+    int            core_pinning_offset = 0;
     //! Empty, or a string provided by the user declaring (unique) GPU IDs available for mdrun to use.
-    std::string   gpuIdsAvailable = "";
+    std::string    gpuIdsAvailable = "";
     //! Empty, or a string provided by the user mapping GPU tasks to devices.
-    std::string   userGpuTaskAssignment = "";
+    std::string    userGpuTaskAssignment = "";
     //! Tells whether mdrun is free to choose the total number of threads (by choosing the number of OpenMP and/or thread-MPI threads).
-    bool          totNumThreadsIsAuto;
+    bool           totNumThreadsIsAuto;
 };
 
 #endif

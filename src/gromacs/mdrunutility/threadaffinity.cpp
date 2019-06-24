@@ -396,7 +396,7 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
 {
     int *localityOrder = nullptr;
 
-    if (hw_opt->thread_affinity == threadaffOFF)
+    if (hw_opt->threadAffinity == ThreadAffinity::Off)
     {
         /* Nothing to do */
         return;
@@ -430,7 +430,7 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
     }
 
     bool affinityIsAutoAndNumThreadsIsNotAuto =
-        (hw_opt->thread_affinity == threadaffAUTO &&
+        (hw_opt->threadAffinity == ThreadAffinity::Auto &&
          !hw_opt->totNumThreadsIsAuto);
     bool issuedWarning;
     bool validLayout
@@ -562,26 +562,26 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
          * thread-MPI whether it should do pinning when spawning threads.
          * TODO: the above no longer holds, we should move these checks later
          */
-        if (hw_opt->thread_affinity != threadaffOFF)
+        if (hw_opt->threadAffinity != ThreadAffinity::Off)
         {
             char *message;
             if (!gmx_omp_check_thread_affinity(&message))
             {
                 /* We only pin automatically with totNumThreadsIsAuto=true */
-                if (hw_opt->thread_affinity == threadaffON ||
+                if (hw_opt->threadAffinity == ThreadAffinity::On ||
                     hw_opt->totNumThreadsIsAuto)
                 {
                     GMX_LOG(mdlog.warning).asParagraph().appendText(message);
                 }
                 sfree(message);
-                hw_opt->thread_affinity = threadaffOFF;
+                hw_opt->threadAffinity = ThreadAffinity::Off;
             }
         }
     }
 
     if (!detectDefaultAffinityMask(nthreads_hw_avail))
     {
-        if (hw_opt->thread_affinity == threadaffAUTO)
+        if (hw_opt->threadAffinity == ThreadAffinity::Auto)
         {
             if (!bAfterOpenmpInit)
             {
@@ -594,7 +594,7 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
                         "Non-default thread affinity set probably by the OpenMP library,\n"
                         "disabling internal thread affinity");
             }
-            hw_opt->thread_affinity = threadaffOFF;
+            hw_opt->threadAffinity = ThreadAffinity::Off;
         }
         else
         {
