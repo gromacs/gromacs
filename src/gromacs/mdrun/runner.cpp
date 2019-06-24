@@ -994,7 +994,7 @@ int Mdrunner::mdrunner()
     // that existing affinity setting was from OpenMP or something
     // else, so we run this code both before and after we initialize
     // the OpenMP support.
-    gmx_check_thread_affinity_set(mdlog, cr,
+    gmx_check_thread_affinity_set(mdlog,
                                   &hw_opt, hwinfo->nthreads_hw_avail, FALSE);
     /* Check and update the number of OpenMP threads requested */
     checkAndUpdateRequestedNumOpenmpThreads(&hw_opt, *hwinfo, cr, ms, physicalNodeComm.size_,
@@ -1190,7 +1190,7 @@ int Mdrunner::mdrunner()
          * - which indicates that probably the OpenMP library has changed it
          * since we first checked).
          */
-        gmx_check_thread_affinity_set(mdlog, cr,
+        gmx_check_thread_affinity_set(mdlog,
                                       &hw_opt, hwinfo->nthreads_hw_avail, TRUE);
 
         int numThreadsOnThisNode, intraNodeThreadOffset;

@@ -464,7 +464,6 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
  */
 void
 gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
-                              const t_commrec     *cr,
                               gmx_hw_opt_t        *hw_opt,
                               int  gmx_unused      nthreads_hw_avail,
                               gmx_bool             bAfterOpenmpInit)
@@ -494,16 +493,8 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
             }
         }
 
-        /* With thread-MPI this is needed as pinning might get turned off,
-         * which needs to be known before starting thread-MPI.
-         * With thread-MPI hw_opt is processed here on the master rank
-         * and passed to the other ranks later, so we only do this on master.
-         */
-        if (!SIMMASTER(cr))
-        {
-            return;
-        }
 #if !GMX_THREAD_MPI
+        // TODO: Remove this return so we get early reporting without thread-MPI as well
         return;
 #endif
     }
@@ -526,6 +517,8 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
         {
             fprintf(debug, "Failed to query affinity mask (error %d)", ret);
         }
+        // TODO: This might cause divergence between ranks on the same node.
+        //       Replace this return by a boolean and combine with bAllSet.
         return;
     }
 
@@ -540,18 +533,29 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
             fprintf(debug, "%d hardware threads detected, but %d was returned by CPU_COUNT",
                     nthreads_hw_avail, CPU_COUNT(&mask_current));
         }
+        // TODO: This might cause divergence between ranks on the same node.
+        //       Replace this return by a boolean and combine with bAllSet.
         return;
     }
 #endif /* CPU_COUNT */
 
+    /* Here we check whether all bits of the affinity mask are set.
+     * Note that this mask can change while the program is executing,
+     * e.g. by the system dynamically enabling or disabling cores or
+     * by some scheduler changing the affinities. Thus we can not assume
+     * that the result is the same on all ranks within a node
+     * when running this code at different times.
+     */
     gmx_bool bAllSet = TRUE;
     for (int i = 0; (i < nthreads_hw_avail && i < CPU_SETSIZE); i++)
     {
         bAllSet = bAllSet && (CPU_ISSET(i, &mask_current) != 0);
     }
 
-    // With thread-MPI, bAllSet must already be the same on all ranks.
-#if GMX_LIB_MPI
+#if GMX_MPI
+    int mpiIsInitialized;
+    MPI_Initialized(&mpiIsInitialized);
+    if (mpiIsInitialized)
     {
         bool bAllSet_All;
         MPI_Allreduce(&bAllSet, &bAllSet_All, 1, MPI_C_BOOL, MPI_LAND, MPI_COMM_WORLD);
