@@ -492,11 +492,6 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
                 hw_opt->thread_affinity = threadaffOFF;
             }
         }
-
-#if !GMX_THREAD_MPI
-        // TODO: Remove this return so we get early reporting without thread-MPI as well
-        return;
-#endif
     }
 
 #if HAVE_SCHED_AFFINITY
