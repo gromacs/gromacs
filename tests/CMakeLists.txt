@@ -183,6 +183,7 @@ endif()
 # Physical validation tests are opt-in via -DGMX_PHYSICAL_VALIDATION=ON
 #
 if(GMX_PHYSICAL_VALIDATION)
+    include(FindPythonModule)
     # physical validation suite is distributed with the source
     set(PHYSVALTEST_SOURCE_PATH
             "${CMAKE_CURRENT_SOURCE_DIR}/physicalvalidation")
