@@ -458,6 +458,91 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
     }
 }
 
+/* Detects and returns whether we have the default affinity mask
+ *
+ * Returns true when we can query thread affinities and CPU count is
+ * consistent and we have default affinity mask on all ranks.
+ *
+ * Should be called simultaneously by all MPI ranks.
+ */
+static bool detectDefaultAffinityMask(const int nthreads_hw_avail)
+{
+    bool      detectedDefaultAffinityMask = true;
+
+#if HAVE_SCHED_AFFINITY
+    cpu_set_t mask_current;
+    CPU_ZERO(&mask_current);
+    int       ret;
+    if ((ret = sched_getaffinity(0, sizeof(cpu_set_t), &mask_current)) != 0)
+    {
+        /* failed to query affinity mask, will just return */
+        if (debug)
+        {
+            fprintf(debug, "Failed to query affinity mask (error %d)", ret);
+        }
+        detectedDefaultAffinityMask = false;
+    }
+
+    /* Before proceeding with the actual check, make sure that the number of
+     * detected CPUs is >= the CPUs in the current set.
+     * We need to check for CPU_COUNT as it was added only in glibc 2.6. */
+#ifdef CPU_COUNT
+    if (detectedDefaultAffinityMask &&
+        nthreads_hw_avail < CPU_COUNT(&mask_current))
+    {
+        if (debug)
+        {
+            fprintf(debug, "%d hardware threads detected, but %d was returned by CPU_COUNT",
+                    nthreads_hw_avail, CPU_COUNT(&mask_current));
+        }
+        detectedDefaultAffinityMask = false;
+    }
+#endif /* CPU_COUNT */
+
+    if (detectedDefaultAffinityMask)
+    {
+        /* Here we check whether all bits of the affinity mask are set.
+         * Note that this mask can change while the program is executing,
+         * e.g. by the system dynamically enabling or disabling cores or
+         * by some scheduler changing the affinities. Thus we can not assume
+         * that the result is the same on all ranks within a node
+         * when running this code at different times.
+         */
+        bool allBitsAreSet = true;
+        for (int i = 0; (i < nthreads_hw_avail && i < CPU_SETSIZE); i++)
+        {
+            allBitsAreSet = allBitsAreSet && (CPU_ISSET(i, &mask_current) != 0);
+        }
+        if (debug)
+        {
+            fprintf(debug, "%s affinity mask found\n",
+                    allBitsAreSet ? "Default" : "Non-default");
+        }
+        if (!allBitsAreSet)
+        {
+            detectedDefaultAffinityMask = false;
+        }
+    }
+#else
+    GMX_UNUSED_VALUE(nthreads_hw_avail);
+#endif /* HAVE_SCHED_AFFINITY */
+
+#if GMX_MPI
+    int mpiIsInitialized;
+    MPI_Initialized(&mpiIsInitialized);
+    if (mpiIsInitialized)
+    {
+        bool detectedDefaultAffinityMaskOnAllRanks;
+        MPI_Allreduce(&detectedDefaultAffinityMask,
+                      &detectedDefaultAffinityMaskOnAllRanks,
+                      1, MPI_C_BOOL, MPI_LAND, MPI_COMM_WORLD);
+        detectedDefaultAffinityMask = detectedDefaultAffinityMaskOnAllRanks;
+    }
+#endif
+
+    return detectedDefaultAffinityMask;
+}
+
 /* Check the process affinity mask and if it is found to be non-zero,
  * will honor it and disable mdrun internal affinity setting.
  * Note that this will only work on Linux as we use a GNU feature.
@@ -494,71 +579,7 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
         }
     }
 
-#if HAVE_SCHED_AFFINITY
-    int       ret;
-    cpu_set_t mask_current;
-
-    if (hw_opt->thread_affinity == threadaffOFF)
-    {
-        /* internal affinity setting is off, don't bother checking process affinity */
-        return;
-    }
-
-    CPU_ZERO(&mask_current);
-    if ((ret = sched_getaffinity(0, sizeof(cpu_set_t), &mask_current)) != 0)
-    {
-        /* failed to query affinity mask, will just return */
-        if (debug)
-        {
-            fprintf(debug, "Failed to query affinity mask (error %d)", ret);
-        }
-        // TODO: This might cause divergence between ranks on the same node.
-        //       Replace this return by a boolean and combine with bAllSet.
-        return;
-    }
-
-    /* Before proceeding with the actual check, make sure that the number of
-     * detected CPUs is >= the CPUs in the current set.
-     * We need to check for CPU_COUNT as it was added only in glibc 2.6. */
-#ifdef CPU_COUNT
-    if (nthreads_hw_avail < CPU_COUNT(&mask_current))
-    {
-        if (debug)
-        {
-            fprintf(debug, "%d hardware threads detected, but %d was returned by CPU_COUNT",
-                    nthreads_hw_avail, CPU_COUNT(&mask_current));
-        }
-        // TODO: This might cause divergence between ranks on the same node.
-        //       Replace this return by a boolean and combine with bAllSet.
-        return;
-    }
-#endif /* CPU_COUNT */
-
-    /* Here we check whether all bits of the affinity mask are set.
-     * Note that this mask can change while the program is executing,
-     * e.g. by the system dynamically enabling or disabling cores or
-     * by some scheduler changing the affinities. Thus we can not assume
-     * that the result is the same on all ranks within a node
-     * when running this code at different times.
-     */
-    gmx_bool bAllSet = TRUE;
-    for (int i = 0; (i < nthreads_hw_avail && i < CPU_SETSIZE); i++)
-    {
-        bAllSet = bAllSet && (CPU_ISSET(i, &mask_current) != 0);
-    }
-
-#if GMX_MPI
-    int mpiIsInitialized;
-    MPI_Initialized(&mpiIsInitialized);
-    if (mpiIsInitialized)
-    {
-        bool bAllSet_All;
-        MPI_Allreduce(&bAllSet, &bAllSet_All, 1, MPI_C_BOOL, MPI_LAND, MPI_COMM_WORLD);
-        bAllSet = bAllSet_All;
-    }
-#endif
-
-    if (!bAllSet)
+    if (!detectDefaultAffinityMask(nthreads_hw_avail))
     {
         if (hw_opt->thread_affinity == threadaffAUTO)
         {
@@ -585,18 +606,5 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
                         gmx::getProgramContext().displayName());
             }
         }
-
-        if (debug)
-        {
-            fprintf(debug, "Non-default affinity mask found\n");
-        }
     }
-    else
-    {
-        if (debug)
-        {
-            fprintf(debug, "Default affinity mask found\n");
-        }
-    }
-#endif /* HAVE_SCHED_AFFINITY */
 }
