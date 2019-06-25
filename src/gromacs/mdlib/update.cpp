@@ -1768,18 +1768,18 @@ void update_pcouple_after_coordinates(FILE             *fplog,
     }
 }
 
-void update_coords(int64_t                             step,
-                   const t_inputrec                   *inputrec, /* input record and box stuff	*/
-                   const t_mdatoms                    *md,
-                   t_state                            *state,
-                   gmx::ArrayRefWithPadding<gmx::RVec> f,
-                   const t_fcdata                     *fcd,
-                   const gmx_ekindata_t               *ekind,
-                   const matrix                        M,
-                   Update                             *upd,
-                   int                                 UpdatePart,
-                   const t_commrec                    *cr, /* these shouldn't be here -- need to think about it */
-                   const gmx::Constraints             *constr)
+void update_coords(int64_t                                   step,
+                   const t_inputrec                         *inputrec, /* input record and box stuff	*/
+                   const t_mdatoms                          *md,
+                   t_state                                  *state,
+                   gmx::ArrayRefWithPadding<const gmx::RVec> f,
+                   const t_fcdata                           *fcd,
+                   const gmx_ekindata_t                     *ekind,
+                   const matrix                              M,
+                   Update                                   *upd,
+                   int                                       UpdatePart,
+                   const t_commrec                          *cr, /* these shouldn't be here -- need to think about it */
+                   const gmx::Constraints                   *constr)
 {
     gmx_bool bDoConstr = (nullptr != constr);
 
