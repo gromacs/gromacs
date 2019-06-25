@@ -44,6 +44,7 @@
 #include "gromacs/mdlib/stophandler.h"
 
 class energyhistory_t;
+struct gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_enfrot;
 struct gmx_mtop_t;
@@ -125,6 +126,7 @@ class ISimulator
             gmx_wallcycle                      *wcycle,
             t_forcerec                         *fr,
             gmx_enerdata_t                     *enerd,
+            gmx_ekindata_t                     *ekind,
             PpForceWorkload                    *ppForceWorkload,
             const ReplicaExchangeParameters    &replExParams,
             gmx_membed_t                       *membed,
@@ -158,6 +160,7 @@ class ISimulator
             wcycle(wcycle),
             fr(fr),
             enerd(enerd),
+            ekind(ekind),
             ppForceWorkload(ppForceWorkload),
             replExParams(replExParams),
             membed(membed),
@@ -221,6 +224,8 @@ class ISimulator
         t_forcerec                         *fr;
         //! Data for energy output.
         gmx_enerdata_t                     *enerd;
+        //! Kinetic energy data.
+        gmx_ekindata_t                     *ekind;
         //! Schedule of force-calculation work each step for this task.
         PpForceWorkload                    *ppForceWorkload;
         //! Parameters for replica exchange algorihtms.

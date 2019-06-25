@@ -79,7 +79,7 @@ static void init_grpstat(const gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
 }
 
 void init_ekindata(FILE gmx_unused *log, const gmx_mtop_t *mtop, const t_grpopts *opts,
-                   gmx_ekindata_t *ekind)
+                   gmx_ekindata_t *ekind, real cos_accel)
 {
     int i;
     int nthread, thread;
@@ -135,6 +135,8 @@ void init_ekindata(FILE gmx_unused *log, const gmx_mtop_t *mtop, const t_grpopts
     ekind->ngacc = opts->ngacc;
     ekind->grpstat.resize(opts->ngacc);
     init_grpstat(mtop, opts->ngacc, ekind->grpstat.data());
+
+    ekind->cosacc.cos_accel = cos_accel;
 }
 
 void accumulate_u(const t_commrec *cr, const t_grpopts *opts, gmx_ekindata_t *ekind)

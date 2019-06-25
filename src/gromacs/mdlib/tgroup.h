@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,8 @@ struct t_mdatoms;
 
 void init_ekindata(FILE *log, const gmx_mtop_t *mtop,
                    const t_grpopts *opts,
-                   gmx_ekindata_t *ekind);
+                   gmx_ekindata_t *ekind,
+                   real cos_accel);
 /* Allocate memory and set the grpnr array. */
 
 void done_ekindata(gmx_ekindata_t *ekind);

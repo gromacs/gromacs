@@ -302,13 +302,6 @@ void gmx::LegacySimulator::do_rerun()
                                          StartingBehavior::NewSimulation);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, ir, pull_work, mdoutf_get_fp_dhdl(outf), true);
 
-    /* Kinetic energy data */
-    std::unique_ptr<gmx_ekindata_t> eKinData = std::make_unique<gmx_ekindata_t>();
-    gmx_ekindata_t                 *ekind    = eKinData.get();
-    init_ekindata(fplog, top_global, &(ir->opts), ekind);
-    /* Copy the cos acceleration to the groups struct */
-    ekind->cosacc.cos_accel = ir->cos_accel;
-
     gstat = global_stat_init(ir);
 
     /* Check for polarizable models and flexible constraints */

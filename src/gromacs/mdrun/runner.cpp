@@ -108,6 +108,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/fcdata.h"
+#include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
@@ -1467,6 +1468,10 @@ int Mdrunner::mdrunner()
         /* Energy terms and groups */
         gmx_enerdata_t enerd(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(), inputrec->fepvals->n_lambda);
 
+        /* Kinetic energy data */
+        gmx_ekindata_t ekind;
+        init_ekindata(fplog, &mtop, &(inputrec->opts), &ekind, inputrec->cos_accel);
+
         /* Set up interactive MD (IMD) */
         auto imdSession = makeImdSession(inputrec, cr, wcycle, &enerd, ms, &mtop, mdlog,
                                          MASTER(cr) ? globalState->x.rvec_array() : nullptr,
@@ -1510,6 +1515,7 @@ int Mdrunner::mdrunner()
                     &observablesHistory,
                     mdAtoms.get(), &nrnb, wcycle, fr,
                     &enerd,
+                    &ekind,
                     &ppForceWorkload,
                     replExParams,
                     membed,
