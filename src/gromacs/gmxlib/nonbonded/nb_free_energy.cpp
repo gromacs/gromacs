@@ -76,6 +76,39 @@ struct SoftCoreReal<SoftCoreTreatment::RPower48>
     using Real = double;
 };
 
+//! Computes r^(1/p) and 1/r^(1/p) for the standard p=6
+template <SoftCoreTreatment softCoreTreatment>
+static inline void pthRoot(const real  r,
+                           real       *pthRoot,
+                           real       *invPthRoot)
+{
+    *invPthRoot = gmx::invsqrt(std::cbrt(r));
+    *pthRoot    = 1/(*invPthRoot);
+}
+
+// We need a double version to make the specialization below work
+#if !GMX_DOUBLE
+//! Computes r^(1/p) and 1/r^(1/p) for the standard p=6
+template <SoftCoreTreatment softCoreTreatment>
+static inline void pthRoot(const double  r,
+                           double       *pthRoot,
+                           double       *invPthRoot)
+{
+    *invPthRoot = gmx::invsqrt(std::cbrt(r));
+    *pthRoot    = 1/(*invPthRoot);
+}
+#endif
+
+//! Computes r^(1/p) and 1/r^(1/p) for p=48
+template <>
+inline void pthRoot<SoftCoreTreatment::RPower48>(const double  r,
+                                                 double       *pthRoot,
+                                                 double       *invPthRoot)
+{
+    *pthRoot    = std::pow(r, 1.0/48.0);
+    *invPthRoot = 1/(*pthRoot);
+}
+
 //! Templated free-energy non-bonded kernel
 template<SoftCoreTreatment softCoreTreatment, bool scLambdasOrAlphasDiffer>
 static void
@@ -466,14 +499,12 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                         if (useSoftCore)
                         {
                             rpinvC     = one/(alpha_coul_eff*lfac_coul[i]*sigma_pow[i]+rp);
-                            rinvC      = std::pow(rpinvC, one/sc_r_power);
-                            rC         = one/rinvC;
+                            pthRoot<softCoreTreatment>(rpinvC, &rinvC, &rC);
 
                             if (scLambdasOrAlphasDiffer)
                             {
                                 rpinvV = one/(alpha_vdw_eff*lfac_vdw[i]*sigma_pow[i]+rp);
-                                rinvV  = std::pow(rpinvV, one/sc_r_power);
-                                rV     = one/rinvV;
+                                pthRoot<softCoreTreatment>(rpinvV, &rinvV, &rV);
                             }
                             else
                             {
