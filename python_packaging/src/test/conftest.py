@@ -116,12 +116,12 @@ def gmxcli():
     try:
         assert os.access(command, os.X_OK)
     except Exception as E:
-        raise RuntimeError('"{}" is not an executable gmx wrapper program') from E
+        raise RuntimeError('"{}" is not an executable gmx wrapper program'.format(command)) from E
     yield command
 
 
 @pytest.fixture(scope='class')
-def spc216(gmxcli):
+def spc_water_box(gmxcli):
     """Provide a TPR input file for a simple simulation.
 
     Prepare the MD input in a freshly created working directory.
@@ -167,14 +167,16 @@ def spc216(gmxcli):
                                                       '-o': structurefile,
                                                       }
                                         )
-    assert solvate.output.returncode.result() == 0
+    if solvate.output.returncode.result() != 0:
+        logging.debug(solvate.output.erroroutput.result())
+        raise RuntimeError('solvate failed in spc_water_box testing fixture.')
 
     mdp_input = [('integrator', 'md'),
                  ('cutoff-scheme', 'Verlet'),
-                 ('nsteps', 1000),
-                 ('nstxout', 100),
-                 ('nstvout', 100),
-                 ('nstfout', 100),
+                 ('nsteps', 2),
+                 ('nstxout', 1),
+                 ('nstvout', 1),
+                 ('nstfout', 1),
                  ('tcoupl', 'v-rescale'),
                  ('tc-grps', 'System'),
                  ('tau-t', 1),
@@ -182,7 +184,7 @@ def spc216(gmxcli):
     mdp_input = '\n'.join([' = '.join([str(item) for item in kvpair]) for kvpair in mdp_input])
     mdpfile = os.path.join(tempdir, 'md.mdp')
     with open(mdpfile, 'w') as fh:
-        fh.write('\n'.join(mdp_input))
+        fh.write(mdp_input)
         fh.write('\n')
     tprfile = os.path.join(tempdir, 'topol.tpr')
     # We don't use mdout_mdp, but if we don't specify it to grompp,
@@ -200,7 +202,7 @@ def spc216(gmxcli):
     tprfilename = grompp.output.file['-o'].result()
     if grompp.output.returncode.result() != 0:
         logging.debug(grompp.output.erroroutput.result())
-        raise RuntimeError('grompp failed in spc216 testing fixture.')
+        raise RuntimeError('grompp failed in spc_water_box testing fixture.')
 
     # TODO: more inspection of grompp errors...
     assert os.path.exists(tprfilename)
