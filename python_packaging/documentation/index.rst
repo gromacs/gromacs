@@ -15,6 +15,9 @@ and
     :maxdepth: 2
     :caption: Documentation sections
 
+    quickstart
+    userguide/userguide.rst
+    reference/reference.rst
     changelog
 
 .. seealso::

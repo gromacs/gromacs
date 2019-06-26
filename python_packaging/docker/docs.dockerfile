@@ -4,7 +4,7 @@
 #
 # Launch and bind the host port 8080 to the web server in the container.
 #
-#     docker run -it --rm -p 8080:80 gmxapi/docs
+#     docker run --rm -tp 8080:80 gmxapi/docs
 #
 # Connect by browsing to http://localhost:8080/
 #

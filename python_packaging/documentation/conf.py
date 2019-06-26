@@ -12,6 +12,14 @@ from pkg_resources import get_distribution, DistributionNotFound
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.doctest',
+    'sphinx.ext.todo',
+    'sphinx.ext.coverage',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.viewcode',
     'sphinxcontrib.plantuml'
 ]
 
@@ -49,6 +57,11 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
+# -- Options for todo extension ----------------------------------------------
+
+# If true, `todo` and `todoList` produce output, else they produce nothing.
+todo_include_todos = True
+
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -68,6 +81,35 @@ html_short_title = u'gmxapi'
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'gmxapi'
+
+# -- Options for autodoc extension -------------------------------------------
+# reference https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#configuration
+
+# Functions imported from C modules cannot be introspected, and therefore the
+# signature for such functions cannot be automatically determined. However, it is
+# an often-used convention to put the signature into the first line of the
+# function's docstring.
+#
+# If this boolean value is set to True (which is the default), autodoc will look
+# at the first line of the docstring for functions and methods, and if it looks
+# like a signature, use the line as the signature and remove it from the docstring
+# content.
+#
+autodoc_docstring_signature = True
+
+# autodoc_mock_imports This value contains a list of modules to be mocked up. This
+# is useful when some external dependencies are not met at build time and break
+# the building process.
+#
+# New in version 1.3.
+#
+autodoc_mock_imports = []
+
+# See http://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#confval-autoclass_content
+autoclass_content = 'both'
+
+# -- Options for Napoleon extension ------------------------------------------
+# reference https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html#configuration
 
 # -- Options for plantuml extension ------------------------------------------
 
