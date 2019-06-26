@@ -47,14 +47,14 @@ RUN groupadd -r testing && useradd -m -s /bin/bash -g testing testing
 
 USER testing
 
-# TODO: Clean up pip cache.
-RUN python3 -m venv $HOME/testing
-RUN . $HOME/testing/bin/activate && \
+ENV VENV /home/testing/venv
+RUN python3 -m venv $VENV
+RUN . $VENV/bin/activate && \
     pip install --no-cache-dir --upgrade pip setuptools
 
 ADD --chown=testing:testing requirements-*.txt /home/testing/gmxapi/
 
-RUN . $HOME/testing/bin/activate && \
+RUN . $VENV/bin/activate && \
     pip install --no-cache-dir -r /home/testing/gmxapi/requirements-test.txt
 
 COPY --from=gromacs $CMAKE_ROOT $CMAKE_ROOT
@@ -63,14 +63,14 @@ COPY --from=gromacs /usr/local/gromacs /usr/local/gromacs
 ADD --chown=testing:testing src /home/testing/gmxapi/src
 ADD --chown=testing:testing src/gmxapi /home/testing/gmxapi/src/gmxapi
 
-RUN . $HOME/testing/bin/activate && \
+RUN . $VENV/bin/activate && \
     . /usr/local/gromacs/bin/GMXRC && \
     (cd $HOME/gmxapi/src && \
      pip install --no-cache-dir . \
     )
 
 ADD --chown=testing:testing src/test /home/testing/gmxapi/test
-ADD --chown=testing:testing scripts /home/testing/scripts
+ADD scripts /docker_entry_points
 ADD --chown=testing:testing test /home/testing/test
 
 ADD --chown=testing:testing sample_restraint /home/testing/sample_restraint

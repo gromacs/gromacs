@@ -20,12 +20,12 @@ RUN apt-get update && \
 
 USER testing
 
-RUN . $HOME/testing/bin/activate && \
+RUN . $VENV/bin/activate && \
     pip install -r /home/testing/gmxapi/requirements-docs.txt --no-cache-dir
 
 COPY documentation /home/testing/gmxapi/documentation
 RUN cd /home/testing/gmxapi && \
-    . $HOME/testing/bin/activate && \
+    . $VENV/bin/activate && \
     sphinx-build -b html documentation html
 
 
