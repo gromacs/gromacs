@@ -331,7 +331,7 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3;/wd161;/wd177;/wd411;/wd593;/wd981;/wd1418;/wd14
         #      "this" in initializer list
         #      deprecated (posix, secure) functions
         #      C4305: truncation (double -> float)
-        #      C4244: conversion from 'double' to 'real', possible loss of data
+        #      C4244: conversion from '.*' to '.*', possible loss of data
         #      unreferenced local variable (only C)
         #      C4267: conversion from 'size_t' to 'int', possible loss of data
         #      conversion from 'const char*' to 'void*', different 'const' qualifiers (only C)

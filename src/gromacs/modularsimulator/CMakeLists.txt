@@ -44,5 +44,9 @@ if(GMX_OPENMP)
     set_target_properties(modularsimulator PROPERTIES COMPILE_OPTIONS $<TARGET_PROPERTY:OpenMP::OpenMP_CXX,INTERFACE_COMPILE_OPTIONS>)
 endif()
 
+if (WIN32)
+    gmx_target_warning_suppression(modularsimulator /wd4244 HAS_NO_MSVC_LOSSY_CONVERSION)
+endif()
+
 list(APPEND libgromacs_object_library_dependencies modularsimulator)
 set(libgromacs_object_library_dependencies ${libgromacs_object_library_dependencies} PARENT_SCOPE)

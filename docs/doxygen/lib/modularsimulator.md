@@ -373,6 +373,15 @@ knows that trajectory writing will occur later in the step,
 and it knows how to write to file given a file pointer by
 the `TrajectoryElement`.
 
+#### `EnergyElement`
+The `EnergyElement` takes part in the simulator run, as it
+does either add data (at energy calculation steps), or
+record a non-calculation step (all other steps). It is the
+responsibility of the simulator builder to ensure that the
+`EnergyElement` is called at a point of the simulator run
+at which it has access to a valid energy state.
+
+
 ## Data structures
 
 ### `MicroState`
@@ -394,3 +403,21 @@ functionality which has not yet been adapted to use the new
 data approach - of the elements currently implemented, only
 domain decomposition, PME load balancing, and the initial
 constraining are using this.
+
+### `EnergyElement`
+The EnergyElement owns the EnergyObject, and is hence responsible
+for saving energy data and writing it to trajectory. It also owns
+the tensors for the different virials and the pressure as well as
+the total dipole vector.
+
+It subscribes to the trajectory signaller, the energy signaller,
+and the logging signaller to know when an energy calculation is
+needed and when a non-recording step is enough. The simulator
+builder is responsible to place the element in a location at
+which a valid energy state is available. The EnergyElement is
+also a subscriber to the trajectory writer element, as it is
+responsible to write energy data to trajectory.
+
+The EnergyElement offers an interface to add virial contributions,
+but also allows access to the raw pointers to tensor data, the
+dipole vector, and the legacy energy data structures.

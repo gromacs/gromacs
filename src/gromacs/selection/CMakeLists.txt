@@ -47,7 +47,7 @@ target_compile_definitions(scanner PRIVATE HAVE_CONFIG_H)
 # suppressions).
 if (WIN32)
     gmx_target_warning_suppression(scanner /wd4101 HAS_NO_MSVC_UNUSED)
-    gmx_target_warning_suppression(scanner /wd4244 HAS_NO_MSVC_LOSSY_CONVERSION_DOUBLE_TO_REAL)
+    gmx_target_warning_suppression(scanner /wd4244 HAS_NO_MSVC_LOSSY_CONVERSION)
     gmx_target_warning_suppression(scanner /wd4267 HAS_NO_MSVC_LOSSY_CONVERSION_SIZE_T_TO_INT)
 else()
     gmx_target_warning_suppression(scanner -Wno-unused HAS_NO_UNUSED)
