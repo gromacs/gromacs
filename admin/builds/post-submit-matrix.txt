@@ -78,7 +78,6 @@ armclang-18.4 armhpc-18.4 armpl openmp simd=ARM_NEON_ASIMD release-with-assert
 # Add OpenMP + CUDA + device sharing TSAN build
 # Test statically linked hwloc support (if/when it can work well)
 # Test 3D DD (2D is partially covered in regressiontests)
-# Test own-fftw build (from local copy of the file)
 # Test mdrun -tunepme (e.g. with relaxed tolerances, for now)
 # Consider testing of other CMake option paths
 # Test behaviour when dlopen is not present
