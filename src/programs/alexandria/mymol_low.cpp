@@ -345,8 +345,8 @@ immStatus updatePlist(const Poldata             &pd,
                         {
                             if (debug)
                             {
-                                fprintf(debug, "Could not find bond information for %s - %s with bondorder of %zu\n",
-                                        aai.c_str(), aaj.c_str(), bondOrder);
+                                fprintf(debug, "Could not find bond information for %s - %s with bondorder of %zu and a bond length of %0.3f\n",
+                                        aai.c_str(), aaj.c_str(), bondOrder, value);
                             }
                             return immNotSupportedBond;
                         }
@@ -388,8 +388,8 @@ immStatus updatePlist(const Poldata             &pd,
                         {
                             if (debug)
                             {
-                                fprintf(debug, "Could not find angle information for %s - %s - %s\n",
-                                        aai.c_str(), aaj.c_str(), aak.c_str());
+                                fprintf(debug, "Could not find angle information for %s - %s - %s with a value of %0.3f\n",
+                                        aai.c_str(), aaj.c_str(), aak.c_str(), value);
                             }
                             return immNotSupportedAngle;
                         }
@@ -435,8 +435,8 @@ immStatus updatePlist(const Poldata             &pd,
                         {
                             if (debug)
                             {
-                                fprintf(debug, "Could not find dihedral information for %s - %s - %s - %s\n",
-                                        aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
+                                fprintf(debug, "Could not find dihedral information for %s - %s - %s - %s with a value of %0.3f\n",
+                                        aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str(), value);
                             }
                             return immNotSupportedDihedral;
                         }
