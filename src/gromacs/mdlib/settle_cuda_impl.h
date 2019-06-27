@@ -309,12 +309,16 @@ class SettleCuda::Impl
         float              *d_virialScaled_;
 
         //! Number of settles
-        int                 numSettles_;
+        int                 numSettles_        = 0;
 
         //! Indexes of atoms (.x for oxygen, .y and.z for hydrogens, CPU)
         std::vector<int3>   h_atomIds_;
         //! Indexes of atoms (.x for oxygen, .y and.z for hydrogens, GPU)
         int3               *d_atomIds_;
+        //! Current size of the array of atom IDs
+        int                 numAtomIds_        = -1;
+        //! Allocated size for the array of atom IDs
+        int                 numAtomIdsAlloc_   = -1;
 
         //! Settle parameters
         SettleParameters    settleParameters_;

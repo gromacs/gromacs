@@ -62,7 +62,7 @@
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
-#include "gromacs/gpu_utils/devicebuffer.cuh"
+#include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 #include "gromacs/math/vec.h"
@@ -661,7 +661,7 @@ SettleCuda::Impl::~Impl()
         return;
     }
     freeDeviceBuffer(&d_virialScaled_);
-    if (h_atomIds_.size() > 0)
+    if (numAtomIdsAlloc_ > 0)
     {
         freeDeviceBuffer(&d_atomIds_);
     }
@@ -674,16 +674,10 @@ void SettleCuda::Impl::set(const t_idef               &idef,
     const int  nral1     = 1 + NRAL(F_SETTLE);
     t_ilist    il_settle = idef.il[F_SETTLE];
     t_iatom   *iatoms    = il_settle.iatoms;
-    numSettles_   = il_settle.nr/nral1;
-    if ((int)h_atomIds_.size() < numSettles_)
-    {
-        if (h_atomIds_.size() > 0)
-        {
-            freeDeviceBuffer(&d_atomIds_);
-        }
-        h_atomIds_.resize(numSettles_);
-        allocateDeviceBuffer(&d_atomIds_, numSettles_, nullptr);
-    }
+    numSettles_          = il_settle.nr/nral1;
+
+    reallocateDeviceBuffer(&d_atomIds_, numSettles_, &numAtomIds_, &numAtomIdsAlloc_, nullptr);
+    h_atomIds_.resize(numSettles_);
     for (int i = 0; i < numSettles_; i++)
     {
         int3 settler;
