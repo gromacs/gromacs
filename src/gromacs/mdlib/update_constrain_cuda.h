@@ -48,11 +48,15 @@
 #ifndef GMX_MDLIB_UPDATE_CONSTRAIN_CUDA_H
 #define GMX_MDLIB_UPDATE_CONSTRAIN_CUDA_H
 
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/idef.h"
+#include "gromacs/mdtypes/group.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
+
+struct gmx_mtop_t;
+struct t_idef;
+struct t_inputrec;
+struct t_mdatoms;
+struct t_pbc;
 
 namespace gmx
 {
@@ -75,28 +79,33 @@ class UpdateConstrainCuda
 
         /*! \brief Integrate
          *
-         * Integrates the equation of motion using Leap-Frog algorithm and applies
-         * LINCS and SETTLE constraints.
-         * Updates d_xp_ and d_v_ fields of this object.
+         * This will extract temperature scaling factors from tcstat, transform them into the plain
+         * array and call the normal integrate method.
          *
-         * \param[in] dt                Timestep
-         * \param[in] updateVelocities  If the velocities should be constrained.
-         * \param[in] computeVirial     If virial should be updated.
-         * \param[out] virial           Place to save virial tensor.
+         * \param[in]  dt                 Timestep
+         * \param[in]  updateVelocities   If the velocities should be constrained.
+         * \param[in]  computeVirial      If virial should be updated.
+         * \param[out] virial             Place to save virial tensor.
+         * \param[in]  doTempCouple       If the temperature coupling should be performed.
+         * \param[in]  tcstat             Temperature coupling data.
          */
-        void integrate(real       dt,
-                       bool       updateVelocities,
-                       bool       computeVirial,
-                       tensor     virial);
+        void integrate(real                              dt,
+                       bool                              updateVelocities,
+                       bool                              computeVirial,
+                       tensor                            virial,
+                       bool                              doTempCouple,
+                       gmx::ArrayRef<const t_grp_tcstat> tcstat);
 
         /*! \brief
          * Update data-structures (e.g. after NB search step).
          *
-         * \param[in] idef    System topology
-         * \param[in] md      Atoms data. Can be used to update masses if needed (not used now).
+         * \param[in] idef                 System topology
+         * \param[in] md                   Atoms data.
+         * \param[in] numTempScaleValues   Number of temperature scaling groups. Zero for no temperature scaling.
          */
-        void set(const t_idef     &idef,
-                 const t_mdatoms  &md);
+        void set(const t_idef    &idef,
+                 const t_mdatoms &md,
+                 int              numTempScaleValues);
 
         /*! \brief
          * Update PBC data.

@@ -147,7 +147,7 @@
 
 using gmx::SimulationSignaller;
 
-//! Whether the GPU versions of Leap-Frog integrator and LINCS and SHAKE constraints
+//! Whether the GPU versions of Leap-Frog integrator and LINCS and SETTLE constraints
 static const bool c_useGpuUpdateConstrain = (getenv("GMX_UPDATE_CONSTRAIN_GPU") != nullptr);
 
 void gmx::LegacySimulator::do_md()
@@ -320,13 +320,14 @@ void gmx::LegacySimulator::do_md()
     if (c_useGpuUpdateConstrain)
     {
         GMX_RELEASE_ASSERT(ir->eI == eiMD, "Only md integrator is supported on the GPU.");
-        GMX_RELEASE_ASSERT(ir->etc == etcNO, "Temperature coupling is not supported on the GPU.");
+        GMX_RELEASE_ASSERT(ir->etc != etcNOSEHOOVER, "Nose Hoover temperature coupling is not supported on the GPU.");
         GMX_RELEASE_ASSERT(ir->epc == epcNO, "Pressure coupling is not supported on the GPU.");
         GMX_RELEASE_ASSERT(!mdatoms->haveVsites, "Virtual sites are not supported on the GPU");
+        GMX_RELEASE_ASSERT(ed == nullptr, "Essential dynamics is not supported with GPU-based update constraints.");
         GMX_LOG(mdlog.info).asParagraph().
             appendText("Using CUDA GPU-based update and constraints module.");
         integrator = std::make_unique<UpdateConstrainCuda>(*ir, *top_global);
-        integrator->set(top.idef, *mdatoms);
+        integrator->set(top.idef, *mdatoms, ekind->ngtc);
         t_pbc pbc;
         set_pbc(&pbc, epbcXYZ, state->box);
         integrator->setPbc(&pbc);
@@ -1220,7 +1221,7 @@ void gmx::LegacySimulator::do_md()
         {
             if (bNS)
             {
-                integrator->set(top.idef, *mdatoms);
+                integrator->set(top.idef, *mdatoms, ekind->ngtc);
                 t_pbc pbc;
                 set_pbc(&pbc, epbcXYZ, state->box);
                 integrator->setPbc(&pbc);
@@ -1230,7 +1231,9 @@ void gmx::LegacySimulator::do_md()
             integrator->copyForcesToGpu(as_rvec_array(f.data()));
 
             // This applies Leap-Frog, LINCS and SETTLE in a succession
-            integrator->integrate(ir->delta_t, true, bCalcVir, shake_vir);
+            bool doTempCouple = (ir->etc != etcNO && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
+
+            integrator->integrate(ir->delta_t, true, bCalcVir, shake_vir, doTempCouple, ekind->tcstat);
 
             integrator->copyCoordinatesFromGpu(state->x.rvec_array());
             integrator->copyVelocitiesFromGpu(state->v.rvec_array());

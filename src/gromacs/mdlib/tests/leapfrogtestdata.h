@@ -107,14 +107,19 @@ class LeapFrogTestData
         //! Update data
         std::unique_ptr<Update> update_;
 
+        //! Number of temperature coupling groups
+        int                     numTCoupleGroups_;
+
+
         /*! \brief Constructor.
          *
-         * \param[in]  numAtoms  Number of atoms in the system
-         * \param[in]  timestep  Integration timestep
-         * \param[in]  v0        Initial velocity (same for all particles)
-         * \param[in]  f0        External constant force, acting on all particles
+         * \param[in]  numAtoms          Number of atoms in the system
+         * \param[in]  timestep          Integration timestep
+         * \param[in]  v0                Initial velocity (same for all particles)
+         * \param[in]  f0                External constant force, acting on all particles
+         * \param[in]  numTCoupleGroups  Number of temperature coupling groups (zero for no temperature coupling)
          */
-        LeapFrogTestData(int numAtoms, real timestep, const rvec v0, const rvec f0);
+        LeapFrogTestData(int numAtoms, real timestep, const rvec v0, const rvec f0, int numTCoupleGroups);
 
         ~LeapFrogTestData();
 };

@@ -37,13 +37,13 @@
  *
  *  The test creates a system of independent particles exerting constant
  *  external forces and makes several numerical integration timesteps.
- *  The results are compared with the analytical solution and with the
- *  pre-computed reference values. The tests use runners that are
- *  created for each available implementation of the tested algorithm.
+ *  The results are compared with the analytical solution (for the systems
+ *  without the temperature coupling) and with the pre-computed reference
+ *  values. The tests use runners that are created for each available
+ *  implementation of the tested algorithm.
  *
- * \todo Add tests for temperature and pressure controlled integrators.
+ * \todo Add tests for integrators with pressure control.
  * \todo Add PBC handling test.
- * \todo Reference values tests.
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  * \ingroup module_mdlib
@@ -91,6 +91,7 @@ namespace
  * 3. Number of steps
  * 4. Velocity components
  * 5. Force components
+ * 6. Number of temperature coupling groups
  */
 struct LeapFrogTestParameters
 {
@@ -104,19 +105,24 @@ struct LeapFrogTestParameters
     rvec v;
     //! Constant force
     rvec f;
+    //! Number of temperature coupling group (zero for no temperature coupling)
+    int  numTCoupleGroups;
 };
 
 //! The set of parameters combinations to run the test on
-const LeapFrogTestParameters parametersSets[] = {{  1, 0.001,    1, {0.0,  0.0, 0.0}, {0.0, 0.0, 0.0}  },  // Zero velocity and force
-                                                 {  1, 0.001,    1, {0.0,  0.0, 0.0}, {-3.0, 2.0, -1.0}},  // Zero velocity
-                                                 {  1, 0.001,    1, {1.0, -2.0, 3.0}, {0.0, 0.0, 0.0}  },  // Zero force
-                                                 {  1, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}},  // 1 particle
-                                                 { 10, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}},  // 10 particles
-                                                 {100, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}},  // 100 particles
-                                                 {300, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}},  // 300 particles
-                                                 {  1, 0.0005,   1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}},  // 0.0005 ps timestep
-                                                 {  1, 0.001,   10, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}},  // 10 step
-                                                 {  1, 0.001,  100, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}}}; // 100 steps
+const LeapFrogTestParameters parametersSets[] = {{  1, 0.001,    1, {0.0,  0.0, 0.0}, {0.0, 0.0, 0.0},  0},    // Zero velocity and force
+                                                 {  1, 0.001,    1, {0.0,  0.0, 0.0}, {-3.0, 2.0, -1.0}, 0},   // Zero velocity
+                                                 {  1, 0.001,    1, {1.0, -2.0, 3.0}, {0.0, 0.0, 0.0},  0},    // Zero force
+                                                 {  1, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 0},   // 1 particle
+                                                 { 10, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 0},   // 10 particles
+                                                 {100, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 0},   // 100 particles
+                                                 {300, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 0},   // 300 particles
+                                                 {  1, 0.0005,   1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 0},   // 0.0005 ps timestep
+                                                 {  1, 0.001,   10, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 0},   // 10 step
+                                                 {  1, 0.001,  100, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 0},   // 100 steps
+                                                 {100, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 1},   // 1 temperature couple group
+                                                 {100, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 2},   // 2 temperature couple groups
+                                                 {100, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 10}}; // 10 temperature couple groups
 
 
 /*! \brief Test fixture for LeapFrog integrator.
@@ -224,15 +230,15 @@ TEST_P(LeapFrogTest, SimpleIntegration)
 
         LeapFrogTestParameters parameters = GetParam();
 
-        std::string            testDescription = formatString("Testing %s with %d atoms for %d timestep (dt = %f, v0=(%f, %f, %f), f0=(%f, %f, %f))",
+        std::string            testDescription = formatString("Testing %s with %d atoms for %d timesteps with %d temperature coupling groups (dt = %f, v0=(%f, %f, %f), f0=(%f, %f, %f))",
                                                               runnerName.c_str(),
-                                                              parameters.numAtoms, parameters.numSteps, parameters.timestep,
+                                                              parameters.numAtoms, parameters.numSteps, parameters.numTCoupleGroups, parameters.timestep,
                                                               parameters.v[XX], parameters.v[YY], parameters.v[ZZ],
                                                               parameters.f[XX], parameters.f[YY], parameters.f[ZZ]);
         SCOPED_TRACE(testDescription);
 
         std::unique_ptr<LeapFrogTestData> testData =
-            std::make_unique<LeapFrogTestData>(parameters.numAtoms, parameters.timestep, parameters.v, parameters.f);
+            std::make_unique<LeapFrogTestData>(parameters.numAtoms, parameters.timestep, parameters.v, parameters.f, parameters.numTCoupleGroups);
 
         runner.second(testData.get(), parameters.numSteps);
 
@@ -242,7 +248,11 @@ TEST_P(LeapFrogTest, SimpleIntegration)
         //      the tolerance can be calculated.
         FloatingPointTolerance tolerance = absoluteTolerance(parameters.numSteps*0.000005);
 
-        testAgainstAnalyticalSolution(tolerance, *testData, totalTime);
+        // Test against the analytical solution (without temperature coupling)
+        if (parameters.numTCoupleGroups == 0)
+        {
+            testAgainstAnalyticalSolution(tolerance, *testData, totalTime);
+        }
 
         checker_.setDefaultTolerance(tolerance);
         testAgainstReferenceData(*testData);

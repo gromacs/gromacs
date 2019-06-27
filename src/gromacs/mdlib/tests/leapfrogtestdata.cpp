@@ -67,7 +67,7 @@ namespace gmx
 namespace test
 {
 
-LeapFrogTestData::LeapFrogTestData(int numAtoms, real timestep, const rvec v0, const rvec f0) :
+LeapFrogTestData::LeapFrogTestData(int numAtoms, real timestep, const rvec v0, const rvec f0, int numTCoupleGroups) :
     numAtoms_(numAtoms),
     timestep_(timestep),
     x0_(numAtoms),
@@ -77,7 +77,8 @@ LeapFrogTestData::LeapFrogTestData(int numAtoms, real timestep, const rvec v0, c
     v_(numAtoms),
     f_(numAtoms),
     inverseMasses_(numAtoms),
-    inverseMassesPerDim_(numAtoms)
+    inverseMassesPerDim_(numAtoms),
+    numTCoupleGroups_(numTCoupleGroups)
 {
     mdAtoms_.nr = numAtoms_;
 
@@ -109,10 +110,44 @@ LeapFrogTestData::LeapFrogTestData(int numAtoms, real timestep, const rvec v0, c
     mdAtoms_.invmass       = inverseMasses_.data();
     mdAtoms_.invMassPerDim = as_rvec_array(inverseMassesPerDim_.data());
 
+    // Temperature coupling
+    snew(mdAtoms_.cTC, numAtoms_);
+
+    // To do temperature coupling at each step
+    inputRecord_.nsttcouple = 1;
+
+    if (numTCoupleGroups_ == 0)
+    {
+        inputRecord_.etc = etcNO;
+        for (int i = 0; i < numAtoms_; i++)
+        {
+            mdAtoms_.cTC[i] = 0;
+        }
+        kineticEnergyData_.ngtc = 1;
+        t_grp_tcstat temperatureCouplingGroupData;
+        temperatureCouplingGroupData.lambda = 1.0;
+        kineticEnergyData_.tcstat.emplace_back(temperatureCouplingGroupData);
+    }
+    else
+    {
+        inputRecord_.etc = etcYES;
+        for (int i = 0; i < numAtoms_; i++)
+        {
+            mdAtoms_.cTC[i] = i % numTCoupleGroups_;
+        }
+        kineticEnergyData_.ngtc = numTCoupleGroups_;
+        for (int i = 0; i < numTCoupleGroups; i++)
+        {
+            real         tCoupleLambda = 1.0 - (i + 1.0)/10.0;
+            t_grp_tcstat temperatureCouplingGroupData;
+            temperatureCouplingGroupData.lambda = tCoupleLambda;
+            kineticEnergyData_.tcstat.emplace_back(temperatureCouplingGroupData);
+        }
+    }
+
     // Data needed for current CPU-based implementation
     inputRecord_.eI      = eiMD;
     inputRecord_.delta_t = timestep_;
-    inputRecord_.etc     = etcNO;
     inputRecord_.epc     = epcNO;
 
     state_.flags = 0;
@@ -131,9 +166,6 @@ LeapFrogTestData::LeapFrogTestData(int numAtoms, real timestep, const rvec v0, c
 
     kineticEnergyData_.bNEMD            = false;
     kineticEnergyData_.cosacc.cos_accel = 0.0;
-    t_grp_tcstat temperatureCouplingGroupData;
-    temperatureCouplingGroupData.lambda = 1;
-    kineticEnergyData_.tcstat.emplace_back(temperatureCouplingGroupData);
 
     kineticEnergyData_.nthreads = 1;
     snew(kineticEnergyData_.ekin_work_alloc, kineticEnergyData_.nthreads);
@@ -144,11 +176,6 @@ LeapFrogTestData::LeapFrogTestData(int numAtoms, real timestep, const rvec v0, c
     mdAtoms_.haveVsites               = false;
     mdAtoms_.havePartiallyFrozenAtoms = false;
     mdAtoms_.cFREEZE                  = nullptr;
-    snew(mdAtoms_.cTC, numAtoms_);
-    for (int i = 0; i < numAtoms_; i++)
-    {
-        mdAtoms_.cTC[i] = 0;
-    }
 
     prVScalingMatrix_[XX][XX] = 1.0;
     prVScalingMatrix_[XX][YY] = 0.0;

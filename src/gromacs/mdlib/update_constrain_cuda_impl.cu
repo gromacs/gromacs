@@ -63,27 +63,26 @@
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/leapfrog_cuda.cuh"
 #include "gromacs/mdlib/lincs_cuda.cuh"
 #include "gromacs/mdlib/settle_cuda.cuh"
 #include "gromacs/mdlib/update_constrain_cuda.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
 
 namespace gmx
 {
 
-void UpdateConstrainCuda::Impl::integrate(const real  dt,
-                                          const bool  updateVelocities,
-                                          const bool  computeVirial,
-                                          tensor      virial)
+void UpdateConstrainCuda::Impl::integrate(const real                        dt,
+                                          const bool                        updateVelocities,
+                                          const bool                        computeVirial,
+                                          tensor                            virial,
+                                          const bool                        doTempCouple,
+                                          gmx::ArrayRef<const t_grp_tcstat> tcstat)
 {
     // Clearing virial matrix
-    // TODO There is no point in having saparate virial matrix for constraints
+    // TODO There is no point in having separate virial matrix for constraints
     clear_mat(virial);
 
-    integrator_->integrate(d_x_, d_xp_, d_v_, d_f_, dt);
+    integrator_->integrate(d_x_, d_xp_, d_v_, d_f_, dt, doTempCouple, tcstat);
     lincsCuda_->apply(d_x_, d_xp_,
                       updateVelocities, d_v_, 1.0/dt,
                       computeVirial, virial);
@@ -120,8 +119,9 @@ UpdateConstrainCuda::Impl::~Impl()
 {
 }
 
-void UpdateConstrainCuda::Impl::set(const t_idef      &idef,
-                                    const t_mdatoms   &md)
+void UpdateConstrainCuda::Impl::set(const t_idef    &idef,
+                                    const t_mdatoms &md,
+                                    const int        numTempScaleValues)
 {
     numAtoms_ = md.nr;
 
@@ -134,7 +134,7 @@ void UpdateConstrainCuda::Impl::set(const t_idef      &idef,
                            &numInverseMasses_, &numInverseMassesAlloc_, nullptr);
 
     // Integrator should also update something, but it does not even have a method yet
-    integrator_->set(md);
+    integrator_->set(md, numTempScaleValues, md.cTC);
     lincsCuda_->set(idef, md);
     settleCuda_->set(idef, md);
 }
@@ -194,18 +194,21 @@ UpdateConstrainCuda::UpdateConstrainCuda(const t_inputrec  &ir,
 
 UpdateConstrainCuda::~UpdateConstrainCuda() = default;
 
-void UpdateConstrainCuda::integrate(const real  dt,
-                                    const bool  updateVelocities,
-                                    const bool  computeVirial,
-                                    tensor      virialScaled)
+void UpdateConstrainCuda::integrate(const real                        dt,
+                                    const bool                        updateVelocities,
+                                    const bool                        computeVirial,
+                                    tensor                            virialScaled,
+                                    const bool                        doTempCouple,
+                                    gmx::ArrayRef<const t_grp_tcstat> tcstat)
 {
-    impl_->integrate(dt, updateVelocities, computeVirial, virialScaled);
+    impl_->integrate(dt, updateVelocities, computeVirial, virialScaled, doTempCouple, tcstat);
 }
 
-void UpdateConstrainCuda::set(const t_idef               &idef,
-                              const t_mdatoms gmx_unused &md)
+void UpdateConstrainCuda::set(const t_idef    &idef,
+                              const t_mdatoms &md,
+                              const int        numTempScaleValues)
 {
-    impl_->set(idef, md);
+    impl_->set(idef, md, numTempScaleValues);
 }
 
 void UpdateConstrainCuda::setPbc(const t_pbc *pbc)

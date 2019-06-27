@@ -64,16 +64,19 @@ UpdateConstrainCuda::UpdateConstrainCuda(gmx_unused const t_inputrec     &ir,
 
 UpdateConstrainCuda::~UpdateConstrainCuda() = default;
 
-void UpdateConstrainCuda::integrate(gmx_unused const real  dt,
-                                    gmx_unused const bool  updateVelocities,
-                                    gmx_unused const bool  computeVirial,
-                                    gmx_unused tensor      virialScaled)
+void UpdateConstrainCuda::integrate(gmx_unused const real                        dt,
+                                    gmx_unused const bool                        updateVelocities,
+                                    gmx_unused const bool                        computeVirial,
+                                    gmx_unused tensor                            virialScaled,
+                                    gmx_unused const bool                        doTempCouple,
+                                    gmx_unused gmx::ArrayRef<const t_grp_tcstat> tcstat)
 {
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
 }
 
 void UpdateConstrainCuda::set(gmx_unused const t_idef     &idef,
-                              gmx_unused const t_mdatoms  &md)
+                              gmx_unused const t_mdatoms  &md,
+                              gmx_unused const int         numTempScaleValues)
 {
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
 }
