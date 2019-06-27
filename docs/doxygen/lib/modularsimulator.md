@@ -421,3 +421,17 @@ responsible to write energy data to trajectory.
 The EnergyElement offers an interface to add virial contributions,
 but also allows access to the raw pointers to tensor data, the
 dipole vector, and the legacy energy data structures.
+
+### `TopologyHolder`
+The topology object owns the local topology and holds a constant reference
+to the global topology owned by the ISimulator.
+
+The local topology is only infrequently changed if domain decomposition is
+on, and never otherwise. The topology holder therefore offers elements to register
+as ITopologyHolderClients. If they do so, they get a handle to the updated local 
+topology whenever it is changed, and can rely that their handle is valid 
+until the next update. The domain decomposition element is defined as friend 
+class to be able to update the local topology when needed.
+
+The topology holder is not a `ISimulatorElement`, i.e. it does not take part in the
+simulator loop.

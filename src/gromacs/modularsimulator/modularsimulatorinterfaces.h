@@ -59,6 +59,7 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+struct gmx_localtop_t;
 struct gmx_mdoutf;
 
 namespace gmx
@@ -315,6 +316,26 @@ class ITrajectoryWriterClient
         //! Return callback to TrajectoryElement
         virtual ITrajectoryWriterCallbackPtr
             registerTrajectoryWriterCallback(TrajectoryEvent) = 0;
+};
+
+/*! \libinternal
+ * \brief Client requiring read access to the local topology
+ *
+ */
+class ITopologyHolderClient
+{
+    public:
+        //! @cond
+        // (doxygen doesn't like these...)
+        //! Allow Topology to set new topology
+        friend class TopologyHolder;
+        //! @endcond
+        //! Standard virtual destructor
+        virtual ~ITopologyHolderClient() = default;
+
+    protected:
+        //! Pass pointer to new local topology
+        virtual void setTopology(const gmx_localtop_t*) = 0;
 };
 
 //! /}
