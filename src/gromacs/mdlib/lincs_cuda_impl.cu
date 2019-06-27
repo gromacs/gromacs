@@ -565,7 +565,8 @@ LincsCuda::Impl::Impl(int numIterations,
     h_virialScaled_.resize(6);
 
     // The data arrays should be expanded/reallocated on first call of set() function.
-    maxConstraintsNumberSoFar_ = 0;
+    numConstraintsThreadsAlloc_ = 0;
+    numAtomsAlloc_              = 0;
     // Use default stream.
     // TODO The stream should/can be assigned by the GPU schedule when the code will be integrated.
     stream_ = nullptr;
@@ -576,10 +577,8 @@ LincsCuda::Impl::~Impl()
 {
     freeDeviceBuffer(&kernelParams_.d_virialScaled);
 
-    if (maxConstraintsNumberSoFar_ > 0)
+    if (numConstraintsThreadsAlloc_ > 0)
     {
-        freeDeviceBuffer(&kernelParams_.d_inverseMasses);
-
         freeDeviceBuffer(&kernelParams_.d_constraints);
         freeDeviceBuffer(&kernelParams_.d_constraintsTargetLengths);
 
@@ -587,6 +586,10 @@ LincsCuda::Impl::~Impl()
         freeDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices);
         freeDeviceBuffer(&kernelParams_.d_massFactors);
         freeDeviceBuffer(&kernelParams_.d_matrixA);
+    }
+    if (numAtomsAlloc_ > 0)
+    {
+        freeDeviceBuffer(&kernelParams_.d_inverseMasses);
     }
 }
 
@@ -812,13 +815,11 @@ void LincsCuda::Impl::set(const t_idef    &idef,
     }
 
     // (Re)allocate the memory, if the number of constraints has increased.
-    if (numConstraints > maxConstraintsNumberSoFar_)
+    if (kernelParams_.numConstraintsThreads > numConstraintsThreadsAlloc_)
     {
         // Free memory if it was allocated before (i.e. if not the first time here).
-        if (maxConstraintsNumberSoFar_ > 0)
+        if (numConstraintsThreadsAlloc_ > 0)
         {
-            freeDeviceBuffer(&kernelParams_.d_inverseMasses);
-
             freeDeviceBuffer(&kernelParams_.d_constraints);
             freeDeviceBuffer(&kernelParams_.d_constraintsTargetLengths);
 
@@ -828,11 +829,8 @@ void LincsCuda::Impl::set(const t_idef    &idef,
             freeDeviceBuffer(&kernelParams_.d_matrixA);
 
         }
-        maxConstraintsNumberSoFar_ = numConstraints;
 
-        // TODO: The masses should be reallocated when numAtoms change, not when number of constraints change.
-        //       Will be needed for domain decomposition support.
-        allocateDeviceBuffer(&kernelParams_.d_inverseMasses, numAtoms, nullptr);
+        numConstraintsThreadsAlloc_ = kernelParams_.numConstraintsThreads;
 
         allocateDeviceBuffer(&kernelParams_.d_constraints, kernelParams_.numConstraintsThreads, nullptr);
         allocateDeviceBuffer(&kernelParams_.d_constraintsTargetLengths, kernelParams_.numConstraintsThreads, nullptr);
@@ -842,6 +840,17 @@ void LincsCuda::Impl::set(const t_idef    &idef,
         allocateDeviceBuffer(&kernelParams_.d_massFactors, maxCoupledConstraints*kernelParams_.numConstraintsThreads, nullptr);
         allocateDeviceBuffer(&kernelParams_.d_matrixA, maxCoupledConstraints*kernelParams_.numConstraintsThreads, nullptr);
 
+    }
+
+    // (Re)allocate the memory, if the number of atoms has increased.
+    if (numAtoms > numAtomsAlloc_)
+    {
+        if (numAtomsAlloc_ > 0)
+        {
+            freeDeviceBuffer(&kernelParams_.d_inverseMasses);
+        }
+        numAtomsAlloc_ = numAtoms;
+        allocateDeviceBuffer(&kernelParams_.d_inverseMasses, numAtoms, nullptr);
     }
 
     // Copy data to GPU.

@@ -218,12 +218,19 @@ class LincsCuda::Impl
         //! Scaled virial tensor (6 floats: [XX, XY, XZ, YY, YZ, ZZ])
         std::vector<float>        h_virialScaled_;
 
-        /*! \brief Maximum total of constraints assigned to this class so far.
+        /*! \brief Maximum total number of constraints so far.
          *
          * If the new number of constraints is larger then previous maximum, the GPU data arrays are
          * reallocated.
          */
-        int                       maxConstraintsNumberSoFar_;
+        int                       numConstraintsThreadsAlloc_;
+
+        /*! \brief Maximum total number of atoms so far.
+         *
+         * If the new number of atoms is larger then previous maximum, the GPU array with masses is
+         * reallocated.
+         */
+        int                       numAtomsAlloc_;
 
 };
 
