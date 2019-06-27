@@ -591,7 +591,7 @@ static void new_status(const char*                           topfile,
     /* TOPOLOGY processing */
     sys->name = do_top(bVerbose, topfile, topppfile, opts, bZero, &(sys->symtab), interactions,
                        comb, reppow, fudgeQQ, atypes, mi, intermolecular_interactions, ir,
-                       &molblock, &ffParametrizedWithHBondConstraints, wi);
+                       &molblock, &ffParametrizedWithHBondConstraints, wi, logger);
 
     sys->molblock.clear();
 
@@ -749,9 +749,9 @@ static void new_status(const char*                           topfile,
             GMX_LOG(logger.info).asParagraph().appendTextFormatted("Setting gen_seed to %d", opts->seed);
         }
         state->flags |= (1 << estV);
-        maxwell_speed(opts->tempi, opts->seed, sys, state->v.rvec_array());
+        maxwell_speed(opts->tempi, opts->seed, sys, state->v.rvec_array(), logger);
 
-        stop_cm(stdout, state->natoms, mass, state->x.rvec_array(), state->v.rvec_array());
+        stop_cm(logger, state->natoms, mass, state->x.rvec_array(), state->v.rvec_array());
         sfree(mass);
     }
 }
@@ -1919,7 +1919,7 @@ int gmx_grompp(int argc, char* argv[])
     /* set parameters for virtual site construction (not for vsiten) */
     for (size_t mt = 0; mt < sys.moltype.size(); mt++)
     {
-        nvsite += set_vsites(bVerbose, &sys.moltype[mt].atoms, &atypes, mi[mt].interactions);
+        nvsite += set_vsites(bVerbose, &sys.moltype[mt].atoms, &atypes, mi[mt].interactions, logger);
     }
     /* now throw away all obsolete bonds, angles and dihedrals: */
     /* note: constraints are ALWAYS removed */
@@ -1927,7 +1927,7 @@ int gmx_grompp(int argc, char* argv[])
     {
         for (size_t mt = 0; mt < sys.moltype.size(); mt++)
         {
-            clean_vsite_bondeds(mi[mt].interactions, sys.moltype[mt].atoms.nr, bRmVSBds);
+            clean_vsite_bondeds(mi[mt].interactions, sys.moltype[mt].atoms.nr, bRmVSBds, logger);
         }
     }
 
@@ -2079,7 +2079,7 @@ int gmx_grompp(int argc, char* argv[])
     /* set ptype to VSite for virtual sites */
     for (gmx_moltype_t& moltype : sys.moltype)
     {
-        set_vsites_ptype(FALSE, &moltype);
+        set_vsites_ptype(FALSE, &moltype, logger);
     }
     if (debug)
     {
@@ -2225,7 +2225,7 @@ int gmx_grompp(int argc, char* argv[])
     /* make exclusions between QM atoms and remove charges if needed */
     if (ir->bQMMM)
     {
-        generate_qmexcl(&sys, ir, wi, GmxQmmmMode::GMX_QMMM_ORIGINAL);
+        generate_qmexcl(&sys, ir, wi, GmxQmmmMode::GMX_QMMM_ORIGINAL, logger);
         if (ir->QMMMscheme != eQMMMschemeoniom)
         {
             std::vector<int> qmmmAtoms = qmmmAtomIndices(*ir, sys);
@@ -2235,7 +2235,7 @@ int gmx_grompp(int argc, char* argv[])
 
     if (ir->eI == eiMimic)
     {
-        generate_qmexcl(&sys, ir, wi, GmxQmmmMode::GMX_QMMM_MIMIC);
+        generate_qmexcl(&sys, ir, wi, GmxQmmmMode::GMX_QMMM_MIMIC, logger);
     }
 
     if (ftp2bSet(efTRN, NFILE, fnm))

@@ -60,6 +60,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
@@ -639,7 +640,8 @@ static bool calc_vsite3out_param(PreprocessingAtomTypes*                     aty
 
 static bool calc_vsite4fd_param(InteractionOfType*                          vsite,
                                 gmx::ArrayRef<const VsiteBondedInteraction> bonds,
-                                gmx::ArrayRef<const VsiteBondedInteraction> angles)
+                                gmx::ArrayRef<const VsiteBondedInteraction> angles,
+                                const gmx::MDLogger&                        logger)
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j-m
@@ -671,8 +673,11 @@ static bool calc_vsite4fd_param(InteractionOfType*                          vsit
         cosakm = (std::cos(akjm) - std::cos(aijk) * std::cos(aijm)) / (std::sin(aijk) * std::sin(aijm));
         if (cosakl < -1 || cosakl > 1 || cosakm < -1 || cosakm > 1)
         {
-            fprintf(stderr, "virtual site %d: angle ijk = %f, angle ijl = %f, angle ijm = %f\n",
-                    vsite->ai() + 1, RAD2DEG * aijk, RAD2DEG * aijl, RAD2DEG * aijm);
+            GMX_LOG(logger.warning)
+                    .asParagraph()
+                    .appendTextFormatted(
+                            "virtual site %d: angle ijk = %f, angle ijl = %f, angle ijm = %f",
+                            vsite->ai() + 1, RAD2DEG * aijk, RAD2DEG * aijl, RAD2DEG * aijm);
             gmx_fatal(FARGS,
                       "invalid construction in calc_vsite4fd for atom %d: "
                       "cosakl=%f, cosakm=%f\n",
@@ -696,7 +701,8 @@ static bool calc_vsite4fd_param(InteractionOfType*                          vsit
 
 static bool calc_vsite4fdn_param(InteractionOfType*                          vsite,
                                  gmx::ArrayRef<const VsiteBondedInteraction> bonds,
-                                 gmx::ArrayRef<const VsiteBondedInteraction> angles)
+                                 gmx::ArrayRef<const VsiteBondedInteraction> angles,
+                                 const gmx::MDLogger&                        logger)
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j-m
@@ -732,8 +738,11 @@ static bool calc_vsite4fdn_param(InteractionOfType*                          vsi
 
         if (fabs(pl) < 1000 * GMX_REAL_MIN || fabs(pm) < 1000 * GMX_REAL_MIN)
         {
-            fprintf(stderr, "virtual site %d: angle ijk = %f, angle ijl = %f, angle ijm = %f\n",
-                    vsite->ai() + 1, RAD2DEG * aijk, RAD2DEG * aijl, RAD2DEG * aijm);
+            GMX_LOG(logger.warning)
+                    .asParagraph()
+                    .appendTextFormatted(
+                            "virtual site %d: angle ijk = %f, angle ijl = %f, angle ijm = %f",
+                            vsite->ai() + 1, RAD2DEG * aijk, RAD2DEG * aijl, RAD2DEG * aijm);
             gmx_fatal(FARGS,
                       "invalid construction in calc_vsite4fdn for atom %d: "
                       "pl=%f, pm=%f\n",
@@ -752,7 +761,11 @@ static bool calc_vsite4fdn_param(InteractionOfType*                          vsi
 }
 
 
-int set_vsites(bool bVerbose, t_atoms* atoms, PreprocessingAtomTypes* atypes, gmx::ArrayRef<InteractionsOfType> plist)
+int set_vsites(bool                              bVerbose,
+               t_atoms*                          atoms,
+               PreprocessingAtomTypes*           atypes,
+               gmx::ArrayRef<InteractionsOfType> plist,
+               const gmx::MDLogger&              logger)
 {
     int  ftype;
     int  nvsite, nrset;
@@ -797,7 +810,9 @@ int set_vsites(bool bVerbose, t_atoms* atoms, PreprocessingAtomTypes* atypes, gm
                 {
                     if (bVerbose && bFirst)
                     {
-                        fprintf(stderr, "Calculating parameters for virtual sites\n");
+                        GMX_LOG(logger.info)
+                                .asParagraph()
+                                .appendTextFormatted("Calculating parameters for virtual sites");
                         bFirst = FALSE;
                     }
 
@@ -836,11 +851,11 @@ int set_vsites(bool bVerbose, t_atoms* atoms, PreprocessingAtomTypes* atypes, gm
                             break;
                         case F_VSITE4FD:
                             bERROR = calc_vsite4fd_param(&param, allVsiteBondeds.bonds,
-                                                         allVsiteBondeds.angles);
+                                                         allVsiteBondeds.angles, logger);
                             break;
                         case F_VSITE4FDN:
                             bERROR = calc_vsite4fdn_param(&param, allVsiteBondeds.bonds,
-                                                          allVsiteBondeds.angles);
+                                                          allVsiteBondeds.angles, logger);
                             break;
                         default:
                             gmx_fatal(FARGS,
@@ -864,13 +879,15 @@ int set_vsites(bool bVerbose, t_atoms* atoms, PreprocessingAtomTypes* atypes, gm
     return nvsite;
 }
 
-void set_vsites_ptype(bool bVerbose, gmx_moltype_t* molt)
+void set_vsites_ptype(bool bVerbose, gmx_moltype_t* molt, const gmx::MDLogger& logger)
 {
     int ftype, i;
 
     if (bVerbose)
     {
-        fprintf(stderr, "Setting particle type to V for virtual sites\n");
+        GMX_LOG(logger.info)
+                .asParagraph()
+                .appendTextFormatted("Setting particle type to V for virtual sites");
     }
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
@@ -883,8 +900,10 @@ void set_vsites_ptype(bool bVerbose, gmx_moltype_t* molt)
 
             if (debug && nrd)
             {
-                fprintf(stderr, "doing %d %s virtual sites\n", (nrd / (nra + 1)),
-                        interaction_function[ftype].longname);
+                GMX_LOG(logger.info)
+                        .asParagraph()
+                        .appendTextFormatted("doing %d %s virtual sites", (nrd / (nra + 1)),
+                                             interaction_function[ftype].longname);
             }
 
             for (i = 0; (i < nrd);)
@@ -928,7 +947,10 @@ private:
     int interactionIndex_;
 };
 
-static void check_vsite_constraints(gmx::ArrayRef<InteractionsOfType> plist, int cftype, const int vsite_type[])
+static void check_vsite_constraints(gmx::ArrayRef<InteractionsOfType> plist,
+                                    int                               cftype,
+                                    const int                         vsite_type[],
+                                    const gmx::MDLogger&              logger)
 {
     int n = 0;
     for (const auto& param : plist[cftype].interactionTypes)
@@ -939,8 +961,11 @@ static void check_vsite_constraints(gmx::ArrayRef<InteractionsOfType> plist, int
             int atom = atoms[k];
             if (vsite_type[atom] != NOTSET)
             {
-                fprintf(stderr, "ERROR: Cannot have constraint (%d-%d) with virtual site (%d)\n",
-                        param.ai() + 1, param.aj() + 1, atom + 1);
+                GMX_LOG(logger.info)
+                        .asParagraph()
+                        .appendTextFormatted(
+                                "ERROR: Cannot have constraint (%d-%d) with virtual site (%d)",
+                                param.ai() + 1, param.aj() + 1, atom + 1);
                 n++;
             }
         }
@@ -954,7 +979,8 @@ static void check_vsite_constraints(gmx::ArrayRef<InteractionsOfType> plist, int
 static void clean_vsite_bonds(gmx::ArrayRef<InteractionsOfType>     plist,
                               gmx::ArrayRef<const VsiteAtomMapping> pindex,
                               int                                   cftype,
-                              const int                             vsite_type[])
+                              const int                             vsite_type[],
+                              const gmx::MDLogger&                  logger)
 {
     int                 ftype, nOut;
     int                 nconverted, nremoved;
@@ -1167,23 +1193,31 @@ static void clean_vsite_bonds(gmx::ArrayRef<InteractionsOfType>     plist,
 
     if (nremoved)
     {
-        fprintf(stderr, "Removed   %4d %15ss with virtual sites, %zu left\n", nremoved,
-                interaction_function[cftype].longname, ps->size());
+        GMX_LOG(logger.info)
+                .asParagraph()
+                .appendTextFormatted("Removed   %4d %15ss with virtual sites, %zu left", nremoved,
+                                     interaction_function[cftype].longname, ps->size());
     }
     if (nconverted)
     {
-        fprintf(stderr, "Converted %4d %15ss with virtual sites to connections, %zu left\n",
-                nconverted, interaction_function[cftype].longname, ps->size());
+        GMX_LOG(logger.info)
+                .asParagraph()
+                .appendTextFormatted(
+                        "Converted %4d %15ss with virtual sites to connections, %zu left",
+                        nconverted, interaction_function[cftype].longname, ps->size());
     }
     if (nOut)
     {
-        fprintf(stderr,
-                "Warning: removed %d %ss with vsite with %s construction\n"
-                "         This vsite construction does not guarantee constant "
-                "bond-length\n"
-                "         If the constructions were generated by pdb2gmx ignore "
-                "this warning\n",
-                nOut, interaction_function[cftype].longname, interaction_function[F_VSITE3OUT].longname);
+        GMX_LOG(logger.info)
+                .asParagraph()
+                .appendTextFormatted(
+                        "Warning: removed %d %ss with vsite with %s construction\n"
+                        "         This vsite construction does not guarantee constant "
+                        "bond-length\n"
+                        "         If the constructions were generated by pdb2gmx ignore "
+                        "this warning",
+                        nOut, interaction_function[cftype].longname,
+                        interaction_function[F_VSITE3OUT].longname);
     }
 }
 
@@ -1191,7 +1225,8 @@ static void clean_vsite_angles(gmx::ArrayRef<InteractionsOfType>         plist,
                                gmx::ArrayRef<VsiteAtomMapping>           pindex,
                                int                                       cftype,
                                const int                                 vsite_type[],
-                               gmx::ArrayRef<const Atom2VsiteConnection> at2vc)
+                               gmx::ArrayRef<const Atom2VsiteConnection> at2vc,
+                               const gmx::MDLogger&                      logger)
 {
     int                 atom, at1, at2;
     InteractionsOfType* ps;
@@ -1333,15 +1368,19 @@ static void clean_vsite_angles(gmx::ArrayRef<InteractionsOfType>         plist,
 
     if (oldSize != gmx::ssize(*ps))
     {
-        fprintf(stderr, "Removed   %4zu %15ss with virtual sites, %zu left\n", oldSize - ps->size(),
-                interaction_function[cftype].longname, ps->size());
+        GMX_LOG(logger.info)
+                .asParagraph()
+                .appendTextFormatted("Removed   %4zu %15ss with virtual sites, %zu left",
+                                     oldSize - ps->size(), interaction_function[cftype].longname,
+                                     ps->size());
     }
 }
 
 static void clean_vsite_dihs(gmx::ArrayRef<InteractionsOfType>     plist,
                              gmx::ArrayRef<const VsiteAtomMapping> pindex,
                              int                                   cftype,
-                             const int                             vsite_type[])
+                             const int                             vsite_type[],
+                             const gmx::MDLogger&                  logger)
 {
     InteractionsOfType* ps;
 
@@ -1460,13 +1499,19 @@ static void clean_vsite_dihs(gmx::ArrayRef<InteractionsOfType>     plist,
 
     if (oldSize != gmx::ssize(*ps))
     {
-        fprintf(stderr, "Removed   %4zu %15ss with virtual sites, %zu left\n", oldSize - ps->size(),
-                interaction_function[cftype].longname, ps->size());
+        GMX_LOG(logger.info)
+                .asParagraph()
+                .appendTextFormatted("Removed   %4zu %15ss with virtual sites, %zu left",
+                                     oldSize - ps->size(), interaction_function[cftype].longname,
+                                     ps->size());
     }
 }
 
 // TODO use gmx::compat::optional for pindex.
-void clean_vsite_bondeds(gmx::ArrayRef<InteractionsOfType> plist, int natoms, bool bRmVSiteBds)
+void clean_vsite_bondeds(gmx::ArrayRef<InteractionsOfType> plist,
+                         int                               natoms,
+                         bool                              bRmVSiteBds,
+                         const gmx::MDLogger&              logger)
 {
     int                               nvsite, vsite;
     int*                              vsite_type;
@@ -1515,8 +1560,10 @@ void clean_vsite_bondeds(gmx::ArrayRef<InteractionsOfType> plist, int natoms, bo
     /* the rest only if we have virtual sites: */
     if (nvsite)
     {
-        fprintf(stderr, "Cleaning up constraints %swith virtual sites\n",
-                bRmVSiteBds ? "and constant bonded interactions " : "");
+        GMX_LOG(logger.info)
+                .asParagraph()
+                .appendTextFormatted("Cleaning up constraints %swith virtual sites",
+                                     bRmVSiteBds ? "and constant bonded interactions " : "");
 
         /* Make a reverse list to avoid ninteractions^2 operations */
         at2vc = make_at2vsitecon(natoms, plist);
@@ -1554,15 +1601,15 @@ void clean_vsite_bondeds(gmx::ArrayRef<InteractionsOfType> plist, int natoms, bo
             {
                 if (interaction_function[ftype].flags & (IF_BTYPE | IF_CONSTRAINT))
                 {
-                    clean_vsite_bonds(plist, pindex, ftype, vsite_type);
+                    clean_vsite_bonds(plist, pindex, ftype, vsite_type, logger);
                 }
                 else if (interaction_function[ftype].flags & IF_ATYPE)
                 {
-                    clean_vsite_angles(plist, pindex, ftype, vsite_type, at2vc);
+                    clean_vsite_angles(plist, pindex, ftype, vsite_type, at2vc, logger);
                 }
                 else if ((ftype == F_PDIHS) || (ftype == F_IDIHS))
                 {
-                    clean_vsite_dihs(plist, pindex, ftype, vsite_type);
+                    clean_vsite_dihs(plist, pindex, ftype, vsite_type, logger);
                 }
             }
         }
@@ -1571,7 +1618,7 @@ void clean_vsite_bondeds(gmx::ArrayRef<InteractionsOfType> plist, int natoms, bo
         {
             if (interaction_function[ftype].flags & IF_CONSTRAINT)
             {
-                check_vsite_constraints(plist, ftype, vsite_type);
+                check_vsite_constraints(plist, ftype, vsite_type, logger);
             }
         }
     }
