@@ -303,4 +303,15 @@ void berendsen_pscale(const t_inputrec *ir, const matrix mu,
 void pleaseCiteCouplingAlgorithms(FILE             *fplog,
                                   const t_inputrec &ir);
 
+/*! \brief Computes the atom range for a thread to operate on, ensuring SIMD aligned ranges
+ *
+ * \param[in]  numThreads   The number of threads to divide atoms over
+ * \param[in]  threadIndex  The thread to get the range for
+ * \param[in]  numAtoms     The total number of atoms (on this rank)
+ * \param[out] startAtom    The start of the atom range
+ * \param[out] endAtom      The end of the atom range, note that this is in general not a multiple of the SIMD width
+ */
+void getThreadAtomRange(int numThreads, int threadIndex, int numAtoms,
+                        int *startAtom, int *endAtom);
+
 #endif

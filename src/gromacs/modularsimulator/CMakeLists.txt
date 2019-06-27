@@ -37,6 +37,12 @@ file(GLOB MODULARSIMULATOR_SOURCES *.cpp)
 add_library(modularsimulator OBJECT ${MODULARSIMULATOR_SOURCES})
 gmx_target_compile_options(modularsimulator)
 target_compile_definitions(modularsimulator PRIVATE HAVE_CONFIG_H)
+target_include_directories(modularsimulator SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
+
+if(GMX_OPENMP)
+    # Explicitly set properties for modular simulator module to compile with openmp
+    set_target_properties(modularsimulator PROPERTIES COMPILE_OPTIONS $<TARGET_PROPERTY:OpenMP::OpenMP_CXX,INTERFACE_COMPILE_OPTIONS>)
+endif()
 
 list(APPEND libgromacs_object_library_dependencies modularsimulator)
 set(libgromacs_object_library_dependencies ${libgromacs_object_library_dependencies} PARENT_SCOPE)

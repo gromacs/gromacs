@@ -1389,16 +1389,8 @@ void update_tcouple(int64_t           step,
     }
 }
 
-/*! \brief Computes the atom range for a thread to operate on, ensured SIMD aligned ranges
- *
- * \param[in]  numThreads   The number of threads to divide atoms over
- * \param[in]  threadIndex  The thread to get the range for
- * \param[in]  numAtoms     The total number of atoms (on this rank)
- * \param[out] startAtom    The start of the atom range
- * \param[out] endAtom      The end of the atom range, note that this is in general not a multiple of the SIMD width
- */
-static void getThreadAtomRange(int numThreads, int threadIndex, int numAtoms,
-                               int *startAtom, int *endAtom)
+void getThreadAtomRange(int numThreads, int threadIndex, int numAtoms,
+                        int *startAtom, int *endAtom)
 {
 #if GMX_HAVE_SIMD_UPDATE
     constexpr int blockSize = GMX_SIMD_REAL_WIDTH;

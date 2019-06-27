@@ -144,15 +144,15 @@ int mdoutf_get_tng_compressed_box_output_interval(gmx_mdoutf_t of);
  */
 int mdoutf_get_tng_compressed_lambda_output_interval(gmx_mdoutf_t of);
 
-#define MDOF_X                 (1<<0)
-#define MDOF_V                 (1<<1)
-#define MDOF_F                 (1<<2)
-#define MDOF_X_COMPRESSED      (1<<3)
-#define MDOF_CPT               (1<<4)
-#define MDOF_IMD               (1<<5)
-#define MDOF_BOX               (1<<6)
-#define MDOF_LAMBDA            (1<<7)
-#define MDOF_BOX_COMPRESSED    (1<<8)
-#define MDOF_LAMBDA_COMPRESSED (1<<9)
+#define MDOF_X                 (1u<<0u)
+#define MDOF_V                 (1u<<1u)
+#define MDOF_F                 (1u<<2u)
+#define MDOF_X_COMPRESSED      (1u<<3u)
+#define MDOF_CPT               (1u<<4u)
+#define MDOF_IMD               (1u<<5u)
+#define MDOF_BOX               (1u<<6u)
+#define MDOF_LAMBDA            (1u<<7u)
+#define MDOF_BOX_COMPRESSED    (1u<<8u)
+#define MDOF_LAMBDA_COMPRESSED (1u<<9u)
 
 #endif
