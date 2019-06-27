@@ -41,6 +41,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <random>
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
@@ -612,22 +613,18 @@ static void removeExtraSolventMolecules(t_atoms *atoms, std::vector<RVec> *x,
                                         std::vector<RVec> *v,
                                         int numberToRemove)
 {
-    gmx::AtomsRemover remover(*atoms);
-    // TODO: It might be nicer to remove a random set of residues, but
-    // in practice this should give a roughly uniform spatial distribution.
-    const int stride = atoms->nr / numberToRemove;
-    for (int i = 0; i < numberToRemove; ++i)
+    gmx::AtomsRemover               remover(*atoms);
+    std::random_device              rd;
+    std::mt19937                    randomNumberGenerator(rd());
+    std::uniform_int_distribution<> randomDistribution(0, atoms->nr - 1);
+    while (numberToRemove > 0)
     {
-        int atomIndex = (i+1)*stride - 1;
-        while (remover.isMarked(atomIndex))
+        int atomIndex = randomDistribution(randomNumberGenerator);
+        if (!remover.isMarked(atomIndex))
         {
-            ++atomIndex;
-            if (atomIndex == atoms->nr)
-            {
-                atomIndex = 0;
-            }
+            remover.markResidue(*atoms, atomIndex, true);
+            numberToRemove--;
         }
-        remover.markResidue(*atoms, atomIndex, true);
     }
     remover.removeMarkedElements(x);
     if (!v->empty())
