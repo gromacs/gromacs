@@ -298,6 +298,12 @@ struct gmx_nbnxn_ocl_t
                                                    non-local force calculations are done
                                                    (e.g. f buffer 0-ing, local x/q H2D) */
 
+    //! True if there has been local/nonlocal GPU work, either bonded or nonbonded, scheduled
+    //  to be executed in the current domain. As long as bonded work is not split up into
+    //  local/nonlocal, if there is bonded GPU work, both flags will be true.
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, bool> haveWork;
+
+
     cl_bool                           bDoTime;  /**< True if event-based timing is enabled.                     */
     cl_timers_t                      *timers;   /**< OpenCL event-based timers.                                 */
     struct gmx_wallclock_gpu_nbnxn_t *timings;  /**< Timing data. TODO: deprecate this and query timers for accumulated data instead */

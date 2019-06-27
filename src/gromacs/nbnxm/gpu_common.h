@@ -56,6 +56,7 @@
 #endif
 
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/listed_forces/gpubonded.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/nbnxm/nbnxm.h"
@@ -66,6 +67,11 @@
 
 #include "gpu_common_utils.h"
 #include "nbnxm_gpu.h"
+
+namespace gmx
+{
+class GpuBonded;
+}
 
 namespace Nbnxm
 {
@@ -116,6 +122,49 @@ gpuAtomToInteractionLocality(const AtomLocality atomLocality)
         gmx_incons("Wrong locality");
     }
 }
+
+
+void
+setupGpuShortRangeWork(gmx_nbnxn_gpu_t                  *nb,
+                       const gmx::GpuBonded             *gpuBonded,
+                       const Nbnxm::InteractionLocality  iLocality)
+{
+    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+
+    // There is short-range work if the pair list for the provided
+    // interaction locality contains entries or if there is any
+    // bonded work (as this is not split into local/nonlocal).
+    nb->haveWork[iLocality] =
+        ((nb->plist[iLocality]->nsci != 0) ||
+         (gpuBonded != nullptr && gpuBonded->haveInteractions()));
+}
+
+/*! \brief Returns true if there is GPU short-range work for the given interaction locality.
+ *
+ * Note that as, unlike nonbonded tasks, bonded tasks are not split into local/nonlocal,
+ * and therefore if there are GPU offloaded bonded interactions, this function will return
+ * true for all interaction localities.
+ *
+ * \param[inout]  nb        Pointer to the nonbonded GPU data structure
+ * \param[in]     iLocality Interaction locality identifier
+ */
+static bool
+haveGpuShortRangeWork(const gmx_nbnxn_gpu_t            &nb,
+                      const Nbnxm::InteractionLocality  iLocality)
+{
+    return nb.haveWork[iLocality];
+}
+
+bool
+haveGpuShortRangeWork(const gmx_nbnxn_gpu_t     *nb,
+                      const Nbnxm::AtomLocality  aLocality)
+{
+    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+
+    return haveGpuShortRangeWork(*nb, gpuAtomToInteractionLocality(aLocality));
+}
+
+
 
 /*! \brief Calculate atom range and return start index and length.
  *
@@ -319,7 +368,6 @@ gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t *timings,
 bool gpu_try_finish_task(gmx_nbnxn_gpu_t    *nb,
                          const int           flags,
                          const AtomLocality  aloc,
-                         const bool          haveOtherWork,
                          real               *e_lj,
                          real               *e_el,
                          rvec               *fshift,
@@ -331,8 +379,9 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t    *nb,
     const InteractionLocality iLocality = gpuAtomToInteractionLocality(aloc);
 
     //  We skip when during the non-local phase there was actually no work to do.
-    //  This is consistent with nbnxn_gpu_launch_kernel.
-    if (haveOtherWork || !canSkipWork(*nb, iLocality))
+    //  This is consistent with nbnxn_gpu_launch_kernel but it also considers possible
+    //  bonded GPU work.
+    if ((iLocality == InteractionLocality::Local) || haveGpuShortRangeWork(*nb, iLocality))
     {
         // Query the state of the GPU stream and return early if we're not done
         if (completionKind == GpuTaskCompletion::Check)
@@ -378,7 +427,6 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t    *nb,
  * \param[in] nb The nonbonded data GPU structure
  * \param[in] flags Force flags
  * \param[in] aloc Atom locality identifier
- * \param[in] haveOtherWork  Tells whether there is other work than non-bonded work in the nbnxn stream(s)
  * \param[out] e_lj Pointer to the LJ energy output to accumulate into
  * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
  * \param[out] fshift Pointer to the shift force buffer to accumulate into
@@ -387,12 +435,11 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t    *nb,
 void gpu_wait_finish_task(gmx_nbnxn_gpu_t *nb,
                           int              flags,
                           AtomLocality     aloc,
-                          bool             haveOtherWork,
                           real            *e_lj,
                           real            *e_el,
                           rvec            *fshift)
 {
-    gpu_try_finish_task(nb, flags, aloc, haveOtherWork, e_lj, e_el, fshift,
+    gpu_try_finish_task(nb, flags, aloc, e_lj, e_el, fshift,
                         GpuTaskCompletion::Wait);
 }
 

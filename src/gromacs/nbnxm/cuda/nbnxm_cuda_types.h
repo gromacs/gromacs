@@ -260,6 +260,12 @@ struct gmx_nbnxn_cuda_t
                                                    initialization in local stream that is required also
                                                    by nonlocal stream ) */
 
+    //! True if there has been local/nonlocal GPU work, either bonded or nonbonded, scheduled
+    //  to be executed in the current domain. As long as bonded work is not split up into
+    //  local/nonlocal, if there is bonded GPU work, both flags will be true.
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, bool> haveWork;
+
+
     /* NOTE: With current CUDA versions (<=5.0) timing doesn't work with multiple
      * concurrent streams, so we won't time if both l/nl work is done on GPUs.
      * Timer init/uninit is still done even with timing off so only the condition

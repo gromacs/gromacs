@@ -317,6 +317,23 @@ struct nonbonded_verlet_t
         void changePairlistRadii(real rlistOuter,
                                  real rlistInner);
 
+        //! Set up internal flags that indicate what type of short-range work there is.
+        void setupGpuShortRangeWork(const gmx::GpuBonded             *gpuBonded,
+                                    const Nbnxm::InteractionLocality  iLocality)
+        {
+            if (useGpu() && !emulateGpu())
+            {
+                Nbnxm::setupGpuShortRangeWork(gpu_nbv, gpuBonded, iLocality);
+            }
+        }
+
+        //! Returns true if there is GPU short-range work for the given atom locality.
+        bool haveGpuShortRangeWork(const Nbnxm::AtomLocality aLocality)
+        {
+            return ((useGpu() && !emulateGpu()) &&
+                    Nbnxm::haveGpuShortRangeWork(gpu_nbv, aLocality));
+        }
+
         // TODO: Make all data members private
     public:
         //! All data related to the pair lists

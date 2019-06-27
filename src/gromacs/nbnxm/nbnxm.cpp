@@ -164,6 +164,13 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality  locality
                                              rvec                      *f,
                                              gmx_wallcycle             *wcycle)
 {
+    /* Skip the reduction if there was no short-range GPU work to do
+     * (either NB or both NB and bonded work). */
+    if (!pairlistIsSimple() && !haveGpuShortRangeWork(locality))
+    {
+        return;
+    }
+
     wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
     wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
 

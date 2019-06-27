@@ -266,6 +266,7 @@ GpuBonded::Impl::launchEnergyTransfer()
     // TODO should wrap with ewcLAUNCH_GPU
     GMX_ASSERT(haveInteractions_, "No GPU bonded interactions, so no energies will be computed, so transfer should not be called");
 
+    // TODO add conditional on whether there has been any compute (and make sure host buffer doesn't contain garbage)
     float *h_vTot   = vTot_.data();
     copyFromDeviceBuffer(h_vTot, &d_vTot_,
                          0, F_NRE,
