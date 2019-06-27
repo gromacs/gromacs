@@ -291,7 +291,8 @@ struct nonbonded_verlet_t
                                       real                       *lambda,
                                       gmx_enerdata_t             *enerd,
                                       int                         forceFlags,
-                                      t_nrnb                     *nrnb);
+                                      t_nrnb                     *nrnb,
+                                      gmx_wallcycle              *wcycle);
 
         //! Add the forces stored in nbat to f, zeros the forces in nbat */
         void atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality  locality,

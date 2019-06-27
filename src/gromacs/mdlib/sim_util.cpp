@@ -346,16 +346,9 @@ static void do_nb_verlet(t_forcerec                       *fr,
             nbv->dispatchPruneKernelCpu(ilocality, fr->shift_vec);
             wallcycle_sub_stop(wcycle, ewcsNONBONDED_PRUNING);
         }
-
-        wallcycle_sub_start(wcycle, ewcsNONBONDED);
     }
 
     nbv->dispatchNonbondedKernel(ilocality, *ic, flags, clearF, *fr, enerd, nrnb, wcycle);
-
-    if (!nbv->useGpu())
-    {
-        wallcycle_sub_stop(wcycle, ewcsNONBONDED);
-    }
 }
 
 static inline void clear_rvecs_omp(int n, rvec v[])
@@ -1259,20 +1252,18 @@ void do_force(FILE                                     *fplog,
         /* Calculate the local and non-local free energy interactions here.
          * Happens here on the CPU both with and without GPU.
          */
-        wallcycle_sub_start(wcycle, ewcsNONBONDED);
         nbv->dispatchFreeEnergyKernel(Nbnxm::InteractionLocality::Local,
                                       fr, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f, *mdatoms,
                                       inputrec->fepvals, lambda.data(),
-                                      enerd, flags, nrnb);
+                                      enerd, flags, nrnb, wcycle);
 
         if (havePPDomainDecomposition(cr))
         {
             nbv->dispatchFreeEnergyKernel(Nbnxm::InteractionLocality::NonLocal,
                                           fr, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f, *mdatoms,
                                           inputrec->fepvals, lambda.data(),
-                                          enerd, flags, nrnb);
+                                          enerd, flags, nrnb, wcycle);
         }
-        wallcycle_sub_stop(wcycle, ewcsNONBONDED);
     }
 
     if (!bUseOrEmulGPU)
