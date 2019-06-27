@@ -332,10 +332,11 @@ immStatus updatePlist(const Poldata             &pd,
                         atoms = {aai, aaj};
                         auto  bondOrder = pw.bondOrder(bondOrder_index);
                         n     = 0;
+                        value = 0;
                         if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain, bondOrder)) != 0)
                         {
                             pwi->c[n++] = convert2gmx(value, lu);
-                            ptr       = gmx::splitString(params);
+                            ptr         = gmx::splitString(params);
                             for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
                             {
                                 pwi->c[n++] = gmx::doubleFromString(pi->c_str());
@@ -369,6 +370,7 @@ immStatus updatePlist(const Poldata             &pd,
                     {
                         atoms = {aai, aaj, aak};
                         n     = 0;
+                        value = 0;
                         if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
                         {
                             r13 = calc_r13(pd, aai, aaj, aak, value);
@@ -412,6 +414,7 @@ immStatus updatePlist(const Poldata             &pd,
                     {
                         atoms = {aai, aaj, aak, aal};
                         n     = 0;
+                        value = 0;
                         if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
                         {
                             b->c[n++] = value;
