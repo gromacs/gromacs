@@ -69,92 +69,67 @@
 
 using gmx::RVec;
 
-typedef struct {
-    char *name;
-    int   natoms;
-    int   nmol;
-    int   i, i0;
-    int   res0;
-} t_moltypes;
+/*! \brief Describes a molecule type, and keeps track of the number of these molecules
+ *
+ *  Used for sorting coordinate file data after solvation
+ */
+struct MoleculeType
+{
+    //! molecule name
+    std::string name;
+    //! number of atoms in the molecule
+    int         numAtoms       = 0;
+    //! number of occurences of molecule
+    int         numMolecules   = 0;
+};
 
 static void sort_molecule(t_atoms          **atoms_solvt,
                           t_atoms          **newatoms,
                           std::vector<RVec> *x,
                           std::vector<RVec> *v)
 {
-    int         atnr, i, j, moltp = 0, nrmoltypes, resi_o, resi_n, resnr;
-    t_moltypes *moltypes;
-    t_atoms    *atoms;
 
     fprintf(stderr, "Sorting configuration\n");
-
-    atoms = *atoms_solvt;
+    t_atoms *atoms = *atoms_solvt;
 
     /* copy each residue from *atoms to a molecule in *molecule */
-    moltypes   = nullptr;
-    nrmoltypes = 0;
-    for (i = 0; i < atoms->nr; i++)
+    std::vector<MoleculeType>  molTypes;
+    for (int i = 0; i < atoms->nr; i++)
     {
         if ( (i == 0) || (atoms->atom[i].resind != atoms->atom[i-1].resind) )
         {
             /* see if this was a molecule type we haven't had yet: */
-            moltp = -1;
-            for (j = 0; (j < nrmoltypes) && (moltp == -1); j++)
+            auto matchingMolType = std::find_if(molTypes.begin(), molTypes.end(),
+                                                [atoms, i](const MoleculeType &molecule)
+                                                {return molecule.name == *atoms->resinfo[atoms->atom[i].resind].name; });
+            if (matchingMolType == molTypes.end())
             {
-                /* moltypes is guaranteed to be allocated because otherwise
-                 * nrmoltypes is 0. */
-                if (strcmp(*(atoms->resinfo[atoms->atom[i].resind].name), moltypes[j].name) == 0)
+                int numAtomsInMolType = 0;
+                while ((i + numAtomsInMolType < atoms->nr) &&
+                       (atoms->atom[i].resind == atoms->atom[i + numAtomsInMolType].resind))
                 {
-                    moltp = j;
+                    numAtomsInMolType++;
                 }
+                molTypes.emplace_back(MoleculeType {*atoms->resinfo[atoms->atom[i].resind].name, numAtomsInMolType, 1});
             }
-            if (moltp == -1)
+            else
             {
-                moltp = nrmoltypes;
-                nrmoltypes++;
-                srenew(moltypes, nrmoltypes);
-                moltypes[moltp].name = *(atoms->resinfo[atoms->atom[i].resind].name);
-                atnr                 = 0;
-                while ((i+atnr < atoms->nr) &&
-                       (atoms->atom[i].resind == atoms->atom[i+atnr].resind))
-                {
-                    atnr++;
-                }
-                moltypes[moltp].natoms = atnr;
-                moltypes[moltp].nmol   = 0;
+                matchingMolType->numMolecules++;
             }
-            moltypes[moltp].nmol++;
         }
     }
 
-    fprintf(stderr, "Found %d%s molecule type%s:\n",
-            nrmoltypes, nrmoltypes == 1 ? "" : " different", nrmoltypes == 1 ? "" : "s");
-    for (j = 0; j < nrmoltypes; j++)
+    fprintf(stderr, "Found %zu%s molecule type%s:\n",
+            molTypes.size(), molTypes.size() == 1 ? "" : " different", molTypes.size() == 1 ? "" : "s");
+    for (const auto &molType : molTypes)
     {
-        if (j == 0)
-        {
-            moltypes[j].res0 = 0;
-        }
-        else
-        {
-            moltypes[j].res0 = moltypes[j-1].res0+moltypes[j-1].nmol;
-        }
         fprintf(stderr, "%7s (%4d atoms): %5d residues\n",
-                moltypes[j].name, moltypes[j].natoms, moltypes[j].nmol);
+                molType.name.c_str(), molType.numAtoms, molType.numMolecules);
     }
 
     /* if we have only 1 moleculetype, we don't have to sort */
-    if (nrmoltypes > 1)
+    if (molTypes.size() > 1)
     {
-        /* find out which molecules should go where: */
-        moltypes[0].i = moltypes[0].i0 = 0;
-        for (j = 1; j < nrmoltypes; j++)
-        {
-            moltypes[j].i      =
-                moltypes[j].i0 =
-                    moltypes[j-1].i0+moltypes[j-1].natoms*moltypes[j-1].nmol;
-        }
-
         /* now put them there: */
         snew(*newatoms, 1);
         init_t_atoms(*newatoms, atoms->nr, FALSE);
@@ -163,38 +138,37 @@ static void sort_molecule(t_atoms          **atoms_solvt,
         std::vector<RVec> newx(x->size());
         std::vector<RVec> newv(v->size());
 
-        resi_n = 0;
-        resnr  = 1;
-        j      = 0;
-        for (moltp = 0; moltp < nrmoltypes; moltp++)
+        int               residIndex = 0;
+        int               atomIndex  = 0;
+        for (const auto &moleculeType : molTypes)
         {
-            i = 0;
+            int i = 0;
             while (i < atoms->nr)
             {
-                resi_o = atoms->atom[i].resind;
-                if (strcmp(*atoms->resinfo[resi_o].name, moltypes[moltp].name) == 0)
+                int residOfCurrAtom = atoms->atom[i].resind;
+                if (moleculeType.name == *atoms->resinfo[residOfCurrAtom].name)
                 {
                     /* Copy the residue info */
-                    (*newatoms)->resinfo[resi_n]    = atoms->resinfo[resi_o];
-                    (*newatoms)->resinfo[resi_n].nr = resnr;
+                    (*newatoms)->resinfo[residIndex]    = atoms->resinfo[residOfCurrAtom];
+                    // Residue numbering starts from 1, so +1 from the index
+                    (*newatoms)->resinfo[residIndex].nr = residIndex + 1;
                     /* Copy the atom info */
                     do
                     {
-                        (*newatoms)->atom[j]        = atoms->atom[i];
-                        (*newatoms)->atomname[j]    = atoms->atomname[i];
-                        (*newatoms)->atom[j].resind = resi_n;
-                        copy_rvec((*x)[i], newx[j]);
+                        (*newatoms)->atom[atomIndex]        = atoms->atom[i];
+                        (*newatoms)->atomname[atomIndex]    = atoms->atomname[i];
+                        (*newatoms)->atom[atomIndex].resind = residIndex;
+                        copy_rvec((*x)[i], newx[atomIndex]);
                         if (!v->empty())
                         {
-                            copy_rvec((*v)[i], newv[j]);
+                            copy_rvec((*v)[i], newv[atomIndex]);
                         }
                         i++;
-                        j++;
+                        atomIndex++;
                     }
-                    while (i < atoms->nr && atoms->atom[i].resind == resi_o);
+                    while (i < atoms->nr && atoms->atom[i].resind == residOfCurrAtom);
                     /* Increase the new residue counters */
-                    resi_n++;
-                    resnr++;
+                    residIndex++;
                 }
                 else
                 {
@@ -203,7 +177,7 @@ static void sort_molecule(t_atoms          **atoms_solvt,
                     {
                         i++;
                     }
-                    while (i < atoms->nr && atoms->atom[i].resind == resi_o);
+                    while (i < atoms->nr && atoms->atom[i].resind == residOfCurrAtom);
                 }
             }
         }
@@ -214,7 +188,6 @@ static void sort_molecule(t_atoms          **atoms_solvt,
         std::swap(*x, newx);
         std::swap(*v, newv);
     }
-    sfree(moltypes);
 }
 
 static void rm_res_pbc(const t_atoms *atoms, std::vector<RVec> *x, matrix box)
