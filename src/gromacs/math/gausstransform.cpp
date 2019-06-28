@@ -233,7 +233,7 @@ IVec rangeBeginWithinLattice(const IVec &index, const IVec &range)
  */
 IVec rangeEndWithinLattice(const IVec &index, const dynamicExtents3D &extents, const IVec &range)
 {
-    IVec extentAsIvec(static_cast<int>(extents.extent(XX)), static_cast<int>(extents.extent(YY)), static_cast<int>(extents.extent(ZZ)));
+    IVec extentAsIvec(static_cast<int>(extents.extent(ZZ)), static_cast<int>(extents.extent(YY)), static_cast<int>(extents.extent(XX)));
     return elementWiseMin(extentAsIvec, index + range);
 }
 

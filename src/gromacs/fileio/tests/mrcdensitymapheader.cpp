@@ -131,7 +131,7 @@ TEST(MrcDensityMapHeaderTest, GetsCorrectExtents)
     header.numColumnRowSection_ = {100, 200, 300};
 
     const auto extents = getDynamicExtents3D(header);
-    std::array<std::ptrdiff_t, DIM> expectedExtents = {100, 200, 300};
+    std::array<std::ptrdiff_t, DIM> expectedExtents = {300, 200, 100};
     EXPECT_EQ(expectedExtents[XX], extents.extent(XX));
     EXPECT_EQ(expectedExtents[YY], extents.extent(YY));
     EXPECT_EQ(expectedExtents[ZZ], extents.extent(ZZ));

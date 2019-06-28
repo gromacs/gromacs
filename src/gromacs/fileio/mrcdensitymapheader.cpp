@@ -98,7 +98,7 @@ TranslateAndScale getCoordinateTransformationToLattice(const MrcDensityMapHeader
 
 dynamicExtents3D getDynamicExtents3D(const MrcDensityMapHeader &header)
 {
-    return {header.numColumnRowSection_[XX], header.numColumnRowSection_[YY], header.numColumnRowSection_[ZZ]};
+    return {header.numColumnRowSection_[ZZ], header.numColumnRowSection_[YY], header.numColumnRowSection_[XX]};
 };
 
 } // namespace gmx
