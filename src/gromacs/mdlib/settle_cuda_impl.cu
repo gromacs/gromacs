@@ -423,6 +423,12 @@ void SettleCuda::Impl::apply(const float3 *d_x,
 
     ensureNoPendingCudaError("In CUDA version SETTLE");
 
+    // Early exit if no settles
+    if (numSettles_ == 0)
+    {
+        return;
+    }
+
     if (computeVirial)
     {
         // Fill with zeros so the values can be reduced to it
@@ -536,6 +542,20 @@ SettleCuda::Impl::Impl(const gmx_mtop_t &mtop)
     static_assert(c_threadsPerBlock > 0 && ((c_threadsPerBlock & (c_threadsPerBlock - 1)) == 0),
                   "Number of threads per block should be a power of two in order for reduction to work.");
 
+    // This is to prevent the assertion failure for the systems without water
+    int totalSettles = 0;
+    for (unsigned mt = 0; mt < mtop.moltype.size(); mt++)
+    {
+        const int        nral1           = 1 + NRAL(F_SETTLE);
+        InteractionList  interactionList = mtop.moltype.at(mt).ilist[F_SETTLE];
+        std::vector<int> iatoms          = interactionList.iatoms;
+        totalSettles += iatoms.size()/nral1;
+    }
+    if (totalSettles == 0)
+    {
+        return;
+    }
+
     // TODO This should be lifted to a separate subroutine that gets the values of Oxygen and Hydrogen
     // masses, checks if they are consistent across the topology and if there is no more than two values
     // for each mass if the free energy perturbation is enabled. In later case, masses may need to be
@@ -635,6 +655,11 @@ SettleCuda::Impl::Impl(const real mO,  const real mH,
 
 SettleCuda::Impl::~Impl()
 {
+    // Early exit if there is no settles
+    if (numSettles_ == 0)
+    {
+        return;
+    }
     freeDeviceBuffer(&d_virialScaled_);
     if (h_atomIds_.size() > 0)
     {

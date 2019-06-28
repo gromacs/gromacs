@@ -441,6 +441,12 @@ void LincsCuda::Impl::apply(const float3 *d_x,
 {
     ensureNoPendingCudaError("In CUDA version of LINCS");
 
+    // Early exit if no constraints
+    if (kernelParams_.numConstraintsThreads == 0)
+    {
+        return;
+    }
+
     if (computeVirial)
     {
         // Fill with zeros so the values can be reduced to it
@@ -648,6 +654,14 @@ void LincsCuda::Impl::set(const t_idef    &idef,
     t_iatom  *iatoms         = idef.il[F_CONSTR].iatoms;
     const int stride         = NRAL(F_CONSTR) + 1;
     const int numConstraints = idef.il[F_CONSTR].nr/stride;
+
+    // Early exit if no constraints
+    if (numConstraints == 0)
+    {
+        kernelParams_.numConstraintsThreads = 0;
+        return;
+    }
+
     // Constructing adjacency list --- usefull intermediate structure
     std::vector<std::vector<std::tuple<int, int, int> > > atomsAdjacencyList(numAtoms);
     for (int c = 0; c < numConstraints; c++)
