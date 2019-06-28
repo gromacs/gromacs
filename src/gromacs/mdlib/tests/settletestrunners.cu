@@ -33,27 +33,26 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Implements the test runner for GPU version of SETTLE.
+ * \brief Defines the runner for CUDA version of SETTLE.
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  * \ingroup module_mdlib
  */
 #include "gmxpre.h"
 
-#include "settle_runners.h"
+#include "settletestrunners.h"
+
+#include "config.h"
 
 #include <assert.h>
 
 #include <cmath>
 
 #include <algorithm>
-#include <unordered_map>
 #include <vector>
 
 #include "gromacs/gpu_utils/devicebuffer.cuh"
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/settle_cuda.cuh"
 #include "gromacs/utility/unique_cptr.h"
 
@@ -62,24 +61,41 @@ namespace gmx
 namespace test
 {
 
-void applySettleCuda(const int          numAtoms,
-                     const rvec        *h_x,
-                     rvec              *h_xp,
-                     const bool         updateVelocities,
-                     rvec              *h_v,
-                     const real         invdt,
-                     const bool         computeVirial,
-                     tensor             virialScaled,
-                     const t_pbc       *pbc,
-                     const gmx_mtop_t  &mtop,
-                     const t_idef      &idef,
-                     const t_mdatoms   &mdatoms)
+/*! \brief Apply SETTLE using GPU version of the algorithm.
+ *
+ * Initializes SETTLE object, copied data to the GPU, applies algorithm, copies the data back,
+ * destroys the object. The coordinates, velocities and virial are updated in the testData object.
+ *
+ * \param[in,out] testData          An object, containing all the data structures needed by SETTLE.
+ * \param[in]     pbc               Periodic boundary setup.
+ * \param[in]     updateVelocities  If the velocities should be updated.
+ * \param[in]     calcVirial        If the virial should be computed.
+ * \param[in]     testDescription   Brief description that will be printed in case of test failure.
+ */
+void applySettleGpu(SettleTestData               *testData,
+                    const t_pbc                   pbc,
+                    const bool                    updateVelocities,
+                    const bool                    calcVirial,
+                    gmx_unused const std::string &testDescription)
 {
-    auto settleCuda = std::make_unique<SettleCuda>(mtop);
-    settleCuda->setPbc(pbc);
-    settleCuda->set(idef, mdatoms);
+    // These should never fail since this function should only be called if CUDA is enabled and
+    // there is a CUDA-capable device available.
+    GMX_RELEASE_ASSERT(GMX_GPU == GMX_GPU_CUDA, "CUDA version of SETTLE was called from non-CUDA build.");
+
+    // TODO: Here we should check that at least 1 suitable GPU is available
+    GMX_RELEASE_ASSERT(canPerformGpuDetection(), "Can't detect CUDA-capable GPUs.");
+
+    auto settleCuda = std::make_unique<SettleCuda>(testData->mtop_);
+    settleCuda->setPbc(&pbc);
+    settleCuda->set(testData->idef_, testData->mdatoms_);
+
+    int     numAtoms = testData->mdatoms_.homenr;
 
     float3 *d_x, *d_xp, *d_v;
+
+    float3 *h_x  = (float3*)(as_rvec_array(testData->x_.data()));
+    float3 *h_xp = (float3*)(as_rvec_array(testData->xPrime_.data()));
+    float3 *h_v  = (float3*)(as_rvec_array(testData->v_.data()));
 
     allocateDeviceBuffer(&d_x,  numAtoms, nullptr);
     allocateDeviceBuffer(&d_xp, numAtoms, nullptr);
@@ -92,8 +108,8 @@ void applySettleCuda(const int          numAtoms,
         copyToDeviceBuffer(&d_v, (float3*)h_v, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
     }
     settleCuda->apply(d_x, d_xp,
-                      updateVelocities, d_v, invdt,
-                      computeVirial, virialScaled);
+                      updateVelocities, d_v, testData->reciprocalTimeStep_,
+                      calcVirial, testData->virial_);
 
     copyFromDeviceBuffer((float3*)h_xp, &d_xp, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
     if (updateVelocities)
@@ -104,6 +120,7 @@ void applySettleCuda(const int          numAtoms,
     freeDeviceBuffer(&d_x);
     freeDeviceBuffer(&d_xp);
     freeDeviceBuffer(&d_v);
+
 }
 
 } // namespace test

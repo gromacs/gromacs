@@ -43,6 +43,8 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test
                   leapfrogtestdata.cpp
                   leapfrogtestrunners.cpp
                   settle.cpp
+                  settletestdata.cpp
+                  settletestrunners.cpp
                   shake.cpp
                   simulationsignal.cpp
                   updategroups.cpp
@@ -52,5 +54,5 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test
 if(GMX_USE_CUDA)
     gmx_add_libgromacs_sources(constrtestrunners.cu
                                leapfrogtestrunners.cu
-                               settle_runners.cu)
+                               settletestrunners.cu)
 endif()

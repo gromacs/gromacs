@@ -33,7 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief SETTLE tests header.
+ * \brief Declaration of the SETTLE tests runners.
  *
  * Declares the functions that do the buffer management and apply
  * SETTLE constraints ("test runners").
@@ -42,61 +42,53 @@
  * \ingroup module_mdlib
  */
 
-#ifndef GMX_MDLIB_TESTS_SETTLE_RUNNERS_H
-#define GMX_MDLIB_TESTS_SETTLE_RUNNERS_H
+#ifndef GMX_MDLIB_TESTS_SETTLETESTRUNNERS_H
+#define GMX_MDLIB_TESTS_SETTLETESTRUNNERS_H
 
-#include "config.h"
-
-#include "gromacs/math/vectypes.h"
+#include "settletestdata.h"
 
 struct t_pbc;
-struct gmx_mtop_t;
-struct t_idef;
-struct t_mdatoms;
 
 namespace gmx
 {
 namespace test
 {
 
-#if GMX_GPU == GMX_GPU_CUDA
-
-/*! \brief
- * Initialize and apply SETTLE constraints on CUDA-enabled GPU.
+/*! \brief Apply SETTLE using CPU version of the algorithm
  *
- * \param[in]     numAtoms          Number of atoms.
- * \param[in]     h_x               Coordinates before timestep (in CPU memory).
- * \param[in,out] h_xp              Coordinates after timestep (in CPU memory). The
- *                                  resulting constrained coordinates will be saved here.
+ * Initializes SETTLE object, applies algorithm, destroys the object. The coordinates, velocities and
+ * virial are updated in the testData object.
+ *
+ * \param[in,out] testData          An object, containing all the data structures needed by SETTLE.
+ * \param[in]     pbc               Periodic boundary setup.
  * \param[in]     updateVelocities  If the velocities should be updated.
- * \param[in,out] h_v               Velocities to update (in CPU memory, can be nullptr
- *                                  if not updated).
- * \param[in]     invdt             Reciprocal timestep (to scale Lagrange
- *                                  multipliers when velocities are updated)
- * \param[in]     computeVirial     If virial should be updated.
- * \param[in,out] virialScaled      Scaled virial tensor to be updated.
- * \param[in]     pbc               Periodic boundary data.
- * \param[in]     mtop              Topology of the system to get the masses for O and
- *                                  H atoms target O-H and H-H distances.
- * \param[in]     idef              System topology.
- * \param[in]     mdatoms           Atoms data.
+ * \param[in]     calcVirial        If the virial should be computed.
+ * \param[in]     testDescription   Brief description that will be printed in case of test failure.
  */
-void applySettleCuda(int                numAtoms,
-                     const rvec        *h_x,
-                     rvec              *h_xp,
-                     bool               updateVelocities,
-                     rvec              *h_v,
-                     real               invdt,
-                     bool               computeVirial,
-                     tensor             virialScaled,
-                     const t_pbc       *pbc,
-                     const gmx_mtop_t  &mtop,
-                     const t_idef      &idef,
-                     const t_mdatoms   &mdatoms);
+void applySettle(SettleTestData    *testData,
+                 t_pbc              pbc,
+                 bool               updateVelocities,
+                 bool               calcVirial,
+                 const std::string &testDescription);
 
-#endif // GMX_GPU == GMX_GPU_CUDA
+/*! \brief Apply SETTLE using GPU version of the algorithm
+ *
+ * Initializes SETTLE object, copied data to the GPU, applies algorithm, copies the data back,
+ * destroys the object. The coordinates, velocities and virial are updated in the testData object.
+ *
+ * \param[in,out] testData          An object, containing all the data structures needed by SETTLE.
+ * \param[in]     pbc               Periodic boundary setup.
+ * \param[in]     updateVelocities  If the velocities should be updated.
+ * \param[in]     calcVirial        If the virial should be computed.
+ * \param[in]     testDescription   Brief description that will be printed in case of test failure.
+ */
+void applySettleGpu(SettleTestData    *testData,
+                    t_pbc              pbc,
+                    bool               updateVelocities,
+                    bool               calcVirial,
+                    const std::string &testDescription);
 
 }      // namespace test
 }      // namespace gmx
 
-#endif // GMX_MDLIB_TESTS_SETTLE_RUNNERS_H
+#endif // GMX_MDLIB_TESTS_SETTLETESTRUNNERS_H
