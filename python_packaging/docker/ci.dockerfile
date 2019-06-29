@@ -52,7 +52,7 @@ RUN python3 -m venv $HOME/testing
 RUN . $HOME/testing/bin/activate && \
     pip install --no-cache-dir --upgrade pip setuptools
 
-ADD --chown=testing:testing requirements-test.txt /home/testing/gmxapi/
+ADD --chown=testing:testing requirements-*.txt /home/testing/gmxapi/
 
 RUN . $HOME/testing/bin/activate && \
     pip install --no-cache-dir -r /home/testing/gmxapi/requirements-test.txt
