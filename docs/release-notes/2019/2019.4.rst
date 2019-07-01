@@ -19,6 +19,13 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix bug in gmx xpm2ps
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The tool would fail when not being provided with a library file to read in.
+
+:issue:`3012`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
