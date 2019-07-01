@@ -300,7 +300,6 @@ void gmx::Simulator::do_md()
 
     if (DOMAINDECOMP(cr))
     {
-        GMX_RELEASE_ASSERT(!c_useGpuUpdateConstrain, "Domain decomposition is not supported with GPU-based update-constraints.");
         dd_init_local_top(*top_global, &top);
 
         stateInstance = std::make_unique<t_state>();
@@ -329,22 +328,21 @@ void gmx::Simulator::do_md()
                                   &graph, mdAtoms, constr, vsite, shellfc);
 
         upd.setNumAtoms(state->natoms);
+    }
 
-        if (c_useGpuUpdateConstrain)
-        {
-            GMX_RELEASE_ASSERT(ir->eI == eiMD, "Only md integrator is supported on the GPU.");
-            GMX_RELEASE_ASSERT(ir->etc == etcNO, "Temperature coupling is not supported on the GPU.");
-            GMX_RELEASE_ASSERT(ir->epc == epcNO, "Pressure coupling is not supported on the GPU.");
-            GMX_RELEASE_ASSERT(!mdatoms->haveVsites, "Virtual sites are not supported on the GPU");
-            GMX_LOG(mdlog.info).asParagraph().
-                appendText("Using CUDA GPU-based update and constraints module.");
-            integrator = std::make_unique<UpdateConstrainCuda>(state->natoms, *ir, *top_global);
-            integrator->set(top.idef, *mdatoms);
-            t_pbc pbc;
-            set_pbc(&pbc, epbcXYZ, state->box);
-            integrator->setPbc(&pbc);
-        }
-
+    if (c_useGpuUpdateConstrain)
+    {
+        GMX_RELEASE_ASSERT(ir->eI == eiMD, "Only md integrator is supported on the GPU.");
+        GMX_RELEASE_ASSERT(ir->etc == etcNO, "Temperature coupling is not supported on the GPU.");
+        GMX_RELEASE_ASSERT(ir->epc == epcNO, "Pressure coupling is not supported on the GPU.");
+        GMX_RELEASE_ASSERT(!mdatoms->haveVsites, "Virtual sites are not supported on the GPU");
+        GMX_LOG(mdlog.info).asParagraph().
+            appendText("Using CUDA GPU-based update and constraints module.");
+        integrator = std::make_unique<UpdateConstrainCuda>(*ir, *top_global);
+        integrator->set(top.idef, *mdatoms);
+        t_pbc pbc;
+        set_pbc(&pbc, epbcXYZ, state->box);
+        integrator->setPbc(&pbc);
     }
 
     if (fr->nbv->useGpu())
@@ -1222,6 +1220,13 @@ void gmx::Simulator::do_md()
 
         if (c_useGpuUpdateConstrain)
         {
+            if (bNS)
+            {
+                integrator->set(top.idef, *mdatoms);
+                t_pbc pbc;
+                set_pbc(&pbc, epbcXYZ, state->box);
+                integrator->setPbc(&pbc);
+            }
             integrator->copyCoordinatesToGpu(state->x.rvec_array());
             integrator->copyVelocitiesToGpu(state->v.rvec_array());
             integrator->copyForcesToGpu(as_rvec_array(f.data()));

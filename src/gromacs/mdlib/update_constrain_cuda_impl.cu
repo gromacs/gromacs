@@ -60,7 +60,7 @@
 #include <algorithm>
 
 #include "gromacs/gpu_utils/cudautils.cuh"
-#include "gromacs/gpu_utils/devicebuffer.cuh"
+#include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 #include "gromacs/math/vec.h"
@@ -104,24 +104,16 @@ void UpdateConstrainCuda::Impl::integrate(const real  dt,
     return;
 }
 
-UpdateConstrainCuda::Impl::Impl(int                numAtoms,
-                                const t_inputrec  &ir,
+UpdateConstrainCuda::Impl::Impl(const t_inputrec  &ir,
                                 const gmx_mtop_t  &mtop)
-    : numAtoms_(numAtoms)
 {
-    allocateDeviceBuffer(&d_x_,              numAtoms, nullptr);
-    allocateDeviceBuffer(&d_xp_,             numAtoms, nullptr);
-    allocateDeviceBuffer(&d_v_,              numAtoms, nullptr);
-    allocateDeviceBuffer(&d_f_,              numAtoms, nullptr);
-    allocateDeviceBuffer(&d_inverseMasses_,  numAtoms, nullptr);
-
     // TODO When the code will be integrated into the schedule, it will be assigned non-default stream.
     stream_ = nullptr;
 
-    GMX_RELEASE_ASSERT(numAtoms == mtop.natoms, "State and topology number of atoms should be the same.");
+    integrator_ = std::make_unique<LeapFrogCuda>();
     lincsCuda_  = std::make_unique<LincsCuda>(ir.nLincsIter, ir.nProjOrder);
     settleCuda_ = std::make_unique<SettleCuda>(mtop);
-    integrator_ = std::make_unique<LeapFrogCuda>();
+
 }
 
 UpdateConstrainCuda::Impl::~Impl()
@@ -131,6 +123,16 @@ UpdateConstrainCuda::Impl::~Impl()
 void UpdateConstrainCuda::Impl::set(const t_idef      &idef,
                                     const t_mdatoms   &md)
 {
+    numAtoms_ = md.nr;
+
+    reallocateDeviceBuffer(&d_x_,  numAtoms_, &numX_,  &numXAlloc_,  nullptr);
+    reallocateDeviceBuffer(&d_xp_, numAtoms_, &numXp_, &numXpAlloc_, nullptr);
+    reallocateDeviceBuffer(&d_v_,  numAtoms_, &numV_,  &numVAlloc_,  nullptr);
+    reallocateDeviceBuffer(&d_f_,  numAtoms_, &numF_,  &numFAlloc_,  nullptr);
+
+    reallocateDeviceBuffer(&d_inverseMasses_, numAtoms_,
+                           &numInverseMasses_, &numInverseMassesAlloc_, nullptr);
+
     // Integrator should also update something, but it does not even have a method yet
     integrator_->set(md);
     lincsCuda_->set(idef, md);
@@ -184,10 +186,9 @@ void UpdateConstrainCuda::Impl::setXVFPointers(rvec *d_x, rvec *d_xp, rvec *d_v,
 }
 
 
-UpdateConstrainCuda::UpdateConstrainCuda(int                numAtoms,
-                                         const t_inputrec  &ir,
+UpdateConstrainCuda::UpdateConstrainCuda(const t_inputrec  &ir,
                                          const gmx_mtop_t  &mtop)
-    : impl_(new Impl(numAtoms, ir, mtop))
+    : impl_(new Impl(ir, mtop))
 {
 }
 

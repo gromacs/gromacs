@@ -67,14 +67,12 @@ class UpdateConstrainCuda::Impl
     public:
         /*! \brief Create Update-Constrain object
          *
-         * \param[in] numAtoms  Number of atoms.
          * \param[in] ir        Input record data: LINCS takes number of iterations and order of
          *                      projection from it.
          * \param[in] mtop      Topology of the system: SETTLE gets the masses for O and H atoms
          *                      and target O-H and H-H distances from this object.
          */
-        Impl(int                   numAtoms,
-             const t_inputrec     &ir,
+        Impl(const t_inputrec     &ir,
              const gmx_mtop_t     &mtop);
 
         ~Impl();
@@ -193,15 +191,38 @@ class UpdateConstrainCuda::Impl
 
         //! Coordinates before the timestep (on GPU)
         float3             *d_x_;
+        //! Number of elements in coordinates buffer
+        int                 numX_                  = -1;
+        //! Allocation size for the coordinates buffer
+        int                 numXAlloc_             = -1;
+
         //! Coordinates after the timestep (on GPU).
         float3             *d_xp_;
+        //! Number of elements in shifted coordinates buffer
+        int                 numXp_                 = -1;
+        //! Allocation size for the shifted coordinates buffer
+        int                 numXpAlloc_            = -1;
+
         //! Velocities of atoms (on GPU)
         float3             *d_v_;
+        //! Number of elements in velocities buffer
+        int                 numV_                  = -1;
+        //! Allocation size for the velocities buffer
+        int                 numVAlloc_             = -1;
+
         //! Forces, exerted by atoms (on GPU)
         float3             *d_f_;
+        //! Number of elements in forces buffer
+        int                 numF_                  = -1;
+        //! Allocation size for the forces buffer
+        int                 numFAlloc_             = -1;
 
         //! 1/mass for all atoms (GPU)
         real               *d_inverseMasses_;
+        //! Number of elements in reciprocal masses buffer
+        int                 numInverseMasses_      = -1;
+        //! Allocation size for the reciprocal masses buffer
+        int                 numInverseMassesAlloc_ = -1;
 
         //! Leap-Frog integrator
         std::unique_ptr<LeapFrogCuda>        integrator_;
