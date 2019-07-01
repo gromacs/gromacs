@@ -199,7 +199,7 @@ void gmx::Simulator::do_rerun()
     double                  t, lam0[efptNR];
     bool                    isLastStep               = false;
     bool                    doFreeEnergyPerturbation = false;
-    int                     force_flags;
+    unsigned int            force_flags;
     tensor                  force_vir, shake_vir, total_vir, pres;
     t_trxstatus            *status;
     rvec                    mu_tot;

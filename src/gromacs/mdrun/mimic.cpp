@@ -146,7 +146,7 @@ void gmx::Simulator::do_mimic()
     double                   t, lam0[efptNR];
     bool                     isLastStep               = false;
     bool                     doFreeEnergyPerturbation = false;
-    int                      force_flags;
+    unsigned int             force_flags;
     tensor                   force_vir, shake_vir, total_vir, pres;
     rvec                     mu_tot;
     gmx_localtop_t           top;

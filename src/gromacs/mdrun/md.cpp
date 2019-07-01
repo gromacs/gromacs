@@ -167,7 +167,7 @@ void gmx::Simulator::do_md()
     gmx_bool                bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
     gmx_bool                do_ene, do_log, do_verbose;
     gmx_bool                bMasterState;
-    int                     force_flags, cglo_flags;
+    unsigned int            force_flags;
     tensor                  force_vir = {{0}}, shake_vir = {{0}}, total_vir = {{0}},
                             tmp_vir   = {{0}}, pres = {{0}};
     int                     i, m;
@@ -437,7 +437,7 @@ void gmx::Simulator::do_md()
 
     if (!ir->bContinuation)
     {
-        if (state->flags & (1 << estV))
+        if (state->flags & (1u << estV))
         {
             auto v = makeArrayRef(state->v);
             /* Set the velocities of vsites, shells and frozen atoms to zero */
@@ -516,10 +516,10 @@ void gmx::Simulator::do_md()
         restore_ekinstate_from_state(cr, ekind, &state_global->ekinstate);
     }
 
-    cglo_flags = (CGLO_INITIALIZATION | CGLO_TEMPERATURE | CGLO_GSTAT
-                  | (EI_VV(ir->eI) ? CGLO_PRESSURE : 0)
-                  | (EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0)
-                  | (hasReadEkinState ? CGLO_READEKIN : 0));
+    unsigned int cglo_flags = (CGLO_INITIALIZATION | CGLO_TEMPERATURE | CGLO_GSTAT
+                               | (EI_VV(ir->eI) ? CGLO_PRESSURE : 0)
+                               | (EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0)
+                               | (hasReadEkinState ? CGLO_READEKIN : 0));
 
     bSumEkinhOld = FALSE;
 
@@ -533,7 +533,7 @@ void gmx::Simulator::do_md()
      */
     for (int cgloIteration = 0; cgloIteration < (bStopCM ? 2 : 1); cgloIteration++)
     {
-        int cglo_flags_iteration = cglo_flags;
+        unsigned int cglo_flags_iteration = cglo_flags;
         if (bStopCM && cgloIteration == 0)
         {
             cglo_flags_iteration |= CGLO_STOPCM;
@@ -1525,7 +1525,7 @@ void gmx::Simulator::do_md()
         /* With all integrators, except VV, we need to retain the pressure
          * at the current step for coupling at the next step.
          */
-        if ((state->flags & (1<<estPRES_PREV)) &&
+        if ((state->flags & (1u<<estPRES_PREV)) &&
             (bGStatEveryStep ||
              (ir->nstpcouple > 0 && step % ir->nstpcouple == 0)))
         {

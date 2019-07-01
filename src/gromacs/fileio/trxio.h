@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -194,18 +194,18 @@ int check_times(real t);
  * but a frame might be returned which does not contain the field.
  * When a NEED flag is set, frames not containing the field will be skipped.
  */
-#define TRX_READ_X    (1<<0)
-#define TRX_NEED_X    (1<<1)
-#define TRX_READ_V    (1<<2)
-#define TRX_NEED_V    (1<<3)
-#define TRX_READ_F    (1<<4)
-#define TRX_NEED_F    (1<<5)
+#define TRX_READ_X    (1u<<0u)
+#define TRX_NEED_X    (1u<<1u)
+#define TRX_READ_V    (1u<<2u)
+#define TRX_NEED_V    (1u<<3u)
+#define TRX_READ_F    (1u<<4u)
+#define TRX_NEED_F    (1u<<5u)
 /* Useful for reading natoms from a trajectory without skipping */
-#define TRX_DONT_SKIP (1<<6)
+#define TRX_DONT_SKIP (1u<<6u)
 
 /* For trxframe.not_ok */
-#define HEADER_NOT_OK (1<<0)
-#define DATA_NOT_OK   (1<<1)
+#define HEADER_NOT_OK (1u<<0u)
+#define DATA_NOT_OK   (1u<<1u)
 #define FRAME_NOT_OK  (HEADER_NOT_OK | DATA_NOT_OK)
 
 bool read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,

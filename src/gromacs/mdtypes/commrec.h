@@ -46,8 +46,8 @@
 struct mpi_in_place_buf_t;
 struct gmx_domdec_t;
 
-#define DUTY_PP  (1<<0)
-#define DUTY_PME (1<<1)
+#define DUTY_PP  (1u<<0u)
+#define DUTY_PME (1u<<1u)
 
 typedef struct {
     int      bUse;
