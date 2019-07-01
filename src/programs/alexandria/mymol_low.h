@@ -116,7 +116,8 @@ real calc_relposition(const Poldata     &pd,
 immStatus updatePlist(const Poldata             &pd,
                       std::vector<PlistWrapper> &plist,
                       t_topology                *top,
-                      bool                       bBASTAT);
+                      bool                       bBASTAT,
+                      std::string                molname);
 
 std::vector<double> getDoubles(const std::string &s);
 

@@ -303,7 +303,8 @@ real calc_relposition(const Poldata     &pd,
 immStatus updatePlist(const Poldata             &pd,
                       std::vector<PlistWrapper> &plist,
                       t_topology                *top,
-                      bool                       bBASTAT)
+                      bool                       bBASTAT,
+                      std::string                molname)
 {
     std::string              aai, aaj, aak, aal, params;
     std::vector<std::string> atoms, ptr;
@@ -346,8 +347,8 @@ immStatus updatePlist(const Poldata             &pd,
                         {
                             if (debug)
                             {
-                                fprintf(debug, "Could not find bond information for %s - %s with bondorder of %zu and a bond length of %0.3f\n",
-                                        aai.c_str(), aaj.c_str(), bondOrder, value);
+                                fprintf(debug, "Could not find bond information for %s - %s with bondorder of %zu in %s\n",
+                                        aai.c_str(), aaj.c_str(), bondOrder, molname.c_str());
                             }
                             return immNotSupportedBond;
                         }
@@ -390,8 +391,8 @@ immStatus updatePlist(const Poldata             &pd,
                         {
                             if (debug)
                             {
-                                fprintf(debug, "Could not find angle information for %s - %s - %s with a value of %0.3f\n",
-                                        aai.c_str(), aaj.c_str(), aak.c_str(), value);
+                                fprintf(debug, "Could not find angle information for %s - %s - %s in %s\n",
+                                        aai.c_str(), aaj.c_str(), aak.c_str(), molname.c_str());
                             }
                             return immNotSupportedAngle;
                         }
@@ -438,8 +439,8 @@ immStatus updatePlist(const Poldata             &pd,
                         {
                             if (debug)
                             {
-                                fprintf(debug, "Could not find dihedral information for %s - %s - %s - %s with a value of %0.3f\n",
-                                        aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str(), value);
+                                fprintf(debug, "Could not find dihedral information for %s - %s - %s - %s in %s\n",
+                                        aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str(), molname.c_str());
                             }
                             return immNotSupportedDihedral;
                         }
