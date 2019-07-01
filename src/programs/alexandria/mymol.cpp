@@ -732,14 +732,14 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
                                   bool                    bBASTAT,
                                   const char             *tabfn)
 {
-    immStatus   imm = immOK;
     int         ftb;
     t_param     b;
+    immStatus   imm = immOK;
     std::string btype1, btype2;
 
     if (nullptr != debug)
     {
-        fprintf(debug, "Generating topology_ for %s\n", molProp()->getMolname().c_str());
+        fprintf(debug, "Generating topology for %s\n", molProp()->getMolname().c_str());
     }
     nexcl_ = pd.getNexcl();
     molProp()->GenerateComposition(pd);
@@ -824,7 +824,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     }
     if (immOK == imm)
     {
-        /*Calculate center of charge*/
+        /*Center of charge*/
         auto atntot = 0;
         for (auto i = 0; i < topology_->atoms.nr; i++)
         {
@@ -836,37 +836,32 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
             }
         }
         svmul((1.0/atntot), coc_, coc_);
-    }
-    bool bAddShells = (iChargeDistributionModel == eqdAXpp || 
-                       iChargeDistributionModel == eqdAXpg || 
-                       iChargeDistributionModel == eqdAXps);
-    if (bAddShells && imm == immOK)
-    {
-        addShells(pd, iChargeDistributionModel);
-    }
-    if (imm == immOK)
-    {
-        char **molnameptr = put_symtab(symtab_, molProp()->getMolname().c_str());
-
-        mtop_ = do_init_mtop(pd, molnameptr, &topology_->atoms, plist_, inputrec_, symtab_, tabfn);
-
-        excls_to_blocka(topology_->atoms.nr, excls_, &(mtop_->moltype[0].excls));
-    }
-    if (bAddShells && imm == immOK)
-    {
-        // Update mtop internals to account for shell type
-        srenew(mtop_->atomtypes.atomnumber, get_atomtype_ntypes(atype_));
-        for(int i = 0; i < get_atomtype_ntypes(atype_); i++)
+        /*Center of charge*/
+    
+        bool bAddShells = (iChargeDistributionModel == eqdAXpp || 
+                           iChargeDistributionModel == eqdAXpg || 
+                           iChargeDistributionModel == eqdAXps);
+        if (bAddShells)
         {
-            mtop_->atomtypes.atomnumber[i] = get_atomtype_atomnumber(i, atype_);
+            addShells(pd, iChargeDistributionModel);
         }
-        mtop_->ffparams.atnr = get_atomtype_ntypes(atype_);
-        // Generate shell data structure
-        shellfc_ = init_shell_flexcon(debug, mtop_, 0, 1, false);
-    }
-    if (nullptr == ltop_ && imm == immOK)
-    {
-        ltop_ = gmx_mtop_generate_local_top(mtop_, false);
+        char **molnameptr = put_symtab(symtab_, molProp()->getMolname().c_str());        
+        mtop_ = do_init_mtop(pd, molnameptr, &topology_->atoms, plist_, inputrec_, symtab_, tabfn); // Generate mtop        
+        excls_to_blocka(topology_->atoms.nr, excls_, &(mtop_->moltype[0].excls));
+        if (bAddShells)
+        {          
+            srenew(mtop_->atomtypes.atomnumber, get_atomtype_ntypes(atype_)); // Update mtop internals to account for shell type            
+            for(auto i = 0; i < get_atomtype_ntypes(atype_); i++)
+            {
+                mtop_->atomtypes.atomnumber[i] = get_atomtype_atomnumber(i, atype_);
+            }            
+            mtop_->ffparams.atnr = get_atomtype_ntypes(atype_);            
+            shellfc_ = init_shell_flexcon(debug, mtop_, 0, 1, false); // Generate shell data structure
+        }
+        if (nullptr == ltop_)
+        {
+            ltop_ = gmx_mtop_generate_local_top(mtop_, false); // Generate ltop from mtop
+        }
     }
     return imm;
 }
