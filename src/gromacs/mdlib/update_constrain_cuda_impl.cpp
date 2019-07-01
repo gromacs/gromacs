@@ -55,8 +55,7 @@ class UpdateConstrainCuda::Impl
 {
 };
 
-UpdateConstrainCuda::UpdateConstrainCuda(gmx_unused int                   numAtoms,
-                                         gmx_unused const t_inputrec     &ir,
+UpdateConstrainCuda::UpdateConstrainCuda(gmx_unused const t_inputrec     &ir,
                                          gmx_unused const gmx_mtop_t     &mtop)
     : impl_(nullptr)
 {
