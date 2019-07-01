@@ -820,7 +820,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
 
         MakeSpecialInteractions(pd, bUseVsites);
 
-        imm = updatePlist(pd, plist_, topology_, bBASTAT, molProp()->getMolname().c_str());
+        imm = updatePlist(pd, plist_, topology_, bBASTAT, molProp()->getMolname());
     }
     if (immOK == imm)
     {
