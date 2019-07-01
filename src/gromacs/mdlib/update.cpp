@@ -1218,16 +1218,18 @@ static void calc_ke_part_visc(const matrix box, const rvec x[], const rvec v[],
     inc_nrnb(nrnb, eNR_EKIN, homenr);
 }
 
-void calc_ke_part(const t_state *state, const t_grpopts *opts, const t_mdatoms *md,
-                  gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
+void calc_ke_part(
+        rvec *x, rvec *v, matrix box,
+        const t_grpopts *opts, const t_mdatoms *md,
+        gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
     if (ekind->cosacc.cos_accel == 0)
     {
-        calc_ke_part_normal(state->v.rvec_array(), opts, md, ekind, nrnb, bEkinAveVel);
+        calc_ke_part_normal(v, opts, md, ekind, nrnb, bEkinAveVel);
     }
     else
     {
-        calc_ke_part_visc(state->box, state->x.rvec_array(), state->v.rvec_array(), opts, md, ekind, nrnb, bEkinAveVel);
+        calc_ke_part_visc(box, x, v, opts, md, ekind, nrnb, bEkinAveVel);
     }
 }
 

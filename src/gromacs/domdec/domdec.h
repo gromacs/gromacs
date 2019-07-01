@@ -265,7 +265,8 @@ void dd_print_missing_interactions(const gmx::MDLogger  &mdlog,
                                    int                   local_count,
                                    const gmx_mtop_t     *top_global,
                                    const gmx_localtop_t *top_local,
-                                   const t_state        *state_local);
+                                   const rvec           *x,
+                                   const matrix          box);
 
 /*! \brief Generate and store the reverse topology */
 void dd_make_reverse_top(FILE *fplog,

@@ -342,7 +342,8 @@ void dd_print_missing_interactions(const gmx::MDLogger  &mdlog,
                                    int                   local_count,
                                    const gmx_mtop_t     *top_global,
                                    const gmx_localtop_t *top_local,
-                                   const t_state        *state_local)
+                                   const rvec           *x,
+                                   const matrix          box)
 {
     int             ndiff_tot, cl[F_NRE], n, ndiff, rest_global, rest_local;
     int             ftype, nral;
@@ -408,7 +409,7 @@ void dd_print_missing_interactions(const gmx::MDLogger  &mdlog,
 
     print_missing_interactions_atoms(mdlog, cr, top_global, &top_local->idef);
     write_dd_pdb("dd_dump_err", 0, "dump", top_global, cr,
-                 -1, state_local->x.rvec_array(), state_local->box);
+                 -1, x, box);
 
     std::string errorMessage;
 

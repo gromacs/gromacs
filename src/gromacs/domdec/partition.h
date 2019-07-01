@@ -117,7 +117,8 @@ void dd_partition_system(FILE                    *fplog,
  * \param[in]    totalNumberOfBondedInteractions        Result of the global reduction over the number of bonds treated in each domain
  * \param[in]    top_global                             Global topology for the error message
  * \param[in]    top_local                              Local topology for the error message
- * \param[in]    state                                  Global state for the error message
+ * \param[in]    x                                      Position vector for the error message
+ * \param[in]    box                                    Box matrix for the error message
  * \param[in,out] shouldCheckNumberOfBondedInteractions Whether we should do the check. Always set to false.
  */
 void checkNumberOfBondedInteractions(const gmx::MDLogger  &mdlog,
@@ -125,7 +126,8 @@ void checkNumberOfBondedInteractions(const gmx::MDLogger  &mdlog,
                                      int                   totalNumberOfBondedInteractions,
                                      const gmx_mtop_t     *top_global,
                                      const gmx_localtop_t *top_local,
-                                     const t_state        *state,
+                                     const rvec           *x,
+                                     const matrix          box,
                                      bool                 *shouldCheckNumberOfBondedInteractions);
 
 #endif

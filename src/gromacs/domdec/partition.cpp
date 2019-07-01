@@ -3351,14 +3351,15 @@ void checkNumberOfBondedInteractions(const gmx::MDLogger  &mdlog,
                                      int                   totalNumberOfBondedInteractions,
                                      const gmx_mtop_t     *top_global,
                                      const gmx_localtop_t *top_local,
-                                     const t_state        *state,
+                                     const rvec           *x,
+                                     const matrix          box,
                                      bool                 *shouldCheckNumberOfBondedInteractions)
 {
     if (*shouldCheckNumberOfBondedInteractions)
     {
         if (totalNumberOfBondedInteractions != cr->dd->nbonded_global)
         {
-            dd_print_missing_interactions(mdlog, cr, totalNumberOfBondedInteractions, top_global, top_local, state); // Does not return
+            dd_print_missing_interactions(mdlog, cr, totalNumberOfBondedInteractions, top_global, top_local, x, box); // Does not return
         }
         *shouldCheckNumberOfBondedInteractions = false;
     }
