@@ -148,6 +148,10 @@ def do_build(context):
 
     if context.opts.hwloc is False:
         cmake_opts['GMX_HWLOC'] = 'OFF'
+    elif context.opts.hwloc is True:
+        cmake_opts['GMX_HWLOC'] = 'ON'
+    else:
+        cmake_opts['GMX_HWLOC'] = 'AUTO'
 
     if context.opts.tng is False:
         cmake_opts['GMX_USE_TNG'] = 'OFF'
