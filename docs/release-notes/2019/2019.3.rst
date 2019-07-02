@@ -16,11 +16,13 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Fix missing intermolecular interactions with domain decomposition
+Fix missing interactions with domain decomposition
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-When running with domain decomposition, all intermolecular interactions
-(when present) were ignored.
+When running with domain decomposition, any interactions described by
+the rarely-used topology file section
+``[ intermolecular_interactions ]`` were ignored. This did not
+affect normal non-bonded or intra-molecular interactions.
 
 :issue:`2953`
 
