@@ -168,6 +168,12 @@ TEST_F(MatrixTest, determinantOfDiagonalMatrix)
     EXPECT_EQ(determinant(mat), 24);
 }
 
+TEST_F(MatrixTest, traceWorks)
+{
+    const Matrix3x3 mat = {{1.5, 9, 9, 9, 2.0, 9, 9, 9, 0.25}};
+    EXPECT_EQ(trace(mat), 3.75);
+}
+
 } // namespace
 
 } // namespace test
