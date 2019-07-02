@@ -37,29 +37,30 @@ import os.path
 # Policy global variables
 use_stdlib_through_env_vars = False
 
-# These are accessible later in the script, just like other
-# declared options, via e.g. context.opts.release.
+# These are accessible later in the script, just like other declared
+# options, via e.g. context.opts.release.  Keep these in alphabetical
+# order for more convenient rebasing
 extra_options = {
+    'asan': Option.simple,
+    'buildfftw': Option.simple,
+    'clang_cuda': Option.bool,
+    'double': Option.simple,
+    'fftpack': Option.simple,
+    'gpu_id': Option.string,
+    'hwloc': Option.bool,
     'mdrun-only': Option.simple,
-    'static': Option.simple,
+    'mkl': Option.simple,
+    'mpiinplace': Option.bool,
+    'npme': Option.string,
+    'nranks': Option.string,
+    'openmp': Option.bool,
     'reference': Option.simple,
     'release': Option.simple,
     'release-with-assert': Option.simple,
     'release-with-debug-info': Option.simple,
-    'asan': Option.simple,
-    'tng' : Option.bool,
-    'mkl': Option.simple,
-    'fftpack': Option.simple,
-    'buildfftw': Option.simple,
-    'double': Option.simple,
+    'static': Option.simple,
     'thread-mpi': Option.bool,
-    'clang_cuda': Option.bool,
-    'openmp': Option.bool,
-    'nranks': Option.string,
-    'npme': Option.string,
-    'gpu_id': Option.string,
-    'hwloc': Option.bool,
-    'mpiinplace': Option.bool
+    'tng' : Option.bool,
 }
 
 extra_projects = [Project.REGRESSIONTESTS]
