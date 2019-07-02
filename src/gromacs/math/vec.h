@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,13 +37,18 @@
 #ifndef GMX_MATH_VEC_H
 #define GMX_MATH_VEC_H
 
+/*! \brief Mathematical operations on (deprecated) rvec and matrix classes
+ *
+ * \todo Remove functions as Rvec replaces rvec and BasicMatrix3x3 replaces matrix
+ *
+ * \ingroup module_math
+ */
 /*
    collection of in-line ready operations:
 
    vector operations:
    void rvec_add(const rvec a,const rvec b,rvec c)  c = a + b
    void dvec_add(const dvec a,const dvec b,dvec c)  c = a + b
-   void ivec_add(const ivec a,const ivec b,ivec c)  c = a + b
    void rvec_inc(rvec a,const rvec b)               a += b
    void dvec_inc(dvec a,const dvec b)               a += b
    void ivec_inc(ivec a,const ivec b)               a += b
@@ -64,7 +69,6 @@
    void clear_rvecs(int n,rvec v[])
    real iprod(rvec a,rvec b)                        = a . b (inner product)
    double diprod(dvec a,dvec b)                     = a . b (inner product)
-   real iiprod(ivec a,ivec b)                       = a . b (integers)
    real norm2(rvec a)                               = | a |^2 ( = x*y*z )
    double dnorm2(dvec a)                            = | a |^2 ( = x*y*z )
    real norm(rvec a)                                = | a |
@@ -108,19 +112,6 @@
 static inline void rvec_add(const rvec a, const rvec b, rvec c)
 {
     real x, y, z;
-
-    x = a[XX]+b[XX];
-    y = a[YY]+b[YY];
-    z = a[ZZ]+b[ZZ];
-
-    c[XX] = x;
-    c[YY] = y;
-    c[ZZ] = z;
-}
-
-static inline void dvec_add(const dvec a, const dvec b, dvec c)
-{
-    double x, y, z;
 
     x = a[XX]+b[XX];
     y = a[YY]+b[YY];
@@ -350,11 +341,6 @@ static inline double diprod(const dvec a, const dvec b)
     return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
 }
 
-static inline int iiprod(const ivec a, const ivec b)
-{
-    return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
-}
-
 static inline real norm2(const rvec a)
 {
     return a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ];
@@ -379,16 +365,6 @@ static inline double dnorm(const dvec a)
 static inline real norm(const rvec a)
 {
     return std::sqrt(iprod(a, a));
-}
-
-static inline real invnorm(const rvec a)
-{
-    return gmx::invsqrt(norm2(a));
-}
-
-static inline real dinvnorm(const dvec a)
-{
-    return gmx::invsqrt(dnorm2(a));
 }
 
 /* WARNING:
