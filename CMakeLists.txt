@@ -469,8 +469,8 @@ gmx_option_trivalue(
 
 if (GMX_HWLOC)
     # Find quietly the second time.
-    if(DEFINED HWLOC_LIBRARIES)
-        set(Hwloc_FIND_QUIETLY TRUE)
+    if(DEFINED HWLOC_FOUND)
+        set(HWLOC_FIND_QUIETLY TRUE)
     endif()
     find_package(Hwloc 1.5)
 
@@ -480,7 +480,7 @@ if (GMX_HWLOC)
         endif()
 
         gmx_check_if_changed(HWLOC_FOUND_CHANGED HWLOC_FOUND)
-        if (_STATIC_HWLOC AND HWLOC_FOUND_CHANGED)
+        if (_STATIC_HWLOC AND HWLOC_FOUND_CHANGED AND NOT GMX_HWLOC_FORCE)
             message(STATUS "Static hwloc library found, will not attempt using it as it could lead to link-time errors. To use the detected library, manually set GMX_HWLOC=ON and you will likely have to pass appropriate linker flags too to satisfy the link-time dependencies of your hwloc library. Try \"pkg-config --libs --static hwloc\" for suggestions on what you will need.")
             set(GMX_USE_HWLOC OFF)
         else()
