@@ -27,7 +27,7 @@ gcc-5 gpuhw=nvidia cuda-9.0 cmake-3.9.6 mpi npme=1 nranks=2 openmp
 # Test newest gcc supported by newest CUDA at time of release
 # Test thread-MPI with CUDA
 # Test SIMD implementation of pair search for GPU code-path
-gcc-7 gpuhw=nvidia gpu_id=1 cuda-10.0 thread-mpi openmp cmake-3.10.0 release-with-assert simd=avx2_256
+gcc-8 gpuhw=nvidia gpu_id=1 cuda-10.1 thread-mpi openmp cmake-3.10.0 release-with-assert simd=avx2_256
 
 # Test with libcxx
 # Test with ThreadSanitizer + OpenMP + SIMD
