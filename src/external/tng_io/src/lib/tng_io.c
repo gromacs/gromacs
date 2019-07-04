@@ -15177,6 +15177,7 @@ tng_function_status DECLSPECDLLEXPORT tng_time_get_str
 {
     struct tm *time_data;
     time_t secs;
+    int retval;
 
     TNG_ASSERT(tng_data, "TNG library: Trajectory container not properly setup.");
     TNG_ASSERT(time, "TNG library: time must not be a NULL pointer");
@@ -15184,12 +15185,13 @@ tng_function_status DECLSPECDLLEXPORT tng_time_get_str
     secs = tng_data->time;
 
     time_data = localtime(&secs); /* Returns a statically allocated variable. */
-    TNG_SNPRINTF(time, TNG_MAX_DATE_STR_LEN,
+    retval = TNG_SNPRINTF(time, TNG_MAX_DATE_STR_LEN,
              "%4d-%02d-%02d %02d:%02d:%02d",
              time_data->tm_year+1900, time_data->tm_mon+1, time_data->tm_mday,
              time_data->tm_hour, time_data->tm_min, time_data->tm_sec);
 
-    return(TNG_SUCCESS);
+    /* handle return value (also) to quiet a -Wformat-truncation warning */
+    return( (retval < 0) ? TNG_SUCCESS : TNG_FAILURE );
 }
 
 
