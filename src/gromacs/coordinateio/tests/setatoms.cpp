@@ -32,8 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*!\file
- * \internal
+/*!\internal
+ * \file
  * \brief
  * Tests for gmx::SetAtoms
  *
