@@ -582,8 +582,8 @@ bool_t xdr_double(XDR * xdrs, double * dp)
             ip     = reinterpret_cast<int *>(dp);
             tmp[0] = ip[!bool(LSW)];
             tmp[1] = ip[LSW];
-            return (bool(xdr_putint32(xdrs, tmp)) &&
-                    bool(xdr_putint32(xdrs, tmp+1)));
+            return static_cast<bool_t>(bool(xdr_putint32(xdrs, tmp)) &&
+                                       bool(xdr_putint32(xdrs, tmp+1)));
 
         case XDR_DECODE:
             ip = reinterpret_cast<int *>(dp);
