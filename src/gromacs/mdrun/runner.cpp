@@ -1064,11 +1064,11 @@ int Mdrunner::mdrunner()
             }
             else if (nonbondedTarget == TaskTarget::Gpu)
             {
-                gmx_fatal(FARGS, "Cannot run short-ranged nonbonded interactions on a GPU because there is none detected.");
+                gmx_fatal(FARGS, "Cannot run short-ranged nonbonded interactions on a GPU because no GPU is detected.");
             }
             else if (bondedTarget == TaskTarget::Gpu)
             {
-                gmx_fatal(FARGS, "Cannot run bonded interactions on a GPU because there is none detected.");
+                gmx_fatal(FARGS, "Cannot run bonded interactions on a GPU because no GPU is detected.");
             }
         }
     }
@@ -1083,7 +1083,7 @@ int Mdrunner::mdrunner()
             }
             else if (pmeTarget == TaskTarget::Gpu)
             {
-                gmx_fatal(FARGS, "Cannot run PME on a GPU because there is none detected.");
+                gmx_fatal(FARGS, "Cannot run PME on a GPU because no GPU is detected.");
             }
         }
     }
