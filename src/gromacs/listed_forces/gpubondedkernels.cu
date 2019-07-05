@@ -74,6 +74,7 @@
 /*-------------------------------- CUDA kernels-------------------------------- */
 /*------------------------------------------------------------------------------*/
 
+#define CUDA_DEG2RAD_F          (CUDART_PI_F/180.0f)
 
 /*---------------- BONDED CUDA kernels--------------*/
 
@@ -187,7 +188,7 @@ void angles_gpu(const int i, float *vtot_loc, const int numBonds,
         float va;
         float dVdt;
         harmonic_gpu(d_forceparams[type].harmonic.krA,
-                     d_forceparams[type].harmonic.rA*DEG2RAD,
+                     d_forceparams[type].harmonic.rA*CUDA_DEG2RAD_F,
                      theta, &va, &dVdt);
 
         if (calcEner)
@@ -249,7 +250,7 @@ void urey_bradley_gpu(const int i, float *vtot_loc, const int numBonds,
         int   aj     = ubData.z;
         int   ak     = ubData.w;
 
-        float th0A  = d_forceparams[type].u_b.thetaA*DEG2RAD;
+        float th0A  = d_forceparams[type].u_b.thetaA*CUDA_DEG2RAD_F;
         float kthA  = d_forceparams[type].u_b.kthetaA;
         float r13A  = d_forceparams[type].u_b.r13A;
         float kUBA  = d_forceparams[type].u_b.kUBA;
@@ -370,7 +371,7 @@ static void dopdihs_gpu(const float cpA, const float phiA, const int mult,
 {
     float mdphi, sdphi;
 
-    mdphi = mult*phi - phiA*DEG2RAD;
+    mdphi = mult*phi - phiA*CUDA_DEG2RAD_F;
     sdphi = sinf(mdphi);
     *v    = cpA * (1.0f + cosf(mdphi));
     *f    = -cpA*mult*sdphi;
@@ -641,7 +642,7 @@ void  idihs_gpu(const int i, float *vtot_loc, const int numBonds,
         float kA   = d_forceparams[type].harmonic.krA;
         float pA   = d_forceparams[type].harmonic.rA;
 
-        float phi0 = pA*DEG2RAD;
+        float phi0 = pA*CUDA_DEG2RAD_F;
 
         float dp   = phi - phi0;
 
