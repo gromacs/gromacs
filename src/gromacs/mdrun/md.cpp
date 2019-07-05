@@ -333,7 +333,7 @@ void gmx::Simulator::do_md()
     if (c_useGpuUpdateConstrain)
     {
         GMX_RELEASE_ASSERT(ir->eI == eiMD, "Only md integrator is supported on the GPU.");
-        GMX_RELEASE_ASSERT(ir->etc == etcNO, "Temperature coupling is not supported on the GPU.");
+        //GMX_RELEASE_ASSERT(ir->etc == etcNO, "Temperature coupling is not supported on the GPU.");
         GMX_RELEASE_ASSERT(ir->epc == epcNO, "Pressure coupling is not supported on the GPU.");
         GMX_RELEASE_ASSERT(!mdatoms->haveVsites, "Virtual sites are not supported on the GPU");
         GMX_LOG(mdlog.info).asParagraph().
@@ -1232,7 +1232,7 @@ void gmx::Simulator::do_md()
             integrator->copyForcesToGpu(as_rvec_array(f.data()));
 
             // This applies Leap-Frog, LINCS and SETTLE in a succession
-            integrator->integrate(ir->delta_t, true, bCalcVir, shake_vir);
+            integrator->integrate(ir->delta_t, true, bCalcVir, shake_vir, ekind->tcstat[0].lambda);
 
             integrator->copyCoordinatesFromGpu(state->x.rvec_array());
             integrator->copyVelocitiesFromGpu(state->v.rvec_array());

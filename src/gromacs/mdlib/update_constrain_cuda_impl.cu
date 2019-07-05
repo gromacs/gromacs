@@ -77,13 +77,14 @@ namespace gmx
 void UpdateConstrainCuda::Impl::integrate(const real  dt,
                                           const bool  updateVelocities,
                                           const bool  computeVirial,
-                                          tensor      virial)
+                                          tensor      virial,
+                                          float       lambda)
 {
     // Clearing virial matrix
     // TODO There is no point in having saparate virial matrix for constraints
     clear_mat(virial);
 
-    integrator_->integrate(d_x_, d_xp_, d_v_, d_f_, dt);
+    integrator_->integrate(d_x_, d_xp_, d_v_, d_f_, dt, lambda);
     lincsCuda_->apply(d_x_, d_xp_,
                       updateVelocities, d_v_, 1.0/dt,
                       computeVirial, virial);
@@ -197,9 +198,10 @@ UpdateConstrainCuda::~UpdateConstrainCuda() = default;
 void UpdateConstrainCuda::integrate(const real  dt,
                                     const bool  updateVelocities,
                                     const bool  computeVirial,
-                                    tensor      virialScaled)
+                                    tensor      virialScaled,
+                                    real        lambda)
 {
-    impl_->integrate(dt, updateVelocities, computeVirial, virialScaled);
+    impl_->integrate(dt, updateVelocities, computeVirial, virialScaled, lambda);
 }
 
 void UpdateConstrainCuda::set(const t_idef               &idef,

@@ -91,7 +91,8 @@ class UpdateConstrainCuda::Impl
         void integrate(const real  dt,
                        const bool  updateVelocities,
                        const bool  computeVirial,
-                       tensor      virial);
+                       tensor      virial,
+                       real        lambda);
 
         /*! \brief
          * Update data-structures (e.g. after NB search step).

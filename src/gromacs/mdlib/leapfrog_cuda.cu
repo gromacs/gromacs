@@ -97,7 +97,8 @@ __global__ void leapfrog_kernel(const int                  numAtoms,
                                 float3* __restrict__       gm_v,
                                 const float3* __restrict__ gm_f,
                                 const float*  __restrict__ gm_inverseMasses,
-                                const float                dt);
+                                const float                dt,
+                                real                       lambda);
 
 __launch_bounds__(c_maxThreadsPerBlock)
 __global__ void leapfrog_kernel(const int                  numAtoms,
@@ -106,13 +107,14 @@ __global__ void leapfrog_kernel(const int                  numAtoms,
                                 float3* __restrict__       gm_v,
                                 const float3* __restrict__ gm_f,
                                 const float*  __restrict__ gm_inverseMasses,
-                                const float                dt)
+                                const float                dt,
+                                real                       lambda)
 {
     int threadIndex = blockIdx.x*blockDim.x + threadIdx.x;
     if (threadIndex < numAtoms)
     {
         float3 xi           = gm_x[threadIndex];
-        float3 vi           = gm_v[threadIndex];
+        float3 vi           = gm_v[threadIndex]*lambda;
         float3 fi           = gm_f[threadIndex];
         float  imi          = gm_inverseMasses[threadIndex];
         float  imidt        = imi*dt;
@@ -128,7 +130,8 @@ void LeapFrogCuda::integrate(const float3 *d_x,
                              float3       *d_xp,
                              float3       *d_v,
                              const float3 *d_f,
-                             const real    dt)
+                             const real    dt,
+                             real          lambda)
 {
 
     ensureNoPendingCudaError("In CUDA version of Leap-Frog integrator");
@@ -153,7 +156,7 @@ void LeapFrogCuda::integrate(const float3 *d_x,
                                                          &gm_x, &gm_xp,
                                                          &gm_v,
                                                          &gm_f,
-                                                         &gm_inverseMasses, &dt);
+                                                         &gm_inverseMasses, &dt, &lambda);
     launchGpuKernel(kernelPtr, config, nullptr, "leapfrog_kernel", kernelArgs);
 
     return;

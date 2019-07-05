@@ -89,7 +89,7 @@ void integrateLeapFrogCuda(const int        numAtoms,
 
     for (int step = 0; step < numSteps; step++)
     {
-        integrator->integrate(d_x, d_xp, d_v, d_f, dt);
+        integrator->integrate(d_x, d_xp, d_v, d_f, dt, 1.0);
 
         copyFromDeviceBuffer((float3*)h_xp, &d_xp, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
         copyToDeviceBuffer(&d_x,    (float3*)h_xp, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);

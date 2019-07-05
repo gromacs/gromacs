@@ -94,7 +94,8 @@ class LeapFrogCuda
                        float3       *d_xp,
                        float3       *d_v,
                        const float3 *d_f,
-                       const real    dt);
+                       const real    dt,
+                       real          lambda);
 
     private:
 
