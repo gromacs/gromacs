@@ -1982,7 +1982,7 @@ int gmx_grompp(int argc, char *argv[])
 
     /* If we are doing QM/MM, check that we got the atom numbers */
     have_atomnumber = TRUE;
-    for (int i = 0; i < gmx::ssize(atypes); i++)
+    for (gmx::index i = 0; i < gmx::ssize(atypes); i++)
     {
         have_atomnumber = have_atomnumber && (atypes.atomNumberFromAtomType(i) >= 0);
     }

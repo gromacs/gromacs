@@ -93,9 +93,9 @@ class RangePartitioning
                 }
 
                 /*! \brief Begin iterator/value */
-                const iterator begin() const { return begin_; }
+                iterator begin() const { return begin_; }
                 /*! \brief End iterator/value */
-                const iterator end() const { return end_; }
+                iterator end() const { return end_; }
 
                 /*! \brief The number of items in the block */
                 int size() const
@@ -117,7 +117,7 @@ class RangePartitioning
         /*! \brief Returns the number of blocks */
         int numBlocks() const
         {
-            return static_cast<int>(index_.size() - 1);
+            return static_cast<int>(index_.size()) - 1;
         }
 
         /*! \brief Returns the size of the block with index \p blockIndex */

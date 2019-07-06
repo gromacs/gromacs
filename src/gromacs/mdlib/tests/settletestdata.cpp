@@ -84,26 +84,18 @@ SettleTestData::SettleTestData(int numSettles) :
     // Perturb the atom positions, to appear like an
     // "update," and where there is definitely constraining
     // work to do.
-    for (int i = 0; i < xPrime_.size()*DIM; ++i)
+    const real deltas[] = { 0.01, -0.01, +0.02, -0.02 };
+    int        i        = 0;
+    for (auto &xPrime : xPrime_)
     {
-        if (i % 4 == 0)
-        {
-            xPrime_[i / DIM][i % DIM] += 0.01;
-        }
-        else if (i % 4 == 1)
-        {
-            xPrime_[i / DIM][i % DIM] -= 0.01;
-        }
-        else if (i % 4 == 2)
-        {
-            xPrime_[i / DIM][i % DIM] += 0.02;
-        }
-        else if (i % 4 == 3)
-        {
-            xPrime_[i / DIM][i % DIM] -= 0.02;
-        }
-        v_[i / DIM][i % DIM] = 0.0;
+        xPrime[XX] += deltas[i % 4];
+        ++i;
+        xPrime[YY] += deltas[i % 4];
+        ++i;
+        xPrime[ZZ] += deltas[i % 4];
+        ++i;
     }
+    std::fill(v_.begin(), v_.end(), RVec {0.0, 0.0, 0.0});
 
     // Set up the topology.
     const int settleType = 0;

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -241,22 +241,17 @@ void _gmx_error(const char *key, const std::string &msg, const char *file, int l
 void _range_check(int n, int n_min, int n_max, const char *warn_str,
                   const char *var, const char *file, int line)
 {
-    char buf[1024];
-
     if ((n < n_min) || (n >= n_max))
     {
+        std::string buf;
         if (warn_str != nullptr)
         {
-            strcpy(buf, warn_str);
-            strcat(buf, "\n");
-        }
-        else
-        {
-            buf[0] = '\0';
+            buf  = warn_str;
+            buf += "\n";
         }
 
-        sprintf(buf+strlen(buf), "Variable %s has value %d. It should have been "
-                "within [ %d .. %d ]\n", var, n, n_min, n_max);
+        buf += gmx::formatString("Variable %s has value %d. It should have been "
+                                 "within [ %d .. %d ]\n", var, n, n_min, n_max);
 
         _gmx_error("range", buf, file, line);
     }

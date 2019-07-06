@@ -89,7 +89,7 @@ copyMovedAtomsToBufferPerAtom(gmx::ArrayRef<const int> move,
 {
     int pos_vec[DIM*2] = { 0 };
 
-    for (int i = 0; i < move.ssize(); i++)
+    for (gmx::index i = 0; i < move.ssize(); i++)
     {
         /* Skip moved atoms */
         const int m = move[i];
@@ -110,7 +110,7 @@ copyMovedUpdateGroupCogs(gmx::ArrayRef<const int> move,
 {
     int pos_vec[DIM*2] = { 0 };
 
-    for (int g = 0; g < move.ssize(); g++)
+    for (gmx::index g = 0; g < move.ssize(); g++)
     {
         /* Skip moved atoms */
         const int m = move[g];
@@ -133,7 +133,7 @@ static void clear_and_mark_ind(gmx::ArrayRef<const int>      move,
                                char                         *bLocalCG,
                                int                          *cell_index)
 {
-    for (int a = 0; a < move.ssize(); a++)
+    for (gmx::index a = 0; a < move.ssize(); a++)
     {
         if (move[a] >= 0)
         {

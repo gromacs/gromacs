@@ -1521,7 +1521,7 @@ void clean_vsite_bondeds(gmx::ArrayRef<InteractionsOfType> plist, int natoms, bo
             if ((interaction_function[ftype].flags & IF_VSITE) &&
                 ftype != F_VSITEN)
             {
-                for (int interactionIndex = 0;
+                for (gmx::index interactionIndex = 0;
                      interactionIndex < gmx::ssize(plist[ftype]);
                      interactionIndex++)
                 {

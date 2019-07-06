@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,7 +101,7 @@ class HashedMap
             /* Make the hash table a power of 2 and at least 1.5 * #elements */
             int tableSize = 64;
             while (tableSize <= INT_MAX/2 &&
-                   numElementsEstimate*c_relTableSizeSetMin > tableSize)
+                   static_cast<float>(numElementsEstimate)*c_relTableSizeSetMin > tableSize)
             {
                 tableSize *= 2;
             }

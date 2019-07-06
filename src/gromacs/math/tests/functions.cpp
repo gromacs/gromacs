@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -170,7 +170,7 @@ TEST(FunctionTest, InvcbrtFloat)
     gmx::test::TestReferenceChecker  checker(data.rootChecker());
     std::vector<float>               result;
 
-    for (float f : {-5, -4, -3, -2, -1, 1, 2, 3, 4})
+    for (int f : {-5, -4, -3, -2, -1, 1, 2, 3, 4})
     {
         result.push_back(gmx::invcbrt(f));
     }
@@ -311,7 +311,7 @@ TEST(FunctionTest, ErfInvFloat)
 
     for (int i = 0; i < npoints; i++)
     {
-        float r = float(2*i - npoints + 1) / npoints;
+        float r = float(2*i - npoints + 1) / float(npoints);
 
         result.push_back(gmx::erfinv(r));
     }
@@ -340,7 +340,7 @@ TEST(FunctionTest, ErfAndErfInvAreInversesFloat)
 
     for (int i = 0; i < npoints; i++)
     {
-        float r = float(2*i - npoints + 1) / npoints;
+        float r = float(2*i - npoints + 1) / float(npoints);
         EXPECT_FLOAT_EQ_TOL(r, std::erf(gmx::erfinv(r)), gmx::test::ulpTolerance(10));
     }
 }

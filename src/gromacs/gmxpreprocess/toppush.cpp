@@ -1520,7 +1520,7 @@ static bool findIfAllNBAtomsMatch(gmx::ArrayRef<const int>      atomsFromParamet
     }
     else if (bB)
     {
-        for (int i = 0; i < atomsFromCurrentParameter.ssize(); i++)
+        for (gmx::index i = 0; i < atomsFromCurrentParameter.ssize(); i++)
         {
             if (at->atom[atomsFromCurrentParameter[i]].typeB != atomsFromParameterArray[i])
             {
@@ -1531,7 +1531,7 @@ static bool findIfAllNBAtomsMatch(gmx::ArrayRef<const int>      atomsFromParamet
     }
     else
     {
-        for (int i = 0; i < atomsFromCurrentParameter.ssize(); i++)
+        for (gmx::index i = 0; i < atomsFromCurrentParameter.ssize(); i++)
         {
             if (at->atom[atomsFromCurrentParameter[i]].type != atomsFromParameterArray[i])
             {
@@ -1746,7 +1746,7 @@ static bool findIfAllParameterAtomsMatch(gmx::ArrayRef<const int>      atomsFrom
     }
     else if (bB)
     {
-        for (int i = 0; i < atomsFromCurrentParameter.ssize(); i++)
+        for (gmx::index i = 0; i < atomsFromCurrentParameter.ssize(); i++)
         {
             if (atypes->bondAtomTypeFromAtomType(
                         at->atom[atomsFromCurrentParameter[i]].typeB) != atomsFromParameterArray[i])
@@ -1758,7 +1758,7 @@ static bool findIfAllParameterAtomsMatch(gmx::ArrayRef<const int>      atomsFrom
     }
     else
     {
-        for (int i = 0; i < atomsFromCurrentParameter.ssize(); i++)
+        for (gmx::index i = 0; i < atomsFromCurrentParameter.ssize(); i++)
         {
             if (atypes->bondAtomTypeFromAtomType(
                         at->atom[atomsFromCurrentParameter[i]].type) != atomsFromParameterArray[i])

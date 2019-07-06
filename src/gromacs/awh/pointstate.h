@@ -316,7 +316,7 @@ class PointState
                 return false;
             }
 
-            for (int i = 0; i < numUpdatesSkipped; i++)
+            for (int64_t i = 0; i < numUpdatesSkipped; i++)
             {
                 /* This point was non-local at the time of the update meaning no weight */
                 updateFreeEnergyAndWeight(params, 0, weighthistScaling, logPmfSumScaling);

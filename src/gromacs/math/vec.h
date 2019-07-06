@@ -105,6 +105,8 @@
 
 #include <cmath>
 
+#include <type_traits>
+
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
@@ -624,9 +626,19 @@ namespace gmx
  * \return magnitude or squared magnitude of vector
  * \{
  */
-template<typename T> T norm(T* v) {return ::norm(v); }
-template <typename T> T norm2(T* v) { return ::norm2(v); }
+template<typename T> std::remove_const_t<T>
+norm(T* v)
+{
+    return ::norm(v);
+}
+template <typename T> std::remove_const_t<T>
+norm2(T* v)
+{
+    return ::norm2(v);
+}
+
 }      // namespace gmx
+
 /*! \} */
 
 #endif

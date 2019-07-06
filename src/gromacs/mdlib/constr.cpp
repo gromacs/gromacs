@@ -1170,7 +1170,7 @@ void Constraints::saveEdsamPointer(gmx_edsam * ed)
     impl_->ed = ed;
 }
 
-const ArrayRef<const t_blocka>
+ArrayRef<const t_blocka>
 Constraints::atom2constraints_moltype() const
 {
     return impl_->at2con_mt;

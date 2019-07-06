@@ -166,7 +166,7 @@ class Mdrunner
          * rather than offering this public interface.
          */
         void addPotential(std::shared_ptr<IRestraintPotential> restraint,
-                          std::string                          name);
+                          const std::string                   &name);
 
         //! Called when thread-MPI spawns threads.
         t_commrec *spawnThreads(int numThreadsToLaunch) const;

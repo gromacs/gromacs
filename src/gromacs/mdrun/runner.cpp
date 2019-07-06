@@ -1635,7 +1635,7 @@ Mdrunner::~Mdrunner()
 };
 
 void Mdrunner::addPotential(std::shared_ptr<gmx::IRestraintPotential> puller,
-                            std::string                               name)
+                            const std::string                        &name)
 {
     GMX_ASSERT(restraintManager_, "Mdrunner must have a restraint manager.");
     // Not sure if this should be logged through the md logger or something else,
@@ -1645,7 +1645,7 @@ void Mdrunner::addPotential(std::shared_ptr<gmx::IRestraintPotential> puller,
     // When multiple restraints are used, it may be wasteful to register them separately.
     // Maybe instead register an entire Restraint Manager as a force provider.
     restraintManager_->addToSpec(std::move(puller),
-                                 std::move(name));
+                                 name);
 }
 
 Mdrunner::Mdrunner(std::unique_ptr<MDModules> mdModules)

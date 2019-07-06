@@ -256,7 +256,6 @@ class KeyValueTreeObject
             return *this;
         }
         //! Default move constructor.
-        //NOLINTNEXTLINE(performance-noexcept-move-constructor) bug #38733
         KeyValueTreeObject(KeyValueTreeObject &&)            = default;
         //! Default move assignment.
         KeyValueTreeObject &operator=(KeyValueTreeObject &&) = default;

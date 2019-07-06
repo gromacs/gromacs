@@ -144,7 +144,7 @@ ConstraintsTestData::ConstraintsTestData(const std::string &title,
 
     snew(idef_.il[F_CONSTR].iatoms, constraints.size());
     int maxType = 0;
-    for (unsigned i = 0; i < constraints.size(); i++)
+    for (index i = 0; i < ssize(constraints); i++)
     {
         if (i % 3 == 0)
         {
@@ -156,7 +156,7 @@ ConstraintsTestData::ConstraintsTestData(const std::string &title,
         idef_.il[F_CONSTR].iatoms[i] = constraints.at(i);
     }
     snew(idef_.iparams, maxType + 1);
-    for (unsigned i = 0; i < constraints.size()/3; i++)
+    for (index i = 0; i < ssize(constraints)/3; i++)
     {
         idef_.iparams[constraints.at(3*i)].constr.dA = constraintsR0.at(constraints.at(3*i));
         idef_.iparams[constraints.at(3*i)].constr.dB = constraintsR0.at(constraints.at(3*i));
@@ -165,10 +165,7 @@ ConstraintsTestData::ConstraintsTestData(const std::string &title,
     // Constraints and their parameters (global topology)
     InteractionList interactionList;
     interactionList.iatoms.resize(constraints.size());
-    for (unsigned i = 0; i < constraints.size(); i++)
-    {
-        interactionList.iatoms.at(i) = constraints.at(i);
-    }
+    std::copy(constraints.begin(), constraints.end(), interactionList.iatoms.begin());
     InteractionList interactionListEmpty;
     interactionListEmpty.iatoms.resize(0);
 

@@ -44,7 +44,7 @@
 static void pr_cmap(FILE *fp, int indent, const char *title,
                     const gmx_cmap_t *cmap_grid, gmx_bool bShowNumbers)
 {
-    int  i, j, nelem;
+    int  j, nelem;
     real dx, idx;
 
     if (cmap_grid->grid_spacing != 0)
@@ -61,12 +61,12 @@ static void pr_cmap(FILE *fp, int indent, const char *title,
     {
         fprintf(fp, "%s\n", title);
 
-        for (i = 0; i < gmx::ssize(cmap_grid->cmapdata); i++)
+        for (gmx::index i = 0; i < gmx::ssize(cmap_grid->cmapdata); i++)
         {
             idx = -180.0;
             fprintf(fp, "%8s %8s %8s %8s\n", "V", "dVdx", "dVdy", "d2dV");
 
-            fprintf(fp, "grid[%3d]={\n", bShowNumbers ? i : -1);
+            fprintf(fp, "grid[%3zd]={\n", bShowNumbers ? i : -1);
 
             for (j = 0; j < nelem; j++)
             {

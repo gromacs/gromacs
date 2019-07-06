@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
 int gmx_nmtraj(int argc, char *argv[])
@@ -110,16 +111,10 @@ int gmx_nmtraj(int argc, char *argv[])
     real        *     eigval;
     int        *      dummy;
     real        *     invsqrtm;
-    real              fraction;
     int              *out_eigidx;
     rvec        *     this_eigvec;
     real              omega, Ekin, m, vel;
-    int               nmodes, nphases;
-    int              *imodes;
     real             *amplitude;
-    real             *phases;
-    const char       *p;
-    char             *pe;
     gmx_output_env_t *oenv;
 
     t_filenm          fnm[] =
@@ -144,43 +139,30 @@ int gmx_nmtraj(int argc, char *argv[])
 
     /* Find vectors and phases */
 
-    /* first find number of args in string */
-    nmodes = gmx::countWords(eignrvec);
-
-    snew(imodes, nmodes);
-    p = eignrvec;
-    for (i = 0; i < nmodes; i++)
+    std::vector<int> imodes;
+    for (const auto &imodeString : gmx::splitString(eignrvec))
     {
-        /* C indices start on 0 */
-        imodes[i] = std::strtol(p, &pe, 10)-1;
-        p         = pe;
+        imodes.emplace_back(gmx::fromStdString<int>(imodeString));
     }
+    int               nmodes = gmx::ssize(imodes);
 
-    /* Now read phases */
-    nphases = gmx::countWords(phasevec);
+    std::vector<real> phases;
+    phases.reserve(nmodes);
+    for (const auto &phaseString : gmx::splitString(phasevec))
+    {
+        phases.emplace_back(gmx::fromStdString<int>(phaseString));
+    }
+    int nphases = gmx::ssize(phases);
 
     if (nphases > nmodes)
     {
         gmx_fatal(FARGS, "More phases than eigenvector indices specified.\n");
     }
 
-    snew(phases, nmodes);
-    p = phasevec;
-
-    for (i = 0; i < nphases; i++)
-    {
-        phases[i] = strtod(p, &pe);
-        p         = pe;
-    }
-
     if (nmodes > nphases)
     {
         printf("Warning: Setting phase of last %d modes to zero...\n", nmodes-nphases);
-    }
-
-    for (i = nphases; i < nmodes; i++)
-    {
-        phases[i] = 0;
+        phases.resize(nmodes, 0);
     }
 
     atoms = &top.atoms;
@@ -303,7 +285,7 @@ int gmx_nmtraj(int argc, char *argv[])
 
     for (i = 0; i < nframes; i++)
     {
-        fraction = static_cast<real>(i)/nframes;
+        real fraction = static_cast<real>(i)/static_cast<real>(nframes);
         for (j = 0; j < natoms; j++)
         {
             copy_rvec(xav[j], xout[j]);
@@ -322,7 +304,7 @@ int gmx_nmtraj(int argc, char *argv[])
                 }
             }
         }
-        write_trx(out, natoms, dummy, atoms, i, static_cast<real>(i)/nframes, box, xout, nullptr, nullptr);
+        write_trx(out, natoms, dummy, atoms, i, fraction, box, xout, nullptr, nullptr);
     }
 
     fprintf(stderr, "\n");

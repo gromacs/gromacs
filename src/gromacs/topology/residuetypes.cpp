@@ -157,7 +157,7 @@ int ResidueType::indexFromResidueName(const std::string &residueName) const
     return foundIt ? std::distance(temp.begin(), *foundIt) : -1;
 }
 
-const std::string ResidueType::nameFromResidueIndex(int index) const
+std::string ResidueType::nameFromResidueIndex(int index) const
 {
     if (index >= 0 && index < gmx::ssize(impl_->entry))
     {

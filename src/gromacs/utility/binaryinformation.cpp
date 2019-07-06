@@ -68,6 +68,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <array>
 #include <string>
 
 /* This file is completely threadsafe - keep it that way! */
@@ -166,14 +167,14 @@ void printCopyright(gmx::TextWriter *writer)
     {
         for (int j = 0; j < 4 && i < NCONTRIBUTORS; ++j, ++i)
         {
-            const int width = 18;
-            char      buf[30];
-            const int offset = centeringOffset(width, strlen(Contributors[i]));
-            GMX_RELEASE_ASSERT(static_cast<int>(strlen(Contributors[i])) + offset < asize(buf),
+            const int            width = 18;
+            std::array<char, 30> buf;
+            const int            offset = centeringOffset(width, strlen(Contributors[i]));
+            GMX_RELEASE_ASSERT(static_cast<int>(strlen(Contributors[i])) + offset < gmx::ssize(buf),
                                "Formatting buffer is not long enough");
-            std::fill(buf, buf+width, ' ');
-            std::strcpy(buf+offset, Contributors[i]);
-            writer->writeString(formatString(" %-*s", width, buf));
+            std::fill(buf.begin(), buf.begin()+offset, ' ');
+            std::strncpy(buf.data()+offset, Contributors[i], gmx::ssize(buf) - offset);
+            writer->writeString(formatString(" %-*s", width, buf.data()));
         }
         writer->ensureLineBreak();
     }

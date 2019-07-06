@@ -69,7 +69,7 @@ class RestraintManager::Impl
          * \param restraint Handle to be added to the manager.
          * \param name Identifying string for restraint.
          */
-        void add(std::shared_ptr<::gmx::IRestraintPotential> restraint, std::string name);
+        void add(std::shared_ptr<::gmx::IRestraintPotential> restraint, const std::string &name);
 
         /*!
          * \brief Clear registered restraints and reset the manager.
@@ -96,7 +96,7 @@ class RestraintManager::Impl
 std::mutex RestraintManager::Impl::initializationMutex_ {};
 
 
-void RestraintManager::Impl::add(std::shared_ptr<::gmx::IRestraintPotential> restraint, std::string name)
+void RestraintManager::Impl::add(std::shared_ptr<::gmx::IRestraintPotential> restraint, const std::string &name)
 {
     (void)name;
     restraint_.emplace_back(std::move(restraint));
@@ -119,9 +119,9 @@ void RestraintManager::clear() noexcept
 }
 
 void RestraintManager::addToSpec(std::shared_ptr<gmx::IRestraintPotential> puller,
-                                 std::string                               name)
+                                 const std::string                        &name)
 {
-    instance_->add(std::move(puller), std::move(name));
+    instance_->add(std::move(puller), name);
 }
 
 std::vector< std::shared_ptr<IRestraintPotential> > RestraintManager::getRestraints() const

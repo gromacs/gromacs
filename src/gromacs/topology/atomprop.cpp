@@ -410,7 +410,7 @@ bool AtomProperties::setAtomProperty(int                eprop,
 }
 
 
-const std::string AtomProperties::elementFromAtomNumber(int atomNumber)
+std::string AtomProperties::elementFromAtomNumber(int atomNumber)
 {
     if (setProperties(prop(epropElement), restype(), epropElement, impl_->bWarned))
     {

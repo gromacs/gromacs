@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,7 +82,7 @@ static void norm_princ(const t_atoms *atoms, int isize, int *index, int natoms,
         {
             vec[m] += gmx::square(x[index[i]][m]);
         }
-        vec[m] = std::sqrt(vec[m] / isize);
+        vec[m] = std::sqrt(vec[m] / static_cast<real>(isize));
         /* calculate scaling constants */
         vec[m] = 1.0 / (std::sqrt(3.0) * vec[m]);
     }
@@ -950,7 +950,7 @@ int gmx_rms(int argc, char *argv[])
         }
         if (bFile2)
         {
-            rmsd_avg /= tel_mat*tel_mat2;
+            rmsd_avg /= static_cast<real>(tel_mat)*static_cast<real>(tel_mat2);
         }
         else
         {
@@ -1037,7 +1037,7 @@ int gmx_rms(int argc, char *argv[])
                             {
                                 mx = gmx::roundToInt(std::log(static_cast<real>(mx))*delta_scalex);
                             }
-                            my             = gmx::roundToInt(rmsd_mat[i][j]*delta_scaley*del_lev);
+                            my             = gmx::roundToInt(rmsd_mat[i][j]*delta_scaley*static_cast<real>(del_lev));
                             delta_tot[mx] += 1.0;
                             if ((rmsd_mat[i][j] >= 0) && (rmsd_mat[i][j] <= delta_maxy))
                             {
@@ -1071,7 +1071,7 @@ int gmx_rms(int argc, char *argv[])
                 }
                 for (i = 0; i < del_lev+1; i++)
                 {
-                    del_yaxis[i] = delta_maxy*i/del_lev;
+                    del_yaxis[i] = delta_maxy*static_cast<real>(i)/static_cast<real>(del_lev);
                 }
                 sprintf(buf, "%s %s vs. delta t", gn_rms[0], whatname[ewhat]);
                 fp = gmx_ffopen("delta.xpm", "w");
@@ -1209,7 +1209,7 @@ int gmx_rms(int argc, char *argv[])
         fp = xvgropen(opt2fn("-a", NFILE, fnm), buf, "Residue", buf2, oenv);
         for (j = 0; (j < nrms); j++)
         {
-            fprintf(fp, "%10d  %10g\n", j, rlstot/teller);
+            fprintf(fp, "%10d  %10g\n", j, rlstot/static_cast<real>(teller));
         }
         xvgrclose(fp);
     }
@@ -1219,7 +1219,7 @@ int gmx_rms(int argc, char *argv[])
         fp = xvgropen("aver.xvg", gn_rms[0], "Residue", whatxvglabel[ewhat], oenv);
         for (j = 0; (j < irms[0]); j++)
         {
-            fprintf(fp, "%10d  %10g\n", j, rlsnorm[j]/teller);
+            fprintf(fp, "%10d  %10g\n", j, rlsnorm[j]/static_cast<real>(teller));
         }
         xvgrclose(fp);
     }

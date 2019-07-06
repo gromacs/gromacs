@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -446,7 +446,7 @@ relativeToleranceAsPrecisionDependentUlp(double       magnitude,
                                          uint64_t     singleUlpDiff,
                                          uint64_t     doubleUlpDiff)
 {
-    return FloatingPointTolerance(magnitude*singleUlpDiff*GMX_FLOAT_EPS,
+    return FloatingPointTolerance(float(magnitude)*singleUlpDiff*GMX_FLOAT_EPS,
                                   magnitude*doubleUlpDiff*GMX_DOUBLE_EPS,
                                   0.0, 0.0,
                                   singleUlpDiff, doubleUlpDiff, false);
@@ -460,7 +460,7 @@ relativeToleranceAsPrecisionDependentUlp(double       magnitude,
 static inline FloatingPointTolerance
 absoluteTolerance(double tolerance)
 {
-    return FloatingPointTolerance(tolerance, tolerance, 0.0, 0.0,
+    return FloatingPointTolerance(float(tolerance), tolerance, 0.0, 0.0,
                                   UINT64_MAX, UINT64_MAX, false);
 }
 

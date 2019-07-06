@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2003 Erik Lindahl, David van der Spoel, University of Groningen.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,7 +77,7 @@ gmx_fft_init_many_1d(gmx_fft_t *        pfft,
     }
     *pfft = nullptr;
 
-    if ( (fft = (gmx_many_fft_t)malloc(sizeof(struct gmx_many_fft))) == nullptr)
+    if ( (fft = static_cast<gmx_many_fft_t>(malloc(sizeof(struct gmx_many_fft)))) == nullptr)
     {
         return ENOMEM;
     }
@@ -86,7 +86,7 @@ gmx_fft_init_many_1d(gmx_fft_t *        pfft,
     fft->howmany = howmany;
     fft->dist    = 2*nx;
 
-    *pfft = (gmx_fft_t)fft;
+    *pfft = reinterpret_cast<gmx_fft_t>(fft);
     return 0;
 }
 
@@ -104,7 +104,7 @@ gmx_fft_init_many_1d_real(gmx_fft_t *        pfft,
     }
     *pfft = nullptr;
 
-    if ( (fft = (gmx_many_fft_t)malloc(sizeof(struct gmx_many_fft))) == nullptr)
+    if ( (fft = static_cast<gmx_many_fft_t>(malloc(sizeof(struct gmx_many_fft)))) == nullptr)
     {
         return ENOMEM;
     }
@@ -113,7 +113,7 @@ gmx_fft_init_many_1d_real(gmx_fft_t *        pfft,
     fft->howmany = howmany;
     fft->dist    = 2*(nx/2+1);
 
-    *pfft = (gmx_fft_t)fft;
+    *pfft = reinterpret_cast<gmx_fft_t>(fft);
     return 0;
 }
 
@@ -123,7 +123,7 @@ gmx_fft_many_1d     (gmx_fft_t                  fft,
                      void *                     in_data,
                      void *                     out_data)
 {
-    gmx_many_fft_t mfft = (gmx_many_fft_t)fft;
+    gmx_many_fft_t mfft = reinterpret_cast<gmx_many_fft_t>(fft);
     int            i, ret;
     for (i = 0; i < mfft->howmany; i++)
     {
@@ -132,8 +132,8 @@ gmx_fft_many_1d     (gmx_fft_t                  fft,
         {
             return ret;
         }
-        in_data  = (real*)in_data+mfft->dist;
-        out_data = (real*)out_data+mfft->dist;
+        in_data  = static_cast<real*>(in_data)+mfft->dist;
+        out_data = static_cast<real*>(out_data)+mfft->dist;
     }
     return 0;
 }
@@ -144,7 +144,7 @@ gmx_fft_many_1d_real     (gmx_fft_t                  fft,
                           void *                     in_data,
                           void *                     out_data)
 {
-    gmx_many_fft_t mfft = (gmx_many_fft_t)fft;
+    gmx_many_fft_t mfft = reinterpret_cast<gmx_many_fft_t>(fft);
     int            i, ret;
     for (i = 0; i < mfft->howmany; i++)
     {
@@ -153,8 +153,8 @@ gmx_fft_many_1d_real     (gmx_fft_t                  fft,
         {
             return ret;
         }
-        in_data  = (real*)in_data+mfft->dist;
-        out_data = (real*)out_data+mfft->dist;
+        in_data  = static_cast<real*>(in_data)+mfft->dist;
+        out_data = static_cast<real*>(out_data)+mfft->dist;
     }
     return 0;
 }
@@ -163,7 +163,7 @@ gmx_fft_many_1d_real     (gmx_fft_t                  fft,
 void
 gmx_many_fft_destroy(gmx_fft_t    fft)
 {
-    gmx_many_fft_t mfft = (gmx_many_fft_t)fft;
+    gmx_many_fft_t mfft = reinterpret_cast<gmx_many_fft_t>(fft);
     if (mfft != nullptr)
     {
         if (mfft->fft != nullptr)

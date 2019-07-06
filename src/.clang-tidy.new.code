@@ -15,7 +15,16 @@ Checks:  clang-diagnostic-*,-clang-analyzer-*,
          -cppcoreguidelines-avoid-goto,
          google-*,-google-build-using-namespace,-google-explicit-constructor,
          -google-readability-todo,
-         -google-runtime-int
+         -google-runtime-int,
+         -cppcoreguidelines-non-private-member-variables-in-classes,
+         -misc-non-private-member-variables-in-classes,
+         -readability-isolate-declaration,
+         -cppcoreguidelines-avoid-c-arrays,
+         -cppcoreguidelines-avoid-magic-numbers,
+         -readability-magic-numbers,
+         -cppcoreguidelines-macro-usage,
+         -cppcoreguidelines-narrowing-conversions,
+         -bugprone-narrowing-conversions
 HeaderFilterRegex: .*
 CheckOptions:
   - key:           cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
@@ -30,3 +39,8 @@ CheckOptions:
     value:         1
   - key:           bugprone-dangling-handle.HandleClasses
     value:         std::basic_string_view; nonstd::sv_lite::basic_string_view
+# Permit passing shard pointers by value for sink parameters
+  - key:           performance-unnecessary-copy-initialization.AllowedTypes
+    value:         shared_ptr
+  - key:           performance-unnecessary-value-param.AllowedTypes
+    value:         shared_ptr

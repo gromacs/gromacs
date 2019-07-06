@@ -2693,12 +2693,10 @@ static void combine_nblists(gmx::ArrayRef<const NbnxnPairlistGpu>  nbls,
     /* Each thread should copy its own data to the combined arrays,
      * as otherwise data will go back and forth between different caches.
      */
-#if GMX_OPENMP && !(defined __clang_analyzer__)
-    int nthreads = gmx_omp_nthreads_get(emntPairsearch);
-#endif
+    int gmx_unused nthreads = gmx_omp_nthreads_get(emntPairsearch);
 
 #pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (int n = 0; n < nbls.ssize(); n++)
+    for (gmx::index n = 0; n < nbls.ssize(); n++)
     {
         try
         {
@@ -2709,11 +2707,11 @@ static void combine_nblists(gmx::ArrayRef<const NbnxnPairlistGpu>  nbls,
             int cj4_offset  = ncj4;
             int excl_offset = nexcl;
 
-            for (int i = n; i < nbls.ssize(); i++)
+            for (const auto &nbl : nbls)
             {
-                sci_offset  -= nbls[i].sci.size();
-                cj4_offset  -= nbls[i].cj4.size();
-                excl_offset -= nbls[i].excl.size();
+                sci_offset  -= nbl.sci.size();
+                cj4_offset  -= nbl.cj4.size();
+                excl_offset -= nbl.excl.size();
             }
 
             const NbnxnPairlistGpu &nbli = nbls[n];
@@ -3095,7 +3093,8 @@ static int getNumSimpleJClustersInList(const gmx_unused NbnxnPairlistGpu &nbl)
 static void incrementNumSimpleJClustersInList(NbnxnPairlistCpu *nbl,
                                               int               ncj_old_j)
 {
-    nbl->ncjInUse += nbl->cj.size() - ncj_old_j;
+    nbl->ncjInUse += nbl->cj.size();
+    nbl->ncjInUse -= ncj_old_j;
 }
 
 static void incrementNumSimpleJClustersInList(NbnxnPairlistGpu gmx_unused *nbl,
@@ -3311,7 +3310,6 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet &gridSet,
         {
             continue;
         }
-
         ncj_old_i = getNumSimpleJClustersInList(*nbl);
 
         d2cx = 0;
@@ -3323,7 +3321,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet &gridSet,
             }
             else
             {
-                bx1 = iGridDims.lowerCorner[XX] + (ci_x+1)*iGridDims.cellSize[XX];
+                bx1 = iGridDims.lowerCorner[XX] + (real(ci_x)+1)*iGridDims.cellSize[XX];
             }
             if (bx1 < jGridDims.lowerCorner[XX])
             {
@@ -3341,7 +3339,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet &gridSet,
         /* Loop over shift vectors in three dimensions */
         for (int tz = -shp[ZZ]; tz <= shp[ZZ]; tz++)
         {
-            const real shz = tz*box[ZZ][ZZ];
+            const real shz = real(tz)*box[ZZ][ZZ];
 
             bz0 = bbcz_i[ci].lower + shz;
             bz1 = bbcz_i[ci].upper + shz;
@@ -3366,7 +3364,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet &gridSet,
                 continue;
             }
 
-            bz1_frac = bz1/iGrid.numCellsInColumn(ci_xy);
+            bz1_frac = bz1/real(iGrid.numCellsInColumn(ci_xy));
             if (bz1_frac < 0)
             {
                 bz1_frac = 0;
@@ -3375,7 +3373,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet &gridSet,
 
             for (int ty = -shp[YY]; ty <= shp[YY]; ty++)
             {
-                const real shy = ty*box[YY][YY] + tz*box[ZZ][YY];
+                const real shy = real(ty)*box[YY][YY] + real(tz)*box[ZZ][YY];
 
                 if (bSimple)
                 {
@@ -3384,8 +3382,8 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet &gridSet,
                 }
                 else
                 {
-                    by0 = iGridDims.lowerCorner[YY] + (ci_y    )*iGridDims.cellSize[YY] + shy;
-                    by1 = iGridDims.lowerCorner[YY] + (ci_y + 1)*iGridDims.cellSize[YY] + shy;
+                    by0 = iGridDims.lowerCorner[YY] + (real(ci_y)    )*iGridDims.cellSize[YY] + shy;
+                    by1 = iGridDims.lowerCorner[YY] + (real(ci_y) + 1)*iGridDims.cellSize[YY] + shy;
                 }
 
                 get_cell_range<YY>(by0, by1,
@@ -3419,7 +3417,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet &gridSet,
                         continue;
                     }
 
-                    const real shx = tx*box[XX][XX] + ty*box[YY][XX] + tz*box[ZZ][XX];
+                    const real shx = real(tx)*box[XX][XX] + real(ty)*box[YY][XX] + real(tz)*box[ZZ][XX];
 
                     if (bSimple)
                     {
@@ -3428,8 +3426,8 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet &gridSet,
                     }
                     else
                     {
-                        bx0 = iGridDims.lowerCorner[XX] + (ci_x  )*iGridDims.cellSize[XX] + shx;
-                        bx1 = iGridDims.lowerCorner[XX] + (ci_x+1)*iGridDims.cellSize[XX] + shx;
+                        bx0 = iGridDims.lowerCorner[XX] + (real(ci_x)  )*iGridDims.cellSize[XX] + shx;
+                        bx1 = iGridDims.lowerCorner[XX] + (real(ci_x)+1)*iGridDims.cellSize[XX] + shx;
                     }
 
                     get_cell_range<XX>(bx0, bx1,
@@ -3463,14 +3461,15 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet &gridSet,
 
                     for (int cx = cxf; cx <= cxl; cx++)
                     {
+                        const real cx_real = cx;
                         d2zx = d2z;
-                        if (jGridDims.lowerCorner[XX] + cx*jGridDims.cellSize[XX] > bx1)
+                        if (jGridDims.lowerCorner[XX] + cx_real*jGridDims.cellSize[XX] > bx1)
                         {
-                            d2zx += gmx::square(jGridDims.lowerCorner[XX] + cx*jGridDims.cellSize[XX] - bx1);
+                            d2zx += gmx::square(jGridDims.lowerCorner[XX] + cx_real*jGridDims.cellSize[XX] - bx1);
                         }
-                        else if (jGridDims.lowerCorner[XX] + (cx+1)*jGridDims.cellSize[XX] < bx0)
+                        else if (jGridDims.lowerCorner[XX] + (cx_real+1)*jGridDims.cellSize[XX] < bx0)
                         {
-                            d2zx += gmx::square(jGridDims.lowerCorner[XX] + (cx+1)*jGridDims.cellSize[XX] - bx0);
+                            d2zx += gmx::square(jGridDims.lowerCorner[XX] + (cx_real+1)*jGridDims.cellSize[XX] - bx0);
                         }
 
                         if (isIntraGridList &&
@@ -3490,17 +3489,18 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet &gridSet,
 
                         for (int cy = cyf_x; cy <= cyl; cy++)
                         {
-                            const int columnStart = jGrid.firstCellInColumn(cx*jGridDims.numCells[YY] + cy);
-                            const int columnEnd   = jGrid.firstCellInColumn(cx*jGridDims.numCells[YY] + cy + 1);
+                            const int  columnStart = jGrid.firstCellInColumn(cx*jGridDims.numCells[YY] + cy);
+                            const int  columnEnd   = jGrid.firstCellInColumn(cx*jGridDims.numCells[YY] + cy + 1);
 
+                            const real cy_real = cy;
                             d2zxy = d2zx;
-                            if (jGridDims.lowerCorner[YY] + cy*jGridDims.cellSize[YY] > by1)
+                            if (jGridDims.lowerCorner[YY] + cy_real*jGridDims.cellSize[YY] > by1)
                             {
-                                d2zxy += gmx::square(jGridDims.lowerCorner[YY] + cy*jGridDims.cellSize[YY] - by1);
+                                d2zxy += gmx::square(jGridDims.lowerCorner[YY] + cy_real*jGridDims.cellSize[YY] - by1);
                             }
-                            else if (jGridDims.lowerCorner[YY] + (cy + 1)*jGridDims.cellSize[YY] < by0)
+                            else if (jGridDims.lowerCorner[YY] + (cy_real + 1)*jGridDims.cellSize[YY] < by0)
                             {
-                                d2zxy += gmx::square(jGridDims.lowerCorner[YY] + (cy + 1)*jGridDims.cellSize[YY] - by0);
+                                d2zxy += gmx::square(jGridDims.lowerCorner[YY] + (cy_real + 1)*jGridDims.cellSize[YY] - by0);
                             }
                             if (columnStart < columnEnd && d2zxy < listRangeBBToJCell2)
                             {
@@ -3517,7 +3517,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet &gridSet,
                                  * but we do not do this because it would
                                  * complicate this code even more.
                                  */
-                                int midCell = columnStart + static_cast<int>(bz1_frac*(columnEnd - columnStart));
+                                int midCell = columnStart + static_cast<int>(bz1_frac*static_cast<real>(columnEnd - columnStart));
                                 if (midCell >= columnEnd)
                                 {
                                     midCell = columnEnd - 1;
@@ -3746,7 +3746,7 @@ static void copySelectedListRange(const nbnxn_ci_t * gmx_restrict srcCi,
 
     dest->ci.push_back(*srcCi);
     dest->ci.back().cj_ind_start = dest->cj.size();
-    dest->ci.back().cj_ind_end   = dest->cj.size() + ncj;
+    dest->ci.back().cj_ind_end   = dest->ci.back().cj_ind_start + ncj;
 
     if (setFlags)
     {
@@ -3902,7 +3902,7 @@ static bool checkRebalanceSimpleLists(gmx::ArrayRef<const NbnxnPairlistCpu> list
      */
     const real rebalanceTolerance = 1.03;
 
-    return numLists*ncjMax > ncjTotal*rebalanceTolerance;
+    return real(numLists*ncjMax) > real(ncjTotal)*rebalanceTolerance;
 }
 
 /* Perform a count (linear) sort to sort the smaller lists to the end.
@@ -3926,7 +3926,7 @@ static void sort_sci(NbnxnPairlistGpu *nbl)
     NbnxnPairlistGpuWork &work = *nbl->work;
 
     /* We will distinguish differences up to double the average */
-    const int m = (2*nbl->cj4.size())/nbl->sci.size();
+    const int m = static_cast<int>((2*ssize(nbl->cj4))/ssize(nbl->sci));
 
     /* Resize work.sci_sort so we can sort into it */
     work.sci_sort.resize(nbl->sci.size());
@@ -3944,7 +3944,7 @@ static void sort_sci(NbnxnPairlistGpu *nbl)
     /* Calculate the offset for each count */
     int s0  = sort[m];
     sort[m] = 0;
-    for (int i = m - 1; i >= 0; i--)
+    for (gmx::index i = m - 1; i >= 0; i--)
     {
         int s1  = sort[i];
         sort[i] = sort[i + 1] + s0;

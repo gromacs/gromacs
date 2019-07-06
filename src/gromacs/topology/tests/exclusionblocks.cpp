@@ -59,13 +59,13 @@ namespace
 {
 
 //! Add a new group to t_blocka
-void addGroupToBlocka(t_blocka *b, gmx::ArrayRef<const int> index)
+void addGroupToBlocka(t_blocka *b, gmx::ArrayRef<const int> indices)
 {
     srenew(b->index, b->nr+2);
-    srenew(b->a, b->nra+index.size());
-    for (int i = 0; (i < index.ssize()); i++)
+    srenew(b->a, b->nra+indices.size());
+    for (index i = 0; i < indices.ssize(); i++)
     {
-        b->a[b->nra++] = index[i];
+        b->a[b->nra++] = indices[i];
     }
     b->nr++;
     b->index[b->nr] = b->nra;
@@ -74,12 +74,12 @@ void addGroupToBlocka(t_blocka *b, gmx::ArrayRef<const int> index)
 //! Fill ExclusionBlock with data.
 int fillExclusionBlock(gmx::ArrayRef<ExclusionBlock> b)
 {
-    std::vector < std::vector < int>> index = {{0, 4, 7}, {1, 5, 8, 10}, {2, 6, 9, 11, 12}};
+    std::vector < std::vector < int>> indices = {{0, 4, 7}, {1, 5, 8, 10}, {2, 6, 9, 11, 12}};
     int nra = 0;
-    for (int i = 0; i < b.ssize(); i++)
+    for (index i = 0; i < b.ssize(); i++)
     {
         b[i].atomNumber.clear();
-        for (const auto &j : index[i])
+        for (const auto &j : indices[i])
         {
             b[i].atomNumber.push_back(j);
         }
@@ -93,12 +93,12 @@ void makeTestBlockAData(t_blocka *ba)
 {
     init_blocka(ba);
 
-    std::vector<int> index = {12, 11, 9, 6, 2};
-    addGroupToBlocka(ba, index);
-    index = {10, 8, 5, 1};
-    addGroupToBlocka(ba, index);
-    index = {7, 4, 0};
-    addGroupToBlocka(ba, index);
+    std::vector<int> indices = {12, 11, 9, 6, 2};
+    addGroupToBlocka(ba, indices);
+    indices = {10, 8, 5, 1};
+    addGroupToBlocka(ba, indices);
+    indices = {7, 4, 0};
+    addGroupToBlocka(ba, indices);
 }
 
 class ExclusionBlockTest : public ::testing::Test
@@ -117,7 +117,7 @@ class ExclusionBlockTest : public ::testing::Test
 
         void compareBlocks()
         {
-            for (unsigned i = 0; i < b_.size(); i++)
+            for (index i = 0; i < ssize(b_); i++)
             {
                 int index  = ba_.index[i];
                 for (int j = 0; j < b_[i].nra(); j++)

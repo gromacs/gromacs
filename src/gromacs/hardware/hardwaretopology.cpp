@@ -195,7 +195,7 @@ getHwLocObjectMemory(const hwloc_obj* obj)
  *          descendants of the provided object. If no objects of this type
  *          were found, the vector will be empty.
  */
-const std::vector<const hwloc_obj*>
+std::vector<const hwloc_obj*>
 getHwLocDescendantsByType(const hwloc_topology* topo, const hwloc_obj* obj, const hwloc_obj_type_t type)
 {
     GMX_RELEASE_ASSERT(obj, "NULL hwloc object provided to getHwLocDescendantsByType()");

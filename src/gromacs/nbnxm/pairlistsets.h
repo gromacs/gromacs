@@ -89,7 +89,7 @@ class PairlistSets
         //! Returns the number of steps performed with the current pair list
         int numStepsWithPairlist(int64_t step) const
         {
-            return step - outerListCreationStep_;
+            return static_cast<int>(step - outerListCreationStep_);
         }
 
         //! Returns whether step is a dynamic list pruning step, for CPU lists

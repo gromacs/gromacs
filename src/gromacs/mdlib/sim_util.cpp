@@ -865,9 +865,9 @@ void do_force(FILE                                     *fplog,
               gmx_wallcycle_t                           wcycle,
               const gmx_localtop_t                     *top,
               const matrix                              box,
-              gmx::ArrayRefWithPadding<gmx::RVec>       x,     //NOLINT(performance-unnecessary-value-param)
+              gmx::ArrayRefWithPadding<gmx::RVec>       x,
               history_t                                *hist,
-              gmx::ArrayRefWithPadding<gmx::RVec>       force, //NOLINT(performance-unnecessary-value-param)
+              gmx::ArrayRefWithPadding<gmx::RVec>       force,
               tensor                                    vir_force,
               const t_mdatoms                          *mdatoms,
               gmx_enerdata_t                           *enerd,

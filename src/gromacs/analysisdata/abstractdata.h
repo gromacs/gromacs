@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -273,7 +273,7 @@ class AbstractAnalysisData
          * If the method throws, the state of the data object is not changed.
          * The state of the data module is indeterminate.
          */
-        void addModule(AnalysisDataModulePointer module);
+        void addModule(const AnalysisDataModulePointer &module);
         /*! \brief
          * Adds a module that processes only a subset of the columns.
          *
@@ -297,7 +297,7 @@ class AbstractAnalysisData
          *
          * \see addModule()
          */
-        void addColumnModule(int col, int span, AnalysisDataModulePointer module);
+        void addColumnModule(int col, int span, const AnalysisDataModulePointer &module);
         /*! \brief
          * Applies a module to process data that is ready.
          *

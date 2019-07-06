@@ -148,7 +148,7 @@ TextBlockMatcherPointer NoTextMatch::createMatcher() const
 }
 
 FilteringExactTextMatch::FilteringExactTextMatch(std::vector<std::string> linesToSkip)
-    : linesToSkip_(linesToSkip)
+    : linesToSkip_(std::move(linesToSkip))
 {}
 
 void FilteringExactTextMatch::addRegexToSkip(const std::string &lineToSkip)

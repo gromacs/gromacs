@@ -181,7 +181,7 @@ class Constraints
         //! Links the essentialdynamics and constraint code.
         void saveEdsamPointer(gmx_edsam *ed);
         //! Getter for use by domain decomposition.
-        const ArrayRef<const t_blocka> atom2constraints_moltype() const;
+        ArrayRef<const t_blocka> atom2constraints_moltype() const;
         //! Getter for use by domain decomposition.
         ArrayRef < const std::vector < int>> atom2settle_moltype() const;
 

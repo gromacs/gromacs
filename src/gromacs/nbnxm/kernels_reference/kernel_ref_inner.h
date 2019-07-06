@@ -100,17 +100,15 @@
             /* A multiply mask used to zero an interaction
              * when that interaction should be excluded
              * (e.g. because of bonding). */
-            int interact;
-
-            interact = ((l_cj[cjind].excl>>(i*UNROLLI + j)) & 1);
+            real interact = static_cast<real>((l_cj[cjind].excl>>(i*UNROLLI + j)) & 1);
 #ifndef EXCL_FORCES
             skipmask = interact;
 #else
             skipmask = (cj == ci_sh && j <= i) ? 0.0 : 1.0;
 #endif
 #else
-#define interact 1.0
-            skipmask = 1.0;
+            constexpr real interact = 1.0;
+            skipmask = interact;
 #endif
 
             VLJ = 0;
@@ -306,7 +304,7 @@
 #ifdef CALC_COUL_TAB
             rs     = rsq*rinv*tab_coul_scale;
             ri     = int(rs);
-            frac   = rs - ri;
+            frac   = rs - static_cast<real>(ri);
 #if !GMX_DOUBLE
             /* fexcl = F_i + frac * (F_(i+1)-F_i) */
             fexcl  = tab_coul_FDV0[ri*4] + frac*tab_coul_FDV0[ri*4+1];

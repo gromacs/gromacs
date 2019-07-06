@@ -746,7 +746,7 @@ void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll      *dhc,
     GMX_RELEASE_ASSERT(deltaH, "Should have delta_h histograms in energy history");
     GMX_RELEASE_ASSERT(deltaH->dh.size() == static_cast<size_t>(dhc->ndh), "energy history number of delta_h histograms should match inputrec's number");
 
-    for (unsigned int i = 0; i < deltaH->dh.size(); i++)
+    for (gmx::index i = 0; i < gmx::ssize(deltaH->dh); i++)
     {
         dhc->dh[i].ndh = deltaH->dh[i].size();
         for (unsigned int j = 0; j < dhc->dh[i].ndh; j++)

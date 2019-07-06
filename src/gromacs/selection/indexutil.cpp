@@ -248,9 +248,9 @@ gmx_ana_indexgrps_find(gmx_ana_index_t *dest, std::string *destName,
 void
 gmx_ana_indexgrps_print(gmx::TextWriter *writer, gmx_ana_indexgrps_t *g, int maxn)
 {
-    for (int i = 0; i < gmx::ssize(g->g); ++i)
+    for (gmx::index i = 0; i < gmx::ssize(g->g); ++i)
     {
-        writer->writeString(gmx::formatString(" Group %2d \"%s\" ",
+        writer->writeString(gmx::formatString(" Group %2zd \"%s\" ",
                                               i, g->names[i].c_str()));
         gmx_ana_index_dump(writer, &g->g[i], maxn);
     }
@@ -965,7 +965,7 @@ gmx_ana_index_has_full_blocks(const gmx_ana_index_t        *g,
     while (i < g->isize)
     {
         /* Find the block that begins with the first unmatched atom */
-        while (bi < b->numBlocks() && b->block(bi).begin() != g->index[i])
+        while (bi < b->numBlocks() && *b->block(bi).begin() != g->index[i])
         {
             ++bi;
         }
@@ -975,7 +975,7 @@ gmx_ana_index_has_full_blocks(const gmx_ana_index_t        *g,
             return false;
         }
         /* Check that the block matches the index */
-        for (j = b->block(bi).begin(); j < b->block(bi).end(); ++j, ++i)
+        for (j = *b->block(bi).begin(); j < *b->block(bi).end(); ++j, ++i)
         {
             if (g->index[i] != j)
             {

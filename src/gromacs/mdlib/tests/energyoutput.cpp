@@ -95,18 +95,18 @@ void fcloseWrapper(FILE *fp)
  */
 struct EnergyOutputTestParameters
 {
-    //! If output should be initialized as a rerun.
-    bool isRerun;
     //! Thermostat (enum)
     int  temperatureCouplingScheme;
     //! Barostat (enum)
     int  pressureCouplingScheme;
     //! Integrator
     int  integrator;
-    //! Is box triclinic (off-diagonal elements will be printed).
-    bool isBoxTriclinic;
     //! Number of saved energy frames (to test averages output).
     int  numFrames;
+    //! If output should be initialized as a rerun.
+    bool isRerun;
+    //! Is box triclinic (off-diagonal elements will be printed).
+    bool isBoxTriclinic;
 };
 
 /*! \brief Sets of parameters on which to run the tests.
@@ -114,17 +114,17 @@ struct EnergyOutputTestParameters
  * Only several combinations of the parameters are used. Using all possible combinations will require ~10 MB of
  * test data and ~2 sec to run the tests.
  */
-const EnergyOutputTestParameters parametersSets[] = {{false, etcNO,         epcNO,               eiMD, false, 1},
-                                                     {true,  etcNO,         epcNO,               eiMD, false, 1},
-                                                     {false, etcNO,         epcNO,               eiMD, true,  1},
-                                                     {false, etcNO,         epcNO,               eiMD, false, 0},
-                                                     {false, etcNO,         epcNO,               eiMD, false, 10},
-                                                     {false, etcVRESCALE,   epcNO,               eiMD, false, 1},
-                                                     {false, etcNOSEHOOVER, epcNO,               eiMD, false, 1},
-                                                     {false, etcNO,         epcPARRINELLORAHMAN, eiMD, false, 1},
-                                                     {false, etcNO,         epcMTTK,             eiMD, false, 1},
-                                                     {false, etcNO,         epcNO,               eiVV, false, 1},
-                                                     {false, etcNO,         epcMTTK,             eiVV, false, 1}};
+const EnergyOutputTestParameters parametersSets[] = {{etcNO,         epcNO,               eiMD, 1,  false, false},
+                                                     {etcNO,         epcNO,               eiMD, 1,  true,  false},
+                                                     {etcNO,         epcNO,               eiMD, 1,  false, true},
+                                                     {etcNO,         epcNO,               eiMD, 0,  false, false},
+                                                     {etcNO,         epcNO,               eiMD, 10, false, false},
+                                                     {etcVRESCALE,   epcNO,               eiMD, 1,  false, false},
+                                                     {etcNOSEHOOVER, epcNO,               eiMD, 1,  false, false},
+                                                     {etcNO,         epcPARRINELLORAHMAN, eiMD, 1,  false, false},
+                                                     {etcNO,         epcMTTK,             eiMD, 1,  false, false},
+                                                     {etcNO,         epcNO,               eiVV, 1,  false, false},
+                                                     {etcNO,         epcMTTK,             eiVV, 1,  false, false}};
 
 /*! \brief Test fixture to test energy output.
  *
@@ -432,16 +432,16 @@ class EnergyOutputTest : public ::testing::TestWithParam<EnergyOutputTestParamet
             }
 
             // Kinetic energy and related data
-            for (int i = 0; i < gmx::ssize(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling]); i++)
+            for (auto &tcstat : ekindata_.tcstat)
             {
-                ekindata_.tcstat[i].T      = (*testValue += 0.1);
-                ekindata_.tcstat[i].lambda = (*testValue += 0.1);
+                tcstat.T      = (*testValue += 0.1);
+                tcstat.lambda = (*testValue += 0.1);
             }
-            for (int i = 0; i < gmx::ssize(mtop_.groups.groups[SimulationAtomGroupType::Acceleration]); i++)
+            for (auto &grpstat : ekindata_.grpstat)
             {
-                ekindata_.grpstat[i].u[XX] = (*testValue += 0.1);
-                ekindata_.grpstat[i].u[YY] = (*testValue += 0.1);
-                ekindata_.grpstat[i].u[ZZ] = (*testValue += 0.1);
+                grpstat.u[XX] = (*testValue += 0.1);
+                grpstat.u[YY] = (*testValue += 0.1);
+                grpstat.u[ZZ] = (*testValue += 0.1);
             }
 
             // This conditional is to check whether the ebin was allocated.
@@ -531,7 +531,7 @@ class EnergyOutputTest : public ::testing::TestWithParam<EnergyOutputTestParamet
                 inputrec_.opts.ref_t[i] = (*testValue += 0.1);
             }
 
-            for (int k = 0; k < gmx::ssize(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling])*inputrec_.opts.nhchainlength; k++)
+            for (index k = 0; k < ssize(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling])*inputrec_.opts.nhchainlength; k++)
             {
                 state_.nosehoover_xi[k]  = (*testValue += 0.1);
                 state_.nosehoover_vxi[k] = (*testValue += 0.1);

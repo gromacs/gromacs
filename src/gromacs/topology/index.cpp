@@ -120,7 +120,7 @@ void add_grp(t_blocka *b, char ***gnames, gmx::ArrayRef<const int> a, const std:
     (*gnames)[b->nr] = gmx_strdup(name.c_str());
 
     srenew(b->a, b->nra+a.size());
-    for (int i = 0; (i < a.ssize()); i++)
+    for (gmx::index i = 0; (i < a.ssize()); i++)
     {
         b->a[b->nra++] = a[i];
     }
@@ -154,7 +154,7 @@ static bool grp_cmp(t_blocka *b, gmx::ArrayRef<const int> a, int index)
     {
         return FALSE;
     }
-    for (int i = 0; i < a.ssize(); i++)
+    for (gmx::index i = 0; i < a.ssize(); i++)
     {
         if (a[i] != b->a[b->index[index]+i])
         {
@@ -616,7 +616,7 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
         p_status(restype, previousTypename);
     }
 
-    for (int k = 0; k < gmx::index(previousTypename.size()); k++)
+    for (gmx::index k = 0; k < gmx::ssize(previousTypename); k++)
     {
         aid = mk_aid(atoms, restype, previousTypename[k], TRUE);
 
@@ -854,7 +854,7 @@ int find_group(const char *s, int ngrps, char **grpname)
         minstring(key);
         for (i = 0; i < ngrps; i++)
         {
-            strcpy(string, grpname[i]);
+            strncpy(string, grpname[i], STRLEN-1);
             upstring(string);
             minstring(string);
             if (strstr(string, key) != nullptr)

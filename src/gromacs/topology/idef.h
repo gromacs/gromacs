@@ -255,7 +255,7 @@ struct InteractionListHandle
  * \param[in] ilists  Set of interaction lists
  * \param[in] flags   Bit mask with one or more IF_... bits set
  */
-static inline const std::vector<InteractionListHandle>
+static inline std::vector<InteractionListHandle>
 extractILists(const InteractionLists &ilists,
               int                     flags)
 {

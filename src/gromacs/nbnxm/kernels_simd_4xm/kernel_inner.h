@@ -268,7 +268,7 @@
     ajz           = ajy + STRIDE;
 
 #ifdef CHECK_EXCLS
-    gmx_load_simd_4xn_interactions(l_cj[cjind].excl,
+    gmx_load_simd_4xn_interactions(static_cast<int>(l_cj[cjind].excl),
                                    filter_S0, filter_S1,
                                    filter_S2, filter_S3,
                                    nbat->simdMasks.interaction_array.data(),

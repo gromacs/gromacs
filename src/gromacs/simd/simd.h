@@ -576,7 +576,7 @@ class SimdSetZeroProxy
  *         variable to zero based on the conversion function called when you
  *         assign the result.
  */
-static inline const SimdSetZeroProxy gmx_simdcall
+static inline SimdSetZeroProxy gmx_simdcall
 setZero()
 {
     return {};

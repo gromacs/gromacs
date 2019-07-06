@@ -413,7 +413,7 @@ detectX86Features(std::string *                  brand,
  *  \returns A new std::vector of unsigned integer APIC IDs, one for each
  *           logical processor in the system.
  */
-const std::vector<unsigned int>
+std::vector<unsigned int>
 detectX86ApicIDs(bool gmx_unused haveX2Apic)
 {
     std::vector<unsigned int>  apicID;
@@ -704,7 +704,7 @@ detectX86LogicalProcessors()
  * \return New map with the contents. If the file is not available, the returned
  *         map will be empty.
  */
-const std::map<std::string, std::string>
+std::map<std::string, std::string>
 parseProcCpuInfo()
 {
     std::ifstream                       procCpuInfo("/proc/cpuinfo");

@@ -99,7 +99,7 @@ static real gridAtomDensity(int        numAtoms,
 
     rvec_sub(upperCorner, lowerCorner, size);
 
-    return numAtoms/(size[XX]*size[YY]*size[ZZ]);
+    return static_cast<real>(numAtoms)/(size[XX]*size[YY]*size[ZZ]);
 }
 
 void Grid::setDimensions(const int            ddZone,

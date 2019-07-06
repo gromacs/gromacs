@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -93,23 +93,21 @@ gmx_bool get_a_line(FILE *fp, char line[], int n)
 
 gmx_bool get_header(char line[], char *header)
 {
-    char temp[STRLEN], *dum;
-
-    std::strcpy(temp, line);
-    dum = std::strchr(temp, '[');
-    if (dum == nullptr)
+    std::string temp  = line;
+    auto        index = temp.find('[');
+    if (index == std::string::npos)
     {
         return FALSE;
     }
-    dum[0] = ' ';
-    dum    = std::strchr(temp, ']');
-    if (dum == nullptr)
+    temp[index] = ' ';
+    index       = temp.find(']', index);
+    if (index == std::string::npos)
     {
         gmx_fatal(FARGS, "header is not terminated on line:\n'%s'\n", line);
         return FALSE;
     }
-    dum[0] = '\0';
-    return sscanf(temp, "%s%*s", header) == 1;
+    temp.resize(index);
+    return sscanf(temp.c_str(), "%s%*s", header) == 1;
 }
 
 int search_str(int nstr, char **str, char *key)

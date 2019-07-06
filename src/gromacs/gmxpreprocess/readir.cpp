@@ -2694,11 +2694,11 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     snew(na_vcm, groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].size()+1);
     snew(nrdf_vcm_sub, groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].size()+1);
 
-    for (int i = 0; i < gmx::ssize(groups.groups[SimulationAtomGroupType::TemperatureCoupling]); i++)
+    for (gmx::index i = 0; i < gmx::ssize(groups.groups[SimulationAtomGroupType::TemperatureCoupling]); i++)
     {
         nrdf_tc[i] = 0;
     }
-    for (int i = 0; i < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval])+1; i++)
+    for (gmx::index i = 0; i < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval])+1; i++)
     {
         nrdf_vcm[i]     = 0;
         clear_ivec(dof_vcm[i]);
@@ -2857,7 +2857,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
          * the number of degrees of freedom in each vcm group when COM
          * translation is removed and 6 when rotation is removed as well.
          */
-        for (int j = 0; j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval])+1; j++)
+        for (gmx::index j = 0; j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval])+1; j++)
         {
             switch (ir->comm_mode)
             {
@@ -2880,10 +2880,10 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
             }
         }
 
-        for (int i = 0; i < gmx::ssize(groups.groups[SimulationAtomGroupType::TemperatureCoupling]); i++)
+        for (gmx::index i = 0; i < gmx::ssize(groups.groups[SimulationAtomGroupType::TemperatureCoupling]); i++)
         {
             /* Count the number of atoms of TC group i for every VCM group */
-            for (int j = 0; j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval])+1; j++)
+            for (gmx::index j = 0; j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval])+1; j++)
             {
                 na_vcm[j] = 0;
             }
@@ -2901,7 +2901,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
              */
             nrdf_uc    = nrdf_tc[i];
             nrdf_tc[i] = 0;
-            for (int j = 0; j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval])+1; j++)
+            for (gmx::index j = 0; j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval])+1; j++)
             {
                 if (nrdf_vcm[j] > nrdf_vcm_sub[j])
                 {

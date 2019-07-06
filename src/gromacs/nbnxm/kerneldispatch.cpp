@@ -244,7 +244,7 @@ nbnxn_kernel_cpu(const PairlistSet              &pairlistSet,
     int gmx_unused                        nthreads = gmx_omp_nthreads_get(emntNonbonded);
     wallcycle_sub_start(wcycle, ewcsNONBONDED_CLEAR);
 #pragma omp parallel for schedule(static) num_threads(nthreads)
-    for (int nb = 0; nb < pairlists.ssize(); nb++)
+    for (gmx::index nb = 0; nb < pairlists.ssize(); nb++)
     {
         // Presently, the kernels do not call C++ code that can throw,
         // so no need for a try/catch pair in this OpenMP region.
@@ -568,7 +568,7 @@ nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocali
 
     wallcycle_sub_start(wcycle_, ewcsNONBONDED_FEP);
 #pragma omp parallel for schedule(static) num_threads(nbl_fep.ssize())
-    for (int th = 0; th < nbl_fep.ssize(); th++)
+    for (gmx::index th = 0; th < nbl_fep.ssize(); th++)
     {
         try
         {
@@ -610,7 +610,7 @@ nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocali
             }
             reset_foreign_enerdata(enerd);
 #pragma omp parallel for schedule(static) num_threads(nbl_fep.ssize())
-            for (int th = 0; th < nbl_fep.ssize(); th++)
+            for (gmx::index th = 0; th < nbl_fep.ssize(); th++)
             {
                 try
                 {

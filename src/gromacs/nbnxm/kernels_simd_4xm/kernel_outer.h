@@ -247,7 +247,7 @@
 
     invtsp_S  = SimdReal(ic->coulombEwaldTables->scale);
 #ifdef CALC_ENERGIES
-    mhalfsp_S = SimdReal(-0.5/ic->coulombEwaldTables->scale);
+    mhalfsp_S = SimdReal(-0.5_real/ic->coulombEwaldTables->scale);
 #endif
 
 #ifdef TAB_FDV0

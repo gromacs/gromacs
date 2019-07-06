@@ -189,7 +189,7 @@ class GaussTransform3D
         //! \brief Set all values on the lattice to zero.
         void setZero();
         //! Return a view on the spread lattice.
-        const basic_mdspan<const float, dynamicExtents3D> view();
+        basic_mdspan<const float, dynamicExtents3D> view();
 
     private:
         class Impl;

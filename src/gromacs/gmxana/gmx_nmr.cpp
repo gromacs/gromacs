@@ -306,7 +306,7 @@ static void calc_violations(real rt[], real rav3[], int nb, const int index[],
     *sa = sumaver;
 }
 
-static void analyse_disre(const char *voutfn,    int nframes,
+static void analyse_disre(const char *voutfn, int nframes,
                           real violaver[], real bounds[], int index[],
                           int pair[],      int nbounds,
                           const gmx_output_env_t *oenv)
@@ -335,7 +335,7 @@ static void analyse_disre(const char *voutfn,    int nframes,
         sumaver = 0;
         for (j = pair[i]; (j < pair[i+1]); j++)
         {
-            sumaver += gmx::square(violaver[j]/nframes);
+            sumaver += gmx::square(violaver[j]/real(nframes));
         }
         sumaver = std::max(0.0, mypow(sumaver, minsixth)-bounds[i]);
 
@@ -346,7 +346,7 @@ static void analyse_disre(const char *voutfn,    int nframes,
 #ifdef DEBUG
     for (j = 0; (j < dr.ndr); j++)
     {
-        fprintf(vout, "%10d  %10.5e\n", j, mypow(violaver[j]/nframes, minthird));
+        fprintf(vout, "%10d  %10.5e\n", j, mypow(violaver[j]/real(nframes), minthird));
     }
 #endif
     xvgrclose(vout);
@@ -882,7 +882,7 @@ int gmx_nmr(int argc, char *argv[])
         }
         for (i = 0; i < nor; i++)
         {
-            fprintf(out, "%5d  %g\n", or_label[i], orient[i]/norfr);
+            fprintf(out, "%5d  %g\n", or_label[i], orient[i]/real(norfr));
         }
         xvgrclose(out);
     }
@@ -897,7 +897,7 @@ int gmx_nmr(int argc, char *argv[])
         }
         for (i = 0; i < nor; i++)
         {
-            fprintf(out, "%5d  %g\n", or_label[i], orient[i]/norfr-oobs[i]);
+            fprintf(out, "%5d  %g\n", or_label[i], orient[i]/real(norfr)-oobs[i]);
         }
         xvgrclose(out);
     }
@@ -912,7 +912,7 @@ int gmx_nmr(int argc, char *argv[])
         }
         for (i = 0; i < nor; i++)
         {
-            fprintf(out, "%5d  %g\n", or_label[i], std::sqrt(odrms[i]/norfr));
+            fprintf(out, "%5d  %g\n", or_label[i], std::sqrt(odrms[i]/real(norfr)));
         }
         xvgrclose(out);
     }

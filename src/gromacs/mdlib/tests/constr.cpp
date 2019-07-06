@@ -171,7 +171,7 @@ class ConstraintsTest : public ::testing::TestWithParam<ConstraintsTestParameter
         {
 
             // Test if all the constraints are satisfied
-            for (unsigned c = 0; c < testData.constraints_.size()/3; c++)
+            for (index c = 0; c < ssize(testData.constraints_)/3; c++)
             {
                 real r0 = testData.constraintsR0_.at(testData.constraints_.at(3*c));
                 int  i  = testData.constraints_.at(3*c + 1);
@@ -191,7 +191,7 @@ class ConstraintsTest : public ::testing::TestWithParam<ConstraintsTestParameter
                 d0 = norm(xij0);
                 d1 = norm(xij1);
                 EXPECT_REAL_EQ_TOL(r0, d1, tolerance) << gmx::formatString(
-                        "rij = %f, which is not equal to r0 = %f for constraint #%u, between atoms %d and %d"
+                        "rij = %f, which is not equal to r0 = %f for constraint #%zd, between atoms %d and %d"
                         " (before constraining rij was %f).", d1, r0, c, i, j, d0);
             }
         }
@@ -209,7 +209,7 @@ class ConstraintsTest : public ::testing::TestWithParam<ConstraintsTestParameter
         void checkConstrainsDirection(const ConstraintsTestData &testData, t_pbc pbc)
         {
 
-            for (unsigned c = 0; c < testData.constraints_.size()/3; c++)
+            for (index c = 0; c < ssize(testData.constraints_)/3; c++)
             {
                 int  i  = testData.constraints_.at(3*c + 1);
                 int  j  = testData.constraints_.at(3*c + 2);
@@ -228,7 +228,7 @@ class ConstraintsTest : public ::testing::TestWithParam<ConstraintsTestParameter
                 real dot = xij0.dot(xij1);
 
                 EXPECT_GE(dot, 0.0) << gmx::formatString(
-                        "The constraint %u changed direction. Constraining algorithm might have returned the wrong root "
+                        "The constraint %zd changed direction. Constraining algorithm might have returned the wrong root "
                         "of the constraints equation.", c);
 
             }

@@ -70,7 +70,7 @@ class AtomProperties
          * \todo This should be made const once the lazy
          * implementation is done properly for the class.
          */
-        const std::string elementFromAtomNumber(int atomNumber);
+        std::string elementFromAtomNumber(int atomNumber);
         /*! \brief
          * Get atom number from element string.
          *

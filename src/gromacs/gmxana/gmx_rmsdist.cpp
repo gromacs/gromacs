@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -126,8 +126,8 @@ static void calc_nmr(int nind, int nframes, real **dtot1_3, real **dtot1_6,
     {
         for (j = i+1; (j < nind); j++)
         {
-            temp1_3 = gmx::invcbrt(dtot1_3[i][j]/nframes);
-            temp1_6 = gmx::invsixthroot(dtot1_6[i][j]/nframes);
+            temp1_3 = gmx::invcbrt(dtot1_3[i][j]/static_cast<real>(nframes));
+            temp1_6 = gmx::invsixthroot(dtot1_6[i][j]/static_cast<real>(nframes));
             if (temp1_3 > *max1_3)
             {
                 *max1_3 = temp1_3;
@@ -488,8 +488,8 @@ static void calc_noe(int isize, const int *noe_index,
     {
         for (j = i+1; j < gnr; j++)
         {
-            noe[i][j].r_3 = gmx::invcbrt(noe[i][j].i_3/noe[i][j].nr);
-            noe[i][j].r_6 = gmx::invsixthroot(noe[i][j].i_6/noe[i][j].nr);
+            noe[i][j].r_3 = gmx::invcbrt(noe[i][j].i_3/static_cast<real>(noe[i][j].nr));
+            noe[i][j].r_6 = gmx::invsixthroot(noe[i][j].i_6/static_cast<real>(noe[i][j].nr));
             noe[j][i]     = noe[i][j];
         }
     }
@@ -588,8 +588,8 @@ static void calc_rms(int nind, int nframes,
     {
         for (j = i+1; (j < nind); j++)
         {
-            mean  = dtot[i][j]/nframes;
-            mean2 = dtot2[i][j]/nframes;
+            mean  = dtot[i][j]/static_cast<real>(nframes);
+            mean2 = dtot2[i][j]/static_cast<real>(nframes);
             rms   = std::sqrt(std::max(0.0_real, mean2-mean*mean));
             rmsc  = rms/mean;
             if (mean > *meanmax)

@@ -393,8 +393,8 @@ static int nitrogen_is_planar(gmx::ArrayRef<const VirtualSiteConfiguration> vsit
     return res;
 }
 
-static const std::string get_dummymass_name(gmx::ArrayRef<const VirtualSiteConfiguration> vsiteconflist,
-                                            const std::string &atom, const std::string &nextheavy)
+static std::string get_dummymass_name(gmx::ArrayRef<const VirtualSiteConfiguration> vsiteconflist,
+                                      const std::string &atom, const std::string &nextheavy)
 {
     /* Return the dummy mass name if found, or NULL if not set in ddb database */
     const auto found = std::find_if(vsiteconflist.begin(), vsiteconflist.end(),

@@ -645,14 +645,14 @@ static real energyDrift(gmx::ArrayRef<const VerletbufAtomtype> att,
 
     // Here add up the contribution of all atom pairs in the system to
     // (estimated) energy drift by looping over all atom type pairs.
-    for (int i = 0; i < att.ssize(); i++)
+    for (gmx::index i = 0; i < att.ssize(); i++)
     {
         // Get the thermal displacement variance for the i-atom type
         const atom_nonbonded_kinetic_prop_t *prop_i = &att[i].prop;
         real                                 s2i_2d, s2i_3d;
         get_atom_sigma2(kT_fac, prop_i, &s2i_2d, &s2i_3d);
 
-        for (int j = i; j < att.ssize(); j++)
+        for (gmx::index j = i; j < att.ssize(); j++)
         {
             // Get the thermal displacement variance for the j-atom type
             const atom_nonbonded_kinetic_prop_t *prop_j = &att[j].prop;
@@ -837,10 +837,11 @@ static real maxSigma(real                                   kT_fac,
 {
     GMX_ASSERT(!att.empty(), "We should have at least one type");
     real smallestMass = att[0].prop.mass;
-    for (int i = 1; i < att.ssize(); i++)
+    for (const auto &atomType : att)
     {
-        smallestMass = std::min(smallestMass, att[i].prop.mass);
+        smallestMass = std::min(smallestMass, atomType.prop.mass);
     }
+    ;
 
     return 2*std::sqrt(kT_fac/smallestMass);
 }

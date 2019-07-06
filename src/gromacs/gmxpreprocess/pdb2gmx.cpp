@@ -262,10 +262,10 @@ static void read_rtprename(const char *fname, FILE *fp,
     }
 }
 
-static const std::string search_resrename(gmx::ArrayRef<const RtpRename> rr,
-                                          const char *name,
-                                          bool bStart, bool bEnd,
-                                          bool bCompareFFRTPname)
+static std::string search_resrename(gmx::ArrayRef<const RtpRename> rr,
+                                    const char *name,
+                                    bool bStart, bool bEnd,
+                                    bool bCompareFFRTPname)
 {
     auto found = std::find_if(rr.begin(), rr.end(), [&name, &bCompareFFRTPname](const auto &rename)
                               { return ((!bCompareFFRTPname && (name == rename.gmx)) ||

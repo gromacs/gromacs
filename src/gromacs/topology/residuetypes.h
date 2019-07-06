@@ -91,7 +91,7 @@ class ResidueType
          * \param[in] index Which entry should be returned.
          * \returns The name of the entry at \p index, or nullptr.
          */
-        const std::string nameFromResidueIndex(int index) const;
+        std::string nameFromResidueIndex(int index) const;
         /*! \brief
          * Return the residue type if a residue with that name exists, or "Other"
          *

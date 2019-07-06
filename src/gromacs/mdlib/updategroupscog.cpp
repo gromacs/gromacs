@@ -94,7 +94,7 @@ void UpdateGroupsCog::addCogs(gmx::ArrayRef<const int>        globalAtomIndices,
     cogIndices_.reserve(globalAtomIndices.size());
 
     int moleculeBlock = 0;
-    for (int localAtom = localAtomBegin; localAtom < globalAtomIndices.ssize(); localAtom++)
+    for (gmx::index localAtom = localAtomBegin; localAtom < globalAtomIndices.ssize(); localAtom++)
     {
         const int   globalAtom = globalAtomIndices[localAtom];
         int         moleculeIndex;

@@ -122,7 +122,7 @@ class GridSet
                        nbnxn_atomdata_t               *nbat);
 
         //! Returns the domain setup
-        const DomainSetup domainSetup() const
+        DomainSetup domainSetup() const
         {
             return domainSetup_;
         }

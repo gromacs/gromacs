@@ -160,10 +160,10 @@ void applyLincs(ConstraintsTestData *testData, t_pbc pbc)
                                    maxwarn, &warncount_lincs);
     EXPECT_TRUE(success) << "Test failed with a false return value in LINCS.";
     EXPECT_EQ(warncount_lincs, 0) << "There were warnings in LINCS.";
-    for (unsigned int i = 0; i < testData->mtop_.moltype.size(); i++)
+    for (auto &moltype : at2con_mt)
     {
-        sfree(at2con_mt.at(i).index);
-        sfree(at2con_mt.at(i).a);
+        sfree(moltype.index);
+        sfree(moltype.a);
     }
     done_lincs(lincsd);
 }
