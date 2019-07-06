@@ -469,7 +469,7 @@ gmx_option_trivalue(
 
 if (GMX_HWLOC)
     # Find quietly the second time.
-    if(DEFINED HWLOC_FOUND)
+    if(HWLOC_VERSION)
         set(HWLOC_FIND_QUIETLY TRUE)
     endif()
     find_package(Hwloc 1.5)

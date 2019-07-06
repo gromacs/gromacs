@@ -271,7 +271,6 @@ if(HWLOC_LIBRARIES)
     string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
 
     # test link
-    unset(HWLOC_WORKS CACHE)
     include(CheckFunctionExists)
     check_function_exists(hwloc_topology_init HWLOC_WORKS)
     mark_as_advanced(HWLOC_WORKS)

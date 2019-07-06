@@ -61,10 +61,12 @@ set(EXPECTED_DOXYGEN_VERSION 1.8.5)
 set(EXPECTED_SPHINX_VERSION 1.6.1)
 
 # By default, suppress output after first configuration.
-if(FIND_PACKAGE_MESSAGE_DETAILS_Sphinx)
+if(SPHINX_ALREADY_SEARCHED)
     set(Sphinx_FIND_QUIETLY ON)
 endif()
 find_package(Sphinx ${EXPECTED_SPHINX_VERSION} COMPONENTS pygments)
+set(SPHINX_ALREADY_SEARCHED TRUE CACHE BOOL "True if a search for Sphinx has already been done")
+mark_as_advanced(SPHINX_ALREADY_SEARCHED)
 
 # Even if we aren't going to make the full webpage, set up to put all
 # the documentation output in the same place, for convenience
