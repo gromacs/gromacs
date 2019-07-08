@@ -75,6 +75,7 @@
 namespace gmx
 {
 
+
 //! Number of CUDA threads in a block
 constexpr static int c_threadsPerBlock = 256;
 //! Maximum number of threads in a block (for __launch_bounds__)
@@ -127,6 +128,9 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
     const float*  __restrict__  gm_inverseMasses            = kernelParams.d_inverseMasses;
     float*  __restrict__        gm_virialScaled             = kernelParams.d_virialScaled;
 
+    float3             *        gm_r               = (float3*) kernelParams.d_gm_r;
+    float              *        gm_rhs             = kernelParams.d_gm_rhs;
+
     int threadIndex                                         = blockIdx.x*blockDim.x+threadIdx.x;
 
     // numConstraintsThreads should be a integer multiple of blockSize (numConstraintsThreads = numBlocks*blockSize).
@@ -135,7 +139,7 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
 
     // Vectors connecting constrained atoms before algorithm was applied.
     // Needed to construct constrain matrix A
-    extern __shared__ float3 sm_r[];
+    //extern __shared__ float3 sm_r[];
 
     int2                     pair = gm_constraints[threadIndex];
     int                      i    = pair.x;
@@ -185,7 +189,9 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
         rc   = rlen*dx;
     }
 
-    sm_r[threadIdx.x] = rc;
+    //sm_r[threadIdx.x] = rc;
+    gm_r[blockIdx.x*blockDim.x+threadIdx.x] = rc;
+
     // Make sure that all r's are saved into shared memory
     // before they are accessed in the loop below
     __syncthreads();
@@ -201,7 +207,8 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
         int    index = n*numConstraintsThreads + threadIndex;
         int    c1    = gm_coupledConstraintsIdxes[index];
 
-        float3 rc1 = sm_r[c1 - blockIdx.x*blockDim.x];
+        //        float3 rc1 = sm_r[c1 - blockIdx.x*blockDim.x];
+        float3 rc1 = gm_r[blockIdx.x*blockDim.x+c1 - blockIdx.x*blockDim.x];
         gm_matrixA[index] = gm_massFactors[index]*(rc.x*rc1.x + rc.y*rc1.y + rc.z*rc1.z);
     }
 
@@ -221,9 +228,10 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
      */
 
     // This will use the same memory space as sm_r, which is no longer needed.
-    extern __shared__ float  sm_rhs[];
+    //extern __shared__ float  sm_rhs[];
     // Save current right-hand-side vector in the shared memory
-    sm_rhs[threadIdx.x] = sol;
+    //sm_rhs[threadIdx.x] = sol;
+    gm_rhs[blockIdx.x*blockDim.x+threadIdx.x] = sol;
 
     for (int rec = 0; rec < expansionOrder; rec++)
     {
@@ -237,11 +245,13 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
             int c1    = gm_coupledConstraintsIdxes[index];
             // Convolute current right-hand-side with A
             // Different, non overlapping parts of sm_rhs[..] are read during odd and even iterations
-            mvb = mvb + gm_matrixA[index]*sm_rhs[c1 - blockIdx.x*blockDim.x + blockDim.x*(rec % 2)];
+            //mvb = mvb + gm_matrixA[index]*sm_rhs[c1 - blockIdx.x*blockDim.x + blockDim.x*(rec % 2)];
+            mvb = mvb + gm_matrixA[index]*gm_rhs[blockIdx.x*blockDim.x+c1 - blockIdx.x*blockDim.x + blockDim.x*(rec % 2)];
         }
         // 'Switch' rhs vectors, save current result
         // These values will be accessed in the loop above during the next iteration.
-        sm_rhs[threadIdx.x + blockDim.x*((rec + 1) % 2)] = mvb;
+        //        sm_rhs[threadIdx.x + blockDim.x*((rec + 1) % 2)] = mvb;
+        gm_rhs[blockIdx.x*blockDim.x+threadIdx.x + blockDim.x*((rec + 1) % 2)] = mvb;
         sol  = sol + mvb;
     }
 
@@ -290,7 +300,8 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
             proj = sqrtReducedMass*targetLength;
         }
 
-        sm_rhs[threadIdx.x]   = proj;
+        //        sm_rhs[threadIdx.x]   = proj;
+        gm_rhs[blockIdx.x*blockDim.x+threadIdx.x]   = proj;
         float sol = proj;
 
         /*
@@ -307,10 +318,11 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
                 int index = n*numConstraintsThreads + threadIndex;
                 int c1    = gm_coupledConstraintsIdxes[index];
 
-                mvb = mvb + gm_matrixA[index]*sm_rhs[c1 - blockIdx.x*blockDim.x + blockDim.x*(rec % 2)];
-
+                //                mvb = mvb + gm_matrixA[index]*sm_rhs[c1 - blockIdx.x*blockDim.x + blockDim.x*(rec % 2)];
+                mvb = mvb + gm_matrixA[index]*gm_rhs[blockIdx.x*blockDim.x+c1 - blockIdx.x*blockDim.x + blockDim.x*(rec % 2)];
             }
-            sm_rhs[threadIdx.x + blockDim.x*((rec + 1) % 2)] = mvb;
+            //            sm_rhs[threadIdx.x + blockDim.x*((rec + 1) % 2)] = mvb;
+            gm_rhs[blockIdx.x*blockDim.x+threadIdx.x + blockDim.x*((rec + 1) % 2)] = mvb;
             sol  = sol + mvb;
         }
 
@@ -335,7 +347,6 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
         atomicAdd(&gm_v[i], -tmp*inverseMassi);
         atomicAdd(&gm_v[j],  tmp*inverseMassj);
     }
-
 
     if (computeVirial)
     {
@@ -554,6 +565,8 @@ LincsCuda::~LincsCuda()
         freeDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices);
         freeDeviceBuffer(&kernelParams_.d_massFactors);
         freeDeviceBuffer(&kernelParams_.d_matrixA);
+        freeDeviceBuffer(&kernelParams_.d_gm_r);
+        freeDeviceBuffer(&kernelParams_.d_gm_rhs);
     }
     if (numAtomsAlloc_ > 0)
     {
@@ -804,6 +817,9 @@ void LincsCuda::set(const t_idef    &idef,
             freeDeviceBuffer(&kernelParams_.d_massFactors);
             freeDeviceBuffer(&kernelParams_.d_matrixA);
 
+            freeDeviceBuffer(&kernelParams_.d_gm_r);
+            freeDeviceBuffer(&kernelParams_.d_gm_rhs);
+
         }
 
         numConstraintsThreadsAlloc_ = kernelParams_.numConstraintsThreads;
@@ -815,6 +831,9 @@ void LincsCuda::set(const t_idef    &idef,
         allocateDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices, maxCoupledConstraints*kernelParams_.numConstraintsThreads, nullptr);
         allocateDeviceBuffer(&kernelParams_.d_massFactors, maxCoupledConstraints*kernelParams_.numConstraintsThreads, nullptr);
         allocateDeviceBuffer(&kernelParams_.d_matrixA, maxCoupledConstraints*kernelParams_.numConstraintsThreads, nullptr);
+
+        allocateDeviceBuffer(&kernelParams_.d_gm_r, 3*maxCoupledConstraints*kernelParams_.numConstraintsThreads, nullptr);
+        allocateDeviceBuffer(&kernelParams_.d_gm_rhs, maxCoupledConstraints*kernelParams_.numConstraintsThreads, nullptr);
 
     }
 

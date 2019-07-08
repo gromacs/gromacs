@@ -90,6 +90,10 @@ struct LincsCudaKernelParameters
     float              *d_matrixA;
     //! Mass factors (GPU)
     float              *d_massFactors;
+
+    //workaround scratch global memory pointers
+    float              *d_gm_r;
+    float              *d_gm_rhs;
 };
 
 /*! \internal \brief Class with interfaces and data for CUDA version of LINCS. */
