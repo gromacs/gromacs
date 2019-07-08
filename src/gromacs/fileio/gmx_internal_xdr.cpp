@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -161,7 +161,7 @@ xdr_free (xdrproc_t proc, char *objp)
  * XDR nothing
  */
 bool_t
-xdr_void (void)
+xdr_void ()
 {
     return TRUE;
 }
@@ -508,8 +508,6 @@ bool_t xdr_float(XDR * xdrs, float * fp)
             tmp = *(reinterpret_cast<xdr_int32_t *>(fp));
             return (xdr_putint32(xdrs, &tmp));
 
-            break;
-
         case XDR_DECODE:
             if (xdr_getint32(xdrs, &tmp))
             {
@@ -582,12 +580,10 @@ bool_t xdr_double(XDR * xdrs, double * dp)
 
         case XDR_ENCODE:
             ip     = reinterpret_cast<int *>(dp);
-            tmp[0] = ip[!LSW];
+            tmp[0] = ip[bool(LSW == 0)];
             tmp[1] = ip[LSW];
-            return (xdr_putint32(xdrs, tmp) &&
-                    xdr_putint32(xdrs, tmp+1));
-
-            break;
+            return static_cast<bool_t>(bool(xdr_putint32(xdrs, tmp)) &&
+                                       bool(xdr_putint32(xdrs, tmp+1)));
 
         case XDR_DECODE:
             ip = reinterpret_cast<int *>(dp);

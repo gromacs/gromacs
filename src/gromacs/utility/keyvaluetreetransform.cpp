@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -536,7 +536,12 @@ KeyValueTreeTransformRuleBuilder::KeyValueTreeTransformRuleBuilder(
 {
 }
 
-KeyValueTreeTransformRuleBuilder::~KeyValueTreeTransformRuleBuilder()
+// TODO If the function called here would ever throw
+// (e.g. std::bad_alloc) then std::terminate will be called.
+// Alternatively, createRule could catch all exceptions and terminate
+// but that's the same for an end user. So suppressing the clang-tidy
+// warning is about as bad as any alternative.
+KeyValueTreeTransformRuleBuilder::~KeyValueTreeTransformRuleBuilder() // NOLINT(bugprone-exception-escape)
 {
     if (!std::uncaught_exception())
     {

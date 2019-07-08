@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -301,7 +301,7 @@ class KeyValueTreeTransformRuleBuilder
         KeyValueTreeTransformRuleBuilder(KeyValueTreeTransformRuleBuilder &&)            = default;
         //! Supports returning the builder from IKeyValueTreeTransformRules::addRule().
         KeyValueTreeTransformRuleBuilder &operator=(KeyValueTreeTransformRuleBuilder &&) = default;
-        ~KeyValueTreeTransformRuleBuilder();
+        ~KeyValueTreeTransformRuleBuilder(); // NOLINT(bugprone-exception-escape)
 
         /*! \brief
          * Specifies a rule that maps a value at given path.
