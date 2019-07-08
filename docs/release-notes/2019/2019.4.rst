@@ -26,6 +26,16 @@ The tool would fail when not being provided with a library file to read in.
 
 :issue:`3012`
 
+
+Fix bug in gmx anaeig
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+An issue was noted when reading a second set
+set of eigenvectors that could lead to problems when the number
+of eigenvectors was less than the three times the number of atoms.
+
+:issue:`2972`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
