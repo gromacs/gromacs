@@ -522,29 +522,6 @@ class ConstraintsTest : public ::testing::TestWithParam<ConstraintsTestParameter
         }
 
         /*! \brief
-         * The test on the final coordinates (not used).
-         *
-         * Goes through all atoms and checks if the final positions correspond to the
-         * provided reference set of coordinates.
-         *
-         * \param[in] xPrimeRef       The reference set of coordinates.
-         * \param[in] tolerance       Tolerance for the coordinates test.
-         * \param[in] testData        Test data structure.
-         */
-        void checkFinalCoordinates(std::vector<RVec> xPrimeRef, FloatingPointTolerance tolerance,
-                                   const ConstraintsTestData &testData)
-        {
-            for (int i = 0; i < testData.numAtoms_; i++)
-            {
-                for (int d = 0; d < DIM; d++)
-                {
-                    EXPECT_REAL_EQ_TOL(xPrimeRef.at(i)[d], testData.xPrime_[i][d], tolerance) << gmx::formatString(
-                            "Coordinates after constrains were applied differ from these in the reference set for atom #%d.", i);
-                }
-            }
-        }
-
-        /*! \brief
          * The test of virial tensor.
          *
          * Checks if the values in the scaled virial tensor are equal to pre-computed values.
@@ -564,24 +541,6 @@ class ConstraintsTest : public ::testing::TestWithParam<ConstraintsTestParameter
                 }
             }
         }
-
-        /*! \brief
-         * The test for FEP (not used).
-         *
-         * Checks if the value of dH/dLambda is equal to the reference value.
-         * \todo Add tests for dHdLambda values.
-         *
-         * \param[in] dHdLambdaRef    Reference value.
-         * \param[in] tolerance       Tolerance.
-         * \param[in] testData        Test data structure.
-         */
-        void checkFEP(const real dHdLambdaRef, FloatingPointTolerance tolerance,
-                      const ConstraintsTestData &testData)
-        {
-            EXPECT_REAL_EQ_TOL(dHdLambdaRef, testData.dHdLambda_, tolerance) <<
-            "Computed value for dV/dLambda is not equal to the reference value. ";
-        }
-
 };
 
 TEST_P(ConstraintsTest, SingleConstraint){
