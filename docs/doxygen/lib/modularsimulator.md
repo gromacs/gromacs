@@ -412,6 +412,21 @@ implementation itself, but replaces the legacy `constrain_coordinates`
 and `constrain_velocities` calls from update.h by elements implementing
 the ISimulatorElement interface and using the new data management.
 
+#### `Propagator`
+The propagator element can, through templating, cover the different
+propagation types used in NVE MD. The combination of templating, static
+functions, and having only the inner-most operations in the static
+functions allows to have performance comparable to fused update elements
+while keeping easily re-orderable single instructions.
+
+Currently, the (templated) implementation covers four cases:
+ * *PositionsOnly:* Moves the position vector by the given time step
+ * *VelocitiesOnly:* Moves the velocity vector by the given time step
+ * *LeapFrog:* A manual fusion of the previous two propagators
+ * *VelocityVerletPositionsAndVelocities:* A manual fusion of VelocitiesOnly 
+    and PositionsOnly, where VelocitiesOnly is only propagated by half the 
+    time step of PositionsOnly.
+
 ## Data structures
 
 ### `StatePropagatorData`
