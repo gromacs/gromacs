@@ -405,6 +405,13 @@ degrees of freedom would be desirable to pave the way towards multiple
 time step integrators, allowing to integrate slower degrees of freedom
 at a different frequency than faster degrees of freedom.
 
+#### `ConstraintElement`
+The constraint element is implemented for the two cases of constraining
+both positions and velocities, and only velocities. It does not change the constraint
+implementation itself, but replaces the legacy `constrain_coordinates`
+and `constrain_velocities` calls from update.h by elements implementing
+the ISimulatorElement interface and using the new data management.
+
 ## Data structures
 
 ### `StatePropagatorData`
