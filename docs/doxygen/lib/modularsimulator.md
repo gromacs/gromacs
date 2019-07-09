@@ -458,3 +458,15 @@ class to be able to update the local topology when needed.
 
 The topology holder is not a `ISimulatorElement`, i.e. it does not take part in the
 simulator loop.
+
+## Infrastructure
+### `DomDecHelper` and `PmeLoadBalanceHelper`
+These infrastructure elements are responsible for domain decomposition and 
+PME load balancing, respectively. They encapsulate function calls which are 
+important for performance, but outside the scope of this effort. They rely 
+on legacy data structures for the state (both) and the topology (domdec).
+    
+The elements do not implement the ISimulatorElement interface, as
+the Simulator is calling them explicitly between task queue population
+steps. This allows elements to receive the new topology / state before
+deciding what functionality they need to run.
