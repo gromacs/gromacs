@@ -32,7 +32,6 @@ The tool would fail when not being provided with a library file to read in.
 
 :issue:`3012`
 
-
 Fix bug in gmx anaeig
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -41,6 +40,13 @@ set of eigenvectors that could lead to problems when the number
 of eigenvectors was less than the three times the number of atoms.
 
 :issue:`2972`
+
+Fix issue with demux.pl script
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The trajectories could become discontinuous with simulations longer than 100ns
+and exchange strides that are not a multiple of 1 ps. This only affected the
+post-processing of trajectories generated from replica exchange simulations.
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
