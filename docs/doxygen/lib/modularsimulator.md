@@ -427,6 +427,11 @@ Currently, the (templated) implementation covers four cases:
     and PositionsOnly, where VelocitiesOnly is only propagated by half the 
     time step of PositionsOnly.
 
+#### `CompositeSimulatorElement`
+The composite simulator element takes a list of elements and implements
+the ISimulatorElement interface, making a group of elements effectively
+behave as one. This simplifies building algorithms.
+
 ## Data structures
 
 ### `StatePropagatorData`
