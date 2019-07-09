@@ -49,6 +49,7 @@ struct gmx_enfrot;
 struct gmx_multisim_t;
 struct gmx_shellfc_t;
 struct gmx_mtop_t;
+class history_t;
 struct pull_t;
 struct t_forcerec;
 struct t_fcdata;
@@ -86,7 +87,12 @@ void relax_shell_flexcon(FILE                                     *log,
                          gmx::Constraints                         *constr,
                          gmx_enerdata_t                           *enerd,
                          t_fcdata                                 *fcd,
-                         t_state                                  *state,
+                         int                                       natoms,
+                         gmx::ArrayRefWithPadding<gmx::RVec>       x,
+                         gmx::ArrayRefWithPadding<gmx::RVec>       v,
+                         matrix                                    box,
+                         gmx::ArrayRef<real>                       lambda,
+                         history_t                                *hist,
                          gmx::ArrayRefWithPadding<gmx::RVec>       f,
                          tensor                                    force_vir,
                          const t_mdatoms                          *md,
