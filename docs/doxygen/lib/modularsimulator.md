@@ -381,6 +381,19 @@ responsibility of the simulator builder to ensure that the
 `EnergyElement` is called at a point of the simulator run
 at which it has access to a valid energy state.
 
+#### `ComputeGlobalsElement`
+The `ComputeGlobalsElement` encapsulates the legacy calls to
+`compute_globals`. While a new approach to the global reduction
+operations has been discussed, it is currently not part of this
+effort. This element therefore aims at offering an interface
+to the legacy implementation which is compatible with the new
+simulator approach.
+
+The element currently comes in 3 (templated) flavors: the leap-frog case,
+the first call during a velocity-verlet integrator, and the second call
+during a velocity-verlet integrator. It is the responsibility of the
+simulator builder to place them at the right place of the
+integration algorithm.
 
 ## Data structures
 
