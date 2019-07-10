@@ -314,7 +314,7 @@ int alex_molselect(int argc, char *argv[])
     mdp.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
-             bZero, opt_elem, nullptr,
+             bZero, opt_elem,
              gms, true, false, false,
              false, true, nullptr);
 
