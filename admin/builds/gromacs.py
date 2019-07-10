@@ -61,6 +61,9 @@ extra_options = {
     'static': Option.simple,
     'thread-mpi': Option.bool,
     'tng' : Option.bool,
+    # The following options cater for testing code in Jenkins that is
+    # currently behind feature flags in master branch.
+    'gpubufferops' : Option.bool,
 }
 
 extra_projects = [Project.REGRESSIONTESTS]
@@ -168,6 +171,9 @@ def do_build(context):
     # produce a reasonable stack trace for them.
     if context.opts.asan:
         cmake_opts['GMX_HWLOC'] = 'OFF'
+
+    if context.opts.gpubufferops:
+        context.env.set_env_var('GMX_USE_GPU_BUFFER_OPS', "1")
 
     regressiontests_path = context.workspace.get_project_dir(Project.REGRESSIONTESTS)
 
