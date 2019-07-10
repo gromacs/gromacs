@@ -75,13 +75,18 @@ ADD --chown=testing:testing test /home/testing/test
 
 ADD --chown=testing:testing sample_restraint /home/testing/sample_restraint
 
-RUN . $HOME/testing/bin/activate && \
+# TODO: (#3027) Get googletest sources locally.
+RUN . $VENV/bin/activate && \
     . /usr/local/gromacs/bin/GMXRC && \
     (cd $HOME/sample_restraint && \
      mkdir build && \
      cd build && \
-     cmake .. && \
-     make -j4 install \
+     cmake .. \
+             -DDOWNLOAD_GOOGLETEST=ON \
+             -DGMXAPI_EXTENSION_DOWNLOAD_PYBIND=ON && \
+     make -j4 && \
+     make test && \
+     make install \
     )
 
 # TODO: this can be in the root user section above once it is stable

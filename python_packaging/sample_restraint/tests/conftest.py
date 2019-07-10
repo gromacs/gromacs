@@ -40,5 +40,5 @@ except ImportError:
 def tpr_filename():
     """Provide a sample TPR file by filename."""
     current_dir = os.path.dirname(__file__)
-    file_path = os.path.join(current_dir, 'data', 'topol.tpr')
+    file_path = os.path.join(current_dir, 'topol.tpr')
     return os.path.abspath(file_path)

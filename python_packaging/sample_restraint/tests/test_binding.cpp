@@ -57,28 +57,4 @@ class SimpleApiModule : public gmxapi::MDModule
         }
 };
 
-// This should be in a validation test suite, not a unit test...
-//TEST(ApiRestraint, MdAndPlugin)
-//{
-//
-//    {
-//        // Run a lot of steps of a large system.
-//        std::string waterfile = "water.tpr";
-//        auto system = gmxapi::fromTprFile(waterfile);
-//        std::shared_ptr<gmxapi::Context> context = gmxapi::defaultContext();
-//
-//        auto module = std::make_shared<SimpleApiModule>();
-//        system->setRestraint(module);
-//
-//        auto session = system->launch(context);
-//
-//        gmxapi::Status status;
-//        ASSERT_NO_THROW(status = session->run());
-////        ASSERT_TRUE(module->force_called() > 0);
-////        ASSERT_NO_THROW(session->run(1000));
-//        ASSERT_TRUE(status.success());
-//    }
-//
-//}
-
 } // end anonymous namespace

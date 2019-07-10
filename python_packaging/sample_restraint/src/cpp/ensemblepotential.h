@@ -19,9 +19,10 @@
  * potentials.
  */
 
-#include <vector>
 #include <array>
+#include <memory>
 #include <mutex>
+#include <vector>
 
 #include "gmxapi/gromacsfwd.h"
 #include "gmxapi/session.h"

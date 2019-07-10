@@ -1,7 +1,58 @@
-cmake_minimum_required(VERSION 3.4.3)
+cmake_minimum_required(VERSION 3.9.6)
 # If you are using this repository as a template, you should probably change the
 # project name and adopt your own versioning scheme.
 project(sample_restraint VERSION 0.0.7)
+
+find_package(PythonInterp)
+
+# Check if Python package is being built directly or via add_subdirectory.
+# I.e. is this being built as a standalone project or as part of the GROMACS
+# build tree (for testing)?
+set(GMXAPI_EXTENSION_MASTER_PROJECT OFF)
+if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    set(GMXAPI_EXTENSION_MASTER_PROJECT ON)
+endif()
+
+# TODO: (Issue #3027) Handle pybind sources both for forked projects and
+#  for GROMACS-project-internal testing.
+# Projects based on this subtree should bundle pybind11 sources.
+# The GROMACS project already bundles one copy of pybind sources for the gmxapi
+# Python package, and should package them with source distribution archives of
+# the paackage that should be installed with GROMACS, but the pybind sources
+# would only be available to this project with some additional management by
+# the parent project CMake configuration.
+# Also reference https://redmine.gromacs.org/issues/2896
+set(GMXAPI_USE_BUNDLED_PYBIND OFF CACHE BOOL
+    "Use pybind11 headers bundled with this repository. If OFF, CMake does `find_package(pybind11)`.")
+if(GMXAPI_USE_BUNDLED_PYBIND)
+    add_subdirectory(external/pybind)
+else()
+    # If configuring as part of the GROMACS project, pybind11 2.2 has already been found.
+    if(NOT GMXAPI_EXTENSION_MASTER_PROJECT)
+        # TODO: (Issue #3027) Handle locally available sources.
+    else()
+        # TODO: Find a proper way to reference a local directory, once we figure out where that is.
+        option(GMXAPI_EXTENSION_DOWNLOAD_PYBIND ON)
+        if(GMXAPI_EXTENSION_DOWNLOAD_PYBIND)
+            configure_file(CMakeLists.pybind.in pybind-download/CMakeLists.txt)
+            execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+                            RESULT_VARIABLE result
+                            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/pybind-download)
+            if(result)
+                message(FATAL_ERROR "CMake step for pybind download failed: ${result}")
+            endif()
+            execute_process(COMMAND ${CMAKE_COMMAND} --build .
+                            RESULT_VARIABLE result
+                            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/pybind-download)
+            if(result)
+                message(FATAL_ERROR "Build step for pybind failed: ${result}")
+            endif()
+            add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/pybind-src)
+        else()
+            find_package(pybind11 2.2 REQUIRED)
+        endif()
+    endif()
+endif()
 
 # This project requires a GROMACS supporting gmxapi 0.0.7 or higher. It should
 # be sufficient to source the GMXRC, but you can also set the GROMACS_DIR or
@@ -82,12 +133,8 @@ option(GMXPLUGIN_USER_INSTALL
 # not use any Python virtual environments, we recommend you _do_ perform "user" installs exclusively. Overall, we
 # we recommend you use Python virtual environments and activate one before performing a regular (non-"user") install.
 
-unset(PYTHONINTERP_FOUND)
-unset(PYTHONLIBS_FOUND)
-find_package(PythonInterp)
 if (PYTHONINTERP_FOUND)
     message(STATUS "Found Python interpreter: ${PYTHON_EXECUTABLE}")
-    add_subdirectory(src/external/pybind11)
     if (PYTHON_LIBRARIES)
         if (GMXPLUGIN_USER_INSTALL)
             execute_process(COMMAND ${PYTHON_EXECUTABLE} "-m" "site" "--user-site"
@@ -111,7 +158,7 @@ if (PYTHONINTERP_FOUND)
             "Set PYTHON_EXECUTABLE to the Python interpreter that was installed with a working Python.h header file.")
     endif()
 else()
-    message(FATAL "Could not find Python interpreter. Set CMake flag -DPYTHON_EXECUTABLE=/path/to/python to hint.")
+    message(FATAL_ERROR "Could not find Python interpreter. Set CMake flag -DPYTHON_EXECUTABLE=/path/to/python to hint.")
 endif()
 
 # At some point this may be part of a CMake package with several components for which a single CMAKE_INSTALL_PREFIX does
@@ -128,9 +175,13 @@ message(STATUS "Python module will be installed to GMXPLUGIN_INSTALL_PATH cache 
 # Set up testing options.
 include(CTest)
 
-# Either use the git subtree in tests/googletest or download a fresh copy of
-# googletest master branch.
-option(DOWNLOAD_GOOGLETEST OFF "Download the latest master branch of googletest.")
+# TODO: (Issue #3027) Handle Googletest sources both for forked projects and
+#  for GROMACS-project-internal testing.
+# Projects based on this subtree should bundle googletest sources.
+# The GROMACS project already bundles googletest sources for internal use, but
+# they will only be available to this project with some additional management by
+# the parent project CMake configuration.
+option(DOWNLOAD_GOOGLETEST "Download the latest master branch of googletest." OFF)
 mark_as_advanced(DOWNLOAD_GOOGLETEST)
 
 # Prevent overriding the parent project's compiler/linker
@@ -147,5 +198,6 @@ add_subdirectory(docs)
 
 # Process CMake configuration for Python and C++ tests.
 if(BUILD_TESTING)
+    include(GoogleTest)
     add_subdirectory(tests)
 endif()
