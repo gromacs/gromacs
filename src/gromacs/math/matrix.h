@@ -68,8 +68,7 @@ using Matrix3x3Span      = Matrix3x3::view_type;
 using Matrix3x3ConstSpan = Matrix3x3::const_view_type;
 
 //! Determinant of a 3x3 matrix
-template <class ElementType>
-ElementType determinant(const BasicMatrix3x3<ElementType> matrix)
+constexpr real determinant(Matrix3x3ConstSpan matrix)
 {
     return (  matrix(0, 0)*(matrix(1, 1)*matrix(2, 2)-matrix(2, 1)*matrix(1, 2))
               -matrix(1, 0)*(matrix(0, 1)*matrix(2, 2)-matrix(2, 1)*matrix(0, 2))
