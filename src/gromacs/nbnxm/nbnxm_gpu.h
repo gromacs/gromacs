@@ -300,8 +300,8 @@ void nbnxn_launch_copy_f_from_gpu(const AtomLocality      gmx_unused  atomLocali
 
 /*! \brief Wait for GPU stream to complete */
 CUDA_FUNC_QUALIFIER
-void nbnxn_wait_stream_gpu(const AtomLocality      gmx_unused  atomLocality,
-                           gmx_nbnxn_gpu_t         gmx_unused *nb) CUDA_FUNC_TERM
+void nbnxn_wait_for_gpu_force_reduction(const AtomLocality      gmx_unused  atomLocality,
+                                        gmx_nbnxn_gpu_t         gmx_unused *nb) CUDA_FUNC_TERM
 
 
 }     // namespace Nbnxm

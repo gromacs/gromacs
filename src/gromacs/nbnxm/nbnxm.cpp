@@ -248,9 +248,9 @@ void nonbonded_verlet_t::launch_copy_f_from_gpu(rvec *f, const Nbnxm::AtomLocali
                                  f);
 }
 
-void nonbonded_verlet_t::wait_stream_gpu(const Nbnxm::AtomLocality locality)
+void nonbonded_verlet_t::wait_for_gpu_force_reduction(const Nbnxm::AtomLocality locality)
 {
-    nbnxn_wait_stream_gpu(locality, gpu_nbv);
+    nbnxn_wait_for_gpu_force_reduction(locality, gpu_nbv);
 }
 
 /*! \endcond */

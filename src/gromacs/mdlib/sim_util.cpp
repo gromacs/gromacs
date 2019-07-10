@@ -1454,7 +1454,7 @@ void do_force(FILE                                     *fplog,
         {
             if (useGpuFBufOps == BufferOpsUseGpu::True)
             {
-                nbv->wait_stream_gpu(Nbnxm::AtomLocality::NonLocal);
+                nbv->wait_for_gpu_force_reduction(Nbnxm::AtomLocality::NonLocal);
             }
             dd_move_f(cr->dd, force.unpaddedArrayRef(), fr->fshift, wcycle);
         }
@@ -1526,6 +1526,11 @@ void do_force(FILE                                     *fplog,
     if (bUseOrEmulGPU && !alternateGpuWait)
     {
 
+        // TODO: move these steps as early as possible:
+        // - CPU f H2D should be as soon as all CPU-side forces are done
+        // - wait for force reduction does not need to block host (at least not here, it's sufficient to wait
+        //   before the next CPU task that consumes the forces: vsite spread or update)
+        //
         if (useGpuFBufOps == BufferOpsUseGpu::True && haveCpuForces)
         {
             nbv->launch_copy_f_to_gpu(forceOut.f, Nbnxm::AtomLocality::Local);
@@ -1535,7 +1540,7 @@ void do_force(FILE                                     *fplog,
         if (useGpuFBufOps == BufferOpsUseGpu::True)
         {
             nbv->launch_copy_f_from_gpu(forceOut.f, Nbnxm::AtomLocality::Local);
-            nbv->wait_stream_gpu(Nbnxm::AtomLocality::Local);
+            nbv->wait_for_gpu_force_reduction(Nbnxm::AtomLocality::Local);
         }
     }
 

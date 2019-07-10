@@ -758,6 +758,9 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
                            int                              gridId,
                            int                              numColumnsMax)
 {
+    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+    GMX_ASSERT(x,  "Need a valid x pointer");
+
     cu_atomdata_t             *adat    = nb->atdat;
     bool                       bDoTime = nb->bDoTime;
 
@@ -812,6 +815,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
     {
         d_x = (rvec*) xPmeDevicePtr;
     }
+    GMX_ASSERT(d_x,  "Need a valid d_x pointer");
 
     /* launch kernel on GPU */
 
@@ -853,10 +857,12 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                  atomLocality,
                                int                                 nAtoms,
                                GpuBufferOpsAccumulateForce         accumulateForce)
 {
+    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
-    cu_atomdata_t       *adat    = nb->atdat;
-    cudaStream_t         stream  = atomLocality == AtomLocality::Local ?
-        nb->stream[InteractionLocality::Local] : nb->stream[InteractionLocality::NonLocal];
+    const InteractionLocality iLocality = gpuAtomToInteractionLocality(atomLocality);
+    cudaStream_t              stream    = nb->stream[iLocality];
+
+    cu_atomdata_t            *adat    = nb->atdat;
 
     /* launch kernel */
 
@@ -892,12 +898,16 @@ void nbnxn_launch_copy_f_to_gpu(const AtomLocality               atomLocality,
                                 gmx_nbnxn_gpu_t                 *nb,
                                 rvec                            *f)
 {
-    cudaStream_t         stream  = atomLocality == AtomLocality::Local ?
-        nb->stream[InteractionLocality::Local] : nb->stream[InteractionLocality::NonLocal];
-    bool                 bDoTime = nb->bDoTime;
-    cu_timers_t         *t       = nb->timers;
+    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+    GMX_ASSERT(f,  "Need a valid f pointer");
 
-    int                  atomStart = 0, nAtoms = 0;
+    const InteractionLocality iLocality = gpuAtomToInteractionLocality(atomLocality);
+    cudaStream_t              stream    = nb->stream[iLocality];
+
+    bool                      bDoTime = nb->bDoTime;
+    cu_timers_t              *t       = nb->timers;
+
+    int                       atomStart = 0, nAtoms = 0;
 
     nbnxn_get_atom_range(atomLocality, gridSet, &atomStart, &nAtoms);
 
@@ -927,12 +937,15 @@ void nbnxn_launch_copy_f_from_gpu(const AtomLocality               atomLocality,
                                   gmx_nbnxn_gpu_t                 *nb,
                                   rvec                            *f)
 {
-    cudaStream_t         stream  = atomLocality == AtomLocality::Local ?
-        nb->stream[InteractionLocality::Local] : nb->stream[InteractionLocality::NonLocal];
-    bool                 bDoTime = nb->bDoTime;
-    cu_timers_t         *t       = nb->timers;
+    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+    GMX_ASSERT(f,  "Need a valid f pointer");
 
-    int                  atomStart = 0, nAtoms = 0;
+    const InteractionLocality iLocality = gpuAtomToInteractionLocality(atomLocality);
+    cudaStream_t              stream    = nb->stream[iLocality];
+
+    bool                      bDoTime = nb->bDoTime;
+    cu_timers_t              *t       = nb->timers;
+    int                       atomStart, nAtoms;
 
     nbnxn_get_atom_range(atomLocality, gridSet, &atomStart, &nAtoms);
 
@@ -941,6 +954,7 @@ void nbnxn_launch_copy_f_from_gpu(const AtomLocality               atomLocality,
         t->xf[atomLocality].nb_d2h.openTimingRegion(stream);
     }
 
+    GMX_ASSERT(nb->frvec,  "Need a valid nb->frvec pointer");
     rvec       *ptrDest = reinterpret_cast<rvec *> (f[atomStart]);
     rvec       *ptrSrc  = reinterpret_cast<rvec *> (nb->frvec[atomStart]);
     //copyFromDeviceBuffer(ptrDest, &ptrSrc, 0, nAtoms,
@@ -957,12 +971,14 @@ void nbnxn_launch_copy_f_from_gpu(const AtomLocality               atomLocality,
     return;
 }
 
-void nbnxn_wait_stream_gpu(const AtomLocality      gmx_unused atomLocality,
-                           gmx_nbnxn_gpu_t                   *nb)
+void nbnxn_wait_for_gpu_force_reduction(const AtomLocality      gmx_unused atomLocality,
+                                        gmx_nbnxn_gpu_t                   *nb)
 {
+    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
-    cudaStream_t         stream  = atomLocality == AtomLocality::Local ?
-        nb->stream[InteractionLocality::Local] : nb->stream[InteractionLocality::NonLocal];
+    const InteractionLocality iLocality = gpuAtomToInteractionLocality(atomLocality);
+
+    cudaStream_t              stream    = nb->stream[iLocality];
 
     cudaStreamSynchronize(stream);
 
