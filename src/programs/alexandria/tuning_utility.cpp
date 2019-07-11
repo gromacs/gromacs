@@ -303,7 +303,8 @@ void print_electric_props(FILE                           *fp,
 
     for (auto ai = indexCount->beginIndex(); ai < indexCount->endIndex(); ++ai)
     {
-        if (ai->count())
+        // More than 1 data point is needed for doing statistical analysis for each zeta type. 
+        if (ai->count() > 1)
         {
             ZetaTypeLsq k;
             k.ztype.assign(ai->name());
