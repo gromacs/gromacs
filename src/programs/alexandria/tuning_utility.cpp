@@ -318,7 +318,7 @@ void print_electric_props(FILE                           *fp,
                     mol.molProp()->getCharge(),
                     mol.molProp()->getMultiplicity());
             
-            // Recalculate the atomic charges using the optmized pd.
+            // Recalculate the atomic charges using the optmized parameters.
             mol.GenerateCharges(pd, fplog, ap, qdist, qgen,
                                 watoms, hfac, lot, false, nullptr,
                                 cr, tabfn, hwinfo, qcycle,
@@ -396,36 +396,35 @@ void print_electric_props(FILE                           *fp,
             
             // Atomic charges
             fprintf(fp, "Atom   Type      q_Calc     q_ESP     q_CM5     q_HPA     q_MPA       x       y       z\n");
-            auto qcm5 = mol.chargeQM(qtCM5);
-            auto x    = mol.x();
-            double qrmsd = 0;
+            auto qcm5  = mol.chargeQM(qtCM5);
+            auto x     = mol.x();
+            auto qrmsd = 0.0;
             for (j = i = 0; j < mol.topology_->atoms.nr; j++)
             {
                 if (mol.topology_->atoms.atom[j].ptype == eptAtom ||
                     mol.topology_->atoms.atom[j].ptype == eptNucleus)
                 {
-                    auto fa = pd.findAtype(*(mol.topology_->atoms.atomtype[j]));
-                    auto at = fa->getZtype();
-                    if (indexCount->isOptimized(at))
+                    auto atp = pd.findAtype(*(mol.topology_->atoms.atomtype[j]));
+                    auto ztp = atp->getZtype();
+                    auto  k  = std::find_if(lsqt.begin(), lsqt.end(),
+                                           [ztp](const ZetaTypeLsq &atlsq)
+                                           {
+                                               return atlsq.ztype.compare(ztp) == 0;
+                                           });
+                    if (k != lsqt.end())
                     {
-                        auto  k  = std::find_if(lsqt.begin(), lsqt.end(),
-                                                [at](const ZetaTypeLsq &atlsq)
-                                                {
-                                                    return atlsq.ztype.compare(at) == 0;
-                                                });
-                        if (k != lsqt.end())
+                        qCalc = mol.topology_->atoms.atom[j].q;
+                        if (nullptr != mol.shellfc_)
                         {
-                            qCalc = mol.topology_->atoms.atom[j].q;
-                            if (nullptr != mol.shellfc_)
-                            {
-                                qCalc += mol.topology_->atoms.atom[j+1].q;
-                            }
-                            gmx_stats_add_point(k->lsq, qcm5[i], qCalc, 0, 0);
-
+                            qCalc += mol.topology_->atoms.atom[j+1].q;
+                        }                        
+                        if (indexCount->isOptimized(ztp))
+                        {
+                            // Make histogram and correlation plot only for the optimized zeta types.
+                            gmx_stats_add_point(k->lsq, qcm5[i], qCalc, 0, 0);                           
                             gmx_stats_add_point(lsq_charge, qcm5[i], qCalc, 0, 0);
-
-                            qrmsd += gmx::square(qcm5[i]-qCalc);
                         }
+                        qrmsd += gmx::square(qcm5[i]-qCalc);
                         fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
                                 mol.topology_->atoms.atom[j].atomnumber,
                                 j+1,
