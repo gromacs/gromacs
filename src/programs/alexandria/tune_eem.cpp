@@ -147,6 +147,11 @@ class OptACM : public MolGen
             addOptions(pargs);
             TuneACM_.add_pargs(pargs);
         }
+        void optionsFinished()
+        {
+            MolGen::optionsFinished();
+            TuneACM_.setBounds(weight(ermsBOUNDS) > 0);
+        }
 
         double l2_regularizer (double x,
                                double min,

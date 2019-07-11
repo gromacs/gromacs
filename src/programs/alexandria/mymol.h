@@ -266,9 +266,7 @@ class MyMol
         double                         chieq_         = 0;
         double                         Hform_         = 0;
         double                         Emol_          = 0;
-        double                         Ecalc_         = 0;
         double                         OptEcalc_      = 0;
-        double                         Force2_        = 0;
         double                         OptForce2_     = 0;
         double                         isoPol_elec_   = 0;
         double                         isoPol_calc_   = 0;

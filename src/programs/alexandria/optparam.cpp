@@ -63,8 +63,6 @@ void OptParam::add_pargs(std::vector<t_pargs> *pargs)
           "'Temperature' for the Monte Carlo simulation" },
         { "-anneal", FALSE, etBOOL, {&anneal_},
           "Use annealing in Monte Carlo simulation." },
-        { "-bound", FALSE, etBOOL, {&bBound_},
-          "Impose box-constrains for the optimization. Box constraints give lower and upper bounds for each parameter seperately." },
         { "-seed",   FALSE, etINT,  {&seed_},
           "Random number seed. If zero, a seed will be generated." },
         { "-step",  FALSE, etREAL, {&step_},

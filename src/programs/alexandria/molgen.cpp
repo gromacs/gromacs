@@ -469,7 +469,6 @@ void MolGen::Read(FILE            *fp,
                   const char      *tabfn)
 {
     int                              nwarn    = 0;
-    int                              nmol_cpu = 0;
     int                              imm_count[immNR];
     immStatus                        imm      = immOK;
     std::vector<alexandria::MolProp> mp;
@@ -521,11 +520,6 @@ void MolGen::Read(FILE            *fp,
                 ++mpi;
             }
         }
-        nmol_cpu = mp.size()/cr_->nnodes + 1;
-    }
-    else
-    {
-        nmol_cpu = 0;
     }
     /*Sort Molecules based on the number of atoms*/
     if (MASTER(cr_))
@@ -537,10 +531,6 @@ void MolGen::Read(FILE            *fp,
                       return (mp1.NAtom() < mp2.NAtom());
                   });
     }
-    if (PAR(cr_))
-    {
-        gmx_sumi(1, &nmol_cpu, cr_);
-    }
     if (bCheckSupport && MASTER(cr_))
     {
         make_index_count(&indexCount_,
@@ -551,9 +541,11 @@ void MolGen::Read(FILE            *fp,
                          bFitZeta);
     }
     /*Generate topology for Molecules and distribute them among the nodes*/
-    int ntopol = 0;
+    int ntopol    = 0;
+    std::vector<int> nmolpar;
     if (MASTER(cr_))
     {
+        int nlocaltop = 0;
         for (auto mpi = mp.begin(); mpi < mp.end(); ++mpi)
         {
             if (imsTrain == gms.status(mpi->getIupac()))
@@ -640,11 +632,12 @@ void MolGen::Read(FILE            *fp,
                     else
                     {
                         mymol.eSupp_ = eSupportLocal;
+                        nlocaltop += 1;
                     }
                     if (immOK == imm)
                     {
                         mymol_.push_back(std::move(mymol));
-                        ntopol++;
+                        ntopol += 1;
                         if (nullptr != debug)
                         {
                             fprintf(debug, "Added %s, ntopol = %d\n", mymol.molProp()->getMolname().c_str(), ntopol);
@@ -667,6 +660,15 @@ void MolGen::Read(FILE            *fp,
         {
             gmx_send_int(cr_, i, 0);
         }
+        nmolpar.push_back(nlocaltop);
+        for(int i = 1; i < cr_->nnodes; i++)
+        {
+            nmolpar.push_back(gmx_recv_int(cr_, i));
+        }
+        for(int i = 0; i < cr_->nnodes; i++)
+        {
+            fprintf(fp, "Node %d has %d compounds\n", i, nmolpar[i]);
+        }
     }
     else
     {
@@ -675,13 +677,13 @@ void MolGen::Read(FILE            *fp,
          *           S L A V E   N O D E S             *
          *                                             *
          ***********************************************/
-        ntopol = 0;
+        int nlocaltop = 0;
         while (gmx_recv_int(cr_, 0) == 1)
         {
             alexandria::MyMol mymol;
             if (nullptr != debug)
             {
-                fprintf(debug, "Going to retrieve new molecule\n");
+                fprintf(debug, "Going to retrieve new compound\n");
             }
             CommunicationStatus cs = mymol.molProp()->Receive(cr_, 0);
             if (CS_OK != cs)
@@ -740,6 +742,7 @@ void MolGen::Read(FILE            *fp,
             if (immOK == imm)
             {
                 mymol_.push_back(std::move(mymol));
+                nlocaltop += 1;
                 if (nullptr != debug)
                 {
                     fprintf(debug, "Added molecule %s\n", mymol.molProp()->getMolname().c_str());
@@ -747,33 +750,13 @@ void MolGen::Read(FILE            *fp,
             }
             gmx_send_int(cr_, 0, imm);
         }
-    }
-    int              nnn = nmol_cpu;
-    std::vector<int> nmolpar;
-    if (PAR(cr_))
-    {
-        nmolpar.resize(cr_->nnodes, 0);
-        nmolpar[cr_->nodeid] = nnn;
-        gmx_sumi(cr_->nnodes, nmolpar.data(), cr_);
+        gmx_send_int(cr_, 0, nlocaltop);
     }
     if (fp)
     {
         fprintf(fp, "There were %d warnings because of zero error bars.\n", nwarn);
-        int nmoltot = 0;
-        if (PAR(cr_))
-        {
-            for (int i = 0; i < cr_->nnodes; i++)
-            {
-                fprintf(fp, "Node %d has %d molecules\n", i, nmolpar[i]);
-                nmoltot += nmolpar[i];
-            }
-        }
-        else
-        {
-            nmoltot = mp.size();
-        }
         fprintf(fp, "Made topologies for %d out of %d molecules.\n",
-                ntopol, (MASTER(cr_)) ? nmoltot : nmol_cpu);
+                ntopol, static_cast<int>(mp.size()));
 
         for (int i = 0; (i < immNR); i++)
         {

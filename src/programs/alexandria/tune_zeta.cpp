@@ -130,6 +130,11 @@ class OptZeta : public MolGen
             addOptions(pargs);
             TuneZeta_.add_pargs(pargs);
         }
+        void optionsFinished()
+        {
+            MolGen::optionsFinished();
+            TuneZeta_.setBounds(weight(ermsBOUNDS) > 0);
+        }
 
         double l2_regularizer (double x,
                                double min,

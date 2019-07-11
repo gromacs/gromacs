@@ -599,13 +599,6 @@ void plist_to_mtop(const Poldata                   &pd,
                    const std::vector<PlistWrapper> &plist,
                    gmx_mtop_t                      *mtop_)
 {
-    double fudgeLJ;
-    double reppow = 12.0;
-    int    n      = 0;
-
-    /* Generate pairs */
-    fudgeLJ = pd.getFudgeLJ();
-
     int nfptot = gmx::square(mtop_->ffparams.atnr);
     for (auto &pw : plist)
     {
@@ -614,7 +607,7 @@ void plist_to_mtop(const Poldata                   &pd,
     mtop_->ffparams.functype.resize(nfptot, {0});
     t_iparams ip = { { 0 } };
     mtop_->ffparams.iparams.resize(nfptot, ip);
-
+    int n = 0;
     for (auto &pw : plist)
     {
         int ftype  = pw.getFtype();
@@ -627,6 +620,8 @@ void plist_to_mtop(const Poldata                   &pd,
                     interaction_function[ftype].name);
         }
         mtop_->moltype[0].ilist[ftype].iatoms.resize(nratot, {0});
+        /* For generating pairs */
+        double fudgeLJ = pd.getFudgeLJ();
         int k = 0;
         for (auto j = pw.beginParam(); (j < pw.endParam()); ++j)
         {
@@ -656,7 +651,10 @@ void plist_to_mtop(const Poldata                   &pd,
             {
                 c[l] = 0;
             }
-            n = enter_params(&mtop_->ffparams, ftype, c.data(), 0, reppow, n, TRUE);
+            double reppow = 12.0;
+            int ffparamsSize = mtop_->ffparams.numTypes();
+            n = enter_params(&mtop_->ffparams, ftype, c.data(), 0, reppow, n, true);
+            GMX_RELEASE_ASSERT(n == ffparamsSize, "All parameters need to be appended");
             mtop_->moltype[0].ilist[ftype].iatoms[k++] = n;
             for (l = 0; (l < nra); l++)
             {

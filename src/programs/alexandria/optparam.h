@@ -123,6 +123,9 @@ class OptParam
         //! \brief Addapt the step size for perturbing the parameter
         void adapt_step(real factor) {step_ *= factor ;}
 
+        //! \brief Use box constraints or not
+        void setBounds(bool bBound) { bBound_ = bBound; }
+
         //! \brief Return whether or not bounds are used for parameters
         bool bounds() const { return bBound_; }
 

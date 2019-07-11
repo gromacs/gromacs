@@ -177,8 +177,8 @@ class MolGen
         real                            watoms_;
         real                            qtol_;
         int                             qcycle_;
-        real                            ener_[ermsNR];
-        real                            fc_[ermsNR];
+        real                            ener_[ermsNR] = { 0 };
+        real                            fc_[ermsNR] = { 1 };
         char                           *fixchi_;
         gmx_bool                        bOptHfac_;
         gmx_bool                        bQM_;
