@@ -54,7 +54,7 @@ template<typename T>
 class SimdReference
 {
     private:
-        using non_const_T = typename std::remove_const<T>::type;
+        using non_const_T = std::remove_const_t<T>;
         using pointer     = typename SimdTraits<T>::type*;
     public:
         //! \brief Constructor
@@ -204,9 +204,9 @@ class SimdArrayRef
         }
         //! \copydoc ArrayRef::ArrayRef(U)
         template<typename U,
-                 typename = typename std::enable_if<
-                         std::is_convertible<typename std::remove_reference<U>::type::pointer,
-                                             pointer>::value>::type>
+                 typename = std::enable_if_t<
+                         std::is_convertible<typename std::remove_reference_t<U>::pointer,
+                                             pointer>::value> >
         SimdArrayRef(U &&o) : begin_(reinterpret_cast<pointer>(o.data())),
                               end_(reinterpret_cast<pointer>(o.data()+o.size())) {}
         //reinterpret_cast is only needed for const conversion of SimdArrayRef itself.

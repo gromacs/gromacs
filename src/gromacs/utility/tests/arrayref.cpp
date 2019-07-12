@@ -109,7 +109,7 @@ class ArrayRefTest : public ::testing::Test
     public:
         typedef TypeParam ArrayRefType;
         typedef typename ArrayRefType::value_type ValueType;
-        typedef typename std::remove_const<ValueType>::type NonConstValueType;
+        typedef std::remove_const_t<ValueType> NonConstValueType;
 
         /*! \brief Run the same tests all the time
          *
@@ -174,7 +174,7 @@ TYPED_TEST(ArrayRefTest, ConstructFromNonConstPointersWorks)
 }
 
 template<bool c, typename T>
-using makeConstIf_t = typename std::conditional<c, const T, T>::type;
+using makeConstIf_t = std::conditional_t<c, const T, T>;
 
 TYPED_TEST(ArrayRefTest, ConstructFromVectorWorks)
 {

@@ -113,9 +113,9 @@ class ArrayRefWithPadding
             : begin_(std::move(o.begin_)), end_(std::move(o.end_)), paddedEnd_(std::move(o.paddedEnd_)) {}
         //! Convenience overload constructor to make an ArrayRefWithPadding<const T> from a non-const one.
         template<typename U,
-                 typename = typename std::enable_if<
+                 typename = std::enable_if_t<
                          std::is_same<value_type,
-                                      const typename std::remove_reference<U>::type::value_type>::value>::type>
+                                      const typename std::remove_reference_t<U>::value_type>::value> >
         ArrayRefWithPadding(U &&o)
         {
             auto constArrayRefWithPadding = o.constArrayRefWithPadding();

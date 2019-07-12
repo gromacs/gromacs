@@ -90,7 +90,7 @@ template <typename T>
 ArrayRef<char> charArrayRefFromArray(T *data, size_t size)
 {
     // Make a type like T, but without its possible const qualifier.
-    using NonConstT = typename std::remove_const<T>::type;
+    using NonConstT = std::remove_const_t<T>;
     return arrayRefFromArray<char>(reinterpret_cast<char *>(const_cast<NonConstT *>(data)), size * sizeof(T));
 }
 

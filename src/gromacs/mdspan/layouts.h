@@ -186,7 +186,7 @@ class layout_right
                  * \returns One-dimensional integer index.
                  */
                 template<class ... Indices >
-                typename std::enable_if<sizeof ... (Indices) == Extents::rank(), index_type>::type
+                std::enable_if_t<sizeof ... (Indices) == Extents::rank(), index_type>
                 constexpr operator()( Indices ... indices ) const noexcept
                 { return offset( 0, 0, indices ... ); }
 

@@ -106,9 +106,9 @@ class Any
          *
          * \throws std::bad_alloc if out of memory.
          */
-        template <typename T, typename = typename std::enable_if<!std::is_same<T, Any>::value>::type>
+        template <typename T, typename = std::enable_if_t<!std::is_same<T, Any>::value> >
         explicit Any(T &&value)
-            : content_(new Content<typename std::decay<T>::type>(std::forward<T>(value)))
+            : content_(new Content < std::decay_t < T>>(std::forward<T>(value)))
         {
         }
         /*! \brief

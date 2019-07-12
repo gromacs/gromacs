@@ -183,7 +183,7 @@ TYPED_TEST(ArrayRefWithPaddingTest, ConstructFromPointersWorks)
 }
 
 template<bool c, typename T>
-using makeConstIf_t = typename std::conditional<c, const T, T>::type;
+using makeConstIf_t = std::conditional_t<c, const T, T>;
 
 //! Helper struct for the case actually used in mdrun signalling
 template <typename T>

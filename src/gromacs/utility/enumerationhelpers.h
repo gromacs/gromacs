@@ -113,7 +113,7 @@ class EnumerationIterator final
 {
     public:
         //! Convenience alias
-        using IntegerType = typename std::underlying_type<EnumType>::type;
+        using IntegerType = std::underlying_type_t<EnumType>;
 
         /*! \name Iterator type traits
          * Satisfies the requirements for STL forward iterator.

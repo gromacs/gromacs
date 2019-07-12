@@ -97,7 +97,7 @@ class ArrayRefTest : public test::SimdTest
         using ArrayRefType = TypeParam;
         using PointerType  = typename ArrayRefType::pointer;
         using ValueType    = typename ArrayRefType::value_type;
-        using ElementType  = typename std::remove_const<typename gmx::internal::SimdTraits<ValueType>::type>::type;
+        using ElementType  = std::remove_const_t < typename gmx::internal::SimdTraits < ValueType>::type>;
         static constexpr int width = gmx::internal::SimdTraits<ValueType>::width;
 
         /*! \brief Run the same tests all the time
@@ -165,7 +165,7 @@ TYPED_TEST(ArrayRefTest, ConstructFromArrayRefWorks)
     std::array<typename TestFixture::ElementType, TestFixture::width*3> a;
 
     std::iota(a.begin(), a.end(), 0);
-    ArrayRef<typename std::remove_const<typename TestFixture::ValueType>::type>
+    ArrayRef < std::remove_const_t < typename TestFixture::ValueType>>
     ref(a.data(), a.data()+a.size());
     typename TestFixture::ArrayRefType        arrayRef(ref);
     this->runReadOnlyTests(a.data(), 3, arrayRef);

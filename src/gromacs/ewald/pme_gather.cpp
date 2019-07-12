@@ -215,7 +215,7 @@ struct do_fspline
  * This code supports pme_order <= 5.
  */
     template <int Order>
-    typename std::enable_if<Order == 4 || Order == 5, RVec>::type
+    std::enable_if_t<Order == 4 || Order == 5, RVec>
     operator()(std::integral_constant<int, Order>  order) const
     {
         const int                     norder = nn*order;

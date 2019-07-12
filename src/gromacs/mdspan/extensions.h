@@ -59,8 +59,8 @@ namespace gmx
  *       the view itself, so a single begin that takes a const view suffices.
  */
 template <class BasicMdspan>
-constexpr typename std::enable_if<BasicMdspan::is_always_contiguous(),
-                                  typename BasicMdspan::pointer>::type
+constexpr std::enable_if_t<BasicMdspan::is_always_contiguous(),
+                           typename BasicMdspan::pointer>
 begin(const BasicMdspan &basicMdspan)
 {
     return basicMdspan.data();
@@ -73,8 +73,8 @@ begin(const BasicMdspan &basicMdspan)
  *       the view itself, so a single end that takes a const view suffices.
  */
 template <class BasicMdspan>
-constexpr typename std::enable_if<BasicMdspan::is_always_contiguous(),
-                                  typename BasicMdspan::pointer>::type
+constexpr std::enable_if_t<BasicMdspan::is_always_contiguous(),
+                           typename BasicMdspan::pointer>
 end(const BasicMdspan &basicMdspan)
 {
     return basicMdspan.data() + basicMdspan.mapping().required_span_size();

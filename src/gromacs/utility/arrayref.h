@@ -146,9 +146,9 @@ class ArrayRef
          * a container to a method that takes ArrayRef.
          */
         template<typename U,
-                 typename = typename std::enable_if<
-                         std::is_convertible<typename std::remove_reference<U>::type::pointer,
-                                             pointer>::value>::type>
+                 typename = std::enable_if_t<
+                         std::is_convertible<typename std::remove_reference_t<U>::pointer,
+                                             pointer>::value> >
         ArrayRef(U &&o) : begin_(o.data()), end_(o.data()+o.size()) {}
         /*! \brief
          * Constructs a reference to a particular range.
@@ -273,9 +273,9 @@ ArrayRef<const T> constArrayRefFromArray(const T *begin, size_t size)
  * \see ArrayRef
  */
 template <typename T>
-ArrayRef<typename std::conditional<std::is_const<T>::value,
-                                   const typename T::value_type,
-                                   typename T::value_type>::type>
+ArrayRef < std::conditional_t < std::is_const<T>::value,
+const typename T::value_type,
+typename T::value_type>>
 makeArrayRef(T &c)
 {
     return c;
