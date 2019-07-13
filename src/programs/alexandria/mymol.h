@@ -264,7 +264,9 @@ class MyMol
 
     public:
         double                         chieq_         = 0;
+        // Enthalpy of formation (experimental) for this compound
         double                         Hform_         = 0;
+        // Target molecule energy for this compound
         double                         Emol_          = 0;
         double                         OptEcalc_      = 0;
         double                         OptForce2_     = 0;

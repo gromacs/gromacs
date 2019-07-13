@@ -972,8 +972,7 @@ class Optimization : public MolGen
                           char                   *title,
                           const char             *xvg,
                           const char             *HF_xvg,
-                          const gmx_output_env_t *oenv,
-                          bool                    bCheckOutliers);
+                          const gmx_output_env_t *oenv);
 
         void calcDeviation();
 
@@ -1844,7 +1843,8 @@ static void print_mols(FILE                          *fp,
                     (mi->mtop_->moltype[0].ilist[k].size() > 0))
                 {
                     fprintf(fp, "%s %d %g\n", interaction_function[k].name,
-                            mi->mtop_->moltype[0].ilist[k].size(),
+                            mi->mtop_->moltype[0].ilist[k].size()/
+                            (interaction_function[k].nratoms+1),
                             mi->enerd_->term[k]);
                 }
             }
@@ -1861,79 +1861,101 @@ void Optimization::printResults(FILE                   *fp,
                                 char                   *title,
                                 const char             *hform_xvg,
                                 const char             *HF_xvg,
-                                const gmx_output_env_t *oenv,
-                                bool                    bCheckOutliers)
+                                const gmx_output_env_t *oenv)
 {
     int         N, i;
     real        a, b;
     real        da, db;
     real        chi2, Rfit;
     double      msd;
-    FILE       *xfp, *hfp;
+    FILE       *xfp, *hfp = nullptr;
     gmx_stats_t gst;
 
     gst = gmx_stats_init();
-    if (nullptr != hform_xvg)
     {
-        xfp = xvgropen(hform_xvg, "Enthalpy of Formation", "Experiment (kJ/mol)", "Calculated (kJ/mol)", oenv);
-    }
-    if (nullptr != HF_xvg)
-    {
-        hfp = xvgropen(HF_xvg, "Energy", "B3LYP/aug-cc-pVTZ (kJ/mol)", "Alexandria (kJ/mol)", oenv);
-        xvgr_view(hfp, 0.15, 0.15, 0.75, 0.85, oenv);
+        const char *title = "Enthalpy of Formation";
+        const char *yaxis = "Alexandria (kJ/mol)";
+        if (nullptr != hform_xvg)
+        {
+            xfp = xvgropen(hform_xvg, title, "Experiment (kJ/mol)", yaxis, oenv);
+        }
+        if (nullptr != HF_xvg)
+        {
+            hfp = xvgropen(HF_xvg, title,
+                           "Experiment + \\f{12}DD\\f{4}E(B3LYP/aug-cc-pVTZ) (kJ/mol)",
+                           yaxis, oenv);
+            xvgr_view(hfp, 0.15, 0.15, 0.75, 0.85, oenv);
+        }
     }
     fprintf(fp, "%s\n", title);
-    fprintf(fp, "Nr.   %-30s %10s %10s %10s %10s %10s\n", "Molecule", "DHf@298K", "Emol@0K", "Delta E", "rms F", "Outlier?");
+    fprintf(fp, "Fit of energy at different conformations to y = ax+b\n");
+    fprintf(fp, "Nr.   %-30s %10s %10s %6s %6s %6s %6s\n", "Molecule", "DHf@298K", "Emol@0K", "rms F", "rms E", "a", "b");
     
     msd = 0;
     i   = 0;
     for (auto mi = mymols().begin(); mi < mymols().end(); mi++, i++)
     {
         real DeltaE = mi->OptEcalc_ - mi->Emol_;
-        fprintf(fp, "%-5d %-30s %10g %10g %10g %10g %-10s\n",
-                i,
-                mi->molProp()->getMolname().c_str(),
-                mi->Hform_,
-                mi->Emol_,
-                DeltaE,
-                sqrt(mi->OptForce2_),
-                (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
-        msd += gmx::square(DeltaE);
-        gmx_stats_add_point(gst, mi->Hform_, mi->Hform_ + DeltaE, 0, 0);
         if (nullptr != hform_xvg)
         {
             fprintf(xfp, "%10g  %10g\n", mi->Hform_, mi->Hform_ + DeltaE);
         }
-        if (nullptr != HF_xvg)
+        gmx_stats_t gmol = gmx_stats_init();
+        double   spHF    = 0;
+        double   optHF   = 0;
+        double   deltaEn = 0;
+        gmx_bool bpolar  = (mi->shellfc_ != nullptr);
+        GMX_RELEASE_ASSERT(mi->molProp()->getOptHF(&optHF), 
+                           "No optimized energy");
+        if (nullptr != hfp)
         {
-            double   spHF     = 0;
-            double   optHF    = 0;
-            double   deltaEn  = 0;
-            gmx_bool bpolar   = (mi->shellfc_ != nullptr);
-            GMX_RELEASE_ASSERT(mi->molProp()->getOptHF(&optHF), 
-                               "No optimized energy"); 
-            fprintf(hfp, "@ s%d legend \"%s\"\n", i, mi->molProp()->getMolname().c_str());
+            fprintf(hfp, "@ s%d legend \"%s\"\n", i, 
+                    mi->molProp()->getMolname().c_str());
             fprintf(hfp, "@type xy\n");
-            for (auto ei = mi->molProp()->BeginExperiment(); ei < mi->molProp()->EndExperiment(); ++ei)
+        }
+        for (auto ei = mi->molProp()->BeginExperiment(); ei < mi->molProp()->EndExperiment(); ++ei)
+        {
+            auto jtype = ei->getJobtype();
+            if (jtype == JOB_SP)
             {
-                auto jtype = ei->getJobtype();
-                if (jtype == JOB_SP)
+                ei->getHF(&spHF);
+                deltaEn = spHF - optHF;
+                mi->f_.clear();
+                mi->f_.resizeWithPadding(2*mi->topology_->atoms.nr);
+                mi->changeCoordinate(ei, bpolar);
+                mi->computeForces(nullptr, commrec());
+                real Hexper = mi->Hform_ + deltaEn;
+                real Halex  = mi->enerd_->term[F_EPOT] + mi->Hform_ - mi->Emol_;
+                if (nullptr != hfp)
                 {
-                    ei->getHF(&spHF);
-                    deltaEn = spHF - optHF;
-                    mi->f_.clear();
-                    mi->f_.resizeWithPadding(2*mi->topology_->atoms.nr);
-                    mi->changeCoordinate(ei, bpolar);
-                    mi->computeForces(nullptr, commrec());
-                    fprintf(hfp, "%10g  %10g\n", mi->Emol_ + deltaEn, mi->enerd_->term[F_EPOT]);
+                    fprintf(hfp, "%10g  %10g\n", Hexper, Halex);
                 }
+                gmx_stats_add_point(gmol, Hexper, Halex, 0, 0);
+        
             }
+        }
+        if (nullptr != hfp)
+        {
             fprintf(hfp, "&\n");
         }
+        real a, b, chi2, da, db, Rfit;
+        gmx_stats_get_ab(gmol, 0, &a, &b, &da, &db, &chi2, &Rfit);
+
+        fprintf(fp, "%-5d %-30s %10g %10g %6.1f %6.1f %6.3f %6.1f\n",
+                i,
+                mi->molProp()->getMolname().c_str(),
+                mi->Hform_,
+                mi->Emol_,
+                sqrt(mi->OptForce2_),
+                std::sqrt(chi2), a, b);
+        msd += gmx::square(DeltaE);
+        gmx_stats_add_point(gst, mi->Hform_, mi->Hform_ + DeltaE, 0, 0);
+        gmx_stats_free(gmol);
     }
 
     fprintf(fp, "\n");
-    fprintf(fp, "RMSD is %g kJ/mol for %zu molecules.\n\n", sqrt(msd/mymols().size()), mymols().size());
+    fprintf(fp, "RMSD for energy of optimized structure = %g kJ/mol for %zu molecules.\n\n", 
+            sqrt(msd/mymols().size()), mymols().size());
     fflush(fp);
     if (nullptr != hform_xvg)
     {
@@ -2113,7 +2135,8 @@ int alex_tune_fc(int argc, char *argv[])
 
     if (MASTER(opt.commrec()))
     {
-        opt.printResults(fp, (char *)"Before optimization", nullptr, nullptr, oenv, false);
+        opt.printResults(fp, (char *)"Before optimization", 
+                         nullptr, nullptr, oenv);
     }
 
     opt.optRun(MASTER(opt.commrec()) ? stderr : nullptr,
@@ -2130,7 +2153,7 @@ int alex_tune_fc(int argc, char *argv[])
         opt.printResults(fp, (char *)"After optimization",
                          opt2fn("-x", NFILE, fnm),
                          opt2fn("-hf", NFILE, fnm),
-                         oenv, true);
+                         oenv);
         writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), compress);
         gmx_ffclose(fp);
     }
