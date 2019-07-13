@@ -122,47 +122,46 @@ static void dump_index_count(const IndexCount       *ic,
     fflush(fp);
 }
 
-static void update_index_count_bool(IndexCount             *ic,
-                                    const Poldata          &pd,
-                                    const char             *string,
-                                    gmx_bool                bSet,
-                                    gmx_bool                bAllowZero,
-                                    ChargeDistributionModel iDistributionModel)
-{
-    std::vector<std::string> ptr = gmx::splitString(string);
-    for (auto &k : ptr)
-    {
-        if (pd.haveEemSupport(iDistributionModel, k, bAllowZero))
-        {
-            auto fa = pd.findAtype(k);
-            ic->addName(fa->getZtype(), bSet);
-        }
-    }
-}
-
 static void make_index_count(IndexCount                *ic,
                              const Poldata             &pd,
                              char                      *opt_elem,
-                             char                      *const_elem,
                              ChargeDistributionModel    iDistributionModel,
                              gmx_bool                   bFitZeta)
 {
-    if (nullptr != const_elem)
-    {
-        update_index_count_bool(ic, pd, const_elem, true, true, iDistributionModel);
-    }
     if (nullptr != opt_elem)
     {
-        update_index_count_bool(ic, pd, opt_elem, false, false, iDistributionModel);
+        /*Only members of opt_elem will be optimized */
+        std::vector<std::string> opt_elems = gmx::splitString(opt_elem);
+        for (auto eep = pd.BeginEemprops(); eep != pd.EndEemprops(); ++eep)
+        {
+            auto bConst = true;
+            if (eep->getEqdModel() == iDistributionModel)
+            {
+                auto name     = eep->getName();
+                auto opt_elem = std::find_if(opt_elems.begin(), opt_elems.end(),
+                                             [name](const std::string a)
+                                             {
+                                                 return a == name;
+                                             });
+                
+                if (opt_elems.end() != opt_elem)
+                {
+                    bConst = false;
+                }
+                
+                ic->addName(eep->getName(), bConst);
+            }
+        }
     }
     else
     {
+        /*All types of Eeemprops will be optimized */
+        bool bConst = false;
         for (auto eep = pd.BeginEemprops(); eep != pd.EndEemprops(); ++eep)
         {
-            if ((eep->getEqdModel() == iDistributionModel) &&
-                pd.haveEemSupport(iDistributionModel, eep->getName(), false))
+            if (eep->getEqdModel() == iDistributionModel)
             {
-                ic->addName(eep->getName(), false);
+                ic->addName(eep->getName(), bConst);
             }
         }
     }
@@ -186,8 +185,7 @@ void IndexCount::addName(const std::string &name,
     {
         if (ai->isConst() == bConst)
         {
-            gmx_fatal(FARGS, "Trying to add atom %s as both constant and optimized",
-                      name.c_str());
+            gmx_fatal(FARGS, "Trying to add atom %s as both constant and optimized", name.c_str());
         }
         else
         {
@@ -459,7 +457,6 @@ void MolGen::Read(FILE            *fp,
                   const char      *pd_fn,
                   gmx_bool         bZero,
                   char            *opt_elem,
-                  char            *const_elem,
                   const MolSelect &gms,
                   gmx_bool         bCheckSupport,
                   bool             bPairs,
@@ -533,10 +530,10 @@ void MolGen::Read(FILE            *fp,
     }
     if (bCheckSupport && MASTER(cr_))
     {
+        /*Make a index of eemprop types to be either optimized or being kept constant*/
         make_index_count(&indexCount_,
                          pd_,
                          opt_elem,
-                         const_elem,
                          iChargeDistributionModel_,
                          bFitZeta);
     }

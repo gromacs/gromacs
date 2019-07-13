@@ -407,7 +407,6 @@ class MolGen
                   const char                *pd_fn,
                   gmx_bool                   bZero,
                   char                      *opt_elem,
-                  char                      *const_elem,
                   const MolSelect           &gms,
                   gmx_bool                   bCheckSupport,
                   bool                       bPairs,

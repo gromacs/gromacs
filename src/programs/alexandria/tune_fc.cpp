@@ -2035,8 +2035,6 @@ int alex_tune_fc(int argc, char *argv[])
     int                   reinit        = 0;
     int                   compress      = 0;
     int                   nmultisim     = 0;
-    char                 *opt_elem      = nullptr;
-    char                 *const_elem    = nullptr;
     gmx_bool              bZPE          = false;
     gmx_bool              bZero         = true;
     t_pargs               pa[]         = {
@@ -2048,10 +2046,6 @@ int alex_tune_fc(int argc, char *argv[])
           "This many runs will be done, before each run a complete randomization will be done" },
         { "-zpe",     FALSE, etBOOL, {&bZPE},
           "Consider zero-point energy from thermochemistry calculations in order to calculate the reference enthalpy of the molecule" },
-        { "-opt_elem",  FALSE, etSTR, {&opt_elem},
-          "Space-separated list of elements to optimize, e.g. \"H C Br\". The other available elements in gentop.dat are left unmodified. If this variable is not set, all elements will be optimized." },
-        { "-const_elem",  FALSE, etSTR, {&const_elem},
-          "Space-separated list of elements to include but keep constant, e.g. \"O N\". These elements from gentop.dat are left unmodified" },
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML file" }
     };
@@ -2102,8 +2096,7 @@ int alex_tune_fc(int argc, char *argv[])
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
              bZero,
-             opt_elem,
-             const_elem,
+             nullptr,
              gms,
              false,
              opt.iOpt(eitLJ14),

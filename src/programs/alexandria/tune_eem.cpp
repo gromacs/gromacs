@@ -857,7 +857,6 @@ int alex_tune_eem(int argc, char *argv[])
     real                        factor        = 0.8;
     real                        efield        = 10;
     char                       *opt_elem      = nullptr;
-    char                       *const_elem    = nullptr;
     gmx_bool                    bRandom       = false;
     gmx_bool                    bcompress     = false;
     gmx_bool                    bZPE          = false;
@@ -872,8 +871,6 @@ int alex_tune_eem(int argc, char *argv[])
           "This many runs will be done, before each run a complete randomization will be done" },
         { "-opt_elem",  FALSE, etSTR, {&opt_elem},
           "Space-separated list of atom types to optimize, e.g. \"H C Br\". The other available atom types in gentop.dat are left unmodified. If this variable is not set, all elements will be optimized." },
-        { "-const_elem",  FALSE, etSTR, {&const_elem},
-          "Space-separated list of atom types to include but keep constant, e.g. \"O N\". These atom types from gentop.dat are left unmodified" },
         { "-random", FALSE, etBOOL, {&bRandom},
           "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
         { "-zero", FALSE, etBOOL, {&bZero},
@@ -950,7 +947,6 @@ int alex_tune_eem(int argc, char *argv[])
              opt2fn_null("-d", NFILE, fnm),
              bZero,
              opt_elem,
-             const_elem,
              gms,
              true,
              false,

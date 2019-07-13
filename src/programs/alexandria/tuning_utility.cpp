@@ -303,10 +303,14 @@ void print_electric_props(FILE                           *fp,
 
     for (auto ai = indexCount->beginIndex(); ai < indexCount->endIndex(); ++ai)
     {
-        ZetaTypeLsq k;
-        k.ztype.assign(ai->name());
-        k.lsq = gmx_stats_init();
-        lsqt.push_back(std::move(k));
+        // More than 1 data point is needed for doing statistical analysis for each zeta type. 
+        if (ai->count() > 1)
+        {
+            ZetaTypeLsq k;
+            k.ztype.assign(ai->name());
+            k.lsq = gmx_stats_init();
+            lsqt.push_back(std::move(k));
+        }
     }
     
     for (auto &mol : mymol)
@@ -318,7 +322,7 @@ void print_electric_props(FILE                           *fp,
                     mol.molProp()->getCharge(),
                     mol.molProp()->getMultiplicity());
             
-            // Recalculate the atomic charges using the optmized pd.
+            // Recalculate the atomic charges using the optmized parameters.
             mol.GenerateCharges(pd, fplog, ap, qdist, qgen,
                                 watoms, hfac, lot, false, nullptr,
                                 cr, tabfn, hwinfo, qcycle,
@@ -396,36 +400,31 @@ void print_electric_props(FILE                           *fp,
             
             // Atomic charges
             fprintf(fp, "Atom   Type      q_Calc     q_ESP     q_CM5     q_HPA     q_MPA       x       y       z\n");
-            auto qcm5 = mol.chargeQM(qtCM5);
-            auto x    = mol.x();
-            double qrmsd = 0;
+            auto qcm5  = mol.chargeQM(qtCM5);
+            auto x     = mol.x();
+            auto qrmsd = 0.0;
             for (j = i = 0; j < mol.topology_->atoms.nr; j++)
             {
                 if (mol.topology_->atoms.atom[j].ptype == eptAtom ||
                     mol.topology_->atoms.atom[j].ptype == eptNucleus)
                 {
-                    auto fa = pd.findAtype(*(mol.topology_->atoms.atomtype[j]));
-                    auto at = fa->getZtype();
-                    if (indexCount->isOptimized(at))
+                    auto atp = pd.findAtype(*(mol.topology_->atoms.atomtype[j]));
+                    auto ztp = atp->getZtype();
+                    auto  k  = std::find_if(lsqt.begin(), lsqt.end(),
+                                           [ztp](const ZetaTypeLsq &atlsq)
+                                           {
+                                               return atlsq.ztype.compare(ztp) == 0;
+                                           });
+                    if (k != lsqt.end())
                     {
-                        auto  k  = std::find_if(lsqt.begin(), lsqt.end(),
-                                                [at](const ZetaTypeLsq &atlsq)
-                                                {
-                                                    return atlsq.ztype.compare(at) == 0;
-                                                });
-                        if (k != lsqt.end())
+                        qCalc = mol.topology_->atoms.atom[j].q;
+                        if (nullptr != mol.shellfc_)
                         {
-                            qCalc = mol.topology_->atoms.atom[j].q;
-                            if (nullptr != mol.shellfc_)
-                            {
-                                qCalc += mol.topology_->atoms.atom[j+1].q;
-                            }
-                            gmx_stats_add_point(k->lsq, qcm5[i], qCalc, 0, 0);
-
-                            gmx_stats_add_point(lsq_charge, qcm5[i], qCalc, 0, 0);
-
-                            qrmsd += gmx::square(qcm5[i]-qCalc);
-                        }
+                            qCalc += mol.topology_->atoms.atom[j+1].q;
+                        }                        
+                        gmx_stats_add_point(k->lsq, qcm5[i], qCalc, 0, 0);                           
+                        gmx_stats_add_point(lsq_charge, qcm5[i], qCalc, 0, 0);
+                        qrmsd += gmx::square(qcm5[i]-qCalc);
                         fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
                                 mol.topology_->atoms.atom[j].atomnumber,
                                 j+1,
@@ -448,13 +447,6 @@ void print_electric_props(FILE                           *fp,
             n++;
         }
     }
-
-    std::vector<const char*> atypes;
-    for (const auto &k : lsqt)
-    {
-        atypes.push_back(k.ztype.c_str());
-    }
-    fprintf(fp, "\nParameters are optimized for %zu atom types:\n", atypes.size());
     
     fprintf(fp, "Dipoles are %s in Calc Parametrization.\n",     (bDipole ?     "used" : "not used"));
     fprintf(fp, "Quadrupoles are %s in Calc Parametrization.\n", (bQuadrupole ? "used" : "not used"));
@@ -478,8 +470,13 @@ void print_electric_props(FILE                           *fp,
         fprintf(fp, "\n");
     }
     
+    std::vector<const char*> types;
+    for (const auto &k : lsqt)
+    {
+        types.push_back(k.ztype.c_str());
+    }
     hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
-    xvgr_legend(hh, atypes.size(), atypes.data(), oenv);   
+    xvgr_legend(hh, types.size(), types.data(), oenv);   
     print_stats(fp, "All Partial Charges  (e)",  lsq_charge, true,  "CM5", "Calculated");
     for (auto k = lsqt.begin(); k < lsqt.end(); ++k)
     {
