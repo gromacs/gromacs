@@ -304,11 +304,6 @@ MolGen::MolGen()
     lot_       = "B3LYP/aug-cc-pVTZ";
     inputrec_  = new t_inputrec();
     fill_inputrec(inputrec_);
-    for (int i = 0; i < ermsNR; i++)
-    {
-        fc_[i]   = 0;
-        ener_[i] = 0;
-    }
     fc_[ermsTOT] = 1;
 }
 
@@ -320,38 +315,64 @@ MolGen::~MolGen()
     }
 }
 
-void MolGen::addOptions(std::vector<t_pargs> *pargs)
+static void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
 {
-    t_pargs pa[] =
+    for (size_t i = 0; i < npa; i++)
+    {
+        pargs->push_back(pa[i]);
+    }
+}
+
+void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
+{
+    t_pargs pa_general[] =
     {
         { "-mindata", FALSE, etINT, {&mindata_},
           "Minimum number of data points to optimize force field parameters" },
-        { "-maxpot", FALSE, etINT, {&maxESP_},
-          "Maximum percent of the electrostatic potential points that will be used to fit partial charges." },
         { "-qdist",   FALSE, etENUM, {cqdist},
           "Model used for charge distribution" },
         { "-qgen",   FALSE, etENUM, {cqgen},
           "Algorithm used for charge generation" },
         { "-lot",    FALSE, etSTR,  {&lot_},
           "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
+        { "-fc_bound",    FALSE, etREAL, {&fc_[ermsBOUNDS]},
+          "Force constant in the penalty function for going outside the borders given with the fitting options (see below)." },
+        { "-qtol",   FALSE, etREAL, {&qtol_},
+          "Tolerance for assigning charge generation algorithm." },
+        { "-qcycle", FALSE, etINT, {&qcycle_},
+          "Max number of tries for optimizing the charges." },
+        { "-qsymm",  FALSE, etBOOL, {&qsymm_},
+          "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },
+        { "-genvsites", FALSE, etBOOL, {&bGenVsite_},
+          "Generate virtual sites. Check and double check." },
+        { "-nexcl",  FALSE, etINT, {&nexcl_},
+          "[HIDDEN]Exclusion number." },
+        { "-qm",     FALSE, etBOOL, {&bQM_},
+          "[HIDDEN]Use only quantum chemistry results (from the levels of theory below) in order to fit the parameters. If not set, experimental values will be used as reference with optional quantum chemistry results, in case no experimental results are available" }
+    };
+    t_pargs pa_zeta[] = 
+    {
         { "-watoms", FALSE, etREAL, {&watoms_},
           "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended." },
+        { "-maxpot", FALSE, etINT, {&maxESP_},
+          "Maximum percent of the electrostatic potential points that will be used to fit partial charges." },
         { "-fixchi", FALSE, etSTR,  {&fixchi_},
           "Electronegativity for this atom type is fixed. Set to FALSE if you want this variable as well, but read the help text above (or somewhere)." },
-        { "-j0",    FALSE, etREAL, {&J0_min_},
-          "Minimum value that J0 (eV) can obtain in fitting" },
-        { "-chi0",    FALSE, etREAL, {&Chi0_min_},
-          "Minimum value that Chi0 (eV) can obtain in fitting" },
         { "-z0",    FALSE, etREAL, {&zeta_min_},
           "Minimum value that inverse radius (1/nm) can obtain in fitting" },
+        { "-z1",    FALSE, etREAL, {&zeta_max_},
+          "Maximum value that inverse radius (1/nm) can obtain in fitting" }
+    };
+    t_pargs pa_eem[] =
+    {
+        { "-j0",    FALSE, etREAL, {&J0_min_},
+          "Minimum value that J0 (eV) can obtain in fitting" },
         { "-j1",    FALSE, etREAL, {&J0_max_},
           "Maximum value that J0 (eV) can obtain in fitting" },
+        { "-chi0",    FALSE, etREAL, {&Chi0_min_},
+          "Minimum value that Chi0 (eV) can obtain in fitting" },
         { "-chi1",    FALSE, etREAL, {&Chi0_max_},
           "Maximum value that Chi0 (eV) can obtain in fitting" },
-        { "-z1",    FALSE, etREAL, {&zeta_max_},
-          "Maximum value that inverse radius (1/nm) can obtain in fitting" },
-        { "-fc_bound",    FALSE, etREAL, {&fc_[ermsBOUNDS]},
-          "Force constant in the penalty function for going outside the borders given with the above six options." },
         { "-fc_mu",    FALSE, etREAL, {&fc_[ermsMU]},
           "Force constant in the penalty function for the magnitude of the dipole components." },
         { "-fc_quad",  FALSE, etREAL, {&fc_[ermsQUAD]},
@@ -360,32 +381,34 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs)
           "Force constant in the penalty function for the magnitude of the electrostatic potential." },
         { "-fc_charge",  FALSE, etREAL, {&fc_[ermsCHARGE]},
           "Force constant in the penalty function for the magnitude of the charges with respect to the ESP charges." },
+        { "-fc_polar",  FALSE, etREAL, {&fc_[ermsPolar]},
+          "Force constant in the penalty function for polarizability." },
+        { "-hfac",  FALSE, etREAL, {&hfac_},
+          "[HIDDEN]Fudge factor to scale the J00 of hydrogen by (1 + hfac * qH). Default hfac is 0, means no fudging." },
+        { "-opthfac",  FALSE, etBOOL, {&bOptHfac_},
+          "[HIDDEN]Optimize the fudge factor to scale the J00 of hydrogen (see above). If set, then [TT]-hfac[tt] set the absolute value of the largest hfac. Above this, a penalty is incurred." }
+    };
+    t_pargs pa_fc[] =
+    {
         { "-fc_epot",  FALSE, etREAL, {&fc_[ermsEPOT]},
           "Force constant in the penalty function for the magnitude of the potential energy." },
         { "-fc_force",  FALSE, etREAL, {&fc_[ermsForce2]},
-          "Force constant in the penalty function for the magnitude of the force." },
-        { "-fc_polar",  FALSE, etREAL, {&fc_[ermsPolar]},
-          "Force constant in the penalty function for polarizability." },
-        { "-qtol",   FALSE, etREAL, {&qtol_},
-          "Tolerance for assigning charge generation algorithm." },
-        { "-qcycle", FALSE, etINT, {&qcycle_},
-          "Max number of tries for optimizing the charges." },
-        { "-hfac",  FALSE, etREAL, {&hfac_},
-          "[HIDDEN]Fudge factor to scale the J00 of hydrogen by (1 + hfac * qH). Default hfac is 0, means no fudging." },
-        { "-nexcl",  FALSE, etINT, {&nexcl_},
-          "[HIDDEN]Exclusion number." },
-        { "-opthfac",  FALSE, etBOOL, {&bOptHfac_},
-          "[HIDDEN]Optimize the fudge factor to scale the J00 of hydrogen (see above). If set, then [TT]-hfac[tt] set the absolute value of the largest hfac. Above this, a penalty is incurred." },
-        { "-qm",     FALSE, etBOOL, {&bQM_},
-          "Use only quantum chemistry results (from the levels of theory below) in order to fit the parameters. If not set, experimental values will be used as reference with optional quantum chemistry results, in case no experimental results are available" },
-        { "-qsymm",  FALSE, etBOOL, {&qsymm_},
-          "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },
-        { "-genvsites", FALSE, etBOOL, {&bGenVsite_},
-          "Generate virtual sites. Check and double check." }
+          "Force constant in the penalty function for the magnitude of the force." }
     };
-    for (size_t i = 0; i < asize(pa); i++)
+    doAddOptions(pargs, asize(pa_general), pa_general);
+    switch (etune)
     {
-        pargs->push_back(pa[i]);
+        case etuneEEM:
+            doAddOptions(pargs, asize(pa_eem), pa_eem);
+            break;
+        case etuneZETA:
+            doAddOptions(pargs, asize(pa_zeta), pa_zeta);
+            break;
+        case etuneFC:
+            doAddOptions(pargs, asize(pa_fc), pa_fc);
+            break;
+        default:
+            break;
     }
 }
 

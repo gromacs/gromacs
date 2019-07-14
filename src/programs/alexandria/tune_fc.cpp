@@ -911,7 +911,7 @@ class Optimization : public MolGen
             {
                 pargs->push_back(pa[i]);
             }
-            addOptions(pargs);
+            addOptions(pargs, etuneFC);
             TuneFc_.add_pargs(pargs);
         }
         void optionsFinished()

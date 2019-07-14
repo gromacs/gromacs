@@ -144,7 +144,7 @@ class OptACM : public MolGen
             {
                 pargs->push_back(pa[i]);
             }
-            addOptions(pargs);
+            addOptions(pargs, etuneEEM);
             TuneACM_.add_pargs(pargs);
         }
         void optionsFinished()

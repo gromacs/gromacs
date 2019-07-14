@@ -72,6 +72,13 @@ const char *rmsName(int e);
 namespace alexandria
 {
 
+enum eTune {
+    etuneEEM = 0,
+    etuneZETA = 1,
+    etuneFC = 2,
+    etuneNR = 3
+};
+
 class AtomIndex
 {
     private:
@@ -178,7 +185,7 @@ class MolGen
         real                            qtol_;
         int                             qcycle_;
         real                            ener_[ermsNR] = { 0 };
-        real                            fc_[ermsNR] = { 1 };
+        real                            fc_[ermsNR] = { 0 };
         char                           *fixchi_;
         gmx_bool                        bOptHfac_;
         gmx_bool                        bQM_;
@@ -216,7 +223,7 @@ class MolGen
         IndexCount *indexCount() { return &indexCount_; }
 
         //! \brief Add options to the command line
-        void addOptions(std::vector<t_pargs> *pargs);
+        void addOptions(std::vector<t_pargs> *pargs, eTune etune);
 
         //! \brief Process options after parsing
         void optionsFinished();

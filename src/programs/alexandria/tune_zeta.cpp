@@ -127,7 +127,7 @@ class OptZeta : public MolGen
             {
                 pargs->push_back(pa[i]);
             }
-            addOptions(pargs);
+            addOptions(pargs, etuneZETA);
             TuneZeta_.add_pargs(pargs);
         }
         void optionsFinished()
