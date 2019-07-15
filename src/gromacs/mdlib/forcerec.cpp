@@ -2078,12 +2078,16 @@ void init_forcerec(FILE                             *fp,
  * that it's not needed anymore (with a shared GPU run).
  */
 void free_gpu_resources(t_forcerec                          *fr,
-                        const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator)
+                        const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator,
+                        const gmx_gpu_info_t                &gpu_info)
 {
     bool isPPrankUsingGPU = (fr != nullptr) && (fr->nbv != nullptr) && fr->nbv->useGpu();
 
     /* stop the GPU profiler (only CUDA) */
-    stopGpuProfiler();
+    if (gpu_info.n_dev > 0)
+    {
+        stopGpuProfiler();
+    }
 
     if (isPPrankUsingGPU)
     {

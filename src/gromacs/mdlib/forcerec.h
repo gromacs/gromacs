@@ -50,6 +50,7 @@ struct t_commrec;
 struct t_fcdata;
 struct t_filenm;
 struct t_inputrec;
+struct gmx_gpu_info_t;
 
 namespace gmx
 {
@@ -150,6 +151,7 @@ void forcerec_set_excl_load(t_forcerec           *fr,
 void update_forcerec(t_forcerec *fr, matrix box);
 
 void free_gpu_resources(t_forcerec                          *fr,
-                        const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator);
+                        const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator,
+                        const gmx_gpu_info_t                &gpu_info);
 
 #endif

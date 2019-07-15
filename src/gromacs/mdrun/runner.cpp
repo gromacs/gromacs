@@ -1520,7 +1520,7 @@ int Mdrunner::mdrunner()
     mdModules_.reset(nullptr);   // destruct force providers here as they might also use the GPU
 
     /* Free GPU memory and set a physical node tMPI barrier (which should eventually go away) */
-    free_gpu_resources(fr, physicalNodeComm);
+    free_gpu_resources(fr, physicalNodeComm, hwinfo->gpu_info);
     free_gpu(nonbondedDeviceInfo);
     free_gpu(pmeDeviceInfo);
     done_forcerec(fr, mtop.molblock.size());
