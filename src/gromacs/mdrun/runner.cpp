@@ -158,6 +158,32 @@
 namespace gmx
 {
 
+/*! \brief Log if development feature flags are encountered
+ *
+ * The use of dev features indicated by environment variables is logged
+ * in order to ensure that runs with such featrues enabled can be identified
+ * from their log and standard output.
+ *
+ * \param[in]  mdlog        Logger object.
+ */
+static void reportDevelopmentFeatures(const gmx::MDLogger &mdlog)
+{
+    const bool enableGpuBufOps       = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
+    const bool useGpuUpdateConstrain = (getenv("GMX_UPDATE_CONSTRAIN_GPU") != nullptr);
+
+    if (enableGpuBufOps)
+    {
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                "NOTE: This run uses the 'GPU buffer ops' feature, enabled by the GMX_USE_GPU_BUFFER_OPS environment variable.");
+    }
+
+    if (useGpuUpdateConstrain)
+    {
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                "NOTE: This run uses the 'GPU update/constraints' feature, enabled by the GMX_UPDATE_CONSTRAIN_GPU environment variable.");
+    }
+}
+
 /*! \brief Barrier for safe simultaneous thread access to mdrunner data
  *
  * Used to ensure that the master thread does not modify mdrunner during copy
@@ -613,6 +639,9 @@ int Mdrunner::mdrunner()
     }
     gmx::LoggerOwner logOwner(buildLogger(fplog, cr));
     gmx::MDLogger    mdlog(logOwner.logger());
+
+    // report any development features that may be enabled by environment variables
+    reportDevelopmentFeatures(mdlog);
 
     // With thread-MPI, the communicator changes after threads are
     // launched, so this is rebuilt for the master rank at that
