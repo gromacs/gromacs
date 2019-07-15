@@ -427,10 +427,11 @@ init_nb_verlet(const gmx::MDLogger     &mdlog,
         enbnxninitcombrule = enbnxninitcombruleNONE;
     }
 
-    auto nbat =
-        std::make_unique<nbnxn_atomdata_t>(useGpu ? gmx::PinningPolicy::PinnedIfSupported : gmx::PinningPolicy::CannotBePinned);
+    auto pinPolicy = (useGpu ? gmx::PinningPolicy::PinnedIfSupported : gmx::PinningPolicy::CannotBePinned);
 
-    int mimimumNumEnergyGroupNonbonded = ir->opts.ngener;
+    auto nbat      = std::make_unique<nbnxn_atomdata_t>(pinPolicy);
+
+    int  mimimumNumEnergyGroupNonbonded = ir->opts.ngener;
     if (ir->opts.ngener - ir->nwall == 1)
     {
         /* We have only one non-wall energy group, we do not need energy group
@@ -474,7 +475,8 @@ init_nb_verlet(const gmx::MDLogger     &mdlog,
                                      DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
                                      pairlistParams.pairlistType,
                                      bFEP_NonBonded,
-                                     gmx_omp_nthreads_get(emntPairsearch));
+                                     gmx_omp_nthreads_get(emntPairsearch),
+                                     pinPolicy);
 
     return std::make_unique<nonbonded_verlet_t>(std::move(pairlistSets),
                                                 std::move(pairSearch),

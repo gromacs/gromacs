@@ -211,7 +211,8 @@ class PairSearch
                    const gmx_domdec_zones_t *zones,
                    PairlistType              pairlistType,
                    bool                      haveFep,
-                   int                       maxNumthreads);
+                   int                       maxNumthreads,
+                   gmx::PinningPolicy        pinningPolicy);
 
         //! Sets the order of the local atoms to the order grid atom ordering
         void setLocalAtomOrder()

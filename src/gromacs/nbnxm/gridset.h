@@ -103,7 +103,8 @@ class GridSet
                 const gmx_domdec_zones_t *ddZones,
                 PairlistType              pairlistType,
                 bool                      haveFep,
-                int                       numThreads);
+                int                       numThreads,
+                gmx::PinningPolicy        pinningPolicy);
 
         //! Puts the atoms in \p ddZone on the grid and copies the coordinates to \p nbat
         void putOnGrid(const matrix                    box,

@@ -87,7 +87,8 @@ GridSet::GridSet(const int                 ePBC,
                  const gmx_domdec_zones_t *ddZones,
                  const PairlistType        pairlistType,
                  const bool                haveFep,
-                 const int                 numThreads) :
+                 const int                 numThreads,
+                 gmx::PinningPolicy        pinningPolicy) :
     domainSetup_(ePBC, numDDCells, ddZones),
     grids_(numDDZones(domainSetup_.haveMultipleDomainsPerDim), Grid(pairlistType, haveFep_)),
     haveFep_(haveFep),
@@ -96,8 +97,8 @@ GridSet::GridSet(const int                 ePBC,
     gridWork_(numThreads)
 {
     clear_mat(box_);
-    changePinningPolicy(&gridSetData_.cells, gmx::PinningPolicy::PinnedIfSupported);
-    changePinningPolicy(&gridSetData_.atomIndices, gmx::PinningPolicy::PinnedIfSupported);
+    changePinningPolicy(&gridSetData_.cells, pinningPolicy);
+    changePinningPolicy(&gridSetData_.atomIndices, pinningPolicy);
 }
 
 void GridSet::setLocalAtomOrder()
@@ -181,11 +182,14 @@ void GridSet::putOnGrid(const matrix                    box,
     /* We always use the home zone (grid[0]) for setting the cell size,
      * since determining densities for non-local zones is difficult.
      */
+    // grid data used in GPU transfers inherits the gridset pinnin policy
+    auto pinPolicy = gridSetData_.cells.get_allocator().pinningPolicy();
     grid.setDimensions(ddZone, n - numAtomsMoved,
                        lowerCorner, upperCorner,
                        atomDensity,
                        maxAtomGroupRadius,
-                       haveFep_);
+                       haveFep_,
+                       pinPolicy);
 
     for (GridWork &work : gridWork_)
     {

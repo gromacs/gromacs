@@ -101,13 +101,14 @@ static real gridAtomDensity(int        numAtoms,
     return numAtoms/(size[XX]*size[YY]*size[ZZ]);
 }
 
-void Grid::setDimensions(const int           ddZone,
-                         const int           numAtoms,
-                         const rvec          lowerCorner,
-                         const rvec          upperCorner,
-                         real                atomDensity,
-                         const real          maxAtomGroupRadius,
-                         const bool          haveFep)
+void Grid::setDimensions(const int            ddZone,
+                         const int            numAtoms,
+                         const rvec           lowerCorner,
+                         const rvec           upperCorner,
+                         real                 atomDensity,
+                         const real           maxAtomGroupRadius,
+                         const bool           haveFep,
+                         gmx::PinningPolicy   pinningPolicy)
 {
     /* For the home zone we compute the density when not set (=-1) or when =0 */
     if (ddZone == 0 && atomDensity <= 0)
@@ -182,8 +183,8 @@ void Grid::setDimensions(const int           ddZone,
     /* We need one additional cell entry for particles moved by DD */
     cxy_na_.resize(numColumns() + 1);
     cxy_ind_.resize(numColumns() + 2);
-    changePinningPolicy(&cxy_na_, gmx::PinningPolicy::PinnedIfSupported);
-    changePinningPolicy(&cxy_ind_, gmx::PinningPolicy::PinnedIfSupported);
+    changePinningPolicy(&cxy_na_, pinningPolicy);
+    changePinningPolicy(&cxy_ind_, pinningPolicy);
 
     /* Worst case scenario of 1 atom in each last cell */
     int maxNumCells;

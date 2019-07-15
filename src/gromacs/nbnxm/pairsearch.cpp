@@ -113,8 +113,9 @@ PairSearch::PairSearch(const int                 ePBC,
                        const gmx_domdec_zones_t *ddZones,
                        const PairlistType        pairlistType,
                        const bool                haveFep,
-                       const int                 maxNumThreads) :
-    gridSet_(ePBC, numDDCells, ddZones, pairlistType, haveFep, maxNumThreads),
+                       const int                 maxNumThreads,
+                       gmx::PinningPolicy        pinningPolicy) :
+    gridSet_(ePBC, numDDCells, ddZones, pairlistType, haveFep, maxNumThreads, pinningPolicy),
     work_(maxNumThreads)
 {
     cycleCounting_.recordCycles_ = (getenv("GMX_NBNXN_CYCLE") != nullptr);

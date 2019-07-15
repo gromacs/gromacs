@@ -464,7 +464,8 @@ class Grid
                            const rvec            upperCorner,
                            real                  atomDensity,
                            real                  maxAtomGroupRadius,
-                           bool                  haveFep);
+                           bool                  haveFep,
+                           gmx::PinningPolicy    pinningPolicy);
 
         //! Sets the cell indices using indices in \p gridSetData and \p gridWork
         void setCellIndices(int                             ddZone,
