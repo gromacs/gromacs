@@ -647,7 +647,8 @@ int alex_bastat(int argc, char *argv[])
     }
     for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
     {
-        if (gms.status(mpi->getIupac()) != imsIgnore)
+        auto imol = gms.status(mpi->getIupac());
+        if (imol == imsTrain || imol == imsTest)
         {
             alexandria::MyMol mmi;
             int               i;

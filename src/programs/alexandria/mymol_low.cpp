@@ -654,7 +654,21 @@ void plist_to_mtop(const Poldata                   &pd,
             double reppow = 12.0;
             int ffparamsSize = mtop_->ffparams.numTypes();
             n = enter_params(&mtop_->ffparams, ftype, c.data(), 0, reppow, n, true);
-            GMX_RELEASE_ASSERT(n == ffparamsSize, "All parameters need to be appended");
+            if (n < ffparamsSize && debug)
+            {
+                fprintf(debug, "Parameter already present: %s",
+                        interaction_function[ftype].name);
+                for(int i = 0; i < interaction_function[ftype].nratoms; i++)
+                {
+                    fprintf(debug, " %s", 
+                            *mtop_->moltype[0].atoms.atomtype[j->a[i]]);
+                }
+                for(int i = 0; i < nrfp; i++)
+                {
+                    fprintf(debug, " %g", c[i]);
+                }
+                fprintf(debug, "\n");
+            }
             mtop_->moltype[0].ilist[ftype].iatoms[k++] = n;
             for (l = 0; (l < nra); l++)
             {
