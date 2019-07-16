@@ -113,3 +113,4 @@
 
 set(PYBIND11_PYTHON_VERSION "3")
 add_subdirectory(src)
+add_subdirectory(sample_restraint)

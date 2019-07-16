@@ -270,7 +270,7 @@ void EnsemblePotential::callback(gmx::Vector v,
 //
 gmx::PotentialPointData EnsemblePotential::calculate(gmx::Vector v,
                                                     gmx::Vector v0,
-                                                    double t)
+                                                    double /* t */)
 {
     // This is not the vector from v to v0. It is the position of a site
     // at v, relative to the origin v0. This is a potentially confusing convention...

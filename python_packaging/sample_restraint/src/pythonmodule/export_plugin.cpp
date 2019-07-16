@@ -249,6 +249,10 @@ class EnsembleRestraintBuilder
                 if (!py::hasattr(subscriber_, "potential")) throw gmxapi::ProtocolError("Invalid subscriber");
             }
 
+            // Restraints do not currently add any new nodes to the graph, so we
+            // mark this standard 'graph' argument unused.
+            (void) graph;
+
             // Temporarily subvert things to get quick-and-dirty solution for testing.
             // Need to capture Python communicator and pybind syntax in closure so EnsembleResources
             // can just call with matrix arguments.
@@ -308,6 +312,8 @@ class EnsembleRestraintBuilder
         std::string name_;
 };
 
+namespace {
+
 /*!
  * \brief Factory function to create a new builder for use during Session launch.
  *
@@ -319,6 +325,8 @@ std::unique_ptr<EnsembleRestraintBuilder> createEnsembleBuilder(const py::object
     using std::make_unique;
     auto builder = make_unique<EnsembleRestraintBuilder>(element);
     return builder;
+}
+
 }
 
 

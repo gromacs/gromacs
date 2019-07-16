@@ -87,8 +87,9 @@ if(gmxapi_FOUND)
     message(STATUS "Found gmxapi version ${gmxapi_VERSION}${_suffix}")
 endif()
 
-set(GMXAPI_USE_BUNDLED_PYBIND ON CACHE BOOL
-    "Use pybind11 headers bundled with this repository. If OFF, CMake does `find_package(pybind11)`.")
+option(GMXAPI_USE_BUNDLED_PYBIND
+       "Use pybind11 headers bundled with this repository. If OFF, CMake does `find_package(pybind11)`."
+       ON)
 if(GMXAPI_USE_BUNDLED_PYBIND)
     add_subdirectory(external/pybind)
 else()
