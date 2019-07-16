@@ -44,7 +44,7 @@ package.
     can add it to `CMakeLists.txt` and `export_plugin.cpp`. This is the
     code that produces the C++ extension for Python. `HarmonicRestraint`
     is a simple example that applies a Hooke\'s Law spring between two
-    atoms. `EnsembleHarmonic` applies a more complicated potential and
+    atoms. `EnsemblePotential` applies a more complicated potential and
     uses additional facilities provided by gmxapi.
 -   `src/pybind11` is just a copy of the Python bindings framework from
     the Pybind project (ref <https://github.com/pybind/pybind11> ). It

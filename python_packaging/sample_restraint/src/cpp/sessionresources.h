@@ -1,6 +1,10 @@
-//
-// Created by Eric Irrgang on 6/11/18.
-//
+/*! \file
+ * \brief Provide some useful types and templates for GROMACS restraints.
+ *
+ * \todo This should be part of a template library installed with GROMACS.
+ *
+ * \author M. Eric Irrgang <ericirrgang@gmail.com>
+ */
 
 #ifndef RESTRAINT_SESSIONRESOURCES_H
 #define RESTRAINT_SESSIONRESOURCES_H
@@ -101,7 +105,7 @@ class Matrix<double>;
  * If no other consumers of the data request ownership, the ownership can be transferred without a copy. Otherwise, a
  * copy is made.
  */
-class EnsembleResourceHandle
+class ResourcesHandle
 {
     public:
         /*!
@@ -137,7 +141,7 @@ class EnsembleResourceHandle
  *
  * gmxapi version 0.1.0 will provide this functionality through SessionResources.
  */
-class EnsembleResources
+class Resources
 {
     public:
         /*!
@@ -150,8 +154,8 @@ class EnsembleResources
          *
          * \param reduce ownership of a function object providing ensemble averaging of a 2D matrix.
          */
-        explicit EnsembleResources(std::function<void(const Matrix<double>&,
-                                                      Matrix<double>*)>&& reduce) :
+        explicit Resources(std::function<void(const Matrix<double>&,
+                                              Matrix<double>*)>&& reduce) :
             reduce_(reduce),
             session_(nullptr)
         {};
@@ -172,7 +176,7 @@ class EnsembleResources
          * In this release, the only facility provided by the resources is a function object for
          * the ensemble averaging function provided by the Context.
          */
-        EnsembleResourceHandle getHandle() const;
+        ResourcesHandle getHandle() const;
 
         /*!
          * \brief Acquires a pointer to a Session managing these resources.
@@ -223,7 +227,7 @@ class RestraintModule : public gmxapi::MDModule // consider names
         RestraintModule(std::string name,
                         std::vector<int> sites,
                         const typename R::input_param_type& params,
-                        std::shared_ptr<EnsembleResources> resources) :
+                        std::shared_ptr<Resources> resources) :
             sites_{std::move(sites)},
             params_{params},
             resources_{std::move(resources)},
@@ -275,7 +279,7 @@ class RestraintModule : public gmxapi::MDModule // consider names
         param_t params_;
 
         // Need to figure out if this is copyable or who owns it.
-        std::shared_ptr<EnsembleResources> resources_;
+        std::shared_ptr<Resources> resources_;
 
         const std::string name_;
         std::shared_ptr<R> restraint_{nullptr};

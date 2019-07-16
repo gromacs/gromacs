@@ -65,22 +65,6 @@ set_tests_properties(${BasicPlugin} PROPERTIES
                      COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}"
                      COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
 
-
-# Test the C++ code implementing the basic harmonic potential.
-add_executable(harmonic-test test_harmonic.cpp)
-gtest_add_tests(TARGET harmonic-test
-                TEST_LIST HarmonicPotentialPlugin)
-
-target_include_directories(harmonic-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-
-set_target_properties(harmonic-test PROPERTIES SKIP_BUILD_RPATH FALSE)
-target_link_libraries(harmonic-test harmonicpotential Gromacs::gmxapi
-                      gtest_main)
-
-set_tests_properties(${HarmonicPotentialPlugin} PROPERTIES
-                     COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}"
-                     COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
-
 # Test the C++ force evaluation for the restrained-ensemble biasing potential.
 add_executable(histogram-test test_histogram.cpp)
 gtest_add_tests(TARGET histogram-test

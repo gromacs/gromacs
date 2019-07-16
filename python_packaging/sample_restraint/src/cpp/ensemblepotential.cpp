@@ -1,7 +1,3 @@
-//
-// Created by Eric Irrgang on 2/26/18.
-//
-
 /*! \file
  * \brief Code to implement the potential declared in ensemblepotential.h
  *
@@ -10,6 +6,8 @@
  *
  * A simpler restraint potential would only update the calculate() function. If a callback function is
  * not needed or desired, remove the callback() code from this file and from ensemblepotential.h
+ *
+ * \author M. Eric Irrgang <ericirrgang@gmail.com>
  */
 
 #include "ensemblepotential.h"
@@ -111,7 +109,7 @@ class BlurToGrid
         const double sigma_;
 };
 
-EnsembleHarmonic::EnsembleHarmonic(size_t nbins,
+EnsemblePotential::EnsemblePotential(size_t nbins,
                                    double binWidth,
                                    double minDist,
                                    double maxDist,
@@ -143,8 +141,8 @@ EnsembleHarmonic::EnsembleHarmonic(size_t nbins,
     sigma_{sigma}
 {}
 
-EnsembleHarmonic::EnsembleHarmonic(const input_param_type& params) :
-    EnsembleHarmonic(params.nBins,
+EnsemblePotential::EnsemblePotential(const input_param_type& params) :
+    EnsemblePotential(params.nBins,
                      params.binWidth,
                      params.minDist,
                      params.maxDist,
@@ -164,10 +162,10 @@ EnsembleHarmonic::EnsembleHarmonic(const input_param_type& params) :
 // a parallelized simulation).
 //
 //
-void EnsembleHarmonic::callback(gmx::Vector v,
-                                gmx::Vector v0,
-                                double t,
-                                const EnsembleResources& resources)
+void EnsemblePotential::callback(gmx::Vector v,
+                                 gmx::Vector v0,
+                                 double t,
+                                 const Resources& resources)
 {
     const auto rdiff = v - v0;
     const auto Rsquared = dot(rdiff,
@@ -270,7 +268,7 @@ void EnsembleHarmonic::callback(gmx::Vector v,
 // HERE is the function that does the calculation of the restraint force.
 //
 //
-gmx::PotentialPointData EnsembleHarmonic::calculate(gmx::Vector v,
+gmx::PotentialPointData EnsemblePotential::calculate(gmx::Vector v,
                                                     gmx::Vector v0,
                                                     double t)
 {

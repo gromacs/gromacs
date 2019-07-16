@@ -43,14 +43,14 @@ TEST(EnsembleBoundingPotentialPlugin, ForceCalc)
     // Get a dummy EnsembleResources. We aren't testing that here.
     auto dummyFunc = [](const plugin::Matrix<double>&, plugin::Matrix<double>*){
         return;};
-    auto resource = std::make_shared<plugin::EnsembleResources>(dummyFunc);
+    auto resource = std::make_shared<plugin::Resources>(dummyFunc);
 
     // Define a reference distribution with a triangular peak at the 1.0 bin.
     const std::vector<double>
         experimental{{0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1}};
 
 
-    plugin::EnsembleHarmonic restraint{10, // nbins
+    plugin::EnsemblePotential restraint{10, // nbins
                                        1.0, // binWidth
                                        5.0, // minDist
                                        5.0, // maxDist

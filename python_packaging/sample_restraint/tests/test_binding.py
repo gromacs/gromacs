@@ -35,43 +35,6 @@ def test_import():
 
 
 @pytest.mark.usefixtures("cleandir")
-def test_harmonic_potential(tpr_filename):
-    print("Testing plugin potential with input file {}".format(os.path.abspath(tpr_filename)))
-
-    md = from_tpr(tpr_filename, append_output=False)
-
-    context = ParallelArrayContext(md)
-    with context as session:
-        session.run()
-
-    # Create a WorkElement for the potential
-    params = {'sites': [1, 4],
-              'R0': 2.0,
-              'k': 10000.0}
-    potential_element = WorkElement(namespace="myplugin",
-                                    operation="create_restraint",
-                                    params=params)
-    # Note that we could flexibly capture accessor methods as workflow elements, too. Maybe we can
-    # hide the extra Python bindings by letting myplugin.HarmonicRestraint automatically convert
-    # to a WorkElement when add_dependency is called on it.
-    potential_element.name = "harmonic_restraint"
-    before = md.workspec.elements[md.name]
-    md.add_dependency(potential_element)
-    assert potential_element.name in md.workspec.elements
-    assert potential_element.workspec is md.workspec
-    after = md.workspec.elements[md.name]
-    assert before is not after
-
-    # Context will need to do these in __enter__
-    # potential = myplugin.HarmonicRestraint()
-    # potential.set_params(1, 4, 2.0, 10000.0)
-
-    context = ParallelArrayContext(md)
-    with context as session:
-        session.run()
-
-
-@pytest.mark.usefixtures("cleandir")
 def test_ensemble_potential_nompi(tpr_filename):
     """Test ensemble potential without an ensemble.
     """

@@ -51,7 +51,7 @@ TEST(EnsembleHistogramPotentialPlugin, ForceCalc)
     experimental{{0, 1, 0, 0, 0, 0, 0, 0, 0, 0}};
 
 
-    plugin::EnsembleHarmonic restraint{10, // nbins
+    plugin::EnsemblePotential restraint{10, // nbins
                                     1.0, // binWidth
                                     0.0, // minDist
                                     10.0, // maxDist
