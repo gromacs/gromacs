@@ -30,15 +30,16 @@ namespace plugin
 {
 
 /*!
- * \brief Apply a Gaussian blur when building a density grid for a list of values.
+ * \brief Discretize a density field on a grid.
  *
+ * Apply a Gaussian blur when building a density grid for a list of values.
  * Normalize such that the area under each sample is 1.0/num_samples.
  */
 class BlurToGrid
 {
     public:
         /*!
-         * \brief Contsruct the blurring functor.
+         * \brief Construct the blurring functor.
          *
          * \param low The coordinate value of the first grid point.
          * \param gridSpacing Distance between grid points.
