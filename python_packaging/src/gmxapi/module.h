@@ -59,15 +59,35 @@ extern "C" __attribute__((visibility("default"))) PyObject* PyInit__gmxapi();
  * Python API in the C++ Python extension it produces, and it uses the public
  * C++ Gromacs API, but is itself an API *client* and its C++ interfaces are not
  * intended to be used in external code.
+ *
+ * Python objects exported by the module are in the gmxpy namespace if
+ * implemented in this library, or in the gmxapi namespace if directly wrapped
+ * from libgmxapi in the GROMACS installation.
+ *
  * \ingroup module_python
  */
 namespace gmxpy
 {
 
+/*!
+ * \brief Implementation details of the Python bindings library.
+ *
+ * Python objects (including classes/types) are expressed with pybind11.
+ * At run time (when the module is imported by the Python interpreter), an
+ * initialization function (defined with a pybind11 macro in module.cpp) is run
+ * by the Python C API machinery to bind the code exported by this module.
+ *
+ * To keep module.cpp concise, we create the Python module object and then pass
+ * it to various `export_...` functions defined in other source files. Those
+ * export functions are declared in gmxpy::detail in module.h
+ *
+ * \ingroup module_python
+ */
 namespace detail
 {
 
 void export_context(pybind11::module &m);
+void export_exceptions(pybind11::module &m);
 void export_system(pybind11::module &m);
 
 }      // end namespace gmxpy::detail

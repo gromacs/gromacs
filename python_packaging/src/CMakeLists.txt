@@ -99,6 +99,7 @@ endif()
 set(GMXAPI_PYTHON_EXTENSION_SOURCES
     gmxapi/module.cpp
     gmxapi/export_context.cpp
+    gmxapi/export_exceptions.cpp
     gmxapi/export_system.cpp
     gmxapi/pycontext.cpp
     gmxapi/pysystem.cpp
