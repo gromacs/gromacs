@@ -2494,7 +2494,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                 }
                 else
                 {
-                    gmx_fatal(FARGS, "There are no parameters for imporper proper dihedral %s-%s-%s-%s in the force field",
+                    gmx_fatal(FARGS, "There are no parameters for improper proper dihedral %s-%s-%s-%s in the force field",
                               aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
                 }
             }
@@ -2502,44 +2502,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         break;
         case eitVDW:
         {
-            auto ftv   = pd.getVdwFtype();
-            auto ntype = mtop_->ffparams.atnr;
-            for (auto i = 0; (i < ntype); i++)
-            {
-                for (auto j = 0; (j < ntype); j++)
-                {
-                    auto idx = ntype*i+j;
-                    switch (ftv)
-                    {
-                        case F_LJ:
-                        {
-                            double c6, c12;
-                            getLjParams(pd,
-                                        *(topology_->atoms.atomtype[i]),
-                                        *(topology_->atoms.atomtype[j]),
-                                        &c6, &c12);
-                            mtop_->ffparams.iparams[idx].lj.c6  = c6;
-                            mtop_->ffparams.iparams[idx].lj.c12 = c12;
-                        }
-                        break;
-                        case F_BHAM:
-                        {
-                            double a, b, c;
-                            getBhamParams(pd,
-                                          *(topology_->atoms.atomtype[i]),
-                                          *(topology_->atoms.atomtype[j]),
-                                          &a, &b, &c);
-                            mtop_->ffparams.iparams[idx].bham.a = a;
-                            mtop_->ffparams.iparams[idx].bham.b = b;
-                            mtop_->ffparams.iparams[idx].bham.c = c;
-                        }
-                        break;
-                        default:
-                            fprintf(stderr, "Invalid van der waals type %s\n",
-                                    pd.getVdwFunction().c_str());
-                    }
-                }
-            }
+            nonbondedFromPdToMtop(mtop_, &topology_->atoms, pd);
         }
         break;
         case eitLJ14:

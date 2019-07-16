@@ -429,8 +429,8 @@ immStatus updatePlist(const Poldata             &pd,
                                 }
                                 else
                                 {
-                                    /*Multiplicity for Proper Dihedral must be integer
-                                       This assumes that the second paramter is Multiplicity*/
+                                    /* Multiplicity for Proper Dihedral must be integer
+                                       This assumes that the second paramter is Multiplicity */
                                     b->c[n++] = atoi(pi->c_str());
                                 }
                             }
@@ -538,34 +538,27 @@ void getBhamParams(const Poldata     &pd,
                    double            *b,
                    double            *c)
 {
-    std::vector<double> vdwi, vdwj;
-
-    auto                fai = pd.findAtype(ai);
-    if (fai != pd.getAtypeEnd())
+    std::vector<std::vector<double> > vdw;
+    for(auto a : { ai, aj })
     {
-        vdwi  = getDoubles(fai->getVdwparams());
-    }
-    else
-    {
-        gmx_fatal(FARGS, "Can not find atomtype %s looking for BHAM", ai.c_str());
-    }
-    auto faj = pd.findAtype(aj);
-    if (faj != pd.getAtypeEnd())
-    {
-        vdwj  = getDoubles(faj->getVdwparams());
-    }
-    else
-    {
-        gmx_fatal(FARGS, "Can not find atomtype %s looking for BHAM", aj.c_str());
+        auto fai = pd.findAtype(a);
+        if (fai != pd.getAtypeEnd())
+        {
+            vdw.push_back(getDoubles(fai->getVdwparams()));
+        }
+        else
+        {
+            gmx_fatal(FARGS, "Can not find atomtype %s looking for BHAM", a.c_str());
+        }
     }
 
-    auto si = vdwi[0];
-    auto ei = vdwi[1];
-    auto gi = vdwi[2];
+    auto si = vdw[0][0];
+    auto ei = vdw[0][1];
+    auto gi = vdw[0][2];
 
-    auto sj = vdwj[0];
-    auto ej = vdwj[1];
-    auto gj = vdwj[2];
+    auto sj = vdw[1][0];
+    auto ej = vdw[1][1];
+    auto gj = vdw[1][2];
 
     switch (pd.getCombRule())
     {
@@ -592,6 +585,77 @@ void getBhamParams(const Poldata     &pd,
     if (debug)
     {
         fprintf(debug, "BHAM parameters %g %g %g\n", *a, *b, *c);
+    }
+}
+
+void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
+                           t_atoms       *atoms,
+                           const Poldata &pd)
+{
+    int ntype2  = gmx::square(mtop->ffparams.atnr);
+    if (mtop->ffparams.functype.empty())
+    {
+        mtop->ffparams.functype.resize(ntype2);
+    }
+    if (mtop->ffparams.iparams.empty())
+    {
+        mtop->ffparams.iparams.resize(ntype2);
+    }
+    auto ftv   = pd.getVdwFtype();
+    auto ntype = mtop->ffparams.atnr;
+    std::vector<std::string> typenames;
+    typenames.resize(ntype);
+    for (int i = 0; i < atoms->nr; i++)
+    {
+        auto itype = atoms->atom[i].type;
+        auto iname = *atoms->atomtype[i];
+        if (typenames[itype].empty())
+        {
+            typenames[itype].assign(iname);
+        }
+        else if (typenames[itype].compare(iname) != 0)
+        {
+            gmx_fatal(FARGS, "Atom type mismatch. Found %s for type %d but expected %s", iname, itype, typenames[itype].c_str());
+        }
+    }
+    if (debug)
+    {
+        int i = 0;
+        for (auto &tn : typenames)
+        {
+            fprintf(debug, "type %d name %s\n", i++, tn.c_str());
+        }
+    }
+    for (auto i = 0; (i < ntype); i++)
+    {
+        for (auto j = 0; (j < ntype); j++)
+        {
+            auto idx = ntype*i+j;
+            mtop->ffparams.functype[idx] = ftv;
+            switch (ftv)
+            {
+            case F_LJ:
+                {
+                    double c6, c12;
+                    getLjParams(pd, typenames[i], typenames[j], &c6, &c12);
+                    mtop->ffparams.iparams[idx].lj.c6  = c6;
+                    mtop->ffparams.iparams[idx].lj.c12 = c12;
+                }
+                break;
+            case F_BHAM:
+                {
+                    double a, b, c;
+                    getBhamParams(pd, typenames[i], typenames[j], &a, &b, &c);
+                    mtop->ffparams.iparams[idx].bham.a = a;
+                    mtop->ffparams.iparams[idx].bham.b = b;
+                    mtop->ffparams.iparams[idx].bham.c = c;
+                }
+                break;
+            default:
+                fprintf(stderr, "Invalid van der waals type %s\n",
+                        pd.getVdwFunction().c_str());
+            }
+        }
     }
 }
 
@@ -752,62 +816,8 @@ gmx_mtop_t *do_init_mtop(const Poldata            &pd,
         }
     }
 
-    int vdw_type = pd.getVdwFtype();
-    int ntypes   = gmx::square(mtop->ffparams.atnr);
-    mtop->ffparams.functype.resize(ntypes);
-    mtop->ffparams.iparams.resize(ntypes);
-    for (int i = 0; (i < ntype); i++)
-    {
-        for (int j = 0; (j < ntype); j++)
-        {
-            int idx = ntype*i+j;
-            mtop->ffparams.functype[idx] = vdw_type;
-            switch (vdw_type)
-            {
-                case F_LJ:
-                {
-                    double c6  = 0;
-                    double c12 = 0;
-                    if (atoms->atom[i].ptype != eptShell &&
-                        atoms->atom[i].ptype != eptVSite &&
-                        atoms->atom[j].ptype != eptShell &&
-                        atoms->atom[j].ptype != eptVSite)
-                    {
-                        getLjParams(pd,
-                                    *(atoms->atomtype[i]),
-                                    *(atoms->atomtype[j]),
-                                    &c6, &c12);
-                    }
-                    mtop->ffparams.iparams[idx].lj.c6  = c6;
-                    mtop->ffparams.iparams[idx].lj.c12 = c12;
-                }
-                break;
-                case F_BHAM:
-                {
-                    double a = 0;
-                    double b = 0;
-                    double c = 0;
-                    if (atoms->atom[i].ptype != eptShell &&
-                        atoms->atom[i].ptype != eptVSite &&
-                        atoms->atom[j].ptype != eptShell &&
-                        atoms->atom[j].ptype != eptVSite)
-                    {
-                        getBhamParams(pd,
-                                      *(atoms->atomtype[i]),
-                                      *(atoms->atomtype[j]),
-                                      &a, &b, &c);
-                    }
-                    mtop->ffparams.iparams[idx].bham.a = a;
-                    mtop->ffparams.iparams[idx].bham.b = b;
-                    mtop->ffparams.iparams[idx].bham.c = c;
-                }
-                break;
-                default:
-                    fprintf(stderr, "Invalid van der waals type %s\n",
-                            pd.getVdwFunction().c_str());
-            }
-        }
-    }
+    nonbondedFromPdToMtop(mtop, atoms, pd);
+
     gmx_mtop_finalize(mtop);
     /* Create a charge group block */
     stupid_fill_block(&(mtop->moltype[0].cgs), atoms->nr, false);

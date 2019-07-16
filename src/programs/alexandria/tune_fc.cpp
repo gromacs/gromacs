@@ -418,6 +418,7 @@ class BondNames
         BondNames () {}
 
         BondNames(int                ncopies,
+                  int                ftype,
                   const std::string &name,
                   const std::string &params,
                   int                index,
@@ -425,6 +426,7 @@ class BondNames
 
             :
               ncopies_(ncopies),
+              ftype_(ftype),
               name_(name),
               params_(params),
               bondorder_(bondorder),
@@ -459,6 +461,8 @@ class BondNames
 
         //! Number of copies in the molecule data set
         int                 ncopies_;
+        //! Fucntion type for this particular bond
+        int                 ftype_;
         //! Name of this bond/angle/dihedral
         std::string         name_;
         //! String holding all the parameters
@@ -525,6 +529,13 @@ void BondNames::setParamString(const std::string &params)
 void BondNames::extractParams()
 {
     const auto p = gmx::splitString(params_);
+    int np = 1+static_cast<int>(p.size());
+    if ((ftype_ == F_UREY_BRADLEY && np != 3) ||
+        (ftype_ != F_UREY_BRADLEY && np != NRFPA(ftype_)))
+    {
+        gmx_fatal(FARGS, "Number of parameters (%d) in gentop.dat does not match function type %s (%d)", np, 
+                  interaction_function[ftype_].name, NRFPA(ftype_));
+    }
     p_.clear();
     for (const auto &d : p)
     {
@@ -790,7 +801,7 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                     }
                     else
                     {
-                        BondNames bn(1, buf, params, index, 0);
+                        BondNames bn(1, ftype_, buf, params, index, 0);
                         addForceConstant(bn);
                     }
                 }
@@ -1641,22 +1652,11 @@ void Optimization::calcDeviation()
                                 copy_rvec(mymol.f_[j], mymol.optf_[j]);
                             }
                             mymol.OptForce2_   /= natoms;
-                            increaseEnergy(ermsForce2, std::sqrt(mymol.OptForce2_));
+                            increaseEnergy(ermsForce2, mymol.OptForce2_);
                             mymol.OptEcalc_     = mymol.enerd_->term[F_EPOT];
                         }
-
                         if (nullptr != debug)
                         {
-                            double Force2_  = 0.0;
-                            if (jtype == JOB_OPT)
-                            {
-                                for (int j = 0; j < natoms; j++)
-                                {
-                                    Force2_ += iprod(mymol.f_[j], mymol.f_[j]);
-                                }
-                                Force2_ /= natoms;
-                            }
-
                             fprintf(debug, "spHF: %g  optHF: %g  DeltaEn: %g\n",
                                     spHF, optHF, deltaEn);
                             fprintf(debug, "%s Chi2 %g Hform %g Eqm %g  Ecalc %g Morse %g  "
@@ -1675,7 +1675,7 @@ void Optimization::calcDeviation()
                                     mymol.enerd_->term[F_LJ],
                                     mymol.enerd_->term[F_BHAM],
                                     mymol.enerd_->term[F_POLARIZATION],
-                                    std::sqrt(Force2_));
+                                    std::sqrt(mymol.OptForce2_));
                         }
                     }
                 }

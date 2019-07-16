@@ -134,6 +134,10 @@ void getBhamParams(const Poldata     &pd,
                    double            *b,
                    double            *c);
 
+void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
+                           t_atoms       *atoms,
+                           const Poldata &pd);
+                           
 void plist_to_mtop(const Poldata                   &pd,
                    const std::vector<PlistWrapper> &plist,
                    gmx_mtop_t                      *mtop_);
