@@ -44,6 +44,22 @@ Use `pytest` to run unit tests and integration tests.
 For additional discussion on packaging and distribution, see
 https://redmine.gromacs.org/issues/2896
 
+## Sample MD extension code
+
+`sample_restraint` is a subtree containing a complete CMake project for building
+pluggable GROMACS MD extensions for execution through gmxapi. Up to and
+including version 0.0.7 of the sample code, the sub-project lived at
+https://github.com/kassonlab/sample_restraint/ and was supported by GROMACS 2019.
+
+The GROMACS repository becomes the upstream source for the sample code for
+GROMACS releases 2020 and higher. Refer to [README.md](sample_restraint/README.md)
+in `python_packaging/sample_restraint` for more information.
+
+To use a plugin based on the sample restraint, you will need to build and install
+the gmxapi Python package (above).
+
+**todo** CookieCutter repo for easy forking.
+
 ## Docker and Travis-CI testing
 
 **TODO: Migrate to Jenkins-based CI as Docker infrastructure becomes available.**
@@ -93,16 +109,6 @@ Hint: the fork point from `master` and the current git ref can be set as environ
 
     FORKPOINT=$(git show -s --pretty=format:"%h" `git merge-base gerrit_master HEAD`)
     REF=`git show -s --pretty=format:"%h"`
-
-## Sample MD extension code
-
-`sample_restraint` is a subtree containing a complete CMake project for building
-pluggable GROMACS MD extensions for execution through gmxapi. Up to and
-including version 0.0.7.3 of the sample code, the sub-project lived at
-https://github.com/kassonlab/sample_restraint/ and was supported by GROMACS 2019.
-
-The GROMACS repository becomes the upstream source for the sample code for
-GROMACS releases 2020 and higher.
 
 ## External project code
 
