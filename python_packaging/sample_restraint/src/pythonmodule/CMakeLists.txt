@@ -21,8 +21,10 @@ set_target_properties(sampleplugin PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 # CMakeLists.txt
 target_link_libraries(sampleplugin PRIVATE Gromacs::gmxapi harmonicpotential ensemblepotential)
 
-install(TARGETS sampleplugin
-        LIBRARY DESTINATION ${GMXPLUGIN_INSTALL_PATH}
-        ARCHIVE DESTINATION ${GMXPLUGIN_INSTALL_PATH}
-        RUNTIME DESTINATION ${GMXPLUGIN_INSTALL_PATH}
-        )
+if(GMXAPI_EXTENSION_MASTER_PROJECT)
+    install(TARGETS sampleplugin
+            LIBRARY DESTINATION ${GMXPLUGIN_INSTALL_PATH}
+            ARCHIVE DESTINATION ${GMXPLUGIN_INSTALL_PATH}
+            RUNTIME DESTINATION ${GMXPLUGIN_INSTALL_PATH}
+            )
+endif()
