@@ -531,7 +531,9 @@ void BondNames::extractParams()
     const auto p = gmx::splitString(params_);
     int np = 1+static_cast<int>(p.size());
     if ((ftype_ == F_UREY_BRADLEY && np != 3) ||
-        (ftype_ != F_UREY_BRADLEY && np != NRFPA(ftype_)))
+        (ftype_ == F_CROSS_BOND_ANGLES && np != 5) ||
+        (ftype_ != F_UREY_BRADLEY && ftype_ != F_CROSS_BOND_ANGLES
+         && np != NRFPA(ftype_)))
     {
         gmx_fatal(FARGS, "Number of parameters (%d) in gentop.dat does not match function type %s (%d)", np, 
                   interaction_function[ftype_].name, NRFPA(ftype_));
@@ -1888,8 +1890,8 @@ void Optimization::printResults(FILE                   *fp,
         }
     }
     fprintf(fp, "%s\n", title);
-    fprintf(fp, "Fit of energy at different conformations to y = ax+b\n");
-    fprintf(fp, "Nr.   %-30s %10s %10s %6s %6s %6s %6s\n", "Molecule", "DHf@298K", "Emol@0K", "rms F", "rms E", "a", "b");
+    fprintf(fp, "Fit of energy at different conformations to y = ax\n");
+    fprintf(fp, "Nr.   %-30s %10s %10s %7s %7s %7s\n", "Molecule", "DHf@298K", "Emol@0K", "rmsF@0K", "rms E", "a");
     
     msd = 0;
     i   = 0;
@@ -1938,16 +1940,16 @@ void Optimization::printResults(FILE                   *fp,
         {
             fprintf(hfp, "&\n");
         }
-        real a, b, chi2, da, db, Rfit;
-        gmx_stats_get_ab(gmol, 0, &a, &b, &da, &db, &chi2, &Rfit);
+        real a, chi2, da, Rfit;
+        gmx_stats_get_a(gmol, 0, &a, &da, &chi2, &Rfit);
 
-        fprintf(fp, "%-5d %-30s %10g %10g %6.1f %6.1f %6.3f %6.1f\n",
+        fprintf(fp, "%-5d %-30s %10g %10g %7.1f %7.3f %7.1f\n",
                 i,
                 mi->molProp()->getMolname().c_str(),
                 mi->Hform_,
                 mi->Emol_,
                 sqrt(mi->OptForce2_),
-                std::sqrt(chi2), a, b);
+                std::sqrt(chi2), a);
         msd += gmx::square(DeltaE);
         gmx_stats_add_point(gst, mi->Hform_, mi->Hform_ + DeltaE, 0, 0);
         gmx_stats_free(gmol);
@@ -1994,19 +1996,6 @@ int alex_tune_fc(int argc, char *argv[])
         "slightly, in order to speed-up local search but not global search."
         "In other words, complete random starts are done only at the beginning of each",
         "run, and only when explicitly requested.[PAR]",
-        "The absolut dipole moment of a molecule remains unchanged if all the",
-        "atoms swap the sign of the charge. To prevent this kind of mirror",
-        "effects a penalty is added to the square deviation ",
-        "if hydrogen atoms have a negative charge. Similarly a penalty is",
-        "added if atoms from row VI or VII in the periodic table have a positive",
-        "charge. The penalty is equal to the force constant given on the command line",
-        "time the square of the charge.[PAR]",
-        "One of the electronegativities (chi) is redundant in the optimization,",
-        "only the relative values are meaningful.",
-        "Therefore by default we fix the value for hydrogen to what is written",
-        "in the eemprops.dat file (or whatever is given with the [tt]-d[TT] flag).",
-        "A suitable value would be 2.3, the original, value due to Pauling,",
-        "this can by overridden by setting the [tt]-fixchi[TT] flag to something else (e.g. a non-existing atom).[PAR]",
         "A selection of molecules into a training set and a test set (or ignore set)",
         "can be made using option [TT]-sel[tt]. The format of this file is:[BR]",
         "iupac|Train[BR]",
@@ -2045,7 +2034,7 @@ int alex_tune_fc(int argc, char *argv[])
         { "-nrun",    FALSE, etINT,  {&nrun},
           "This many runs will be done, before each run a complete randomization will be done" },
         { "-zpe",     FALSE, etBOOL, {&bZPE},
-          "Consider zero-point energy from thermochemistry calculations in order to calculate the reference enthalpy of the molecule" },
+          "Consider zero-point energy from thermochemistry calculations in order to calculate the reference enthalpy of the molecule. If set, the zero point energy will be subtracted from the target energy when optimizing the force field model." },
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML file" }
     };
