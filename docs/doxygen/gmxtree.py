@@ -220,7 +220,7 @@ class File(object):
         include_re = r'^\s*#\s*include\s+(?P<quote>["<])(?P<path>[^">]*)[">]'
         define_re = r'^\s*#.*define(?:01)?\s+(\w*)'
         current_block = None
-        with open(self._abspath, 'r') as scanfile:
+        with open(self._abspath, 'r', encoding='utf8') as scanfile:
             contents = scanfile.read()
         lines = contents.splitlines(True)
         for lineno, line in enumerate(lines, 1):
