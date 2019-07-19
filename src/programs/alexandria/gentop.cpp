@@ -47,7 +47,6 @@
 #include "alex_modules.h"
 #include "babel_io.h"
 #include "fill_inputrec.h"
-#include "getmdlogger.h"
 #include "molprop_xml.h"
 #include "mymol.h"
 #include "poldata_xml.h"
@@ -228,7 +227,7 @@ int alex_gentop(int argc, char *argv[])
     eChargeGroup              ecg                        = (eChargeGroup) get_option(cgopt);
     ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
     ChargeDistributionModel   iChargeDistributionModel;
-    gmx::MDLogger             mdlog                      = getMdLogger(cr, stdout);
+    gmx::MDLogger             mdlog {};
 
     /* Force field selection, interactive or direct */
     choose_ff(strcmp(ff, "select") == 0 ? nullptr : ff,

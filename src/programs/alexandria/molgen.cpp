@@ -42,6 +42,7 @@
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/topology/mtop_util.h"
@@ -51,7 +52,6 @@
 
 #include "alex_modules.h"
 #include "fill_inputrec.h"
-#include "getmdlogger.h"
 #include "gmx_simple_comm.h"
 #include "molprop_xml.h"
 #include "poldata_xml.h"
@@ -418,7 +418,8 @@ void MolGen::optionsFinished()
     iChargeGenerationAlgorithm_ = (ChargeGenerationAlgorithm) get_option(cqgen);
     hfac0_                      = hfac_;
     cr_                         = init_commrec();
-    mdlog_                      = getMdLogger(cr_, stdout);
+    mdlog_                      = gmx::MDLogger {};
+    gmx_omp_nthreads_init(mdlog_, cr_, 1, 1, 1, 0, false, false);
     auto pnc                    = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
     hwinfo_                     = gmx_detect_hardware(mdlog_, pnc);
     if (MASTER(cr_))
@@ -560,7 +561,7 @@ void MolGen::Read(FILE            *fp,
                          iChargeDistributionModel_,
                          bFitZeta);
     }
-    /*Generate topology for Molecules and distribute them among the nodes*/
+    /* Generate topology for Molecules and distribute them among the nodes */
     int ntopol    = 0;
     std::vector<int> nmolpar;
     if (MASTER(cr_))

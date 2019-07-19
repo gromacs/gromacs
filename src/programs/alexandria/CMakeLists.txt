@@ -55,7 +55,6 @@ set(ALEXANDRIA_SOURCES
            fit_qs_zeta.cpp
            gen_table.cpp
            gentop.cpp
-           getmdlogger.cpp
            merge_mp.cpp
            merge_pd.cpp
            molgen.cpp

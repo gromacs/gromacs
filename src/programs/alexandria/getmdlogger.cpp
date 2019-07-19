@@ -37,18 +37,17 @@
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/loggerbuilder.h"
 
+#include "getmdlogger.h"
+
 gmx::MDLogger getMdLogger(const t_commrec *cr,
                           FILE            *fplog)
 {
     gmx::LoggerBuilder builder;
     builder.addTargetFile(gmx::MDLogger::LogLevel::Info, fplog);
-    if (cr == nullptr || SIMMASTER(cr))
-    {
-        builder.addTargetStream(gmx::MDLogger::LogLevel::Warning,
-                                &gmx::TextOutputFile::standardError());
-    }
-    gmx::LoggerOwner logOwner(builder.build());
-    gmx::MDLogger    mdlog(logOwner.logger());
+    builder.addTargetStream(gmx::MDLogger::LogLevel::Warning,
+                            &gmx::TextOutputFile::standardError());
+    gmx::LoggerOwner logOwner = builder.build();
+    gmx::MDLogger    mdlog {};// = logOwner.logger();
 
     return mdlog;
 }

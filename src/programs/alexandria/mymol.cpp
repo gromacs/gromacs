@@ -52,7 +52,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
-#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -1295,7 +1294,6 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     bool                converged   = false;
     int                 iter        = 0;
 
-    gmx_omp_nthreads_init(mdlog, cr, 1, 1, 1, 0, false, false);
     GenerateGromacs(mdlog, cr, tabfn, hwinfo, iChargeDistributionModel);
     if (bSymmetricCharges)
     {
