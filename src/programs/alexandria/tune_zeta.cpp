@@ -56,7 +56,6 @@
 
 #include "alex_modules.h"
 #include "gentop_core.h"
-#include "getmdlogger.h"
 #include "gmx_simple_comm.h"
 #include "molgen.h"
 #include "optparam.h"

@@ -590,9 +590,8 @@ void MolGen::Read(FILE            *fp,
                 }
                 if (immOK == imm)
                 {
-                    gmx::MDLogger mdlog = getMdLogger(cr_, stdout);
                     imm = mymol.GenerateCharges(pd_,
-                                                mdlog,
+                                                mdlog_,
                                                 atomprop_,
                                                 iChargeDistributionModel_,
                                                 iChargeGenerationAlgorithm_,
@@ -728,9 +727,8 @@ void MolGen::Read(FILE            *fp,
 
             if (immOK == imm)
             {
-                gmx::MDLogger mdlog = getMdLogger(cr_, stdout);
                 imm = mymol.GenerateCharges(pd_,
-                                            mdlog,
+                                            mdlog_,
                                             atomprop_,
                                             iChargeDistributionModel_,
                                             iChargeGenerationAlgorithm_,

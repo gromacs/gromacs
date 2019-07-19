@@ -54,7 +54,6 @@
 
 #include "alex_modules.h"
 #include "composition.h"
-#include "getmdlogger.h"
 #include "molgen.h"
 #include "molprop.h"
 #include "molprop_xml.h"

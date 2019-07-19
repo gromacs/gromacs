@@ -57,7 +57,6 @@
 #include "alex_modules.h"
 #include "communication.h"
 #include "gentop_core.h"
-#include "getmdlogger.h"
 #include "gmx_simple_comm.h"
 #include "molgen.h"
 #include "molprop.h"
