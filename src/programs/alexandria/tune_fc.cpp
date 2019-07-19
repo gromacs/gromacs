@@ -1856,18 +1856,12 @@ static void print_mols(FILE                          *fp,
     }
 }
 
-
 void Optimization::printResults(FILE                   *fp,
                                 char                   *title,
                                 const char             *hform_xvg,
                                 const char             *HF_xvg,
                                 const gmx_output_env_t *oenv)
 {
-    int         N, i;
-    real        a, b;
-    real        da, db;
-    real        chi2, Rfit;
-    double      msd;
     FILE       *xfp, *hfp = nullptr;
     gmx_stats_t gst;
 
@@ -1889,11 +1883,10 @@ void Optimization::printResults(FILE                   *fp,
     }
     fprintf(fp, "%s\n", title);
     fprintf(fp, "Fit of energy at different conformations to y = ax\n");
-    fprintf(fp, "Nr.   %-30s %10s %10s %7s %7s %7s\n", "Molecule", "DHf@298K", "Emol@0K", "rmsF@0K", "rms E", "a");
+    fprintf(fp, "Nr.   %-30s %10s %10s %7s %7s %7s %7s\n", "Molecule", "DHf@298K", "Emol@0K", "rmsF@0K", "rms E", "a", "r2");
     
-    msd = 0;
-    i   = 0;
-    for (auto mi = mymols().begin(); mi < mymols().end(); mi++, i++)
+    int imol = 0;
+    for (auto mi = mymols().begin(); mi < mymols().end(); mi++, imol++)
     {
         real DeltaE = mi->OptEcalc_ - mi->Emol_;
         if (nullptr != hform_xvg)
@@ -1909,54 +1902,58 @@ void Optimization::printResults(FILE                   *fp,
                            "No optimized energy");
         if (nullptr != hfp)
         {
-            fprintf(hfp, "@ s%d legend \"%s\"\n", i, 
+            fprintf(hfp, "@ s%d legend \"%s\"\n", imol, 
                     mi->molProp()->getMolname().c_str());
             fprintf(hfp, "@type xy\n");
         }
+        double rmsForce = 0;
         for (auto ei = mi->molProp()->BeginExperiment(); ei < mi->molProp()->EndExperiment(); ++ei)
         {
             auto jtype = ei->getJobtype();
-            if (jtype == JOB_SP)
+            ei->getHF(&spHF);
+            deltaEn = spHF - optHF;
+            mi->f_.clear();
+            mi->f_.resizeWithPadding(2*mi->topology_->atoms.nr);
+            mi->changeCoordinate(ei, bpolar);
+            mi->computeForces(nullptr, commrec());
+            real Hexper = mi->Hform_ + deltaEn;
+            real Halex  = mi->enerd_->term[F_EPOT] + mi->Hform_ - mi->Emol_;
+            if (nullptr != hfp)
             {
-                ei->getHF(&spHF);
-                deltaEn = spHF - optHF;
-                mi->f_.clear();
-                mi->f_.resizeWithPadding(2*mi->topology_->atoms.nr);
-                mi->changeCoordinate(ei, bpolar);
-                mi->computeForces(nullptr, commrec());
-                real Hexper = mi->Hform_ + deltaEn;
-                real Halex  = mi->enerd_->term[F_EPOT] + mi->Hform_ - mi->Emol_;
-                if (nullptr != hfp)
+                fprintf(hfp, "%10g  %10g\n", Hexper, Halex);
+            }
+            gmx_stats_add_point(gmol, Hexper, Halex, 0, 0);
+            if (jtype == JOB_OPT)
+            {
+                double f2 = 0;
+                int    natoms = mi->mtop_->natoms;
+                for (int j = 0; j < natoms; j++)
                 {
-                    fprintf(hfp, "%10g  %10g\n", Hexper, Halex);
+                    f2 += iprod(mi->f_[j], mi->f_[j]);
                 }
-                gmx_stats_add_point(gmol, Hexper, Halex, 0, 0);
-        
+                rmsForce = std::sqrt(f2 / natoms);
+                gmx_stats_add_point(gst, Hexper, Halex, 0, 0);
             }
         }
         if (nullptr != hfp)
         {
             fprintf(hfp, "&\n");
         }
-        real a, chi2, da, Rfit;
+        real a, chi2, da, rmsd, Rfit, Rdata;
         gmx_stats_get_a(gmol, 0, &a, &da, &chi2, &Rfit);
-
-        fprintf(fp, "%-5d %-30s %10g %10g %7.1f %7.3f %7.1f\n",
-                i,
+        gmx_stats_get_rmsd(gmol, &rmsd);
+        gmx_stats_get_corr_coeff(gmol, &Rdata);
+        fprintf(fp, "%-5d %-30s %10g %10g %7.1f %7.3f %7.3f %6.1f%%\n",
+                imol,
                 mi->molProp()->getMolname().c_str(),
                 mi->Hform_,
                 mi->Emol_,
-                sqrt(mi->OptForce2_),
-                std::sqrt(chi2), a);
-        msd += gmx::square(DeltaE);
-        gmx_stats_add_point(gst, mi->Hform_, mi->Hform_ + DeltaE, 0, 0);
+                rmsForce,
+                rmsd, a, Rdata*100);
         gmx_stats_free(gmol);
     }
 
     fprintf(fp, "\n");
-    fprintf(fp, "RMSD for energy of optimized structure = %g kJ/mol for %zu molecules.\n\n", 
-            sqrt(msd/mymols().size()), mymols().size());
-    fflush(fp);
     if (nullptr != hform_xvg)
     {
         xvgrclose(xfp);
@@ -1968,14 +1965,20 @@ void Optimization::printResults(FILE                   *fp,
         do_view(oenv, HF_xvg, nullptr);
     }
 
-    gmx_stats_get_ab(gst, 1, &a, &b, &da, &db, &chi2, &Rfit);
+    real a, da, chi2, rmsd, Rfit, Rdata;
+    int  N;
+    gmx_stats_get_a(gst, 1, &a, &da, &chi2, &Rfit);
     gmx_stats_get_npoints(gst, &N);
-    fprintf(fp, "Regression analysis fit to y = ax + b:\n");
-    fprintf(fp, "a = %.3f  b = %3f  R2 = %.1f%%  chi2 = %.1f N = %d\n", a, b, Rfit*100, chi2, N);
+    gmx_stats_get_corr_coeff(gst, &Rdata);
+    gmx_stats_get_rmsd(gst, &rmsd);
+    fprintf(fp, "Regression analysis fit to y = ax of %d minimum energy structures:\n", N);
+    fprintf(fp, "a = %.3f  r2 = %.1f%%  rmsd = %.2f kJ/mol\n",
+            a, Rdata*100, rmsd);
     gmx_stats_free(gst);
     fflush(fp);
 }
-}
+
+} // namespace alexandria
 
 int alex_tune_fc(int argc, char *argv[])
 {
