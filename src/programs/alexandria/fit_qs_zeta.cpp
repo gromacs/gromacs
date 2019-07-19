@@ -33,6 +33,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 
+#include "gromacs/random.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/network.h"
@@ -40,7 +41,6 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/random.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"

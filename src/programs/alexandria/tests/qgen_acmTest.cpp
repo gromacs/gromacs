@@ -32,6 +32,7 @@
 
 
 #include <math.h>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/gmxlib/network.h"
@@ -40,8 +41,8 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
-#include "programs/alexandria/fill_inputrec.h"
 #include "programs/alexandria/babel_io.h"
+#include "programs/alexandria/fill_inputrec.h"
 #include "programs/alexandria/getmdlogger.h"
 #include "programs/alexandria/mymol.h"
 #include "programs/alexandria/poldata.h"

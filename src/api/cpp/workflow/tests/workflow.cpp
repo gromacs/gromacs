@@ -40,7 +40,6 @@
 #include "api/cpp/include/gmxapi/context.h"
 #include "api/cpp/include/gmxapi/status.h"
 #include "api/cpp/include/gmxapi/system.h"
-
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/utility/arrayref.h"
 

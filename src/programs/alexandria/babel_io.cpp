@@ -31,10 +31,13 @@
  */
 
 #include "gmxpre.h"
+
 #include "babel_io.h"
+
 #include "config.h"
 
 #include <cstdio>
+
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -72,12 +75,12 @@
 #include <openbabel/elements.h>
 #include <openbabel/forcefield.h>
 #include <openbabel/generic.h>
-#include <openbabel/math/vector3.h>
 #include <openbabel/mol.h>
 #include <openbabel/obconversion.h>
 #include <openbabel/obiter.h>
 #include <openbabel/obmolecformat.h>
 #include <openbabel/residue.h>
+#include <openbabel/math/vector3.h>
 
 #ifdef KOKO
 #ifndef HAVE_SYS_TIME_H

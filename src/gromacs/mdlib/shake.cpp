@@ -47,10 +47,9 @@
 #include "shake.h"
 
 #include <cmath>
+#include <cstdlib>
 
 #include <algorithm>
-
-#include <cstdlib>
 
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/nrnb.h"

@@ -35,6 +35,7 @@
 #define GMX_QGEN_RESP_H
 
 #include <cstdio>
+
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
