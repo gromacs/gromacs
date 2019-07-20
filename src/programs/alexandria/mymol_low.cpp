@@ -593,68 +593,83 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                            t_atoms       *atoms,
                            const Poldata &pd)
 {
-    int ntype2  = gmx::square(mtop->ffparams.atnr);
+    auto ntype  = mtop->ffparams.atnr;
+    int  ntype2 = gmx::square(ntype);
     if (mtop->ffparams.functype.empty())
     {
-        mtop->ffparams.functype.resize(ntype2);
+        mtop->ffparams.functype.resize(ntype2, 0);
     }
     if (mtop->ffparams.iparams.empty())
     {
-        mtop->ffparams.iparams.resize(ntype2);
+        mtop->ffparams.iparams.resize(ntype2, {});
     }
     auto ftv   = pd.getVdwFtype();
-    auto ntype = mtop->ffparams.atnr;
-    std::vector<std::string> typenames;
-    typenames.resize(ntype);
+    typedef struct
+    { 
+        std::string name;
+        int         ptype;
+    } mytype;
+    std::vector<mytype> mytypes;
+    mytypes.resize(ntype);
     for (int i = 0; i < atoms->nr; i++)
     {
         auto itype = atoms->atom[i].type;
         auto iname = *atoms->atomtype[i];
-        if (typenames[itype].empty())
+        if (mytypes[itype].name.empty())
         {
-            typenames[itype].assign(iname);
+            mytypes[itype].name.assign(iname);
+            mytypes[itype].ptype = atoms->atom[i].ptype;
         }
-        else if (typenames[itype].compare(iname) != 0)
+        else if (mytypes[itype].name.compare(iname) != 0)
         {
-            gmx_fatal(FARGS, "Atom type mismatch. Found %s for type %d but expected %s", iname, itype, typenames[itype].c_str());
+            gmx_fatal(FARGS, "Atom type mismatch. Found %s for type %d but expected %s", iname, itype, mytypes[itype].name.c_str());
         }
     }
     if (debug)
     {
         int i = 0;
-        for (auto &tn : typenames)
+        for (auto &tn : mytypes)
         {
-            fprintf(debug, "type %d name %s\n", i++, tn.c_str());
+            fprintf(debug, "type %d name %s ptype %s\n",
+                    i++, tn.name.c_str(), ptype_str[tn.ptype]);
         }
     }
     for (auto i = 0; (i < ntype); i++)
     {
-        for (auto j = 0; (j < ntype); j++)
+        if (mytypes[i].ptype == eptAtom)
         {
-            auto idx = ntype*i+j;
-            mtop->ffparams.functype[idx] = ftv;
-            switch (ftv)
+            for (auto j = 0; (j < ntype); j++)
             {
-            case F_LJ:
+                if (mytypes[j].ptype == eptAtom)
                 {
-                    double c6, c12;
-                    getLjParams(pd, typenames[i], typenames[j], &c6, &c12);
-                    mtop->ffparams.iparams[idx].lj.c6  = c6;
-                    mtop->ffparams.iparams[idx].lj.c12 = c12;
+                    auto idx = ntype*i+j;
+                    mtop->ffparams.functype[idx] = ftv;
+                    switch (ftv)
+                    {
+                    case F_LJ:
+                        {
+                            double c6, c12;
+                            getLjParams(pd, mytypes[i].name, 
+                                        mytypes[j].name, &c6, &c12);
+                            mtop->ffparams.iparams[idx].lj.c6  = c6;
+                            mtop->ffparams.iparams[idx].lj.c12 = c12;
+                        }
+                        break;
+                    case F_BHAM:
+                        {
+                            double a, b, c;
+                            getBhamParams(pd, mytypes[i].name, 
+                                          mytypes[j].name, &a, &b, &c);
+                            mtop->ffparams.iparams[idx].bham.a = a;
+                            mtop->ffparams.iparams[idx].bham.b = b;
+                            mtop->ffparams.iparams[idx].bham.c = c;
+                        }
+                        break;
+                    default:
+                        fprintf(stderr, "Invalid van der waals type %s\n",
+                                pd.getVdwFunction().c_str());
+                    }
                 }
-                break;
-            case F_BHAM:
-                {
-                    double a, b, c;
-                    getBhamParams(pd, typenames[i], typenames[j], &a, &b, &c);
-                    mtop->ffparams.iparams[idx].bham.a = a;
-                    mtop->ffparams.iparams[idx].bham.b = b;
-                    mtop->ffparams.iparams[idx].bham.c = c;
-                }
-                break;
-            default:
-                fprintf(stderr, "Invalid van der waals type %s\n",
-                        pd.getVdwFunction().c_str());
             }
         }
     }

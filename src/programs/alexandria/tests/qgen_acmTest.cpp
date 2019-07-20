@@ -43,7 +43,6 @@
 #include "gromacs/utility/physicalnodecommunicator.h"
 #include "programs/alexandria/babel_io.h"
 #include "programs/alexandria/fill_inputrec.h"
-#include "programs/alexandria/getmdlogger.h"
 #include "programs/alexandria/mymol.h"
 #include "programs/alexandria/poldata.h"
 #include "programs/alexandria/poldata_xml.h"
@@ -156,7 +155,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             char          *symm_string           = (char *)"";
             t_commrec     *cr                    = init_commrec();
             auto           pnc                   = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
-            auto           mdlog                 = getMdLogger(cr, stdout);
+            gmx::MDLogger  mdlog {};
             auto           hwinfo                = gmx_detect_hardware(mdlog, pnc);
             int            qcycle                = 100;
             real           qtol                  = 1e-3;

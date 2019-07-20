@@ -52,6 +52,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -1144,6 +1145,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
     gmx::ArrayRef<const std::string>  tabbfnm;
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
                   state_->box, tabfn, tabfn, tabbfnm, *hwinfo, nullptr, false, true, -1);
+    gmx_omp_nthreads_set(emntBonded, 1);
     init_bonded_threading(nullptr, 1, &fr_->bondedThreading);
     setup_bonded_threading(fr_->bondedThreading, topology_->atoms.nr, false, ltop_->idef);
     wcycle_    = wallcycle_init(debug, 0, cr);

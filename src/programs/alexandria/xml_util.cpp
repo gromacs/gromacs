@@ -36,21 +36,6 @@
 
 #include "gromacs/utility/fatalerror.h"
 
-int find_elem(char *name, int nr, const char *names[])
-{
-    int i;
-
-    for (i = 0; (i < nr); i++)
-    {
-        if (strcmp(name, names[i]) == 0)
-        {
-            return i;
-        }
-    }
-
-    return -1;
-}
-
 void add_xml_int(xmlNodePtr ptr, const char *name, int val)
 {
     xmlChar buf[32];
@@ -105,12 +90,13 @@ xmlNodePtr add_xml_child_val(xmlNodePtr parent, const char *type, const char *va
     return child;
 }
 
-xmlNodePtr add_xml_comment(xmlDocPtr doc,
-                           xmlNodePtr prev, char *comment)
+xmlNodePtr add_xml_comment(xmlDocPtr   doc,
+                           xmlNodePtr  prev,
+                           const char *comment)
 {
     xmlNodePtr comm, ptr;
 
-    if ((comm = xmlNewComment((xmlChar *)comment)) == NULL)
+    if ((comm = xmlNewComment((const xmlChar *)comment)) == NULL)
     {
         gmx_fatal(FARGS, "Creating doc comment element %s", "");
     }

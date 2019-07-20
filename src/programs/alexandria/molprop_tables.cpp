@@ -199,7 +199,7 @@ void alexandria_molprop_stats_table(FILE                 *fp,
             if ((gmx_stats_get_rmsd(lsq, &rms) == estatsOK) &&
                 (gmx_stats_get_npoints(lsq, &N) == estatsOK))
             {
-                sprintf(buf, "& %8.1f(%d)", rms, N);
+                snprintf(buf, sizeof(buf)-1, "& %8.1f(%d)", rms, N);
                 catbuf.append(buf);
                 nqmres++;
             }
@@ -413,15 +413,15 @@ void alexandria_molprop_composition_table(FILE                 *fp,
             {
                 if ((q != 0) && (m != 1))
                 {
-                    sprintf(qbuf, " (q=%c%d, mult=%d)", (q < 0) ? '-' : '+', abs(q), m);
+                    snprintf(qbuf, sizeof(qbuf), " (q=%c%d, mult=%d)", (q < 0) ? '-' : '+', abs(q), m);
                 }
                 else if (q != 0)
                 {
-                    sprintf(qbuf, " (q=%c%d)", (q < 0) ? '-' : '+', abs(q));
+                    snprintf(qbuf, sizeof(qbuf), " (q=%c%d)", (q < 0) ? '-' : '+', abs(q));
                 }
                 else
                 {
-                    sprintf(qbuf, " (mult=%d)", m);
+                    snprintf(qbuf, sizeof(qbuf), " (mult=%d)", m);
                 }
             }
             else
@@ -1009,26 +1009,26 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                     }
                     if (ed.size() > 0)
                     {
-                        sprintf(mylbuf, "& %8.3f", ed[nexp].val_);
+                        snprintf(mylbuf, sizeof(mylbuf), "& %8.3f", ed[nexp].val_);
                         strncat(myline, mylbuf, BLEN-strlen(myline)-1);
                         if (ed[nexp].err_ > 0)
                         {
-                            sprintf(mylbuf, "(%.3f)", ed[nexp].err_);
+                            snprintf(mylbuf, sizeof(mylbuf), "(%.3f)", ed[nexp].err_);
                             strncat(myline, mylbuf, BLEN-strlen(myline)-1);
                         }
                         if (strcmp(ed[nexp].ref_.c_str(), "Maaren2017a") == 0)
                         {
-                            sprintf(mylbuf, " (*)");
+                            snprintf(mylbuf, sizeof(mylbuf), " (*)");
                         }
                         else
                         {
-                            sprintf(mylbuf, "~\\cite{%s} ", ed[nexp].ref_.c_str());
+                            snprintf(mylbuf, sizeof(mylbuf), "~\\cite{%s} ", ed[nexp].ref_.c_str());
                         }
                         strncat(myline, mylbuf, BLEN-strlen(myline)-1);
                     }
                     else
                     {
-                        sprintf(mylbuf, "& - ");
+                        snprintf(mylbuf, sizeof(mylbuf), "& - ");
                         strncat(myline, mylbuf, BLEN-strlen(myline)-1);
                     }
                     for (size_t j = 0; (j < qmc.nCalc()); j++)
@@ -1038,11 +1038,11 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                             vc = cd[j].val_;
                             if (cd[j].err_ > 0)
                             {
-                                sprintf(vbuf, "%8.2f(%.2f)", vc, cd[j].err_);
+                                snprintf(vbuf, sizeof(vbuf), "%8.2f(%.2f)", vc, cd[j].err_);
                             }
                             else
                             {
-                                sprintf(vbuf, "%8.2f", vc);
+                                snprintf(vbuf, sizeof(vbuf), "%8.2f", vc);
                             }
                             if (ed.size() > 0)
                             {
@@ -1050,24 +1050,24 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                                 switch (oo)
                                 {
                                     case 2:
-                                        sprintf(mylbuf, "& \\textcolor{Red}{\\bf %s} ", vbuf);
+                                        snprintf(mylbuf, sizeof(mylbuf), "& \\textcolor{Red}{\\bf %s} ", vbuf);
                                         break;
                                     case 1:
-                                        sprintf(mylbuf, "& {\\bf %s} ", vbuf);
+                                        snprintf(mylbuf, sizeof(mylbuf), "& {\\bf %s} ", vbuf);
                                         break;
                                     default:
-                                        sprintf(mylbuf, "& %s ", vbuf);
+                                        snprintf(mylbuf, sizeof(mylbuf), "& %s ", vbuf);
                                 }
                             }
                             else
                             {
-                                sprintf(mylbuf, "& %s ", vbuf);
+                                snprintf(mylbuf, sizeof(mylbuf), "& %s ", vbuf);
                             }
                             strncat(myline, mylbuf, BLEN-strlen(myline)-1);
                         }
                         else
                         {
-                            sprintf(mylbuf, "& ");
+                            snprintf(mylbuf, sizeof(mylbuf), "& ");
                             strncat(myline, mylbuf, BLEN-strlen(myline));
                         }
                     }

@@ -34,6 +34,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <map>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
@@ -77,187 +78,207 @@ const char *xmltypes[] = {
 #define NXMLTYPES sizeof(xmltypes)/sizeof(xmltypes[0])
 
 enum {
-    exmlGENTOP            = 0,
-    exmlREFERENCE         = 1,
-    exmlATOMTYPES         = 2,
-    exmlATOMTYPE          = 3,
-    exmlGT_FORCEFIELD     = 4,
-    exmlPOLAR_UNIT        = 5,
-    exmlCOMB_RULE         = 6,
-    exmlNEXCL             = 7,
-    exmlFUDGEQQ           = 8,
-    exmlFUDGELJ           = 9,
-    exmlPOLTYPES          = 10,
-    exmlPOLTYPE           = 11,
-    exmlPTYPE             = 12,
-    exmlELEM              = 13,
-    exmlNAME              = 14,
-    exmlDESC              = 15,
-    exmlATYPE             = 16,
-    exmlMILLER            = 17,
-    exmlVALENCE           = 18,
-    exmlBOSQUE            = 19,
-    exmlBTYPE             = 20,
-    exmlZTYPE             = 21,
-    exmlNEIGHBORS         = 22,
-    exmlAROMATIC          = 23,
-    exmlGEOMETRY          = 24,
-    exmlNUMBONDS          = 25,
-    exmlPOLARIZABILITY    = 26,
-    exmlSIGPOL            = 27,
-    exmlVDWPARAMS         = 28,
-    exmlEREF              = 29,
-    exmlFUNCTION          = 30,
-    exmlINTERACTION       = 31,
-    exmlATOM1             = 32,
-    exmlATOM2             = 33,
-    exmlATOM3             = 34,
-    exmlATOM4             = 35,
-    exmlSIGMA             = 36,
-    exmlBONDORDER         = 37,
-    exmlPARAMS            = 38,
-    exmlREFVALUE          = 39,
-    exmlUNIT              = 40,
-    exmlNTRAIN            = 41,
-    exmlGT_VSITES         = 42,
-    exmlGT_VSITE          = 43,
-    exmlGT_BONDS          = 44,
-    exmlGT_BOND           = 45,
-    exmlGT_ANGLES         = 46,
-    exmlGT_ANGLE          = 47,
-    exmlGT_DIHEDRALS      = 48,
-    exmlGT_DIHEDRAL       = 49,
-    exmlGT_IMPROPERS      = 50,
-    exmlGT_IMPROPER       = 51,
-    exmlBSATOMS           = 52,
-    exmlBSATOM            = 53,
-    exmlMILATOMS          = 54,
-    exmlTAU_UNIT          = 55,
-    exmlAHP_UNIT          = 56,
-    exmlMILATOM           = 57,
-    exmlMILNAME           = 58,
-    exmlALEXANDRIA_EQUIV  = 59,
-    exmlATOMNUMBER        = 60,
-    exmlTAU_AHC           = 61,
-    exmlALPHA_AHP         = 62,
-    exmlSYMMETRIC_CHARGES = 63,
-    exmlSYM_CHARGE        = 64,
-    exmlCENTRAL           = 65,
-    exmlATTACHED          = 66,
-    exmlNUMATTACH         = 67,
-    exmlEEMPROPS          = 68,
-    exmlEEMPROP           = 69,
-    exmlMODEL             = 70,
-    exmlJ0                = 71,
-    exmlJ0_SIGMA          = 72,
-    exmlCHI0              = 73,
-    exmlCHI0_SIGMA        = 74,
-    exmlZETA              = 75,
-    exmlZETA_SIGMA        = 76,
-    exmlROW               = 77,
-    exmlEEMPROP_REF       = 78,
-    exmlEPREF             = 79,
-    exmlCHARGES           = 80,
-    exmlANGLE_UNIT        = 81,
-    exmlLENGTH_UNIT       = 82,
-    exmlDISTANCE          = 83,
-    exmlNCONTROLATOMS     = 84,
-    exmlNUMBER            = 85,
-    exmlVTYPE             = 86,
-    exmlANGLE             = 87,
-    exmlNR                = 88
+      exmlGENTOP             = 0,
+      exmlREFERENCE          = 1,
+      exmlATOMTYPES          = 2,
+      exmlATOMTYPE           = 3,
+      exmlGT_FORCEFIELD      = 4,
+      exmlPOLAR_UNIT         = 5,
+      exmlCOMB_RULE          = 6,
+      exmlNEXCL              = 7,
+      exmlFUDGEQQ            = 8,
+      exmlFUDGELJ            = 9,
+      exmlPOLTYPES           = 10,
+      exmlPOLTYPE            = 11,
+      exmlPTYPE              = 12,
+      exmlELEM               = 13,
+      exmlNAME               = 14,
+      exmlDESC               = 15,
+      exmlATYPE              = 16,
+      exmlMILLER             = 17,
+      exmlVALENCE            = 18,
+      exmlBOSQUE             = 19,
+      exmlBTYPE              = 20,
+      exmlZTYPE              = 21,
+      exmlNEIGHBORS          = 22,
+      exmlAROMATIC           = 23,
+      exmlGEOMETRY           = 24,
+      exmlNUMBONDS           = 25,
+      exmlPOLARIZABILITY     = 26,
+      exmlSIGPOL             = 27,
+      exmlVDWPARAMS          = 28,
+      exmlEREF               = 29,
+      exmlFUNCTION           = 30,
+      exmlINTERACTION        = 31,
+      exmlATOM1              = 32,
+      exmlATOM2              = 33,
+      exmlATOM3              = 34,
+      exmlATOM4              = 35,
+      exmlSIGMA              = 36,
+      exmlBONDORDER          = 37,
+      exmlPARAMS             = 38,
+      exmlREFVALUE           = 39,
+      exmlUNIT               = 40,
+      exmlNTRAIN             = 41,
+      exmlGT_VSITES          = 42,
+      exmlGT_VSITE           = 43,
+      exmlGT_BONDS           = 44,
+      exmlGT_BOND            = 45,
+      exmlGT_ANGLES          = 46,
+      exmlGT_ANGLE           = 47,
+      exmlGT_DIHEDRALS       = 48,
+      exmlGT_DIHEDRAL        = 49,
+      exmlGT_IMPROPERS       = 50,
+      exmlGT_IMPROPER        = 51,
+      exmlBSATOMS            = 52,
+      exmlBSATOM             = 53,
+      exmlMILATOMS           = 54,
+      exmlTAU_UNIT           = 55,
+      exmlAHP_UNIT           = 56,
+      exmlMILATOM            = 57,
+      exmlMILNAME            = 58,
+      exmlALEXANDRIA_EQUIV   = 59,
+      exmlATOMNUMBER         = 60,
+      exmlTAU_AHC            = 61,
+      exmlALPHA_AHP          = 62,
+      exmlSYMMETRIC_CHARGES  = 63,
+      exmlSYM_CHARGE         = 64,
+      exmlCENTRAL            = 65,
+      exmlATTACHED           = 66,
+      exmlNUMATTACH          = 67,
+      exmlEEMPROPS           = 68,
+      exmlEEMPROP            = 69,
+      exmlMODEL              = 70,
+      exmlJ0                 = 71,
+      exmlJ0_SIGMA           = 72,
+      exmlCHI0               = 73,
+      exmlCHI0_SIGMA         = 74,
+      exmlZETA               = 75,
+      exmlZETA_SIGMA         = 76,
+      exmlROW                = 77,
+      exmlEEMPROP_REF        = 78,
+      exmlEPREF              = 79,
+      exmlCHARGES            = 80,
+      exmlANGLE_UNIT         = 81,
+      exmlLENGTH_UNIT        = 82,
+      exmlDISTANCE           = 83,
+      exmlNCONTROLATOMS      = 84,
+      exmlNUMBER             = 85,
+      exmlVTYPE              = 86,
+      exmlANGLE              = 87,
+      exmlNR                 = 88
 };
 
-const char * exml_names[exmlNR] = {
-    "gentop",
-    "reference",
-    "atomtypes",
-    "atomtype",
-    "forcefield",
-    "polarizability_unit",
-    "combination_rule",
-    "nexclusions",
-    "fudgeQQ",
-    "fudgeLJ",
-    "poltypes",
-    "poltype",
-    "ptype",
-    "elem",
-    "name",
-    "description",
-    "atype",
-    "miller",
-    "valence",
-    "bosque",
-    "btype",
-    "ztype",
-    "neighbors",
-    "aromatic",
-    "geometry",
-    "numbonds",
-    "polarizability",
-    "sigma_pol",
-    "vdwparams",
-    "ref_enthalpy",
-    "function",
-    "interaction",
-    "atom1",
-    "atom2",
-    "atom3",
-    "atom4",
-    "sigma",
-    "bondorder",
-    "params",
-    "refValue",
-    "unit",
-    "ntrain",
-    "gt_vsites",
-    "gt_vsite",
-    "gt_bonds",
-    "gt_bond",
-    "gt_angles",
-    "gt_angle",
-    "gt_dihedrals",
-    "gt_dihedral",
-    "gt_impropers",
-    "gt_improper",
-    "bsatoms",
-    "bsatom",
-    "milatoms",
-    "tau_ahc_unit",
-    "alpha_ahp_unit",
-    "milatom",
-    "milname",
-    "alexandria_equiv",
-    "atomnumber",
-    "tau_ahc",
-    "alpha_ahp",
-    "symmetric_charges",
-    "sym_charge",
-    "central",
-    "attached",
-    "numattach",
-    "eemprops",
-    "eemprop",
-    "model",
-    "jaa",
-    "jaa_sigma",
-    "chi",
-    "chi_sigma",
-    "zeta",
-    "zeta_sigma",
-    "row",
-    "eemprop_ref",
-    "epref",
-    "charge",
-    "angle_unit",
-    "length_unit",
-    "distance",
-    "ncontrolatoms",
-    "number",
-    "vtype",
-    "angle"
-};
+std::map<const std::string, int> xmlxxx = 
+    {
+     { "gentop",                 exmlGENTOP           },
+     { "reference",              exmlREFERENCE        },
+     { "atomtypes",              exmlATOMTYPES        },
+     { "atomtype",               exmlATOMTYPE         },
+     { "forcefield",             exmlGT_FORCEFIELD    },
+     { "polarizability_unit",    exmlPOLAR_UNIT       },
+     { "combination_rule",       exmlCOMB_RULE        },
+     { "nexclusions",            exmlNEXCL            },
+     { "fudgeQQ",                exmlFUDGEQQ          },
+     { "fudgeLJ",                exmlFUDGELJ          },
+     { "poltypes",               exmlPOLTYPES         },
+     { "poltype",                exmlPOLTYPE          },
+     { "ptype",                  exmlPTYPE            },
+     { "elem",                   exmlELEM             },
+     { "name",                   exmlNAME             },
+     { "description",            exmlDESC             },
+     { "atype",                  exmlATYPE            },
+     { "miller",                 exmlMILLER           },
+     { "valence",                exmlVALENCE          },
+     { "bosque",                 exmlBOSQUE           },
+     { "btype",                  exmlBTYPE            },
+     { "ztype",                  exmlZTYPE            },
+     { "neighbors",              exmlNEIGHBORS        },
+     { "aromatic",               exmlAROMATIC         },
+     { "geometry",               exmlGEOMETRY         },
+     { "numbonds",               exmlNUMBONDS         },
+     { "polarizability",         exmlPOLARIZABILITY   },
+     { "sigma_pol",              exmlSIGPOL           },
+     { "vdwparams",              exmlVDWPARAMS        },
+     { "ref_enthalpy",           exmlEREF             },
+     { "function",               exmlFUNCTION         },
+     { "interaction",            exmlINTERACTION      },
+     { "atom1",                  exmlATOM1            },
+     { "atom2",                  exmlATOM2            },
+     { "atom3",                  exmlATOM3            },
+     { "atom4",                  exmlATOM4            },
+     { "sigma",                  exmlSIGMA            },
+     { "bondorder",              exmlBONDORDER        },
+     { "params",                 exmlPARAMS           },
+     { "refValue",               exmlREFVALUE         },
+     { "unit",                   exmlUNIT             },
+     { "ntrain",                 exmlNTRAIN           },
+     { "gt_vsites",              exmlGT_VSITES        },
+     { "gt_vsite",               exmlGT_VSITE         },
+     { "gt_bonds",               exmlGT_BONDS         },
+     { "gt_bond",                exmlGT_BOND          },
+     { "gt_angles",              exmlGT_ANGLES        },
+     { "gt_angle",               exmlGT_ANGLE         },
+     { "gt_dihedrals",           exmlGT_DIHEDRALS     },
+     { "gt_dihedral",            exmlGT_DIHEDRAL      },
+     { "gt_impropers",           exmlGT_IMPROPERS     },
+     { "gt_improper",            exmlGT_IMPROPER      },
+     { "bsatoms",                exmlBSATOMS          },
+     { "bsatom",                 exmlBSATOM           },
+     { "milatoms",               exmlMILATOMS         },
+     { "tau_ahc_unit",           exmlTAU_UNIT         },
+     { "alpha_ahp_unit",         exmlAHP_UNIT         },
+     { "milatom",                exmlMILATOM          },
+     { "milname",                exmlMILNAME          },
+     { "alexandria_equiv",       exmlALEXANDRIA_EQUIV },
+     { "atomnumber",             exmlATOMNUMBER       },
+     { "tau_ahc",                exmlTAU_AHC          },
+     { "alpha_ahp",              exmlALPHA_AHP        },
+     { "symmetric_charges",      exmlSYMMETRIC_CHARGES},
+     { "sym_charge",             exmlSYM_CHARGE       },
+     { "central",                exmlCENTRAL          },
+     { "attached",               exmlATTACHED         },
+     { "numattach",              exmlNUMATTACH        },
+     { "eemprops",               exmlEEMPROPS         },
+     { "eemprop",                exmlEEMPROP          },
+     { "model",                  exmlMODEL            },
+     { "jaa",                    exmlJ0               },
+     { "jaa_sigma",              exmlJ0_SIGMA         },
+     { "chi",                    exmlCHI0             },
+     { "chi_sigma",              exmlCHI0_SIGMA       },
+     { "zeta",                   exmlZETA             },
+     { "zeta_sigma",             exmlZETA_SIGMA       },
+     { "row",                    exmlROW              },
+     { "eemprop_ref",            exmlEEMPROP_REF      },
+     { "epref",                  exmlEPREF            },
+     { "charge",                 exmlCHARGES          },
+     { "angle_unit",             exmlANGLE_UNIT       },
+     { "length_unit",            exmlLENGTH_UNIT      },
+     { "distance",               exmlDISTANCE         },
+     { "ncontrolatoms",          exmlNCONTROLATOMS    },
+     { "number",                 exmlNUMBER           },
+     { "vtype",                  exmlVTYPE            },
+     { "angle",                  exmlANGLE            }
+    };
+
+std::map<int, const std::string> rmap;
+
+static const char *exml_names(int xml)
+{
+    if (rmap.empty())
+    {
+        for(auto iter=xmlxxx.begin(); iter != xmlxxx.end(); ++iter)
+        {
+            rmap.insert({iter->second, iter->first});
+        }
+    }
+    auto iter = rmap.find(xml);
+    if (iter != rmap.end())
+    {
+        return iter->second.c_str();
+    }
+    return nullptr;
+}
 
 static void sp(int n, char buf[], int maxindent)
 {
@@ -288,7 +309,7 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
 {
     std::string attrname, attrval;
     char        buf[100];
-    int         i, kkk;
+    int         i;
     std::string xbuf[exmlNR];
 
     for (i = 0; (i < exmlNR); i++)
@@ -301,9 +322,10 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
         attrval.assign((char *)attr->children->content);
 
 #define atest(s) ((strcasecmp(attrname, s) == 0) && (attrval != nullptr))
-        kkk = find_elem((char *)attrname.c_str(), exmlNR, exml_names);
-        if (-1 != kkk)
+        auto iter = xmlxxx.find(attrname);
+        if (iter != xmlxxx.end())
         {
+            int kkk = iter->second;
             if (attrval.size() != 0)
             {
                 xbuf[kkk] = attrval;
@@ -579,7 +601,7 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 {
                     if (xbuf[i].size() != 0)
                     {
-                        fprintf(debug, "%s = %s\n", exml_names[i], xbuf[i].c_str());
+                        fprintf(debug, "%s = %s\n", exml_names(i), xbuf[i].c_str());
                     }
                 }
             }
@@ -589,8 +611,7 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
 static void processTree(FILE *fp, xmlNodePtr tree, int indent,
                         Poldata &pd, gmx_atomprop_t aps)
 {
-    int           elem;
-    char          buf[100];
+    char buf[100];
 
     while (tree != nullptr)
     {
@@ -609,14 +630,15 @@ static void processTree(FILE *fp, xmlNodePtr tree, int indent,
 
         if (tree->type == XML_ELEMENT_NODE)
         {
-            elem = find_elem((char *)tree->name, exmlNR, exml_names);
             if (fp)
             {
                 sp(indent, buf, 99);
                 fprintf(fp, "%sElement node name %s\n", buf, (char *)tree->name);
             }
-            if (-1 != elem)
+            auto iter = xmlxxx.find((const char *)tree->name);
+            if (iter != xmlxxx.end())
             {
+                int elem = iter->second;
                 if (elem != exmlGENTOP)
                 {
                     processAttr(fp, tree->properties, elem, indent+2, pd);
@@ -678,251 +700,251 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
     double       fudgeQQ, fudgeLJ;
     std::string  tmp, func, blu;
 
-    child = add_xml_child(parent, exml_names[exmlATOMTYPES]);
+    child = add_xml_child(parent, exml_names(exmlATOMTYPES));
     tmp   = pd.getForceField();
     if (0 != tmp.size())
     {
-        add_xml_char(child, exml_names[exmlGT_FORCEFIELD], tmp.c_str());
+        add_xml_char(child, exml_names(exmlGT_FORCEFIELD), tmp.c_str());
     }
     tmp = pd.getVdwFunction();
     if (0 != tmp.size())
     {
-        add_xml_char(child, exml_names[exmlFUNCTION], tmp.c_str());
+        add_xml_char(child, exml_names(exmlFUNCTION), tmp.c_str());
     }
     tmp = pd.getCombinationRule();
     if (0 != tmp.size())
     {
-        add_xml_char(child, exml_names[exmlCOMB_RULE], tmp.c_str());
+        add_xml_char(child, exml_names(exmlCOMB_RULE), tmp.c_str());
     }
     nexcl = pd.getNexcl();
-    add_xml_int(child, exml_names[exmlNEXCL], nexcl);
+    add_xml_int(child, exml_names(exmlNEXCL), nexcl);
     fudgeQQ = pd.getFudgeQQ();
-    add_xml_double(child, exml_names[exmlFUDGEQQ], fudgeQQ);
+    add_xml_double(child, exml_names(exmlFUDGEQQ), fudgeQQ);
     fudgeLJ = pd.getFudgeLJ();
-    add_xml_double(child, exml_names[exmlFUDGELJ], fudgeLJ);
+    add_xml_double(child, exml_names(exmlFUDGELJ), fudgeLJ);
     {
         for (auto aType = pd.getAtypeBegin();
              aType != pd.getAtypeEnd(); aType++)
         {
-            grandchild = add_xml_child(child, exml_names[exmlATOMTYPE]);
-            add_xml_char(grandchild, exml_names[exmlELEM], aType->getElem().c_str());
-            add_xml_char(grandchild, exml_names[exmlDESC], aType->getDesc().c_str());
-            add_xml_char(grandchild, exml_names[exmlATYPE], aType->getType().c_str());
-            add_xml_char(grandchild, exml_names[exmlPTYPE], aType->getPtype().c_str());
-            add_xml_char(grandchild, exml_names[exmlBTYPE], aType->getBtype().c_str());
-            add_xml_char(grandchild, exml_names[exmlZTYPE], aType->getZtype().c_str());
-            add_xml_char(grandchild, exml_names[exmlVDWPARAMS], aType->getVdwparams().c_str());
-            add_xml_char(grandchild, exml_names[exmlEREF], aType->getRefEnthalpy().c_str());
+            grandchild = add_xml_child(child, exml_names(exmlATOMTYPE));
+            add_xml_char(grandchild, exml_names(exmlELEM), aType->getElem().c_str());
+            add_xml_char(grandchild, exml_names(exmlDESC), aType->getDesc().c_str());
+            add_xml_char(grandchild, exml_names(exmlATYPE), aType->getType().c_str());
+            add_xml_char(grandchild, exml_names(exmlPTYPE), aType->getPtype().c_str());
+            add_xml_char(grandchild, exml_names(exmlBTYPE), aType->getBtype().c_str());
+            add_xml_char(grandchild, exml_names(exmlZTYPE), aType->getZtype().c_str());
+            add_xml_char(grandchild, exml_names(exmlVDWPARAMS), aType->getVdwparams().c_str());
+            add_xml_char(grandchild, exml_names(exmlEREF), aType->getRefEnthalpy().c_str());
         }
     }
-    child = add_xml_child(parent, exml_names[exmlPOLTYPES]);
+    child = add_xml_child(parent, exml_names(exmlPOLTYPES));
     tmp   = pd.getPolarUnit();
     if (0 != tmp.size())
     {
-        add_xml_char(child, exml_names[exmlPOLAR_UNIT], tmp.c_str());
+        add_xml_char(child, exml_names(exmlPOLAR_UNIT), tmp.c_str());
     }
     tmp = pd.getPolarRef();
     if (0 != tmp.size())
     {
-        add_xml_char(child, exml_names[exmlREFERENCE], tmp.c_str());
+        add_xml_char(child, exml_names(exmlREFERENCE), tmp.c_str());
     }
     for (auto pType = pd.getPtypeBegin();
          pType != pd.getPtypeEnd(); pType++)
     {
-        grandchild = add_xml_child(child, exml_names[exmlPOLTYPE]);
-        add_xml_char(grandchild, exml_names[exmlPTYPE], pType->getType().c_str());
-        add_xml_char(grandchild, exml_names[exmlMILLER], pType->getMiller().c_str());
-        add_xml_char(grandchild, exml_names[exmlBOSQUE], pType->getBosque().c_str());
-        add_xml_double(grandchild, exml_names[exmlPOLARIZABILITY], pType->getPolarizability());
-        add_xml_double(grandchild, exml_names[exmlSIGPOL], pType->getSigPol());
+        grandchild = add_xml_child(child, exml_names(exmlPOLTYPE));
+        add_xml_char(grandchild, exml_names(exmlPTYPE), pType->getType().c_str());
+        add_xml_char(grandchild, exml_names(exmlMILLER), pType->getMiller().c_str());
+        add_xml_char(grandchild, exml_names(exmlBOSQUE), pType->getBosque().c_str());
+        add_xml_double(grandchild, exml_names(exmlPOLARIZABILITY), pType->getPolarizability());
+        add_xml_double(grandchild, exml_names(exmlSIGPOL), pType->getSigPol());
     }
     tmp   = pd.getVsite_angle_unit();
     if (0 != tmp.size())
     {
-        child = add_xml_child(parent, exml_names[exmlGT_VSITES]);
-        add_xml_char(child, exml_names[exmlANGLE_UNIT], tmp.c_str());
+        child = add_xml_child(parent, exml_names(exmlGT_VSITES));
+        add_xml_char(child, exml_names(exmlANGLE_UNIT), tmp.c_str());
     }
     tmp   = pd.getVsite_length_unit();
     if (0 != tmp.size())
     {
-        add_xml_char(child, exml_names[exmlLENGTH_UNIT], tmp.c_str());
+        add_xml_char(child, exml_names(exmlLENGTH_UNIT), tmp.c_str());
     }
     for (auto vsite = pd.getVsiteBegin(); vsite != pd.getVsiteEnd(); vsite++)
     {
-        grandchild = add_xml_child(child, exml_names[exmlGT_VSITE]);
-        add_xml_char(grandchild, exml_names[exmlATYPE], vsite->atype().c_str());
-        add_xml_char(grandchild, exml_names[exmlVTYPE], vsiteType2string(vsite->type()));
-        add_xml_int(grandchild, exml_names[exmlNUMBER], vsite->nvsite());
-        add_xml_double(grandchild, exml_names[exmlDISTANCE], vsite->distance());
-        add_xml_double(grandchild, exml_names[exmlANGLE], vsite->angle());
-        add_xml_int(grandchild, exml_names[exmlNCONTROLATOMS], vsite->ncontrolatoms());
+        grandchild = add_xml_child(child, exml_names(exmlGT_VSITE));
+        add_xml_char(grandchild, exml_names(exmlATYPE), vsite->atype().c_str());
+        add_xml_char(grandchild, exml_names(exmlVTYPE), vsiteType2string(vsite->type()));
+        add_xml_int(grandchild, exml_names(exmlNUMBER), vsite->nvsite());
+        add_xml_double(grandchild, exml_names(exmlDISTANCE), vsite->distance());
+        add_xml_double(grandchild, exml_names(exmlANGLE), vsite->angle());
+        add_xml_int(grandchild, exml_names(exmlNCONTROLATOMS), vsite->ncontrolatoms());
     }
     for (auto fs = pd.forcesBegin(); fs != pd.forcesEnd(); fs++)
     {
         if (eitBONDS == fs->iType())
         {
-            child = add_xml_child(parent, exml_names[exmlGT_BONDS]);
+            child = add_xml_child(parent, exml_names(exmlGT_BONDS));
             blu   = fs->unit();
             if (blu.size() != 0)
             {
-                add_xml_char(child, exml_names[exmlUNIT], blu.c_str());
+                add_xml_char(child, exml_names(exmlUNIT), blu.c_str());
             }
 
-            add_xml_char(child, exml_names[exmlINTERACTION], iType2string(fs->iType()));
+            add_xml_char(child, exml_names(exmlINTERACTION), iType2string(fs->iType()));
 
             func = fs->function();
             if (func.size() != 0)
             {
-                add_xml_char(child, exml_names[exmlFUNCTION], func.c_str());
+                add_xml_char(child, exml_names(exmlFUNCTION), func.c_str());
             }
             for (auto f = fs->forceBegin(); f != fs->forceEnd(); f++)
             {
                 const std::vector<std::string> atoms = f->atoms();
 
-                grandchild = add_xml_child(child, exml_names[exmlGT_BOND]);
-                add_xml_char(grandchild, exml_names[exmlATOM1], atoms[0].c_str());
-                add_xml_char(grandchild, exml_names[exmlATOM2], atoms[1].c_str());
-                add_xml_int(grandchild, exml_names[exmlBONDORDER], f->bondOrder());
-                add_xml_double(grandchild, exml_names[exmlREFVALUE], f->refValue());
-                add_xml_double(grandchild, exml_names[exmlSIGMA], f->sigma());
-                add_xml_int(grandchild, exml_names[exmlNTRAIN], f->ntrain());
-                add_xml_char(grandchild, exml_names[exmlPARAMS], f->params().c_str());
+                grandchild = add_xml_child(child, exml_names(exmlGT_BOND));
+                add_xml_char(grandchild, exml_names(exmlATOM1), atoms[0].c_str());
+                add_xml_char(grandchild, exml_names(exmlATOM2), atoms[1].c_str());
+                add_xml_int(grandchild, exml_names(exmlBONDORDER), f->bondOrder());
+                add_xml_double(grandchild, exml_names(exmlREFVALUE), f->refValue());
+                add_xml_double(grandchild, exml_names(exmlSIGMA), f->sigma());
+                add_xml_int(grandchild, exml_names(exmlNTRAIN), f->ntrain());
+                add_xml_char(grandchild, exml_names(exmlPARAMS), f->params().c_str());
             }
         }
         else if (eitANGLES == fs->iType() ||
                  eitLINEAR_ANGLES == fs->iType())
         {
-            child = add_xml_child(parent, exml_names[exmlGT_ANGLES]);
+            child = add_xml_child(parent, exml_names(exmlGT_ANGLES));
             blu   = fs->unit();
             if (blu.size() != 0)
             {
-                add_xml_char(child, exml_names[exmlUNIT], blu.c_str());
+                add_xml_char(child, exml_names(exmlUNIT), blu.c_str());
             }
 
-            add_xml_char(child, exml_names[exmlINTERACTION], iType2string(fs->iType()));
+            add_xml_char(child, exml_names(exmlINTERACTION), iType2string(fs->iType()));
 
             func = fs->function();
             if (func.size() != 0)
             {
-                add_xml_char(child, exml_names[exmlFUNCTION], func.c_str());
+                add_xml_char(child, exml_names(exmlFUNCTION), func.c_str());
             }
             for (auto f = fs->forceBegin(); f != fs->forceEnd(); f++)
             {
                 const std::vector<std::string> atoms = f->atoms();
 
-                grandchild = add_xml_child(child, exml_names[exmlGT_ANGLE]);
-                add_xml_char(grandchild, exml_names[exmlATOM1], atoms[0].c_str());
-                add_xml_char(grandchild, exml_names[exmlATOM2], atoms[1].c_str());
-                add_xml_char(grandchild, exml_names[exmlATOM3], atoms[2].c_str());
-                add_xml_double(grandchild, exml_names[exmlREFVALUE], f->refValue());
-                add_xml_double(grandchild, exml_names[exmlSIGMA], f->sigma());
-                add_xml_int(grandchild, exml_names[exmlNTRAIN], f->ntrain());
-                add_xml_char(grandchild, exml_names[exmlPARAMS], f->params().c_str());
+                grandchild = add_xml_child(child, exml_names(exmlGT_ANGLE));
+                add_xml_char(grandchild, exml_names(exmlATOM1), atoms[0].c_str());
+                add_xml_char(grandchild, exml_names(exmlATOM2), atoms[1].c_str());
+                add_xml_char(grandchild, exml_names(exmlATOM3), atoms[2].c_str());
+                add_xml_double(grandchild, exml_names(exmlREFVALUE), f->refValue());
+                add_xml_double(grandchild, exml_names(exmlSIGMA), f->sigma());
+                add_xml_int(grandchild, exml_names(exmlNTRAIN), f->ntrain());
+                add_xml_char(grandchild, exml_names(exmlPARAMS), f->params().c_str());
             }
         }
         else if (eitPROPER_DIHEDRALS   == fs->iType() ||
                  eitIMPROPER_DIHEDRALS == fs->iType())
         {
-            child = add_xml_child(parent, exml_names[exmlGT_DIHEDRALS]);
+            child = add_xml_child(parent, exml_names(exmlGT_DIHEDRALS));
             blu   = fs->unit();
             if (blu.size() != 0)
             {
-                add_xml_char(child, exml_names[exmlUNIT], blu.c_str());
+                add_xml_char(child, exml_names(exmlUNIT), blu.c_str());
             }
 
-            add_xml_char(child, exml_names[exmlINTERACTION], iType2string(fs->iType()));
+            add_xml_char(child, exml_names(exmlINTERACTION), iType2string(fs->iType()));
 
             func = fs->function();
             if (func.size() != 0)
             {
-                add_xml_char(child, exml_names[exmlFUNCTION], func.c_str());
+                add_xml_char(child, exml_names(exmlFUNCTION), func.c_str());
             }
 
             for (auto f = fs->forceBegin(); f != fs->forceEnd(); f++)
             {
                 const std::vector<std::string> atoms = f->atoms();
 
-                grandchild = add_xml_child(child, exml_names[exmlGT_DIHEDRAL]);
-                add_xml_char(grandchild, exml_names[exmlATOM1], atoms[0].c_str());
-                add_xml_char(grandchild, exml_names[exmlATOM2], atoms[1].c_str());
-                add_xml_char(grandchild, exml_names[exmlATOM3], atoms[2].c_str());
-                add_xml_char(grandchild, exml_names[exmlATOM4], atoms[3].c_str());
-                add_xml_double(grandchild, exml_names[exmlREFVALUE], f->refValue());
-                add_xml_double(grandchild, exml_names[exmlSIGMA], f->sigma());
-                add_xml_int(grandchild, exml_names[exmlNTRAIN], f->ntrain());
-                add_xml_char(grandchild, exml_names[exmlPARAMS], f->params().c_str());
+                grandchild = add_xml_child(child, exml_names(exmlGT_DIHEDRAL));
+                add_xml_char(grandchild, exml_names(exmlATOM1), atoms[0].c_str());
+                add_xml_char(grandchild, exml_names(exmlATOM2), atoms[1].c_str());
+                add_xml_char(grandchild, exml_names(exmlATOM3), atoms[2].c_str());
+                add_xml_char(grandchild, exml_names(exmlATOM4), atoms[3].c_str());
+                add_xml_double(grandchild, exml_names(exmlREFVALUE), f->refValue());
+                add_xml_double(grandchild, exml_names(exmlSIGMA), f->sigma());
+                add_xml_int(grandchild, exml_names(exmlNTRAIN), f->ntrain());
+                add_xml_char(grandchild, exml_names(exmlPARAMS), f->params().c_str());
             }
         }
     }
 
-    child = add_xml_child(parent, exml_names[exmlBSATOMS]);
+    child = add_xml_child(parent, exml_names(exmlBSATOMS));
     std::string ref;
     pd.getBosqueFlags(tmp, ref);
-    add_xml_char(child, exml_names[exmlPOLAR_UNIT], tmp.c_str());
-    add_xml_char(child, exml_names[exmlREFERENCE], ref.c_str());
+    add_xml_char(child, exml_names(exmlPOLAR_UNIT), tmp.c_str());
+    add_xml_char(child, exml_names(exmlREFERENCE), ref.c_str());
 
     for (auto bosque = pd.getBosqueBegin();
          bosque != pd.getBosqueEnd(); bosque++)
     {
-        grandchild = add_xml_child(child, exml_names[exmlBSATOM]);
-        add_xml_char(grandchild, exml_names[exmlELEM], bosque->getBosque().c_str());
-        add_xml_double(grandchild, exml_names[exmlPOLARIZABILITY], bosque->getPolarizability());
+        grandchild = add_xml_child(child, exml_names(exmlBSATOM));
+        add_xml_char(grandchild, exml_names(exmlELEM), bosque->getBosque().c_str());
+        add_xml_double(grandchild, exml_names(exmlPOLARIZABILITY), bosque->getPolarizability());
     }
-    child = add_xml_child(parent, exml_names[exmlMILATOMS]);
+    child = add_xml_child(parent, exml_names(exmlMILATOMS));
     std::string milref;
     pd.getMillerFlags(tau_unit, ahp_unit, milref);
-    add_xml_char(child, exml_names[exmlTAU_UNIT], tau_unit.c_str());
-    add_xml_char(child, exml_names[exmlAHP_UNIT], ahp_unit.c_str());
-    add_xml_char(child, exml_names[exmlREFERENCE], milref.c_str());
+    add_xml_char(child, exml_names(exmlTAU_UNIT), tau_unit.c_str());
+    add_xml_char(child, exml_names(exmlAHP_UNIT), ahp_unit.c_str());
+    add_xml_char(child, exml_names(exmlREFERENCE), milref.c_str());
     for (auto miller = pd.getMillerBegin();
          miller != pd.getMillerEnd(); miller++)
     {
-        grandchild = add_xml_child(child, exml_names[exmlMILATOM]);
-        add_xml_char(grandchild, exml_names[exmlMILNAME], miller->getMiller().c_str());
-        add_xml_int(grandchild, exml_names[exmlATOMNUMBER], miller->getAtomnumber());
-        add_xml_double(grandchild, exml_names[exmlTAU_AHC], miller->getTauAhc());
-        add_xml_double(grandchild, exml_names[exmlALPHA_AHP], miller->getAlphaAhp());
+        grandchild = add_xml_child(child, exml_names(exmlMILATOM));
+        add_xml_char(grandchild, exml_names(exmlMILNAME), miller->getMiller().c_str());
+        add_xml_int(grandchild, exml_names(exmlATOMNUMBER), miller->getAtomnumber());
+        add_xml_double(grandchild, exml_names(exmlTAU_AHC), miller->getTauAhc());
+        add_xml_double(grandchild, exml_names(exmlALPHA_AHP), miller->getAlphaAhp());
         const std::string ae = miller->getAlexandriaEquiv();
         if (ae.size() > 0)
         {
-            add_xml_char(grandchild, exml_names[exmlALEXANDRIA_EQUIV], ae.c_str());
+            add_xml_char(grandchild, exml_names(exmlALEXANDRIA_EQUIV), ae.c_str());
         }
     }
 
-    child = add_xml_child(parent, exml_names[exmlSYMMETRIC_CHARGES]);
+    child = add_xml_child(parent, exml_names(exmlSYMMETRIC_CHARGES));
     for (auto symcharges = pd.getSymchargesBegin();
          symcharges != pd.getSymchargesEnd(); symcharges++)
     {
-        grandchild = add_xml_child(child, exml_names[exmlSYM_CHARGE]);
-        add_xml_char(grandchild, exml_names[exmlCENTRAL], symcharges->getCentral().c_str());
-        add_xml_char(grandchild, exml_names[exmlATTACHED], symcharges->getAttached().c_str());
-        add_xml_int(grandchild, exml_names[exmlNUMATTACH], symcharges->getNumattach());
+        grandchild = add_xml_child(child, exml_names(exmlSYM_CHARGE));
+        add_xml_char(grandchild, exml_names(exmlCENTRAL), symcharges->getCentral().c_str());
+        add_xml_char(grandchild, exml_names(exmlATTACHED), symcharges->getAttached().c_str());
+        add_xml_int(grandchild, exml_names(exmlNUMATTACH), symcharges->getNumattach());
     }
 
-    child = add_xml_child(parent, exml_names[exmlEEMPROPS]);
+    child = add_xml_child(parent, exml_names(exmlEEMPROPS));
     for (auto eep = pd.BeginEemprops();
          eep != pd.EndEemprops(); eep++)
     {
         ChargeDistributionModel model = eep->getEqdModel();
 
-        grandchild = add_xml_child(child, exml_names[exmlEEMPROP]);
-        add_xml_char(grandchild, exml_names[exmlMODEL], getEemtypeName(model));
-        add_xml_char(grandchild, exml_names[exmlNAME], eep->getName());
-        add_xml_double(grandchild, exml_names[exmlJ0], eep->getJ0());
-        add_xml_double(grandchild, exml_names[exmlJ0_SIGMA], eep->getJ0_sigma());
-        add_xml_double(grandchild, exml_names[exmlCHI0], eep->getChi0());
-        add_xml_double(grandchild, exml_names[exmlCHI0_SIGMA], eep->getChi0_sigma());
-        add_xml_char(grandchild, exml_names[exmlZETA], eep->getZetastr());
-        add_xml_char(grandchild, exml_names[exmlZETA_SIGMA], eep->getZeta_sigma());
-        add_xml_char(grandchild, exml_names[exmlCHARGES], eep->getQstr());
-        add_xml_char(grandchild, exml_names[exmlROW], eep->getRowstr());
+        grandchild = add_xml_child(child, exml_names(exmlEEMPROP));
+        add_xml_char(grandchild, exml_names(exmlMODEL), getEemtypeName(model));
+        add_xml_char(grandchild, exml_names(exmlNAME), eep->getName());
+        add_xml_double(grandchild, exml_names(exmlJ0), eep->getJ0());
+        add_xml_double(grandchild, exml_names(exmlJ0_SIGMA), eep->getJ0_sigma());
+        add_xml_double(grandchild, exml_names(exmlCHI0), eep->getChi0());
+        add_xml_double(grandchild, exml_names(exmlCHI0_SIGMA), eep->getChi0_sigma());
+        add_xml_char(grandchild, exml_names(exmlZETA), eep->getZetastr());
+        add_xml_char(grandchild, exml_names(exmlZETA_SIGMA), eep->getZeta_sigma());
+        add_xml_char(grandchild, exml_names(exmlCHARGES), eep->getQstr());
+        add_xml_char(grandchild, exml_names(exmlROW), eep->getRowstr());
     }
 
     for (auto eep = pd.epRefBegin(); eep < pd.epRefEnd(); ++eep)
     {
-        grandchild = add_xml_child(child, exml_names[exmlEEMPROP_REF]);
-        add_xml_char(grandchild, exml_names[exmlMODEL], getEemtypeName(eep->getEqdModel()));
-        add_xml_char(grandchild, exml_names[exmlEPREF], eep->getEpref());
+        grandchild = add_xml_child(child, exml_names(exmlEEMPROP_REF));
+        add_xml_char(grandchild, exml_names(exmlMODEL), getEemtypeName(eep->getEqdModel()));
+        add_xml_char(grandchild, exml_names(exmlEPREF), eep->getEpref());
     }
 }
 

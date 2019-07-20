@@ -1763,11 +1763,13 @@ void Optimization::optRun(FILE                   *fp,
             double emin = objFunction(best_.data());
             if (fplog)
             {
-                fprintf(fplog, "\nMinimum rmsd value during optimization: %.3f.\n", sqrt(emin));
-                fprintf(fplog, "Average and standard deviation of parameters\n");
+                fprintf(fplog, "\nLowest RMSD value during optimization: %.3f.\n",
+                        std::sqrt(emin));
+                fprintf(fplog, "Average and standard deviation of parameters. Optimum parameter.\n");
                 for (size_t k = 0; k < param_.size(); k++)
                 {
-                    fprintf(fplog, "%5zu  %10g  %10g\n", k, pmean_[k], psigma_[k]);
+                    fprintf(fplog, "%5zu  %10g  %10g  %10g\n",
+                            k, pmean_[k], psigma_[k], best_[k]);
                 }
             }
         }
@@ -1785,7 +1787,6 @@ void Optimization::optRun(FILE                   *fp,
     if (MASTER(commrec()))
     {
         chi2 = objFunction(best_.data());;
-        printEnergies(fp);
         printEnergies(fplog);
     }
 }

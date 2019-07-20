@@ -399,12 +399,15 @@ class MolGen
         {
             if (nullptr != fp && MASTER(commrec()))
             {
-                fprintf(fp, "ENER:");
+                fprintf(fp, "Components of fitting function\n");
                 for (int j = 0; j < ermsNR; j++)
                 {
-                    fprintf(fp, "  %8.3f", ener_[j]);
+                    auto eee = energy(j);
+                    if (eee > 0)
+                    {
+                        fprintf(fp, "%-8s  %8.3f\n", rmsName(j), eee);
+                    }
                 }
-                fprintf(fp, "\n");
             }
         }
 
