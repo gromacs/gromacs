@@ -640,9 +640,9 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
         {
             for (auto j = 0; (j < ntype); j++)
             {
+                auto idx = ntype*i+j;
                 if (mytypes[j].ptype == eptAtom)
                 {
-                    auto idx = ntype*i+j;
                     mtop->ffparams.functype[idx] = ftv;
                     switch (ftv)
                     {
@@ -670,6 +670,15 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                                 pd.getVdwFunction().c_str());
                     }
                 }
+                if (debug)
+                {
+                    fprintf(debug, "idx = %3d a = %10g b = %10g c = %10g\n",
+                            idx,
+                            mtop->ffparams.iparams[idx].bham.a,
+                            mtop->ffparams.iparams[idx].bham.b,
+                            mtop->ffparams.iparams[idx].bham.c);
+                }
+                           
             }
         }
     }
