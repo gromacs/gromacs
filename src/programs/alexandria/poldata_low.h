@@ -393,17 +393,28 @@ class ListedForce
                     size_t                         bondOrder);
 
         /*! \brief
-         * Return the vector of atom bond types invloved in the listed force
+         * Return the vector of atom bond types involved in the listed force
          */
         const std::vector<std::string> &atoms() const { return atoms_; }
 
         /*! \brief
-         * Set the listed force paramters
+         * Return a condensed atom string involved in the listed force
+         */
+        const std::string &condensed_atoms() const { return condensed_atoms_; }
+        
+        /*! \brief
+         * Return a condensed atom string involved in the listed force
+         * in reversed order.
+         */
+        const std::string &reverse_condensed_atoms() const { return reverse_condensed_atoms_; }
+
+        /*! \brief
+         * Set the listed force parameters
          */
         void setParams(const std::string &params) { params_ = params; }
 
         /*! \brief
-         * Return the listed force paramters
+         * Return the listed force parameters
          */
         const std::string &params() const { return params_; }
 
@@ -454,6 +465,8 @@ class ListedForce
     private:
 
         const std::vector<std::string> atoms_;
+        std::string                    condensed_atoms_;
+        std::string                    reverse_condensed_atoms_;
         std::string                    params_;
         double                         refValue_;
         double                         sigma_;

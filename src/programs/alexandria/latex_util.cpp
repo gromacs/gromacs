@@ -113,7 +113,7 @@ void LongTable::printFooter()
     fflush(fp_);
 }
 
-void LongTable::printLine(std::string line)
+void LongTable::printLine(const std::string &line)
 {
     fprintf(fp_, "%s\\\\\n", line.c_str());
 }
