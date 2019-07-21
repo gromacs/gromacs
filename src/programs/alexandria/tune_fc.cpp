@@ -1087,7 +1087,12 @@ void Optimization::checkSupport(FILE *fp)
             if (iOpt_[bt])
             {
                 auto iType = static_cast<InteractionType>(bt);
-                ft         = poldata().findForces(iType)->fType();
+                auto fs    = poldata().findForces(iType);
+                if (fs == poldata().forcesEnd())
+                {
+                    continue;
+                }
+                ft         = fs->fType();
                 bSupport   = (mymol->ltop_ != nullptr);
                 for (int i = 0; bSupport && (i < mymol->ltop_->idef.il[ft].nr);
                      i += interaction_function[ft].nratoms+1)

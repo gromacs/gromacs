@@ -472,6 +472,9 @@ class ListedForce
         double                         sigma_;
         size_t                         ntrain_;
         size_t                         bondOrder_;
+
+        // Generate condensed atom strings.
+        void MakeCondensed();
 };
 
 using ListedForceIterator      = typename std::vector<ListedForce>::iterator;

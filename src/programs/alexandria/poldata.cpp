@@ -997,7 +997,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
             }
         }
 
-        /*Receive Listed Forces*/
+        /* Receive Listed Forces */
         forces_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nforces); n++)
         {

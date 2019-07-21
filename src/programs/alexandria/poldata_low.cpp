@@ -316,18 +316,29 @@ CommunicationStatus Vsite::Receive(const t_commrec *cr, int src)
     return cs;
 }
 
-std::string condense_atoms(const std::vector<std::string> atoms)
+static std::string condense_atoms(const std::vector<std::string> atoms)
 {
     std::string catoms;
     if (!atoms.empty())
     {
         catoms = atoms[0];
-        for(auto i = 1; i < atoms.size(); i++)
+        for(size_t i = 1; i < atoms.size(); i++)
         {
             catoms.append("-").append(atoms[i]);
         }
     }
     return catoms;
+}
+
+void ListedForce::MakeCondensed()
+{
+    condensed_atoms_ = condense_atoms(atoms_);
+    std::vector<std::string> ratoms(atoms_.rbegin(), atoms_.rend());
+    reverse_condensed_atoms_ = condense_atoms(ratoms);
+    if (nullptr != debug)
+    {
+        fprintf(debug, "%s %s\n", condensed_atoms_.c_str(), reverse_condensed_atoms_.c_str());
+    }
 }
 
 ListedForce::ListedForce(const std::vector<std::string> atoms,
@@ -344,9 +355,7 @@ ListedForce::ListedForce(const std::vector<std::string> atoms,
       bondOrder_(0)
 
 {
-    condensed_atoms_ = condense_atoms(atoms);
-    std::vector<std::string> ratoms(atoms.rbegin(), atoms.rend());
-    reverse_condensed_atoms_ = condense_atoms(ratoms);
+    MakeCondensed();
 }
 
 ListedForce::ListedForce(const std::vector<std::string> atoms,
@@ -364,9 +373,7 @@ ListedForce::ListedForce(const std::vector<std::string> atoms,
       bondOrder_(bondOrder)
 
 {
-    condensed_atoms_ = condense_atoms(atoms);
-    std::vector<std::string> ratoms(atoms.rbegin(), atoms.rend());
-    reverse_condensed_atoms_ = condense_atoms(ratoms);
+    MakeCondensed();
 }
 
 CommunicationStatus ListedForce::Send(const t_commrec *cr, int dest)
@@ -425,7 +432,7 @@ CommunicationStatus ListedForce::Receive(const t_commrec *cr, int src)
                 gmx_fatal(FARGS, "A category was promised but I got a nullptr pointer");
             }
         }
-
+        MakeCondensed();
         if (nullptr != debug)
         {
             fprintf(debug, "Received ListedForce %s %g %g %zu, status %s\n",
@@ -551,7 +558,6 @@ ListedForceConstIterator ListedForces::findForce(const std::vector<std::string> 
                         {
                             return (catoms == force.condensed_atoms() || 
                                     catoms == force.reverse_condensed_atoms());
-                            //                            return (atoms == force.atoms() || atoms == force.reverse_atoms());
                         });
 }
 
@@ -578,8 +584,6 @@ ListedForceConstIterator ListedForces::findForce(const std::vector<std::string> 
                             return (bondOrder == force.bondOrder() &&
                                     (catoms == force.condensed_atoms() ||
                                      catoms == force.reverse_condensed_atoms()));
-                            //return (bondOrder == force.bondOrder() &&
-                            //      (atoms == force.atoms() || atoms == force.reverse_atoms()));
                         });
 }
 
