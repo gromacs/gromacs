@@ -75,13 +75,13 @@ class LongTable
 
         void setColumns(const char *columns) { columns_.assign(columns); }
 
-        void addHeadLine(const char *headline) { headLines_.push_back(headline); }
+        void addHeadLine(const std::string &headline) { headLines_.push_back(headline); }
 
         void printHeader();
 
         void printFooter();
 
-        void printLine(std::string line);
+        void printLine(const std::string &line);
 
         void printHLine();
 };

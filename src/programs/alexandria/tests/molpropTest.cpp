@@ -103,7 +103,7 @@ class MolpropTest : public gmx::test::CommandLineTestBase
             gmx::test::TestReferenceChecker myCheck(this->rootChecker());
             for (alexandria::MolPropIterator mpi = mp_.begin(); (mpi < mp_.end()); ++mpi, ++mol)
             {
-                char mbuf[256];
+                char mbuf[512];
                 int  exp = 1;
                 snprintf(mbuf, sizeof(mbuf), "molecule %d number of experiments", mol);
                 myCheck.checkInteger(mpi->NExperiment(), mbuf);
@@ -132,7 +132,7 @@ class MolpropTest : public gmx::test::CommandLineTestBase
             gmx::test::TestReferenceChecker myCheck(this->rootChecker());
             for (alexandria::MolPropIterator mpi = mp_.begin(); (mpi < mp_.end()); ++mpi, ++mol)
             {
-                char mbuf[256];
+                char mbuf[512];
                 int  calc = 1;
                 snprintf(mbuf, sizeof(mbuf), "molecule %d number of calcs", mol);
                 myCheck.checkInteger(mpi->NExperiment(), mbuf);

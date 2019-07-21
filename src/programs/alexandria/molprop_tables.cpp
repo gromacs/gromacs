@@ -68,46 +68,46 @@ static void stats_header(LongTable         &lt,
                          const QmCount     &qmc,
                          iMolSelect         ims)
 {
-    char caption[STRLEN];
-    char label[STRLEN];
-
     lt.setColumns(1+qmc.nCalc());
 
     for (int k = 0; (k < 2); k++)
     {
         if (0 == k)
         {
-            snprintf(caption, STRLEN, "Performance of the different methods for predicting the molecular %s for molecules containing different chemical groups, given as the RMSD from experimental values (%s), and in brackets the number of molecules in this particular subset. {\\bf Data set: %s.} At the bottom the correlation coefficient R, the regression coefficient a and the intercept b are given as well as the normalized quality of the fit $\\chi^2$, the mean signed error (MSE) and the mean absolute error (MSA).",
+            // Caption
+            char caption[STRLEN];
+            snprintf(caption, sizeof(caption), "Performance of the different methods for predicting the molecular %s for molecules containing different chemical groups, given as the RMSD from experimental values (%s), and in brackets the number of molecules in this particular subset. {\\bf Data set: %s.} At the bottom the correlation coefficient R, the regression coefficient a and the intercept b are given as well as the normalized quality of the fit $\\chi^2$, the mean signed error (MSE) and the mean absolute error (MSA).",
                      mpo_name[mpo], mpo_unit[mpo], iMolSelectName(ims));
-            snprintf(label, STRLEN, "%s_rmsd", mpo_name[mpo]);
             lt.setCaption(caption);
+            // Label
+            char label[STRLEN];
+            snprintf(label, sizeof(label), "%s_rmsd", mpo_name[mpo]);
             lt.setLabel(label);
         }
         else
         {
-            char hline[STRLEN];
+            std::string hline("Method ");
             char koko[STRLEN];
-            snprintf(hline, STRLEN, "Method ");
             for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q)
             {
                 snprintf(koko, STRLEN, " & %s", q->method().c_str());
-                strncat(hline, koko, STRLEN-strlen(hline)-1);
+                hline.append(koko);
             }
             lt.addHeadLine(hline);
-
-            snprintf(hline, STRLEN, " ");
+            
+            hline.assign(" ");
             for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q)
             {
                 snprintf(koko, STRLEN, "& %s ", q->basis().c_str());
-                strncat(hline, koko, STRLEN-strlen(hline)-1);
+                hline.append(koko);
             }
             lt.addHeadLine(hline);
 
-            snprintf(hline, STRLEN, " ");
+            hline.assign(" ");
             for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q)
             {
                 snprintf(koko, STRLEN, "& %s ", q->type().c_str());
-                strncat(hline, koko, STRLEN-strlen(hline)-1);
+                hline.append(koko);
             }
             lt.addHeadLine(hline);
         }
@@ -381,7 +381,6 @@ void alexandria_molprop_composition_table(FILE                 *fp,
     std::vector<MolProp>::iterator             mpi;
     MolecularCompositionIterator               mci;
     int                                        q, m, iline, nprint;
-    char                                       qbuf[32], longbuf[STRLEN], buf[256];
     LongTable                                  lt(fp, true, "small");
     CompositionSpecs                           cs;
     const char                                *alex = cs.searchCS(iCalexandria)->name();
@@ -407,6 +406,7 @@ void alexandria_molprop_composition_table(FILE                 *fp,
         if ((ims == gms.status(mpi->getIupac())) &&
             (mpi->HasComposition(alex)))
         {
+            char qbuf[32];
             q = mpi->getCharge();
             m = mpi->getMultiplicity();
             if ((q != 0) || (m != 1))
@@ -428,11 +428,13 @@ void alexandria_molprop_composition_table(FILE                 *fp,
             {
                 qbuf[0] = '\0';
             }
-            snprintf(longbuf, STRLEN, "%3d. %s%s & %s & ",
+            char buf[1024];
+            snprintf(buf, STRLEN, "%3d. %s%s & %s & ",
                      ++iline,
                      mpi->getIupac().c_str(),
                      qbuf,
                      mpi->getTexFormula().c_str());
+            std::string longbuf(buf);
             mci = mpi->SearchMolecularComposition(cs.searchCS(iCalexandria)->name());
             if (mci != mpi->EndMolecularComposition())
             {
@@ -442,7 +444,7 @@ void alexandria_molprop_composition_table(FILE                 *fp,
                 {
                     snprintf(buf, 256, " %d %s\t",
                              ani->getNumber(), ani->getAtom().c_str());
-                    strncat(longbuf, buf, STRLEN-sizeof(longbuf)-1);
+                    longbuf.append(buf);
                 }
             }
             lt.printLine(longbuf);
@@ -864,7 +866,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
 
     int                         iprint = 0;
 #define BLEN 1024
-    char                        myline[BLEN], mylbuf[BLEN], vbuf[BLEN];
+    char                        mylbuf[BLEN], vbuf[BLEN-32];
     double                      calc_val, calc_err, vc;
     rvec                        rvec;
     tensor                      quadrupole;
@@ -979,12 +981,12 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                     {
                         iprint++;
                     }
-                    myline[0] = '\0';
+                    std:: string myline;
                     if (nexp == 0)
                     {
                         if (bPrintMultQ)
                         {
-                            snprintf(myline, BLEN, "%d. %-15s & %s & %d & %d",
+                            snprintf(mylbuf, sizeof(mylbuf), "%d. %-15s & %s & %d & %d",
                                      iprint, mpi.getIupac().c_str(),
                                      mpi.getTexFormula().c_str(),
                                      mpi.getCharge(),
@@ -992,29 +994,30 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                         }
                         else
                         {
-                            snprintf(myline, BLEN, "%d. %-15s & %s",
+                            snprintf(mylbuf, sizeof(mylbuf), "%d. %-15s & %s",
                                      iprint, mpi.getIupac().c_str(),
                                      mpi.getTexFormula().c_str());
                         }
                     }
                     else
                     {
-                        snprintf(myline, BLEN, " & ");
+                        snprintf(mylbuf, sizeof(mylbuf), " & ");
                     }
+                    myline.append(mylbuf);
                     if (bPrintConf)
                     {
                         snprintf(mylbuf, BLEN, "      & %s ", ((ed[nexp].conf_.size() > 0) ?
                                                                ed[nexp].conf_.c_str() : "-"));
-                        strncat(myline, mylbuf, BLEN-strlen(myline)-1);
+                        myline.append(mylbuf);
                     }
                     if (ed.size() > 0)
                     {
                         snprintf(mylbuf, sizeof(mylbuf), "& %8.3f", ed[nexp].val_);
-                        strncat(myline, mylbuf, BLEN-strlen(myline)-1);
+                        myline.append(mylbuf);
                         if (ed[nexp].err_ > 0)
                         {
                             snprintf(mylbuf, sizeof(mylbuf), "(%.3f)", ed[nexp].err_);
-                            strncat(myline, mylbuf, BLEN-strlen(myline)-1);
+                            myline.append(mylbuf);
                         }
                         if (strcmp(ed[nexp].ref_.c_str(), "Maaren2017a") == 0)
                         {
@@ -1024,12 +1027,12 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                         {
                             snprintf(mylbuf, sizeof(mylbuf), "~\\cite{%s} ", ed[nexp].ref_.c_str());
                         }
-                        strncat(myline, mylbuf, BLEN-strlen(myline)-1);
+                        myline.append(mylbuf);
                     }
                     else
                     {
                         snprintf(mylbuf, sizeof(mylbuf), "& - ");
-                        strncat(myline, mylbuf, BLEN-strlen(myline)-1);
+                        myline.append(mylbuf);
                     }
                     for (size_t j = 0; (j < qmc.nCalc()); j++)
                     {
@@ -1063,15 +1066,15 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                             {
                                 snprintf(mylbuf, sizeof(mylbuf), "& %s ", vbuf);
                             }
-                            strncat(myline, mylbuf, BLEN-strlen(myline)-1);
+                            myline.append(mylbuf);
                         }
                         else
                         {
                             snprintf(mylbuf, sizeof(mylbuf), "& ");
-                            strncat(myline, mylbuf, BLEN-strlen(myline));
+                            myline.append(mylbuf);
                         }
                     }
-                    lt.printLine(myline);
+                    lt.printLine(myline.c_str());
                 }
             }
         }

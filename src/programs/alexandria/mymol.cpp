@@ -2184,7 +2184,17 @@ void MyMol::UpdateIdef(const Poldata   &pd,
     std::string              aai, aaj, aak, aal, params;
     std::vector<std::string> atoms;
 
+    if (iType == eitVDW)
+    {
+        nonbondedFromPdToMtop(mtop_, &topology_->atoms, pd);
+        return;
+    }
     auto fs = pd.findForces(iType);
+    if (fs == pd.forcesEnd())
+    {
+        gmx_fatal(FARGS, "Can not find the force %s to update",
+                  iType2string(iType));
+    }
     auto lu = string2unit(fs->unit().c_str());
     switch (iType)
     {
@@ -2422,11 +2432,6 @@ void MyMol::UpdateIdef(const Poldata   &pd,
             }
         }
         break;
-        case eitVDW:
-            {
-                nonbondedFromPdToMtop(mtop_, &topology_->atoms, pd);
-            }
-            break;
         case eitLJ14:
         case eitPOLARIZATION:
         {
@@ -2448,11 +2453,13 @@ void MyMol::UpdateIdef(const Poldata   &pd,
             }
         }
         break;
+        case eitVDW:
         case eitVSITE2:
         case eitVSITE3FAD:
         case eitVSITE3OUT:
         case eitCONSTR:
         case eitNR:
+        default:
             break;
     }
 }
