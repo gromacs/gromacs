@@ -99,6 +99,17 @@ that works.
 Python environment requirements
 -------------------------------
 
+gmxapi requires Python 3.5 or higher. Check your version with
+``python3 --version`` or ``python --version``.
+
+..  note::
+
+    The following documentation assumes you do not need to use a trailing '3' to
+    access a Python 3 interpreter on your system.
+    The default Python interpreter on your system may use ``python3`` and ``pip3``
+    instead of ``python`` and ``pip``. You can check the version with
+    ``python3 --version`` or ``python --version`` and ``pip --version``.
+
 To build and install, you also need the packages ``cmake``,
 ``setuptools``, and ``scikit-build``.
 
@@ -109,7 +120,12 @@ The easiest way to make sure you have the requirements installed, first update
 File paths in this section are relative to the root directory of your local copy
 of the GROMACS source.
 
-::
+Confirm that ``pip`` is available, install ``pip`` if it is missing, or get
+instructions on how to install ``pip``::
+
+    python -m ensurepip --default-pip
+
+Install or upgrade required components::
 
     python -m pip install --upgrade pip
     pip install --upgrade setuptools
