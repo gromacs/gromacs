@@ -473,7 +473,14 @@ static void update_pd(FILE *fp,      t_bonds *b,        Poldata &pd,
         gmx_stats_get_npoints(i.lsq, &N);
         round_numbers(&av, &sig);
         atoms = {i.a1, i.a2, i.a3};
-        sprintf(pbuf, "%g  %g", kt, kub);
+        if (angle->fType() == F_ANGLES)
+        {   
+            sprintf(pbuf, "%g", kt);
+        }
+        else
+        {   
+            sprintf(pbuf, "%g  %g", kt, kub);
+        }
         angle->addForce(atoms, pbuf, av, sig, N);
 
         fprintf(fp, "harmonic_angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",

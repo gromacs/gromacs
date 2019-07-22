@@ -852,10 +852,14 @@ class Optimization : public MolGen
         param_type                  param_, lower_, upper_, best_;
         param_type                  De_, orig_, psigma_, pmean_;
         std::vector<int>            iOpt_;
-        real                        factor_;
+        real                        factor_     = 1;
         bool                        OptimizeDe_ = true;
         bool                        bDissoc_    = true;
-        real                        beta0_, D0_, beta_min_, D0_min_;
+        real                        beta0_      = 20;
+        real                        D0_         = 350;
+        real                        beta_min_   = 12;
+        real                        D0_min_     = 200;
+        real                        w_dhf_      = 1;
         const char                 *lot_;
         Bayes <double>              TuneFc_;
     public:
@@ -900,6 +904,8 @@ class Optimization : public MolGen
                   "Derive dissociation energy from the enthalpy of formation. If not chosen, the dissociation energy will be read from the gentop.dat file." },
                 { "-optimizeDe", FALSE, etBOOL, {&OptimizeDe_},
                   "Optimize the dissociation energy or keep it constant." },
+                { "-weight_dhf", FALSE, etREAL, {&w_dhf_},
+                  "Fitting weight of the minimum energy structure, representing the enthalpy of formation relative to high energy structures." },
                 { "-bonds",   FALSE, etINT, {&(iOpt_[eitBONDS])},
                   "Optimize bond parameters" },
                 { "-angles",  FALSE, etINT, {&(iOpt_[eitANGLES])},
