@@ -559,11 +559,14 @@ class MyMol
         /*! \brief
          * Update internal structures for bondtype due to changes in pd
          *
-         * \param[in] pd      Data structure containing atomic properties
-         * \param[in] iType   Interaction type
+         * \param[in] pd           Data structure containing atomic properties
+         * \param[in] iType        Interaction type
+         * \param[in] modifiedOnly Only update parameters that were modified.
+         *                         Experimental speed-up for tune_fc.
          */
         void UpdateIdef(const Poldata   &pd,
-                        InteractionType  iType);
+                        InteractionType  iType,
+                        bool             modifiedOnly);
 
         /*! \brief
          * Get the force field

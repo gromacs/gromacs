@@ -173,7 +173,22 @@ class Ffatype
          */
         const std::string &getVdwparams() const { return vdwparams_; }
 
+        /*! \brief
+         * Set the Van der Waals parameters.
+         * \param[in] param The string of parameters
+         */ 
         void setVdwparams(std::string param) {vdwparams_ = param; }
+
+        /*! \brief
+         * Set the modified flag
+         * \param[in] modified The flag, true or false
+         */
+        void setModified(bool modified) { modified_ = modified; }
+    
+        /*! \brief
+         * Returns the modified flag
+         */
+        bool modified() const { return modified_; }
 
         /*! \brief
          * Return the reference enthalpy of formation of atoms
@@ -193,6 +208,7 @@ class Ffatype
         std::string elem_;
         std::string vdwparams_;
         std::string refEnthalpy_;
+        bool        modified_;
 };
 
 using FfatypeIterator      = typename std::vector<Ffatype>::iterator;
@@ -419,6 +435,17 @@ class ListedForce
         const std::string &params() const { return params_; }
 
         /*! \brief
+         * Set the modified flag
+         * \param[in] modified The flag, true or false
+         */
+        void setModified(bool modified) { modified_ = modified; }
+    
+        /*! \brief
+         * Returns the modified flag
+         */
+        bool modified() const { return modified_; }
+
+        /*! \brief
          * Set reference value
          */
         void setRefValue(double value) { refValue_ = value; }
@@ -472,7 +499,7 @@ class ListedForce
         double                         sigma_;
         size_t                         ntrain_;
         size_t                         bondOrder_;
-
+        bool                           modified_;
         // Generate condensed atom strings.
         void MakeCondensed();
 };

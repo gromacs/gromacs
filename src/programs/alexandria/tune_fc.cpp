@@ -952,8 +952,10 @@ class Optimization : public MolGen
         /*! \brief
          *
          * Copy the optimized parameters back to Poldata
+         *
+         * \param[in] changed Boolean list stating whether a parameter has changed
          */
-        void tuneFc2PolData();
+        void tuneFc2PolData(const std::vector<bool> &changed);
 
         /*! \brief
          *
@@ -987,6 +989,8 @@ class Optimization : public MolGen
         void calcDeviation();
 
         double objFunction(const double v[]);
+        
+        size_t nParams() const { return param_.size(); }
 
         CommunicationStatus Send(t_commrec *cr, int dest);
 
@@ -1284,11 +1288,10 @@ void Optimization::polData2TuneFc()
     }
 }
 
-void Optimization::tuneFc2PolData()
+void Optimization::tuneFc2PolData(const std::vector<bool> &changed)
 {
-    int n = 0;
-    int m = 0;
-    std::vector<std::string> atoms;
+    size_t n   = 0;
+    size_t nDe = 0;
 
     for (auto &fc : ForceConstants_)
     {
@@ -1297,7 +1300,7 @@ void Optimization::tuneFc2PolData()
         {
             char buf[STRLEN];
             buf[0] = '\0';
-
+            bool bondChanged = false;
             if (iType == eitBONDS)
             {
                 for (size_t p = 0; p < b->nParams(); p++)
@@ -1305,10 +1308,11 @@ void Optimization::tuneFc2PolData()
                     strncat(buf, " ", sizeof(buf)-1);
                     if (p == 0 && !OptimizeDe_)
                     {
-                        strncat(buf, gmx_ftoa(De_[m++]).c_str(), sizeof(buf)-1);
+                        strncat(buf, gmx_ftoa(De_[nDe++]).c_str(), sizeof(buf)-1);
                     }
                     else
                     {
+                        bondChanged = bondChanged || changed[n];
                         strncat(buf, gmx_ftoa(param_[n++]).c_str(), sizeof(buf)-1);
                     }
                 }
@@ -1318,44 +1322,18 @@ void Optimization::tuneFc2PolData()
                 for (size_t p = 0; p < b->nParams(); p++)
                 {
                     strncat(buf, " ", sizeof(buf)-1);
+                    bondChanged = bondChanged || changed[n];
                     strncat(buf, gmx_ftoa(param_[n++]).c_str(), sizeof(buf)-1);
                 }
             }
 
-            b->setParamString(buf);
-            const auto bondtypes = gmx::splitString(b->name());
-            atoms.clear();
-            switch (iType)
+            if (bondChanged)
             {
-                case eitBONDS:
-                {
-                    atoms    = {bondtypes[0], bondtypes[1]};
-                    break;
-                }
-                case eitANGLES:
-                case eitLINEAR_ANGLES:
-                {
-                    atoms    = {bondtypes[0], bondtypes[1], bondtypes[2]};
-                    break;
-                }
-                case eitPROPER_DIHEDRALS:
-                case eitIMPROPER_DIHEDRALS:
-                {
-                    atoms    = {bondtypes[0], bondtypes[1], bondtypes[2], bondtypes[3]};
-                    break;
-                }
-                default:
-                    gmx_fatal(FARGS, "Unsupported InteractionType %d",
-                              static_cast<int>(fc.interactionType()));
-            }
-            if (!atoms.empty())
-            {
-                auto  fs = poldata().findForces(iType);
-                auto  f  = fs->findForce(atoms);
-                if (fs->forceEnd() != f)
-                {
-                    f->setParams(buf);
-                }
+                b->setParamString(buf);
+                auto fs = poldata().findForces(iType);
+                auto f  = fs->forceBegin()+b->poldataIndex();
+                f->setParams(buf);
+                f->setModified(true);
             }
         }
     }
@@ -1363,22 +1341,25 @@ void Optimization::tuneFc2PolData()
     {
         for (auto at = nbp.beginAT(); at < nbp.endAT(); ++at)
         {
+            bool bondChanged = false;
             char buf[STRLEN];
             buf[0] = '\0';
             for (size_t p = 0; p < at->nParams(); p++)
             {
                 strncat(buf, " ", sizeof(buf)-1);
+                bondChanged = bondChanged || changed[n];
                 strncat(buf, gmx_ftoa(param_[n++]).c_str(), sizeof(buf)-1);
             }
-            at->setParamString(buf);
-            const auto atype       = at->name();
-            auto       fat         = poldata().findAtype(atype);
-            if (fat != poldata().getAtypeEnd())
+            if (bondChanged)
             {
+                at->setParamString(buf);
+                auto fat = poldata().getAtypeBegin() + at->poldataIndex();
                 fat->setVdwparams(buf);
+                fat->setModified(true);
             }
         }
     }
+    GMX_RELEASE_ASSERT(n == param_.size(), "Number of parameters set should be equal to the length of the parameter array");
 }
 
 void Optimization::getDissociationEnergy(FILE *fplog)
@@ -1604,7 +1585,7 @@ void Optimization::calcDeviation()
                 {
                     if (fc.nbad() > 0)
                     {
-                        mymol.UpdateIdef(poldata(), fc.interactionType());
+                        mymol.UpdateIdef(poldata(), fc.interactionType(), true);
                     }
                 }
 
@@ -1612,7 +1593,7 @@ void Optimization::calcDeviation()
                 {
                     if (nbp.nAT() > 0)
                     {
-                        mymol.UpdateIdef(poldata(), nbp.interactionType());
+                        mymol.UpdateIdef(poldata(), nbp.interactionType(), true);
                     }
                 }
                         
@@ -1699,12 +1680,17 @@ void Optimization::calcDeviation()
 
 double Optimization::objFunction(const double v[])
 {
-    size_t np     = param_.size();
+    size_t np = param_.size();
+    std::vector<bool> changed(np, false);
     for (size_t i = 0; i < np; i++)
     {
-        param_[i] = v[i];
+        if (param_[i] != v[i])
+        {
+            param_[i]  = v[i];
+            changed[i] = true;
+        }
     }
-    tuneFc2PolData();
+    tuneFc2PolData(changed);
     calcDeviation();
     return energy(ermsTOT);
 }
@@ -2136,7 +2122,8 @@ int alex_tune_fc(int argc, char *argv[])
 
     if (MASTER(opt.commrec()))
     {
-        opt.tuneFc2PolData();
+        std::vector<bool> changed(opt.nParams(), false);
+        opt.tuneFc2PolData(changed);
         print_mols(fp, opt.mymols(), true, false);
         opt.printResults(fp, (char *)"After optimization",
                          opt2fn("-x", NFILE, fnm),
