@@ -287,8 +287,8 @@ TEST_P(SettleTest, SatisfiesConstraints)
     // 1. The code was compiled with cuda
     // 2. There is a CUDA-capable GPU in a system
 #if GMX_GPU == GMX_GPU_CUDA
-    std::string errorMessage;
-    if (canDetectGpus(&errorMessage))
+    // TODO: Here we should check that at least 1 suitable GPU is available
+    if (canPerformGpuDetection())
     {
         // Run the CUDA code and check if it gives identical results to CPU code
         t_idef                        idef;

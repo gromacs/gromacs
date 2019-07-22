@@ -104,7 +104,7 @@ void PmeTest::SetUpTestCase()
     // there is no GPU support in the build.
     //
     // TODO report any error messages gracefully.
-    if (canDetectGpus(nullptr))
+    if (canPerformGpuDetection())
     {
         findGpus(&gpuInfo);
         s_hasCompatibleGpus = (gpuInfo.n_dev_compatible > 0);

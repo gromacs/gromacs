@@ -94,9 +94,6 @@ namespace gmx
 #    define _SC_NPROCESSORS_CONF _SC_NPROC_CONF
 #endif
 
-//! Constant used to help minimize preprocessed code
-static const bool bGPUBinary     = GMX_GPU != GMX_GPU_NONE;
-
 /*! \brief Information about the hardware of all nodes (common to all threads in this process).
  *
  * This information is constructed only when required, but thereafter
@@ -114,8 +111,8 @@ static void gmx_detect_gpus(const gmx::MDLogger              &mdlog,
                             const PhysicalNodeCommunicator   &physicalNodeComm,
                             compat::not_null<gmx_hw_info_t *> hardwareInfo)
 {
-    hardwareInfo->gpu_info.bDetectGPUs =
-        (bGPUBinary && getenv("GMX_DISABLE_GPU_DETECTION") == nullptr);
+    hardwareInfo->gpu_info.bDetectGPUs = canPerformGpuDetection();
+
     if (!hardwareInfo->gpu_info.bDetectGPUs)
     {
         return;
@@ -139,7 +136,7 @@ static void gmx_detect_gpus(const gmx::MDLogger              &mdlog,
     if (isMasterRankOfPhysicalNode || allRanksMustDetectGpus)
     {
         std::string errorMessage;
-        gpusCanBeDetected = canDetectGpus(&errorMessage);
+        gpusCanBeDetected = isGpuDetectionFunctional(&errorMessage);
         if (!gpusCanBeDetected)
         {
             GMX_LOG(mdlog.info).asParagraph().appendTextFormatted(

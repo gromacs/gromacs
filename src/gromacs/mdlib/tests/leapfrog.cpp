@@ -168,10 +168,10 @@ class IntegratorTest : public ::testing::TestWithParam<IntegratorTestParameters>
 
 };
 
-TEST_P(IntegratorTest, SimpleIntegration){
-    // Do nothing if it is a CUDA build but there are no CUDA-capable GPUs
-    std::string errorMessage;
-    if (!canDetectGpus(&errorMessage))
+TEST_P(IntegratorTest, SimpleIntegration)
+{
+    // TODO: Here we should check that at least 1 suitable GPU is available
+    if (!canPerformGpuDetection())
     {
         return;
     }

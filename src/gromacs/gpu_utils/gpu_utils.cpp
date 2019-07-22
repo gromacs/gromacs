@@ -50,7 +50,27 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-#if !GMX_GPU
+#ifdef _MSC_VER
+#pragma warning(disable: 6237)
+#endif
+
+//! Constant used to help minimize preprocessed code
+static constexpr bool c_binarySupportsGpus = (GMX_GPU != GMX_GPU_NONE);
+
+bool canPerformGpuDetection()
+{
+    if (c_binarySupportsGpus &&
+        getenv("GMX_DISABLE_GPU_DETECTION") == nullptr)
+    {
+        return isGpuDetectionFunctional(nullptr);
+    }
+    else
+    {
+        return false;
+    }
+}
+
+#if GMX_GPU == GMX_GPU_NONE
 int gpu_info_get_stat(const gmx_gpu_info_t & /*unused*/, int /*unused*/)
 {
     return egpuNonexistent;
@@ -109,7 +129,7 @@ bool buildSupportsNonbondedOnGpu(std::string *error)
     {
         errorReasons.emplace_back("double precision");
     }
-    if (GMX_GPU == GMX_GPU_NONE)
+    if (!c_binarySupportsGpus)
     {
         errorReasons.emplace_back("non-GPU build of GROMACS");
     }

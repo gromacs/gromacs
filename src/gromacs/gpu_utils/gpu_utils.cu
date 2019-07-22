@@ -330,7 +330,7 @@ static int is_gmx_supported_gpu_id(int                   deviceId,
     return egpuCompatible;
 }
 
-bool canDetectGpus(std::string *errorMessage)
+bool isGpuDetectionFunctional(std::string *errorMessage)
 {
     cudaError_t        stat;
     int                driverVersion = -1;

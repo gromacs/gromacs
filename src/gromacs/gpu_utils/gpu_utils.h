@@ -77,6 +77,14 @@ enum class GpuTaskCompletion
 /*! \brief Return whether GPUs can be detected
  *
  * Returns true when this is a build of \Gromacs configured to support
+ * GPU usage, GPU detection is not disabled by an environment variable
+ * and a valid device driver, ICD, and/or runtime was detected.
+ * Does not throw. */
+bool canPerformGpuDetection();
+
+/*! \brief Return whether GPU detection is functioning correctly
+ *
+ * Returns true when this is a build of \Gromacs configured to support
  * GPU usage, and a valid device driver, ICD, and/or runtime was detected.
  *
  * This function is not intended to be called from build
@@ -90,13 +98,13 @@ enum class GpuTaskCompletion
  *
  * Does not throw. */
 GPU_FUNC_QUALIFIER
-bool canDetectGpus(std::string *GPU_FUNC_ARGUMENT(errorMessage)) GPU_FUNC_TERM_WITH_RETURN(false);
+bool isGpuDetectionFunctional(std::string *GPU_FUNC_ARGUMENT(errorMessage)) GPU_FUNC_TERM_WITH_RETURN(false);
 
 /*! \brief Find all GPUs in the system.
  *
- *  Will detect every GPU supported by the device driver in use. Must
- *  only be called if canDetectGpus() has returned true. This routine
- *  also checks for the compatibility of each and fill the
+ *  Will detect every GPU supported by the device driver in use.
+ *  Must only be called if canPerformGpuDetection() has returned true.
+ *  This routine also checks for the compatibility of each and fill the
  *  gpu_info->gpu_dev array with the required information on each the
  *  device: ID, device properties, status.
  *
