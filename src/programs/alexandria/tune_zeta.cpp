@@ -353,7 +353,7 @@ void OptZeta::calcDeviation()
             {
                 if (bFitAlpha_)
                 {
-                    mymol.UpdateIdef(poldata(), eitPOLARIZATION);
+                    mymol.UpdateIdef(poldata(), eitPOLARIZATION, false);
                 }
                 mymol.computeForces(nullptr, commrec());
                 mymol.Qgresp_.updateAtomCoords(mymol.x());
