@@ -168,6 +168,40 @@ TEST_F(MatrixTest, traceWorks)
     EXPECT_EQ(trace(mat), 3.75);
 }
 
+TEST_F(MatrixTest, transposeWorks)
+{
+    const Matrix3x3 asymmetricMat = {{1, 2, 3,
+                                      4, 5, 6,
+                                      7, 8, 9}};
+
+    const Matrix3x3 transposedAsymmetricMat = transpose(asymmetricMat);
+    EXPECT_EQ(asymmetricMat(0, 0), transposedAsymmetricMat(0, 0));
+    EXPECT_EQ(asymmetricMat(0, 1), transposedAsymmetricMat(1, 0));
+    EXPECT_EQ(asymmetricMat(0, 2), transposedAsymmetricMat(2, 0));
+    EXPECT_EQ(asymmetricMat(1, 0), transposedAsymmetricMat(0, 1));
+    EXPECT_EQ(asymmetricMat(1, 1), transposedAsymmetricMat(1, 1));
+    EXPECT_EQ(asymmetricMat(1, 2), transposedAsymmetricMat(2, 1));
+    EXPECT_EQ(asymmetricMat(2, 0), transposedAsymmetricMat(0, 2));
+    EXPECT_EQ(asymmetricMat(2, 1), transposedAsymmetricMat(1, 2));
+    EXPECT_EQ(asymmetricMat(2, 2), transposedAsymmetricMat(2, 2));
+
+}
+
+TEST_F(MatrixTest, transposeOfSymmetricMatrix)
+{
+    const Matrix3x3 symmetricMat = {{ 1, 2, 3,
+                                      2, 5, 6,
+                                      3, 6, 9}};
+    const Matrix3x3 transposedSymmetricMat = transpose(symmetricMat);
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            EXPECT_EQ(symmetricMat(i, j), transposedSymmetricMat(i, j));
+        }
+    }
+}
+
 } // namespace
 
 } // namespace test

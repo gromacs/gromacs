@@ -80,6 +80,15 @@ constexpr real trace(Matrix3x3ConstSpan matrixView)
 {
     return matrixView(0, 0) + matrixView(1, 1) + matrixView(2, 2);
 }
+
+//! Calculate the transpose of a 3x3 matrix, from its view
+static Matrix3x3 transpose(Matrix3x3ConstSpan matrixView)
+{
+
+    return Matrix3x3({matrixView(0, 0), matrixView(1, 0), matrixView(2, 0),
+                      matrixView(0, 1), matrixView(1, 1), matrixView(2, 1),
+                      matrixView(0, 2), matrixView(1, 2), matrixView(2, 2)});
+}
 } // namespace gmx
 
 #endif
