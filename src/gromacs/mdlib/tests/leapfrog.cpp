@@ -61,7 +61,7 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/gpu_testutils.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/leapfrog_cuda.h"
 #include "gromacs/utility/stringutil.h"
@@ -166,15 +166,29 @@ class IntegratorTest : public ::testing::TestWithParam<IntegratorTestParameters>
             mdAtoms_.invmass = inverseMasses_.data();
         }
 
+        //! Store whether any compatible GPUs exist.
+        static bool s_hasCompatibleGpus;
+        //! Before any test is run, work out whether any compatible GPUs exist.
+        static void SetUpTestCase()
+        {
+            s_hasCompatibleGpus = canComputeOnGpu();
+        }
 };
 
+bool IntegratorTest::s_hasCompatibleGpus = false;
+
+// The test will run only if:
+// 1. The code was compiled with CUDA
+// 2. There is a CUDA-capable GPU in a system
+// 3. This GPU is detectable
+// 4. GPU detection was not disabled by GMX_DISABLE_GPU_DETECTION environment variable
 TEST_P(IntegratorTest, SimpleIntegration)
 {
-    // TODO: Here we should check that at least 1 suitable GPU is available
-    if (!canPerformGpuDetection())
+    if (!s_hasCompatibleGpus)
     {
         return;
     }
+
     int  numAtoms;    // 1. Number of atoms
     real timestep;    // 2. Timestep
     rvec v0;          // 3. Velocity

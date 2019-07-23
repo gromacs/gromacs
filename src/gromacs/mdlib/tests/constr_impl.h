@@ -59,7 +59,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
-#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/gpu_testutils.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"

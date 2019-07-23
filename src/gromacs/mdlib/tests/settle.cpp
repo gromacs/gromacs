@@ -43,7 +43,7 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/gpu_testutils.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -133,7 +133,17 @@ class SettleTest : public ::testing::TestWithParam<SettleTestParameters>
                 velocities_[i / DIM][i % DIM] = 0.0;
             }
         }
+
+        //! Store whether any compatible GPUs exist.
+        static bool s_hasCompatibleGpus;
+        //! Before any test is run, work out whether any compatible GPUs exist.
+        static void SetUpTestCase()
+        {
+            s_hasCompatibleGpus = canComputeOnGpu();
+        }
 };
+
+bool SettleTest::s_hasCompatibleGpus = false;
 
 TEST_P(SettleTest, SatisfiesConstraints)
 {
@@ -284,12 +294,13 @@ TEST_P(SettleTest, SatisfiesConstraints)
         }
     }
 
-    // CUDA version will be tested only if
-    // 1. The code was compiled with cuda
+    // CUDA version will be tested only if:
+    // 1. The code was compiled with CUDA
     // 2. There is a CUDA-capable GPU in a system
+    // 3. This GPU is detectable
+    // 4. GPU detection was not disabled by GMX_DISABLE_GPU_DETECTION environment variable
 #if GMX_GPU == GMX_GPU_CUDA
-    // TODO: Here we should check that at least 1 suitable GPU is available
-    if (canPerformGpuDetection())
+    if (s_hasCompatibleGpus)
     {
         // Run the CUDA code and check if it gives identical results to CPU code
         t_idef idef;

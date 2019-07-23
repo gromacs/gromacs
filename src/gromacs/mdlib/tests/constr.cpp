@@ -312,8 +312,7 @@ std::vector<std::string> getAlgorithmsNames()
 {
     algorithmsNames.emplace_back("SHAKE");
     algorithmsNames.emplace_back("LINCS");
-    // TODO: Here we should check that at least 1 suitable GPU is available
-    if (GMX_GPU == GMX_GPU_CUDA && canPerformGpuDetection())
+    if (GMX_GPU == GMX_GPU_CUDA && canComputeOnGpu())
     {
         algorithmsNames.emplace_back("LINCS_CUDA");
     }

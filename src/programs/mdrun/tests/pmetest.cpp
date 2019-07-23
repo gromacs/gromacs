@@ -55,7 +55,7 @@
 #include <gtest/gtest-spi.h>
 
 #include "gromacs/ewald/pme.h"
-#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/gpu_testutils.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/trajectory/energyframe.h"
@@ -98,18 +98,7 @@ bool PmeTest::s_hasCompatibleGpus = false;
 
 void PmeTest::SetUpTestCase()
 {
-    gmx_gpu_info_t gpuInfo {};
-    // It would be nicer to do this detection once and have mdrun
-    // re-use it, but this is OK. Note that this also caters for when
-    // there is no GPU support in the build.
-    //
-    // TODO report any error messages gracefully.
-    if (canPerformGpuDetection())
-    {
-        findGpus(&gpuInfo);
-        s_hasCompatibleGpus = (gpuInfo.n_dev_compatible > 0);
-    }
-    free_gpu_info(&gpuInfo);
+    s_hasCompatibleGpus = canComputeOnGpu();
 }
 
 void PmeTest::runTest(const RunModesList &runModes)
