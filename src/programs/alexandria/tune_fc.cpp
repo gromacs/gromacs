@@ -842,6 +842,94 @@ void ForceConstants::dump(FILE *fp) const
     }
 }
 
+class PoldataUpdate
+{
+public:
+    PoldataUpdate() {}
+    PoldataUpdate(InteractionType     iType,
+                  int                 index,
+                  std::vector<double> params,
+                  std::string         paramString) : iType_(iType), index_(index), params_(params), paramString_(paramString)
+    {}
+    
+    InteractionType            iType()       const { return iType_; }
+    int                        index()       const { return index_; }
+    const std::vector<double> &params()      const { return params_; }
+    const std::string         &paramString() const { return paramString_; }
+    
+    /*! \brief
+     * Implement the changes in Poldata on the master.
+     *
+     * \param[inout] pd Pointer to the Poldata structure
+     * \param[in]    cr Communication record
+     */
+    void execute(Poldata &pd);
+
+    CommunicationStatus Send(t_commrec *cr, int dest);
+    
+    CommunicationStatus Receive(t_commrec *cr, int src);
+
+private:
+    InteractionType     iType_;
+    int                 index_;
+    std::vector<double> params_;
+    std::string         paramString_;
+};
+
+void PoldataUpdate::execute(Poldata &pd)
+{
+    if (iType_ == eitVDW)
+    {
+        auto fat = pd.getAtypeBegin() + index_;
+        fat->setVdwparams(paramString_);
+        fat->setModified(true);
+    }
+    else
+    {
+        auto fs = pd.findForces(iType_);
+        auto f  = fs->forceBegin() + index_;
+        f->setParams(paramString_);
+        f->setModified(true);
+    }
+}
+
+CommunicationStatus PoldataUpdate::Send(t_commrec *cr, int dest)
+{
+    CommunicationStatus cs;
+    cs = gmx_send_data(cr, dest);
+    if (CS_OK == cs)
+    {
+        gmx_send_int(cr, dest, static_cast<int>(iType_));
+        gmx_send_int(cr, dest, index_);
+        gmx_send_str(cr, dest, &paramString_);
+        gmx_send_int(cr, dest, static_cast<int>(params_.size()));
+        for(const auto &p : params_)
+        {
+            gmx_send_double(cr, dest, p);
+        }
+    }
+    return cs;
+}
+
+CommunicationStatus PoldataUpdate::Receive(t_commrec *cr, int src)
+{
+    CommunicationStatus cs;
+    cs = gmx_recv_data(cr, src);
+    if (CS_OK == cs)
+    {
+        iType_ = static_cast<InteractionType>(gmx_recv_int(cr, src));
+        index_ = gmx_recv_int(cr, src);
+        gmx_recv_str(cr, src, &paramString_);
+        int n  = gmx_recv_int(cr, src);
+        params_.clear();
+        for(int i = 0; i < n; i++)
+        {
+            params_.push_back(gmx_recv_double(cr, src));
+        }
+    }
+    return cs;
+}
+
 class Optimization : public MolGen
 {
     using param_type = std::vector<double>;
@@ -852,6 +940,7 @@ class Optimization : public MolGen
         param_type                  param_, lower_, upper_, best_;
         param_type                  De_, orig_, psigma_, pmean_;
         std::vector<int>            iOpt_;
+        std::vector<PoldataUpdate>  poldataUpdates;
         real                        factor_     = 1;
         bool                        OptimizeDe_ = true;
         bool                        bDissoc_    = true;
@@ -964,6 +1053,11 @@ class Optimization : public MolGen
         void tuneFc2PolData(const std::vector<bool> &changed);
 
         /*! \brief
+         * Broadcast changes in Poldata to the 
+         * slaves when in parallel.
+         */
+        void broadcastPoldataUpdate();
+        /*! \brief
          *
          * Compute the dissociation energies for all the bonds.
          * Given all the bonds and the enthalpies of formation of all
@@ -1002,7 +1096,7 @@ class Optimization : public MolGen
 
         CommunicationStatus Receive(t_commrec *cr, int src);
 
-        void broadcast(t_commrec *cr);
+        void broadcast();
 };
 
 CommunicationStatus Optimization::Send(t_commrec *cr, int dest)
@@ -1056,8 +1150,39 @@ CommunicationStatus Optimization::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-void Optimization::broadcast(t_commrec *cr)
+void Optimization::broadcastPoldataUpdate()
 {
+    t_commrec *cr = commrec();
+    if (!PAR(cr))
+    {
+        return;
+    }
+    
+    if (MASTER(cr))
+    {
+        for(int i = 1; i < cr->nnodes; i++)
+        {
+            gmx_send_int(cr, i, static_cast<int>(poldataUpdates.size()));
+            for (auto &p : poldataUpdates)
+            {
+                p.Send(cr, i);
+            }
+        }
+    }
+    else
+    {
+        int n = gmx_recv_int(cr, 0);
+        poldataUpdates.resize(n);
+        for (int i = 0; i < n; i++)
+        {
+            poldataUpdates[i].Receive(cr, 0);
+        }
+    }
+}
+
+void Optimization::broadcast()
+{
+    t_commrec *cr = commrec();
     const int src = 0;
     if (MASTER(cr))
     {
@@ -1305,11 +1430,13 @@ void Optimization::tuneFc2PolData(const std::vector<bool> &changed)
     size_t n   = 0;
     size_t nDe = 0;
 
+    poldataUpdates.clear();
     for (auto &fc : ForceConstants_)
     {
         const auto iType = fc.interactionType();
         for (auto b = fc.beginBN(); b  < fc.endBN(); ++b)
         {
+            std::vector<double> thisParam;
             char buf[STRLEN];
             buf[0] = '\0';
             bool bondChanged = false;
@@ -1325,6 +1452,7 @@ void Optimization::tuneFc2PolData(const std::vector<bool> &changed)
                     else
                     {
                         bondChanged = bondChanged || changed[n];
+                        thisParam.push_back(param_[n]);
                         strncat(buf, gmx_ftoa(param_[n++]).c_str(), sizeof(buf)-1);
                     }
                 }
@@ -1335,6 +1463,7 @@ void Optimization::tuneFc2PolData(const std::vector<bool> &changed)
                 {
                     strncat(buf, " ", sizeof(buf)-1);
                     bondChanged = bondChanged || changed[n];
+                    thisParam.push_back(param_[n]);
                     strncat(buf, gmx_ftoa(param_[n++]).c_str(), sizeof(buf)-1);
                 }
             }
@@ -1342,10 +1471,8 @@ void Optimization::tuneFc2PolData(const std::vector<bool> &changed)
             if (bondChanged)
             {
                 b->setParamString(buf);
-                auto fs = poldata().findForces(iType);
-                auto f  = fs->forceBegin()+b->poldataIndex();
-                f->setParams(buf);
-                f->setModified(true);
+                poldataUpdates.push_back(PoldataUpdate(iType, b->poldataIndex(),
+                                                       thisParam, buf));
             }
         }
     }
@@ -1353,6 +1480,7 @@ void Optimization::tuneFc2PolData(const std::vector<bool> &changed)
     {
         for (auto at = nbp.beginAT(); at < nbp.endAT(); ++at)
         {
+            std::vector<double> thisParam;
             bool bondChanged = false;
             char buf[STRLEN];
             buf[0] = '\0';
@@ -1360,14 +1488,15 @@ void Optimization::tuneFc2PolData(const std::vector<bool> &changed)
             {
                 strncat(buf, " ", sizeof(buf)-1);
                 bondChanged = bondChanged || changed[n];
+                thisParam.push_back(param_[n]);
                 strncat(buf, gmx_ftoa(param_[n++]).c_str(), sizeof(buf)-1);
             }
             if (bondChanged)
             {
                 at->setParamString(buf);
-                auto fat = poldata().getAtypeBegin() + at->poldataIndex();
-                fat->setVdwparams(buf);
-                fat->setModified(true);
+                poldataUpdates.push_back(PoldataUpdate(eitVDW, 
+                                                       at->poldataIndex(),
+                                                       thisParam, buf));
             }
         }
     }
@@ -1566,20 +1695,14 @@ void Optimization::calcDeviation()
         {
             setFinal();
         }
-    }
-    if (nullptr != debug)
-    {
-        fprintf(debug, "Begin communicating force parameters\n");
-        fflush(debug);
-    }
-    if (PAR(commrec()) && !final())
-    {
-        poldata().broadcast(commrec());
-    }
-    if (nullptr != debug)
-    {
-        fprintf(debug, "Done communicating force parameters\n");
-        fflush(debug);
+        else
+        {
+            broadcastPoldataUpdate();
+            for (auto &pUpd : poldataUpdates)
+            {
+                pUpd.execute(poldata());
+            }
+        }
     }
     resetEnergies();
     for (auto &mymol : mymols())
@@ -1702,6 +1825,7 @@ double Optimization::objFunction(const double v[])
     }
     tuneFc2PolData(changed);
     calcDeviation();
+
     return energy(ermsTOT);
 }
 
@@ -1724,9 +1848,10 @@ void Optimization::optRun(FILE                   *fp,
     {
         if (PAR(commrec()))
         {
+            int niter = 2+nrun*TuneFc_.maxIter()*param_.size();
             for (int dest = 1; dest < commrec()->nnodes; dest++)
             {
-                gmx_send_int(commrec(), dest, (nrun*TuneFc_.maxIter()*param_.size()));
+                gmx_send_int(commrec(), dest, niter);
             }
 
         }
@@ -1779,7 +1904,7 @@ void Optimization::optRun(FILE                   *fp,
     {
         /* S L A V E   N O D E S */
         int niter = gmx_recv_int(commrec(), 0);
-        for (int n = 0; n < niter + 2; n++)
+        for (int n = 0; n < niter; n++)
         {
             calcDeviation();
         }
@@ -2110,7 +2235,7 @@ int alex_tune_fc(int argc, char *argv[])
 
     if (PAR(opt.commrec()))
     {
-        opt.broadcast(opt.commrec());
+        opt.broadcast();
     }
 
     opt.calcDeviation();
