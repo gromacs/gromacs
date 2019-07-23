@@ -152,16 +152,13 @@ struct GaussianSpreadKernelParameters
 };
 
 /*! \libinternal \brief Sums Gaussian values at three dimensional lattice coordinates.
- * The Gaussian is defined as
- * \f[
- *      A * \frac{1}{\sigma^3 \sqrt(2^3*\pi^3)} * \exp(-\frac{(x-x0)^2}{2 \sigma^2})
- * \f]
- * \verbatim
- *  x0:              X           x
- *                 /   \        / \
- *               --     --    --   --
- *  lattice: |    |    |    |    |    |    |
- * \endverbatim
+ * The Gaussian is defined as \f$A \frac{1}{\sigma^3 \sqrt(2^3\pi^3)} * \exp(-\frac{(x-x0)^2}{2 \sigma^2})\f$
+   \verbatim
+   x0:              X           x
+               /   \        / \
+             --     --    --   --
+   lattice: |    |    |    |    |    |    |
+   \endverbatim
  * The lattice has spacing 1, all coordinates are given with respect to the lattice
  * coordinates.
  */
