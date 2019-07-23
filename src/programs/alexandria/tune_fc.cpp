@@ -53,6 +53,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strconvert.h"
 
 #include "alex_modules.h"
 #include "communication.h"
@@ -218,7 +219,7 @@ void AtomTypes::extractParams()
     p_.resize(p.size(), 0.0);
     for (size_t d = 0; d < p.size(); d++)
     {
-        p_[d] = atof(p[d].c_str());
+        p_[d] = gmx::doubleFromString(p[d].c_str());
     }
 }
 
@@ -538,7 +539,7 @@ void BondNames::extractParams()
     p_.resize(p.size(), 0.0);
     for (size_t d = 0; d < p.size(); d++)
     {
-        p_[d] = atof(p[d].c_str());
+        p_[d] = gmx::doubleFromString(p[d].c_str());
     }
 }
 
@@ -852,19 +853,18 @@ public:
                   std::string         paramString) : iType_(iType), index_(index), params_(params), paramString_(paramString)
     {}
     
-    InteractionType            iType()       const { return iType_; }
-    int                        index()       const { return index_; }
-    const std::vector<double> &params()      const { return params_; }
-    const std::string         &paramString() const { return paramString_; }
-    
     /*! \brief
-     * Implement the changes in Poldata on the master.
+     * Implement the changes in Poldata.
      *
-     * \param[inout] pd Pointer to the Poldata structure
-     * \param[in]    cr Communication record
+     * \param[inout] pd The Poldata structure
      */
     void execute(Poldata &pd);
-
+    /*! \brief
+     * Dump the contents of the structure to a file.
+     * \param[in] fp File pointer to dumpt to if not nullptr
+     */
+    void dump(FILE *fp) const;
+    
     CommunicationStatus Send(t_commrec *cr, int dest);
     
     CommunicationStatus Receive(t_commrec *cr, int src);
@@ -893,12 +893,27 @@ void PoldataUpdate::execute(Poldata &pd)
     }
 }
 
+void PoldataUpdate::dump(FILE *fp) const
+{
+    if (nullptr != fp)
+    {
+        fprintf(fp, "iType: %s index: %d paramString: %s params:",
+                iType2string(iType_), index_, paramString_.c_str());
+        for (auto &p : params_)
+        {
+            fprintf(fp, " %g", p);
+        }
+        fprintf(fp, "\n");        
+    }
+}
+
 CommunicationStatus PoldataUpdate::Send(t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
+        dump(debug);
         gmx_send_int(cr, dest, static_cast<int>(iType_));
         gmx_send_int(cr, dest, index_);
         gmx_send_str(cr, dest, &paramString_);
@@ -926,6 +941,7 @@ CommunicationStatus PoldataUpdate::Receive(t_commrec *cr, int src)
         {
             params_.push_back(gmx_recv_double(cr, src));
         }
+        dump(debug);
     }
     return cs;
 }
@@ -1143,7 +1159,7 @@ CommunicationStatus Optimization::Receive(t_commrec *cr, int src)
             cs = nb.Receive(cr, src);
             if (CS_OK == cs)
             {
-                NonBondParams_.push_back(nb);
+                NonBondParams_.push_back(std::move(nb));
             }
         }
     }
@@ -1176,6 +1192,11 @@ void Optimization::broadcastPoldataUpdate()
         for (int i = 0; i < n; i++)
         {
             poldataUpdates[i].Receive(cr, 0);
+        }
+        if (debug)
+        {
+            fprintf(debug, "broadcastPoldataUpdate: received %d updates\n",
+                    n);
         }
     }
 }
@@ -1568,7 +1589,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
                           mymol->molProp()->getIupac().c_str());
             }
         }
-        rhs.push_back(std::move(-mymol->Emol_));
+        rhs.push_back(-mymol->Emol_);
     }
 
     char buf[STRLEN];
@@ -1649,7 +1670,6 @@ void Optimization::InitOpt(FILE *fplog)
                    mymols().size(), ForceConstants_[eitBONDS].nbad());
         }
     }
-
     NonBondParams nbp(iOpt_[eitVDW], eitVDW);
     nbp.analyzeIdef(mymols(), poldata());
     nbp.makeReverseIndex();
@@ -1695,14 +1715,17 @@ void Optimization::calcDeviation()
         {
             setFinal();
         }
-        else
-        {
-            broadcastPoldataUpdate();
-            for (auto &pUpd : poldataUpdates)
-            {
-                pUpd.execute(poldata());
-            }
-        }
+        broadcastPoldataUpdate();
+    }
+    for (auto &pUpd : poldataUpdates)
+    {
+        pUpd.execute(poldata());
+    }
+    if (debug)
+    {
+        char buf[256];
+        snprintf(buf, sizeof(buf), "pd%d.dat", commrec()->nodeid);
+        writePoldata(buf, poldata(), false);
     }
     resetEnergies();
     for (auto &mymol : mymols())
@@ -1711,7 +1734,6 @@ void Optimization::calcDeviation()
             (final() && (mymol.eSupp_ == eSupportRemote)))
         {
             int      natoms = mymol.topology_->atoms.nr;
-            int      nOptSP = mymol.molProp()->NOptSP();
             gmx_bool bpolar = (mymol.shellfc_ != nullptr);
             double   optHF;
             if (mymol.molProp()->getOptHF(&optHF))
@@ -1733,7 +1755,8 @@ void Optimization::calcDeviation()
                 }
                 mymol.f_.resizeWithPadding(natoms);
                 mymol.optf_.resizeWithPadding(natoms);
-                                                
+                double ePot2 = 0;
+                int    nCalc = 0;
                 for (auto ei = mymol.molProp()->BeginExperiment();
                      ei < mymol.molProp()->EndExperiment(); ++ei)
                 {
@@ -1757,10 +1780,10 @@ void Optimization::calcDeviation()
 
                         real Ecalc     = mymol.enerd_->term[F_EPOT];
                         real EnerDiff2 = gmx::square(Ecalc - Emol);
-                        // energy is added for opt and sp geometries
-                        increaseEnergy(ermsEPOT, EnerDiff2); 
-                        
-                        // force is added only for the opt geometry
+                        // Energy is added for opt and sp geometries
+                        ePot2 += EnerDiff2; 
+                        nCalc += 1;
+                        // Force is added only for the opt geometry
                         if (jtype == JOB_OPT)
                         {
                             mymol.OptForce2_ = 0.0;
@@ -1771,33 +1794,40 @@ void Optimization::calcDeviation()
                             }
                             mymol.OptForce2_   /= natoms;
                             increaseEnergy(ermsForce2, mymol.OptForce2_);
-                            mymol.OptEcalc_     = mymol.enerd_->term[F_EPOT];
+                            mymol.OptEcalc_     = Ecalc;
                         }
                         if (nullptr != debug)
                         {
+                            int angleType = poldata().findForces(eitANGLES)->fType();
+                            int vdwType   = poldata().getVdwFtype();
                             fprintf(debug, "spHF: %g  optHF: %g  DeltaEn: %g\n",
                                     spHF, optHF, deltaEn);
                             fprintf(debug, "%s Chi2 %g Hform %g Eqm %g  Ecalc %g Morse %g  "
-                                    "Hangle %g Langle %g PDIHS %g IDIHS %g Coul %g LJ %g BHAM %g POL %g  Force %g\n",
+                                    "Angle %g Langle %g PDIHS %g IDIHS %g Coul %g VdW %g POL %g  Force %g\n",
                                     mymol.molProp()->getMolname().c_str(),
                                     EnerDiff2,
                                     mymol.Hform_,
                                     Emol,
                                     Ecalc,
                                     mymol.enerd_->term[F_MORSE],
-                                    mymol.enerd_->term[F_UREY_BRADLEY],
+                                    mymol.enerd_->term[angleType],
                                     mymol.enerd_->term[F_LINEAR_ANGLES],
                                     mymol.enerd_->term[F_PDIHS],
                                     mymol.enerd_->term[F_IDIHS],
                                     mymol.enerd_->term[F_COUL_SR],
-                                    mymol.enerd_->term[F_LJ],
-                                    mymol.enerd_->term[F_BHAM],
+                                    mymol.enerd_->term[vdwType],
                                     mymol.enerd_->term[F_POLARIZATION],
                                     std::sqrt(mymol.OptForce2_));
                         }
                     }
                 }
-                setEnergy(ermsEPOT, std::sqrt(energy(ermsEPOT) / nOptSP));
+                increaseEnergy(ermsEPOT, ePot2/nCalc);
+                if (debug)
+                {
+                    fprintf(debug, "%s nCalc: %d ePot2: %g\n",
+                            mymol.molProp()->getMolname().c_str(),
+                            nCalc, ePot2);
+                }
             }
             else
             {
@@ -1807,7 +1837,7 @@ void Optimization::calcDeviation()
         }
     }
     sumEnergies();
-    normalizeEnergies();
+    //    normalizeEnergies();
     printEnergies(debug);
 }
 
@@ -2232,9 +2262,10 @@ int alex_tune_fc(int argc, char *argv[])
         opt.InitOpt(fp);
         print_mols(fp, opt.mymols(), false, false);
     }
-
+    
     if (PAR(opt.commrec()))
     {
+        opt.poldata().broadcast(opt.commrec());
         opt.broadcast();
     }
 

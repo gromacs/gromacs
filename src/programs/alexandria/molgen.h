@@ -369,7 +369,12 @@ class MolGen
         {
             if (PAR(commrec()) && !final())
             {
-                gmx_sum(ermsNR, ener_, commrec());
+                gmx_sum(ermsNR-1, ener_, commrec());
+            }
+            ener_[ermsTOT] = 0.0;
+            for (int rms = 0; rms < ermsTOT; rms++)
+            {
+                ener_[ermsTOT] += fc_[rms]*ener_[rms];
             }
         }
 
@@ -389,7 +394,7 @@ class MolGen
                 }                
                 for (int rms = 0; rms < ermsTOT; rms++)
                 {
-                    ener_[ermsTOT] += ((fc_[rms]*ener_[rms])/normFactor);
+                    ener_[ermsTOT] += fc_[rms]*ener_[rms]/normFactor;
                 }
             }
         }
@@ -397,7 +402,7 @@ class MolGen
         //! \brief Print the energy components.
         void printEnergies(FILE *fp)
         {
-            if (nullptr != fp && MASTER(commrec()))
+            if (nullptr != fp)
             {
                 fprintf(fp, "Components of fitting function\n");
                 for (int j = 0; j < ermsNR; j++)

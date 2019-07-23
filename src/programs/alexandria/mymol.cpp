@@ -1195,7 +1195,14 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
     rvec          mu_tot      = { 0, 0, 0 };
     tensor        force_vir;
     clear_mat (force_vir);
-
+    for(int i = 0; i < mtop_->natoms; i++)
+    {
+        clear_rvec(f_[i]);
+    }
+    for(int i = 0; i < F_NRE; i++)
+    {
+        enerd_->term[i] = 0;
+    }
     if (nullptr != shellfc_)
     {
         auto nnodes = cr->nnodes;
@@ -2168,6 +2175,10 @@ void MyMol::UpdateIdef(const Poldata   &pd,
 {
     std::string params;
 
+    if (debug)
+    {
+        fprintf(debug, "UpdateIdef for %s\n", iType2string(iType));
+    }
     if (iType == eitVDW)
     {
         nonbondedFromPdToMtop(mtop_, &topology_->atoms, pd);
