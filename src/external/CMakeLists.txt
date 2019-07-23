@@ -33,52 +33,31 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 if(BUILD_TESTING AND GMX_BUILD_UNITTESTS)
-    include(CheckCXXCompilerFlag)
-    check_cxx_compiler_flag("-Wno-unused-variable" HAS_NO_UNUSED_VARIABLE)
-
     # GTest/GMock suggest linking with pthreads when available for thread safety
     set(CMAKE_THREAD_PREFER_PTHREAD 1)
     find_package(Threads)
     set(PTHREADS_LIBRARIES)
     if (CMAKE_USE_PTHREADS_INIT)
         set(PTHREADS_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
-        list(APPEND GMOCK_COMPILE_DEFINITIONS "GTEST_HAS_PTHREAD=1")
+        # Input to googletest CMake scripts
+        set(GTEST_HAS_PTHREAD 1)
+        # Output for consumption in GROMACS build tree
         set(GTEST_IS_THREADSAFE 1)
     else()
-        list(APPEND GMOCK_COMPILE_DEFINITIONS "GTEST_HAS_PTHREAD=0")
+        # Input to googletest CMake scripts
+        set(GTEST_HAS_PTHREAD 0)
+        # Output for consumption in GROMACS build tree
         set(GTEST_IS_THREADSAFE 0)
     endif()
+
+    add_subdirectory(googletest)
+    target_compile_definitions(gmock PRIVATE
+                               _GNU_SOURCE=1
+                               GTEST_CAN_STREAM_RESULTS=0)
     if (WIN32)
-        list(APPEND GMOCK_COMPILE_DEFINITIONS _SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING)
+        target_compile_definitions(gmock PRIVATE _SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING)
+        target_compile_definitions(gtest PRIVATE _SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING)
     endif()
 
-    set(GMOCK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/googletest/googlemock)
-    set(GTEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/googletest/googletest)
-    set(GTEST_SOURCES ${GTEST_DIR}/src/gtest-all.cc)
-    set(GMOCK_SOURCES ${GMOCK_DIR}/src/gmock-all.cc)
-
-    set(GTEST_INCLUDE_DIRS ${GTEST_DIR}/include)
-    set(GMOCK_INCLUDE_DIRS ${GMOCK_DIR}/include ${GTEST_INCLUDE_DIRS})
-
-    include_directories(BEFORE SYSTEM ${GTEST_INCLUDE_DIRS})
-    include_directories(BEFORE SYSTEM ${GTEST_DIR})
-    include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
-    include_directories(BEFORE SYSTEM ${GMOCK_DIR})
-
-    if (HAS_NO_UNUSED_VARIABLE)
-        set_source_files_properties(${GTEST_SOURCES} PROPERTIES COMPILE_FLAGS "-Wno-unused-variable")
-    endif()
-
-    add_library(gmock STATIC ${UNITTEST_TARGET_OPTIONS} ${GMOCK_SOURCES} ${GTEST_SOURCES})
-    set_property(TARGET gmock APPEND PROPERTY COMPILE_DEFINITIONS
-        "_GNU_SOURCE=1;${GMOCK_COMPILE_DEFINITIONS};GTEST_CAN_STREAM_RESULTS=0")
-    set_property(TARGET gmock APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
-
-    set(GMOCK_LIBRARIES gmock ${PTHREADS_LIBRARIES} PARENT_SCOPE)
-    set(GTEST_LIBRARIES ${GMOCK_LIBRARIES} PARENT_SCOPE)
-    set(GMOCK_INCLUDE_DIRS ${GMOCK_INCLUDE_DIRS} PARENT_SCOPE)
-    set(GTEST_INCLUDE_DIRS ${GTEST_INCLUDE_DIRS} PARENT_SCOPE)
-    set(GMOCK_COMPILE_DEFINITIONS ${GMOCK_COMPILE_DEFINITIONS} PARENT_SCOPE)
-    set(GMOCK_COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}" PARENT_SCOPE)
     set(GTEST_IS_THREADSAFE "${GTEST_IS_THREADSAFE}" PARENT_SCOPE)
 endif()

@@ -61,10 +61,6 @@ gtest_add_tests(TARGET library-test
 target_include_directories(library-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(library-test Gromacs::gmxapi gtest_main)
 
-set_tests_properties(${BasicPlugin} PROPERTIES
-                     COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}"
-                     COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
-
 # Test the C++ force evaluation for the restrained-ensemble biasing potential.
 add_executable(histogram-test test_histogram.cpp)
 gtest_add_tests(TARGET histogram-test
@@ -76,10 +72,6 @@ set_target_properties(histogram-test PROPERTIES SKIP_BUILD_RPATH FALSE)
 target_link_libraries(histogram-test ensemblepotential Gromacs::gmxapi
                       gtest_main)
 
-set_tests_properties(${EnsembleHistogramPotentialPlugin} PROPERTIES
-                     COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}"
-                     COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
-
 # Test the flat-bottom bounding potential built in to the ensemble restraint.
 add_executable(bounding-test test_bounding_restraint.cpp)
 gtest_add_tests(TARGET bounding-test
@@ -90,7 +82,3 @@ target_include_directories(bounding-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(bounding-test PROPERTIES SKIP_BUILD_RPATH FALSE)
 target_link_libraries(bounding-test ensemblepotential Gromacs::gmxapi
                       GTest::Main)
-
-set_tests_properties(${EnsembleBoundingPotentialPlugin} PROPERTIES
-                     COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}"
-                     COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")

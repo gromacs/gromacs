@@ -37,7 +37,6 @@ if (NOT GMX_BUILD_UNITTESTS)
     return()
 endif()
 
-include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
 set(TESTUTILS_SOURCES
     cmdlinetest.cpp
     conftest.cpp
@@ -69,9 +68,7 @@ add_library(testutils STATIC ${UNITTEST_TARGET_OPTIONS} ${TESTUTILS_SOURCES})
 gmx_target_compile_options(testutils)
 target_compile_definitions(testutils PRIVATE HAVE_CONFIG_H)
 target_include_directories(testutils SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
-set_property(TARGET testutils APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
-set_property(TARGET testutils APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
-target_link_libraries(testutils libgromacs ${GMX_COMMON_LIBRARIES} ${GMOCK_LIBRARIES})
+target_link_libraries(testutils PRIVATE libgromacs ${GMX_COMMON_LIBRARIES} gmock)
 
 if(HAVE_TINYXML2)
     include_directories(SYSTEM ${TinyXML2_INCLUDE_DIR})
