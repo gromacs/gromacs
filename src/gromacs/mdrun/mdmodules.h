@@ -43,6 +43,7 @@
 #ifndef GMX_MDRUN_MDMODULES_H
 #define GMX_MDRUN_MDMODULES_H
 
+#include "gromacs/mdrun/mdmodulenotification.h"
 #include "gromacs/utility/classhelpers.h"
 
 struct ForceProviders;
@@ -59,6 +60,17 @@ class IKeyValueTreeTransformRules;
 class IMDOutputProvider;
 class KeyValueTreeObject;
 class IMDModule;
+class LocalAtomSetManager;
+
+/*! \libinternal \brief
+ * \brief Signals that the communication record is set up and provides this record.
+ */
+struct CommunicationIsSetup
+{
+    //! The communication record that is set up.
+    const t_commrec &communicationRecord_;
+};
+
 
 /*! \libinternal \brief
  * Manages the collection of all modules used for mdrun.
@@ -94,6 +106,12 @@ class MDModules
     public:
         MDModules();
         ~MDModules();
+
+        //! Register callback function types for MDModules
+        using notifier_type = registerMdModuleNotification<
+                    CommunicationIsSetup,
+                    LocalAtomSetManager *
+                    >::type;
 
         /*! \brief
          * Initializes a transform from mdp values to sectioned options.
@@ -168,6 +186,10 @@ class MDModules
          * to a builder class.
          */
         void add(std::shared_ptr<gmx::IMDModule> module);
+
+        /*! \brief Return a handle to the callbacks.
+         */
+        const notifier_type &notifier();
 
     private:
         class Impl;

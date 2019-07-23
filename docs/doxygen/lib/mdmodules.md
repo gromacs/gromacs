@@ -44,7 +44,7 @@ class, which is expressed with the final keyword in the class
 definition. Generally, modules will implement different flavours of
 functionality, perhaps based on user choices, or available computing
 resources. This should generally be implemented by providing variable
-behaviour for the methods that are called through the above
+behavior for the methods that are called through the above
 interfaces. Either code should branch at run time upon some data
 contained by the module (e.g. read from the mdp options), or that the
 module class should contain a pointer to an internal interface class
@@ -152,3 +152,42 @@ for initMdpTransform() to support specifying version-to-version conversions for
 any changed options, and applying the necessary conversions in sequence.  The
 main challenge is keeping track of the versions to know which conversions to
 apply.
+
+Callbacks to modules during setup and simulation
+------------------------------------------------
+
+During setup and simulation, modules receive required information like topologies
+and local atom sets by subscribing to callback functions.
+
+To include a notification for your module,  
+
+* Add the function signature for the callback function to the `notifier_type`
+  in the MdModules class
+
+  ```C++
+    notifier_type = registerMdModuleNotification<...,
+                      YourCallbackSignature,
+                      ...,
+  ```
+
+  (keep alphabetical order for ease of git merge)
+
+* Hand the notifier_ member of the MdModules Implementation class to your
+  builder createYourModule(&notifier_)
+
+* Add the function you want to subscribe with in the builder,
+  `notifier->subscribe(yourFunction)`
+  
+  * To subscribe class member functions of your module, you can use lambda expressions
+
+  ```C++
+    notifier->subscribe([modulePointer = yourModule.get()]
+      (YourCallbackSignature argument){modulePointer(argument);});
+  ```
+
+* During setup in , e.g., within `Mdrunner` use
+
+  ```C++
+    YourCallbackSignature argument();
+    mdModules_.notifier().notify(argument);
+  ```

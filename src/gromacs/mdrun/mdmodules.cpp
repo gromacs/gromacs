@@ -102,6 +102,9 @@ class MDModules::Impl : public IMDOutputProvider
          * \todo include field_ in modules_
          */
         std::vector< std::shared_ptr<IMDModule> > modules_;
+
+        //! Manages resources and notifies the MD modules when available
+        MDModules::notifier_type notifier_;
 };
 
 MDModules::MDModules() : impl_(new Impl)
@@ -168,6 +171,11 @@ ForceProviders *MDModules::initForceProviders()
 void MDModules::add(std::shared_ptr<gmx::IMDModule> module)
 {
     impl_->modules_.emplace_back(std::move(module));
+}
+
+const MDModules::notifier_type &MDModules::notifier()
+{
+    return impl_->notifier_;
 }
 
 } // namespace gmx
