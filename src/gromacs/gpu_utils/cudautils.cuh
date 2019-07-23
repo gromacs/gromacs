@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -304,13 +304,14 @@ void prepareGpuKernelArgument(KernelPtr kernel,
  * A wrapper function for setting up all the CUDA kernel arguments.
  * Calls the recursive functions above.
  *
+ * \tparam    KernelPtr       Kernel function handle type
  * \tparam    Args            Types of all the kernel arguments
  * \param[in] kernel          Kernel function handle
  * \param[in] argsPtrs        Pointers to all the kernel arguments
  * \returns A prepared parameter pack to be used with launchGpuKernel() as the last argument.
  */
-template <typename ... Args>
-std::array<void *, sizeof ... (Args)> prepareGpuKernelArguments(void                     (*kernel)(Args...),
+template <typename KernelPtr, typename ... Args>
+std::array<void *, sizeof ... (Args)> prepareGpuKernelArguments(KernelPtr                kernel,
                                                                 const KernelLaunchConfig & /*config */,
                                                                 const Args *...          argsPtrs)
 {
