@@ -197,10 +197,10 @@ CommunicationStatus AtomTypes::Receive(t_commrec *cr, int src)
         gmx_recv_str(cr, src, &vdwParams_);
         poldataIndex_ = gmx_recv_int(cr, src);
         int np        = gmx_recv_int(cr, src);
+        p_.resize(np, 0.0);
         for (int n = 0; n < np; n++)
         {
-            auto p = gmx_recv_double(cr, src);
-            p_.push_back(p);
+            p_[n] = gmx_recv_double(cr, src);
         }
     }
     return cs;
@@ -215,10 +215,10 @@ void AtomTypes::setParamString(const std::string &params)
 void AtomTypes::extractParams()
 {
     const auto p = gmx::splitString(vdwParams_);
-    p_.clear();
-    for (const auto &d : p)
+    p_.resize(p.size(), 0.0);
+    for (size_t d = 0; d < p.size(); d++)
     {
-        p_.push_back(std::move(atof(d.c_str())));
+        p_[d] = atof(p[d].c_str());
     }
 }
 
@@ -238,8 +238,8 @@ class NonBondParams
 
         void addNonBonded(AtomTypes at) { at_.push_back(std::move(at)); }
 
-        void analyzeIdef(std::vector<MyMol> &mm,
-                         const Poldata      &pd);
+        void analyzeIdef(const std::vector<MyMol> &mm,
+                         const Poldata            &pd);
 
         void makeReverseIndex();
 
@@ -340,7 +340,7 @@ CommunicationStatus NonBondParams::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-void NonBondParams::analyzeIdef(std::vector<MyMol> &mm,
+void NonBondParams::analyzeIdef(const std::vector<MyMol> &mm,
                                 const Poldata      &pd)
 {
     if (!bOpt_)
@@ -510,10 +510,10 @@ CommunicationStatus BondNames::Receive(t_commrec *cr, int src)
         bondorder_    = gmx_recv_double(cr, src);
         poldataIndex_ = gmx_recv_int(cr, src);
         int np        = gmx_recv_int(cr, src);
+        p_.resize(np, 0.0);
         for (int n = 0; n < np; n++)
         {
-            auto p = gmx_recv_double(cr, src);
-            p_.push_back(p);
+            p_[n] = gmx_recv_double(cr, src);
         }
     }
     return cs;
@@ -535,10 +535,10 @@ void BondNames::extractParams()
         gmx_fatal(FARGS, "Number of parameters (%d) in gentop.dat does not match function type %s (%d)", np, 
                   interaction_function[ftype_].name, NRFPA(ftype_));
     }
-    p_.clear();
-    for (const auto &d : p)
+    p_.resize(p.size(), 0.0);
+    for (size_t d = 0; d < p.size(); d++)
     {
-        p_.push_back(std::move(atof(d.c_str())));
+        p_[d] = atof(p[d].c_str());
     }
 }
 
@@ -563,8 +563,8 @@ class ForceConstants
 
         void addForceConstant(BondNames bn) { bn_.push_back(std::move(bn)); }
 
-        void analyzeIdef(std::vector<MyMol> &mm,
-                         const Poldata      &pd);
+        void analyzeIdef(const std::vector<MyMol> &mm,
+                         const Poldata            &pd);
 
         /*! \brief Make reverse index from Poldata to BondNames
          *
@@ -684,8 +684,8 @@ CommunicationStatus ForceConstants::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
-                                 const Poldata      &pd)
+void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
+                                 const Poldata            &pd)
 {
     std::string  aai, aaj, aak, aal;
 
@@ -1249,6 +1249,7 @@ void Optimization::checkSupport(FILE *fp)
 
 void Optimization::polData2TuneFc()
 {
+    De_.clear();
     param_.clear();
     for (auto &fc : ForceConstants_)
     {
@@ -1261,11 +1262,11 @@ void Optimization::polData2TuneFc()
                 {
                     if (n == 0 && !OptimizeDe_)
                     {
-                        De_.push_back(std::move(p));
+                        De_.push_back(p);
                     }
                     else
                     {
-                        param_.push_back(std::move(p));
+                        param_.push_back(p);
                     }
                     n++;
                 }
@@ -1277,7 +1278,7 @@ void Optimization::polData2TuneFc()
             {
                 for (const auto &p : b->paramValues())
                 {
-                    param_.push_back(std::move(p));
+                    param_.push_back(p);
                 }
             }
         }
@@ -1288,9 +1289,14 @@ void Optimization::polData2TuneFc()
         {
             for (const auto &p : at->paramValues())
             {
-                param_.push_back(std::move(p));
+                param_.push_back(p);
             }
         }
+    }
+    if (debug)
+    {
+        fprintf(debug, "poldata2TuneFc: Copied %zu parameters.\n",
+                param_.size());
     }
 }
 
@@ -1602,7 +1608,9 @@ void Optimization::calcDeviation()
                         mymol.UpdateIdef(poldata(), nbp.interactionType(), true);
                     }
                 }
-                        
+                mymol.f_.resizeWithPadding(natoms);
+                mymol.optf_.resizeWithPadding(natoms);
+                                                
                 for (auto ei = mymol.molProp()->BeginExperiment();
                      ei < mymol.molProp()->EndExperiment(); ++ei)
                 {
@@ -1618,8 +1626,6 @@ void Optimization::calcDeviation()
                         double deltaEn = spHF - optHF;
                         double Emol    = mymol.Emol_ + deltaEn;
 
-                        mymol.f_.clear();
-                        mymol.f_.resizeWithPadding(2*natoms);
                         FILE *dbcopy = debug;
                         debug  = nullptr;
                         mymol.changeCoordinate(ei, bpolar);
@@ -1634,8 +1640,6 @@ void Optimization::calcDeviation()
                         // force is added only for the opt geometry
                         if (jtype == JOB_OPT)
                         {
-                            mymol.optf_.clear();
-                            mymol.optf_.resizeWithPadding(2*natoms);
                             mymol.OptForce2_ = 0.0;
                             for (int j = 0; j < natoms; j++)
                             {
@@ -1909,8 +1913,6 @@ void Optimization::printResults(FILE                   *fp,
             auto jtype = ei->getJobtype();
             ei->getHF(&spHF);
             deltaEn = spHF - optHF;
-            mi->f_.clear();
-            mi->f_.resizeWithPadding(2*mi->topology_->atoms.nr);
             mi->changeCoordinate(ei, bpolar);
             mi->computeForces(nullptr, commrec());
             real Hexper = mi->Hform_ + deltaEn;

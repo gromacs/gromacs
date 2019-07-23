@@ -37,6 +37,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -934,6 +935,12 @@ void Experiment::AddAtom(CalcAtom ca)
 
     if (cai == EndAtom())
     {
+        gmx::RVec x;
+        int       unit = string2unit(ca.getUnit().c_str());
+        x[XX]          = convert2gmx(ca.getX(), unit);
+        x[YY]          = convert2gmx(ca.getY(), unit);
+        x[ZZ]          = convert2gmx(ca.getZ(), unit);
+        coordinates_.push_back(x);
         catom_.push_back(ca);
     }
     else

@@ -1172,24 +1172,29 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
 
 void MyMol::computeForces(FILE *fplog, t_commrec *cr)
 {
-    tensor          force_vir;
-    unsigned long   force_flags = ~0;
-    double          t           = 0;
-
-    auto            mdatoms = MDatoms_->get()->mdatoms();
-    clear_mat (force_vir);
-    for (auto i = 0; i < mtop_->natoms; i++)
+    auto mdatoms = MDatoms_->get()->mdatoms();
+    if (mdatoms->typeA[0] == 0)
     {
-        mdatoms->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;
-        mdatoms->typeA[i]   = mtop_->moltype[0].atoms.atom[i].type;
-        if (nullptr != debug)
+        for (auto i = 0; i < mtop_->natoms; i++)
         {
-            fprintf(debug, "QQQ Setting q[%d] to %g\n", i, mdatoms->chargeA[i]);
+            mdatoms->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;
+            mdatoms->typeA[i]   = mtop_->moltype[0].atoms.atom[i].type;
+            if (nullptr != debug)
+            {
+                fprintf(debug, "QQQ Setting q[%d] to %g\n", i, mdatoms->chargeA[i]);
+            }
         }
     }
-    vsite_  = new std::unique_ptr<gmx_vsite_t>(new gmx_vsite_t());
-    *vsite_ = initVsite(*mtop_, cr);
-    rvec mu_tot = { 0, 0, 0 };
+    if (!vsite_)
+    {
+        vsite_  = new std::unique_ptr<gmx_vsite_t>(new gmx_vsite_t());
+        *vsite_ = initVsite(*mtop_, cr);
+    }
+    unsigned long force_flags = ~0;
+    double        t           = 0;
+    rvec          mu_tot      = { 0, 0, 0 };
+    tensor        force_vir;
+    clear_mat (force_vir);
 
     if (nullptr != shellfc_)
     {
@@ -1438,7 +1443,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             }
             if (!converged)
             {
-                printf("Alexandri Charge Model did not converge to %g. rms: %g\n", tolerance, sqrt(EemRms_));
+                printf("Alexandria Charge Model did not converge to %g. rms: %g\n", tolerance, sqrt(EemRms_));
             }
         }
         break;
@@ -1451,44 +1456,27 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
 
 void MyMol::changeCoordinate(ExperimentIterator ei, gmx_bool bpolar)
 {
-    double  xx, yy, zz;
-    int     unit, natom = 0;
+    const std::vector<gmx::RVec> &x = ei->getCoordinates();
 
     if (bpolar)
     {
-        /*This is ugly, needs to be fixed!*/
-        for (auto eia = ei->BeginAtom(); eia < ei->EndAtom(); eia++)
+        for (size_t i = 0; i < x.size(); i++)
         {
-            unit = string2unit((char *)eia->getUnit().c_str());
-            eia->getCoords(&xx, &yy, &zz);
-            //core
-            state_->x[natom][XX]   = convert2gmx(xx, unit);
-            state_->x[natom][YY]   = convert2gmx(yy, unit);
-            state_->x[natom++][ZZ] = convert2gmx(zz, unit);
-            //shell (the same position as the core, but later will be minimzed)
-            state_->x[natom][XX]   = convert2gmx(xx, unit);
-            state_->x[natom][YY]   = convert2gmx(yy, unit);
-            state_->x[natom++][ZZ] = convert2gmx(zz, unit);
+            copy_rvec(x[i], state_->x[2*i]);
+            copy_rvec(x[i], state_->x[2*i+1]);
         }
     }
     else
     {
-        for (auto eia = ei->BeginAtom(); eia < ei->EndAtom(); eia++)
+        for (size_t i = 0; i < x.size(); i++)
         {
-            unit = string2unit((char *)eia->getUnit().c_str());
-            eia->getCoords(&xx, &yy, &zz);
-            state_->x[natom][XX] = convert2gmx(xx, unit);
-            state_->x[natom][YY] = convert2gmx(yy, unit);
-            state_->x[natom][ZZ] = convert2gmx(zz, unit);
-            natom++;
+            copy_rvec(x[i], state_->x[i]);
         }
     }
 }
 
 bool MyMol::getOptimizedGeometry(rvec *x)
 {
-    double  xx, yy, zz;
-    int     unit, natom = 0;
     bool    bopt = false;
 
     for (auto ei = molProp()->BeginExperiment();
@@ -1496,14 +1484,10 @@ bool MyMol::getOptimizedGeometry(rvec *x)
     {
         if (JOB_OPT == ei->getJobtype())
         {
-            for (auto eia = ei->BeginAtom(); eia < ei->EndAtom(); eia++)
+            const std::vector<gmx::RVec> &xxx = ei->getCoordinates();
+            for (size_t i = 0; i < xxx.size(); i++)
             {
-                unit = string2unit((char *)eia->getUnit().c_str());
-                eia->getCoords(&xx, &yy, &zz);
-                x[natom][XX] = convert2gmx(xx, unit);
-                x[natom][YY] = convert2gmx(yy, unit);
-                x[natom][ZZ] = convert2gmx(zz, unit);
-                natom++;
+                copy_rvec(xxx[i], x[i]);
             }
             bopt = true;
         }

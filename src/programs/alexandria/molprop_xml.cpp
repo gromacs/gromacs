@@ -376,7 +376,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
     alexandria::CalcAtomIterator atom_it;
     gmx_bool                     bCompIt = false;
     std::vector<std::string>     xbuf;
-    int                          node, elem = -1;
+    int                          node;
     std::string                  xxx;
 
     xxx.clear();
@@ -698,7 +698,6 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                     auto iter = xmlxxx.find((char *)tree->name);
                     if (iter != xmlxxx.end())
                     {
-                        elem = iter->second;
                         mp_process_tree(fp, tree->children, indent+2,
                                         molprops, bExperiment);
                     }
@@ -968,6 +967,8 @@ void MolPropWrite(const char *fn, std::vector<alexandria::MolProp> mpt, gmx_bool
     xmlChar                    *libdtdname, *dtdname, *gmx;
     alexandria::MolPropIterator mp_it;
 
+    fprintf(stderr, "MolPropWrite entered.\n");
+    exit(1);
     gmx        = (xmlChar *) "molecules";
     dtdname    = (xmlChar *) "molprops.dtd";
     libdtdname = dtdname;

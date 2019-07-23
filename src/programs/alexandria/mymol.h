@@ -136,9 +136,9 @@ class MyMol
         immStatus                        immAtoms_;
         immStatus                        immCharges_;
         immStatus                        immTopology_;
-        std::unique_ptr<gmx_vsite_t>    *vsite_;
-        std::unique_ptr<gmx::MDAtoms>   *MDatoms_;
-        std::unique_ptr<gmx::MDModules> *mdModules_;
+        std::unique_ptr<gmx_vsite_t>    *vsite_     = nullptr;
+        std::unique_ptr<gmx::MDAtoms>   *MDatoms_   = nullptr;
+        std::unique_ptr<gmx::MDModules> *mdModules_ = nullptr;
         MyForceProvider                 *myforce_;
         GentopVsites                     gvt_;
         std::string                      forcefield_;

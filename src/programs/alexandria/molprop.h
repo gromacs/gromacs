@@ -1181,6 +1181,9 @@ class Experiment
         //! Return iterator pointint to this particular atom or EndAtom() if not found
         CalcAtomIterator SearchAtom(CalcAtom ca);
 
+        //! Return a complete coordinate array
+        const std::vector<gmx::RVec> &getCoordinates() const { return coordinates_; }
+
         //! Add ElectrostaticPotential element to the array
         void AddPotential(ElectrostaticPotential ep) { potential_.push_back(ep); }
 
@@ -1267,6 +1270,7 @@ class Experiment
         std::vector<MolecularEnergy>         energy_;
         std::vector<MolecularQuadrupole>     quadrupole_;
         std::vector<MolecularPolarizability> polar_;
+        std::vector<gmx::RVec>               coordinates_;
 };
 //! Iterates over Experiment items
 using  ExperimentIterator = typename std::vector<Experiment>::iterator;
