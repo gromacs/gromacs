@@ -58,6 +58,10 @@ Refer to Docker documentation for details.
 
 ### ci.dockerfile
 
+The default user for this image is `testing`. The gmxapi and sample_restraint
+Python packages are installed into a Python 3 `venv` (virtual environment) owned
+by the `testing` user.
+
 The `entrypoint.sh` script activates the python venv and wraps commands in a `bash` `exec`.
 The default command is a script sourced from `../scripts/run_pytest.sh`. You can use this,
 other scripts, `bash`, etc.
@@ -65,6 +69,22 @@ other scripts, `bash`, etc.
     docker run --rm -t gmxapi/ci-mpich:${TAG}
     docker run --rm -t gmxapi/ci-mpich:${TAG} run_pytest_mpi
     docker run --rm -ti gmxapi/ci-mpich:${TAG} bash
+
+### Why venv?
+
+`venv` is the suggested and primary installation mode for the gmxapi Python package,
+so it is the most important installation mode to test.
+
+These scripts will ultimately be ported to as-yet-undefined GROMACS testing
+infrastructure.
+It seems equally plausible to have a single image with multiple Python installations
+as to have multiple Docker images, or that single-Python docker images would use
+some sort of Python virtualenv system to manage non-default Python interpreters.
+
+Since the installation, tests, and shell environment for post-mortem all use the
+"testing" user instead of "root", the venv provides a tidy place to work, avoids
+the need for the `--user` flag to `pip`, and gives us a convenient place to do
+`pip freeze` to get a known baseline of a working Python environment.
 
 #### Entry points
 
