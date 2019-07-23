@@ -2179,21 +2179,26 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         gmx_fatal(FARGS, "Can not find the force %s to update",
                   iType2string(iType));
     }
-    auto lu    = string2unit(fs->unit().c_str());
     auto ftype = fs->fType();
+    // Make a list of bonded types that can be indexed
+    // with the atomtype. That should speed up the code
+    // below somewhat.
     std::vector<std::string> btype(mtop_->ffparams.atnr);
-    for(int i = 0; i < mtop_->ffparams.atnr; i++)
+    for(int i = 0; i < mtop_->natoms; i++)
     {
-        if (!pd.atypeToBtype(*topology_->atoms.atomtype[i], btype[i]))
+        std::string bt;
+        if (!pd.atypeToBtype(*topology_->atoms.atomtype[i], bt))
         {
             gmx_fatal(FARGS, "Cannot find bonded type for atomtype %s",
                       *topology_->atoms.atomtype[i]);
         }
+        btype[topology_->atoms.atom[i].type] = bt;
     }
     switch (iType)
     {
         case eitBONDS:
         {
+            auto lu = string2unit(fs->unit().c_str());
             if (-1 == lu)
             {
                 gmx_fatal(FARGS, "Unknown length unit '%s' for bonds",
