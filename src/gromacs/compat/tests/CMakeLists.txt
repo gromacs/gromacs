@@ -34,7 +34,6 @@
 
 if (GMX_BUILD_UNITTESTS)
     gmx_add_unit_test(CompatibilityHelpersTests compat-test
-                     make_unique.cpp
                      optional.cpp
                      pointers.cpp
                      string_view.cpp
