@@ -305,8 +305,8 @@ nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu     *nbl,
                                         vctot   += vcoul;
 
                                         Vvdwtot +=
-                                            (Vvdw_rep - int_bit*c12*iconst->sh_invrc6*iconst->sh_invrc6)/12 -
-                                            (Vvdw_disp - int_bit*c6*iconst->sh_invrc6)/6;
+                                            (Vvdw_rep + int_bit*c12*iconst->repulsion_shift.cpot)/12 -
+                                            (Vvdw_disp + int_bit*c6*iconst->dispersion_shift.cpot)/6;
                                     }
                                 }
 

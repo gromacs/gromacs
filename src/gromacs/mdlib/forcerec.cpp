@@ -1417,8 +1417,6 @@ init_interaction_const(FILE                       *fp,
             gmx_incons("unimplemented potential modifier");
     }
 
-    ic->sh_invrc6 = -ic->dispersion_shift.cpot;
-
     /* Electrostatics */
     ic->eeltype          = ir->coulombtype;
     ic->coulomb_modifier = ir->coulomb_modifier;
