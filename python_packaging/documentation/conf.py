@@ -14,11 +14,12 @@ from pkg_resources import get_distribution, DistributionNotFound
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.doctest',
-    'sphinx.ext.todo',
     'sphinx.ext.coverage',
+    'sphinx.ext.doctest',
+    'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.todo',
     'sphinx.ext.viewcode',
     'sphinxcontrib.plantuml'
 ]
@@ -81,6 +82,10 @@ html_short_title = u'gmxapi'
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'gmxapi'
+
+# -- Options for Intersphinx -------------------------------------------------
+
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 
 # -- Options for autodoc extension -------------------------------------------
 # reference https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#configuration

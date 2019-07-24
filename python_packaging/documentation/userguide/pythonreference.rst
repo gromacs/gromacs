@@ -1,6 +1,6 @@
-===========================
-gmx Python module reference
-===========================
+==============================
+gmxapi Python module reference
+==============================
 
 .. contents:: :local:
     :depth: 2
@@ -8,8 +8,8 @@ gmx Python module reference
 .. Concise reference documentation extracted directly from code.
 .. For new and non-backwards-compatible features, API versions must be given.
 
-The Gromacs Python interface is implemented as a high-level scripting interface implemented in pure Python and a
-lower-level API implemented as a C++ extension.
+The Gromacs Python package includes a high-level scripting interface implemented
+in pure Python and a lower-level API implemented as a C++ extension module.
 The pure Python implementation provides the basic ``gmxapi`` module and
 classes with a very stable syntax that can be maintained with maximal compatibility
 while mapping to lower level interfaces that may take a while to sort out. The
@@ -29,24 +29,24 @@ Refer to the Python source code itself for additional clarification.
     import gmxapi as gmx
     from gmxapi.data import tpr_filename
 
-.. automodule:: gmxapi
-
 .. _python-procedural:
 
-Procedural interface
-====================
+gmxapi basic pacakage
+=====================
 
-.. alphabetize the functions except for gmx.run (put first)
+::
 
-.. .. - :func:`gmx.run`
+    import gmxapi as gmx
 
-.. list in the same order as above. This makes for more compact documentation
-   than if each function had a different section. If there is a way to extract
-   a table of contents automatically, that would be great, too. Alternatively,
-   maybe we could use `..automodule:: gmx` with limited depth and some tweaks to
-   `__all__`. But it would be nice if we could generate side-bar contents entries...
+.. automodule:: gmxapi
+   :members:
+   :member-order: groupwise
 
-.. .. autofunction:: gmx.run
+Status messages and Logging
+===========================
+
+.. automodule:: gmxapi._logging
+   :members:
 
 Python API
 ==========

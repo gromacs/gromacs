@@ -94,7 +94,7 @@ def ndarray(data=None, shape=None, dtype=None):
     provided, both `shape` and `dtype` are required.
 
     If `data` is provided and shape is provided, `data` must be compatible with
-    or convertible to `shape`. See Broadcast Rules in :doc:`datamodel` documentation.
+    or convertible to `shape`. See Broadcast Rules in `datamodel` documentation.
 
     If `data` is provided and `dtype` is not provided, data type is inferred
     as the narrowest scalar type necessary to hold any element in `data`.
