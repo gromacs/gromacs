@@ -374,7 +374,7 @@ class MolGen
             ener_[ermsTOT] = 0.0;
             for (int rms = 0; rms < ermsTOT; rms++)
             {
-                ener_[ermsTOT] += fc_[rms]*ener_[rms];
+                ener_[ermsTOT] += ener_[rms];
             }
         }
 
@@ -394,7 +394,7 @@ class MolGen
                 }                
                 for (int rms = 0; rms < ermsTOT; rms++)
                 {
-                    ener_[ermsTOT] += fc_[rms]*ener_[rms]/normFactor;
+                    ener_[rms] = fc_[rms]*ener_[rms]/normFactor;
                 }
             }
         }

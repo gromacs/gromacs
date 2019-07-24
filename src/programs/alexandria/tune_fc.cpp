@@ -1836,8 +1836,8 @@ void Optimization::calcDeviation()
             }
         }
     }
+    normalizeEnergies();
     sumEnergies();
-    //    normalizeEnergies();
     printEnergies(debug);
 }
 

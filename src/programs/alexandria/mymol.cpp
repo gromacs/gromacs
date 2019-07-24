@@ -2198,12 +2198,16 @@ void MyMol::UpdateIdef(const Poldata   &pd,
     for(int i = 0; i < mtop_->natoms; i++)
     {
         std::string bt;
-        if (!pd.atypeToBtype(*topology_->atoms.atomtype[i], bt))
+        if (pd.atypeToBtype(*topology_->atoms.atomtype[i], bt))
+        {
+            btype[topology_->atoms.atom[i].type] = bt;
+        }
+        else if (!(topology_->atoms.atom[i].ptype == eptShell ||
+                   topology_->atoms.atom[i].ptype == eptVSite))
         {
             gmx_fatal(FARGS, "Cannot find bonded type for atomtype %s",
                       *topology_->atoms.atomtype[i]);
         }
-        btype[topology_->atoms.atom[i].type] = bt;
     }
     switch (iType)
     {
