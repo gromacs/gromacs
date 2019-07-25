@@ -35,6 +35,7 @@
 #ifndef GMX_MDTYPES_INTERACTION_CONST_H
 #define GMX_MDTYPES_INTERACTION_CONST_H
 
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -65,66 +66,77 @@ struct switch_consts_t
     real c5;
 };
 
+/* The physical interaction parameters for non-bonded interaction calculations
+ *
+ * This struct contains copies of the physical interaction parameters
+ * from the user input as well as processed values that are need in
+ * non-bonded interaction kernels.
+ *
+ * The default constructor gives plain Coulomb and LJ interactions cut off
+ * a 1 nm without potential shifting and a Coulomb pre-factor of 1.
+ */
 struct interaction_const_t
 {
-    int             cutoff_scheme;
+    ~interaction_const_t();
+
+    int             cutoff_scheme = ecutsVERLET;
 
     /* VdW */
-    int                    vdwtype;
-    int                    vdw_modifier;
-    double                 reppow;
-    real                   rvdw;
-    real                   rvdw_switch;
-    struct shift_consts_t  dispersion_shift;
-    struct shift_consts_t  repulsion_shift;
-    struct switch_consts_t vdw_switch;
-    gmx_bool               useBuckingham;
-    real                   buckinghamBMax;
+    int                    vdwtype          = evdwCUT;
+    int                    vdw_modifier     = eintmodNONE;
+    double                 reppow           = 12;
+    real                   rvdw             = 1;
+    real                   rvdw_switch      = 0;
+    struct shift_consts_t  dispersion_shift = { 0, 0, 0 };
+    struct shift_consts_t  repulsion_shift  = { 0, 0, 0 };
+    struct switch_consts_t vdw_switch       = { 0, 0, 0 };
+    gmx_bool               useBuckingham    = false;
+    real                   buckinghamBMax   = 0;
 
-    /* type of electrostatics (defined in enums.h) */
-    int  eeltype;
-    int  coulomb_modifier;
+    /* type of electrostatics */
+    int  eeltype          = eelCUT;
+    int  coulomb_modifier = eintmodNONE;
 
     /* Coulomb */
-    real rcoulomb;
-    real rcoulomb_switch;
+    real rcoulomb        = 1;
+    real rcoulomb_switch = 0;
 
     /* PME/Ewald */
-    real ewaldcoeff_q;
-    real ewaldcoeff_lj;
-    int  ljpme_comb_rule; /* LJ combination rule for the LJ PME mesh part */
-    real sh_ewald;        /* -sh_ewald is added to the direct space potential */
-    real sh_lj_ewald;     /* sh_lj_ewald is added to the correction potential */
+    real ewaldcoeff_q    = 0;
+    real ewaldcoeff_lj   = 0;
+    int  ljpme_comb_rule = eljpmeGEOM; /* LJ combination rule for the LJ PME mesh part */
+    real sh_ewald        = 0;          /* -sh_ewald is added to the direct space potential */
+    real sh_lj_ewald     = 0;          /* sh_lj_ewald is added to the correction potential */
 
     /* Dielectric constant resp. multiplication factor for charges */
-    real epsilon_r;
-    real epsfac;
+    real epsilon_r = 1;
+    real epsfac    = 1;
 
     /* Constants for reaction-field or plain cut-off */
-    real epsilon_rf;
-    real k_rf;
-    real c_rf;
+    real epsilon_rf = 1;
+    real k_rf       = 0;
+    real c_rf       = 0;
 
     /* Force/energy interpolation tables, linear in force, quadratic in V */
-    real  tabq_scale;
-    int   tabq_size;
+    real  tabq_scale = 0;
+    int   tabq_size  = 0;
     /* Coulomb force table, size of array is tabq_size (when used) */
-    real *tabq_coul_F;
+    real *tabq_coul_F = nullptr;
     /* Coulomb energy table, size of array is tabq_size (when used) */
-    real *tabq_coul_V;
+    real *tabq_coul_V = nullptr;
     /* Coulomb force+energy table, size of array is tabq_size*4,
        entry quadruplets are: F[i], F[i+1]-F[i], V[i], 0,
        this is used with single precision x86 SIMD for aligned loads */
-    real *tabq_coul_FDV0;
+    real *tabq_coul_FDV0 = nullptr;
 
     /* Vdw force table for LJ-PME, size of array is tabq_size (when used) */
-    real *tabq_vdw_F;
+    real *tabq_vdw_F = nullptr;
     /* Vdw energy table for LJ-PME, size of array is tabq_size (when used) */
-    real *tabq_vdw_V;
+    real *tabq_vdw_V = nullptr;
     /* Vdw force+energy table for LJ-PME, size of array is tabq_size*4, entry
        quadruplets are: F[i], F[i+1]-F[i], V[i], 0, this is used with
        single precision x86 SIMD for aligned loads */
-    real *tabq_vdw_FDV0;
+    real *tabq_vdw_FDV0 = nullptr;
 };
 
 #endif

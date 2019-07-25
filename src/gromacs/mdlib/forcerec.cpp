@@ -1361,9 +1361,7 @@ init_interaction_const(FILE                       *fp,
                        const gmx_mtop_t           *mtop,
                        bool                        systemHasNetCharge)
 {
-    interaction_const_t *ic;
-
-    snew(ic, 1);
+    interaction_const_t *ic = new interaction_const_t;
 
     ic->cutoff_scheme   = ir->cutoff_scheme;
 
@@ -1490,13 +1488,11 @@ init_interaction_const(FILE                       *fp,
     *interaction_const = ic;
 }
 
-static void
-done_interaction_const(interaction_const_t *interaction_const)
+interaction_const_t::~interaction_const_t()
 {
-    sfree_aligned(interaction_const->tabq_coul_FDV0);
-    sfree_aligned(interaction_const->tabq_coul_F);
-    sfree_aligned(interaction_const->tabq_coul_V);
-    sfree(interaction_const);
+    sfree_aligned(tabq_coul_FDV0);
+    sfree_aligned(tabq_coul_F);
+    sfree_aligned(tabq_coul_V);
 }
 
 void init_forcerec(FILE                             *fp,
@@ -2121,7 +2117,7 @@ void done_forcerec(t_forcerec *fr, int numMolBlocks)
     }
     done_cginfo_mb(fr->cginfo_mb, numMolBlocks);
     sfree(fr->nbfp);
-    done_interaction_const(fr->ic);
+    delete fr->ic;
     sfree(fr->shift_vec);
     sfree(fr->fshift);
     sfree(fr->ewc_t);
