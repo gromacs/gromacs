@@ -805,6 +805,70 @@ setupForceWorkload(gmx::PpForceWorkload *forceWork,
     forceWork->haveCpuListedForceWork = haveCpuListedForces(*fr, idef, *fcd);
 }
 
+
+/* \brief Launch end-of-step GPU tasks: buffer clearing and rolling pruning.
+ *
+ * TODO: eliminate the \p useGpuNonbonded and \p useGpuNonbonded when these are
+ * incorporated in PpForceWorkload.
+ */
+static void
+launchGpuEndOfStepTasks(nonbonded_verlet_t         *nbv,
+                        gmx::GpuBonded             *gpuBonded,
+                        gmx_pme_t                  *pmedata,
+                        gmx_enerdata_t             *enerd,
+                        const gmx::PpForceWorkload &forceWorkload,
+                        bool                        useGpuNonbonded,
+                        bool                        useGpuPme,
+                        int64_t                     step,
+                        int                         flags,
+                        gmx_wallcycle_t             wcycle)
+{
+    if (useGpuNonbonded)
+    {
+        /* Launch pruning before buffer clearing because the API overhead of the
+         * clear kernel launches can leave the GPU idle while it could be running
+         * the prune kernel.
+         */
+        if (nbv->isDynamicPruningStepGpu(step))
+        {
+            wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
+            wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            nbv->dispatchPruneKernelGpu(step);
+            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+        }
+
+        /* now clear the GPU outputs while we finish the step on the CPU */
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
+        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        Nbnxm::gpu_clear_outputs(nbv->gpu_nbv, flags);
+        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+    }
+
+    if (useGpuPme)
+    {
+        pme_gpu_reinit_computation(pmedata, wcycle);
+    }
+
+    if (forceWorkload.haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
+    {
+        wallcycle_start(wcycle, ewcWAIT_GPU_BONDED);
+        // in principle this should be included in the DD balancing region,
+        // but generally it is infrequent so we'll omit it for the sake of
+        // simpler code
+        gpuBonded->accumulateEnergyTerms(enerd);
+        wallcycle_stop(wcycle, ewcWAIT_GPU_BONDED);
+
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
+        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_BONDED);
+        gpuBonded->clearEnergies();
+        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+    }
+}
+
+
 void do_force(FILE                                     *fplog,
               const t_commrec                          *cr,
               const gmx_multisim_t                     *ms,
@@ -1465,11 +1529,6 @@ void do_force(FILE                                     *fplog,
         wallcycle_stop(wcycle, ewcFORCE);
     }
 
-    if (useGpuPme)
-    {
-        pme_gpu_reinit_computation(fr->pmedata, wcycle);
-    }
-
     /* Do the nonbonded GPU (or emulation) force buffer reduction
      * on the non-alternating path. */
     if (bUseOrEmulGPU && !alternateGpuWait)
@@ -1486,39 +1545,14 @@ void do_force(FILE                                     *fplog,
             nbv->launch_copy_f_from_gpu(forceOut.f, Nbnxm::AtomLocality::Local);
             nbv->wait_stream_gpu(Nbnxm::AtomLocality::Local);
         }
-
     }
 
-    if (bUseGPU)
-    {
-        /* now clear the GPU outputs while we finish the step on the CPU */
-        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        Nbnxm::gpu_clear_outputs(nbv->gpu_nbv, flags);
-
-        if (nbv->isDynamicPruningStepGpu(step))
-        {
-            nbv->dispatchPruneKernelGpu(step);
-        }
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
-    }
-
-    if (ppForceWorkload->haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
-    {
-        wallcycle_start(wcycle, ewcWAIT_GPU_BONDED);
-        // in principle this should be included in the DD balancing region,
-        // but generally it is infrequent so we'll omit it for the sake of
-        // simpler code
-        fr->gpuBonded->accumulateEnergyTerms(enerd);
-        wallcycle_stop(wcycle, ewcWAIT_GPU_BONDED);
-
-        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_BONDED);
-        fr->gpuBonded->clearEnergies();
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
-    }
+    launchGpuEndOfStepTasks(nbv, fr->gpuBonded, fr->pmedata, enerd,
+                            *ppForceWorkload,
+                            bUseGPU, useGpuPme,
+                            step,
+                            flags,
+                            wcycle);
 
     if (DOMAINDECOMP(cr))
     {
