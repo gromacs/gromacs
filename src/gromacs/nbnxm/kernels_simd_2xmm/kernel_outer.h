@@ -227,17 +227,17 @@
 
 #ifdef CALC_COUL_TAB
 
-    invtsp_S  = SimdReal(ic->tabq_scale);
+    invtsp_S  = SimdReal(ic->coulombEwaldTables->scale);
 #ifdef CALC_ENERGIES
-    mhalfsp_S = SimdReal(-0.5/ic->tabq_scale);
+    mhalfsp_S = SimdReal(-0.5/ic->coulombEwaldTables->scale);
 #endif
 
 #ifdef TAB_FDV0
-    tab_coul_F = ic->tabq_coul_FDV0;
+    tab_coul_F = ic->coulombEwaldTables->tableFDV0.data();
 #else
-    tab_coul_F = ic->tabq_coul_F;
+    tab_coul_F = ic->coulombEwaldTables->tableF.data();
 #ifdef CALC_ENERGIES
-    tab_coul_V = ic->tabq_coul_V;
+    tab_coul_V = ic->coulombEwaldTables->tableV.data();
 #endif
 #endif
 #endif /* CALC_COUL_TAB */

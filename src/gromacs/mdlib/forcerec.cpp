@@ -1244,51 +1244,38 @@ static void initVdwEwaldParameters(FILE *fp, const t_inputrec *ir,
     }
 }
 
-static void init_ewald_f_table(interaction_const_t *ic,
-                               real                 rtab)
+static void init_ewald_f_table(const interaction_const_t &ic,
+                               real                       rtab,
+                               EwaldCorrectionTables     *coulombTables,
+                               EwaldCorrectionTables     *vdwTables)
 {
-    real maxr;
+    const bool useCoulombTable = (EEL_PME_EWALD(ic.eeltype) && coulombTables != nullptr);
+    const bool useVdwTable     = (EVDW_PME(ic.vdwtype) && vdwTables != nullptr);
 
     /* Get the Ewald table spacing based on Coulomb and/or LJ
      * Ewald coefficients and rtol.
      */
-    ic->tabq_scale = ewald_spline3_table_scale(ic);
+    const real tableScale = ewald_spline3_table_scale(ic, useCoulombTable, useVdwTable);
 
-    if (ic->cutoff_scheme == ecutsVERLET)
+    real       maxr;
+    if (ic.cutoff_scheme == ecutsVERLET)
     {
-        maxr = ic->rcoulomb;
+        maxr = ic.rcoulomb;
     }
     else
     {
-        maxr = std::max(ic->rcoulomb, rtab);
+        maxr = std::max(ic.rcoulomb, rtab);
     }
-    ic->tabq_size  = static_cast<int>(maxr*ic->tabq_scale) + 2;
+    const int tableSize = static_cast<int>(maxr*tableScale) + 2;
 
-    sfree_aligned(ic->tabq_coul_FDV0);
-    sfree_aligned(ic->tabq_coul_F);
-    sfree_aligned(ic->tabq_coul_V);
-
-    sfree_aligned(ic->tabq_vdw_FDV0);
-    sfree_aligned(ic->tabq_vdw_F);
-    sfree_aligned(ic->tabq_vdw_V);
-
-    if (EEL_PME_EWALD(ic->eeltype))
+    if (useCoulombTable)
     {
-        /* Create the original table data in FDV0 */
-        snew_aligned(ic->tabq_coul_FDV0, ic->tabq_size*4, 32);
-        snew_aligned(ic->tabq_coul_F, ic->tabq_size, 32);
-        snew_aligned(ic->tabq_coul_V, ic->tabq_size, 32);
-        table_spline3_fill_ewald_lr(ic->tabq_coul_F, ic->tabq_coul_V, ic->tabq_coul_FDV0,
-                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_q, v_q_ewald_lr);
+        *coulombTables = generateEwaldCorrectionTables(tableSize, tableScale, ic.ewaldcoeff_q, v_q_ewald_lr);
     }
 
-    if (EVDW_PME(ic->vdwtype))
+    if (useVdwTable)
     {
-        snew_aligned(ic->tabq_vdw_FDV0, ic->tabq_size*4, 32);
-        snew_aligned(ic->tabq_vdw_F, ic->tabq_size, 32);
-        snew_aligned(ic->tabq_vdw_V, ic->tabq_size, 32);
-        table_spline3_fill_ewald_lr(ic->tabq_vdw_F, ic->tabq_vdw_V, ic->tabq_vdw_FDV0,
-                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_lj, v_lj_ewald_lr);
+        *vdwTables = generateEwaldCorrectionTables(tableSize, tableScale, ic.ewaldcoeff_lj, v_lj_ewald_lr);
     }
 }
 
@@ -1298,12 +1285,15 @@ void init_interaction_const_tables(FILE                *fp,
 {
     if (EEL_PME_EWALD(ic->eeltype) || EVDW_PME(ic->vdwtype))
     {
-        init_ewald_f_table(ic, rtab);
+        init_ewald_f_table(*ic, rtab, ic->coulombEwaldTables.get(), ic->vdwEwaldTables.get());
 
-        if (fp != nullptr)
+        /* Note that the VdW correction tables are currently never used,
+         * so we don't need to print the spacing with only VdW Ewald.
+         */
+        if (fp != nullptr && EEL_PME_EWALD(ic->eeltype))
         {
-            fprintf(fp, "Initialized non-bonded Ewald correction tables, spacing: %.2e size: %d\n\n",
-                    1/ic->tabq_scale, ic->tabq_size);
+            fprintf(fp, "Initialized non-bonded Ewald correction tables, spacing: %.2e size: %zu\n\n",
+                    1/ic->coulombEwaldTables->scale, ic->coulombEwaldTables->tableF.size());
         }
     }
 }
@@ -1365,10 +1355,8 @@ init_interaction_const(FILE                       *fp,
 
     ic->cutoff_scheme   = ir->cutoff_scheme;
 
-    /* Just allocate something so we can free it */
-    snew_aligned(ic->tabq_coul_FDV0, 16, 32);
-    snew_aligned(ic->tabq_coul_F, 16, 32);
-    snew_aligned(ic->tabq_coul_V, 16, 32);
+    ic->coulombEwaldTables = std::make_unique<EwaldCorrectionTables>();
+    ic->vdwEwaldTables     = std::make_unique<EwaldCorrectionTables>();
 
     /* Lennard-Jones */
     ic->vdwtype         = ir->vdwtype;
@@ -1486,13 +1474,6 @@ init_interaction_const(FILE                       *fp,
     }
 
     *interaction_const = ic;
-}
-
-interaction_const_t::~interaction_const_t()
-{
-    sfree_aligned(tabq_coul_FDV0);
-    sfree_aligned(tabq_coul_F);
-    sfree_aligned(tabq_coul_V);
 }
 
 void init_forcerec(FILE                             *fp,

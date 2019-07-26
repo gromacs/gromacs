@@ -74,37 +74,37 @@ enum {
 typedef double (*real_space_grid_contribution_computer)(double, double);
 
 
-/*! \brief Fill tables with the Ewald long-range force interaction
+/*! \brief Construct tables with the Ewald long-range force interaction
  *
- * Fill tables of ntab points with spacing dr with the ewald long-range
- * (mesh) force.
- * There are three separate tables with format FDV0, F, and V.
+ * Creates and fills tables of numPoints points with the spacing
+ * set to 1/tableScaling with the Ewald long-range (mesh) force.
+ * There are three separate tables with format F, V, FDV0.
  * This function interpolates the Ewald mesh potential contribution
  * with coefficient beta using a quadratic spline.
- * The force can then be interpolated linearly.
+ * The force is then be interpolated linearly.
  *
- * \param table_F    Force table
- * \param table_V    Potential table
- * \param table_FDV0 Combined table optimized for SIMD loads
- * \param ntab       Number of points in tables
- * \param dx         Spacing
- * \param beta       Ewald splitting paramter
- * \param v_lr       Pointer to function calculating real-space grid contribution
+ * \param numPoints     Number of points in the tables
+ * \param tableScaling  1/spacing, units 1/nm
+ * \param beta          Ewald splitting parameter, units 1/nm
+ * \param v_lr          Pointer to function calculating real-space grid contribution
+ * \returns a set of Ewald correction tables
  */
-void table_spline3_fill_ewald_lr(real                                 *table_F,
-                                 real                                 *table_V,
-                                 real                                 *table_FDV0,
-                                 int                                   ntab,
-                                 double                                dx,
-                                 real                                  beta,
-                                 real_space_grid_contribution_computer v_lr);
+EwaldCorrectionTables
+generateEwaldCorrectionTables(int                                   numPoints,
+                              double                                tableScaling,
+                              real                                  beta,
+                              real_space_grid_contribution_computer v_lr);
 
 /*! \brief Compute scaling for the Ewald quadratic spline tables.
  *
- * \param ic  Pointer to interaction constant structure
- * \return The scaling factor
+ * \param ic                     Pointer to interaction constant structure
+ * \param generateCoulombTables  Take the spacing for Coulomb Ewald corrections into account
+ * \param generateVdwTables      Take the spacing for Van der Waals Ewald corrections into account
+ * \return The scaling factor in units 1/nm
  */
-real ewald_spline3_table_scale(const interaction_const_t *ic);
+real ewald_spline3_table_scale(const interaction_const_t &ic,
+                               bool                       generateCoulombTables,
+                               bool                       generateVdwTables);
 
 /*! \brief Return the real space grid contribution for Ewald
  *

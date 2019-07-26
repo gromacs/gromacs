@@ -50,6 +50,7 @@
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -152,13 +153,11 @@ double v_lj_ewald_lr(double beta, double r)
     }
 }
 
-void table_spline3_fill_ewald_lr(real                                 *table_f,
-                                 real                                 *table_v,
-                                 real                                 *table_fdv0,
-                                 int                                   ntab,
-                                 double                                dx,
-                                 real                                  beta,
-                                 real_space_grid_contribution_computer v_lr)
+EwaldCorrectionTables
+generateEwaldCorrectionTables(const int                             numPoints,
+                              const double                          tableScaling,
+                              const real                            beta,
+                              real_space_grid_contribution_computer v_lr)
 {
     real     tab_max;
     int      i, i_inrange;
@@ -171,10 +170,21 @@ void table_spline3_fill_ewald_lr(real                                 *table_f,
      * depending on wether we should create electrostatic or Lennard-Jones Ewald tables.
      */
 
-    if (ntab < 2)
+    if (numPoints < 2)
     {
         gmx_fatal(FARGS, "Can not make a spline table with less than 2 points");
     }
+
+    const double          dx = 1/tableScaling;
+
+    EwaldCorrectionTables tables;
+    tables.scale = tableScaling;
+    tables.tableF.resize(numPoints);
+    tables.tableV.resize(numPoints);
+    tables.tableFDV0.resize(numPoints*4);
+    gmx::ArrayRef<real> table_f    = tables.tableF;
+    gmx::ArrayRef<real> table_v    = tables.tableV;
+    gmx::ArrayRef<real> table_fdv0 = tables.tableFDV0;
 
     /* We need some margin to be able to divide table values by r
      * in the kernel and also to do the integration arithmetics
@@ -189,10 +199,10 @@ void table_spline3_fill_ewald_lr(real                                 *table_f,
      */
 
     bOutOfRange = FALSE;
-    i_inrange   = ntab;
+    i_inrange   = numPoints;
     v_inrange   = 0;
     dc          = 0;
-    for (i = ntab-1; i >= 0; i--)
+    for (i = numPoints - 1; i >= 0; i--)
     {
         x_r0 = i*dx;
 
@@ -211,10 +221,7 @@ void table_spline3_fill_ewald_lr(real                                 *table_f,
             vi = v_inrange - dc*(i - i_inrange)*dx;
         }
 
-        if (table_v != nullptr)
-        {
-            table_v[i] = vi;
-        }
+        table_v[i] = vi;
 
         if (i == 0)
         {
@@ -242,7 +249,7 @@ void table_spline3_fill_ewald_lr(real                                 *table_f,
             dc = (v_r0 - v_r1)/dx + 0.5*a2dx;
         }
 
-        if (i == ntab - 1)
+        if (i == numPoints - 1)
         {
             /* Fill the table with the force, minus the derivative of the spline */
             table_f[i] = -dc;
@@ -281,23 +288,26 @@ void table_spline3_fill_ewald_lr(real                                 *table_f,
     /* Currently the last value only contains half the force: double it */
     table_f[0] *= 2;
 
-    if (table_v != nullptr && table_fdv0 != nullptr)
+    if (!table_fdv0.empty())
     {
         /* Copy to FDV0 table too. Allocation occurs in forcerec.c,
          * init_ewald_f_table().
          */
-        for (i = 0; i < ntab-1; i++)
+        for (i = 0; i < numPoints - 1; i++)
         {
             table_fdv0[4*i]     = table_f[i];
             table_fdv0[4*i+1]   = table_f[i+1]-table_f[i];
             table_fdv0[4*i+2]   = table_v[i];
             table_fdv0[4*i+3]   = 0.0;
         }
-        table_fdv0[4*(ntab-1)]    = table_f[(ntab-1)];
-        table_fdv0[4*(ntab-1)+1]  = -table_f[(ntab-1)];
-        table_fdv0[4*(ntab-1)+2]  = table_v[(ntab-1)];
-        table_fdv0[4*(ntab-1)+3]  = 0.0;
+        const int lastPoint = numPoints - 1;
+        table_fdv0[4*lastPoint]    = table_f[lastPoint];
+        table_fdv0[4*lastPoint+1]  = -table_f[lastPoint];
+        table_fdv0[4*lastPoint+2]  = table_v[lastPoint];
+        table_fdv0[4*lastPoint+3]  = 0.0;
     }
+
+    return tables;
 }
 
 /* Returns the spacing for a function using the maximum of
@@ -334,46 +344,53 @@ static double spline3_table_scale(double third_deriv_max,
  * faster kernels with both Coulomb and LJ Ewald, especially
  * when interleaving both tables (currently not implemented).
  */
-real ewald_spline3_table_scale(const interaction_const_t *ic)
+real ewald_spline3_table_scale(const interaction_const_t &ic,
+                               const bool                 generateCoulombTables,
+                               const bool                 generateVdwTables)
 {
-    real sc;
+    GMX_RELEASE_ASSERT(!generateCoulombTables || EEL_PME_EWALD(ic.eeltype), "Can only use tables with Ewald");
+    GMX_RELEASE_ASSERT(!generateVdwTables || EVDW_PME(ic.vdwtype), "Can only use tables with Ewald");
 
-    sc = 0;
+    real sc = 0;
 
-    if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
+    if (generateCoulombTables)
     {
+        GMX_RELEASE_ASSERT(ic.ewaldcoeff_q > 0, "The Ewald coefficient shoule be positive");
+
         double erf_x_d3 = 1.0522; /* max of (erf(x)/x)''' */
         double etol;
         real   sc_q;
 
         /* Energy tolerance: 0.1 times the cut-off jump */
-        etol  = 0.1*std::erfc(ic->ewaldcoeff_q*ic->rcoulomb);
+        etol  = 0.1*std::erfc(ic.ewaldcoeff_q*ic.rcoulomb);
 
-        sc_q  = spline3_table_scale(erf_x_d3, ic->ewaldcoeff_q, etol);
+        sc_q  = spline3_table_scale(erf_x_d3, ic.ewaldcoeff_q, etol);
 
         if (debug)
         {
-            fprintf(debug, "Ewald Coulomb quadratic spline table spacing: %f 1/nm\n", 1/sc_q);
+            fprintf(debug, "Ewald Coulomb quadratic spline table spacing: %f nm\n", 1/sc_q);
         }
 
         sc    = std::max(sc, sc_q);
     }
 
-    if (EVDW_PME(ic->vdwtype))
+    if (generateVdwTables)
     {
+        GMX_RELEASE_ASSERT(ic.ewaldcoeff_lj > 0, "The Ewald coefficient shoule be positive");
+
         double func_d3 = 0.42888; /* max of (x^-6 (1 - exp(-x^2)(1+x^2+x^4/2)))''' */
         double xrc2, etol;
         real   sc_lj;
 
         /* Energy tolerance: 0.1 times the cut-off jump */
-        xrc2  = gmx::square(ic->ewaldcoeff_lj*ic->rvdw);
+        xrc2  = gmx::square(ic.ewaldcoeff_lj*ic.rvdw);
         etol  = 0.1*std::exp(-xrc2)*(1 + xrc2 + xrc2*xrc2/2.0);
 
-        sc_lj = spline3_table_scale(func_d3, ic->ewaldcoeff_lj, etol);
+        sc_lj = spline3_table_scale(func_d3, ic.ewaldcoeff_lj, etol);
 
         if (debug)
         {
-            fprintf(debug, "Ewald LJ quadratic spline table spacing: %f 1/nm\n", 1/sc_lj);
+            fprintf(debug, "Ewald LJ quadratic spline table spacing: %f nm\n", 1/sc_lj);
         }
 
         sc = std::max(sc, sc_lj);

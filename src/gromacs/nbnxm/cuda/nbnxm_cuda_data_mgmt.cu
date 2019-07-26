@@ -109,17 +109,17 @@ static inline bool useLjCombRule(const cu_nbparam_t  *nbparam)
     and the table GPU array. If called with an already allocated table,
     it just re-uploads the table.
  */
-static void init_ewald_coulomb_force_table(const interaction_const_t *ic,
-                                           cu_nbparam_t              *nbp)
+static void init_ewald_coulomb_force_table(const EwaldCorrectionTables &tables,
+                                           cu_nbparam_t                *nbp)
 {
     if (nbp->coulomb_tab != nullptr)
     {
         nbnxn_cuda_free_nbparam_table(nbp);
     }
 
-    nbp->coulomb_tab_scale = ic->tabq_scale;
+    nbp->coulomb_tab_scale = tables.scale;
     initParamLookupTable(nbp->coulomb_tab, nbp->coulomb_tab_texobj,
-                         ic->tabq_coul_F, ic->tabq_size);
+                         tables.tableF.data(), tables.tableF.size());
 }
 
 
@@ -321,7 +321,8 @@ static void init_nbparam(cu_nbparam_t                   *nbp,
     nbp->coulomb_tab = nullptr;
     if (nbp->eeltype == eelCuEWALD_TAB || nbp->eeltype == eelCuEWALD_TAB_TWIN)
     {
-        init_ewald_coulomb_force_table(ic, nbp);
+        GMX_RELEASE_ASSERT(ic->coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
+        init_ewald_coulomb_force_table(*ic->coulombEwaldTables, nbp);
     }
 
     /* set up LJ parameter lookup table */
@@ -354,7 +355,8 @@ void gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
 
     nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw);
 
-    init_ewald_coulomb_force_table(ic, nbp);
+    GMX_RELEASE_ASSERT(ic->coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
+    init_ewald_coulomb_force_table(*ic->coulombEwaldTables, nbp);
 }
 
 /*! Initializes the pair list data structure. */

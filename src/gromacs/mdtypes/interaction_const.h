@@ -35,7 +35,11 @@
 #ifndef GMX_MDTYPES_INTERACTION_CONST_H
 #define GMX_MDTYPES_INTERACTION_CONST_H
 
+#include <memory>
+#include <vector>
+
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -66,6 +70,28 @@ struct switch_consts_t
     real c5;
 };
 
+/* Convenience type for vector with aligned memory */
+template<typename T>
+using AlignedVector = std::vector < T, gmx::AlignedAllocator < T>>;
+
+/* Force/energy interpolation tables for Ewald long-range corrections
+ *
+ * Interpolation is linear for the force, quadratic for the potential.
+ */
+struct EwaldCorrectionTables
+{
+    // 1/table_spacing, units 1/nm
+    real                scale = 0;
+    // Force table
+    AlignedVector<real> tableF;
+    // Energy table
+    AlignedVector<real> tableV;
+    // Coulomb force+energy table, size of array is tabq_size*4,
+    // entry quadruplets are: F[i], F[i+1]-F[i], V[i], 0,
+    // this is used with 4-wide SIMD for aligned loads
+    AlignedVector<real> tableFDV0;
+};
+
 /* The physical interaction parameters for non-bonded interaction calculations
  *
  * This struct contains copies of the physical interaction parameters
@@ -77,8 +103,6 @@ struct switch_consts_t
  */
 struct interaction_const_t
 {
-    ~interaction_const_t();
-
     int             cutoff_scheme = ecutsVERLET;
 
     /* VdW */
@@ -117,26 +141,10 @@ struct interaction_const_t
     real k_rf       = 0;
     real c_rf       = 0;
 
-    /* Force/energy interpolation tables, linear in force, quadratic in V */
-    real  tabq_scale = 0;
-    int   tabq_size  = 0;
-    /* Coulomb force table, size of array is tabq_size (when used) */
-    real *tabq_coul_F = nullptr;
-    /* Coulomb energy table, size of array is tabq_size (when used) */
-    real *tabq_coul_V = nullptr;
-    /* Coulomb force+energy table, size of array is tabq_size*4,
-       entry quadruplets are: F[i], F[i+1]-F[i], V[i], 0,
-       this is used with single precision x86 SIMD for aligned loads */
-    real *tabq_coul_FDV0 = nullptr;
-
-    /* Vdw force table for LJ-PME, size of array is tabq_size (when used) */
-    real *tabq_vdw_F = nullptr;
-    /* Vdw energy table for LJ-PME, size of array is tabq_size (when used) */
-    real *tabq_vdw_V = nullptr;
-    /* Vdw force+energy table for LJ-PME, size of array is tabq_size*4, entry
-       quadruplets are: F[i], F[i+1]-F[i], V[i], 0, this is used with
-       single precision x86 SIMD for aligned loads */
-    real *tabq_vdw_FDV0 = nullptr;
+    // Coulomb Ewald correction table
+    std::unique_ptr<EwaldCorrectionTables> coulombEwaldTables;
+    // Van der Waals Ewald correction table
+    std::unique_ptr<EwaldCorrectionTables> vdwEwaldTables;
 };
 
 #endif

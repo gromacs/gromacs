@@ -119,7 +119,7 @@ nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu     *nbl,
     bEwald = EEL_FULL(iconst->eeltype);
     if (bEwald)
     {
-        Ftab = iconst->tabq_coul_F;
+        Ftab = iconst->coulombEwaldTables->tableF.data();
     }
 
     rcut2                = iconst->rcoulomb*iconst->rcoulomb;
@@ -273,7 +273,7 @@ nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu     *nbl,
                                 else
                                 {
                                     r     = rsq*rinv;
-                                    rt    = r*iconst->tabq_scale;
+                                    rt    = r*iconst->coulombEwaldTables->scale;
                                     n0    = static_cast<int>(rt);
                                     eps   = rt - n0;
 

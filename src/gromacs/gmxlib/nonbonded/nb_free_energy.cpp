@@ -253,12 +253,13 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
     if (bEwald || bEwaldLJ)
     {
+        const auto &tables = *ic->coulombEwaldTables;
         sh_ewald       = ic->sh_ewald;
-        ewtab          = ic->tabq_coul_FDV0;
-        ewtabscale     = ic->tabq_scale;
+        ewtab          = tables.tableFDV0.data();
+        ewtabscale     = tables.scale;
         ewtabhalfspace = half/ewtabscale;
-        tab_ewald_F_lj = ic->tabq_vdw_F;
-        tab_ewald_V_lj = ic->tabq_vdw_V;
+        tab_ewald_F_lj = tables.tableF.data();
+        tab_ewald_V_lj = tables.tableV.data();
     }
 
     /* For Ewald/PME interactions we cannot easily apply the soft-core component to

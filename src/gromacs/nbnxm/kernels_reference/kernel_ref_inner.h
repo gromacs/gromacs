@@ -304,7 +304,7 @@
 #endif
 
 #ifdef CALC_COUL_TAB
-            rs     = rsq*rinv*ic->tabq_scale;
+            rs     = rsq*rinv*tab_coul_scale;
             ri     = int(rs);
             frac   = rs - ri;
 #if !GMX_DOUBLE

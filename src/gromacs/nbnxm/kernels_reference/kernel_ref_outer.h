@@ -196,15 +196,16 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 #endif
 #endif
 #ifdef CALC_COUL_TAB
+    const real tab_coul_scale = ic->coulombEwaldTables->scale;
 #ifdef CALC_ENERGIES
-    halfsp = 0.5/ic->tabq_scale;
+    halfsp = 0.5/tab_coul_scale;
 #endif
 
 #if !GMX_DOUBLE
-    tab_coul_FDV0 = ic->tabq_coul_FDV0;
+    tab_coul_FDV0 = ic->coulombEwaldTables->tableFDV0.data();
 #else
-    tab_coul_F    = ic->tabq_coul_F;
-    tab_coul_V    = ic->tabq_coul_V;
+    tab_coul_F    = ic->coulombEwaldTables->tableF.data();
+    tab_coul_V    = ic->coulombEwaldTables->tableV.data();
 #endif
 #endif
 

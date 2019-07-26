@@ -116,7 +116,7 @@ bool useLjCombRule(int vdwType)
  * If called with an already allocated table, it just re-uploads the
  * table.
  */
-static void init_ewald_coulomb_force_table(const interaction_const_t       *ic,
+static void init_ewald_coulomb_force_table(const EwaldCorrectionTables     &tables,
                                            cl_nbparam_t                    *nbp,
                                            const gmx_device_runtime_data_t *runData)
 {
@@ -142,12 +142,12 @@ static void init_ewald_coulomb_force_table(const interaction_const_t       *ic,
      */
 
     coul_tab = clCreateBuffer(runData->context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY | CL_MEM_COPY_HOST_PTR,
-                              ic->tabq_size*sizeof(cl_float), ic->tabq_coul_F, &cl_error);
+                              tables.tableF.size()*sizeof(cl_float), const_cast<real *>(tables.tableF.data()), &cl_error);
     GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
                        ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
 
     nbp->coulomb_tab_climg2d  = coul_tab;
-    nbp->coulomb_tab_scale    = ic->tabq_scale;
+    nbp->coulomb_tab_scale    = tables.scale;
 }
 
 
@@ -335,7 +335,8 @@ static void init_nbparam(cl_nbparam_t                    *nbp,
     nbp->coulomb_tab_climg2d = nullptr;
     if (nbp->eeltype == eelOclEWALD_TAB || nbp->eeltype == eelOclEWALD_TAB_TWIN)
     {
-        init_ewald_coulomb_force_table(ic, nbp, runData);
+        GMX_RELEASE_ASSERT(ic->coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
+        init_ewald_coulomb_force_table(*ic->coulombEwaldTables, nbp, runData);
     }
     else
     // TODO: improvement needed.
@@ -430,7 +431,8 @@ void gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
 
     nbp->eeltype = gpu_pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw);
 
-    init_ewald_coulomb_force_table(ic, nbp, nb->dev_rundata);
+    GMX_RELEASE_ASSERT(ic->coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
+    init_ewald_coulomb_force_table(*ic->coulombEwaldTables, nbp, nb->dev_rundata);
 }
 
 /*! \brief Initializes the pair list data structure.
