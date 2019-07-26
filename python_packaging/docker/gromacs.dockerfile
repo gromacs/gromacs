@@ -16,13 +16,13 @@ COPY . $SRC_DIR
 
 ENV BUILD_DIR /tmp/gromacs-build
 RUN mkdir -p $BUILD_DIR
+WORKDIR $BUILD_DIR
 
 ARG DOCKER_CORES=1
 # Allow the build type to be specified with `docker build --build-arg TYPE=something`
 ARG TYPE=Release
 # Note: AVX2 instructions not available in older docker engines.
-RUN cd $BUILD_DIR && \
-    cmake $SRC_DIR \
+RUN cmake $SRC_DIR \
         -DCMAKE_INSTALL_PREFIX=/usr/local/gromacs \
         -DGMXAPI=ON \
         -DGMX_THREAD_MPI=ON \
@@ -30,5 +30,10 @@ RUN cd $BUILD_DIR && \
         -DGMX_SIMD=AVX_256 \
         -DGMX_USE_RDTSCP=OFF \
         -DGMX_HWLOC=OFF \
-        -DCMAKE_BUILD_TYPE=$TYPE && \
-    make -j$DOCKER_CORES install
+        -DCMAKE_BUILD_TYPE=$TYPE
+RUN make -j$DOCKER_CORES
+RUN make -j$DOCKER_CORES tests
+RUN make -j$DOCKER_CORES install
+
+# Default command provided for convenience since it inherits WORKDIR from above.
+CMD make check
