@@ -142,14 +142,6 @@ void init_forcerec(FILE                             *fplog,
 void forcerec_set_excl_load(t_forcerec           *fr,
                             const gmx_localtop_t *top);
 
-/*! \brief Update parameters dependent on box
- *
- * Updates parameters in the forcerec that are time dependent
- * \param[out] fr  The force record
- * \param[in]  box The simulation box
- */
-void update_forcerec(t_forcerec *fr, matrix box);
-
 void free_gpu_resources(t_forcerec                          *fr,
                         const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator,
                         const gmx_gpu_info_t                &gpu_info);

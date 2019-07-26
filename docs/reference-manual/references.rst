@@ -998,20 +998,6 @@ for parallelization of particle simulations," *J. Chem. Phys.*, **124**
 
 .. raw:: html
 
-   <div id="ref-Tironi95">
-
-.. _refTironi95:
-
-:sup:`71` I.G. Tironi, R. Sperb, P.E. Smith, and W.F. van Gunsteren, "A
-generalized reaction field method for molecular dynamics simulations,"
-*J. Chem. Phys.*, **102** 5451–5459 (1995).
-
-.. raw:: html
-
-   </div>
-
-.. raw:: html
-
    <div id="ref-Spoel2006a">
 
 .. _refSpoel2006a:

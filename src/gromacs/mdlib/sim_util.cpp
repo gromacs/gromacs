@@ -887,8 +887,6 @@ void do_force(FILE                                     *fplog,
 
     if (bStateChanged)
     {
-        update_forcerec(fr, box);
-
         if (inputrecNeedMutot(inputrec))
         {
             /* Calculate total (local) dipole moment in a temporary common array.

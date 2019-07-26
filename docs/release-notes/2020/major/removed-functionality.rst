@@ -17,6 +17,13 @@ that depend on it no longer work.
 
 :issue:`1852`
 
+Generalized reaction-field
+""""""""""""""""""""""""""
+
+This only worked correctly with the group scheme. Note that generalized
+reaction-field simulations can still be performed using standard
+reaction field and computing the dielectric constant manually.
+       
 gmx anadock
 """""""""""
 The gmx anadock tool was removed since it does not belong in gromacs

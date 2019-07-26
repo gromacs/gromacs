@@ -929,16 +929,6 @@ static bool set_chargesum(FILE *log, t_forcerec *fr, const gmx_mtop_t *mtop)
             std::abs(fr->qsum[1]) > 1e-4);
 }
 
-void update_forcerec(t_forcerec *fr, matrix box)
-{
-    if (fr->ic->eeltype == eelGRF)
-    {
-        calc_rffac(nullptr, fr->ic->eeltype, fr->ic->epsilon_r, fr->ic->epsilon_rf,
-                   fr->ic->rcoulomb, fr->temp, fr->zsquare, box,
-                   &fr->ic->k_rf, &fr->ic->c_rf);
-    }
-}
-
 static real calcBuckinghamBMax(FILE *fplog, const gmx_mtop_t *mtop)
 {
     const t_atoms *at1, *at2;
@@ -1424,14 +1414,12 @@ init_interaction_const(FILE                       *fp,
     /* Reaction-field */
     if (EEL_RF(ic->eeltype))
     {
+        GMX_RELEASE_ASSERT(ic->eeltype != eelGRF_NOTUSED, "GRF is no longer supported");
         ic->epsilon_rf = ir->epsilon_rf;
-        /* Generalized reaction field parameters are updated every step */
-        if (ic->eeltype != eelGRF)
-        {
-            calc_rffac(fp, ic->eeltype, ic->epsilon_r, ic->epsilon_rf,
-                       ic->rcoulomb, 0, 0, nullptr,
-                       &ic->k_rf, &ic->c_rf);
-        }
+
+        calc_rffac(fp, ic->epsilon_r, ic->epsilon_rf,
+                   ic->rcoulomb,
+                   &ic->k_rf, &ic->c_rf);
     }
     else
     {
@@ -1528,7 +1516,8 @@ void init_forcerec(FILE                             *fp,
         fr->n_tpi = 0;
     }
 
-    if (ir->coulombtype == eelRF_NEC_UNSUPPORTED)
+    if (ir->coulombtype == eelRF_NEC_UNSUPPORTED ||
+        ir->coulombtype == eelGRF_NOTUSED)
     {
         gmx_fatal(FARGS, "%s electrostatics is no longer supported",
                   eel_names[ir->coulombtype]);
@@ -1729,7 +1718,6 @@ void init_forcerec(FILE                             *fp,
             break;
 
         case eelRF:
-        case eelGRF:
             fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_REACTIONFIELD;
             break;
 
@@ -1809,15 +1797,6 @@ void init_forcerec(FILE                             *fp,
 
     /* 1-4 interaction electrostatics */
     fr->fudgeQQ = mtop->ffparams.fudgeQQ;
-
-    /* Parameters for generalized RF */
-    fr->zsquare = 0.0;
-    fr->temp    = 0.0;
-
-    if (ic->eeltype == eelGRF)
-    {
-        init_generalized_rf(fp, mtop, ir, fr);
-    }
 
     fr->haveDirectVirialContributions =
         (EEL_FULL(ic->eeltype) || EVDW_PME(ic->vdwtype) ||

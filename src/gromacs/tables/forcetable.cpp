@@ -1226,7 +1226,6 @@ static void set_table_type(int tabsel[], const interaction_const_t *ic, gmx_bool
             tabsel[etiCOUL] = etabEwaldUserSwitch;
             break;
         case eelRF:
-        case eelGRF:
         case eelRF_ZERO:
             tabsel[etiCOUL] = etabRF_ZERO;
             break;

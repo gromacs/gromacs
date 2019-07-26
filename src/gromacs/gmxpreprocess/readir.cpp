@@ -4040,18 +4040,10 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
     }
 
     /* Generalized reaction field */
-    if (ir->opts.ngtc == 0)
+    if (ir->coulombtype == eelGRF_NOTUSED)
     {
-        sprintf(err_buf, "No temperature coupling while using coulombtype %s",
-                eel_names[eelGRF]);
-        CHECK(ir->coulombtype == eelGRF);
-    }
-    else
-    {
-        sprintf(err_buf, "When using coulombtype = %s"
-                " ref-t for temperature coupling should be > 0",
-                eel_names[eelGRF]);
-        CHECK((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0));
+        warning_error(wi, "Generalized reaction-field electrostatics is no longer supported. "
+                      "You can use normal reaction-field instead and compute the reaction-field constant by hand.");
     }
 
     bAcc = FALSE;

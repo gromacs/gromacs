@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -161,7 +161,7 @@ extern const char *eintmod_names[eintmodNR+1];
 
 /*! \brief Cut-off treatment for Coulomb */
 enum {
-    eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelP3M_AD,
+    eelCUT,     eelRF,     eelGRF_NOTUSED,   eelPME,  eelEWALD,  eelP3M_AD,
     eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB_NOTUSED, eelRF_NEC_UNSUPPORTED, eelENCADSHIFT,
     eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH, eelRF_ZERO, eelNR
 };
@@ -178,7 +178,7 @@ enum {
 extern const char *eewg_names[eewgNR+1];
 
 //! Macro telling us whether we use reaction field
-#define EEL_RF(e) ((e) == eelRF || (e) == eelGRF || (e) == eelRF_NEC_UNSUPPORTED || (e) == eelRF_ZERO )
+#define EEL_RF(e) ((e) == eelRF || (e) == eelGRF_NOTUSED || (e) == eelRF_NEC_UNSUPPORTED || (e) == eelRF_ZERO )
 
 //! Macro telling us whether we use PME
 #define EEL_PME(e)  ((e) == eelPME || (e) == eelPMESWITCH || (e) == eelPMEUSER || (e) == eelPMEUSERSWITCH || (e) == eelP3M_AD)

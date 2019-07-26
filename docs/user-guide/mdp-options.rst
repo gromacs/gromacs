@@ -622,16 +622,6 @@ Electrostatics
       :mdp:`epsilon-rf`. The dielectric constant can be set to
       infinity by setting :mdp:`epsilon-rf` =0.
 
-   .. mdp-value:: Generalized-Reaction-Field
-
-      Generalized reaction field with Coulomb cut-off
-      :mdp:`rcoulomb`, where :mdp:`rlist` >= :mdp:`rcoulomb`. The
-      dielectric constant beyond the cut-off is
-      :mdp:`epsilon-rf`. The ionic strength is computed from the
-      number of charged (*i.e.* with non zero charge) charge
-      groups. The temperature for the GRF potential is set with
-      :mdp:`ref-t`.
-
    .. mdp-value:: Reaction-Field-zero
 
       In |Gromacs|, normal reaction-field electrostatics with

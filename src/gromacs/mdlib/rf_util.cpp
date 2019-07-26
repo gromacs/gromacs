@@ -50,115 +50,29 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/pleasecite.h"
 
-void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf, real Rc, real Temp,
-                real zsq, matrix box,
+void calc_rffac(FILE *fplog, real eps_r, real eps_rf, real Rc,
                 real *krf, real *crf)
 {
-    /* Compute constants for Generalized reaction field */
-    real   kappa, k1, k2, I, rmin;
-    real   vol = 0;
-
-    if (EEL_RF(eel))
+    /* eps == 0 signals infinite dielectric */
+    if (eps_rf == 0)
     {
-        if (eel == eelGRF)
-        {
-            /* Consistency check */
-            if (Temp <= 0.0)
-            {
-                gmx_fatal(FARGS, "Temperature is %f while using"
-                          " Generalized Reaction Field\n", Temp);
-            }
-            /* Ionic strength (only needed for eelGRF */
-            vol     = det(box);
-            I       = 0.5*zsq/vol;
-            kappa   = std::sqrt(2*I/(EPSILON0*eps_rf*BOLTZ*Temp));
-        }
-        else
-        {
-            I      = 0;
-            kappa  = 0;
-        }
+        *krf = 1/(2*Rc*Rc*Rc);
+    }
+    else
+    {
+        *krf = (eps_rf - eps_r)/(2*eps_rf + eps_r)/(Rc*Rc*Rc);
+    }
+    *crf   = 1/Rc + *krf*Rc*Rc;
 
-        /* eps == 0 signals infinite dielectric */
-        if (eps_rf == 0)
-        {
-            *krf = 1/(2*Rc*Rc*Rc);
-        }
-        else
-        {
-            k1   = 1 + kappa*Rc;
-            k2   = eps_rf*gmx::square(static_cast<real>(kappa*Rc));
-
-            *krf = ((eps_rf - eps_r)*k1 + 0.5*k2)/((2*eps_rf + eps_r)*k1 + k2)/(Rc*Rc*Rc);
-        }
-        *crf   = 1/Rc + *krf*Rc*Rc;
+    if (fplog)
+    {
+        fprintf(fplog, "%s:\n"
+                "epsRF = %g, rc = %g, krf = %g, crf = %g, epsfac = %g\n",
+                eel_names[eelRF], eps_rf, Rc, *krf, *crf, ONE_4PI_EPS0/eps_r);
         // Make sure we don't lose resolution in pow() by casting real arg to double
-        rmin   = gmx::invcbrt(static_cast<double>(*krf*2.0));
-
-        if (fplog)
-        {
-            if (eel == eelGRF)
-            {
-                please_cite(fplog, "Tironi95a");
-                fprintf(fplog, "%s:\n"
-                        "epsRF = %10g, I   = %10g, volume = %10g, kappa  = %10g\n"
-                        "rc    = %10g, krf = %10g, crf    = %10g, epsfac = %10g\n",
-                        eel_names[eel], eps_rf, I, vol, kappa, Rc, *krf, *crf,
-                        ONE_4PI_EPS0/eps_r);
-            }
-            else
-            {
-                fprintf(fplog, "%s:\n"
-                        "epsRF = %g, rc = %g, krf = %g, crf = %g, epsfac = %g\n",
-                        eel_names[eel], eps_rf, Rc, *krf, *crf, ONE_4PI_EPS0/eps_r);
-            }
-            fprintf(fplog,
-                    "The electrostatics potential has its minimum at r = %g\n",
-                    rmin);
-        }
+        real rmin = gmx::invcbrt(static_cast<double>(*krf*2.0));
+        fprintf(fplog,
+                "The electrostatics potential has its minimum at r = %g\n",
+                rmin);
     }
-}
-
-void init_generalized_rf(FILE *fplog,
-                         const gmx_mtop_t *mtop, const t_inputrec *ir,
-                         t_forcerec *fr)
-{
-    int                  i, j;
-    real                 q, zsq, nrdf, T;
-    const gmx_moltype_t *molt;
-    const t_block       *cgs;
-
-    if (ir->efep != efepNO && fplog)
-    {
-        fprintf(fplog, "\nWARNING: the generalized reaction field constants are determined from topology A only\n\n");
-    }
-    zsq = 0.0;
-    for (const gmx_molblock_t &molb : mtop->molblock)
-    {
-        molt = &mtop->moltype[molb.type];
-        cgs  = &molt->cgs;
-        for (i = 0; (i < cgs->nr); i++)
-        {
-            q = 0;
-            for (j = cgs->index[i]; (j < cgs->index[i+1]); j++)
-            {
-                q += molt->atoms.atom[j].q;
-            }
-            zsq += molb.nmol*q*q;
-        }
-        fr->zsquare = zsq;
-    }
-
-    T    = 0.0;
-    nrdf = 0.0;
-    for (i = 0; (i < ir->opts.ngtc); i++)
-    {
-        nrdf += ir->opts.nrdf[i];
-        T    += (ir->opts.nrdf[i] * ir->opts.ref_t[i]);
-    }
-    if (nrdf == 0)
-    {
-        gmx_fatal(FARGS, "No degrees of freedom!");
-    }
-    fr->temp   = T/nrdf;
 }

@@ -156,10 +156,6 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
      */
     real rlist = 0;
 
-    /* Parameters for generalized reaction field */
-    real zsquare = 0;
-    real temp    = 0;
-
     /* Charge sum and dipole for topology A/B ([0]/[1]) for Ewald corrections */
     double qsum[2]   = { 0 };
     double q2sum[2]  = { 0 };

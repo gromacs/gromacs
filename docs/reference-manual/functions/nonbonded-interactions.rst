@@ -204,37 +204,6 @@ The reaction-field correction should also be applied to all excluded
 atoms pairs, including self pairs, in which case the normal Coulomb term
 in :eq:`eqns. %s <eqnvcrf>` and :eq:`%s <eqnfcrf>` is absent.
 
-Tironi *et al.* have introduced a generalized reaction field in which
-the dielectric continuum beyond the cut-off :math:`r_c` also has an
-ionic strength :math:`I` :ref:`71 <refTironi95>`. In this case we can
-rewrite the constants :math:`k_{rf}` and :math:`c_{rf}` using the
-inverse Debye screening length :math:`\kappa`:
-
-.. math:: \begin{aligned}
-          \kappa^2  &=&     
-          \frac{2 I \,F^2}{\varepsilon_0 {\varepsilon_{rf}}RT}
-          = \frac{F^2}{\varepsilon_0 {\varepsilon_{rf}}RT}\sum_{i=1}^{K} c_i z_i^2     \\
-          k_{rf}  &=&     \frac{1}{r_c^3}\,
-          \frac{({\varepsilon_{rf}}-{\varepsilon_r})(1 + \kappa r_c) + {\frac{1}{2}}{\varepsilon_{rf}}(\kappa r_c)^2}
-          {(2{\varepsilon_{rf}}+ {\varepsilon_r})(1 + \kappa r_c) + {\varepsilon_{rf}}(\kappa r_c)^2}
-          \end{aligned}
-          :label: eqnkgrf
-
-.. math:: \begin{aligned}
-          c_{rf}  &=&     \frac{1}{r_c}\,
-          \frac{3{\varepsilon_{rf}}(1 + \kappa r_c + {\frac{1}{2}}(\kappa r_c)^2)}
-          {(2{\varepsilon_{rf}}+{\varepsilon_r})(1 + \kappa r_c) + {\varepsilon_{rf}}(\kappa r_c)^2}
-          \end{aligned}
-          :label: eqncgrf
-
-where :math:`F` is Faraday’s constant, :math:`R` is the ideal gas
-constant, :math:`T` the absolute temperature, :math:`c_i` the molar
-concentration for species :math:`i` and :math:`z_i` the charge number of
-species :math:`i` where we have :math:`K` different species. In the
-limit of zero ionic strength (:math:`\kappa=0`) :eq:`eqns. %s <eqnkgrf>` and
-:eq:`%s <eqncgrf>` reduce to the simple forms of :eq:`eqns. %s <eqnkrf>` and :eq:`%s <eqncrf>`
-respectively.
-
 .. _modnbint:
 
 Modified non-bonded interactions
