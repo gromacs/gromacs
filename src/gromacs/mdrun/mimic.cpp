@@ -225,7 +225,6 @@ void gmx::Simulator::do_mimic()
     top_global->intermolecularExclusionGroup = genQmmmIndices(*top_global);
 
     initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda, lam0);
-    init_nrnb(nrnb);
 
     gmx_mdoutf        *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, top_global, oenv, wcycle,
                                           StartingBehavior::NewSimulation);

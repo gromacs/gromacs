@@ -256,7 +256,6 @@ void gmx::Simulator::do_md()
     {
         pleaseCiteCouplingAlgorithms(fplog, *ir);
     }
-    init_nrnb(nrnb);
     gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, top_global, oenv, wcycle,
                                          StartingBehavior::NewSimulation);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, ir, pull_work, mdoutf_get_fp_dhdl(outf), false);

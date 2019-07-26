@@ -376,8 +376,6 @@ static void init_em(FILE *fplog,
     }
     initialize_lambdas(fplog, *ir, MASTER(cr), &(state_global->fep_state), state_global->lambda, nullptr);
 
-    init_nrnb(nrnb);
-
     if (ir->eI == eiNM)
     {
         GMX_ASSERT(shellfc != nullptr, "With NM we always support shells");
@@ -2755,9 +2753,6 @@ Simulator::do_nm()
     {
         snew(full_matrix, sz*sz);
     }
-
-    init_nrnb(nrnb);
-
 
     /* Write start time and temperature */
     print_em_start(fplog, cr, walltime_accounting, wcycle, NM);

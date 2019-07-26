@@ -195,7 +195,7 @@ bool ResetHandler::resetCountersImpl(
         {
             reset_dd_statistics_counters(cr->dd);
         }
-        init_nrnb(nrnb);
+        clear_nrnb(nrnb);
         wallcycle_start(wcycle, ewcRUN);
         walltime_accounting_reset_time(walltime_accounting, step);
         print_date_and_time(fplog, cr->nodeid, "Restarted time", gmx_gettime());

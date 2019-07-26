@@ -42,11 +42,11 @@
 #include <cstring>
 
 #include <algorithm>
+#include <vector>
 
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arraysize.h"
-#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     const char *name;
@@ -254,23 +254,13 @@ static void pr_difftime(FILE *out, double dt)
     fprintf(out, "\n");
 }
 
-void init_nrnb(t_nrnb *nrnb)
+void clear_nrnb(t_nrnb *nrnb)
 {
     int i;
 
     for (i = 0; (i < eNRNB); i++)
     {
         nrnb->n[i] = 0.0;
-    }
-}
-
-void cp_nrnb(t_nrnb *dest, t_nrnb *src)
-{
-    int i;
-
-    for (i = 0; (i < eNRNB); i++)
-    {
-        dest->n[i] = src->n[i];
     }
 }
 
@@ -551,63 +541,59 @@ static double pr_av(FILE *log, t_commrec *cr,
 
 void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[])
 {
-    int     i, j, perc;
-    double  dperc, unb, uf, us;
-    double *ftot, fav;
-    double *stot, sav;
-    t_nrnb *av;
+    t_nrnb              av;
 
-    snew(av, 1);
-    snew(ftot, cr->nnodes);
-    snew(stot, cr->nnodes);
-    init_nrnb(av);
-    for (i = 0; (i < cr->nnodes); i++)
+    std::vector<double> ftot(cr->nnodes);
+    std::vector<double> stot(cr->nnodes);
+    for (int i = 0; (i < cr->nnodes); i++)
     {
-        add_nrnb(av, av, &(nrnb[i]));
+        add_nrnb(&av, &av, &(nrnb[i]));
         /* Cost due to forces */
-        for (j = 0; (j < eNR_NBKERNEL_TOTAL_NR); j++)
+        for (int j = 0; (j < eNR_NBKERNEL_TOTAL_NR); j++)
         {
             ftot[i] += nrnb[i].n[j]*cost_nrnb(j);
         }
-        for (j = 0; (j < NFORCE_INDEX); j++)
+        for (int j = 0; (j < NFORCE_INDEX); j++)
         {
             ftot[i] += nrnb[i].n[force_index[j]]*cost_nrnb(force_index[j]);
         }
         /* Due to shake */
-        for (j = 0; (j < NCONSTR_INDEX); j++)
+        for (int j = 0; (j < NCONSTR_INDEX); j++)
         {
             stot[i] += nrnb[i].n[constr_index[j]]*cost_nrnb(constr_index[j]);
         }
     }
-    for (j = 0; (j < eNRNB); j++)
+    for (int j = 0; (j < eNRNB); j++)
     {
-        av->n[j] = av->n[j]/static_cast<double>(cr->nnodes - cr->npmenodes);
+        av.n[j] = av.n[j]/static_cast<double>(cr->nnodes - cr->npmenodes);
     }
 
     fprintf(log, "\nDetailed load balancing info in percentage of average\n");
 
     fprintf(log, " Type                 RANK:");
-    for (i = 0; (i < cr->nnodes); i++)
+    for (int i = 0; (i < cr->nnodes); i++)
     {
         fprintf(log, "%3d ", i);
     }
     fprintf(log, "Scaling\n");
     fprintf(log, "---------------------------");
-    for (i = 0; (i < cr->nnodes); i++)
+    for (int i = 0; (i < cr->nnodes); i++)
     {
         fprintf(log, "----");
     }
     fprintf(log, "-------\n");
 
-    for (j = 0; (j < eNRNB); j++)
+    for (int j = 0; (j < eNRNB); j++)
     {
-        unb = 100.0;
-        if (av->n[j] > 0)
+        double unb = 100.0;
+        if (av.n[j] > 0)
         {
+            double dperc;
+            int    perc;
             fprintf(log, " %-26s", nrnb_str(j));
-            for (i = 0; (i < cr->nnodes); i++)
+            for (int i = 0; (i < cr->nnodes); i++)
             {
-                dperc = (100.0*nrnb[i].n[j])/av->n[j];
+                dperc = (100.0*nrnb[i].n[j])/av.n[j];
                 unb   = std::max(unb, dperc);
                 perc  = static_cast<int>(dperc);
                 fprintf(log, "%3d ", perc);
@@ -623,16 +609,17 @@ void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[])
             }
         }
     }
-    fav = sav = 0;
-    for (i = 0; (i < cr->nnodes); i++)
+    double fav = 0;
+    double sav = 0;
+    for (int i = 0; (i < cr->nnodes); i++)
     {
         fav += ftot[i];
         sav += stot[i];
     }
-    uf = pr_av(log, cr, fav, ftot, "Total Force");
-    us = pr_av(log, cr, sav, stot, "Total Constr.");
+    double uf = pr_av(log, cr, fav, ftot.data(), "Total Force");
+    double us = pr_av(log, cr, sav, stot.data(), "Total Constr.");
 
-    unb = (uf*fav+us*sav)/(fav+sav);
+    double unb = (uf*fav+us*sav)/(fav+sav);
     if (unb > 0)
     {
         unb = 10000.0/unb;

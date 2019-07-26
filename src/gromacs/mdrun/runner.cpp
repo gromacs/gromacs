@@ -437,7 +437,6 @@ static void finish_run(FILE *fplog,
                        const gmx_pme_t *pme,
                        gmx_bool bWriteStat)
 {
-    t_nrnb *nrnb_tot = nullptr;
     double  delta_t  = 0;
     double  nbfs     = 0, mflop = 0;
     double  elapsed_time,
@@ -465,9 +464,12 @@ static void finish_run(FILE *fplog,
         printReport = false;
     }
 
+    t_nrnb                  *nrnb_tot;
+    std::unique_ptr<t_nrnb>  nrnbTotalStorage;
     if (cr->nnodes > 1)
     {
-        snew(nrnb_tot, 1);
+        nrnbTotalStorage = std::make_unique<t_nrnb>();
+        nrnb_tot         = nrnbTotalStorage.get();
 #if GMX_MPI
         MPI_Allreduce(nrnb->n, nrnb_tot->n, eNRNB, MPI_DOUBLE, MPI_SUM,
                       cr->mpi_comm_mysim);
@@ -506,10 +508,6 @@ static void finish_run(FILE *fplog,
     if (printReport)
     {
         print_flop(fplog, nrnb_tot, &nbfs, &mflop);
-    }
-    if (cr->nnodes > 1)
-    {
-        sfree(nrnb_tot);
     }
 
     if (thisRankHasDuty(cr, DUTY_PP) && DOMAINDECOMP(cr))
@@ -566,7 +564,6 @@ static void finish_run(FILE *fplog,
 int Mdrunner::mdrunner()
 {
     matrix                    box;
-    t_nrnb                   *nrnb;
     t_forcerec               *fr               = nullptr;
     t_fcdata                 *fcd              = nullptr;
     real                      ewaldcoeff_q     = 0;
@@ -1237,7 +1234,7 @@ int Mdrunner::mdrunner()
     std::unique_ptr<MDAtoms>     mdAtoms;
     std::unique_ptr<gmx_vsite_t> vsite;
 
-    snew(nrnb, 1);
+    t_nrnb nrnb;
     if (thisRankHasDuty(cr, DUTY_PP))
     {
         /* Initiate forcerecord */
@@ -1422,7 +1419,7 @@ int Mdrunner::mdrunner()
                                     || observablesHistory.edsamHistory);
         auto constr              = makeConstraints(mtop, *inputrec, pull_work, doEssentialDynamics,
                                                    fplog, *mdAtoms->mdatoms(),
-                                                   cr, ms, nrnb, wcycle, fr->bMolPBC);
+                                                   cr, ms, &nrnb, wcycle, fr->bMolPBC);
 
         /* Energy terms and groups */
         gmx_enerdata_t enerd(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(), inputrec->fepvals->n_lambda);
@@ -1466,7 +1463,7 @@ int Mdrunner::mdrunner()
             fcd,
             globalState.get(),
             &observablesHistory,
-            mdAtoms.get(), nrnb, wcycle, fr,
+            mdAtoms.get(), &nrnb, wcycle, fr,
             &enerd,
             &ppForceWorkload,
             replExParams,
@@ -1487,7 +1484,7 @@ int Mdrunner::mdrunner()
         GMX_RELEASE_ASSERT(pmedata, "pmedata was NULL while cr->duty was not DUTY_PP");
         /* do PME only */
         walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntPME));
-        gmx_pmeonly(pmedata, cr, nrnb, wcycle, walltime_accounting, inputrec, pmeRunMode);
+        gmx_pmeonly(pmedata, cr, &nrnb, wcycle, walltime_accounting, inputrec, pmeRunMode);
     }
 
     wallcycle_stop(wcycle, ewcRUN);
@@ -1496,7 +1493,7 @@ int Mdrunner::mdrunner()
      * if rerunMD, don't write last frame again
      */
     finish_run(fplog, mdlog, cr,
-               inputrec, nrnb, wcycle, walltime_accounting,
+               inputrec, &nrnb, wcycle, walltime_accounting,
                fr ? fr->nbv.get() : nullptr,
                pmedata,
                EI_DYNAMICS(inputrec->eI) && !isMultiSim(ms));
@@ -1534,7 +1531,6 @@ int Mdrunner::mdrunner()
     /* Does what it says */
     print_date_and_time(fplog, cr->nodeid, "Finished mdrun", gmx_gettime());
     walltime_accounting_destroy(walltime_accounting);
-    sfree(nrnb);
 
     // Ensure log file content is written
     if (logFileHandle)

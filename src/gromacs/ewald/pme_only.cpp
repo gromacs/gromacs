@@ -164,7 +164,7 @@ static void reset_pmeonly_counters(gmx_wallcycle_t           wcycle,
     /* Reset all the counters related to performance over the run */
     wallcycle_stop(wcycle, ewcRUN);
     wallcycle_reset_all(wcycle);
-    init_nrnb(nrnb);
+    *nrnb = { 0 };
     wallcycle_start(wcycle, ewcRUN);
     walltime_accounting_reset_time(walltime_accounting, step);
 
@@ -552,7 +552,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         changePinningPolicy(&pme_pp->x, pme_get_pinning_policy());
     }
 
-    init_nrnb(mynrnb);
+    clear_nrnb(mynrnb);
 
     count = 0;
     do /****** this is a quasi-loop over time steps! */

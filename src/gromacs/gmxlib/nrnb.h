@@ -117,17 +117,14 @@ enum
 };
 
 
-typedef struct t_nrnb
+struct t_nrnb
 {
-    double n[eNRNB];
-}
-t_nrnb;
+    double n[eNRNB] = { 0 };
+};
+
 struct t_commrec;
-struct t_nrnb;
 
-void init_nrnb(t_nrnb *nrnb);
-
-void cp_nrnb(t_nrnb *dest, t_nrnb *src);
+void clear_nrnb(t_nrnb *nrnb);
 
 void add_nrnb(t_nrnb *dest, t_nrnb *s1, t_nrnb *s2);
 

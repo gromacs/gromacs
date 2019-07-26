@@ -52,7 +52,6 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed_forces/disre.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/functions.h"
@@ -660,7 +659,6 @@ int gmx_disre(int argc, char *argv[])
     FILE             *out = nullptr, *aver = nullptr, *numv = nullptr, *maxxv = nullptr, *xvg = nullptr;
     gmx_localtop_t    top;
     t_fcdata          fcd;
-    t_nrnb            nrnb;
     t_graph          *g;
     int               i, j, kkk;
     t_trxstatus      *status;
@@ -808,7 +806,6 @@ int gmx_disre(int argc, char *argv[])
     auto mdAtoms = gmx::makeMDAtoms(fplog, *topInfo.mtop(), *ir, false);
     atoms2md(topInfo.mtop(), ir, -1, nullptr, ntopatoms, mdAtoms.get());
     update_mdatoms(mdAtoms->mdatoms(), ir->fepvals->init_lambda);
-    init_nrnb(&nrnb);
     if (ir->ePBC != epbcNONE)
     {
         gpbc = gmx_rmpbc_init(&top.idef, ir->ePBC, natoms);
