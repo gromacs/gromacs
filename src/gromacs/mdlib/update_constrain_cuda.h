@@ -144,7 +144,9 @@ class UpdateConstrainCuda
          *
          * \param[out] h_xp CPU pointer where coordinates should be copied to.
          */
-        void copyCoordinatesFromGpu(rvec *h_xp);
+        void copyCoordinatesFromGpu(rvec *h_x);
+        void copyCoordinatesPFromGpu(rvec *h_xp);
+        void copyCoordinatesOnGpu();
 
         /*! \brief
          * Copy velocities from GPU to CPU.

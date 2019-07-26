@@ -1234,6 +1234,7 @@ void gmx::Simulator::do_md()
             // This applies Leap-Frog, LINCS and SETTLE in a succession
             integrator->integrate(ir->delta_t, true, bCalcVir, shake_vir, ekind->tcstat[0].lambda);
 
+            integrator->copyCoordinatesOnGpu();
             integrator->copyCoordinatesFromGpu(state->x.rvec_array());
             integrator->copyVelocitiesFromGpu(state->v.rvec_array());
         }

@@ -163,9 +163,19 @@ void UpdateConstrainCuda::Impl::copyForcesToGpu(const rvec *h_f)
     copyToDeviceBuffer(&d_f_, (float3*)h_f, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
 }
 
-void UpdateConstrainCuda::Impl::copyCoordinatesFromGpu(rvec *h_xp)
+void UpdateConstrainCuda::Impl::copyCoordinatesFromGpu(rvec *h_x)
+{
+    copyFromDeviceBuffer((float3*)h_x, &d_x_, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
+}
+
+void UpdateConstrainCuda::Impl::copyCoordinatesPFromGpu(rvec *h_xp)
 {
     copyFromDeviceBuffer((float3*)h_xp, &d_xp_, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
+}
+
+void UpdateConstrainCuda::Impl::copyCoordinatesOnGpu()
+{
+    cudaMemcpy(d_x_, d_xp_, numAtoms_*sizeof(rvec), cudaMemcpyDeviceToDevice);
 }
 
 void UpdateConstrainCuda::Impl::copyVelocitiesFromGpu(rvec *h_v)
@@ -230,10 +240,21 @@ void UpdateConstrainCuda::copyForcesToGpu(const rvec *h_f)
     impl_->copyForcesToGpu(h_f);
 }
 
-void UpdateConstrainCuda::copyCoordinatesFromGpu(rvec *h_xp)
+void UpdateConstrainCuda::copyCoordinatesFromGpu(rvec *h_x)
 {
-    impl_->copyCoordinatesFromGpu(h_xp);
+    impl_->copyCoordinatesFromGpu(h_x);
 }
+
+void UpdateConstrainCuda::copyCoordinatesPFromGpu(rvec *h_xp)
+{
+    impl_->copyCoordinatesPFromGpu(h_xp);
+}
+
+void UpdateConstrainCuda::copyCoordinatesOnGpu()
+{
+    impl_->copyCoordinatesOnGpu();
+}
+
 
 void UpdateConstrainCuda::copyVelocitiesFromGpu(rvec *h_v)
 {
