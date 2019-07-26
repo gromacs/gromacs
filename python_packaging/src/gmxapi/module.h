@@ -48,6 +48,10 @@
 
 #include "pybind11/pybind11.h"
 
+// Forward declaration for the module initialization.
+// Avoids a warning for the use of PYBIND11_MODULE macro in module.cpp
+// e.g. no previous prototype for function 'PyInit__gmxapi' [-Wmissing-prototypes]
+extern "C" __attribute__((visibility("default"))) PyObject* PyInit__gmxapi();
 
 /*! \brief API client code from which to export Python bindings
  *
