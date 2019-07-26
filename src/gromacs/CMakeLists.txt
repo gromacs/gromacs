@@ -287,6 +287,7 @@ target_link_libraries(libgromacs
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS}
                       ${OpenCL_LIBRARIES}
+                      $<$<PLATFORM_ID:SunOS>:socket>
                       PUBLIC
                       ${GMX_PUBLIC_LIBRARIES}
                       )

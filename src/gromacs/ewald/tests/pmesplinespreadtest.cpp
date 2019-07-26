@@ -234,7 +234,8 @@ public:
                     TestReferenceChecker gridValuesChecker(
                             rootChecker.checkCompound("NonZeroGridValues", "RealSpaceGrid"));
                     const auto ulpToleranceGrid =
-                            2 * ulpToleranceSplineValues * static_cast<int>(ceil(sqrt(atomCount)));
+                            2 * ulpToleranceSplineValues
+                            * static_cast<int>(ceil(sqrt(static_cast<real>(atomCount))));
                     /* 2 is empiric; sqrt(atomCount) assumes all the input charges may spread onto the same cell */
                     SCOPED_TRACE(formatString("Testing grid values with tolerance of %d", ulpToleranceGrid));
                     if (!gridValuesSizeAssigned)
