@@ -1218,6 +1218,10 @@ void gmx::Simulator::do_md()
             copy_rvecn(as_rvec_array(state->x.data()), cbuf, 0, state->natoms);
         }
 
+        int  bNSNextStep      = (ir->nstlist > 0  && (step+1) % ir->nstlist == 0);
+        bool doInterSimSignal = (simulationsShareState && do_per_step(step, nstSignalComm));
+        bool copybackVelocity = (bGStat || (!EI_VV(ir->eI) && do_per_step(step+1, nstglobalcomm)) || doInterSimSignal);
+
         if (c_useGpuUpdateConstrain)
         {
             if (bNS)
@@ -1226,6 +1230,16 @@ void gmx::Simulator::do_md()
                 t_pbc pbc;
                 set_pbc(&pbc, epbcXYZ, state->box);
                 integrator->setPbc(&pbc);
+
+                rvec* d_x    = static_cast<rvec *> (pme_gpu_get_device_x(fr->pmedata));
+                if (d_x == nullptr)
+                {
+                    d_x = static_cast<rvec *> (fr->nbv->get_gpu_xrvec());
+                }
+
+                rvec* d_f    = static_cast<rvec *> (fr->nbv->get_gpu_frvec());
+                integrator->setXVFPointers(d_x, nullptr, nullptr, d_f);
+
             }
             integrator->copyCoordinatesToGpu(state->x.rvec_array());
             integrator->copyVelocitiesToGpu(state->v.rvec_array());

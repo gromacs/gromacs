@@ -190,10 +190,22 @@ void UpdateConstrainCuda::Impl::copyForcesFromGpu(rvec *h_f)
 
 void UpdateConstrainCuda::Impl::setXVFPointers(rvec *d_x, rvec *d_xp, rvec *d_v, rvec *d_f)
 {
-    d_x_  = (float3*)d_x;
-    d_xp_ = (float3*)d_xp;
-    d_v_  = (float3*)d_v;
-    d_f_  = (float3*)d_f;
+    if (d_x != nullptr)
+    {
+        d_x_  = (float3*)d_x;
+    }
+    if (d_xp != nullptr)
+    {
+        d_xp_ = (float3*)d_xp;
+    }
+    if (d_v != nullptr)
+    {
+        d_v_  = (float3*)d_v;
+    }
+    if (d_f != nullptr)
+    {
+        d_f_  = (float3*)d_f;
+    }
 }
 
 
