@@ -43,27 +43,16 @@
  * \ingroup module_mdlib
  */
 
-#ifndef GMX_MDLIB_TESTS_CONSTR_IMPL_H
-#define GMX_MDLIB_TESTS_CONSTR_IMPL_H
+#ifndef GMX_MDLIB_TESTS_CONSTRTESTDATA_H
+#define GMX_MDLIB_TESTS_CONSTRTESTDATA_H
 
-#include "gmxpre.h"
-
-#include <assert.h>
-
-#include <cmath>
-
-#include <algorithm>
-#include <unordered_map>
 #include <vector>
 
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/gpu_utils/gpu_testutils.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/lincs.h"
 #include "gromacs/mdlib/shake.h"
@@ -72,13 +61,9 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/unique_cptr.h"
 
 namespace gmx
 {
@@ -218,20 +203,7 @@ class ConstraintsTestData
         ~ConstraintsTestData();
 };
 
-/*! \brief Apply SHAKE constraints to the test data.
- */
-void applyShake(ConstraintsTestData *testData, t_pbc pbc);
-/*! \brief Apply LINCS constraints to the test data.
- */
-void applyLincs(ConstraintsTestData *testData, t_pbc pbc);
-/*! \brief Apply CUDA version of LINCS constraints to the test data.
- *
- * All the data is copied to the GPU device, then LINCS is applied and
- * the resulting coordinates are copied back.
- */
-void applyLincsCuda(ConstraintsTestData *testData, t_pbc pbc);
-
 }      // namespace test
 }      // namespace gmx
 
-#endif // GMX_MDLIB_TESTS_CONSTR_IMPL_H
+#endif // GMX_MDLIB_TESTS_CONSTRTESTDATA_H

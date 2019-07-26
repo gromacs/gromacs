@@ -44,7 +44,7 @@
 
 #include "gmxpre.h"
 
-#include "constr_impl.h"
+#include "constrtestrunners.h"
 
 #include "config.h"
 
@@ -53,7 +53,6 @@
 #include <cmath>
 
 #include <algorithm>
-#include <unordered_map>
 #include <vector>
 
 #include <gtest/gtest.h>

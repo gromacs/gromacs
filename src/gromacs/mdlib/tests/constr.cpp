@@ -44,254 +44,31 @@
  * \author Artem Zhmurov <zhmurov@gmail.com>
  * \ingroup module_mdlib
  */
-
 #include "gmxpre.h"
-
-#include "gromacs/mdlib/constr.h"
 
 #include "config.h"
 
 #include <assert.h>
 
-#include <cmath>
-
-#include <algorithm>
 #include <unordered_map>
 #include <vector>
 
 #include <gtest/gtest.h>
 
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdlib/lincs.h"
-#include "gromacs/mdlib/shake.h"
-#include "gromacs/mdrunutility/multisim.h"
-#include "gromacs/mdtypes/commrec.h"
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/block.h"
-#include "gromacs/topology/idef.h"
-#include "gromacs/topology/ifunc.h"
-#include "gromacs/topology/topology.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/unique_cptr.h"
 
-#include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
-#include "constr_impl.h"
+#include "constrtestdata.h"
+#include "constrtestrunners.h"
 
 namespace gmx
 {
 namespace test
 {
-
-ConstraintsTestData::ConstraintsTestData(const std::string &title,
-                                         int numAtoms, std::vector<real> masses,
-                                         std::vector<int> constraints, std::vector<real> constraintsR0,
-                                         bool computeVirial, tensor virialScaledRef,
-                                         bool compute_dHdLambda, float dHdLambdaRef,
-                                         real initialTime, real timestep,
-                                         const std::vector<RVec> &x, const std::vector<RVec> &xPrime, const std::vector<RVec> &v,
-                                         real shakeTolerance, gmx_bool shakeUseSOR,
-                                         int lincsNumIterations, int lincsExpansionOrder, real lincsWarnAngle)
-{
-    // This is to trick Gerrit
-    {
-        {
-            title_    = title;    // Human-friendly name of the system
-            numAtoms_ = numAtoms; // Number of atoms
-
-            // Masses of atoms
-            masses_ = masses;
-            invmass_.resize(numAtoms); // Vector of inverse masses
-
-            for (int i = 0; i < numAtoms; i++)
-            {
-                invmass_[i] = 1.0/masses.at(i);
-            }
-
-            // Saving constraints to check if they are satisfied after algorithm was applied
-            constraints_   = constraints;   // Constraints indices (in type-i-j format)
-            constraintsR0_ = constraintsR0; // Equilibrium distances for each type of constraint
-
-            invdt_  = 1.0/timestep;         // Inverse timestep
-
-            // Communication record
-            cr_.nnodes = 1;
-            cr_.dd     = nullptr;
-
-            // Multisim data
-            ms_.sim  = 0;
-            ms_.nsim = 1;
-
-            // Input record - data that usually comes from configuration file (.mdp)
-            ir_.efep           = 0;
-            ir_.init_t         = initialTime;
-            ir_.delta_t        = timestep;
-            ir_.eI             = 0;
-
-            // MD atoms data
-            md_.nMassPerturbed = 0;
-            md_.lambda         = 0.0;
-            md_.invmass        = invmass_.data();
-            md_.nr             = numAtoms;
-            md_.homenr         = numAtoms;
-
-            // Virial evaluation
-            computeVirial_ = computeVirial;
-            if (computeVirial)
-            {
-                for (int i = 0; i < DIM; i++)
-                {
-                    for (int j = 0; j < DIM; j++)
-                    {
-                        virialScaled_[i][j]    = 0;
-                        virialScaledRef_[i][j] = virialScaledRef[i][j];
-                    }
-                }
-            }
-
-
-            // Free energy evaluation
-            compute_dHdLambda_ = compute_dHdLambda;
-            dHdLambda_         = 0;
-            if (compute_dHdLambda_)
-            {
-                ir_.efep                    = efepYES;
-                dHdLambdaRef_               = dHdLambdaRef;
-            }
-            else
-            {
-                ir_.efep                    = efepNO;
-                dHdLambdaRef_               = 0;
-            }
-
-            // Constraints and their parameters (local topology)
-            for (int i = 0; i < F_NRE; i++)
-            {
-                idef_.il[i].nr = 0;
-            }
-            idef_.il[F_CONSTR].nr   = constraints.size();
-
-            snew(idef_.il[F_CONSTR].iatoms, constraints.size());
-            int maxType = 0;
-            for (unsigned i = 0; i < constraints.size(); i++)
-            {
-                if (i % 3 == 0)
-                {
-                    if (maxType < constraints.at(i))
-                    {
-                        maxType = constraints.at(i);
-                    }
-                }
-                idef_.il[F_CONSTR].iatoms[i] = constraints.at(i);
-            }
-            snew(idef_.iparams, maxType + 1);
-            for (unsigned i = 0; i < constraints.size()/3; i++)
-            {
-                idef_.iparams[constraints.at(3*i)].constr.dA = constraintsR0.at(constraints.at(3*i));
-                idef_.iparams[constraints.at(3*i)].constr.dB = constraintsR0.at(constraints.at(3*i));
-            }
-
-            // Constraints and their parameters (global topology)
-            InteractionList interactionList;
-            interactionList.iatoms.resize(constraints.size());
-            for (unsigned i = 0; i < constraints.size(); i++)
-            {
-                interactionList.iatoms.at(i) = constraints.at(i);
-            }
-            InteractionList interactionListEmpty;
-            interactionListEmpty.iatoms.resize(0);
-
-            gmx_moltype_t molType;
-            molType.atoms.nr             = numAtoms;
-            molType.ilist.at(F_CONSTR)   = interactionList;
-            molType.ilist.at(F_CONSTRNC) = interactionListEmpty;
-            mtop_.moltype.push_back(molType);
-
-            gmx_molblock_t molBlock;
-            molBlock.type = 0;
-            molBlock.nmol = 1;
-            mtop_.molblock.push_back(molBlock);
-
-            mtop_.natoms = numAtoms;
-            mtop_.ffparams.iparams.resize(maxType + 1);
-            for (int i = 0; i <= maxType; i++)
-            {
-                mtop_.ffparams.iparams.at(i) = idef_.iparams[i];
-            }
-            mtop_.bIntermolecularInteractions = false;
-
-            // Coordinates and velocities
-            x_.resizeWithPadding(numAtoms);
-            xPrime_.resizeWithPadding(numAtoms);
-            xPrime0_.resizeWithPadding(numAtoms);
-            xPrime2_.resizeWithPadding(numAtoms);
-
-            v_.resizeWithPadding(numAtoms);
-            v0_.resizeWithPadding(numAtoms);
-
-            std::copy(x.begin(), x.end(), x_.begin());
-            std::copy(xPrime.begin(), xPrime.end(), xPrime_.begin());
-            std::copy(xPrime.begin(), xPrime.end(), xPrime0_.begin());
-            std::copy(xPrime.begin(), xPrime.end(), xPrime2_.begin());
-
-            std::copy(v.begin(), v.end(), v_.begin());
-            std::copy(v.begin(), v.end(), v0_.begin());
-
-            // SHAKE-specific parameters
-            ir_.shake_tol            = shakeTolerance;
-            ir_.bShakeSOR            = shakeUseSOR;
-
-            // LINCS-specific parameters
-            ir_.nLincsIter     = lincsNumIterations;
-            ir_.nProjOrder     = lincsExpansionOrder;
-            ir_.LincsWarnAngle = lincsWarnAngle;
-        }
-    }
-}
-
-/*! \brief
- * Reset the data structure so it can be reused.
- *
- * Set the coordinates and velocities back to their values before
- * constraining. The scaled virial tensor and dHdLambda are zeroed.
- *
- */
-void ConstraintsTestData::reset()
-{
-    xPrime_  = xPrime0_;
-    xPrime2_ = xPrime0_;
-    v_       = v0_;
-
-    if (computeVirial_)
-    {
-        for (int i = 0; i < DIM; i++)
-        {
-            for (int j = 0; j < DIM; j++)
-            {
-                virialScaled_[i][j] = 0;
-            }
-        }
-    }
-    dHdLambda_         = 0;
-}
-
-/*! \brief
- * Cleaning up the memory.
- */
-ConstraintsTestData::~ConstraintsTestData()
-{
-    sfree(idef_.il[F_CONSTR].iatoms);
-    sfree(idef_.iparams);
-}
-
 namespace
 {
 
@@ -304,19 +81,19 @@ namespace
  */
 typedef std::tuple<std::string, std::string> ConstraintsTestParameters;
 
-//! Names of all availible algorithms
-std::vector<std::string> algorithmsNames;
+//! Names of all availible runners
+std::vector<std::string> runnersNames;
 
-//! Method that fills and returns algorithmNames to the test macros.
-std::vector<std::string> getAlgorithmsNames()
+//! Method that fills and returns runnersNames to the test macros.
+std::vector<std::string> getRunnersNames()
 {
-    algorithmsNames.emplace_back("SHAKE");
-    algorithmsNames.emplace_back("LINCS");
+    runnersNames.emplace_back("SHAKE");
+    runnersNames.emplace_back("LINCS");
     if (GMX_GPU == GMX_GPU_CUDA && canComputeOnGpu())
     {
-        algorithmsNames.emplace_back("LINCS_CUDA");
+        runnersNames.emplace_back("LINCS_CUDA");
     }
-    return algorithmsNames;
+    return runnersNames;
 }
 
 /*! \brief Test fixture for constraints.
@@ -886,12 +663,12 @@ TEST_P(ConstraintsTest, TriangleOfConstraints){
             lincsNIter, lincslincsExpansionOrder, lincsWarnAngle);
 
     std::string pbcName;
-    std::string algorithmName;
-    std::tie(pbcName, algorithmName) = GetParam();
-    t_pbc                                   pbc       = pbcs_.at(pbcName);
+    std::string runnerName;
+    std::tie(pbcName, runnerName) = GetParam();
+    t_pbc       pbc               = pbcs_.at(pbcName);
 
     // Apply constraints
-    algorithms_.at(algorithmName)(testData.get(), pbc);
+    algorithms_.at(runnerName)(testData.get(), pbc);
 
     checkConstrainsLength(absoluteTolerance(0.0002), *testData, pbc);
     checkConstrainsDirection(*testData, pbc);
@@ -905,7 +682,7 @@ TEST_P(ConstraintsTest, TriangleOfConstraints){
 
 INSTANTIATE_TEST_CASE_P(WithParameters, ConstraintsTest,
                             ::testing::Combine(::testing::Values("PBCNone", "PBCXYZ"),
-                                                   ::testing::ValuesIn(getAlgorithmsNames())));
+                                                   ::testing::ValuesIn(getRunnersNames())));
 
 } // namespace
 } // namespace test

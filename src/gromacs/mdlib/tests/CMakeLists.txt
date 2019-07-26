@@ -33,12 +33,13 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB MDLIB_TEST_SOURCES
-     constr_impl.cpp
+     constrtestrunners.cpp
+     constrtestdata.cpp
      )
 
 if (GMX_USE_CUDA)
     file(GLOB MDLIB_TEST_CUDA_SOURCES
-         constr_impl.cu
+         constrtestrunners.cu
          settle_runners.cu
          )
 endif()

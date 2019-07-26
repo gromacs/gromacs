@@ -42,21 +42,17 @@
  */
 #include "gmxpre.h"
 
-#include "constr_impl.h"
+#include "constrtestrunners.h"
 
 #include <assert.h>
 
 #include <cmath>
 
 #include <algorithm>
-#include <unordered_map>
 #include <vector>
 
 #include "gromacs/gpu_utils/devicebuffer.cuh"
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
-#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/lincs_cuda.cuh"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/unique_cptr.h"
