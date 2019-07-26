@@ -130,7 +130,8 @@ class GpuBonded::Impl
     public:
         //! Constructor
         Impl(const gmx_ffparams_t &ffparams,
-             void                 *streamPtr);
+             void                 *streamPtr,
+             gmx_wallcycle        *wcycle);
         /*! \brief Destructor, non-default needed for freeing
          * device-side buffers */
         ~Impl();
@@ -158,7 +159,7 @@ class GpuBonded::Impl
         /*! \brief Launches the transfer of computed bonded energies. */
         void launchEnergyTransfer();
         /*! \brief Waits on the energy transfer, and accumulates bonded energies to \c enerd. */
-        void accumulateEnergyTerms(gmx_enerdata_t *enerd);
+        void waitAccumulateEnergyTerms(gmx_enerdata_t *enerd);
         /*! \brief Clears the device side energy buffer */
         void clearEnergies();
     private:
@@ -190,6 +191,9 @@ class GpuBonded::Impl
 
         //! Parameters and pointers, passed to the CUDA kernel
         BondedCudaKernelParameters kernelParams_;
+
+        //! \brief Pointer to wallcycle structure.
+        gmx_wallcycle    *wcycle_;
 };
 
 }   // namespace gmx

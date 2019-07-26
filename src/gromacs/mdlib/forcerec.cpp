@@ -1469,7 +1469,8 @@ void init_forcerec(FILE                             *fp,
                    const gmx_device_info_t          *deviceInfo,
                    const bool                        useGpuForBonded,
                    gmx_bool                          bNoSolvOpt,
-                   real                              print_force)
+                   real                              print_force,
+                   gmx_wallcycle                    *wcycle)
 {
     real           rtab;
     char          *env;
@@ -1989,7 +1990,8 @@ void init_forcerec(FILE                             *fp,
             // TODO the heap allocation is only needed while
             // t_forcerec lacks a constructor.
             fr->gpuBonded = new gmx::GpuBonded(mtop->ffparams,
-                                               stream);
+                                               stream,
+                                               wcycle);
         }
     }
 

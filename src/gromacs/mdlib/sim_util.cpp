@@ -853,18 +853,12 @@ launchGpuEndOfStepTasks(nonbonded_verlet_t         *nbv,
 
     if (forceWorkload.haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
     {
-        wallcycle_start(wcycle, ewcWAIT_GPU_BONDED);
         // in principle this should be included in the DD balancing region,
         // but generally it is infrequent so we'll omit it for the sake of
         // simpler code
-        gpuBonded->accumulateEnergyTerms(enerd);
-        wallcycle_stop(wcycle, ewcWAIT_GPU_BONDED);
+        gpuBonded->waitAccumulateEnergyTerms(enerd);
 
-        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_BONDED);
         gpuBonded->clearEnergies();
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 }
 
@@ -1240,9 +1234,7 @@ void do_force(FILE                                     *fplog,
 
         if (ppForceWorkload->haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
         {
-            wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_BONDED);
             fr->gpuBonded->launchEnergyTransfer();
-            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
         }
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }

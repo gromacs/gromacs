@@ -51,6 +51,7 @@ struct t_fcdata;
 struct t_filenm;
 struct t_inputrec;
 struct gmx_gpu_info_t;
+struct gmx_wallcycle;
 
 namespace gmx
 {
@@ -113,6 +114,7 @@ void init_interaction_const_tables(FILE                   *fp,
  * \param[in]  useGpuForBonded  Whether bonded interactions will run on a GPU
  * \param[in]  bNoSolvOpt  Do not use solvent optimization
  * \param[in]  print_force Print forces for atoms with force >= print_force
+ * \param[out] wcycle      Pointer to cycle counter object
  */
 void init_forcerec(FILE                             *fplog,
                    const gmx::MDLogger              &mdlog,
@@ -129,7 +131,8 @@ void init_forcerec(FILE                             *fplog,
                    const gmx_device_info_t          *deviceInfo,
                    bool                              useGpuForBonded,
                    gmx_bool                          bNoSolvOpt,
-                   real                              print_force);
+                   real                              print_force,
+                   gmx_wallcycle                    *wcycle);
 
 /*! \brief Divide exclusions over threads
  *

@@ -59,6 +59,7 @@ struct gmx_mtop_t;
 struct t_forcerec;
 struct t_idef;
 struct t_inputrec;
+struct gmx_wallcycle;
 
 /*! \brief The number on bonded function types supported on GPUs */
 static constexpr int numFTypesOnGpu = 8;
@@ -112,7 +113,8 @@ class GpuBonded
     public:
         //! Construct the manager with constant data and the stream to use.
         GpuBonded(const gmx_ffparams_t &ffparams,
-                  void                 *streamPtr);
+                  void                 *streamPtr,
+                  gmx_wallcycle        *wcycle);
         //! Destructor
         ~GpuBonded();
 
@@ -138,7 +140,7 @@ class GpuBonded
         /*! \brief Launches the transfer of computed bonded energies. */
         void launchEnergyTransfer();
         /*! \brief Waits on the energy transfer, and accumulates bonded energies to \c enerd. */
-        void accumulateEnergyTerms(gmx_enerdata_t *enerd);
+        void waitAccumulateEnergyTerms(gmx_enerdata_t *enerd);
         /*! \brief Clears the device side energy buffer */
         void clearEnergies();
 

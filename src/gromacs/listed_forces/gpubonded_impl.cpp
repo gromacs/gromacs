@@ -165,7 +165,8 @@ class GpuBonded::Impl
 };
 
 GpuBonded::GpuBonded(const gmx_ffparams_t & /* ffparams */,
-                     void                 * /*streamPtr */)
+                     void                 * /*streamPtr */,
+                     gmx_wallcycle        * /* wcycle */)
     : impl_(nullptr)
 {
 }
@@ -200,7 +201,7 @@ GpuBonded::launchEnergyTransfer()
 }
 
 void
-GpuBonded::accumulateEnergyTerms(gmx_enerdata_t * /* enerd */)
+GpuBonded::waitAccumulateEnergyTerms(gmx_enerdata_t * /* enerd */)
 {
 }
 

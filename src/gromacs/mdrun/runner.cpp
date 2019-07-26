@@ -1277,7 +1277,8 @@ int Mdrunner::mdrunner()
                       *hwinfo, nonbondedDeviceInfo,
                       useGpuForBonded,
                       FALSE,
-                      pforce);
+                      pforce,
+                      wcycle);
 
         /* Initialize the mdAtoms structure.
          * mdAtoms is not filled with atom data,

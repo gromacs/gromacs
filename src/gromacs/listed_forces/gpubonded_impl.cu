@@ -52,6 +52,7 @@
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/forcefieldparameters.h"
 
 struct t_forcerec;
@@ -62,9 +63,11 @@ namespace gmx
 // ---- GpuBonded::Impl
 
 GpuBonded::Impl::Impl(const gmx_ffparams_t &ffparams,
-                      void                 *streamPtr)
+                      void                 *streamPtr,
+                      gmx_wallcycle        *wcycle)
 {
     stream_ = *static_cast<CommandStream*>(streamPtr);
+    wcycle_ = wcycle;
 
     allocateDeviceBuffer(&d_forceParams_, ffparams.numTypes(), nullptr);
     // This could be an async transfer (if the source is pinned), so
@@ -263,25 +266,26 @@ GpuBonded::Impl::haveInteractions() const
 void
 GpuBonded::Impl::launchEnergyTransfer()
 {
-    // TODO should wrap with ewcLAUNCH_GPU
     GMX_ASSERT(haveInteractions_, "No GPU bonded interactions, so no energies will be computed, so transfer should not be called");
 
+    wallcycle_sub_start_nocount(wcycle_, ewcsLAUNCH_GPU_BONDED);
     // TODO add conditional on whether there has been any compute (and make sure host buffer doesn't contain garbage)
     float *h_vTot   = vTot_.data();
     copyFromDeviceBuffer(h_vTot, &d_vTot_,
                          0, F_NRE,
                          stream_, GpuApiCallBehavior::Async, nullptr);
+    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_BONDED);
 }
 
 void
-GpuBonded::Impl::accumulateEnergyTerms(gmx_enerdata_t *enerd)
+GpuBonded::Impl::waitAccumulateEnergyTerms(gmx_enerdata_t *enerd)
 {
-    // TODO should wrap with some kind of wait counter, so not all
-    // wait goes in to the "Rest" counter
     GMX_ASSERT(haveInteractions_, "No GPU bonded interactions, so no energies will be computed or transferred, so accumulation should not occur");
 
+    wallcycle_start(wcycle_, ewcWAIT_GPU_BONDED);
     cudaError_t stat = cudaStreamSynchronize(stream_);
     CU_RET_ERR(stat, "D2H transfer of bonded energies failed");
+    wallcycle_stop(wcycle_, ewcWAIT_GPU_BONDED);
 
     for (int fType : fTypesOnGpu)
     {
@@ -301,15 +305,19 @@ GpuBonded::Impl::accumulateEnergyTerms(gmx_enerdata_t *enerd)
 void
 GpuBonded::Impl::clearEnergies()
 {
-    // TODO should wrap with ewcLAUNCH_GPU
+    wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
+    wallcycle_sub_start_nocount(wcycle_, ewcsLAUNCH_GPU_BONDED);
     clearDeviceBufferAsync(&d_vTot_, 0, F_NRE, stream_);
+    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_BONDED);
+    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
 }
 
 // ---- GpuBonded
 
 GpuBonded::GpuBonded(const gmx_ffparams_t &ffparams,
-                     void                 *streamPtr)
-    : impl_(new Impl(ffparams, streamPtr))
+                     void                 *streamPtr,
+                     gmx_wallcycle        *wcycle)
+    : impl_(new Impl(ffparams, streamPtr, wcycle))
 {
 }
 
@@ -339,9 +347,9 @@ GpuBonded::launchEnergyTransfer()
 }
 
 void
-GpuBonded::accumulateEnergyTerms(gmx_enerdata_t *enerd)
+GpuBonded::waitAccumulateEnergyTerms(gmx_enerdata_t *enerd)
 {
-    impl_->accumulateEnergyTerms(enerd);
+    impl_->waitAccumulateEnergyTerms(enerd);
 }
 
 void
