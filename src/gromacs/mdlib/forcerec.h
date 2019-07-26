@@ -91,11 +91,9 @@ forcerec_set_ranges(t_forcerec *fr,
  * Initializes the tables in the interaction constant data structure.
  * \param[in] fp   File for debugging output
  * \param[in] ic   Structure holding the table constant
- * \param[in] rtab The additional distance to add to tables
  */
 void init_interaction_const_tables(FILE                   *fp,
-                                   interaction_const_t    *ic,
-                                   real                    rtab);
+                                   interaction_const_t    *ic);
 
 /*! \brief Initialize forcerec structure.
  *

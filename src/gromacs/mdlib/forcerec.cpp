@@ -1234,8 +1234,13 @@ static void initVdwEwaldParameters(FILE *fp, const t_inputrec *ir,
     }
 }
 
+/* Generate Coulomb and/or Van der Waals Ewald long-range correction tables
+ *
+ * Tables are generated for one or both, depending on if the pointers
+ * are non-null. The spacing for both table sets is the same and obeys
+ * both accuracy requirements, when relevant.
+ */
 static void init_ewald_f_table(const interaction_const_t &ic,
-                               real                       rtab,
                                EwaldCorrectionTables     *coulombTables,
                                EwaldCorrectionTables     *vdwTables)
 {
@@ -1247,16 +1252,7 @@ static void init_ewald_f_table(const interaction_const_t &ic,
      */
     const real tableScale = ewald_spline3_table_scale(ic, useCoulombTable, useVdwTable);
 
-    real       maxr;
-    if (ic.cutoff_scheme == ecutsVERLET)
-    {
-        maxr = ic.rcoulomb;
-    }
-    else
-    {
-        maxr = std::max(ic.rcoulomb, rtab);
-    }
-    const int tableSize = static_cast<int>(maxr*tableScale) + 2;
+    const int  tableSize  = static_cast<int>(ic.rcoulomb*tableScale) + 2;
 
     if (useCoulombTable)
     {
@@ -1270,19 +1266,14 @@ static void init_ewald_f_table(const interaction_const_t &ic,
 }
 
 void init_interaction_const_tables(FILE                *fp,
-                                   interaction_const_t *ic,
-                                   real                 rtab)
+                                   interaction_const_t *ic)
 {
-    if (EEL_PME_EWALD(ic->eeltype) || EVDW_PME(ic->vdwtype))
+    if (EEL_PME_EWALD(ic->eeltype))
     {
-        init_ewald_f_table(*ic, rtab, ic->coulombEwaldTables.get(), ic->vdwEwaldTables.get());
-
-        /* Note that the VdW correction tables are currently never used,
-         * so we don't need to print the spacing with only VdW Ewald.
-         */
-        if (fp != nullptr && EEL_PME_EWALD(ic->eeltype))
+        init_ewald_f_table(*ic, ic->coulombEwaldTables.get(), nullptr);
+        if (fp != nullptr)
         {
-            fprintf(fp, "Initialized non-bonded Ewald correction tables, spacing: %.2e size: %zu\n\n",
+            fprintf(fp, "Initialized non-bonded Coulomb Ewald tables, spacing: %.2e size: %zu\n\n",
                     1/ic->coulombEwaldTables->scale, ic->coulombEwaldTables->tableF.size());
         }
     }
@@ -1346,7 +1337,6 @@ init_interaction_const(FILE                       *fp,
     ic->cutoff_scheme   = ir->cutoff_scheme;
 
     ic->coulombEwaldTables = std::make_unique<EwaldCorrectionTables>();
-    ic->vdwEwaldTables     = std::make_unique<EwaldCorrectionTables>();
 
     /* Lennard-Jones */
     ic->vdwtype         = ir->vdwtype;
@@ -1700,7 +1690,7 @@ void init_forcerec(FILE                             *fp,
 
     /* fr->ic is used both by verlet and group kernels (to some extent) now */
     init_interaction_const(fp, &fr->ic, ir, mtop, systemHasNetCharge);
-    init_interaction_const_tables(fp, fr->ic, ir->rlist + ir->tabext);
+    init_interaction_const_tables(fp, fr->ic);
 
     const interaction_const_t *ic = fr->ic;
 
