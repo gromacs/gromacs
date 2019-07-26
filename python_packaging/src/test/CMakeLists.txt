@@ -70,3 +70,5 @@ add_custom_target(gmxapi_pytest
                   WORKING_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR})
 # The current test fixtures require the `gmx` tool-wrapper executable.
 add_dependencies(gmxapi_pytest gmx)
+
+add_dependencies(check gmxapi_pytest)
