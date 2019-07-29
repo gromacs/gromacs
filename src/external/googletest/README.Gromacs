@@ -28,7 +28,7 @@ googletest/docs/V*md
 googletest/samples
 googlemock/docs/v*/*md
 
-The file CMakeLists.txt in this directory is part of the GROMACS build
+The file CMakeLists.txt in the parent directory is part of the GROMACS build
 system and has been written from scratch.
 
 This README.Gromacs file is new, of course.
