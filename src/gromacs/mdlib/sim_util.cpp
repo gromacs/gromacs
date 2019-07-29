@@ -682,23 +682,15 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
         if (!isNbGpuDone)
         {
             GpuTaskCompletion completionType = (isPmeGpuDone) ? GpuTaskCompletion::Wait : GpuTaskCompletion::Check;
-            wallcycle_start_nocount(wcycle, ewcWAIT_GPU_NB_L);
             isNbGpuDone = Nbnxm::gpu_try_finish_task(nbv->gpu_nbv,
                                                      flags,
                                                      Nbnxm::AtomLocality::Local,
                                                      enerd->grpp.ener[egLJSR].data(),
                                                      enerd->grpp.ener[egCOULSR].data(),
-                                                     forceWithShiftForces.shiftForces(), completionType);
-            wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
-            // To get the call count right, when the task finished we
-            // issue a start/stop.
-            // TODO: move the ewcWAIT_GPU_NB_L cycle counting into nbnxn_gpu_try_finish_task()
-            // and ewcNB_XF_BUF_OPS counting into nbnxn_atomdata_add_nbat_f_to_f().
+                                                     forceWithShiftForces.shiftForces(), completionType, wcycle);
+
             if (isNbGpuDone)
             {
-                wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
-                wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
-
                 nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
                                               forceWithShiftForces.force());
             }
@@ -1394,13 +1386,12 @@ void do_force(FILE                                     *fplog,
         {
             if (bUseGPU)
             {
-                wallcycle_start(wcycle, ewcWAIT_GPU_NB_NL);
-                Nbnxm::gpu_wait_finish_task(nbv->gpu_nbv,
-                                            flags, Nbnxm::AtomLocality::NonLocal,
-                                            enerd->grpp.ener[egLJSR].data(),
-                                            enerd->grpp.ener[egCOULSR].data(),
-                                            forceWithShiftForces.shiftForces());
-                cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
+                cycles_wait_gpu += Nbnxm::gpu_wait_finish_task(nbv->gpu_nbv,
+                                                               flags, Nbnxm::AtomLocality::NonLocal,
+                                                               enerd->grpp.ener[egLJSR].data(),
+                                                               enerd->grpp.ener[egCOULSR].data(),
+                                                               forceWithShiftForces.shiftForces(),
+                                                               wcycle);
             }
             else
             {
@@ -1478,19 +1469,18 @@ void do_force(FILE                                     *fplog,
          * of the step time.
          */
         const float gpuWaitApiOverheadMargin = 2e6F; /* cycles */
-
-        wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
-        Nbnxm::gpu_wait_finish_task(nbv->gpu_nbv,
-                                    flags, Nbnxm::AtomLocality::Local,
-                                    enerd->grpp.ener[egLJSR].data(),
-                                    enerd->grpp.ener[egCOULSR].data(),
-                                    forceOut.forceWithShiftForces().shiftForces());
-        float cycles_tmp = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+        const float waitCycles               =
+            Nbnxm::gpu_wait_finish_task(nbv->gpu_nbv,
+                                        flags, Nbnxm::AtomLocality::Local,
+                                        enerd->grpp.ener[egLJSR].data(),
+                                        enerd->grpp.ener[egCOULSR].data(),
+                                        forceOut.forceWithShiftForces().shiftForces(),
+                                        wcycle);
 
         if (ddBalanceRegionHandler.useBalancingRegion())
         {
             DdBalanceRegionWaitedForGpu waitedForGpu = DdBalanceRegionWaitedForGpu::yes;
-            if (bDoForces && cycles_tmp <= gpuWaitApiOverheadMargin)
+            if (bDoForces && waitCycles <= gpuWaitApiOverheadMargin)
             {
                 /* We measured few cycles, it could be that the kernel
                  * and transfer finished earlier and there was no actual

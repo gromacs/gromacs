@@ -106,6 +106,9 @@ void wallcycle_start_nocount(gmx_wallcycle_t wc, int ewc);
 double wallcycle_stop(gmx_wallcycle_t wc, int ewc);
 /* Stop the cycle count for ewc, returns the last cycle count */
 
+void wallcycle_increment_event_count(gmx_wallcycle_t wc, int ewc);
+/* Only increment call count for ewc by one */
+
 void wallcycle_get(gmx_wallcycle_t wc, int ewc, int *n, double *c);
 /* Returns the cumulative count and cycle count for ewc */
 

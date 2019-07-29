@@ -53,6 +53,7 @@
 #include "locality.h"
 
 struct nbnxn_atomdata_t;
+struct gmx_wallcycle;
 enum class GpuTaskCompletion;
 
 namespace gmx
@@ -165,6 +166,10 @@ void gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused *nb,
  *  - auxiliary tasks: updating the internal module state (timing accumulation, list pruning states) and
  *  - internal staging reduction of (\p fshift, \p e_el, \p e_lj).
  *
+ * In GpuTaskCompletion::Check mode this function does the timing and keeps correct count
+ * for the nonbonded task (incrementing only once per taks), in the GpuTaskCompletion::Wait mode
+ * timing is expected to be done in the caller.
+ *
  *  TODO: improve the handling of outputs e.g. by ensuring that this function explcitly returns the
  *  force buffer (instead of that being passed only to nbnxn_gpu_launch_cpyback()) and by returning
  *  the energy and Fshift contributions for some external/centralized reduction.
@@ -176,16 +181,18 @@ void gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused *nb,
  * \param[out] e_el   Pointer to the electrostatics energy output to accumulate into
  * \param[out] shiftForces    Shift forces buffer to accumulate into
  * \param[in]  completionKind Indicates whether nnbonded task completion should only be checked rather than waited for
+ * \param[out] wcycle Pointer to wallcycle data structure
  * \returns              True if the nonbonded tasks associated with \p aloc locality have completed
  */
 GPU_FUNC_QUALIFIER
-bool gpu_try_finish_task(gmx_nbnxn_gpu_t          gmx_unused *nb,
-                         int                      gmx_unused  flags,
-                         AtomLocality             gmx_unused  aloc,
-                         real                     gmx_unused *e_lj,
-                         real                     gmx_unused *e_el,
+bool gpu_try_finish_task(gmx_nbnxn_gpu_t gmx_unused  *nb,
+                         int             gmx_unused   flags,
+                         AtomLocality    gmx_unused   aloc,
+                         real            gmx_unused  *e_lj,
+                         real            gmx_unused  *e_el,
                          gmx::ArrayRef<gmx::RVec> gmx_unused  shiftForces,
-                         GpuTaskCompletion        gmx_unused  completionKind) GPU_FUNC_TERM_WITH_RETURN(false);
+                         GpuTaskCompletion gmx_unused completionKind,
+                         gmx_wallcycle    gmx_unused  *wcycle) GPU_FUNC_TERM_WITH_RETURN(false);
 
 /*! \brief  Completes the nonbonded GPU task blocking until GPU tasks and data
  * transfers to finish.
@@ -202,12 +209,13 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t          gmx_unused *nb,
  * \param[out] shiftForces Shift forces buffer to accumulate into
  */
 GPU_FUNC_QUALIFIER
-void gpu_wait_finish_task(gmx_nbnxn_gpu_t          gmx_unused *nb,
-                          int                      gmx_unused  flags,
-                          AtomLocality             gmx_unused  aloc,
-                          real                     gmx_unused *e_lj,
-                          real                     gmx_unused *e_el,
-                          gmx::ArrayRef<gmx::RVec> gmx_unused  shiftForces) GPU_FUNC_TERM;
+float gpu_wait_finish_task(gmx_nbnxn_gpu_t          gmx_unused *nb,
+                           int             gmx_unused  flags,
+                           AtomLocality    gmx_unused  aloc,
+                           real            gmx_unused *e_lj,
+                           real            gmx_unused *e_el,
+                           gmx::ArrayRef<gmx::RVec> gmx_unused shiftForces,
+                           gmx_wallcycle    gmx_unused  *wcycle) GPU_FUNC_TERM_WITH_RETURN(0.0);
 
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
 GPU_FUNC_QUALIFIER

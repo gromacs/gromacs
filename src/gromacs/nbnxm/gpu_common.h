@@ -62,6 +62,7 @@
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -371,7 +372,8 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t          *nb,
                          real                     *e_lj,
                          real                     *e_el,
                          gmx::ArrayRef<gmx::RVec>  shiftForces,
-                         GpuTaskCompletion         completionKind)
+                         GpuTaskCompletion         completionKind,
+                         gmx_wallcycle            *wcycle)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -386,12 +388,22 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t          *nb,
         // Query the state of the GPU stream and return early if we're not done
         if (completionKind == GpuTaskCompletion::Check)
         {
+            // To get the wcycle call count right, when in GpuTaskCompletion::Check mode,
+            // we start without counting and only when the task finished we issue a
+            // start/stop to increment.
+            // GpuTaskCompletion::Wait mode the timing is expected to be done in the caller.
+            wallcycle_start_nocount(wcycle, ewcWAIT_GPU_NB_L);
+
             if (!haveStreamTasksCompleted(nb->stream[iLocality]))
             {
+                wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+
                 // Early return to skip the steps below that we have to do only
                 // after the NB task completed
                 return false;
             }
+
+            wallcycle_increment_event_count(wcycle, ewcWAIT_GPU_NB_L);
         }
         else
         {
@@ -431,17 +443,27 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t          *nb,
  * \param[out] e_lj Pointer to the LJ energy output to accumulate into
  * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
  * \param[out] shiftForces Shift forces buffer to accumulate into
+ * \param[out] wcycle Pointer to wallcycle data structure
+ * \return            The number of cycles the gpu wait took
  */
 //NOLINTNEXTLINE(misc-definitions-in-headers) TODO: move into source file
-void gpu_wait_finish_task(gmx_nbnxn_gpu_t          *nb,
-                          int                       flags,
-                          AtomLocality              aloc,
-                          real                     *e_lj,
-                          real                     *e_el,
-                          gmx::ArrayRef<gmx::RVec>  shiftForces)
+float gpu_wait_finish_task(gmx_nbnxn_gpu_t         *nb,
+                           int                      flags,
+                           AtomLocality             aloc,
+                           real                    *e_lj,
+                           real                    *e_el,
+                           gmx::ArrayRef<gmx::RVec> shiftForces,
+                           gmx_wallcycle           *wcycle)
 {
+    auto cycleCounter =
+        (gpuAtomToInteractionLocality(aloc) == InteractionLocality::Local) ? ewcWAIT_GPU_NB_L : ewcWAIT_GPU_NB_NL;
+
+    wallcycle_start(wcycle, cycleCounter);
     gpu_try_finish_task(nb, flags, aloc, e_lj, e_el, shiftForces,
-                        GpuTaskCompletion::Wait);
+                        GpuTaskCompletion::Wait, wcycle);
+    float waitTime = wallcycle_stop(wcycle, cycleCounter);
+
+    return waitTime;
 }
 
 } // namespace Nbnxm

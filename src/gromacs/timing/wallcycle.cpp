@@ -312,6 +312,15 @@ void wallcycle_start(gmx_wallcycle_t wc, int ewc)
     }
 }
 
+void wallcycle_increment_event_count(gmx_wallcycle_t wc, int ewc)
+{
+    if (wc == nullptr)
+    {
+        return;
+    }
+    wc->wcc[ewc].n++;
+}
+
 void wallcycle_start_nocount(gmx_wallcycle_t wc, int ewc)
 {
     if (wc == nullptr)
