@@ -346,7 +346,7 @@ static void do_nb_verlet(t_forcerec                       *fr,
         }
     }
 
-    nbv->dispatchNonbondedKernel(ilocality, *ic, flags, clearF, *fr, enerd, nrnb, wcycle);
+    nbv->dispatchNonbondedKernel(ilocality, *ic, flags, clearF, *fr, enerd, nrnb);
 }
 
 static inline void clear_rvecs_omp(int n, rvec v[])
@@ -693,8 +693,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
                 nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
                                               as_rvec_array(force->unpaddedArrayRef().data()),
                                               BufferOpsUseGpu::False,
-                                              GpuBufferOpsAccumulateForce::Null,
-                                              wcycle);
+                                              GpuBufferOpsAccumulateForce::Null);
             }
         }
     }
@@ -831,11 +830,7 @@ launchGpuEndOfStepTasks(nonbonded_verlet_t         *nbv,
          */
         if (nbv->isDynamicPruningStepGpu(step))
         {
-            wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-            wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
             nbv->dispatchPruneKernelGpu(step);
-            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-            wallcycle_stop(wcycle, ewcLAUNCH_GPU);
         }
 
         /* now clear the GPU outputs while we finish the step on the CPU */
@@ -1108,13 +1103,13 @@ void do_force(FILE                                     *fplog,
         // NS step is also a virial step (on which f buf ops are deactivated).
         if (c_enableGpuBufOps && bUseGPU && (GMX_GPU == GMX_GPU_CUDA))
         {
-            nbv->atomdata_init_add_nbat_f_to_f_gpu(wcycle);
+            nbv->atomdata_init_add_nbat_f_to_f_gpu();
         }
     }
     else
     {
         nbv->setCoordinates(Nbnxm::AtomLocality::Local, false,
-                            x.unpaddedArrayRef(), useGpuXBufOps, pme_gpu_get_device_x(fr->pmedata), wcycle);
+                            x.unpaddedArrayRef(), useGpuXBufOps, pme_gpu_get_device_x(fr->pmedata));
     }
 
     if (bUseGPU)
@@ -1181,7 +1176,7 @@ void do_force(FILE                                     *fplog,
             dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
 
             nbv->setCoordinates(Nbnxm::AtomLocality::NonLocal, false,
-                                x.unpaddedArrayRef(), useGpuXBufOps, pme_gpu_get_device_x(fr->pmedata), wcycle);
+                                x.unpaddedArrayRef(), useGpuXBufOps, pme_gpu_get_device_x(fr->pmedata));
 
         }
 
@@ -1318,14 +1313,14 @@ void do_force(FILE                                     *fplog,
         nbv->dispatchFreeEnergyKernel(Nbnxm::InteractionLocality::Local,
                                       fr, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f, *mdatoms,
                                       inputrec->fepvals, lambda.data(),
-                                      enerd, flags, nrnb, wcycle);
+                                      enerd, flags, nrnb);
 
         if (havePPDomainDecomposition(cr))
         {
             nbv->dispatchFreeEnergyKernel(Nbnxm::InteractionLocality::NonLocal,
                                           fr, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f, *mdatoms,
                                           inputrec->fepvals, lambda.data(),
-                                          enerd, flags, nrnb, wcycle);
+                                          enerd, flags, nrnb);
         }
     }
 
@@ -1344,8 +1339,7 @@ void do_force(FILE                                     *fplog,
         wallcycle_stop(wcycle, ewcFORCE);
         nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::All, forceOut.f,
                                       BufferOpsUseGpu::False,
-                                      GpuBufferOpsAccumulateForce::Null,
-                                      wcycle);
+                                      GpuBufferOpsAccumulateForce::Null);
 
         wallcycle_start_nocount(wcycle, ewcFORCE);
 
@@ -1427,7 +1421,7 @@ void do_force(FILE                                     *fplog,
                 nbv->launch_copy_f_to_gpu(forceOut.f, Nbnxm::AtomLocality::NonLocal);
             }
             nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::NonLocal,
-                                          forceOut.f, useGpuFBufOps, accumulateForce, wcycle);
+                                          forceOut.f, useGpuFBufOps, accumulateForce);
             if (useGpuFBufOps == BufferOpsUseGpu::True)
             {
                 nbv->launch_copy_f_from_gpu(forceOut.f, Nbnxm::AtomLocality::NonLocal);
@@ -1536,7 +1530,7 @@ void do_force(FILE                                     *fplog,
             nbv->launch_copy_f_to_gpu(forceOut.f, Nbnxm::AtomLocality::Local);
         }
         nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
-                                      forceOut.f, useGpuFBufOps, accumulateForce, wcycle);
+                                      forceOut.f, useGpuFBufOps, accumulateForce);
         if (useGpuFBufOps == BufferOpsUseGpu::True)
         {
             nbv->launch_copy_f_from_gpu(forceOut.f, Nbnxm::AtomLocality::Local);

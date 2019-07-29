@@ -1980,7 +1980,7 @@ void init_forcerec(FILE                             *fp,
 
         fr->nbv = Nbnxm::init_nb_verlet(mdlog, bFEP_NonBonded, ir, fr,
                                         cr, hardwareInfo, deviceInfo,
-                                        mtop, box);
+                                        mtop, box, wcycle);
 
         if (useGpuForBonded)
         {

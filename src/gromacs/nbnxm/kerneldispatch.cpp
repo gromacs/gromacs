@@ -467,8 +467,7 @@ nonbonded_verlet_t::dispatchNonbondedKernel(Nbnxm::InteractionLocality iLocality
                                             int                        clearF,
                                             const t_forcerec          &fr,
                                             gmx_enerdata_t            *enerd,
-                                            t_nrnb                    *nrnb,
-                                            gmx_wallcycle             *wcycle)
+                                            t_nrnb                    *nrnb)
 {
     const PairlistSet &pairlistSet = pairlistSets().pairlistSet(iLocality);
 
@@ -488,7 +487,7 @@ nonbonded_verlet_t::dispatchNonbondedKernel(Nbnxm::InteractionLocality iLocality
                              fr.bBHAM ?
                              enerd->grpp.ener[egBHAMSR].data() :
                              enerd->grpp.ener[egLJSR].data(),
-                             wcycle);
+                             wcycle_);
             break;
 
         case Nbnxm::KernelType::Gpu8x8x8:
@@ -527,8 +526,7 @@ nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocali
                                              real                       *lambda,
                                              gmx_enerdata_t             *enerd,
                                              const int                   forceFlags,
-                                             t_nrnb                     *nrnb,
-                                             gmx_wallcycle              *wcycle)
+                                             t_nrnb                     *nrnb)
 {
     const auto nbl_fep = pairlistSets().pairlistSet(iLocality).fepLists();
 
@@ -567,7 +565,7 @@ nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocali
 
     GMX_ASSERT(gmx_omp_nthreads_get(emntNonbonded) == nbl_fep.ssize(), "Number of lists should be same as number of NB threads");
 
-    wallcycle_sub_start(wcycle, ewcsNONBONDED_FEP);
+    wallcycle_sub_start(wcycle_, ewcsNONBONDED_FEP);
 #pragma omp parallel for schedule(static) num_threads(nbl_fep.ssize())
     for (int th = 0; th < nbl_fep.ssize(); th++)
     {
@@ -624,5 +622,5 @@ nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocali
             enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
         }
     }
-    wallcycle_sub_stop(wcycle, ewcsNONBONDED_FEP);
+    wallcycle_sub_stop(wcycle_, ewcsNONBONDED_FEP);
 }

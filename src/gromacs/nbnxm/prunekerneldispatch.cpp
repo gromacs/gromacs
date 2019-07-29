@@ -37,6 +37,7 @@
 
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "clusterdistancekerneltype.h"
@@ -97,9 +98,15 @@ nonbonded_verlet_t::dispatchPruneKernelCpu(const Nbnxm::InteractionLocality  iLo
 
 void nonbonded_verlet_t::dispatchPruneKernelGpu(int64_t step)
 {
+    wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
+    wallcycle_sub_start_nocount(wcycle_, ewcsLAUNCH_GPU_NONBONDED);
+
     const bool stepIsEven = (pairlistSets().numStepsWithPairlist(step) % 2 == 0);
 
     Nbnxm::gpu_launch_kernel_pruneonly(gpu_nbv,
                                        stepIsEven ? Nbnxm::InteractionLocality::Local : Nbnxm::InteractionLocality::NonLocal,
                                        pairlistSets().params().numRollingPruningParts);
+
+    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_NONBONDED);
+    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
 }

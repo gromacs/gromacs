@@ -364,7 +364,8 @@ init_nb_verlet(const gmx::MDLogger     &mdlog,
                const gmx_hw_info_t     &hardwareInfo,
                const gmx_device_info_t *deviceInfo,
                const gmx_mtop_t        *mtop,
-               matrix                   box)
+               matrix                   box,
+               gmx_wallcycle           *wcycle)
 {
     const bool          emulateGpu = (getenv("GMX_EMULATE_GPU") != nullptr);
     const bool          useGpu     = deviceInfo != nullptr;
@@ -482,7 +483,8 @@ init_nb_verlet(const gmx::MDLogger     &mdlog,
                                                 std::move(pairSearch),
                                                 std::move(nbat),
                                                 kernelSetup,
-                                                gpu_nbv);
+                                                gpu_nbv,
+                                                wcycle);
 }
 
 } // namespace Nbnxm
@@ -491,11 +493,13 @@ nonbonded_verlet_t::nonbonded_verlet_t(std::unique_ptr<PairlistSets>      pairli
                                        std::unique_ptr<PairSearch>        pairSearch,
                                        std::unique_ptr<nbnxn_atomdata_t>  nbat_in,
                                        const Nbnxm::KernelSetup          &kernelSetup,
-                                       gmx_nbnxn_gpu_t                   *gpu_nbv_ptr) :
+                                       gmx_nbnxn_gpu_t                   *gpu_nbv_ptr,
+                                       gmx_wallcycle                     *wcycle) :
     pairlistSets_(std::move(pairlistSets)),
     pairSearch_(std::move(pairSearch)),
     nbat(std::move(nbat_in)),
     kernelSetup_(kernelSetup),
+    wcycle_(wcycle),
     gpu_nbv(gpu_nbv_ptr)
 {
     GMX_RELEASE_ASSERT(pairlistSets_, "Need valid pairlistSets");
