@@ -564,9 +564,9 @@ void MolGen::Read(FILE            *fp,
     /* Generate topology for Molecules and distribute them among the nodes */
     int ntopol    = 0;
     std::vector<int> nmolpar;
+    int nlocaltop = 0;
     if (MASTER(cr_))
     {
-        int nlocaltop = 0;
         for (auto mpi = mp.begin(); mpi < mp.end(); ++mpi)
         {
             if (imsTrain == gms.status(mpi->getIupac()))
@@ -697,7 +697,6 @@ void MolGen::Read(FILE            *fp,
          *           S L A V E   N O D E S             *
          *                                             *
          ***********************************************/
-        int nlocaltop = 0;
         while (gmx_recv_int(cr_, 0) == 1)
         {
             alexandria::MyMol mymol;
@@ -793,7 +792,8 @@ void MolGen::Read(FILE            *fp,
     {
         indexCount_.cleanIndex(mindata_, fp);
     }
-    nmol_support_ = mymol_.size();
+    gmx_sumi(1, &nlocaltop, cr_);
+    nmol_support_ = nlocaltop;
     if (nmol_support_ == 0)
     {
         gmx_fatal(FARGS, "No support for any molecule!");

@@ -331,6 +331,9 @@ class MolGen
         //! \brief Return upper boundary for atomic electronegativity.
         double chi0Max() const { return Chi0_max_; }
         
+        //! \brief Return the number of compounds in the data set
+        int nMolSupport() const { return nmol_support_; }
+
         //! \brief Set the energy value for the corresponding rms.
         void setEnergy(int rms, real ener)
         {
@@ -340,7 +343,7 @@ class MolGen
         //! \brief Return the energy of the corresponding rms. 
         double energy(int rms) const 
         { 
-            return fc_[rms]*ener_[rms]; 
+            return ener_[rms]; 
         }
         
         //! \brief Return the weighting factor of the energy.
@@ -367,35 +370,34 @@ class MolGen
         //! \brief Sum over the energies of the cores. 
         void sumEnergies()
         {
-            if (PAR(commrec()) && !final())
-            {
-                gmx_sum(ermsNR-1, ener_, commrec());
-            }
+            // Locally sum the total energy
             ener_[ermsTOT] = 0.0;
             for (int rms = 0; rms < ermsTOT; rms++)
             {
                 ener_[ermsTOT] += ener_[rms];
+            }
+            // Now sum over processors
+            if (PAR(commrec()) && !final())
+            {
+                gmx_sum(ermsNR, ener_, commrec());
             }
         }
 
         //! \brief Normalize the energy by the number of molecules.
         void normalizeEnergies()
         {
-            if (MASTER(commrec()))
+            double normFactor = nMolSupport(); // total number of molecules used in fitting
+            if (weight(ermsMU) && bQM())
             {
-                double normFactor = nmol_support_; // total number of molecules used in fitting
-                if (weight(ermsMU) && bQM())
-                {
-                    normFactor *= DIM; // three dipole residuals added per molecule if compared to QM dipole vector
-                }
-                if (weight(ermsQUAD))
-                {
-                    normFactor *= DIM; // three quadrupole residuals added per molecule
-                }                
-                for (int rms = 0; rms < ermsTOT; rms++)
-                {
-                    ener_[rms] = fc_[rms]*ener_[rms]/normFactor;
-                }
+                normFactor *= DIM; // three dipole residuals added per molecule if compared to QM dipole vector
+            }
+            if (weight(ermsQUAD))
+            {
+                normFactor *= DIM; // three quadrupole residuals added per molecule
+            }                
+            for (int rms = 0; rms < ermsNR; rms++)
+            {
+                ener_[rms] = fc_[rms]*ener_[rms]/normFactor;
             }
         }
 

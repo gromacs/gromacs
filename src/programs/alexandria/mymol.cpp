@@ -1203,6 +1203,13 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
     {
         enerd_->term[i] = 0;
     }
+    for(int i = 0; i < enerd_->grpp.nener; i++)
+    {
+        for(int j = 0; j < egNR; j++)
+        {
+            enerd_->grpp.ener[j][i] = 0;
+        }
+    }
     if (nullptr != shellfc_)
     {
         auto nnodes = cr->nnodes;
@@ -2182,6 +2189,10 @@ void MyMol::UpdateIdef(const Poldata   &pd,
     if (iType == eitVDW)
     {
         nonbondedFromPdToMtop(mtop_, &topology_->atoms, pd);
+        if (debug)
+        {
+            pr_ffparams(debug, 0, "UpdateIdef", &mtop_->ffparams, FALSE);
+        }
         return;
     }
     auto fs = pd.findForces(iType);

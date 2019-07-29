@@ -240,7 +240,7 @@ void Bayes<T>::getBestParam(parm_t &bestParam)
 {
     bestParam = bestParam_;
 }
-
+    
 template <class T>
 void Bayes<T>::getPmean(parm_t &pmean)
 {
@@ -419,8 +419,12 @@ void Bayes<T>::DRAM()
     *minEval_ = prevEval;
     for (int iter = 0; iter < nParam*maxIter(); iter++)
     {
+        // TODO: integer division iter/nParam yields an integer
+        // step function, 0, 0, 0, 1, 1, 1, 2, 2, 2 etc.
+        // even though this is intended it is confusing.
         double beta = computeBeta(iter/nParam);
-        int       j = static_cast<int>(std::round((1+uniform(gen))*nParam)) % nParam; // Pick random parameter to change
+        // Pick random parameter to change
+        int       j = static_cast<int>(std::round((1+uniform(gen))*nParam)) % nParam; 
         
         storeParam = param_[j];
         changeParam(j, uniform(gen));

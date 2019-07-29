@@ -361,6 +361,10 @@ class MyMol
         MolProp *molProp() const { return mp_; }
 
         /*! \brief
+         * Return mtop structure
+         */
+        const gmx_mtop_t *mtop() { return mtop_; }
+        /*! \brief
          * Return mol state
          */
         t_state *molState() const { return state_; }

@@ -130,7 +130,7 @@ class Ffatype
                 const std::string &btype,
                 const std::string &ztype,
                 const std::string &elem,
-                std::string       &vdwparams,
+                const std::string &vdwparams,
                 const std::string &refEnthalpy);
 
         /*! \brief
@@ -177,7 +177,7 @@ class Ffatype
          * Set the Van der Waals parameters.
          * \param[in] param The string of parameters
          */ 
-        void setVdwparams(std::string param) {vdwparams_ = param; }
+        void setVdwparams(const std::string &param) {vdwparams_ = param; }
 
         /*! \brief
          * Set the modified flag

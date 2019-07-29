@@ -125,7 +125,7 @@ Ffatype::Ffatype(const std::string &desc,
                  const std::string &btype,
                  const std::string &ztype,
                  const std::string &elem,
-                 std::string       &vdwparams,
+                 const std::string &vdwparams,
                  const std::string &refEnthalpy)
     :
       desc_(desc),

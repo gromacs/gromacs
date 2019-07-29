@@ -505,9 +505,11 @@ void getLjParams(const Poldata     &pd,
     switch (pd.getCombRule())
     {
         case eCOMB_GEOMETRIC:
+        {
             *c6 = std::sqrt(si * sj);
             *cn = std::sqrt(ei * ej);
-            break;
+        }
+        break;
         case eCOMB_ARITHMETIC:
         {
             double sig  = 0.5 * (si + sj);
@@ -585,7 +587,8 @@ void getBhamParams(const Poldata     &pd,
     }
     if (debug)
     {
-        fprintf(debug, "BHAM parameters %g %g %g\n", *a, *b, *c);
+        fprintf(debug, "BHAM parameters for %s %s %g %g %g\n",
+                ai.c_str(), aj.c_str(), *a, *b, *c);
     }
 }
 
@@ -603,7 +606,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
     {
         mtop->ffparams.iparams.resize(ntype2, {});
     }
-    auto ftv   = pd.getVdwFtype();
+    auto ftypeVdW   = pd.getVdwFtype();
     typedef struct
     { 
         std::string name;
@@ -634,6 +637,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                     i++, tn.name.c_str(), ptype_str[tn.ptype]);
         }
     }
+    // TODO: Use the symmetry in the matrix 
     for (auto i = 0; (i < ntype); i++)
     {
         if (mytypes[i].ptype == eptAtom)
@@ -643,8 +647,8 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                 auto idx = ntype*i+j;
                 if (mytypes[j].ptype == eptAtom)
                 {
-                    mtop->ffparams.functype[idx] = ftv;
-                    switch (ftv)
+                    mtop->ffparams.functype[idx] = ftypeVdW;
+                    switch (ftypeVdW)
                     {
                     case F_LJ:
                         {
@@ -663,6 +667,14 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                             mtop->ffparams.iparams[idx].bham.a = a;
                             mtop->ffparams.iparams[idx].bham.b = b;
                             mtop->ffparams.iparams[idx].bham.c = c;
+                            if (debug)
+                            {
+                                fprintf(debug, "idx = %3d a = %10g b = %10g c = %10g\n",
+                                        idx,
+                                        mtop->ffparams.iparams[idx].bham.a,
+                                        mtop->ffparams.iparams[idx].bham.b,
+                                        mtop->ffparams.iparams[idx].bham.c);
+                            }
                         }
                         break;
                     default:
@@ -670,15 +682,6 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                                 pd.getVdwFunction().c_str());
                     }
                 }
-                if (debug)
-                {
-                    fprintf(debug, "idx = %3d a = %10g b = %10g c = %10g\n",
-                            idx,
-                            mtop->ffparams.iparams[idx].bham.a,
-                            mtop->ffparams.iparams[idx].bham.b,
-                            mtop->ffparams.iparams[idx].bham.c);
-                }
-                           
             }
         }
     }
@@ -688,15 +691,7 @@ void plist_to_mtop(const Poldata                   &pd,
                    const std::vector<PlistWrapper> &plist,
                    gmx_mtop_t                      *mtop_)
 {
-    int nfptot = gmx::square(mtop_->ffparams.atnr);
-    for (auto &pw : plist)
-    {
-        nfptot += pw.nParam()*NRFPA(pw.getFtype());
-    }
-    mtop_->ffparams.functype.resize(nfptot, {0});
-    t_iparams ip = { { 0 } };
-    mtop_->ffparams.iparams.resize(nfptot, ip);
-    int n = 0;
+    int ffparamsSize = mtop_->ffparams.numTypes();
     for (auto &pw : plist)
     {
         int ftype  = pw.getFtype();
@@ -708,10 +703,10 @@ void plist_to_mtop(const Poldata                   &pd,
             fprintf(debug, "There are %d interactions of type %s\n", nratot/(nra+1),
                     interaction_function[ftype].name);
         }
-        mtop_->moltype[0].ilist[ftype].iatoms.resize(nratot, {0});
+        //mtop_->moltype[0].ilist[ftype].iatoms.resize(nratot, {0});
         /* For generating pairs */
         double fudgeLJ = pd.getFudgeLJ();
-        int k = 0;
+        int k          = 0;
         for (auto j = pw.beginParam(); (j < pw.endParam()); ++j)
         {
             std::vector<real> c;
@@ -741,27 +736,11 @@ void plist_to_mtop(const Poldata                   &pd,
                 c[l] = 0;
             }
             double reppow = 12.0;
-            int ffparamsSize = mtop_->ffparams.numTypes();
-            n = enter_params(&mtop_->ffparams, ftype, c.data(), 0, reppow, n, true);
-            if (n < ffparamsSize && debug)
+            int    type   = enter_params(&mtop_->ffparams, ftype, c.data(), 0, reppow, ffparamsSize, false);
+            mtop_->moltype[0].ilist[ftype].iatoms.push_back(type);
+            for(int m = 0; m < interaction_function[ftype].nratoms; m++)
             {
-                fprintf(debug, "Parameter already present: %s",
-                        interaction_function[ftype].name);
-                for(int i = 0; i < interaction_function[ftype].nratoms; i++)
-                {
-                    fprintf(debug, " %s", 
-                            *mtop_->moltype[0].atoms.atomtype[j->a[i]]);
-                }
-                for(int i = 0; i < nrfp; i++)
-                {
-                    fprintf(debug, " %g", c[i]);
-                }
-                fprintf(debug, "\n");
-            }
-            mtop_->moltype[0].ilist[ftype].iatoms[k++] = n;
-            for (l = 0; (l < nra); l++)
-            {
-                mtop_->moltype[0].ilist[ftype].iatoms[k++] = j->a[l];
+                mtop_->moltype[0].ilist[ftype].iatoms.push_back(j->a[m]);
             }
         }
     }
