@@ -15,7 +15,13 @@ in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
- 
+
+Fix segmentation fault in grompp and mdrun with cosine COM pulling
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`3023`
+
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
