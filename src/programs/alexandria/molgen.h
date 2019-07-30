@@ -343,7 +343,7 @@ class MolGen
         //! \brief Return the energy of the corresponding rms. 
         double energy(int rms) const 
         { 
-            return ener_[rms]; 
+            return fc_[rms]*ener_[rms]; 
         }
         
         //! \brief Return the weighting factor of the energy.
@@ -370,12 +370,6 @@ class MolGen
         //! \brief Sum over the energies of the cores. 
         void sumEnergies()
         {
-            // Locally sum the total energy
-            ener_[ermsTOT] = 0.0;
-            for (int rms = 0; rms < ermsTOT; rms++)
-            {
-                ener_[ermsTOT] += ener_[rms];
-            }
             // Now sum over processors
             if (PAR(commrec()) && !final())
             {
@@ -386,25 +380,28 @@ class MolGen
         //! \brief Normalize the energy by the number of molecules.
         void normalizeEnergies()
         {
-            double normFactor = nMolSupport(); // total number of molecules used in fitting
-            if (weight(ermsMU) && bQM())
+            if (MASTER(commrec()))
             {
-                normFactor *= DIM; // three dipole residuals added per molecule if compared to QM dipole vector
-            }
-            if (weight(ermsQUAD))
-            {
-                normFactor *= DIM; // three quadrupole residuals added per molecule
-            }                
-            for (int rms = 0; rms < ermsNR; rms++)
-            {
-                ener_[rms] = fc_[rms]*ener_[rms]/normFactor;
-            }
+                double normFactor = nmol_support_; // total number of molecules used in fitting
+                if (weight(ermsMU) && bQM())
+                {
+                    normFactor *= DIM; // three dipole residuals added per molecule if compared to QM dipole vector
+                }
+                if (weight(ermsQUAD))
+                {
+                    normFactor *= DIM; // three quadrupole residuals added per molecule
+                }
+                for (int rms = 0; rms < ermsTOT; rms++)
+                {
+                    ener_[ermsTOT] += ((fc_[rms]*ener_[rms])/normFactor);
+                }
+            }           
         }
 
         //! \brief Print the energy components.
         void printEnergies(FILE *fp)
         {
-            if (nullptr != fp)
+            if (nullptr != fp && MASTER(commrec()))
             {
                 fprintf(fp, "Components of fitting function\n");
                 for (int j = 0; j < ermsNR; j++)
