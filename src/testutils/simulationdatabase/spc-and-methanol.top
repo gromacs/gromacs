@@ -1,6 +1,61 @@
-#include "gromos43a1.ff/forcefield.itp"
-#include "gromos43a1.ff/methanol.itp"
-#include "gromos43a1.ff/spc.itp"
+; GROMACS 43A1 united-atom methanol and SPC water
+
+[ defaults ]
+; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
+  1             1               no              1.0     1.0
+
+[ atomtypes ]
+;name  at.num    mass      charge ptype        c6           c12
+   OW    8      0.000      0.000     A  0.0026173456  2.634129e-06
+ CMet    6      0.000      0.000     A  0.0088755241  2.0852922e-05
+ OMet    8      0.000      0.000     A  0.0022619536  1.505529e-06
+    H    1      0.000      0.000     A           0           0
+
+[ nonbond_params ]
+; i    j func          c6           c12
+    CMet       OW  1  0.0048197836  7.050676e-06
+    OMet     CMet  1  0.0044806276  5.1373125e-06
+
+
+[ moleculetype ]
+; name  nrexcl
+Methanol        2
+
+[ atoms ]
+;   nr  type    resnr   residu  atom    cgnr    charge  mass
+1       CMet     1       MeOH    Me1     1        0.176 15.035   
+2       OMet     1       MeOH    O2      1       -0.574 15.999 
+3       H        1       MeOH    H3      1        0.398  1.008 
+
+[ bonds ]
+;  ai  aj funct           c0           c1
+1       2       1          0.13600     376560.
+2       3       1          0.10000     313800.
+
+[ angles ]
+;  ai    aj    ak       funct   c0      c1
+    1     2     3       1       108.53  397.5
+
+
+[ moleculetype ]
+; molname       nrexcl
+SOL             2
+
+[ atoms ]
+;   nr   type  resnr residue  atom   cgnr     charge       mass
+     1     OW      1    SOL     OW      1      -0.82   15.99940
+     2      H      1    SOL    HW1      1       0.41    1.00800
+     3      H      1    SOL    HW2      1       0.41    1.00800
+
+[ settles ]
+; OW    funct   doh     dhh
+1       1       0.1     0.16330
+
+[ exclusions ]
+1       2       3
+2       1       3
+3       1       2
+
 
 [ system ]
 ; Name
