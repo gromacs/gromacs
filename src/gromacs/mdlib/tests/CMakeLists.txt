@@ -40,6 +40,8 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test
                   ebin.cpp
                   energyoutput.cpp
                   leapfrog.cpp
+                  leapfrogtestdata.cpp
+                  leapfrogtestrunners.cpp
                   settle.cpp
                   shake.cpp
                   simulationsignal.cpp
@@ -49,6 +51,6 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test
 # TODO: Make CUDA source to compile inside the testing framework
 if(GMX_USE_CUDA)
     gmx_add_libgromacs_sources(constrtestrunners.cu
-                               leapfrog.cu
+                               leapfrogtestrunners.cu
                                settle_runners.cu)
 endif()

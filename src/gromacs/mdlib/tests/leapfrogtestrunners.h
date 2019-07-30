@@ -33,24 +33,31 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Declaration of interfaces to run integrator on various devices
+ * \brief Declaration of interfaces to run various implementations of integrator (runners)
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  * \ingroup module_mdlib
  */
 
-#include "config.h"
+#ifndef GMX_MDLIB_TESTS_LEAPFROGTESTRUNNERS_H
+#define GMX_MDLIB_TESTS_LEAPFROGTESTRUNNERS_H
 
 #include "gromacs/math/vec.h"
 
-struct t_mdatoms;
+#include "leapfrogtestdata.h"
 
 namespace gmx
 {
 namespace test
 {
 
-#if GMX_GPU == GMX_GPU_CUDA
+/*! \brief Integrate using CPU version of Leap-Frog
+ *
+ * \param[in]     testData  Data needed for the integrator
+ * \param[in]     numSteps  Total number of steps to run integration for.
+ */
+void integrateLeapFrogSimple(LeapFrogTestData *testData,
+                             int               numSteps);
 
 /*! \brief Integrate using CUDA version of Leap-Frog
  *
@@ -58,25 +65,13 @@ namespace test
  * for requested number of steps using Leap-Frog algorithm, copies
  * the result back.
  *
- * \param[in]     numAtoms  Number of atoms.
- * \param[in]     h_x       Initial coordinates.
- * \param[out]    h_xp      Place to save the resulting coordinates to.
- * \param[in,out] h_v       Velocities (will be updated).
- * \param[in]     h_f       Forces.
- * \param[in]     dt        Timestep.
- * \param[in]     numSteps  Total number of steps to runtegration for.
- * \param[in]     mdAtoms   Infromation on atoms (atom masses are used here).
+ * \param[in]     testData  Data needed for the integrator
+ * \param[in]     numSteps  Total number of steps to run integration for.
  */
-void integrateLeapFrogCuda(int         numAtoms,
-                           const rvec *h_x,
-                           rvec       *h_xp,
-                           rvec       *h_v,
-                           const rvec *h_f,
-                           real        dt,
-                           int         numSteps,
-                           t_mdatoms   mdAtoms);
-
-#endif // GMX_GPU == GMX_GPU_CUDA
+void integrateLeapFrogGpu(LeapFrogTestData *testData,
+                          int               numSteps);
 
 }      // namespace test
 }      // namespace gmx
+
+#endif // GMX_MDLIB_TESTS_LEAPFROGTESTRUNNERS_H
