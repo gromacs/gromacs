@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="FinalCoordinates">
+    <Int Name="Length">1</Int>
+    <Settler>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Atom>
+          <Real Name="XX">0.13957903779718056</Real>
+          <Real Name="YY">-0.050722938026974689</Real>
+          <Real Name="ZZ">-0.27171858075593974</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.10565322823307846</Real>
+          <Real Name="YY">-0.051604884600181554</Real>
+          <Real Name="ZZ">-0.18221673711201103</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.065028460921474518</Real>
+          <Real Name="YY">-0.023792759577617249</Real>
+          <Real Name="ZZ">-0.32537764686955362</Real>
+        </Atom>
+      </Sequence>
+    </Settler>
+  </Sequence>
+</ReferenceData>

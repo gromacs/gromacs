@@ -92,6 +92,7 @@
 #include "gromacs/utility/unique_cptr.h"
 
 #include "gromacs/mdlib/tests/watersystem.h"
+#include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
 #include "settletestdata.h"
@@ -105,54 +106,61 @@ namespace
 {
 
 /*! \brief Parameters that will vary from test to test.
- *
- * The test will run in the following parameter space:
- * 1. Number of water molecules (SETTLEs) [1, 2, 4, 5, 7, 10, 12, 15, 17]
- * 2. If the velocities should be updated while constraining [true/false]
- * 3. If the virial should be computed [true/false]
- * 4. Periodic boundary conditions [XYZ/None]
- * 5. Subroutine to use [CPU/GPU version of SETTLE]
  */
-typedef std::tuple<int, bool, bool, std::string, std::string> SettleTestParameters;
-
-
-//! List of all availible algortihms/implementations.
-std::vector<std::string> algorithmsNames;
-
-//! Method that fills and returns algorithmNames to the test macros.
-std::vector<std::string> getAlgorithmsNames()
+struct SettleTestParameters
 {
-    algorithmsNames.emplace_back("SETTLE");
-    // TODO: Here we should check that at least 1 suitable GPU is available
-    if (GMX_GPU == GMX_GPU_CUDA && canComputeOnGpu())
-    {
-        algorithmsNames.emplace_back("SETTLE_GPU");
-    }
-    return algorithmsNames;
-}
+    //! Number of water molecules (SETTLEs) [1, 2, 4, 5, 7, 10, 12, 15, 17]
+    int         numSettles;
+    //! If the velocities should be updated while constraining [true/false]
+    bool        updateVelocities;
+    //! If the virial should be computed [true/false]
+    bool        calcVirial;
+    //! Periodic boundary conditions [PBCXYZ/PBCNone]
+    std::string pbcName;
+};
 
-/*! \brief Test fixture for testing SETTLE position updates.
- *
+/*! \brief Sets of parameters on which to run the tests.
+ */
+const SettleTestParameters parametersSets[] = {{ 1, false, false, "PBCXYZ" },  // 1 water molecule
+                                               { 2, false, false, "PBCXYZ" },  // 2 water molecules
+                                               { 4, false, false, "PBCXYZ" },  // 4 water molecules
+                                               { 5, false, false, "PBCXYZ" },  // 5 water molecules
+                                               { 6, false, false, "PBCXYZ" },  // 6 water molecules
+                                               {10, false, false, "PBCXYZ" },  // 10 water molecules
+                                               {12, false, false, "PBCXYZ" },  // 12 water molecules
+                                               {15, false, false, "PBCXYZ" },  // 15 water molecules
+                                               {17, true,  false, "PBCXYZ" },  // Update velocities
+                                               {17, false, true,  "PBCXYZ" },  // Compute virial
+                                               {17, false, false, "PBCNone"},  // No periodic boundary
+                                               {17, true,  true,  "PBCNone"},  // Update velocities, compute virial, without PBC
+                                               {17, true,  true,  "PBCXYZ" }}; // Update velocities, compute virial, with PBC
+
+/*! \brief Test fixture for testing SETTLE.
  */
 class SettleTest : public ::testing::TestWithParam<SettleTestParameters>
 {
     public:
         //! PBC setups
         std::unordered_map <std::string, t_pbc>                     pbcs_;
-        //! Algorithms (CPU and GPU versions of SETTLE)
+        //! Runners (CPU and GPU versions of SETTLE)
         std::unordered_map <std::string, void(*)(SettleTestData    *testData,
                                                  const t_pbc        pbc,
                                                  const bool         updateVelocities,
                                                  const bool         calcVirial,
-                                                 const std::string &testDescription)> algorithms_;
+                                                 const std::string &testDescription)> runners_;
+        //! Reference data
+        TestReferenceData                        refData_;
+        //! Checker for reference data
+        TestReferenceChecker                     checker_;
 
         /*! \brief Test setup function.
          *
          * Setting up the PBCs and algorithms. Note, that corresponding string keywords
-         * have to be explicitly added at the end of this file when the tests are called.
+         * have to be explicitly specified when parameters are initialied.
          *
          */
-        void SetUp() override
+        SettleTest() :
+            checker_(refData_.rootChecker())
         {
 
             //
@@ -171,155 +179,148 @@ class SettleTest : public ::testing::TestWithParam<SettleTestParameters>
             pbcs_["PBCXYZ"] = pbc;
 
             //
-            // Algorithms
+            // All SETTLE runners should be registered here under appropriate conditions
             //
-            algorithms_["SETTLE"]     = applySettle;
-            algorithms_["SETTLE_GPU"] = applySettleGpu;
-        }
+            runners_["SETTLE"]     = applySettle;
 
-        /*! \brief Check if the positions and velocities were constrained correctly.
-         *
-         * The final distance between constrained atoms is compared to the target distance. The velocities are
-         * not properly tested, only the fact that they were updated is checked.
-         *
-         * \todo Make a proper test for both coordinates and velocities. They should be tested against known
-         *       the final values.
-         *
-         * \param[in]  numSettles        Number of water molecules in the tested system.
-         * \param[in]  updateVelocities  If the velocities were updated.
-         * \param[in]  tolerance         Tolerance to compare floating point numbers.
-         * \param[in]  testDescription   Brief description that will be printed in case of test failure.
-         * \param[in]  testData          An object, containing all the data structures needed by SETTLE.
-         */
-        void checkFinalPositionsAndVelocities(const int                     numSettles,
-                                              const bool                    updateVelocities,
-                                              const FloatingPointTolerance  tolerance,
-                                              const std::string            &testDescription,
-                                              const SettleTestData         &testData)
-        {
-            for (int i = 0; i < numSettles; ++i)
+            // CUDA version will be tested only if:
+            // 1. The code was compiled with CUDA
+            // 2. There is a CUDA-capable GPU in a system
+            // 3. This GPU is detectable
+            // 4. GPU detection was not disabled by GMX_DISABLE_GPU_DETECTION environment variable
+            if (s_hasCompatibleGpus)
             {
-                const gmx::RVec &positionO  = testData.xPrime_[i*3 + 0];
-                const gmx::RVec &positionH1 = testData.xPrime_[i*3 + 1];
-                const gmx::RVec &positionH2 = testData.xPrime_[i*3 + 2];
-
-                real             dOH = testData.dOH_;
-                real             dHH = testData.dHH_;
-
-                EXPECT_REAL_EQ_TOL(dOH*dOH, distance2(positionO, positionH1), tolerance) << formatString("for water %d ", i) << testDescription;
-                EXPECT_REAL_EQ_TOL(dOH*dOH, distance2(positionO, positionH2), tolerance) << formatString("for water %d ", i) << testDescription;
-                EXPECT_REAL_EQ_TOL(dHH*dHH, distance2(positionH1, positionH2), tolerance) << formatString("for water %d ", i) << testDescription;
-
-                // This merely tests whether the velocities were
-                // updated from the starting values of zero (or not),
-                // but not whether the update was correct.
-                for (int j = 0; j < testData.atomsPerSettle_; ++j)
+                if (GMX_GPU == GMX_GPU_CUDA && s_hasCompatibleGpus)
                 {
-                    for (int d = 0; d < DIM; ++d)
-                    {
-                        EXPECT_TRUE(updateVelocities == (0. != testData.v_[i*3 + j][d]))
-                        << formatString("for water %d velocity atom %d dim %d", i, j, d)
-                        << testDescription;
-                    }
+                    runners_["SETTLE_GPU"] = applySettleGpu;
                 }
             }
         }
 
-        /*! \brief Check if the virial was updated.
+        /*! \brief Check if the final interatomic distances are equal to target set by constraints.
+         *
+         * \param[in]  numSettles        Number of water molecules in the tested system.
+         * \param[in]  tolerance         Tolerance to compare floating point numbers.
+         * \param[in]  testData          An object, containing all the data structures needed by SETTLE.
+         */
+        void checkConstrainsSatisfied(const int                     numSettles,
+                                      const FloatingPointTolerance  tolerance,
+                                      const SettleTestData         &testData)
+        {
+            for (int i = 0; i < numSettles; ++i)
+            {
+                const gmx::RVec &positionO  = testData.xPrime_[i*testData.atomsPerSettle_ + 0];
+                const gmx::RVec &positionH1 = testData.xPrime_[i*testData.atomsPerSettle_ + 1];
+                const gmx::RVec &positionH2 = testData.xPrime_[i*testData.atomsPerSettle_ + 2];
+
+                real             dOH = testData.dOH_;
+                real             dHH = testData.dHH_;
+
+                EXPECT_REAL_EQ_TOL(dOH*dOH, distance2(positionO, positionH1), tolerance) << formatString("for water %d. ", i);
+                EXPECT_REAL_EQ_TOL(dOH*dOH, distance2(positionO, positionH2), tolerance) << formatString("for water %d. ", i);
+                EXPECT_REAL_EQ_TOL(dHH*dHH, distance2(positionH1, positionH2), tolerance) << formatString("for water %d. ", i);
+
+            }
+        }
+
+        /*! \brief Check if the virial was updated and symmetric.
          *
          * The two tests on virial are:
          * 1. If it was updated in case calcVirial is true.
          * 2. If it is symmetrical.
          *
-         * \todo Test against pre-computed values should be added.
-         *
          * \param[in]  calcVirial        If the virial is computed.
          * \param[in]  tolerance         Tolerance to compare floating point numbers.
-         * \param[in]  testDescription   Brief description that will be printed in case of test failure.
          * \param[in]  testData          An object, containing all the data structures needed by SETTLE.
          */
-        void checkVirial(const bool                   calcVirial,
-                         const FloatingPointTolerance tolerance,
-                         const std::string           &testDescription,
-                         const SettleTestData        &testData)
+        void checkVirialSymmetric(const bool                   calcVirial,
+                                  const FloatingPointTolerance tolerance,
+                                  const SettleTestData        &testData)
         {
-            // This merely tests whether the viral was updated from
-            // the starting values of zero (or not), but not whether
-            // any update was correct. The symmetry of the tensor is
-            // also tested.
             for (int d = 0; d < DIM; ++d)
             {
                 for (int dd = 0; dd < DIM; ++dd)
                 {
 
                     EXPECT_TRUE(calcVirial == (0. != testData.virial_[d][dd]))
-                    << formatString("for virial component[%d][%d] ", d, dd)
-                    << testDescription;
+                    << formatString("for virial component[%d][%d]. ", d, dd);
 
                     if (calcVirial)
                     {
                         EXPECT_REAL_EQ_TOL(testData.virial_[d][dd], testData.virial_[dd][d], tolerance)
-                        << formatString("Virial is not symmetrical for [%d][%d] ", d, dd)
-                        << testDescription;
+                        << formatString("Virial is not symmetrical for [%d][%d]. ", d, dd);
                     }
                 }
             }
         }
 
-        /*! \brief Check if two sets of coordinates are equal up to the provided tolerance.
+        /*! \brief Check if the final positions correspond to reference values.
          *
-         * This is used to compare the positions and velocities, obtained on the CPU and GPU between
-         * each other.
-         *
-         * \todo Values should be compared to pre-computed reference values instead.
-         *
-         * \param[in]  coordinates       Coordinates to check.
-         * \param[in]  coordinatesRef    Reference values for the constrained coordinates.
-         * \param[in]  tolerance         Tolerance to compare floating point numbers
-         * \param[in]  testDescription   Brief description that will be printed in case of test failure.
+         * \param[in]  numSettles        Number of water molecules in the tested system.
+         * \param[in]  testData          An object, containing all the data structures needed by SETTLE.
          */
-        void checkCoordinatesEqual(const gmx::PaddedVector<gmx::RVec> &coordinates,
-                                   const gmx::PaddedVector<gmx::RVec> &coordinatesRef,
-                                   const FloatingPointTolerance        tolerance,
-                                   const std::string                  &testDescription)
+        void checkFinalPositions(const int                     numSettles,
+                                 const SettleTestData         &testData)
         {
-            EXPECT_EQ(coordinates.size(), coordinatesRef.size());
-            for (index i = 0; i < ssize(coordinates); ++i)
+            TestReferenceChecker finalCoordinatesRef(checker_.checkSequenceCompound("FinalCoordinates", numSettles));
+            for (int i = 0; i < numSettles; ++i)
             {
-                for (int d = 0; d < DIM; ++d)
+                TestReferenceChecker settlerRef(finalCoordinatesRef.checkCompound("Settler", nullptr));
+                TestReferenceChecker atomsRef(settlerRef.checkSequenceCompound("Atoms", testData.atomsPerSettle_));
+                for (int j = 0; j < testData.atomsPerSettle_; ++j)
                 {
-                    EXPECT_REAL_EQ_TOL(coordinates[i][d], coordinatesRef[i][d], tolerance)
-                    << formatString("Different coordinates in GPU and CPU codes for particle %zd component %d ", i, d)
-                    << testDescription;
+                    const gmx::RVec     &xPrime  = testData.xPrime_[testData.atomsPerSettle_*i + j];
+                    TestReferenceChecker xPrimeRef(atomsRef.checkCompound("Atom", nullptr));
+                    xPrimeRef.checkReal(xPrime[XX], "XX");
+                    xPrimeRef.checkReal(xPrime[YY], "YY");
+                    xPrimeRef.checkReal(xPrime[ZZ], "ZZ");
                 }
             }
         }
 
-        /*! \brief Check if two tensors are equal up to the tolerance.
+        /*! \brief Check if the final velocities correspond to reference values.
          *
-         * This is used to check if the computation of virial works similarly on CPU and GPU.
-         *
-         * \todo Values should be compared to pre-computed reference values instead.
-         *
-         * \param[in]  virial            Tensor to check.
-         * \param[in]  virialRef         Reference values for the tensor.
-         * \param[in]  tolerance         Tolerance to compare floating point numbers.
-         * \param[in]  testDescription   Brief description that will be printed in case of test failure.
+         * \param[in]  numSettles        Number of water molecules in the tested system.
+         * \param[in]  testData          An object, containing all the data structures needed by SETTLE.
          */
-        void checkTensorsEqual(const tensor                  virial,
-                               const tensor                  virialRef,
-                               const FloatingPointTolerance  tolerance,
-                               const std::string            &testDescription)
+        void checkFinalVelocities(const int                     numSettles,
+                                  const SettleTestData         &testData)
         {
-            for (int d1 = 0; d1 < DIM; ++d1)
+            TestReferenceChecker finalCoordinatesRef(checker_.checkSequenceCompound("FinalVelocities", numSettles));
+            for (int i = 0; i < numSettles; ++i)
             {
-                for (int d2 = 0; d2 < DIM; ++d2)
+                TestReferenceChecker settlerRef(finalCoordinatesRef.checkCompound("Settler", nullptr));
+                TestReferenceChecker atomsRef(settlerRef.checkSequenceCompound("Atoms", testData.atomsPerSettle_));
+                for (int j = 0; j < testData.atomsPerSettle_; ++j)
                 {
-                    EXPECT_REAL_EQ_TOL(virial[d1][d2], virialRef[d1][d2], tolerance)
-                    << formatString("Different tensor components in GPU and CPU codes for components %d and %d ", d1, d2)
-                    << testDescription;
+                    const gmx::RVec     &v  = testData.v_[testData.atomsPerSettle_*i + j];
+                    TestReferenceChecker vRef(atomsRef.checkCompound("Atom", nullptr));
+                    vRef.checkReal(v[XX], "XX");
+                    vRef.checkReal(v[YY], "YY");
+                    vRef.checkReal(v[ZZ], "ZZ");
                 }
             }
+        }
+
+        /*! \brief Check if the computed virial correspond to reference values.
+         *
+         * \param[in]  testData          An object, containing all the data structures needed by SETTLE.
+         */
+        void checkVirial(const SettleTestData         &testData)
+        {
+            const tensor        &virial  = testData.virial_;
+            TestReferenceChecker virialRef(checker_.checkCompound("Virial", nullptr));
+
+            // TODO: Is it worth it to make this in a loop??
+            virialRef.checkReal(virial[XX][XX], "XX");
+            virialRef.checkReal(virial[XX][YY], "XY");
+            virialRef.checkReal(virial[XX][ZZ], "XZ");
+            virialRef.checkReal(virial[YY][XX], "YX");
+            virialRef.checkReal(virial[YY][YY], "YY");
+            virialRef.checkReal(virial[YY][ZZ], "YZ");
+            virialRef.checkReal(virial[ZZ][XX], "ZX");
+            virialRef.checkReal(virial[ZZ][YY], "ZY");
+            virialRef.checkReal(virial[ZZ][ZZ], "ZZ");
         }
 
         //! Store whether any compatible GPUs exist.
@@ -335,123 +336,81 @@ bool SettleTest::s_hasCompatibleGpus = false;
 
 TEST_P(SettleTest, SatisfiesConstraints)
 {
-    int         numSettles;
-    bool        updateVelocities, calcVirial;
-    std::string pbcName;
-    std::string algorithmName;
-    // Make some symbolic names for the parameter combination.
-    std::tie(numSettles, updateVelocities, calcVirial, pbcName, algorithmName) = GetParam();
-
-    // Make a string that describes which parameter combination is
-    // being tested, to help make failing tests comprehensible.
-    std::string testDescription = formatString("while testing %s with %d SETTLEs, %s, %svelocities and %scalculating the virial",
-                                               algorithmName.c_str(),
-                                               numSettles,
-                                               pbcName.c_str(),
-                                               updateVelocities ? "with " : "without ",
-                                               calcVirial ? "" : "not ");
-
-    auto testData = std::make_unique<SettleTestData>(numSettles);
-
-    ASSERT_LE(numSettles, testData->xPrime_.size() / testData->atomsPerSettle_) << "cannot test that many SETTLEs " << testDescription;
-
-    t_pbc         pbc = pbcs_.at(pbcName);
-
-    algorithms_.at(algorithmName)(testData.get(),
-                                  pbc,
-                                  updateVelocities,
-                                  calcVirial,
-                                  testDescription);
-
-    // The necessary tolerances for the test to pass were determined
-    // empirically. This isn't nice, but the required behavior that
-    // SETTLE produces constrained coordinates consistent with
-    // sensible sampling needs to be tested at a much higher level.
-    real                   dOH             = testData->dOH_;
-    FloatingPointTolerance tolerance       = relativeToleranceAsPrecisionDependentUlp(dOH*dOH, 80, 380);
-    FloatingPointTolerance toleranceVirial = absoluteTolerance(0.000001);
-
-    checkFinalPositionsAndVelocities(numSettles, updateVelocities, tolerance, testDescription, *testData);
-    checkVirial(calcVirial, toleranceVirial, testDescription, *testData);
-}
-
-#if GMX_GPU == GMX_GPU_CUDA
-
-TEST_P(SettleTest, CompareCpuAndGpu)
-{
-    // CUDA version will be tested only if:
-    // 1. The code was compiled with CUDA
-    // 2. There is a CUDA-capable GPU in a system
-    // 3. This GPU is detectable
-    // 4. GPU detection was not disabled by GMX_DISABLE_GPU_DETECTION environment variable
-    if (s_hasCompatibleGpus)
+    // Cycle through all available runners
+    for (const auto &runner : runners_)
     {
-        int         numSettles;
-        bool        updateVelocities, calcVirial;
-        std::string pbcName;
-        std::string algorithmName;
+        std::string runnerName = runner.first;
+
         // Make some symbolic names for the parameter combination.
-        std::tie(numSettles, updateVelocities, calcVirial, pbcName, algorithmName) = GetParam();
+        SettleTestParameters params  = GetParam();
+
+        int                  numSettles       = params.numSettles;
+        bool                 updateVelocities = params.updateVelocities;
+        bool                 calcVirial       = params.calcVirial;
+        std::string          pbcName          = params.pbcName;
+
 
         // Make a string that describes which parameter combination is
         // being tested, to help make failing tests comprehensible.
-        std::string testDescription = formatString("while comparing CPU and GPU implementations with %d SETTLEs, %s, %svelocities and %scalculating the virial",
-                                                   numSettles,
-                                                   pbcName.c_str(),
-                                                   updateVelocities ? "with " : "without ",
-                                                   calcVirial ? "" : "not ");
+        std::string testDescription  = formatString("Testing %s with %d SETTLEs, %s, %svelocities and %scalculating the virial.",
+                                                    runnerName.c_str(),
+                                                    numSettles,
+                                                    pbcName.c_str(),
+                                                    updateVelocities ? "with " : "without ",
+                                                    calcVirial ? "" : "not ");
 
-        auto  testDataCpu = std::make_unique<SettleTestData>(numSettles);
-        auto  testDataGpu = std::make_unique<SettleTestData>(numSettles);
+        SCOPED_TRACE(testDescription);
 
-        t_pbc pbc = pbcs_.at(pbcName);
+        auto testData = std::make_unique<SettleTestData>(numSettles);
 
-        applySettle(testDataCpu.get(),
-                    pbc,
-                    updateVelocities,
-                    calcVirial,
-                    testDescription);
+        ASSERT_LE(numSettles, testData->xPrime_.size() / testData->atomsPerSettle_) << "cannot test that many SETTLEs. " << testDescription;
 
-        applySettleGpu(testDataGpu.get(),
-                       pbc,
-                       updateVelocities,
-                       calcVirial,
-                       testDescription);
+        t_pbc         pbc = pbcs_.at(pbcName);
 
-        FloatingPointTolerance tolerance = absoluteTolerance(0.0001);
+        // Apply SETTLE
+        runner.second(testData.get(),
+                      pbc,
+                      updateVelocities,
+                      calcVirial,
+                      testDescription);
 
-        checkCoordinatesEqual(testDataGpu->xPrime_,
-                              testDataCpu->xPrime_,
-                              tolerance,
-                              testDescription);
+        // The necessary tolerances for the test to pass were determined
+        // empirically. This isn't nice, but the required behavior that
+        // SETTLE produces constrained coordinates consistent with
+        // sensible sampling needs to be tested at a much higher level.
+        // TODO: Re-evaluate the tolerances.
+        real                   dOH             = testData->dOH_;
+        FloatingPointTolerance tolerance       = relativeToleranceAsPrecisionDependentUlp(dOH*dOH, 80, 380);
+        FloatingPointTolerance toleranceVirial = absoluteTolerance(0.000001);
+
+        FloatingPointTolerance tolerancePositions  = absoluteTolerance(0.000001);
+        FloatingPointTolerance toleranceVelocities = absoluteTolerance(0.0001);
+
+        checkConstrainsSatisfied(numSettles, tolerance, *testData);
+        checkVirialSymmetric(calcVirial, toleranceVirial, *testData);
+
+        checker_.setDefaultTolerance(tolerancePositions);
+        checkFinalPositions(numSettles, *testData);
 
         if (updateVelocities)
         {
-            checkCoordinatesEqual(testDataGpu->v_,
-                                  testDataCpu->v_,
-                                  tolerance,
-                                  testDescription);
+            checker_.setDefaultTolerance(toleranceVelocities);
+            checkFinalVelocities(numSettles, *testData);
         }
+
         if (calcVirial)
         {
-            checkTensorsEqual(testDataGpu->virial_,
-                              testDataCpu->virial_,
-                              tolerance,
-                              testDescription);
+            checker_.setDefaultTolerance(toleranceVirial);
+            checkVirial(*testData);
         }
     }
 }
-#endif      // GMX_GPU == GMX_GPU_CUDA
 
-// Scan the full Cartesian product of numbers of SETTLE interactions, whether or not update velocities
-// or calculate the virial contribution, use or not to use PBC, use CPU or GPU-based version of SETTLE.
-INSTANTIATE_TEST_CASE_P(WithParameters, SettleTest,
-                            ::testing::Combine(::testing::Values(1, 2, 4, 5, 7, 10, 12, 15, 17),
-                                                   ::testing::Bool(),
-                                                   ::testing::Bool(),
-                                                   ::testing::Values("PBCNone", "PBCXYZ"),
-                                                   ::testing::ValuesIn(getAlgorithmsNames())
-                                               ));
+// Run test on pre-determined set of combinations for test parameters, which include the numbers of SETTLEs (water
+// molecules), whether or not velocities are updated and virial contribution is computed, was the PBC enabled.
+// The test will cycle through all available runners, including CPU and, if applicable, GPU implementations of SETTLE.
+INSTANTIATE_TEST_CASE_P(WithParameters, SettleTest, ::testing::ValuesIn(parametersSets));
+
 }  // namespace
 }  // namespace test
 }  // namespace gmx
