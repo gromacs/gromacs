@@ -134,7 +134,7 @@ init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
  */
 void do_rotation(const t_commrec  *cr,
                  gmx_enfrot       *er,
-                 matrix            box,
+                 const matrix      box,
                  rvec              x[],
                  real              t,
                  int64_t           step,

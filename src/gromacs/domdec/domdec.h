@@ -208,7 +208,7 @@ void dd_cycles_add(const gmx_domdec_t *dd, float cycles, int ddCycl);
 
 /*! \brief Communicate the coordinates to the neighboring cells and do pbc. */
 void dd_move_x(struct gmx_domdec_t      *dd,
-               matrix                    box,
+               const matrix              box,
                gmx::ArrayRef<gmx::RVec>  x,
                gmx_wallcycle            *wcycle);
 

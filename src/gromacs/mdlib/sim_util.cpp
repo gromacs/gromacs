@@ -530,7 +530,7 @@ computeSpecialForces(FILE                          *fplog,
                      double                         t,
                      gmx_wallcycle_t                wcycle,
                      ForceProviders                *forceProviders,
-                     matrix                         box,
+                     const matrix                   box,
                      gmx::ArrayRef<const gmx::RVec> x,
                      const t_mdatoms               *mdatoms,
                      real                          *lambda,
@@ -607,8 +607,8 @@ computeSpecialForces(FILE                          *fplog,
  * \param[in]  wcycle        The wallcycle structure
  */
 static inline void launchPmeGpuSpread(gmx_pme_t      *pmedata,
-                                      matrix          box,
-                                      rvec            x[],
+                                      const matrix    box,
+                                      const rvec      x[],
                                       int             flags,
                                       int             pmeFlags,
                                       gmx_wallcycle_t wcycle)
@@ -860,7 +860,7 @@ void do_force(FILE                                     *fplog,
               t_nrnb                                   *nrnb,
               gmx_wallcycle_t                           wcycle,
               const gmx_localtop_t                     *top,
-              matrix                                    box,
+              const matrix                              box,
               gmx::ArrayRefWithPadding<gmx::RVec>       x,     //NOLINT(performance-unnecessary-value-param)
               history_t                                *hist,
               gmx::ArrayRefWithPadding<gmx::RVec>       force, //NOLINT(performance-unnecessary-value-param)

@@ -904,7 +904,7 @@ static void do_single_flood(
         rvec             force[],
         t_edpar         *edi,
         int64_t          step,
-        matrix           box,
+        const matrix     box,
         const t_commrec *cr,
         gmx_bool         bNS) /* Are we in a neighbor searching step? */
 {
@@ -1008,7 +1008,7 @@ extern void do_flood(const t_commrec  *cr,
                      const rvec        x[],
                      rvec              force[],
                      gmx_edsam        *ed,
-                     matrix            box,
+                     const matrix      box,
                      int64_t           step,
                      gmx_bool          bNS)
 {

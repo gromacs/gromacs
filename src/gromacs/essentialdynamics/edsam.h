@@ -160,7 +160,7 @@ void do_flood(const t_commrec  *cr,
               const rvec        x[],
               rvec              force[],
               gmx_edsam        *ed,
-              matrix            box,
+              const matrix      box,
               int64_t           step,
               gmx_bool          bNS);
 

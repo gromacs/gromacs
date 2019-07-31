@@ -1938,7 +1938,7 @@ static real do_flex2_lowlevel(
         rvec           x[],
         gmx_bool       bOutstepRot,
         gmx_bool       bOutstepSlab,
-        matrix         box)
+        const matrix   box)
 {
     int             count, ii, iigrp;
     rvec            xj;          /* position in the i-sum                         */
@@ -2185,7 +2185,7 @@ static real do_flex_lowlevel(
         rvec           x[],
         gmx_bool       bOutstepRot,
         gmx_bool       bOutstepSlab,
-        matrix         box)
+        const matrix   box)
 {
     int             count, iigrp;
     rvec            xj, yj0;                /* current and reference position                */
@@ -2523,7 +2523,7 @@ static void do_flexible(
         gmx_enfrot     *enfrot,       /* Other rotation data                        */
         gmx_enfrotgrp  *erg,
         rvec            x[],          /* The local positions                        */
-        matrix          box,
+        const matrix    box,
         double          t,            /* Time in picoseconds                        */
         gmx_bool        bOutstepRot,  /* Output to main rotation output file        */
         gmx_bool        bOutstepSlab) /* Output per-slab data                       */
@@ -2852,7 +2852,7 @@ static void do_radial_motion(
 static void do_radial_motion_pf(
         gmx_enfrotgrp  *erg,
         rvec            x[],          /* The positions                              */
-        matrix          box,          /* The simulation box                         */
+        const matrix    box,          /* The simulation box                         */
         gmx_bool        bOutstepRot,  /* Output to main rotation output file        */
         gmx_bool        bOutstepSlab) /* Output per-slab data                       */
 {
@@ -3056,7 +3056,7 @@ static void radial_motion2_precalc_inner_sum(const gmx_enfrotgrp *erg,
 static void do_radial_motion2(
         gmx_enfrotgrp  *erg,
         rvec            x[],          /* The positions                              */
-        matrix          box,          /* The simulation box                         */
+        const matrix    box,          /* The simulation box                         */
         gmx_bool        bOutstepRot,  /* Output to main rotation output file        */
         gmx_bool        bOutstepSlab) /* Output per-slab data                       */
 {
@@ -3757,7 +3757,7 @@ static void rotate_local_reference(gmx_enfrotgrp *erg)
  * its rotated reference */
 static void choose_pbc_image(rvec x[],
                              gmx_enfrotgrp *erg,
-                             matrix box, int npbcdim)
+                             const matrix box, int npbcdim)
 {
     const auto &localRotationGroupIndex = erg->atomSet->localIndex();
     for (gmx::index i = 0; i < localRotationGroupIndex.ssize(); i++)
@@ -3781,7 +3781,7 @@ static void choose_pbc_image(rvec x[],
 
 void do_rotation(const t_commrec       *cr,
                  gmx_enfrot            *er,
-                 matrix                 box,
+                 const matrix           box,
                  rvec                   x[],
                  real                   t,
                  int64_t                step,

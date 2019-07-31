@@ -223,7 +223,7 @@ void gmx_pme_send_parameters(const t_commrec *cr,
                              int maxshift_x, int maxshift_y);
 
 /*! \brief Send the coordinates to our PME-only node and request a PME calculation */
-void gmx_pme_send_coordinates(const t_commrec *cr, matrix box, rvec *x,
+void gmx_pme_send_coordinates(const t_commrec *cr, const matrix box, const rvec *x,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir,
                               int64_t step, gmx_wallcycle *wcycle);

@@ -92,7 +92,7 @@ static void gmx_pme_send_coeffs_coords(const t_commrec *cr, unsigned int flags,
                                        real gmx_unused *chargeA, real gmx_unused *chargeB,
                                        real gmx_unused *c6A, real gmx_unused *c6B,
                                        real gmx_unused *sigmaA, real gmx_unused *sigmaB,
-                                       matrix box, rvec gmx_unused *x,
+                                       const matrix box, const rvec gmx_unused *x,
                                        real lambda_q, real lambda_lj,
                                        int maxshift_x, int maxshift_y,
                                        int64_t step)
@@ -197,7 +197,9 @@ static void gmx_pme_send_coeffs_coords(const t_commrec *cr, unsigned int flags,
         }
         if (flags & PP_PME_COORD)
         {
-            MPI_Isend(x[0], n*sizeof(rvec), MPI_BYTE,
+            /* MPI_Isend does not accept a const buffer pointer */
+            real *xRealPtr = const_cast<real *>(x[0]);
+            MPI_Isend(xRealPtr, n*sizeof(rvec), MPI_BYTE,
                       dd->pme_nodeid, eCommType_COORD, cr->mpi_comm_mysim,
                       &dd->req_pme[dd->nreq_pme++]);
         }
@@ -244,7 +246,7 @@ void gmx_pme_send_parameters(const t_commrec *cr,
                                nullptr, nullptr, 0, 0, maxshift_x, maxshift_y, -1);
 }
 
-void gmx_pme_send_coordinates(const t_commrec *cr, matrix box, rvec *x,
+void gmx_pme_send_coordinates(const t_commrec *cr, const matrix box, const rvec *x,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir,
                               int64_t step, gmx_wallcycle *wcycle)

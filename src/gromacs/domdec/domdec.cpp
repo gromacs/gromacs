@@ -306,7 +306,7 @@ void dd_get_constraint_range(const gmx_domdec_t *dd, int *at_start, int *at_end)
 }
 
 void dd_move_x(gmx_domdec_t             *dd,
-               matrix                    box,
+               const matrix              box,
                gmx::ArrayRef<gmx::RVec>  x,
                gmx_wallcycle            *wcycle)
 {
