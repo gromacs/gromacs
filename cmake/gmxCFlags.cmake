@@ -97,6 +97,13 @@ function(gmx_set_cmake_compiler_flags)
     endforeach()
 endfunction()
 
+function(gmx_target_warning_suppression TARGET WARNING_FLAG VARNAME)
+    check_cxx_compiler_flag(${WARNING_FLAG} ${VARNAME})
+    if(${VARNAME})
+        target_compile_options(${TARGET} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${WARNING_FLAG}>)
+    endif()
+endfunction()
+
 # This is the actual exported function to be called
 macro (gmx_c_flags)
 

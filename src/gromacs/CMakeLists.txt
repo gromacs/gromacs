@@ -43,18 +43,7 @@ set_property(GLOBAL PROPERTY GMX_LIBGROMACS_GPU_IMPL_SOURCES)
 set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
 set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
-add_library(libgromacs_external OBJECT "")
-if(CMAKE_COMPILER_IS_GNUCXX)
-    # Keep quiet about e.g. linearalgebra module
-    target_compile_options(libgromacs_external PRIVATE ${CXXFLAGS_NO_STRINGOP_TRUNCATION})
-endif()
-
-add_library(libgromacs_generated OBJECT "")
-if (BUILD_SHARED_LIBS)
-    set_target_properties(libgromacs_external PROPERTIES POSITION_INDEPENDENT_CODE true)
-    set_target_properties(libgromacs_generated PROPERTIES POSITION_INDEPENDENT_CODE true)
-endif()
-
+set(libgromacs_object_library_dependencies "")
 function (_gmx_add_files_to_property PROPERTY)
     foreach (_file ${ARGN})
         if (IS_ABSOLUTE "${_file}")
@@ -152,9 +141,9 @@ list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOU
 #    add_subdirectory(thread_mpi)
 #endif()
 #target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} ${THREAD_MPI_LIB})
-
-tmpi_get_source_list(THREAD_MPI_SOURCES ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/src)
-target_sources(libgromacs_external PRIVATE ${THREAD_MPI_SOURCES})
+tmpi_get_source_list(THREAD_MPI_SOURCES ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/src)
+add_library(thread_mpi OBJECT ${THREAD_MPI_SOURCES})
+list(APPEND libgromacs_object_library_dependencies thread_mpi)
 
 configure_file(version.h.cmakein version.h)
 gmx_install_headers(
@@ -179,10 +168,8 @@ gmx_configure_version_file(
     REMOTE_HASH
     EXTRA_VARS
         GMX_SOURCE_DOI
-    )
-list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE}
-     $<TARGET_OBJECTS:libgromacs_external>
-     $<TARGET_OBJECTS:libgromacs_generated>)
+        )
+list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 
 # Mark some shared GPU implementation files to compile with CUDA if needed
 if (GMX_USE_CUDA)
@@ -206,7 +193,12 @@ if (GMX_USE_CUDA)
     # with keywords otherwise...
     set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
     if (NOT GMX_CLANG_CUDA)
+        # FindCUDA.cmake expects this library to already exist, so we
+        # create it here.
+        add_library(libgromacs_generated OBJECT "")
+        set_target_properties(libgromacs_generated PROPERTIES LINKER_LANGUAGE CXX)
         cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
+        list(APPEND libgromacs_object_library_dependencies libgromacs_generated)
     else()
         add_library(libgromacs ${LIBGROMACS_SOURCES})
     endif()
@@ -214,6 +206,19 @@ if (GMX_USE_CUDA)
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
+
+# Handle the object libraries that contain the source file
+# dependencies that need special handling because they are generated
+# or external code.
+foreach(object_library ${libgromacs_object_library_dependencies})
+    if (BUILD_SHARED_LIBS)
+        set_target_properties(${object_library} PROPERTIES POSITION_INDEPENDENT_CODE true)
+    endif()
+    target_include_directories(${object_library} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
+
+    # Add the sources from the object libraries to the main library.
+    target_sources(libgromacs PRIVATE $<TARGET_OBJECTS:${object_library}>)
+endforeach()
 
 if (GMX_USE_OPENCL)
     option(GMX_EXTERNAL_CLFFT "True if an external clFFT is required to be used" FALSE)
@@ -264,42 +269,6 @@ endif()
 #
 # TODO Perhaps generalize this for all headers from src/external
 target_include_directories(libgromacs SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
-
-# Recent versions of gcc and clang give warnings on scanner.cpp, which
-# is a generated source file. These are awkward to suppress inline, so
-# we do it in the compilation command (after testing that the compiler
-# supports the suppressions). Same issue exists for nonbonded kernels
-# so we supress them for all generated files.
-include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag("-Wno-unused -Wno-unused-parameter" HAS_NO_UNUSED)
-check_cxx_compiler_flag(-Wno-missing-declarations HAS_NO_MISSING_DECL)
-check_cxx_compiler_flag(-Wno-missing-prototypes HAS_NO_MISSING_PROTO)
-check_cxx_compiler_flag(/wd4101 HAS_NO_MSVC_UNUSED)
-if (NOT MSVC)
-    check_cxx_compiler_flag(-wd1419 HAS_DECL_IN_SOURCE)
-endif()
-if (HAS_NO_UNUSED)
-    target_compile_options(libgromacs_generated PRIVATE "-Wno-unused;-Wno-unused-parameter")
-endif()
-if (HAS_NO_MISSING_DECL)
-    target_compile_options(libgromacs_generated PRIVATE "-Wno-missing-declarations")
-endif()
-# TODO The group scheme kernels don't use proper function prototype
-# declarations, and clang warns about such use, which we suppress
-# rather than fix. We would prefer to use no suppressions. However
-# other compilers do not support such a warning suppression for C++
-# source files, and issue warnings about that. Remove the use of
-# -Wno-missing-prototypes here and above when the group scheme is
-# removed.
-if (HAS_NO_MISSING_PROTO AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    target_compile_options(libgromacs_generated PRIVATE "-Wno-missing-prototypes")
-endif()
-if (HAS_NO_MSVC_UNUSED)
-    target_compile_options(libgromacs_generated PRIVATE "/wd4101")
-endif()
-if (HAS_DECL_IN_SOURCE)
-    target_compile_options(libgromacs_generated PRIVATE "-wd1419")
-endif()
 
 if(SIMD_AVX_512_CXX_SUPPORTED AND NOT ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_512_KNL"))
     # Since we might be overriding -march=core-avx2, add a flag so we don't warn for this specific file.

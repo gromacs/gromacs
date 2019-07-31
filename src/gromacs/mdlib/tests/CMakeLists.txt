@@ -37,13 +37,6 @@ file(GLOB MDLIB_TEST_SOURCES
      constrtestdata.cpp
      )
 
-if (GMX_USE_CUDA)
-    file(GLOB MDLIB_TEST_CUDA_SOURCES
-         constrtestrunners.cu
-         settle_runners.cu
-         )
-endif()
-
 gmx_add_unit_test(MdlibUnitTest mdlib-test
                   calc_verletbuf.cpp
                   constr.cpp
@@ -58,4 +51,7 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test
                   ${MDLIB_TEST_SOURCES})
 
 # TODO: Make CUDA source to compile inside the testing framework
-gmx_add_libgromacs_sources(${MDLIB_TEST_CUDA_SOURCES})
+if(GMX_USE_CUDA)
+    gmx_add_libgromacs_sources(constrtestrunners.cu
+                               settle_runners.cu)
+endif()
