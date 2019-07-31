@@ -1240,7 +1240,7 @@ static void make_load_communicators(gmx_domdec_t gmx_unused *dd)
         fprintf(debug, "Making load communicators\n");
     }
 
-    snew(dd->comm->load,          std::max(dd->ndim, 1));
+    dd->comm->load = new domdec_load_t[std::max(dd->ndim, 1)];
     snew(dd->comm->mpi_comm_load, std::max(dd->ndim, 1));
 
     if (dd->ndim == 0)

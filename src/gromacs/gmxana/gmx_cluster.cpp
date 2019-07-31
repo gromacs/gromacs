@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -750,7 +750,7 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
 }
 
 static rvec **read_whole_trj(const char *fn, int isize, const int index[], int skip,
-                             int *nframe, real **time,  matrix  **boxes, int **frameindexes, const gmx_output_env_t *oenv, gmx_bool bPBC, gmx_rmpbc_t gpbc)
+                             int *nframe, real **time,  matrix  **boxes, int **frameindices, const gmx_output_env_t *oenv, gmx_bool bPBC, gmx_rmpbc_t gpbc)
 {
     rvec       **xx, *x;
     matrix       box;
@@ -778,7 +778,7 @@ static rvec **read_whole_trj(const char *fn, int isize, const int index[], int s
             srenew(xx, max_nf);
             srenew(*time, max_nf);
             srenew(*boxes, max_nf);
-            srenew(*frameindexes, max_nf);
+            srenew(*frameindices, max_nf);
         }
         if ((i % skip) == 0)
         {
@@ -790,7 +790,7 @@ static rvec **read_whole_trj(const char *fn, int isize, const int index[], int s
             }
             (*time)[clusterIndex] = t;
             copy_mat(box, (*boxes)[clusterIndex]);
-            (*frameindexes)[clusterIndex] = nframes_read(status);
+            (*frameindices)[clusterIndex] = nframes_read(status);
             clusterIndex++;
         }
         i++;
@@ -976,7 +976,7 @@ static void ana_trans(t_clusters *clust, int nf,
 static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
                              int natom, t_atoms *atoms, rvec *xtps,
                              real *mass, rvec **xx, real *time,
-                             matrix *boxes, int *frameindexes,
+                             matrix *boxes, int *frameindices,
                              int ifsize, int *fitidx,
                              int iosize, int *outidx,
                              const char *trxfn, const char *sizefn,
@@ -1084,7 +1084,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
             fprintf(size_fp, "@g%d type %s\n", 0, "bar");
         }
     }
-    if (clustndxfn && frameindexes)
+    if (clustndxfn && frameindices)
     {
         ndxfn = gmx_ffopen(clustndxfn, "w");
     }
@@ -1209,7 +1209,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
             fprintf(log, "%s %6g", buf, time[i1]);
             if (ndxfn)
             {
-                fprintf(ndxfn, " %6d", frameindexes[i1]);
+                fprintf(ndxfn, " %6d", frameindices[i1] + 1);
             }
         }
         fprintf(log, "\n");
@@ -1432,7 +1432,7 @@ int gmx_cluster(int argc, char *argv[])
     real              *eigenvectors;
 
     int                isize = 0, ifsize = 0, iosize = 0;
-    int               *index = nullptr, *fitidx = nullptr, *outidx = nullptr, *frameindexes = nullptr;
+    int               *index = nullptr, *fitidx = nullptr, *outidx = nullptr, *frameindices = nullptr;
     char              *grpname;
     real               rmsd, **d1, **d2, *time = nullptr, time_invfac, *mass = nullptr;
     char               buf[STRLEN], buf1[80];
@@ -1696,7 +1696,7 @@ int gmx_cluster(int argc, char *argv[])
         /* Loop over first coordinate file */
         fn = opt2fn("-f", NFILE, fnm);
 
-        xx = read_whole_trj(fn, isize, index, skip, &nf, &time, &boxes, &frameindexes, oenv, bPBC, gpbc);
+        xx = read_whole_trj(fn, isize, index, skip, &nf, &time, &boxes, &frameindices, oenv, bPBC, gpbc);
         output_env_conv_times(oenv, nf, time);
         if (!bRMSdist || bAnalyze)
         {
@@ -1924,7 +1924,7 @@ int gmx_cluster(int argc, char *argv[])
             copy_rvec(xtps[index[i]], usextps[i]);
         }
         useatoms.nr = isize;
-        analyze_clusters(nf, &clust, rms->mat, isize, &useatoms, usextps, mass, xx, time, boxes, frameindexes,
+        analyze_clusters(nf, &clust, rms->mat, isize, &useatoms, usextps, mass, xx, time, boxes, frameindices,
                          ifsize, fitidx, iosize, outidx,
                          bReadTraj ? trx_out_fn : nullptr,
                          opt2fn_null("-sz", NFILE, fnm),
@@ -1935,7 +1935,7 @@ int gmx_cluster(int argc, char *argv[])
                          bAverage, write_ncl, write_nst, rmsmin, bFit, log,
                          rlo_bot, rhi_bot, oenv);
         sfree(boxes);
-        sfree(frameindexes);
+        sfree(frameindices);
     }
     gmx_ffclose(log);
 

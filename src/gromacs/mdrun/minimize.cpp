@@ -2125,15 +2125,15 @@ LegacySimulator::do_lbfgs()
                 {
                     /* Replace c endpoint with b */
                     c   = b;
-                    /* swap states b and c */
-                    swap_em_state(&sb, &sc);
+                    /* copy state b to c */
+                    *sc = *sb;
                 }
                 else
                 {
                     /* Replace a endpoint with b */
                     a   = b;
-                    /* swap states a and b */
-                    swap_em_state(&sa, &sb);
+                    /* copy state b to a */
+                    *sa = *sb;
                 }
 
                 /*
@@ -2339,7 +2339,7 @@ LegacySimulator::do_lbfgs()
         }
 
         // Reset stepsize in we are doing more iterations
-        stepsize = 1.0/ems.fnorm;
+        stepsize = 1.0;
 
         /* Stop when the maximum force lies below tolerance.
          * If we have reached machine precision, converged is already set to true.
@@ -2597,8 +2597,15 @@ LegacySimulator::do_steep()
             }
         }
 
-        /* Determine new step  */
-        stepsize = ustep/s_min->fmax;
+        // If the force is very small after finishing minimization,
+        // we risk dividing by zero when calculating the step size.
+        // So we check first if the minimization has stopped before
+        // trying to obtain a new step size.
+        if (!bDone)
+        {
+            /* Determine new step  */
+            stepsize = ustep/s_min->fmax;
+        }
 
         /* Check if stepsize is too small, with 1 nm as a characteristic length */
 #if GMX_DOUBLE

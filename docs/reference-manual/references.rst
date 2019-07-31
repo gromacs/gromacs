@@ -2540,5 +2540,20 @@ molecular dynamics simulations*, (2002).
 
 .. raw:: html
 
+   <div id="ref-GroenhofEwaldArtefact">
+
+.. _refGroenhofEwaldArtefact:
+
+:sup:`181` Hub, J. S., de Groot, B. L., Grubmüller, H., Groenhof, G.,
+"Quantifying artifacts in Ewald simulations of inhomogeneous systems with a net charge,"
+*J. Chem. Theory Comput.*, **10**, 381–390 (2014).
+
+.. raw:: html
+
+   </div>
+
+
+.. raw:: html
+
    </div>
 

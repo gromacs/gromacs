@@ -781,15 +781,15 @@ int gmx_editconf(int argc, char *argv[])
         printf("Incompatible options -mead and -grasp. Turning off -grasp\n");
         bGrasp = FALSE;
     }
-    if ((bGrasp || bCONECT) && (outftp != efPDB))
+    if (bGrasp && (outftp != efPDB))
     {
         gmx_fatal(FARGS, "Output file should be a .pdb file"
-                  " when using the -grasp or -connect options\n");
+                  " when using the -grasp option\n");
     }
-    if ((bMead || bGrasp || bCONECT) && (fn2ftp(infile) != efTPR))
+    if ((bMead || bGrasp) && (fn2ftp(infile) != efTPR))
     {
         gmx_fatal(FARGS, "Input file should be a .tpr file"
-                  " when using the -mead or -connect options\n");
+                  " when using the -mead option\n");
     }
 
     t_symtab  symtab;

@@ -173,7 +173,9 @@ Parallelization schemes
 There are multiple parallelization schemes available, therefore a simulation can be run on a
 given hardware with different choices of run configuration.
 
-Core level parallelization via SIMD: SSE, AVX, etc.
+.. _intra-core-parallelization:
+
+Intra-core parallelization via SIMD: SSE, AVX, etc.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 One level of performance improvement available in |Gromacs| is through the use of
@@ -196,13 +198,20 @@ Thus, you need to configure and compile |Gromacs| for the SIMD capabilities of t
 By default, the build system will detect the highest supported
 acceleration of the host where the compilation is carried out. For cross-compiling for
 a machine with a different highest SIMD instructions set, in order to set the target acceleration,
-the ``-DGMX_SIMD`` CMake option can be used. For best performance always pick the highest
-(latest) SIMD instruction set supported by the target architecture (and |Gromacs|). To use a single
+the ``-DGMX_SIMD`` CMake option can be used.
+To use a single
 installation on multiple different machines, it is convenient to compile the analysis tools with
 the lowest common SIMD instruction set (as these rely little on SIMD acceleration), but for best
-performance :ref:`mdrun <gmx mdrun>` should be compiled separately for each machine.
+performance :ref:`mdrun <gmx mdrun>` should be compiled be compiled separately with the
+highest (latest) ``native`` SIMD instruction set of the target architecture (supported by |Gromacs|).
 
-.. TODO add a note on AVX throttle and its impact on MPI-parallel and GPU accelerated runs
+Recent Intel CPU architectures bring tradeoffs between the maximum clock frequency of the
+CPU (ie. its speed), and the width of the SIMD instructions it executes (ie its throughput
+at a given speed). In particular, the Intel ``Skylake`` and ``Cascade Lake`` processors
+(e.g. Xeon SP Gold/Platinum), can offer better throughput when using narrower SIMD because
+of the better clock frequency available. Consider building :ref:`mdrun <gmx mdrun>`
+configured with ``GMX_SIMD=AVX2_256`` instead of ``GMX_SIMD=AVX512`` for better
+performance in GPU accelerated or highly parallel MPI runs.
 
 Process(-or) level parallelization via OpenMP
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -439,6 +448,10 @@ behavior.
     default, 0, will start one thread on each available core.
     Alternatively, :ref:`mdrun <gmx mdrun>` will honor the appropriate system
     environment variable (e.g. ``OMP_NUM_THREADS``) if set.
+    Note that the maximum number of OpenMP threads (per rank) is,
+    for efficiency reasons, limited to 64. While it is rarely beneficial to use
+    a number of threads higher than this, the GMX_OPENMP_MAX_THREADS CMake variable
+    can be used to increase the limit.
 
 ``-npme``
     The total number of ranks to dedicate to the long-ranged
@@ -1060,7 +1073,7 @@ Known limitations
 
 **Please note again the limitations outlined below!**
 
-- Only compilation with CUDA is supported.
+- PME GPU offload is supported on NVIDIA hardware with CUDA and AMD hardware with OpenCL.
 
 - Only a PME order of 4 is supported on GPUs.
 
@@ -1295,9 +1308,13 @@ of 2. So it can be useful go through the checklist.
 * If you have GPUs that support either CUDA or OpenCL, use them.
 
   * Configure with ``-DGMX_GPU=ON`` (add ``-DGMX_USE_OPENCL=ON`` for OpenCL).
-  * For CUDA, use the newest CUDA availabe for your GPU to take advantage of the
+  * For CUDA, use the newest CUDA available for your GPU to take advantage of the
     latest performance enhancements.
   * Use a recent GPU driver.
+  * Make sure you use an :ref:`gmx mdrun` with ``GMX_SIMD`` appropriate for the CPU
+    architecture; the log file will contain a warning note if suboptimal setting is used.
+    However, prefer ``AVX2` over ``AVX512`` in GPU or highly parallel MPI runs (for more
+    information see the :ref:`intra-core parallelization information <intra-core-parallelization>`).
   * If compiling on a cluster head node, make sure that ``GMX_SIMD``
     is appropriate for the compute nodes.
 

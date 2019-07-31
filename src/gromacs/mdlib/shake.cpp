@@ -237,7 +237,7 @@ make_shake_sblock_serial(shakedata *shaked,
         fprintf(debug, "Going to sort constraints\n");
     }
 
-    qsort(sb, ncons, sizeof(*sb), pcomp);
+    std::qsort(sb, ncons, sizeof(*sb), pcomp);
 
     if (debug)
     {

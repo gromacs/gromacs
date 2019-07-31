@@ -1,0 +1,44 @@
+GROMACS 2018.7 release notes
+----------------------------
+
+This version was released on May 29, 2019. These release notes document
+the changes that have taken place in GROMACS since version 2018.6, to fix known
+issues. It also incorporates all fixes made in previous versions,
+which you can find described in the :ref:`release-notes`.
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Reverted broken change made in 2018.1
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+Reverted a change made in 2018.1 that broke simulations that used the
+SHAKE constraint algorithm.
+
+:issue:`2879`
+
+Work around gcc 7 AVX512 compiler bug
+"""""""""""""""""""""""""""""""""""""""
+
+With gcc version 7 a compiler bug caused a large part of non-bonded
+interactions to be ignored when compiled with AVX512 and running on more
+than 16 OpenMP threads.
+
+:issue:`2762`
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixes to improve portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+Updated release notes for 2018.6
+""""""""""""""""""""""""""""""""
+
+A :ref:`fix <release-notes-2018-6-gpu>` made to GPU kernels in 2018.6 was
+thought to resolve :issue:`2845` but further investigation suggests that
+the real cause is not yet known.
+

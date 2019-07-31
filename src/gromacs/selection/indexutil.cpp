@@ -885,21 +885,23 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
                     {
                         int            molnr, atnr_mol;
                         mtopGetMolblockIndex(top, ai, &molb, &molnr, &atnr_mol);
-                        const t_atoms &mol_atoms = top->moltype[top->molblock[molb].type].atoms;
-                        int            last_atom = atnr_mol + 1;
+                        const t_atoms &mol_atoms    = top->moltype[top->molblock[molb].type].atoms;
+                        int            last_atom    = atnr_mol + 1;
+                        const int      currentResid = mol_atoms.atom[atnr_mol].resind;
                         while (last_atom < mol_atoms.nr
-                               && mol_atoms.atom[last_atom].resind == id)
+                               && mol_atoms.atom[last_atom].resind == currentResid)
                         {
                             ++last_atom;
                         }
                         int first_atom = atnr_mol - 1;
                         while (first_atom >= 0
-                               && mol_atoms.atom[first_atom].resind == id)
+                               && mol_atoms.atom[first_atom].resind == currentResid)
                         {
                             --first_atom;
                         }
-                        int first_mol_atom = top->moleculeBlockIndices[molb].globalAtomStart;
-                        first_mol_atom += molnr*top->moleculeBlockIndices[molb].numAtomsPerMolecule;
+                        const MoleculeBlockIndices &molBlock = top->moleculeBlockIndices[molb];
+                        int first_mol_atom                   = molBlock.globalAtomStart;
+                        first_mol_atom += molnr*molBlock.numAtomsPerMolecule;
                         first_atom      = first_mol_atom + first_atom + 1;
                         last_atom       = first_mol_atom + last_atom - 1;
                         for (int j = first_atom; j <= last_atom; ++j)
@@ -910,11 +912,8 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
                     }
                     case INDEX_MOL:
                     {
-                        size_t molb = 0;
-                        while (molb + 1 < top->molblock.size() && id >= top->moleculeBlockIndices[molb].moleculeIndexStart)
-                        {
-                            ++molb;
-                        }
+                        int                         molnr, atnr_mol;
+                        mtopGetMolblockIndex(top, ai, &molb, &molnr, &atnr_mol);
                         const MoleculeBlockIndices &blockIndices  = top->moleculeBlockIndices[molb];
                         const int                   atomStart     = blockIndices.globalAtomStart + (id - blockIndices.moleculeIndexStart)*blockIndices.numAtomsPerMolecule;
                         for (int j = 0; j < blockIndices.numAtomsPerMolecule; ++j)

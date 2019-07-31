@@ -1,19 +1,54 @@
 GROMACS 2018.6 release notes
 ----------------------------
 
-This version was released on TODO, 2019. These release notes document
+This version was released on February 22, 2019. These release notes document
 the changes that have taken place in GROMACS since version 2018.5, to fix known
-issues. It also incorporates all fixes made in version TODO and
-earlier, which you can find described in the :ref:`release-notes`.
+issues. It also incorporates all fixes made in previous versions,
+which you can find described in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Correct free-energy Delta H output with mass lambda's
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When separate lambda parameters were used for perturbed mass
+free-energy contributions, these contributions were double counted
+in the Delta H output used for BAR calculations. Note that dH/dlambda
+was always correct
+
+:issue:`2703`
+:issue:`2849`
+
+.. _release-notes-2018-6-gpu:
+
+Fix incorrect LJ repulsion force switching on GPUs
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using a CUDA or OpenCL GPU, the coefficient for the second order
+term for the LJ repulsion in the force switching function, called 'A'
+in the manual, had the wrong sign. This lead to very small errors in
+the forces and the pressure. Note that the dispersion force switching
+was correct. The effects of this bug on any physical results seems to
+be negligible. Note that force switching is usually only used in
+combination with the CHARMM force field.
+
+:issue:`2845`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix compiler flags for Power8
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A compiler flag for Power8 processors lead to errors in the code and was removed.
+
+:issue:`2747`
+:issue:`2746`
+:issue:`2734`
 
 Miscellaneous
 ^^^^^^^^^^^^^

@@ -76,37 +76,48 @@ class LocalAtomSetManager;
 }
 
 typedef struct {
-    int  j0;     /* j-zone start               */
-    int  j1;     /* j-zone end                 */
-    int  cg1;    /* i-charge-group end         */
-    int  jcg0;   /* j-charge-group start       */
-    int  jcg1;   /* j-charge-group end         */
-    ivec shift0; /* Minimum shifts to consider */
-    ivec shift1; /* Maximum shifts to consider */
+    /* j-zone start               */
+    int  j0 = 0;
+    /* j-zone end                 */
+    int  j1 = 0;
+    /* i-charge-group end         */
+    int  cg1 = 0;
+    /* j-charge-group start       */
+    int  jcg0 = 0;
+    /* j-charge-group end         */
+    int  jcg1 = 0;
+    /* Minimum shifts to consider */
+    ivec shift0 = { };
+    /* Maximum shifts to consider */
+    ivec shift1 = { };
 } gmx_domdec_ns_ranges_t;
 
 typedef struct {
-    rvec x0;     /* Zone lower corner in triclinic coordinates         */
-    rvec x1;     /* Zone upper corner in triclinic coordinates         */
-    rvec bb_x0;  /* Zone bounding box lower corner in Cartesian coords */
-    rvec bb_x1;  /* Zone bounding box upper corner in Cartesian coords */
+    /* Zone lower corner in triclinic coordinates         */
+    rvec x0 = { };
+    /* Zone upper corner in triclinic coordinates         */
+    rvec x1 = { };
+    /* Zone bounding box lower corner in Cartesian coords */
+    rvec bb_x0 = { };
+    /* Zone bounding box upper corner in Cartesian coords */
+    rvec bb_x1 = { };
 } gmx_domdec_zone_size_t;
 
 struct gmx_domdec_zones_t {
     /* The number of zones including the home zone */
-    int                    n;
+    int                    n = 0;
     /* The shift of the zones with respect to the home zone */
-    ivec                   shift[DD_MAXZONE];
+    ivec                   shift[DD_MAXZONE] = { };
     /* The charge group boundaries for the zones */
-    int                    cg_range[DD_MAXZONE+1];
+    int                    cg_range[DD_MAXZONE+1] = { };
     /* The number of neighbor search zones with i-particles */
-    int                    nizone;
+    int                    nizone = 0;
     /* The neighbor search charge group ranges for each i-zone */
     gmx_domdec_ns_ranges_t izone[DD_MAXIZONE];
     /* Boundaries of the zones */
     gmx_domdec_zone_size_t size[DD_MAXZONE];
     /* The cg density of the home zone */
-    real                   dens_zone0;
+    real                   dens_zone0 = 0;
 };
 
 struct gmx_ddbox_t {

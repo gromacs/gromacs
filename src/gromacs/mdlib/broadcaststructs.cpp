@@ -836,7 +836,10 @@ void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
     block_bc(cr, mtop->bIntermolecularInteractions);
     if (mtop->bIntermolecularInteractions)
     {
-        mtop->intermolecular_ilist = std::make_unique<InteractionLists>();
+        if (!MASTER(cr))
+        {
+            mtop->intermolecular_ilist = std::make_unique<InteractionLists>();
+        }
         bc_ilists(cr, mtop->intermolecular_ilist.get());
     }
 

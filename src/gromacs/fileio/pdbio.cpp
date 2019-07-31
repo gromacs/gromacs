@@ -287,7 +287,7 @@ gmx_fprintf_pqr_atomline(FILE *            fp,
     res_seq_number  = res_seq_number % 10000;
 
     int n = fprintf(fp,
-                    "%s %d %s %s %c %d %8.3f %8.3f %8.3f %6.2f %6.2f\n",
+                    "%-6s%5d %-4.4s%4.4s%c%4d %8.3f %8.3f %8.3f %6.2f %6.2f\n",
                     pdbtp[record],
                     atom_seq_number,
                     atom_name,

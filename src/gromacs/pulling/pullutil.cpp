@@ -579,6 +579,15 @@ void pull_calc_coms(const t_commrec *cr,
     {
         pull_group_work_t *pgrp      = &pull->group[g];
 
+        /* Cosine-weighted COMs behave different from all other weighted COMs
+         * in the sense that the weights depend on instantaneous coordinates,
+         * not on pre-set weights. Thus we resize the local weight buffer here.
+         */
+        if (pgrp->epgrppbc == epgrppbcCOS)
+        {
+            pgrp->localWeights.resize(pgrp->atomSet.localIndex().size());
+        }
+
         auto               comBuffer =
             gmx::arrayRefFromArray(comm->comBuffer.data() + g*c_comBufferStride, c_comBufferStride);
 
