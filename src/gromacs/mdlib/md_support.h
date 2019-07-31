@@ -122,15 +122,22 @@ void setCurrentLambdasLocal(int64_t step, const t_lambda *fepvals,
 int multisim_min(const gmx_multisim_t *ms, int nmin, int n);
 /* Set an appropriate value for n across the whole multi-simulation */
 
-void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_inputrec *ir,
+
+/* Compute global variables during integration
+ *
+ * Coordinates x are needed for kinetic energy calculation with cosine accelation
+ * and for COM removal with rotational and acceleration correction modes.
+ * Velocities v are needed for kinetic energy calculation and for COM removal.
+ */
+void compute_globals(gmx_global_stat *gstat, t_commrec *cr, const t_inputrec *ir,
                      t_forcerec *fr, gmx_ekindata_t *ekind,
-                     rvec *x, rvec *v, matrix box, real vdwLambda, t_mdatoms *mdatoms,
+                     const rvec *x, const rvec *v, const matrix box,
+                     real vdwLambda, const t_mdatoms *mdatoms,
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx::Constraints *constr,
                      gmx::SimulationSignaller *signalCoordinator,
-                     matrix lastbox, int *totalNumberOfBondedInteractions,
+                     const matrix lastbox, int *totalNumberOfBondedInteractions,
                      gmx_bool *bSumEkinhOld, int flags);
-/* Compute global variables during integration */
 
 #endif

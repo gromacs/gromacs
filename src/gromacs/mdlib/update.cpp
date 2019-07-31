@@ -1219,7 +1219,7 @@ static void calc_ke_part_visc(const matrix box, const rvec x[], const rvec v[],
 }
 
 void calc_ke_part(
-        rvec *x, rvec *v, matrix box,
+        const rvec *x, const rvec *v, const matrix box,
         const t_grpopts *opts, const t_mdatoms *md,
         gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {

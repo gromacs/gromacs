@@ -54,7 +54,8 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
-t_vcm::t_vcm(const SimulationGroups &groups, const t_inputrec &ir)
+t_vcm::t_vcm(const SimulationGroups &groups, const t_inputrec &ir) :
+    integratorConservesMomentum(!EI_RANDOM(ir.eI))
 {
     mode     = (ir.nstcomm > 0) ? ir.comm_mode : ecmNO;
     ndim     = ndof_com(&ir);
@@ -151,8 +152,8 @@ static void update_tensor(const rvec x, real m0, tensor I)
 }
 
 /* Center of mass code for groups */
-void calc_vcm_grp(int start, int homenr, t_mdatoms *md,
-                  rvec x[], rvec v[], t_vcm *vcm)
+void calc_vcm_grp(const t_mdatoms &md,
+                  const rvec x[], const rvec v[], t_vcm *vcm)
 {
     int nthreads = gmx_omp_nthreads_get(emntDefault);
     if (vcm->mode != ecmNO)
@@ -176,13 +177,13 @@ void calc_vcm_grp(int start, int homenr, t_mdatoms *md,
             }
 
 #pragma omp for schedule(static)
-            for (int i = start; i < start+homenr; i++)
+            for (int i = 0; i < md.homenr; i++)
             {
                 int  g  = 0;
-                real m0 = md->massT[i];
-                if (md->cVCM)
+                real m0 = md.massT[i];
+                if (md.cVCM)
                 {
-                    g = md->cVCM[i];
+                    g = md.cVCM[i];
                 }
                 t_vcm_thread *vcm_t = &vcm->thread_vcm[t*vcm->stride + g];
                 /* Calculate linear momentum */
@@ -349,8 +350,8 @@ doStopComMotionAccelerationCorrection(int                   homenr,
     }
 }
 
-void do_stopcm_grp(const t_mdatoms &mdatoms,
-                   rvec x[], rvec v[], const t_vcm &vcm)
+static void do_stopcm_grp(const t_mdatoms &mdatoms,
+                          rvec x[], rvec v[], const t_vcm &vcm)
 {
     if (vcm.mode != ecmNO)
     {
@@ -460,7 +461,8 @@ static void get_minv(tensor A, tensor B)
     }
 }
 
-void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max)
+/* Processes VCM after reduction over ranks and prints warning with high VMC and fp != nullptr */
+static void process_and_check_cm_grp(FILE *fp, t_vcm *vcm, real Temp_Max)
 {
     int    m, g;
     real   ekcm, ekrot, tm, tm_1, Temp_cm;
@@ -546,7 +548,8 @@ void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max)
             if (vcm->mode == ecmANGULAR)
             {
                 ekrot = 0.5*iprod(vcm->group_j[g], vcm->group_w[g]);
-                if ((ekrot > 1) && fp && !EI_RANDOM(ir->eI))
+                // TODO: Change absolute energy comparison to relative
+                if ((ekrot > 1) && fp && vcm->integratorConservesMomentum)
                 {
                     /* if we have an integrator that may not conserve momenta, skip */
                     tm    = vcm->group_mass[g];
@@ -566,5 +569,19 @@ void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max)
                 }
             }
         }
+    }
+}
+
+void process_and_stopcm_grp(FILE *fplog,
+                            t_vcm *vcm,
+                            const t_mdatoms &mdatoms,
+                            rvec x[], rvec v[])
+{
+    if (vcm->mode != ecmNO)
+    {
+        // TODO: Replace fixed temperature of 1 by a system value
+        process_and_check_cm_grp(fplog, vcm, 1);
+
+        do_stopcm_grp(mdatoms, x, v, *vcm);
     }
 }

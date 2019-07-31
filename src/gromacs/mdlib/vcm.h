@@ -78,6 +78,9 @@ struct t_vcm
     ivec                     *nFreeze;    /* Tells whether dimensions are frozen per freeze group */
     std::vector<t_vcm_thread> thread_vcm; /* Temporary data per thread and group */
 
+    // Tell whether the integrator conserves momentum
+    bool integratorConservesMomentum;
+
     t_vcm(const SimulationGroups &groups, const t_inputrec &ir);
     ~t_vcm();
 };
@@ -87,16 +90,18 @@ void reportComRemovalInfo(FILE * fp, const t_vcm &vcm);
 
 
 /* Do a per group center of mass things */
-void calc_vcm_grp(int start, int homenr, t_mdatoms *md,
-                  rvec x[], rvec v[], t_vcm *vcm);
+void calc_vcm_grp(const t_mdatoms &md,
+                  const rvec x[], const rvec v[], t_vcm *vcm);
 
 /* Set the COM velocity to zero and potentially correct the COM position.
  *
- * With linear modes nullptr can be passed for x.
+ * Processes the kinetic energy reduced over MPI before removing COM motion.
+ * With mode linear, nullptr can be passed for x.
+ * With acceleration correction nullptr should be passed for x at initialization
+ * and a pointer to the coordinates at normal MD steps.
+ * When fplog != nullptr, a warning is printed to fplog with high COM velocity.
  */
-void do_stopcm_grp(const t_mdatoms &mdatoms,
-                   rvec x[], rvec v[], const t_vcm &vcm);
-
-void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max);
+void process_and_stopcm_grp(FILE *fplog, t_vcm *vcm, const t_mdatoms &mdatoms,
+                            rvec x[], rvec v[]);
 
 #endif
