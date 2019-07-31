@@ -376,7 +376,7 @@ void gmx::LegacySimulator::do_rerun()
     }
 
     {
-        int    cglo_flags = (CGLO_INITIALIZATION | CGLO_GSTAT |
+        int    cglo_flags = (CGLO_GSTAT |
                              (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
         bool   bSumEkinhOld = false;
         t_vcm *vcm          = nullptr;

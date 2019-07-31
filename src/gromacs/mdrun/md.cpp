@@ -515,7 +515,7 @@ void gmx::LegacySimulator::do_md()
         restore_ekinstate_from_state(cr, ekind, &state_global->ekinstate);
     }
 
-    unsigned int cglo_flags = (CGLO_INITIALIZATION | CGLO_TEMPERATURE | CGLO_GSTAT
+    unsigned int cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT
                                | (EI_VV(ir->eI) ? CGLO_PRESSURE : 0)
                                | (EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0)
                                | (hasReadEkinState ? CGLO_READEKIN : 0));
