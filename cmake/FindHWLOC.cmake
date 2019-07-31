@@ -355,7 +355,7 @@ if(HWLOC_INCLUDE_DIRS)
 	        message(STATUS "Error executing hwloc-info: ${HWLOC_INFO_ERR}")
             endif()
             string(REGEX MATCH "[0-9]+.*[0-9]+" HWLOC_INFO_OUT "${HWLOC_INFO_OUT}")
-            set(HWLOC_VERSION ${HWLOC_INFO_OUT} CACHE STRING "Hwloc library version")
+            set(HWLOC_VERSION ${HWLOC_INFO_OUT} CACHE STRING "HWLOC library version")
         endif()
     endif()
 
@@ -365,7 +365,7 @@ if(HWLOC_INCLUDE_DIRS)
 
     # Parse header if cross-compiling, or if hwloc-info was not found
     if(NOT HWLOC_VERSION)
-        # Hwloc is never installed as a framework on OS X, so this should always work.
+        # HWLOC is never installed as a framework on OS X, so this should always work.
         file(READ "${HWLOC_INCLUDE_DIRS}/hwloc.h"
              HEADER_CONTENTS LIMIT 16384)
         string(REGEX REPLACE ".*#define HWLOC_API_VERSION (0[xX][0-9a-fA-F]+).*" "\\1"
@@ -376,12 +376,12 @@ if(HWLOC_INCLUDE_DIRS)
         hex2dec(${HEX_MAJOR} DEC_MAJOR)
         hex2dec(${HEX_MINOR} DEC_MINOR)
         hex2dec(${HEX_PATCH} DEC_PATCH)
-        set(HWLOC_VERSION "${DEC_MAJOR}.${DEC_MINOR}.${DEC_PATCH}" CACHE STRING "Hwloc library version")
+        set(HWLOC_VERSION "${DEC_MAJOR}.${DEC_MINOR}.${DEC_PATCH}" CACHE STRING "HWLOC library version")
     endif()
 endif()
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(Hwloc
+find_package_handle_standard_args(HWLOC
                                   REQUIRED_VARS HWLOC_LIBRARIES HWLOC_INCLUDE_DIRS
                                   VERSION_VAR HWLOC_VERSION)
 
