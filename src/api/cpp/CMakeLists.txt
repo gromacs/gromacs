@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2018, by the GROMACS development team, led by
+# Copyright (c) 2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -61,6 +61,9 @@ add_library(gmxapi SHARED
             system.cpp
             version.cpp
             workflow.cpp)
+gmx_target_compile_options(gmxapi)
+target_compile_definitions(gmxapi PRIVATE HAVE_CONFIG_H)
+target_include_directories(gmxapi SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
 
 # Define public interface. Make sure targets linking against `gmxapi` in the build
 # system don't accidentally have the implementation headers (this directory))

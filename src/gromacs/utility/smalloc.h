@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -352,7 +352,7 @@ void gmx_sfree_aligned_impl(const char *name, const char *file, int line, T *ptr
  *
  * This factor leads to 4 realloc calls to double the array size.
  */
-constexpr float OVER_ALLOC_FAC = 1.19;
+constexpr float OVER_ALLOC_FAC = 1.19F;
 
 /*! \brief
  * Turns over allocation for variable size atoms/cg/top arrays on or off,

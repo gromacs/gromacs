@@ -123,7 +123,7 @@ class AnalysisNeighborhoodPositions
          * Initializes positions from a vector of position vectors.
          */
         AnalysisNeighborhoodPositions(const std::vector<RVec> &x)
-            : count_(x.size()), index_(-1), x_(as_rvec_array(x.data())),
+            : count_(ssize(x)), index_(-1), x_(as_rvec_array(x.data())),
               exclusionIds_(nullptr), indices_(nullptr)
         {
         }
@@ -154,7 +154,7 @@ class AnalysisNeighborhoodPositions
         AnalysisNeighborhoodPositions &
         indexed(ArrayRef<const int> indices)
         {
-            count_   = indices.size();
+            count_   = ssize(indices);
             indices_ = indices.data();
             return *this;
         }

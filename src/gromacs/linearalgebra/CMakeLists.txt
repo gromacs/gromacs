@@ -46,6 +46,8 @@ set(LINEARALGEBRA_SOURCES
     ${LINEARALGEBRA_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES})
 
 add_library(linearalgebra OBJECT ${LINEARALGEBRA_SOURCES})
+gmx_target_compile_options(linearalgebra)
+target_compile_definitions(linearalgebra PRIVATE HAVE_CONFIG_H)
 # The linearalgebra code is all considered external, and we will
 # not keep it free of warnings. Any compiler suppressions required
 # should be added here.

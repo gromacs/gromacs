@@ -117,7 +117,7 @@ class RangePartitioning
         /*! \brief Returns the number of blocks */
         int numBlocks() const
         {
-            return index_.size() - 1;
+            return static_cast<int>(index_.size() - 1);
         }
 
         /*! \brief Returns the size of the block with index \p blockIndex */

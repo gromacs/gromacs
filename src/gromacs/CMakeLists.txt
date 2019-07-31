@@ -110,7 +110,6 @@ add_subdirectory(timing)
 add_subdirectory(topology)
 add_subdirectory(trajectory)
 add_subdirectory(utility)
-add_subdirectory(fileio)
 add_subdirectory(swap)
 add_subdirectory(essentialdynamics)
 add_subdirectory(pulling)
@@ -126,7 +125,6 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(statistics)
     add_subdirectory(analysisdata)
     add_subdirectory(coordinateio)
-    add_subdirectory(selection)
     add_subdirectory(trajectoryanalysis)
     add_subdirectory(energyanalysis)
     add_subdirectory(tools)
@@ -143,6 +141,11 @@ list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOU
 #target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} ${THREAD_MPI_LIB})
 tmpi_get_source_list(THREAD_MPI_SOURCES ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/src)
 add_library(thread_mpi OBJECT ${THREAD_MPI_SOURCES})
+target_compile_definitions(thread_mpi PRIVATE HAVE_CONFIG_H)
+gmx_target_compile_options(thread_mpi)
+if (WIN32)
+    gmx_target_warning_suppression(thread_mpi /wd4996 HAS_NO_MSVC_UNSAFE_FUNCTION)
+endif()
 list(APPEND libgromacs_object_library_dependencies thread_mpi)
 
 configure_file(version.h.cmakein version.h)
@@ -160,7 +163,7 @@ gmx_install_headers(
 # This code is here instead of utility/CMakeLists.txt, because CMake
 # custom commands and source file properties can only be set in the directory
 # that contains the target that uses them.
-# TODO: Generate a header instead that can be included from baseversion.c.
+# TODO: Generate a header instead that can be included from baseversion.cpp.
 # That probably simplifies things somewhat.
 set(GENERATED_VERSION_FILE utility/baseversion-gen.cpp)
 gmx_configure_version_file(
@@ -207,6 +210,11 @@ else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
 
+add_subdirectory(fileio)
+if (NOT GMX_BUILD_MDRUN_ONLY)
+    add_subdirectory(selection)
+endif()
+
 # Handle the object libraries that contain the source file
 # dependencies that need special handling because they are generated
 # or external code.
@@ -219,6 +227,9 @@ foreach(object_library ${libgromacs_object_library_dependencies})
     # Add the sources from the object libraries to the main library.
     target_sources(libgromacs PRIVATE $<TARGET_OBJECTS:${object_library}>)
 endforeach()
+gmx_target_compile_options(libgromacs)
+target_compile_definitions(libgromacs PRIVATE HAVE_CONFIG_H)
+target_include_directories(libgromacs SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
 
 if (GMX_USE_OPENCL)
     option(GMX_EXTERNAL_CLFFT "True if an external clFFT is required to be used" FALSE)

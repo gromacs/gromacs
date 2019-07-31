@@ -42,6 +42,9 @@ add_library(mdrun_test_objlib OBJECT
     trajectorycomparison.cpp
     trajectoryreader.cpp
     )
+gmx_target_compile_options(mdrun_test_objlib)
+target_compile_definitions(mdrun_test_objlib PRIVATE HAVE_CONFIG_H)
+target_include_directories(mdrun_test_objlib SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
 
 set(testname "MdrunTests")
 set(exename "mdrun-test")

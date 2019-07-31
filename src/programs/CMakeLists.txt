@@ -35,6 +35,9 @@
 file(GLOB MDRUN_SOURCES mdrun/*.cpp)
 # make an "object library" that we can re-use for multiple targets
 add_library(mdrun_objlib OBJECT ${MDRUN_SOURCES})
+gmx_target_compile_options(mdrun_objlib)
+target_compile_definitions(mdrun_objlib PRIVATE HAVE_CONFIG_H)
+target_include_directories(mdrun_objlib SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
 
 if(GMX_FAHCORE)
     # The lack of a real source file here alongside the object library
@@ -44,6 +47,8 @@ if(GMX_FAHCORE)
     target_link_libraries(fahcore PRIVATE ${GMX_COMMON_LIBRARIES})
 elseif(GMX_BUILD_MDRUN_ONLY)
     add_executable(mdrun $<TARGET_OBJECTS:mdrun_objlib> mdrun_main.cpp)
+    gmx_target_compile_options(mdrun)
+    target_compile_definitions(mdrun PRIVATE HAVE_CONFIG_H)
     target_link_libraries(mdrun libgromacs
         ${GMX_COMMON_LIBRARIES}
         ${GMX_EXE_LINKER_FLAGS})
@@ -63,10 +68,14 @@ else()
         file(GLOB VIEW_SOURCES view/view.cpp)
     endif()
     add_library(view_objlib OBJECT ${VIEW_SOURCES})
+    gmx_target_compile_options(view_objlib)
+    target_compile_definitions(view_objlib PRIVATE HAVE_CONFIG_H)
     add_executable(gmx
         ${GMX_MAIN_SOURCES}
         $<TARGET_OBJECTS:mdrun_objlib>
         $<TARGET_OBJECTS:view_objlib>)
+    gmx_target_compile_options(gmx)
+    target_compile_definitions(gmx PRIVATE HAVE_CONFIG_H)
     target_link_libraries(gmx libgromacs
         ${GMX_COMMON_LIBRARIES}
         ${GMX_EXE_LINKER_FLAGS})

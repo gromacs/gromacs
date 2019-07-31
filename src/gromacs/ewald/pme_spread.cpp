@@ -206,6 +206,13 @@ static void make_thread_local_ind(const PmeAtomComm *atc,
     spline->n = n;
 }
 
+// At run time, the values of order used and asserted upon mean that
+// indexing out of bounds does not occur. However compilers don't
+// always understand that, so we suppress this warning for this code
+// region.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+
 /* Macro to force loop unrolling by fixing order.
  * This gives a significant performance gain.
  */
@@ -285,6 +292,8 @@ static void make_bsplines(splinevec theta, splinevec dtheta, int order,
         }
     }
 }
+
+#pragma GCC diagnostic pop
 
 /* This has to be a macro to enable full compiler optimization with xlC (and probably others too) */
 #define DO_BSPLINE(order)                            \

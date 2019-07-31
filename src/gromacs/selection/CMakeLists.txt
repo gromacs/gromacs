@@ -36,9 +36,11 @@ file(GLOB SELECTION_SOURCES *.cpp)
 file(GLOB SCANNER_SOURCES scanner.cpp parser.cpp)
 list(REMOVE_ITEM SELECTION_SOURCES ${SCANNER_SOURCES})
 # Add the non-generated sources to libgromacs, so that they have only the normal warning suppressions
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${SELECTION_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs PRIVATE ${SELECTION_SOURCES})
 
 add_library(scanner OBJECT ${SCANNER_SOURCES})
+gmx_target_compile_options(scanner)
+target_compile_definitions(scanner PRIVATE HAVE_CONFIG_H)
 # Compilers give lots of warnings on these generated files.  These
 # are awkward to suppress inline, so we do it in the compilation
 # command (after testing that the compiler supports the
@@ -50,7 +52,7 @@ if (WIN32)
 else()
     gmx_target_warning_suppression(scanner -Wno-unused HAS_NO_UNUSED)
     gmx_target_warning_suppression(scanner -Wno-unused-parameter HAS_NO_UNUSED_PARAMETER)
-    gmx_target_warning_suppression(scanner -Wno-missing-declarartions HAS_NO_MISSING_DECLARATIONS)
+    gmx_target_warning_suppression(scanner -Wno-missing-declarations HAS_NO_MISSING_DECLARATIONS)
     gmx_target_warning_suppression(scanner -wd1419 HAS_DECL_IN_SOURCE)
 endif()
 list(APPEND libgromacs_object_library_dependencies scanner)

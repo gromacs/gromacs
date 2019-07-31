@@ -36,10 +36,11 @@ include(CMakeParseArguments)
 
 function (gmx_add_unit_test_object_library NAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
         add_library(${NAME} OBJECT ${UNITTEST_TARGET_OPTIONS} ${ARGN})
-        set_property(TARGET ${NAME} APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
-        set_property(TARGET ${NAME} APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
+        gmx_target_compile_options(${NAME})
+        target_compile_options(${NAME} PRIVATE "${GMOCK_COMPILE_FLAGS}")
+        target_compile_definitions(${NAME} PRIVATE HAVE_CONFIG_H "${GMOCK_COMPILE_DEFINITIONS}")
+        target_include_directories(${NAME} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include ${GMOCK_INCLUDE_DIRS})
     endif()
 endfunction ()
 
@@ -74,21 +75,19 @@ function (gmx_add_gtest_executable EXENAME)
         include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
         add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS}
             ${_source_files} ${TESTUTILS_DIR}/unittest_main.cpp)
-        target_link_libraries(${EXENAME}
-            ${TESTUTILS_LIBS} libgromacs ${GMOCK_LIBRARIES}
-            ${GMX_COMMON_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
-        set_property(TARGET ${EXENAME}
-            APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
-        set_property(TARGET ${EXENAME}
-            APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
-        set_property(TARGET ${EXENAME}
-            APPEND PROPERTY COMPILE_DEFINITIONS "${EXTRA_COMPILE_DEFINITIONS}")
-
+        gmx_target_compile_options(${EXENAME})
+        target_compile_options(${EXENAME} PRIVATE "${GMOCK_COMPILE_FLAGS}")
+        target_compile_definitions(${EXENAME} PRIVATE HAVE_CONFIG_H "${GMOCK_COMPILE_DEFINITIONS}" "${EXTRA_COMPILE_DEFINITIONS}")
+        target_include_directories(${EXENAME} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
         # Permit GROMACS code to include externally developed headers,
         # such as the functionality from the nonstd project that we
         # use for gmx::compat::optional. These are included as system
         # headers so that no warnings are issued from them.
         target_include_directories(${EXENAME} SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
+
+        target_link_libraries(${EXENAME}
+            ${TESTUTILS_LIBS} libgromacs ${GMOCK_LIBRARIES}
+            ${GMX_COMMON_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
 
         if(GMX_CLANG_TIDY)
             set_target_properties(${EXENAME} PROPERTIES CXX_CLANG_TIDY

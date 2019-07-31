@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2016, by the GROMACS development team, led by
+# Copyright (c) 2016,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -82,6 +82,7 @@ function(gmx_setup_tng_for_libgromacs)
             include(${BUNDLED_TNG_LOCATION}/BuildTNG.cmake)
             add_tng_io_library(tng_io OBJECT ${_zlib_arg})
             add_library(tng_io::tng_io ALIAS tng_io)
+            gmx_target_compile_options(tng_io_obj)
             target_link_libraries(libgromacs PRIVATE $<BUILD_INTERFACE:tng_io::tng_io>)
         endif()
     endif()

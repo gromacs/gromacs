@@ -129,7 +129,7 @@ struct SimulationGroups
      *
      * \param[in] group Integer value for the group type.
      */
-    int numberOfGroupNumbers(SimulationAtomGroupType group) const { return groupNumbers[group].size(); }
+    int numberOfGroupNumbers(SimulationAtomGroupType group) const { return gmx::ssize(groupNumbers[group]); }
 };
 
 /*! \brief

@@ -2460,8 +2460,7 @@ static void set_zones_size(gmx_domdec_t *dd,
                 corner[d] -= corner[ZZ]*box[ZZ][d]/box[ZZ][ZZ];
             }
             /* Apply the triclinic couplings */
-            assert(ddbox->npbcdim <= DIM);
-            for (i = YY; i < ddbox->npbcdim; i++)
+            for (i = YY; i < ddbox->npbcdim && i < DIM; i++)
             {
                 for (j = XX; j < i; j++)
                 {

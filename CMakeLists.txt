@@ -310,13 +310,14 @@ include(gmxManageOpenMP)
 include(gmxCFlags)
 gmx_c_flags()
 
-# This variable should be used for additional compiler flags which are not
-# generated in gmxCFlags nor are SIMD or MPI related.
+# These variables should be used for CMake-style lists (ie. separated
+# by semicolons) of additional compiler flags which are not generated
+# in gmxCFlags nor are SIMD or MPI related.
 #
 # TODO These variables should be consolidated into
 # EXTRA_COMPILER_FLAGS so that we we don't perpetrate bugs where
 # things that work in C compilation (e.g. merging from old branches)
-# also work for C++ compilation.
+# might not also work for C++ compilation.
 set(EXTRA_C_FLAGS "")
 set(EXTRA_CXX_FLAGS "")
 
@@ -587,11 +588,7 @@ gmx_add_cache_dependency(GMX_BUILD_UNITTESTS BOOL BUILD_TESTING OFF)
 # Our own GROMACS tests
 ########################################################################
 
-add_definitions( -DHAVE_CONFIG_H )
 include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src)
-# TODO required at high level because both libgromacs and progs/mdrun
-# require it, both for thread-MPI and its atomics and mutexes.
-include_directories(BEFORE SYSTEM ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include)
 # Required for config.h, maybe should only be set in src/CMakeLists.txt
 include_directories(BEFORE ${CMAKE_BINARY_DIR}/src)
 
@@ -761,18 +758,18 @@ endif()
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
 # these are set after everything else
 if (NOT GMX_SKIP_DEFAULT_CFLAGS)
-    set(CMAKE_C_FLAGS "${SIMD_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${SIMD_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
     set(CMAKE_SHARED_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
 else()
     message("Recommended flags which are not added because GMX_SKIP_DEFAULT_CFLAGS=yes:")
-    message("CMAKE_C_FLAGS: ${SIMD_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${GMXC_CFLAGS}")
-    message("CMAKE_C_FLAGS_RELEASE: ${GMXC_CFLAGS_RELEASE}")
-    message("CMAKE_C_FLAGS_DEBUG: ${GMXC_CFLAGS_DEBUG}")
-    message("CMAKE_CXX_FLAGS: ${SIMD_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${GMXC_CXXFLAGS}")
-    message("CMAKE_CXX_FLAGS_RELEASE: ${GMXC_CXXFLAGS_RELEASE}")
-    message("CMAKE_CXX_FLAGS_DEBUG: ${GMXC_CXXFLAGS_DEBUG}")
+    message("CMAKE_C_FLAGS: ${SIMD_C_FLAGS};${MPI_COMPILE_FLAGS};${EXTRA_C_FLAGS};${GMXC_CFLAGS}")
+    foreach(build_type ${build_types_with_explicit_flags})
+        message("CMAKE_C_FLAGS_${build_type}: ${GMXC_CFLAGS_${build_type}}")
+    endforeach()
+    message("CMAKE_CXX_FLAGS: ${SIMD_CXX_FLAGS};${MPI_COMPILE_FLAGS};${EXTRA_CXX_FLAGS};${GMXC_CXXFLAGS}")
+    foreach(build_type ${build_types_with_explicit_flags})
+        message("CMAKE_CXX_FLAGS_${build_type}: ${GMXC_CXXFLAGS_${build_type}}")
+    endforeach()
     message("CMAKE_EXE_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS}")
     message("CMAKE_SHARED_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS}")
 endif()

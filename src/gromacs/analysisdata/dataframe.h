@@ -431,7 +431,7 @@ class AnalysisDataPointSetRef
         //! Returns the number of columns included in this set.
         int columnCount() const
         {
-            return values().size();
+            return ssize(values());
         }
         //! Returns zero-based index of the last column included in this set (inclusive).
         int lastColumn() const
@@ -600,7 +600,7 @@ class AnalysisDataFrameRef
          */
         int pointSetCount() const
         {
-            return pointSets_.size();
+            return ssize(pointSets_);
         }
         /*! \brief
          * Returns point set reference for a given point set.

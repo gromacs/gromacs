@@ -100,7 +100,7 @@ void posres_dx(const rvec x, const rvec pos0A, const rvec pos0B,
                     posA *= pbc->box[m][m];
                     posB *= pbc->box[m][m];
                     assert(npbcdim <= DIM);
-                    for (d = m+1; d < npbcdim; d++)
+                    for (d = m+1; d < npbcdim && d < DIM; d++)
                     {
                         posA += pos0A[d]*pbc->box[d][m];
                         posB += pos0B[d]*pbc->box[d][m];

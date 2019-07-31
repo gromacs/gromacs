@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -105,8 +105,9 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "SSE2")
         gmx_give_fatal_error_when_simd_support_not_found("SSE2" "disable SIMD support (slow)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
-    set(SIMD_C_FLAGS "${SIMD_SSE2_C_FLAGS}")
-    set(SIMD_CXX_FLAGS "${SIMD_SSE2_CXX_FLAGS}")
+    # If multiple flags are neeed, make them into a list
+    string(REPLACE " " ";" SIMD_C_FLAGS ${SIMD_SSE2_C_FLAGS})
+    string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_SSE2_CXX_FLAGS})
     set(GMX_SIMD_X86_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling SSE2 SIMD instructions using CXX flags: ${SIMD_SSE2_CXX_FLAGS}")
 
@@ -119,8 +120,9 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "SSE4.1")
         gmx_give_fatal_error_when_simd_support_not_found("SSE4.1" "choose SSE2 SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
-    set(SIMD_C_FLAGS "${SIMD_SSE4_1_C_FLAGS}")
-    set(SIMD_CXX_FLAGS "${SIMD_SSE4_1_CXX_FLAGS}")
+    # If multiple flags are neeed, make them into a list
+    string(REPLACE " " ";" SIMD_C_FLAGS ${SIMD_SSE4_1_C_FLAGS})
+    string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_SSE4_1_CXX_FLAGS})
     set(GMX_SIMD_X86_SSE4_1 1)
     set(SIMD_STATUS_MESSAGE "Enabling SSE4.1 SIMD instructions using CXX flags: ${SIMD_SSE4_1_CXX_FLAGS}")
 
@@ -133,8 +135,9 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "AVX_128_FMA")
         gmx_give_fatal_error_when_simd_support_not_found("128-bit AVX with FMA support" "choose SSE4.1 SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
-    set(SIMD_C_FLAGS "${SIMD_AVX_128_FMA_C_FLAGS}")
-    set(SIMD_CXX_FLAGS "${SIMD_AVX_128_FMA_CXX_FLAGS}")
+    # If multiple flags are neeed, make them into a list
+    string(REPLACE " " ";" SIMD_C_FLAGS ${SIMD_AVX_128_FMA_C_FLAGS})
+    string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_AVX_128_FMA_CXX_FLAGS})
     set(GMX_SIMD_X86_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 128-bit AMD FMA SIMD instructions using CXX flags: ${SIMD_AVX_128_FMA_CXX_FLAGS}")
 
@@ -147,8 +150,9 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "AVX_256")
         gmx_give_fatal_error_when_simd_support_not_found("AVX" "choose SSE4.1 SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
-    set(SIMD_C_FLAGS "${SIMD_AVX_C_FLAGS}")
-    set(SIMD_CXX_FLAGS "${SIMD_AVX_CXX_FLAGS}")
+    # If multiple flags are neeed, make them into a list
+    string(REPLACE " " ";" SIMD_C_FLAGS ${SIMD_AVX_C_FLAGS})
+    string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_AVX_CXX_FLAGS})
     set(GMX_SIMD_X86_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX SIMD instructions using CXX flags: ${SIMD_AVX_CXX_FLAGS}")
 
@@ -161,8 +165,9 @@ elseif(GMX_SIMD_ACTIVE MATCHES "AVX2_")
         gmx_give_fatal_error_when_simd_support_not_found("AVX2" "choose AVX SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
-    set(SIMD_C_FLAGS "${SIMD_AVX2_C_FLAGS}")
-    set(SIMD_CXX_FLAGS "${SIMD_AVX2_CXX_FLAGS}")
+    # If multiple flags are neeed, make them into a list
+    string(REPLACE " " ";" SIMD_C_FLAGS ${SIMD_AVX2_C_FLAGS})
+    string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_AVX2_CXX_FLAGS})
     set(GMX_SIMD_X86_${GMX_SIMD_ACTIVE} 1)
 
     if(GMX_SIMD_ACTIVE STREQUAL "AVX2_128")
@@ -186,8 +191,9 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "AVX_512")
         gmx_give_fatal_error_when_simd_support_not_found("AVX 512F" "choose a lower level of SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
-    set(SIMD_C_FLAGS "${SIMD_AVX_512_C_FLAGS}")
-    set(SIMD_CXX_FLAGS "${SIMD_AVX_512_CXX_FLAGS}")
+    # If multiple flags are neeed, make them into a list
+    string(REPLACE " " ";" SIMD_C_FLAGS ${SIMD_AVX_512_C_FLAGS})
+    string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_AVX_512_CXX_FLAGS})
     set(GMX_SIMD_X86_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 512-bit AVX-512 SIMD instructions using CXX flags: ${SIMD_AVX_512_CXX_FLAGS}")
 
@@ -200,8 +206,9 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "AVX_512_KNL")
         gmx_give_fatal_error_when_simd_support_not_found("AVX 512ER" "choose a lower level of SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
-    set(SIMD_C_FLAGS "${SIMD_AVX_512_KNL_C_FLAGS}")
-    set(SIMD_CXX_FLAGS "${SIMD_AVX_512_KNL_CXX_FLAGS}")
+    # If multiple flags are neeed, make them into a list
+    string(REPLACE " " ";" SIMD_C_FLAGS ${SIMD_AVX_512_KNL_C_FLAGS})
+    string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_AVX_512_KNL_CXX_FLAGS})
     set(GMX_SIMD_X86_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 512-bit AVX-512-KNL SIMD instructions using CXX flags: ${SIMD_AVX_512_KNL_CXX_FLAGS}")
 
@@ -218,8 +225,9 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_NEON")
         gmx_give_fatal_error_when_simd_support_not_found("ARM NEON" "disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
-    set(SIMD_C_FLAGS "${SIMD_ARM_NEON_C_FLAGS}")
-    set(SIMD_CXX_FLAGS "${SIMD_ARM_NEON_CXX_FLAGS}")
+    # If multiple flags are neeed, make them into a list
+    string(REPLACE " " ";" SIMD_C_FLAGS ${SIMD_ARM_NEON_C_FLAGS})
+    string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_ARM_NEON_CXX_FLAGS})
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 32-bit ARM NEON SIMD instructions using CXX flags: ${SIMD_ARM_NEON_CXX_FLAGS}")
 
@@ -232,8 +240,9 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_NEON_ASIMD")
         gmx_give_fatal_error_when_simd_support_not_found("ARM (AArch64) NEON Advanced SIMD" "particularly gcc version 4.9 or later, or disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
-    set(SIMD_C_FLAGS "${SIMD_ARM_NEON_ASIMD_C_FLAGS}")
-    set(SIMD_CXX_FLAGS "${SIMD_ARM_NEON_ASIMD_CXX_FLAGS}")
+    # If multiple flags are neeed, make them into a list
+    string(REPLACE " " ";" SIMD_C_FLAGS ${SIMD_ARM_NEON_ASIMD_C_FLAGS})
+    string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_ARM_NEON_ASIMD_CXX_FLAGS})
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling ARM (AArch64) NEON Advanced SIMD instructions using CXX flags: ${SIMD_ARM_NEON_ASIMD_CXX_FLAGS}")
 
@@ -246,8 +255,9 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_VMX")
         gmx_give_fatal_error_when_simd_support_not_found("IBM VMX" "disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
-    set(SIMD_C_FLAGS "${SIMD_IBM_VMX_C_FLAGS}")
-    set(SIMD_CXX_FLAGS "${SIMD_IBM_VMX_CXX_FLAGS}")
+    # If multiple flags are neeed, make them into a list
+    string(REPLACE " " ";" SIMD_C_FLAGS ${SIMD_IBM_VMX_C_FLAGS})
+    string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_IBM_VMX_CXX_FLAGS})
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling IBM VMX SIMD instructions using CXX flags: ${SIMD_IBM_VMX_CXX_FLAGS}")
 
@@ -265,8 +275,9 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_VSX")
         gmx_give_fatal_error_when_simd_support_not_found("IBM VSX" "disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
-    set(SIMD_C_FLAGS "${SIMD_IBM_VSX_C_FLAGS}")
-    set(SIMD_CXX_FLAGS "${SIMD_IBM_VSX_CXX_FLAGS}")
+    # If multiple flags are neeed, make them into a list
+    string(REPLACE " " ";" SIMD_C_FLAGS ${SIMD_IBM_VSX_C_FLAGS})
+    string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_IBM_VSX_CXX_FLAGS})
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling IBM VSX SIMD instructions using CXX flags: ${SIMD_IBM_VSX_CXX_FLAGS}")
 
