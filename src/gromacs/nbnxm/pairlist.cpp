@@ -2607,7 +2607,7 @@ static void get_nsubpair_target(const Nbnxm::GridSet      &gridSet,
      */
     *nsubpair_target  = std::max(nsubpair_target_min,
                                  roundToInt(nsp_est/min_ci_balanced));
-    *nsubpair_tot_est = static_cast<int>(nsp_est);
+    *nsubpair_tot_est = nsp_est;
 
     if (debug)
     {
