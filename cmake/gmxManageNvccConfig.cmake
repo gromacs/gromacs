@@ -172,7 +172,7 @@ gmx_check_if_changed(_cuda_nvcc_executable_or_flags_changed CUDA_NVCC_EXECUTABLE
 # code. Set the CMake variable GMX_NVCC_WORKS on if you want to
 # bypass this check.
 if((_cuda_nvcc_executable_or_flags_changed OR CUDA_HOST_COMPILER_CHANGED OR NOT GMX_NVCC_WORKS) AND NOT WIN32)
-    message(STATUS "Check for working NVCC/C compiler combination")
+    message(STATUS "Check for working NVCC/C++ compiler combination with nvcc '${CUDA_NVCC_EXECUTABLE}'")
     execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} -ccbin ${CUDA_HOST_COMPILER} -c ${CUDA_NVCC_FLAGS} ${CUDA_NVCC_FLAGS_${_build_type}} ${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu
         RESULT_VARIABLE _cuda_test_res
         OUTPUT_VARIABLE _cuda_test_out
@@ -184,12 +184,12 @@ if((_cuda_nvcc_executable_or_flags_changed OR CUDA_HOST_COMPILER_CHANGED OR NOT 
         message(STATUS "${CUDA_NVCC_EXECUTABLE} standard output: '${_cuda_test_out}'")
         message(STATUS "${CUDA_NVCC_EXECUTABLE} standard error:  '${_cuda_test_err}'")
         if(${_cuda_test_err} MATCHES "nsupported")
-            message(FATAL_ERROR "NVCC/C compiler combination does not seem to be supported. CUDA frequently does not support the latest versions of the host compiler, so you might want to try an earlier C/C++ compiler version and make sure your CUDA compiler and driver are as recent as possible.")
+            message(FATAL_ERROR "NVCC/C++ compiler combination does not seem to be supported. CUDA frequently does not support the latest versions of the host compiler, so you might want to try an earlier C++ compiler version and make sure your CUDA compiler and driver are as recent as possible.")
         else()
             message(FATAL_ERROR "CUDA compiler does not seem to be functional.")
         endif()
     elseif(NOT GMX_CUDA_TEST_COMPILER_QUIETLY)
-        message(STATUS "Check for working NVCC/C compiler combination - works")
+        message(STATUS "Check for working NVCC/C++ compiler combination - works")
         set(GMX_NVCC_WORKS TRUE CACHE INTERNAL "Nvcc can compile a trivial test program")
     endif()
 endif() # GMX_CHECK_NVCC

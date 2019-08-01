@@ -919,6 +919,18 @@ int Mdrunner::mdrunner()
 
     if (startingBehavior != StartingBehavior::NewSimulation)
     {
+        /* Check if checkpoint file exists before doing continuation.
+         * This way we can use identical input options for the first and subsequent runs...
+         */
+        if (mdrunOptions.numStepsCommandline > -2)
+        {
+            /* Temporarily set the number of steps to unmlimited to avoid
+             * triggering the nsteps check in load_checkpoint().
+             * This hack will go away soon when the -nsteps option is removed.
+             */
+            inputrec->nsteps = -1;
+        }
+
         load_checkpoint(opt2fn_master("-cpi", filenames.size(), filenames.data(), cr),
                         logFileHandle,
                         cr, domdecOptions.numCells,

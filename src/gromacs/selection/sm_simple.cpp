@@ -220,7 +220,7 @@ static const char *const help_resindex[] = {
     "[TT]resnr[tt] selects atoms using the residue numbering in the input",
     "file. [TT]resid[tt] is synonym for this keyword for VMD compatibility.",
     "",
-    "[TT]resindex N[tt] selects the [TT]N[tt]th residue starting from the",
+    "[TT]resindex N[tt] selects the [TT]N[tt] th residue starting from the",
     "beginning of the input file. This is useful for uniquely identifying",
     "residues if there are duplicate numbers in the input file (e.g., in",
     "multiple chains).",

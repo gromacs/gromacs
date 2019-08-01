@@ -369,6 +369,8 @@ if (SPHINX_FOUND)
         release-notes/2020/major/deprecated-functionality.rst
         release-notes/2020/major/portability.rst
         release-notes/2020/major/miscellaneous.rst
+        release-notes/2019/2019.4.rst
+        release-notes/2019/2019.3.rst
         release-notes/2019/2019.2.rst
         release-notes/2019/2019.1.rst
         release-notes/2019/major/highlights.rst
@@ -380,6 +382,7 @@ if (SPHINX_FOUND)
         release-notes/2019/major/deprecated-functionality.rst
         release-notes/2019/major/portability.rst
         release-notes/2019/major/miscellaneous.rst
+        release-notes/2018/2018.7.rst
         release-notes/2018/2018.6.rst
         release-notes/2018/2018.5.rst
         release-notes/2018/2018.4.rst
@@ -599,24 +602,27 @@ if (SPHINX_FOUND)
 
 else()
     set(MANUAL_BUILD_IS_POSSIBLE OFF)
-    set(MANUAL_BUILD_NOT_POSSIBLE_REASON "Sphinx version ${EXPECTED_SPHINX_VERSION} is not available")
+    set(MANUAL_BUILD_NOT_POSSIBLE_REASON "Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is not available")
 
     add_custom_target(webpage-sphinx
         COMMAND ${CMAKE_COMMAND} -E echo
-            "HTML pages cannot be built because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available"
+            "HTML pages cannot be built because Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is not available"
         VERBATIM)
     add_custom_target(install-guide
         COMMAND ${CMAKE_COMMAND} -E echo
-            "INSTALL cannot be built because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available"
+            "INSTALL cannot be built because Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is not available"
         VERBATIM)
     add_custom_target(man
         COMMAND ${CMAKE_COMMAND} -E echo
-            "man pages cannot be built because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available"
+            "man pages cannot be built because Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is not available"
         VERBATIM)
     add_custom_target(sphinx-create-texman
         COMMAND ${CMAKE_COMMAND} -E echo
-            "Cannot prepare LaTeX input files because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available"
+            "Cannot prepare LaTeX input files because Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is not available"
         VERBATIM)
+    add_custom_target(manual
+        COMMAND ${CMAKE_COMMAND} -E echo
+            "manual cannot be built because Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is not available")
 endif()
 
 if (MAN_PAGE_DIR)
@@ -645,7 +651,7 @@ if (NOT PythonInterp_FOUND)
 elseif (NOT SPHINX_FOUND)
     # Hardly anything gets built if Sphinx is not available, so don't bother.
     set(HTML_BUILD_IS_POSSIBLE OFF)
-    set(HTML_BUILD_NOT_POSSIBLE_REASON "Sphinx version ${EXPECTED_SPHINX_VERSION} is required")
+    set(HTML_BUILD_NOT_POSSIBLE_REASON "Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is required")
 endif()
 if (NOT MANUAL_BUILD_IS_POSSIBLE)
     list(APPEND HTML_BUILD_WARNINGS

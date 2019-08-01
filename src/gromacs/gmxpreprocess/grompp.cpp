@@ -2356,8 +2356,14 @@ int gmx_grompp(int argc, char *argv[])
 
     if (ir->bDoAwh)
     {
+        tensor compressibility = { { 0 } };
+        if (ir->epc != epcNO)
+        {
+            copy_mat(ir->compress, compressibility);
+        }
         setStateDependentAwhParams(ir->awhParams, ir->pull, pull,
-                                   state.box, ir->ePBC, &ir->opts, wi);
+                                   state.box, ir->ePBC, compressibility,
+                                   &ir->opts, wi);
     }
 
     if (ir->bPull)

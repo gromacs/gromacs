@@ -2050,7 +2050,8 @@ static void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_Umbrella
         header->pcrd[i].pull_type     = ir->pull->coord[i].eType;
         header->pcrd[i].geometry      = ir->pull->coord[i].eGeom;
         header->pcrd[i].ngroup        = ir->pull->coord[i].ngroup;
-        header->pcrd[i].k             = ir->pull->coord[i].k;
+        /* Angle type coordinates are handled fully in degrees in gmx wham */
+        header->pcrd[i].k             = ir->pull->coord[i].k*pull_conversion_factor_internal2userinput(&ir->pull->coord[i]);
         header->pcrd[i].init_dist     = ir->pull->coord[i].init;
 
         copy_ivec(ir->pull->coord[i].dim, header->pcrd[i].dim);

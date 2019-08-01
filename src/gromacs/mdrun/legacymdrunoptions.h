@@ -235,7 +235,7 @@ class LegacyMdrunOptions
             { "-append",  FALSE, etBOOL, {&appendOption},
               "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
             { "-nsteps",  FALSE, etINT64, {&mdrunOptions.numStepsCommandline},
-              "Run this number of steps, overrides .mdp file option (-1 means infinite, -2 means use mdp option, smaller is invalid)" },
+              "Run this number of steps (-1 means infinite, -2 means use mdp option, smaller is invalid)" },
             { "-maxh",   FALSE, etREAL, {&mdrunOptions.maximumHoursToRun},
               "Terminate after 0.99 times this time (hours)" },
             { "-replex",  FALSE, etINT, {&replExParams.exchangeInterval},

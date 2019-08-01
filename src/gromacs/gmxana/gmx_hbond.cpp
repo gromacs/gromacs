@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -884,8 +884,14 @@ static t_gridcell ***init_grid(gmx_bool bBox, rvec box[], real rcut, ivec ngrid)
     }
     else
     {
-        printf("\nWill do grid-seach on %dx%dx%d grid, rcut=%g\n",
+        printf("\nWill do grid-search on %dx%dx%d grid, rcut=%3.8f\n",
                ngrid[XX], ngrid[YY], ngrid[ZZ], rcut);
+    }
+    if (((ngrid[XX]*ngrid[YY]*ngrid[ZZ]) * sizeof(grid)) > INT_MAX)
+    {
+        gmx_fatal(FARGS, "Failed to allocate memory for %d x %d x %d grid points, which is larger than the maximum of %zu. "
+                  "You are likely either using a box that is too large (box dimensions are %3.8f nm x%3.8f nm x%3.8f nm) or a cutoff (%3.8f nm) that is too small.",
+                  ngrid[XX], ngrid[YY], ngrid[ZZ], INT_MAX/sizeof(grid), box[XX][XX], box[YY][YY], box[ZZ][ZZ], rcut);
     }
     snew(grid, ngrid[ZZ]);
     for (z = 0; z < ngrid[ZZ]; z++)

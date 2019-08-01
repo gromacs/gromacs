@@ -580,7 +580,7 @@ bool_t xdr_double(XDR * xdrs, double * dp)
 
         case XDR_ENCODE:
             ip     = reinterpret_cast<int *>(dp);
-            tmp[0] = ip[!bool(LSW)];
+            tmp[0] = ip[bool(LSW == 0)];
             tmp[1] = ip[LSW];
             return static_cast<bool_t>(bool(xdr_putint32(xdrs, tmp)) &&
                                        bool(xdr_putint32(xdrs, tmp+1)));

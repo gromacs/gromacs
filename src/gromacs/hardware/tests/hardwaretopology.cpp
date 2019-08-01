@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,8 @@
 #include <algorithm>
 
 #include <gtest/gtest.h>
+
+#include "gromacs/utility/stringutil.h"
 
 namespace
 {
@@ -97,31 +99,39 @@ TEST(HardwareTopologyTest, ProcessorSelfconsistency)
 
     if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic)
     {
-        int socketsInMachine = hwTop.machine().sockets.size();
-        int coresPerSocket   = hwTop.machine().sockets[0].cores.size();
-        int hwThreadsPerCore = hwTop.machine().sockets[0].cores[0].hwThreads.size();
+        SCOPED_TRACE(gmx::formatString("Logical Processor count %d", hwTop.machine().logicalProcessorCount));
 
-        // Check that logical processor information is reasonable
-        for (auto &l : hwTop.machine().logicalProcessors)
-        {
-            EXPECT_TRUE(l.socketRankInMachine >= 0 && l.socketRankInMachine < socketsInMachine);
-            EXPECT_TRUE(l.coreRankInSocket >= 0 && l.coreRankInSocket < coresPerSocket);
-            EXPECT_TRUE(l.hwThreadRankInCore >= 0 && l.hwThreadRankInCore < hwThreadsPerCore);
-        }
+        int  socketsInMachine = hwTop.machine().sockets.size();
+        int  coresPerSocket   = hwTop.machine().sockets[0].cores.size();
+        int  hwThreadsPerCore = hwTop.machine().sockets[0].cores[0].hwThreads.size();
 
-        // Double-check that the tree is self-consistent with logical processor info
-        for (int s = 0; s < socketsInMachine; s++)
+        auto logicalProcessors = hwTop.machine().logicalProcessors;
+        for (auto logicalProcessorIt = logicalProcessors.begin();
+             logicalProcessorIt != logicalProcessors.end();
+             ++logicalProcessorIt)
         {
-            for (int c = 0; c < coresPerSocket; c++)
+            // Check that logical processor information contains
+            // reasonable values.
+            SCOPED_TRACE(gmx::formatString("Socket rank in machine: %d", logicalProcessorIt->socketRankInMachine));
+            SCOPED_TRACE(gmx::formatString("Core rank in socket:    %d", logicalProcessorIt->coreRankInSocket));
+            SCOPED_TRACE(gmx::formatString("Hw thread rank in core: %d", logicalProcessorIt->hwThreadRankInCore));
+            EXPECT_TRUE(logicalProcessorIt->socketRankInMachine >= 0 && logicalProcessorIt->socketRankInMachine < socketsInMachine);
+            EXPECT_TRUE(logicalProcessorIt->coreRankInSocket >= 0 && logicalProcessorIt->coreRankInSocket < coresPerSocket);
+            EXPECT_TRUE(logicalProcessorIt->hwThreadRankInCore >= 0 && logicalProcessorIt->hwThreadRankInCore < hwThreadsPerCore);
+            // Check that logical processor information is distinct
+            // for each logical processor.
+
+            for (auto remainingLogicalProcessorIt = logicalProcessorIt + 1;
+                 remainingLogicalProcessorIt != logicalProcessors.end();
+                 ++remainingLogicalProcessorIt)
             {
-                for (int t = 0; t < hwThreadsPerCore; t++)
-                {
-                    int idx = hwTop.machine().sockets[s].cores[c].hwThreads[t].logicalProcessorId;
-                    EXPECT_LT(idx, hwTop.machine().logicalProcessorCount);
-                    EXPECT_EQ(hwTop.machine().logicalProcessors[idx].socketRankInMachine, s);
-                    EXPECT_EQ(hwTop.machine().logicalProcessors[idx].coreRankInSocket, c) << "logical:" << idx;
-                    EXPECT_EQ(hwTop.machine().logicalProcessors[idx].hwThreadRankInCore, t);
-                }
+                SCOPED_TRACE(gmx::formatString("Other socket rank in machine: %d", remainingLogicalProcessorIt->socketRankInMachine));
+                SCOPED_TRACE(gmx::formatString("Other core rank in socket:    %d", remainingLogicalProcessorIt->coreRankInSocket));
+                SCOPED_TRACE(gmx::formatString("Other hw thread rank in core: %d", remainingLogicalProcessorIt->hwThreadRankInCore));
+                EXPECT_TRUE((logicalProcessorIt->socketRankInMachine != remainingLogicalProcessorIt->socketRankInMachine) ||
+                            (logicalProcessorIt->coreRankInSocket    != remainingLogicalProcessorIt->coreRankInSocket) ||
+                            (logicalProcessorIt->hwThreadRankInCore  != remainingLogicalProcessorIt->hwThreadRankInCore)) <<
+                "This pair of logical processors have the same descriptive information, which is an error";
             }
         }
     }

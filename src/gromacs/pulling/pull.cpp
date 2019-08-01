@@ -1597,7 +1597,7 @@ void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull)
 
     for (pull_group_work_t &group : pull->group)
     {
-        if (group.epgrppbc == epgrppbcCOS || !group.globalWeights.empty())
+        if (!group.globalWeights.empty())
         {
             group.localWeights.resize(group.atomSet.numAtomsLocal());
             for (size_t i = 0; i < group.atomSet.numAtomsLocal(); ++i)

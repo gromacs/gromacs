@@ -163,6 +163,7 @@ Awh::Awh(FILE                 *fplog,
             const AwhDimParams &awhDimParams      = awhBiasParams.dimParams[d];
             GMX_RELEASE_ASSERT(awhDimParams.eCoordProvider == eawhcoordproviderPULL, "Currently only the pull code is supported as coordinate provider");
             const t_pull_coord &pullCoord         = inputRecord.pull->coord[awhDimParams.coordIndex];
+            GMX_RELEASE_ASSERT(pullCoord.eGeom != epullgDIRPBC, "Pull geometry 'direction-periodic' is not supported by AWH");
             double              conversionFactor  = pull_coordinate_is_angletype(&pullCoord) ? DEG2RAD : 1;
             dimParams.emplace_back(conversionFactor, awhDimParams.forceConstant, beta);
 

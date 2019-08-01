@@ -530,6 +530,7 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
     r_min_rad = probe_rad*probe_rad;
     gmx::RangePartitioning molecules = gmx_mtop_molecules(*mtop);
     snew(rm_p->block, molecules.numBlocks());
+    snew(rm_p->mol, molecules.numBlocks());
     nrm    = nupper = 0;
     nlower = low_up_rm;
     for (i = 0; i < ins_at->nr; i++)
@@ -689,7 +690,7 @@ static void rm_group(SimulationGroups *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_s
     for (int i = 0; i < rm_p->nr; i++)
     {
         mol_id = rm_p->mol[i];
-        at     = molecules.block(mol_id).size();
+        at     = molecules.block(mol_id).begin();
         block  = rm_p->block[i];
         mtop->molblock[block].nmol--;
         for (j = 0; j < mtop->moltype[mtop->molblock[block].type].atoms.nr; j++)
@@ -700,23 +701,27 @@ static void rm_group(SimulationGroups *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_s
     }
 
     mtop->natoms    -= n;
-    state_change_natoms(state, state->natoms - n);
-    snew(x_tmp, state->natoms);
-    snew(v_tmp, state->natoms);
+    /* We cannot change the size of the state datastructures here
+     * because we still access the coordinate arrays for all positions
+     * before removing the molecules we want to remove.
+     */
+    const int newStateAtomNumber = state->natoms - n;
+    snew(x_tmp, newStateAtomNumber);
+    snew(v_tmp, newStateAtomNumber);
 
     for (auto group : keysOf(groups->groupNumbers))
     {
         if (!groups->groupNumbers[group].empty())
         {
-            groups->groupNumbers[group].resize(state->natoms);
-            new_egrp[group].resize(state->natoms);
+            groups->groupNumbers[group].resize(newStateAtomNumber);
+            new_egrp[group].resize(newStateAtomNumber);
         }
     }
 
     auto x = makeArrayRef(state->x);
     auto v = makeArrayRef(state->v);
     rm = 0;
-    for (int i = 0; i < state->natoms+n; i++)
+    for (int i = 0; i < state->natoms; i++)
     {
         bRM = FALSE;
         for (j = 0; j < n; j++)
@@ -759,6 +764,7 @@ static void rm_group(SimulationGroups *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_s
             }
         }
     }
+    state_change_natoms(state, newStateAtomNumber);
     for (int i = 0; i < state->natoms; i++)
     {
         copy_rvec(x_tmp[i], x[i]);

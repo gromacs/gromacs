@@ -3763,6 +3763,31 @@ static void copySelectedListRange(const nbnxn_ci_t * gmx_restrict srcCi,
     }
 }
 
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__ICC) && __GNUC__ == 7
+/* Avoid gcc 7 avx512 loop vectorization bug (actually only needed with -mavx512f) */
+#pragma GCC push_options
+#pragma GCC optimize ("no-tree-vectorize")
+#endif
+
+/* Returns the number of cluster pairs that are in use summed over all lists */
+static int countClusterpairs(gmx::ArrayRef<const NbnxnPairlistCpu> pairlists)
+{
+    /* gcc 7 with -mavx512f can miss the contributions of 16 consecutive
+     * elements to the sum calculated in this loop. Above we have disabled
+     * loop vectorization to avoid this bug.
+     */
+    int ncjTotal = 0;
+    for (const auto &pairlist : pairlists)
+    {
+        ncjTotal += pairlist.ncjInUse;
+    }
+    return ncjTotal;
+}
+
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__ICC) && __GNUC__ == 7
+#pragma GCC pop_options
+#endif
+
 /* This routine re-balances the pairlists such that all are nearly equally
  * sized. Only whole i-entries are moved between lists. These are moved
  * between the ends of the lists, such that the buffer reduction cost should
@@ -3775,11 +3800,7 @@ static void rebalanceSimpleLists(gmx::ArrayRef<const NbnxnPairlistCpu> srcSet,
                                  gmx::ArrayRef<NbnxnPairlistCpu>       destSet,
                                  gmx::ArrayRef<PairsearchWork>         searchWork)
 {
-    int ncjTotal = 0;
-    for (auto &src : srcSet)
-    {
-        ncjTotal += src.ncjInUse;
-    }
+    const int ncjTotal  = countClusterpairs(srcSet);
     const int numLists  = srcSet.ssize();
     const int ncjTarget = (ncjTotal + numLists - 1)/numLists;
 
@@ -3848,11 +3869,7 @@ static void rebalanceSimpleLists(gmx::ArrayRef<const NbnxnPairlistCpu> srcSet,
     }
 
 #ifndef NDEBUG
-    int ncjTotalNew = 0;
-    for (auto &dest : destSet)
-    {
-        ncjTotalNew += dest.ncjInUse;
-    }
+    const int ncjTotalNew = countClusterpairs(destSet);
     GMX_RELEASE_ASSERT(ncjTotalNew == ncjTotal, "The total size of the lists before and after rebalancing should match");
 #endif
 }
