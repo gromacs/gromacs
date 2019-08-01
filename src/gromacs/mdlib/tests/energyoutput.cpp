@@ -53,10 +53,7 @@
 
 #include "gromacs/mdlib/energyoutput.h"
 
-#include "config.h"
-
 #include <cstdio>
-#include <cstdlib>
 
 #include <gtest/gtest.h>
 
@@ -75,6 +72,7 @@
 #include "gromacs/utility/unique_cptr.h"
 
 #include "testutils/refdata.h"
+#include "testutils/setenv.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
@@ -237,14 +235,7 @@ class EnergyOutputTest : public ::testing::TestWithParam<EnergyOutputTestParamet
 
             // GMX_CONSTRAINTVIR environment variable should also be
             // set to print constraints and force virials separately.
-            //
-            // TODO extract a helper function if we ever need to do
-            // this kind of thing again.
-#if GMX_NATIVE_WINDOWS
-            _putenv_s("GMX_CONSTRAINTVIR", "true");
-#else
-            setenv("GMX_CONSTRAINTVIR", "true", 1);
-#endif
+            gmxSetenv("GMX_CONSTRAINTVIR", "true", 1);
             // To print constrain RMSD, constraints algorithm should be set to LINCS.
             inputrec_.eConstrAlg = econtLINCS;
 
