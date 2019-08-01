@@ -726,7 +726,7 @@ struct ForceOutputs
  * \returns             Cleared force output structure
  */
 static ForceOutputs
-setupForceOutputs(const t_forcerec                    *fr,
+setupForceOutputs(t_forcerec                          *fr,
                   pull_t                              *pull_work,
                   const t_inputrec                    &inputrec,
                   gmx::ArrayRefWithPadding<gmx::RVec>  force,
@@ -753,9 +753,9 @@ setupForceOutputs(const t_forcerec                    *fr,
 
 
     /* forceWithVirial uses the local atom range only */
-    gmx::ForceWithVirial forceWithVirial (useSeparateForceWithVirialBuffer ?
-                                          *fr->forceBufferForDirectVirialContributions : force.unpaddedArrayRef(),
-                                          doVirial);
+    gmx::ForceWithVirial forceWithVirial(useSeparateForceWithVirialBuffer ?
+                                         fr->forceBufferForDirectVirialContributions : force.unpaddedArrayRef(),
+                                         doVirial);
 
     if (useSeparateForceWithVirialBuffer)
     {

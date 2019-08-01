@@ -1131,7 +1131,7 @@ void forcerec_set_ranges(t_forcerec *fr,
 
     if (fr->haveDirectVirialContributions)
     {
-        fr->forceBufferForDirectVirialContributions->resize(natoms_f_novirsum);
+        fr->forceBufferForDirectVirialContributions.resize(natoms_f_novirsum);
     }
 }
 
@@ -1798,11 +1798,6 @@ void init_forcerec(FILE                             *fp,
          ir->bPull ||
          ir->bRot ||
          ir->bIMD);
-
-    if (fr->haveDirectVirialContributions)
-    {
-        fr->forceBufferForDirectVirialContributions = new std::vector<gmx::RVec>;
-    }
 
     if (fr->shift_vec == nullptr)
     {

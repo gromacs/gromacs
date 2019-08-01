@@ -220,9 +220,9 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
      * PPPM/PME/Ewald/posres/ForceProviders
      */
     /* True when we have contributions that are directly added to the virial */
-    gmx_bool                 haveDirectVirialContributions = FALSE;
-    /* TODO: Replace the pointer by an object once we got rid of C */
-    std::vector<gmx::RVec>  *forceBufferForDirectVirialContributions = nullptr;
+    bool                   haveDirectVirialContributions = false;
+    /* Force buffer for force computation with direct virial contributions */
+    std::vector<gmx::RVec> forceBufferForDirectVirialContributions;
 
     /* Data for PPPM/PME/Ewald */
     struct gmx_pme_t *pmedata                = nullptr;
