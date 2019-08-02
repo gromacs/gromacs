@@ -374,8 +374,8 @@ void reduceForces<false>(nbnxn_atomdata_t             *nbat,
                          bool                          accumulateForce);
 
 /* Add the fshift force stored in nbat to fshift */
-void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
-                                              rvec                   *fshift);
+void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t   &nbat,
+                                              gmx::ArrayRef<gmx::RVec>  fshift);
 
 /* Get the atom start index and number of atoms for a given locality */
 void nbnxn_get_atom_range(Nbnxm::AtomLocality              atomLocality,

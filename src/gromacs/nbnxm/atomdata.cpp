@@ -1532,10 +1532,10 @@ void reduceForces<false>(nbnxn_atomdata_t             *nbat,
                          bool                          useGpuFPmeReduction,
                          bool                          accumulateForce);
 
-void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
-                                              rvec                   *fshift)
+void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t   &nbat,
+                                              gmx::ArrayRef<gmx::RVec>  fshift)
 {
-    gmx::ArrayRef<const nbnxn_atomdata_output_t> outputBuffers = nbat->out;
+    gmx::ArrayRef<const nbnxn_atomdata_output_t> outputBuffers = nbat.out;
 
     for (int s = 0; s < SHIFTS; s++)
     {
@@ -1547,7 +1547,7 @@ void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
             sum[YY] += out.fshift[s*DIM+YY];
             sum[ZZ] += out.fshift[s*DIM+ZZ];
         }
-        rvec_inc(fshift[s], sum);
+        fshift[s] += sum;
     }
 }
 

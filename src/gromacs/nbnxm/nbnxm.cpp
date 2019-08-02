@@ -160,7 +160,7 @@ gmx::ArrayRef<const int> nonbonded_verlet_t::getGridIndices() const
 
 void
 nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality           locality,
-                                             rvec                               *f)
+                                             gmx::ArrayRef<gmx::RVec>            force)
 {
 
     /* Skip the reduction if there was no short-range GPU work to do
@@ -173,7 +173,7 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality          
     wallcycle_start(wcycle_, ewcNB_XF_BUF_OPS);
     wallcycle_sub_start(wcycle_, ewcsNB_F_BUF_OPS);
 
-    reduceForces<false>(nbat.get(), locality, pairSearch_->gridSet(), f, nullptr, nullptr, gpu_nbv, false, false);
+    reduceForces<false>(nbat.get(), locality, pairSearch_->gridSet(), as_rvec_array(force.data()), nullptr, nullptr, gpu_nbv, false, false);
 
     wallcycle_sub_stop(wcycle_, ewcsNB_F_BUF_OPS);
     wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);
@@ -181,7 +181,7 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality          
 
 void
 nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality           locality,
-                                             rvec                               *f,
+                                             gmx::ArrayRef<gmx::RVec>            force,
                                              void                               *fPmeDeviceBuffer,
                                              GpuEventSynchronizer               *pmeForcesReady,
                                              BufferOpsUseGpu                     useGpu,
@@ -206,7 +206,7 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality          
     wallcycle_sub_start(wcycle_, ewcsNB_F_BUF_OPS);
 
     auto fn = useGpu == BufferOpsUseGpu::True ? reduceForces<true> : reduceForces<false>;
-    fn(nbat.get(), locality, pairSearch_->gridSet(), f, fPmeDeviceBuffer, pmeForcesReady, gpu_nbv, useGpuFPmeReduction, accumulateForce);
+    fn(nbat.get(), locality, pairSearch_->gridSet(), as_rvec_array(force.data()), fPmeDeviceBuffer, pmeForcesReady, gpu_nbv, useGpuFPmeReduction, accumulateForce);
 
     wallcycle_sub_stop(wcycle_, ewcsNB_F_BUF_OPS);
     wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);

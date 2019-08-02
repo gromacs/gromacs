@@ -59,6 +59,7 @@
 #include "gromacs/mdlib/qm_mopac.h"
 #include "gromacs/mdlib/qm_orca.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -848,9 +849,9 @@ void update_QMMMrec(const t_commrec  *cr,
     }
 } /* update_QMMM_rec */
 
-real calculate_QMMM(const t_commrec  *cr,
-                    rvec              f[],
-                    const t_forcerec *fr)
+real calculate_QMMM(const t_commrec           *cr,
+                    gmx::ForceWithShiftForces *forceWithShiftForces,
+                    const t_forcerec          *fr)
 {
     real
         QMener = 0.0;
@@ -883,6 +884,8 @@ real calculate_QMMM(const t_commrec  *cr,
     /* now different procedures are carried out for one layer ONION and
      * normal QMMM on one hand and multilayer oniom on the other
      */
+    gmx::ArrayRef<gmx::RVec> fMM      = forceWithShiftForces->force();
+    gmx::ArrayRef<gmx::RVec> fshiftMM = forceWithShiftForces->shiftForces();
     if (qr->QMMMscheme == eQMMMschemenormal || qr->nrQMlayers == 1)
     {
         qm = qr->qm[0];
@@ -893,16 +896,16 @@ real calculate_QMMM(const t_commrec  *cr,
         {
             for (j = 0; j < DIM; j++)
             {
-                f[qm->indexQM[i]][j]          -= forces[i][j];
-                fr->fshift[qm->shiftQM[i]][j] += fshift[i][j];
+                fMM[qm->indexQM[i]][j]          -= forces[i][j];
+                fshiftMM[qm->shiftQM[i]][j]     += fshift[i][j];
             }
         }
         for (i = 0; i < mm->nrMMatoms; i++)
         {
             for (j = 0; j < DIM; j++)
             {
-                f[mm->indexMM[i]][j]          -= forces[qm->nrQMatoms+i][j];
-                fr->fshift[mm->shiftMM[i]][j] += fshift[qm->nrQMatoms+i][j];
+                fMM[mm->indexMM[i]][j]      -= forces[qm->nrQMatoms+i][j];
+                fshiftMM[mm->shiftMM[i]][j] += fshift[qm->nrQMatoms+i][j];
             }
 
         }
@@ -950,8 +953,8 @@ real calculate_QMMM(const t_commrec  *cr,
             {
                 for (j = 0; j < DIM; j++)
                 {
-                    f[qm->indexQM[i]][j]          -= (forces[i][j]-forces2[i][j]);
-                    fr->fshift[qm->shiftQM[i]][j] += (fshift[i][j]-fshift2[i][j]);
+                    fMM[qm->indexQM[i]][j]      -= (forces[i][j]-forces2[i][j]);
+                    fshiftMM[qm->shiftQM[i]][j] += (fshift[i][j]-fshift2[i][j]);
                 }
             }
             free(qm2);
@@ -966,8 +969,8 @@ real calculate_QMMM(const t_commrec  *cr,
         {
             for (j = 0; j < DIM; j++)
             {
-                f[qm->indexQM[i]][j]          -= forces[i][j];
-                fr->fshift[qm->shiftQM[i]][j] += fshift[i][j];
+                fMM[qm->indexQM[i]][j]      -= forces[i][j];
+                fshiftMM[qm->shiftQM[i]][j] += fshift[i][j];
             }
         }
         free(forces);

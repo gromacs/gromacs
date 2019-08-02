@@ -174,18 +174,18 @@ void gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused *nb,
  * \param[in]  aloc   Atom locality identifier
  * \param[out] e_lj   Pointer to the LJ energy output to accumulate into
  * \param[out] e_el   Pointer to the electrostatics energy output to accumulate into
- * \param[out] fshift Pointer to the shift force buffer to accumulate into
+ * \param[out] shiftForces    Shift forces buffer to accumulate into
  * \param[in]  completionKind Indicates whether nnbonded task completion should only be checked rather than waited for
  * \returns              True if the nonbonded tasks associated with \p aloc locality have completed
  */
 GPU_FUNC_QUALIFIER
-bool gpu_try_finish_task(gmx_nbnxn_gpu_t gmx_unused  *nb,
-                         int             gmx_unused   flags,
-                         AtomLocality    gmx_unused   aloc,
-                         real            gmx_unused  *e_lj,
-                         real            gmx_unused  *e_el,
-                         rvec            gmx_unused  *fshift,
-                         GpuTaskCompletion gmx_unused completionKind) GPU_FUNC_TERM_WITH_RETURN(false);
+bool gpu_try_finish_task(gmx_nbnxn_gpu_t          gmx_unused *nb,
+                         int                      gmx_unused  flags,
+                         AtomLocality             gmx_unused  aloc,
+                         real                     gmx_unused *e_lj,
+                         real                     gmx_unused *e_el,
+                         gmx::ArrayRef<gmx::RVec> gmx_unused  shiftForces,
+                         GpuTaskCompletion        gmx_unused  completionKind) GPU_FUNC_TERM_WITH_RETURN(false);
 
 /*! \brief  Completes the nonbonded GPU task blocking until GPU tasks and data
  * transfers to finish.
@@ -199,15 +199,15 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t gmx_unused  *nb,
  * \param[in] aloc Atom locality identifier
  * \param[out] e_lj Pointer to the LJ energy output to accumulate into
  * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
- * \param[out] fshift Pointer to the shift force buffer to accumulate into
+ * \param[out] shiftForces Shift forces buffer to accumulate into
  */
 GPU_FUNC_QUALIFIER
-void gpu_wait_finish_task(gmx_nbnxn_gpu_t gmx_unused *nb,
-                          int             gmx_unused  flags,
-                          AtomLocality    gmx_unused  aloc,
-                          real            gmx_unused *e_lj,
-                          real            gmx_unused *e_el,
-                          rvec            gmx_unused *fshift) GPU_FUNC_TERM;
+void gpu_wait_finish_task(gmx_nbnxn_gpu_t          gmx_unused *nb,
+                          int                      gmx_unused  flags,
+                          AtomLocality             gmx_unused  aloc,
+                          real                     gmx_unused *e_lj,
+                          real                     gmx_unused *e_el,
+                          gmx::ArrayRef<gmx::RVec> gmx_unused  shiftForces) GPU_FUNC_TERM;
 
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
 GPU_FUNC_QUALIFIER

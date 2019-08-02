@@ -139,17 +139,20 @@ static void sum_forces(rvec f[], gmx::ArrayRef<const gmx::RVec> forceToAdd)
     }
 }
 
-static void calc_virial(int start, int homenr, const rvec x[], const rvec f[],
+static void calc_virial(int start, int homenr, const rvec x[],
+                        const gmx::ForceWithShiftForces &forceWithShiftForces,
                         tensor vir_part, const t_graph *graph, const matrix box,
                         t_nrnb *nrnb, const t_forcerec *fr, int ePBC)
 {
     /* The short-range virial from surrounding boxes */
-    calc_vir(SHIFTS, fr->shift_vec, fr->fshift, vir_part, ePBC == epbcSCREW, box);
+    const rvec *fshift = as_rvec_array(forceWithShiftForces.shiftForces().data());
+    calc_vir(SHIFTS, fr->shift_vec, fshift, vir_part, ePBC == epbcSCREW, box);
     inc_nrnb(nrnb, eNR_VIRIAL, SHIFTS);
 
     /* Calculate partial virial, for local atoms only, based on short range.
      * Total virial is computed in global_stat, called from do_md
      */
+    const rvec *f = as_rvec_array(forceWithShiftForces.force().data());
     f_calc_vir(start, start+homenr, x, f, vir_part, graph, box);
     inc_nrnb(nrnb, eNR_VIRIAL, homenr);
 
@@ -267,7 +270,7 @@ static void post_process_forces(const t_commrec           *cr,
                                 const gmx_vsite_t         *vsite,
                                 int                        flags)
 {
-    rvec *f = forceOutputs->f();
+    rvec *f = as_rvec_array(forceOutputs->forceWithShiftForces().force().data());
 
     if (fr->haveDirectVirialContributions)
     {
@@ -644,9 +647,7 @@ static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
  *
  * \param[in]     nbv              Nonbonded verlet structure
  * \param[in,out] pmedata          PME module data
- * \param[in,out] force            Force array to reduce task outputs into.
- * \param[in,out] forceWithVirial  Force and virial buffers
- * \param[in,out] fshift           Shift force output vector results are reduced into
+ * \param[in,out] forceOutputs     Output buffer for the forces and virial
  * \param[in,out] enerd            Energy data structure results are reduced into
  * \param[in]     flags            Force flags
  * \param[in]     pmeFlags         PME flags
@@ -654,9 +655,7 @@ static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
  */
 static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv,
                                         gmx_pme_t                           *pmedata,
-                                        gmx::ArrayRefWithPadding<gmx::RVec> *force,
-                                        gmx::ForceWithVirial                *forceWithVirial,
-                                        rvec                                 fshift[],
+                                        gmx::ForceOutputs                   *forceOutputs,
                                         gmx_enerdata_t                      *enerd,
                                         int                                  flags,
                                         int                                  pmeFlags,
@@ -666,14 +665,18 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
     bool isNbGpuDone  = false;
 
 
-    gmx::ArrayRef<const gmx::RVec> pmeGpuForces;
+
+    gmx::ForceWithShiftForces      &forceWithShiftForces = forceOutputs->forceWithShiftForces();
+    gmx::ForceWithVirial           &forceWithVirial      = forceOutputs->forceWithVirial();
+
+    gmx::ArrayRef<const gmx::RVec>  pmeGpuForces;
 
     while (!isPmeGpuDone || !isNbGpuDone)
     {
         if (!isPmeGpuDone)
         {
             GpuTaskCompletion completionType = (isNbGpuDone) ? GpuTaskCompletion::Wait : GpuTaskCompletion::Check;
-            isPmeGpuDone = pme_gpu_try_finish_task(pmedata, pmeFlags, wcycle, forceWithVirial, enerd, completionType);
+            isPmeGpuDone = pme_gpu_try_finish_task(pmedata, pmeFlags, wcycle, &forceWithVirial, enerd, completionType);
         }
 
         if (!isNbGpuDone)
@@ -685,7 +688,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
                                                      Nbnxm::AtomLocality::Local,
                                                      enerd->grpp.ener[egLJSR].data(),
                                                      enerd->grpp.ener[egCOULSR].data(),
-                                                     fshift, completionType);
+                                                     forceWithShiftForces.shiftForces(), completionType);
             wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
             // To get the call count right, when the task finished we
             // issue a start/stop.
@@ -697,7 +700,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
                 wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
                 nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
-                                              as_rvec_array(force->unpaddedArrayRef().data()));
+                                              forceWithShiftForces.force());
             }
         }
     }
@@ -726,13 +729,14 @@ setupForceOutputs(t_forcerec                          *fr,
 {
     wallcycle_sub_start(wcycle, ewcsCLEAR_FORCE_BUFFER);
 
-    // TODO: Add the shift force buffer and use it
-    gmx::ForceWithShiftForces forceWithShiftForces(force, doVirial, gmx::ArrayRef<gmx::RVec>());
+    /* NOTE: We assume fr->shiftForces is all zeros here */
+    gmx::ForceWithShiftForces forceWithShiftForces(force, doVirial, fr->shiftForces);
 
     if (bDoForces)
     {
         /* Clear the short- and long-range forces */
-        clear_rvecs_omp(fr->natoms_force_constr, forceWithShiftForces.f());
+        clear_rvecs_omp(fr->natoms_force_constr,
+                        as_rvec_array(forceWithShiftForces.force().data()));
     }
 
     /* If we need to compute the virial, we might need a separate
@@ -1263,7 +1267,12 @@ void do_force(FILE                                     *fplog,
 
     /* Reset energies */
     reset_enerdata(enerd);
-    clear_rvecs(SHIFTS, fr->fshift);
+    /* Clear the shift forces */
+    // TODO: This should be linked to the shift force buffer in use, or cleared before use instead
+    for (gmx::RVec &elem : fr->shiftForces)
+    {
+        elem = { 0.0_real, 0.0_real, 0.0_real };
+    }
 
     if (DOMAINDECOMP(cr) && !thisRankHasDuty(cr, DUTY_PME))
     {
@@ -1283,8 +1292,9 @@ void do_force(FILE                                     *fplog,
      */
     wallcycle_start(wcycle, ewcFORCE);
 
-    // set up and clear force outputs
-    ForceOutputs forceOut = setupForceOutputs(fr, pull_work, *inputrec, force, bDoForces,
+    // Set up and clear force outputs.
+    // We use std::move to keep the compiler happy, it has no effect.
+    ForceOutputs forceOut = setupForceOutputs(fr, pull_work, *inputrec, std::move(force), bDoForces,
                                               ((flags & GMX_FORCE_VIRIAL) != 0), wcycle);
 
     /* We calculate the non-bonded forces, when done on the CPU, here.
@@ -1307,14 +1317,14 @@ void do_force(FILE                                     *fplog,
          * Happens here on the CPU both with and without GPU.
          */
         nbv->dispatchFreeEnergyKernel(Nbnxm::InteractionLocality::Local,
-                                      fr, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f(), *mdatoms,
+                                      fr, as_rvec_array(x.unpaddedArrayRef().data()), &forceOut.forceWithShiftForces(), *mdatoms,
                                       inputrec->fepvals, lambda.data(),
                                       enerd, flags, nrnb);
 
         if (havePPDomainDecomposition(cr))
         {
             nbv->dispatchFreeEnergyKernel(Nbnxm::InteractionLocality::NonLocal,
-                                          fr, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f(), *mdatoms,
+                                          fr, as_rvec_array(x.unpaddedArrayRef().data()), &forceOut.forceWithShiftForces(), *mdatoms,
                                           inputrec->fepvals, lambda.data(),
                                           enerd, flags, nrnb);
         }
@@ -1333,8 +1343,7 @@ void do_force(FILE                                     *fplog,
          * communication with calculation with domain decomposition.
          */
         wallcycle_stop(wcycle, ewcFORCE);
-        nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::All, forceOut.f());
-
+        nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::All, forceOut.forceWithShiftForces().force());
         wallcycle_start_nocount(wcycle, ewcFORCE);
 
         /* If there are multiple fshift output buffers we need to reduce them */
@@ -1342,8 +1351,8 @@ void do_force(FILE                                     *fplog,
         {
             /* This is not in a subcounter because it takes a
                negligible and constant-sized amount of time */
-            nbnxn_atomdata_add_nbat_fshift_to_fshift(nbv->nbat.get(),
-                                                     fr->fshift);
+            nbnxn_atomdata_add_nbat_fshift_to_fshift(*nbv->nbat,
+                                                     forceOut.forceWithShiftForces().shiftForces());
         }
     }
 
@@ -1377,6 +1386,9 @@ void do_force(FILE                                     *fplog,
     float cycles_wait_gpu = 0;
     if (bUseOrEmulGPU)
     {
+        auto &forceWithShiftForces = forceOut.forceWithShiftForces();
+        rvec *f                    = as_rvec_array(forceWithShiftForces.force().data());
+
         /* wait for non-local forces (or calculate in emulation mode) */
         if (havePPDomainDecomposition(cr))
         {
@@ -1387,7 +1399,7 @@ void do_force(FILE                                     *fplog,
                                             flags, Nbnxm::AtomLocality::NonLocal,
                                             enerd->grpp.ener[egLJSR].data(),
                                             enerd->grpp.ener[egCOULSR].data(),
-                                            fr->fshift);
+                                            forceWithShiftForces.shiftForces());
                 cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
             }
             else
@@ -1400,26 +1412,25 @@ void do_force(FILE                                     *fplog,
 
             if (useGpuFBufOps == BufferOpsUseGpu::True && haveCpuForces)
             {
-                nbv->launch_copy_f_to_gpu(forceOut.f(), Nbnxm::AtomLocality::NonLocal);
+                nbv->launch_copy_f_to_gpu(f, Nbnxm::AtomLocality::NonLocal);
             }
 
             // flag to specify if forces should be accumulated in force buffer
             // ops. For non-local part, this just depends on whether CPU forces are present.
             bool accumulateForce = (useGpuFBufOps == BufferOpsUseGpu::True) && haveCpuForces;
             nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::NonLocal,
-                                          forceOut.f(), pme_gpu_get_device_f(fr->pmedata),
+                                          forceWithShiftForces.force(), pme_gpu_get_device_f(fr->pmedata),
                                           pme_gpu_get_f_ready_synchronizer(fr->pmedata),
                                           useGpuFBufOps, useGpuFPmeReduction, accumulateForce);
-
             if (useGpuFBufOps == BufferOpsUseGpu::True)
             {
-                nbv->launch_copy_f_from_gpu(forceOut.f(), Nbnxm::AtomLocality::NonLocal);
+                nbv->launch_copy_f_from_gpu(f, Nbnxm::AtomLocality::NonLocal);
             }
 
             if (fr->nbv->emulateGpu() && (flags & GMX_FORCE_VIRIAL))
             {
-                nbnxn_atomdata_add_nbat_fshift_to_fshift(nbv->nbat.get(),
-                                                         fr->fshift);
+                nbnxn_atomdata_add_nbat_fshift_to_fshift(*nbv->nbat,
+                                                         forceWithShiftForces.shiftForces());
             }
         }
     }
@@ -1439,7 +1450,7 @@ void do_force(FILE                                     *fplog,
             {
                 nbv->wait_for_gpu_force_reduction(Nbnxm::AtomLocality::NonLocal);
             }
-            dd_move_f(cr->dd, force.unpaddedArrayRef(), fr->fshift, wcycle);
+            dd_move_f(cr->dd, &forceOut.forceWithShiftForces(), wcycle);
         }
     }
 
@@ -1449,7 +1460,7 @@ void do_force(FILE                                     *fplog,
                              (useGpuFBufOps == BufferOpsUseGpu::False));
     if (alternateGpuWait)
     {
-        alternatePmeNbGpuWaitReduce(fr->nbv.get(), fr->pmedata, &force, &forceOut.forceWithVirial(), fr->fshift, enerd,
+        alternatePmeNbGpuWaitReduce(fr->nbv.get(), fr->pmedata, &forceOut, enerd,
                                     flags, pmeFlags, wcycle);
     }
 
@@ -1473,7 +1484,7 @@ void do_force(FILE                                     *fplog,
                                     flags, Nbnxm::AtomLocality::Local,
                                     enerd->grpp.ener[egLJSR].data(),
                                     enerd->grpp.ener[egCOULSR].data(),
-                                    fr->fshift);
+                                    forceOut.forceWithShiftForces().shiftForces());
         float cycles_tmp = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
         if (ddBalanceRegionHandler.useBalancingRegion())
@@ -1508,6 +1519,8 @@ void do_force(FILE                                     *fplog,
      * on the non-alternating path. */
     if (bUseOrEmulGPU && !alternateGpuWait)
     {
+        gmx::ArrayRef<gmx::RVec>  force = forceOut.forceWithShiftForces().force();
+        rvec                     *f     = as_rvec_array(force.data());
 
         // TODO: move these steps as early as possible:
         // - CPU f H2D should be as soon as all CPU-side forces are done
@@ -1516,7 +1529,7 @@ void do_force(FILE                                     *fplog,
         //
         if (useGpuFBufOps == BufferOpsUseGpu::True && (haveCpuForces || DOMAINDECOMP(cr)))
         {
-            nbv->launch_copy_f_to_gpu(forceOut.f(), Nbnxm::AtomLocality::Local);
+            nbv->launch_copy_f_to_gpu(f, Nbnxm::AtomLocality::Local);
         }
         // flag to specify if forces should be accumulated in force
         // buffer ops. For local part, this depends on whether CPU
@@ -1526,13 +1539,12 @@ void do_force(FILE                                     *fplog,
         bool accumulateForce = (useGpuFBufOps == BufferOpsUseGpu::True) &&
             (haveCpuForces || DOMAINDECOMP(cr));
         nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
-                                      forceOut.f(), pme_gpu_get_device_f(fr->pmedata),
+                                      force, pme_gpu_get_device_f(fr->pmedata),
                                       pme_gpu_get_f_ready_synchronizer(fr->pmedata),
                                       useGpuFBufOps, useGpuFPmeReduction, accumulateForce);
-
         if (useGpuFBufOps == BufferOpsUseGpu::True)
         {
-            nbv->launch_copy_f_from_gpu(forceOut.f(), Nbnxm::AtomLocality::Local);
+            nbv->launch_copy_f_from_gpu(f, Nbnxm::AtomLocality::Local);
             nbv->wait_for_gpu_force_reduction(Nbnxm::AtomLocality::Local);
         }
     }
@@ -1551,19 +1563,23 @@ void do_force(FILE                                     *fplog,
 
     if (bDoForces)
     {
+        rvec *f = as_rvec_array(forceOut.forceWithShiftForces().force().data());
+
         /* If we have NoVirSum forces, but we do not calculate the virial,
          * we sum fr->f_novirsum=forceOut.f later.
          */
         if (vsite && !(fr->haveDirectVirialContributions && !(flags & GMX_FORCE_VIRIAL)))
         {
-            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f(), fr->fshift, FALSE, nullptr, nrnb,
+            rvec *fshift = as_rvec_array(forceOut.forceWithShiftForces().shiftForces().data());
+            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), f, fshift, FALSE, nullptr, nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr, wcycle);
         }
 
         if (flags & GMX_FORCE_VIRIAL)
         {
             /* Calculation of the virial must be done after vsites! */
-            calc_virial(0, mdatoms->homenr, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f(),
+            calc_virial(0, mdatoms->homenr, as_rvec_array(x.unpaddedArrayRef().data()),
+                        forceOut.forceWithShiftForces(),
                         vir_force, graph, box, nrnb, fr, inputrec->ePBC);
         }
     }

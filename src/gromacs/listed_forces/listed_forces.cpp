@@ -136,15 +136,18 @@ zero_thread_output(f_thread_t *f_t)
 
 /*! \brief Reduce thread-local force buffers */
 void
-reduce_thread_forces(int n, rvec *f,
-                     const bonded_threading_t *bt,
-                     int nthreads)
+reduce_thread_forces(int                        n,
+                     gmx::ArrayRef<gmx::RVec>   force,
+                     const bonded_threading_t  *bt,
+                     int                        nthreads)
 {
     if (nthreads > MAX_BONDED_THREADS)
     {
         gmx_fatal(FARGS, "Can not reduce bonded forces on more than %d threads",
                   MAX_BONDED_THREADS);
     }
+
+    rvec * gmx_restrict f = as_rvec_array(force.data());
 
     /* This reduction can run on any number of threads,
      * independently of bt->nthreads.
@@ -193,7 +196,7 @@ reduce_thread_forces(int n, rvec *f,
 
 /*! \brief Reduce thread-local forces, shift forces and energies */
 void
-reduce_thread_output(int n, rvec *f, rvec *fshift,
+reduce_thread_output(int n, gmx::ForceWithShiftForces *forceWithShiftForces,
                      real *ener, gmx_grppairener_t *grpp, real *dvdl,
                      const bonded_threading_t *bt,
                      gmx_bool bCalcEnerVir,
@@ -204,8 +207,10 @@ reduce_thread_output(int n, rvec *f, rvec *fshift,
     if (bt->nblock_used > 0)
     {
         /* Reduce the bonded force buffer */
-        reduce_thread_forces(n, f, bt, bt->nthreads);
+        reduce_thread_forces(n, forceWithShiftForces->force(), bt, bt->nthreads);
     }
+
+    rvec * gmx_restrict fshift = as_rvec_array(forceWithShiftForces->shiftForces().data());
 
     /* When necessary, reduce energy and virial using one thread only */
     if (bCalcEnerVir && bt->nthreads > 1)
@@ -361,6 +366,7 @@ calcBondedForces(const t_idef     *idef,
                  const t_forcerec *fr,
                  const t_pbc      *pbc_null,
                  const t_graph    *g,
+                 rvec             *fshiftMasterBuffer,
                  gmx_enerdata_t   *enerd,
                  t_nrnb           *nrnb,
                  const real       *lambda,
@@ -394,7 +400,7 @@ calcBondedForces(const t_idef     *idef,
              */
             if (thread == 0)
             {
-                fshift = fr->fshift;
+                fshift = fshiftMasterBuffer;
                 epot   = enerd->term;
                 grpp   = &enerd->grpp;
                 dvdlt  = dvdl;
@@ -452,8 +458,7 @@ void calc_listed(const t_commrec             *cr,
                  struct gmx_wallcycle        *wcycle,
                  const t_idef *idef,
                  const rvec x[], history_t *hist,
-                 rvec f[],
-                 gmx::ForceWithVirial *forceWithVirial,
+                 gmx::ForceOutputs *forceOutputs,
                  const t_forcerec *fr,
                  const struct t_pbc *pbc,
                  const struct t_pbc *pbc_full,
@@ -491,13 +496,13 @@ void calc_listed(const t_commrec             *cr,
         if (idef->il[F_POSRES].nr > 0)
         {
             posres_wrapper(nrnb, idef, pbc_full, x, enerd, lambda, fr,
-                           forceWithVirial);
+                           &forceOutputs->forceWithVirial());
         }
 
         if (idef->il[F_FBPOSRES].nr > 0)
         {
             fbposres_wrapper(nrnb, idef, pbc_full, x, enerd, fr,
-                             forceWithVirial);
+                             &forceOutputs->forceWithVirial());
         }
 
         /* Do pre force calculation stuff which might require communication */
@@ -530,16 +535,20 @@ void calc_listed(const t_commrec             *cr,
 
     if (haveCpuBondeds(*fr))
     {
+        gmx::ForceWithShiftForces &forceWithShiftForces = forceOutputs->forceWithShiftForces();
+
         wallcycle_sub_start(wcycle, ewcsLISTED);
         /* The dummy array is to have a place to store the dhdl at other values
            of lambda, which will be thrown away in the end */
         real dvdl[efptNR] = {0};
-        calcBondedForces(idef, x, fr, pbc_null, g, enerd, nrnb, lambda, dvdl, md,
+        calcBondedForces(idef, x, fr, pbc_null, g,
+                         as_rvec_array(forceWithShiftForces.shiftForces().data()),
+                         enerd, nrnb, lambda, dvdl, md,
                          fcd, bCalcEnerVir, global_atom_index);
         wallcycle_sub_stop(wcycle, ewcsLISTED);
 
         wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);
-        reduce_thread_output(fr->natoms_force, f, fr->fshift,
+        reduce_thread_output(fr->natoms_force, &forceWithShiftForces,
                              enerd->term, &enerd->grpp, dvdl,
                              bt,
                              bCalcEnerVir,
@@ -637,8 +646,7 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
                 const t_idef                *idef,
                 const rvec                   x[],
                 history_t                   *hist,
-                rvec                        *forceForUseWithShiftForces,
-                gmx::ForceWithVirial        *forceWithVirial,
+                gmx::ForceOutputs           *forceOutputs,
                 const t_forcerec            *fr,
                 const struct t_pbc          *pbc,
                 const struct t_graph        *graph,
@@ -664,7 +672,7 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
         set_pbc(&pbc_full, fr->ePBC, box);
     }
     calc_listed(cr, ms, wcycle, idef, x, hist,
-                forceForUseWithShiftForces, forceWithVirial,
+                forceOutputs,
                 fr, pbc, &pbc_full,
                 graph, enerd, nrnb, lambda, md, fcd,
                 global_atom_index, flags);

@@ -55,6 +55,11 @@ struct t_inputrec;
 struct t_mdatoms;
 struct t_QMMMrec;
 
+namespace gmx
+{
+class ForceWithShiftForces;
+}
+
 typedef struct {
     int                nrQMatoms;      /* total nr of QM atoms              */
     rvec              *xQM;            /* shifted to center of box          */
@@ -138,9 +143,9 @@ void update_QMMMrec(const t_commrec  *cr,
  * routine should be called at every step, since it updates the MM
  * elements of the t_QMMMrec struct.
  */
-real calculate_QMMM(const t_commrec  *cr,
-                    rvec              f[],
-                    const t_forcerec *fr);
+real calculate_QMMM(const t_commrec           *cr,
+                    gmx::ForceWithShiftForces *forceWithShiftForces,
+                    const t_forcerec          *fr);
 
 /* QMMM computes the QM forces. This routine makes either function
  * calls to gmx QM routines (derived from MOPAC7 (semi-emp.) and MPQC

@@ -120,16 +120,14 @@ do_force_lowlevel(t_forcerec                               *fr,
                   const DDBalanceRegionHandler             &ddBalanceRegionHandler)
 {
     // TODO: Replace all uses of x by const coordinates
-    rvec *x = as_rvec_array(coordinates.paddedArrayRef().data());
+    rvec *x               = as_rvec_array(coordinates.paddedArrayRef().data());
 
-    // TODO: Add the shift forces to forceOutputs
-    rvec *forceForUseWithShiftForces = forceOutputs->f();
-    auto &forceWithVirial            = forceOutputs->forceWithVirial();
+    auto &forceWithVirial = forceOutputs->forceWithVirial();
 
     /* do QMMM first if requested */
     if (fr->bQMMM)
     {
-        enerd->term[F_EQM] = calculate_QMMM(cr, forceForUseWithShiftForces, fr);
+        enerd->term[F_EQM] = calculate_QMMM(cr, &forceOutputs->forceWithShiftForces(), fr);
     }
 
     /* Call the short range functions all in one go. */
@@ -186,7 +184,7 @@ do_force_lowlevel(t_forcerec                               *fr,
 
         do_force_listed(wcycle, box, ir->fepvals, cr, ms,
                         idef, x, hist,
-                        forceForUseWithShiftForces, &forceWithVirial,
+                        forceOutputs,
                         fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
                         DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr,
                         flags);
@@ -378,7 +376,8 @@ do_force_lowlevel(t_forcerec                               *fr,
             fprintf(debug, "Vlr_q = %g, Vcorr_q = %g, Vlr_corr_q = %g\n",
                     Vlr_q, ewaldOutput.Vcorr_q, enerd->term[F_COUL_RECIP]);
             pr_rvecs(debug, 0, "vir_el_recip after corr", ewaldOutput.vir_q, DIM);
-            pr_rvecs(debug, 0, "fshift after LR Corrections", fr->fshift, SHIFTS);
+            rvec *fshift = as_rvec_array(forceOutputs->forceWithShiftForces().shiftForces().data());
+            pr_rvecs(debug, 0, "fshift after LR Corrections", fshift, SHIFTS);
             fprintf(debug, "Vlr_lj: %g, Vcorr_lj = %g, Vlr_corr_lj = %g\n",
                     Vlr_lj, ewaldOutput.Vcorr_lj, enerd->term[F_LJ_RECIP]);
             pr_rvecs(debug, 0, "vir_lj_recip after corr", ewaldOutput.vir_lj, DIM);
@@ -392,7 +391,8 @@ do_force_lowlevel(t_forcerec                               *fr,
 
     if (debug)
     {
-        pr_rvecs(debug, 0, "fshift after bondeds", fr->fshift, SHIFTS);
+        rvec *fshift = as_rvec_array(forceOutputs->forceWithShiftForces().shiftForces().data());
+        pr_rvecs(debug, 0, "fshift after bondeds", fshift, SHIFTS);
     }
 
 }

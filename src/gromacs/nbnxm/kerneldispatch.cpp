@@ -45,6 +45,7 @@
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -518,9 +519,9 @@ nonbonded_verlet_t::dispatchNonbondedKernel(Nbnxm::InteractionLocality iLocality
 
 void
 nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocality,
-                                             t_forcerec                 *fr,
+                                             const t_forcerec           *fr,
                                              rvec                        x[],
-                                             rvec                        f[],
+                                             gmx::ForceWithShiftForces  *forceWithShiftForces,
                                              const t_mdatoms            &mdatoms,
                                              t_lambda                   *fepvals,
                                              real                       *lambda,
@@ -572,7 +573,8 @@ nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocali
         try
         {
             gmx_nb_free_energy_kernel(nbl_fep[th].get(),
-                                      x, f, fr, &mdatoms, &kernel_data, nrnb);
+                                      x, forceWithShiftForces,
+                                      fr, &mdatoms, &kernel_data, nrnb);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
@@ -613,7 +615,8 @@ nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocali
                 try
                 {
                     gmx_nb_free_energy_kernel(nbl_fep[th].get(),
-                                              x, f, fr, &mdatoms, &kernel_data, nrnb);
+                                              x, forceWithShiftForces,
+                                              fr, &mdatoms, &kernel_data, nrnb);
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             }

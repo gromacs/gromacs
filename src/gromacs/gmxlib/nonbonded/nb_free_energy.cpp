@@ -47,6 +47,7 @@
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
@@ -114,8 +115,8 @@ template<SoftCoreTreatment softCoreTreatment, bool scLambdasOrAlphasDiffer>
 static void
 nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                       rvec * gmx_restrict              xx,
-                      rvec * gmx_restrict              ff,
-                      t_forcerec * gmx_restrict        fr,
+                      gmx::ForceWithShiftForces *      forceWithShiftForces,
+                      const t_forcerec * gmx_restrict  fr,
                       const t_mdatoms * gmx_restrict   mdatoms,
                       nb_kernel_data_t * gmx_restrict  kernel_data,
                       t_nrnb * gmx_restrict            nrnb)
@@ -158,9 +159,6 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     const int *   typeB;
     int           ntype;
     const real *  shiftvec;
-    real *        fshift;
-    const real *  x;
-    real *        f;
     const real *  chargeA;
     const real *  chargeB;
     real          sigma6_min, sigma6_def, lam_power;
@@ -192,11 +190,13 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     /* Extract pointer to non-bonded interaction constants */
     const interaction_const_t *ic = fr->ic;
 
-    x                   = xx[0];
-    f                   = ff[0];
+    // TODO: We should get rid of using pointers to real
+    const real          *x      = xx[0];
+    real * gmx_restrict  f      = &(forceWithShiftForces->force()[0][0]);
 
-    fshift              = fr->fshift[0];
+    real * gmx_restrict  fshift = &(forceWithShiftForces->shiftForces()[0][0]);
 
+    // Extract pair list data
     nri                 = nlist->nri;
     iinr                = nlist->iinr;
     jindex              = nlist->jindex;
@@ -814,13 +814,13 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     inc_nrnb(nrnb, eNR_NBKERNEL_FREE_ENERGY, nlist->nri*12 + nlist->jindex[n]*150);
 }
 
-void gmx_nb_free_energy_kernel(const t_nblist   *nlist,
-                               rvec             *xx,
-                               rvec             *ff,
-                               t_forcerec       *fr,
-                               const t_mdatoms  *mdatoms,
-                               nb_kernel_data_t *kernel_data,
-                               t_nrnb           *nrnb)
+void gmx_nb_free_energy_kernel(const t_nblist            *nlist,
+                               rvec                      *xx,
+                               gmx::ForceWithShiftForces *ff,
+                               const t_forcerec          *fr,
+                               const t_mdatoms           *mdatoms,
+                               nb_kernel_data_t          *kernel_data,
+                               t_nrnb                    *nrnb)
 {
     if (fr->sc_alphacoul == 0 && fr->sc_alphavdw == 0)
     {

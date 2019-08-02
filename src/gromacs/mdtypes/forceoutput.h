@@ -83,10 +83,16 @@ class ForceWithShiftForces
             computeVirial_(computeVirial),
             shiftForces_(shiftForces) {}
 
-        //! Returns a, deprecated, rvec pointer to the force buffer
-        rvec *f()
+        //! Returns an arrayref to the force buffer without padding
+        gmx::ArrayRef<gmx::RVec> force()
         {
-            return as_rvec_array(force_.paddedArrayRef().data());
+            return force_.unpaddedArrayRef();
+        }
+
+        //! Returns a const arrayref to the force buffer without padding
+        gmx::ArrayRef<const gmx::RVec> force() const
+        {
+            return force_.unpaddedConstArrayRef();
         }
 
         //! Returns whether the virial needs to be computed
@@ -97,6 +103,12 @@ class ForceWithShiftForces
 
         //! Returns the shift forces buffer
         gmx::ArrayRef<gmx::RVec> shiftForces()
+        {
+            return shiftForces_;
+        }
+
+        //! Returns a const shift forces buffer
+        gmx::ArrayRef<const gmx::RVec> shiftForces() const
         {
             return shiftForces_;
         }
@@ -203,10 +215,10 @@ class ForceOutputs
             forceWithShiftForces_(forceWithShiftForces),
             forceWithVirial_(forceWithVirial) {}
 
-        //! Returns a, deprecated, rvec pointer to the force buffer for use with shift forces
-        rvec *f()
+        //! Returns a reference to the force with shift forces object
+        ForceWithShiftForces &forceWithShiftForces()
         {
-            return forceWithShiftForces_.f();
+            return forceWithShiftForces_;
         }
 
         //! Returns a reference to the force with virial object

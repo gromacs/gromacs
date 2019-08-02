@@ -231,8 +231,8 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     /* PME/Ewald stuff */
     struct gmx_ewald_tab_t *ewald_table = nullptr;
 
-    /* Shift force array for computing the virial */
-    rvec *fshift = nullptr;
+    /* Shift force array for computing the virial, size SHIFTS */
+    std::vector<gmx::RVec> shiftForces;
 
     /* Non bonded Parameter lists */
     int      ntype        = 0; /* Number of atom types */

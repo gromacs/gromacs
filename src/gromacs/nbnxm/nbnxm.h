@@ -139,6 +139,7 @@ class GpuEventSynchronizer;
 
 namespace gmx
 {
+class ForceWithShiftForces;
 class MDLogger;
 class UpdateGroupsCog;
 }
@@ -293,9 +294,9 @@ struct nonbonded_verlet_t
 
         //! Executes the non-bonded free-energy kernel, always runs on the CPU
         void dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocality,
-                                      t_forcerec                 *fr,
+                                      const t_forcerec           *fr,
                                       rvec                        x[],
-                                      rvec                        f[],
+                                      gmx::ForceWithShiftForces  *forceWithShiftForces,
                                       const t_mdatoms            &mdatoms,
                                       t_lambda                   *fepvals,
                                       real                       *lambda,
@@ -305,14 +306,14 @@ struct nonbonded_verlet_t
 
         /*! \brief Add the forces stored in nbat to f, zeros the forces in nbat
          * \param [in] locality         Local or non-local
-         * \param [inout] f             Force to be added to
+         * \param [inout] force         Force to be added to
          */
         void atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality                 locality,
-                                      rvec                               *f);
+                                      gmx::ArrayRef<gmx::RVec>            force);
 
         /*! \brief Add the forces stored in nbat to f, allowing for possibility that GPU buffer ops are active
          * \param [in] locality         Local or non-local
-         * \param [inout] f             Force to be added to
+         * \param [inout] force         Force to be added to
          * \param [in] fPme             Force from PME calculation
          * \param [in] pmeForcesReady   Event triggered when PME force calculation has completed
          * \param [in] useGpu           Whether GPU buffer ops are active
@@ -320,7 +321,7 @@ struct nonbonded_verlet_t
          * \param [in] accumulateForce  Whether force should be accumulated or stored
          */
         void atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality                 locality,
-                                      rvec                               *f,
+                                      gmx::ArrayRef<gmx::RVec>            force,
                                       void                               *fPme,
                                       GpuEventSynchronizer               *pmeForcesReady,
                                       BufferOpsUseGpu                     useGpu,

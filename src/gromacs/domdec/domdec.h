@@ -85,6 +85,7 @@ class t_state;
 
 namespace gmx
 {
+class ForceWithShiftForces;
 class MDLogger;
 class LocalAtomSetManager;
 class RangePartitioning;
@@ -217,10 +218,9 @@ void dd_move_x(struct gmx_domdec_t      *dd,
  * When fshift!=NULL the shift forces are updated to obtain
  * the correct virial from the single sum including f.
  */
-void dd_move_f(struct gmx_domdec_t      *dd,
-               gmx::ArrayRef<gmx::RVec>  f,
-               rvec                     *fshift,
-               gmx_wallcycle            *wcycle);
+void dd_move_f(struct gmx_domdec_t       *dd,
+               gmx::ForceWithShiftForces *forceWithShiftForces,
+               gmx_wallcycle             *wcycle);
 
 /*! \brief Communicate a real for each atom to the neighboring cells. */
 void dd_atom_spread_real(struct gmx_domdec_t *dd, real v[]);

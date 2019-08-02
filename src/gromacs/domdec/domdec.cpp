@@ -70,6 +70,7 @@
 #include "gromacs/mdlib/updategroups.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/state.h"
@@ -406,52 +407,43 @@ void dd_move_x(gmx_domdec_t             *dd,
     wallcycle_stop(wcycle, ewcMOVEX);
 }
 
-void dd_move_f(gmx_domdec_t             *dd,
-               gmx::ArrayRef<gmx::RVec>  f,
-               rvec                     *fshift,
-               gmx_wallcycle            *wcycle)
+void dd_move_f(gmx_domdec_t              *dd,
+               gmx::ForceWithShiftForces *forceWithShiftForces,
+               gmx_wallcycle             *wcycle)
 {
     wallcycle_start(wcycle, ewcMOVEF);
 
-    int                    nzone, nat_tot;
-    gmx_domdec_comm_t     *comm;
-    gmx_domdec_comm_dim_t *cd;
-    ivec                   vis;
-    int                    is;
-    gmx_bool               bShiftForcesNeedPbc, bScrew;
+    gmx::ArrayRef<gmx::RVec> f       = forceWithShiftForces->force();
+    gmx::ArrayRef<gmx::RVec> fshift  = forceWithShiftForces->shiftForces();
 
-    comm = dd->comm;
-
-    nzone   = comm->zones.n/2;
-    nat_tot = comm->atomRanges.end(DDAtomRanges::Type::Zones);
+    gmx_domdec_comm_t       &comm    = *dd->comm;
+    int                      nzone   = comm.zones.n/2;
+    int                      nat_tot = comm.atomRanges.end(DDAtomRanges::Type::Zones);
     for (int d = dd->ndim-1; d >= 0; d--)
     {
         /* Only forces in domains near the PBC boundaries need to
            consider PBC in the treatment of fshift */
-        bShiftForcesNeedPbc   = (dd->ci[dd->dim[d]] == 0);
-        bScrew                = (bShiftForcesNeedPbc && dd->bScrewPBC && dd->dim[d] == XX);
-        if (fshift == nullptr && !bScrew)
-        {
-            bShiftForcesNeedPbc = FALSE;
-        }
+        const bool shiftForcesNeedPbc = (forceWithShiftForces->computeVirial() && dd->ci[dd->dim[d]] == 0);
+        const bool applyScrewPbc      = (shiftForcesNeedPbc && dd->bScrewPBC && dd->dim[d] == XX);
         /* Determine which shift vector we need */
-        clear_ivec(vis);
-        vis[dd->dim[d]] = 1;
-        is              = IVEC2IS(vis);
+        ivec       vis   = { 0, 0, 0 };
+        vis[dd->dim[d]]  = 1;
+        const int  is    = IVEC2IS(vis);
 
-        cd = &comm->cd[d];
-        for (int p = cd->numPulses() - 1; p >= 0; p--)
+        /* Loop over the pulses */
+        const gmx_domdec_comm_dim_t &cd = comm.cd[d];
+        for (int p = cd.numPulses() - 1; p >= 0; p--)
         {
-            const gmx_domdec_ind_t    &ind  = cd->ind[p];
-            DDBufferAccess<gmx::RVec>  receiveBufferAccess(comm->rvecBuffer, ind.nsend[nzone + 1]);
+            const gmx_domdec_ind_t    &ind  = cd.ind[p];
+            DDBufferAccess<gmx::RVec>  receiveBufferAccess(comm.rvecBuffer, ind.nsend[nzone + 1]);
             gmx::ArrayRef<gmx::RVec>  &receiveBuffer = receiveBufferAccess.buffer;
 
-            nat_tot                        -= ind.nrecv[nzone+1];
+            nat_tot                                 -= ind.nrecv[nzone+1];
 
-            DDBufferAccess<gmx::RVec>  sendBufferAccess(comm->rvecBuffer2, cd->receiveInPlace ? 0 : ind.nrecv[nzone + 1]);
+            DDBufferAccess<gmx::RVec>  sendBufferAccess(comm.rvecBuffer2, cd.receiveInPlace ? 0 : ind.nrecv[nzone + 1]);
 
             gmx::ArrayRef<gmx::RVec>   sendBuffer;
-            if (cd->receiveInPlace)
+            if (cd.receiveInPlace)
             {
                 sendBuffer = gmx::arrayRefFromArray(f.data() + nat_tot, ind.nrecv[nzone + 1]);
             }
@@ -472,7 +464,7 @@ void dd_move_f(gmx_domdec_t             *dd,
                        sendBuffer, receiveBuffer);
             /* Add the received forces */
             int n = 0;
-            if (!bShiftForcesNeedPbc)
+            if (!shiftForcesNeedPbc)
             {
                 for (int j : ind.index)
                 {
@@ -483,11 +475,8 @@ void dd_move_f(gmx_domdec_t             *dd,
                     n++;
                 }
             }
-            else if (!bScrew)
+            else if (!applyScrewPbc)
             {
-                /* fshift should always be defined if this function is
-                 * called when bShiftForcesNeedPbc is true */
-                assert(nullptr != fshift);
                 for (int j : ind.index)
                 {
                     for (int d = 0; d < DIM; d++)
@@ -510,7 +499,7 @@ void dd_move_f(gmx_domdec_t             *dd,
                     f[j][XX] += receiveBuffer[n][XX];
                     f[j][YY] -= receiveBuffer[n][YY];
                     f[j][ZZ] -= receiveBuffer[n][ZZ];
-                    if (fshift)
+                    if (shiftForcesNeedPbc)
                     {
                         /* Add this force to the shift force */
                         for (int d = 0; d < DIM; d++)

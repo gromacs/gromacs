@@ -86,7 +86,7 @@ class t_state;
 
 namespace gmx
 {
-class ForceWithVirial;
+class ForceOutputs;
 }
 
 //! Type of CPU function to compute a bonded interaction.
@@ -110,8 +110,7 @@ void calc_listed(const t_commrec *cr,
                  struct gmx_wallcycle *wcycle,
                  const t_idef *idef,
                  const rvec x[], history_t *hist,
-                 rvec f[],
-                 gmx::ForceWithVirial *forceWithVirial,
+                 gmx::ForceOutputs *forceOutputs,
                  const t_forcerec *fr,
                  const struct t_pbc *pbc, const struct t_pbc *pbc_full,
                  const struct t_graph *g,
@@ -144,8 +143,7 @@ do_force_listed(struct gmx_wallcycle           *wcycle,
                 const t_idef                   *idef,
                 const rvec                      x[],
                 history_t                      *hist,
-                rvec                           *forceForUseWithShiftForces,
-                gmx::ForceWithVirial           *forceWithVirial,
+                gmx::ForceOutputs              *forceOutputs,
                 const t_forcerec               *fr,
                 const struct t_pbc             *pbc,
                 const struct t_graph           *graph,

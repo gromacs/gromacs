@@ -1804,10 +1804,7 @@ void init_forcerec(FILE                             *fp,
         snew(fr->shift_vec, SHIFTS);
     }
 
-    if (fr->fshift == nullptr)
-    {
-        snew(fr->fshift, SHIFTS);
-    }
+    fr->shiftForces.resize(SHIFTS);
 
     if (fr->nbfp == nullptr)
     {
@@ -2066,7 +2063,6 @@ void done_forcerec(t_forcerec *fr, int numMolBlocks)
     sfree(fr->nbfp);
     delete fr->ic;
     sfree(fr->shift_vec);
-    sfree(fr->fshift);
     sfree(fr->ewc_t);
     tear_down_bonded_threading(fr->bondedThreading);
     GMX_RELEASE_ASSERT(fr->gpuBonded == nullptr, "Should have been deleted earlier, when used");

@@ -365,13 +365,13 @@ gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t *timings,
 
 //TODO: move into shared source file with gmx_compile_cpp_as_cuda
 //NOLINTNEXTLINE(misc-definitions-in-headers)
-bool gpu_try_finish_task(gmx_nbnxn_gpu_t    *nb,
-                         const int           flags,
-                         const AtomLocality  aloc,
-                         real               *e_lj,
-                         real               *e_el,
-                         rvec               *fshift,
-                         GpuTaskCompletion   completionKind)
+bool gpu_try_finish_task(gmx_nbnxn_gpu_t          *nb,
+                         const int                 flags,
+                         const AtomLocality        aloc,
+                         real                     *e_lj,
+                         real                     *e_el,
+                         gmx::ArrayRef<gmx::RVec>  shiftForces,
+                         GpuTaskCompletion         completionKind)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -404,7 +404,8 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t    *nb,
         gpu_accumulate_timings(nb->timings, nb->timers, nb->plist[iLocality], aloc, calcEner,
                                nb->bDoTime != 0);
 
-        gpu_reduce_staged_outputs(nb->nbst, iLocality, calcEner, calcFshift, e_lj, e_el, fshift);
+        gpu_reduce_staged_outputs(nb->nbst, iLocality, calcEner, calcFshift,
+                                  e_lj, e_el, as_rvec_array(shiftForces.data()));
     }
 
     /* Always reset both pruning flags (doesn't hurt doing it even when timing is off). */
@@ -429,17 +430,17 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t    *nb,
  * \param[in] aloc Atom locality identifier
  * \param[out] e_lj Pointer to the LJ energy output to accumulate into
  * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
- * \param[out] fshift Pointer to the shift force buffer to accumulate into
+ * \param[out] shiftForces Shift forces buffer to accumulate into
  */
 //NOLINTNEXTLINE(misc-definitions-in-headers) TODO: move into source file
-void gpu_wait_finish_task(gmx_nbnxn_gpu_t *nb,
-                          int              flags,
-                          AtomLocality     aloc,
-                          real            *e_lj,
-                          real            *e_el,
-                          rvec            *fshift)
+void gpu_wait_finish_task(gmx_nbnxn_gpu_t          *nb,
+                          int                       flags,
+                          AtomLocality              aloc,
+                          real                     *e_lj,
+                          real                     *e_el,
+                          gmx::ArrayRef<gmx::RVec>  shiftForces)
 {
-    gpu_try_finish_task(nb, flags, aloc, e_lj, e_el, fshift,
+    gpu_try_finish_task(nb, flags, aloc, e_lj, e_el, shiftForces,
                         GpuTaskCompletion::Wait);
 }
 
