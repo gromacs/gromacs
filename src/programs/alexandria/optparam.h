@@ -327,6 +327,15 @@ void Bayes<T>::MCMC()
             {
                 bestParam_ = param_;
                 *minEval_  = currEval;
+                if (debug)
+                {
+                    fprintf(debug, "New minimum at %g", currEval);
+                    for(int k = 0; k < nParam; k++)
+                    {
+                        fprintf(debug, " %g", bestParam_[k]);
+                    }
+                    fprintf(debug, "\n");
+                }
             }
             prevEval = currEval;
         }
@@ -419,9 +428,6 @@ void Bayes<T>::DRAM()
     *minEval_ = prevEval;
     for (int iter = 0; iter < nParam*maxIter(); iter++)
     {
-        // TODO: integer division iter/nParam yields an integer
-        // step function, 0, 0, 0, 1, 1, 1, 2, 2, 2 etc.
-        // even though this is intended it is confusing.
         double beta = computeBeta(iter/nParam);
         // Pick random parameter to change
         int       j = static_cast<int>(std::round((1+uniform(gen))*nParam)) % nParam; 

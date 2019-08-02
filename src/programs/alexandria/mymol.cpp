@@ -2085,12 +2085,10 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                 }
                 else
                 {
-                    if (debug)
-                    {
-                        fprintf(debug, "WARNING: NO reference enthalpy for molecule %s.\n",
-                                molProp()->getMolname().c_str());
-                    }
+                    fprintf(stderr, "WARNING: NO reference enthalpy for molecule %s.\n",
+                            molProp()->getMolname().c_str());
                     Emol_ = 0;
+                    imm   = immNoData;
                     break;
                 }
             }
@@ -2105,11 +2103,9 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             }
             else
             {
-                if (debug)
-                {
-                    fprintf(debug, "WARNING: NO Zero-point energy for molecule %s.\n",
-                            molProp()->getMolname().c_str());
-                }
+                fprintf(stderr,"No zero-point energy for molecule %s.\n",
+                        molProp()->getMolname().c_str());
+                imm = immNoData;
             }
         }
         if (ia < topology_->atoms.nr)
@@ -2117,61 +2113,67 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             imm = immNoData;
         }
     }
-    T = -1;
-    if (molProp()->getPropRef(MPO_DIPOLE, iqmQM, lot, "",
-                              (char *)"electronic",
-                              &value, &error, &T, myref, mylot,
-                              vec, quadrupole))
+    if (imm == immOK)
     {
-        dip_exp_  = value;
-        dip_err_  = error;
-        set_muQM(qtElec, vec);
-
-        if (error <= 0)
+        T = -1;
+        if (molProp()->getPropRef(MPO_DIPOLE, iqmQM, lot, "",
+                                  (char *)"electronic",
+                                  &value, &error, &T, myref, mylot,
+                                  vec, quadrupole))
         {
-            if (debug)
+            dip_exp_  = value;
+            dip_err_  = error;
+            set_muQM(qtElec, vec);
+            
+            if (error <= 0)
             {
-                fprintf(debug, "WARNING: Error for %s is %g, assuming it is 10%%.\n",
-                        molProp()->getMolname().c_str(), error);
+                if (debug)
+                {
+                    fprintf(debug, "WARNING: Error for %s is %g, assuming it is 10%%.\n",
+                            molProp()->getMolname().c_str(), error);
+                }
+                nwarn++;
+                error = 0.1*value;
             }
-            nwarn++;
-            error = 0.1*value;
+            dip_weight_ = gmx::square(1.0/error);
+            
+            if (!bZero && (dipQM(qtElec) - 0.0) < 1e-2)
+            {
+                imm = immZeroDip;
+            }
+            if (immOK == imm && esp_dipole_found)
+            {
+                rotateDipole(mu_qm_[qtElec], mu_qm_[qtESP]);
+            }
         }
-        dip_weight_ = gmx::square(1.0/error);
-
-        if (!bZero && (dipQM(qtElec) - 0.0) < 1e-2)
+        else
         {
-            imm = immZeroDip;
-        }
-        if (immOK == imm && esp_dipole_found)
-        {
-            rotateDipole(mu_qm_[qtElec], mu_qm_[qtESP]);
+            imm = immNoDipole;
         }
     }
-    else
+    if (immOK == imm)
     {
-        imm = immNoDipole;
-    }
-    T = -1;
-    if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmQM,
-                              lot, "", (char *)"electronic",
-                              &value, &error, &T, myref, mylot,
-                              vec, quadrupole))
-    {
-        set_QQM(qtElec, quadrupole);
-        if (immOK == imm && esp_dipole_found && norm(mu_qm_[qtElec]) > 0)
+        T = -1;
+        if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmQM,
+                                  lot, "", (char *)"electronic",
+                                  &value, &error, &T, myref, mylot,
+                                  vec, quadrupole))
         {
-            rotate_tensor(Q_qm_[qtElec], Q_qm_[qtESP]);
+            set_QQM(qtElec, quadrupole);
+            if (immOK == imm && esp_dipole_found && norm(mu_qm_[qtElec]) > 0)
+            {
+                rotate_tensor(Q_qm_[qtElec], Q_qm_[qtESP]);
+            }
         }
-    }
-    T = -1;
-    if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM,
-                              lot, "", (char *)"electronic",
-                              &isoPol_elec_, &error, &T,
-                              myref, mylot, vec, polar))
-    {
-        copy_mat(polar, alpha_elec_);
-        CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
+        T = -1;
+        if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM,
+                                  lot, "", (char *)"electronic",
+                                  &isoPol_elec_, &error, &T,
+                                  myref, mylot, vec, polar))
+        {
+            copy_mat(polar, alpha_elec_);
+            CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
+        }
     }
     return imm;
 }

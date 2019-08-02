@@ -1312,6 +1312,7 @@ int MolProp::Merge(std::vector<MolProp>::iterator src)
     }
     SetFormula(src->formula());
     SetMass(src->getMass());
+    SetIndex(src->getIndex());
     if (getMultiplicity() <= 1)
     {
         SetMultiplicity(src->getMultiplicity());
@@ -1879,6 +1880,7 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest)
     if (CS_OK == cs)
     {
         gmx_send_double(cr, dest, mass_);
+        gmx_send_int(cr, dest, index_);
         gmx_send_int(cr, dest, charge_);
         gmx_send_int(cr, dest, multiplicity_);
         gmx_send_str(cr, dest, &formula_);
@@ -1947,6 +1949,7 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
     {
         //! Receive mass and more
         mass_         = gmx_recv_double(cr, src);
+        index_        = gmx_recv_int(cr, src);
         charge_       = gmx_recv_int(cr, src);
         multiplicity_ = gmx_recv_int(cr, src);
         gmx_recv_str(cr, src, &formula_);
@@ -2023,7 +2026,7 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
 
         if (nullptr != debug)
         {
-            fprintf(debug, "Reveived %d experiments from %d for mol %s\n",
+            fprintf(debug, "Received %d experiments from %d for mol %s\n",
                     NExperiment(), src, getMolname().c_str());
             fprintf(debug, "Received MolProp %s, status %s\n",
                     getMolname().c_str(), cs_name(cs));

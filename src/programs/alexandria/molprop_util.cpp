@@ -47,6 +47,17 @@
 namespace alexandria
 {
 
+void generate_index(std::vector<MolProp> *mp)
+{
+    int index = 1;
+    for (auto mpi = mp->begin(); mpi < mp->end(); ++mpi)
+    {
+        // We have to set some kind of index here to distinguish
+        // the compounds. 
+        // TODO: implement alexandria ID here.
+        mpi->SetIndex(index++);
+    }
+}
 
 void generate_composition(std::vector<MolProp> &mp,
                           const Poldata        &pd)

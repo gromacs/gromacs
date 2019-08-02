@@ -53,6 +53,7 @@
 #include "alex_modules.h"
 #include "fill_inputrec.h"
 #include "gmx_simple_comm.h"
+#include "molprop_util.h"
 #include "molprop_xml.h"
 #include "poldata_xml.h"
 
@@ -499,7 +500,7 @@ void MolGen::Read(FILE            *fp,
     {
         imm_count[i] = 0;
     }
-    /*Reading Force Field Data from gentop.dat*/
+    /* Reading Force Field Data from gentop.dat */
     if (MASTER(cr_))
     {
         try
@@ -514,7 +515,7 @@ void MolGen::Read(FILE            *fp,
             pd_.setNexcl(nexcl_);
         }
     }
-    /*Broadcasting Force Field Data from Master to Slave nodes*/
+    /* Broadcasting Force Field Data from Master to Slave nodes */
     if (PAR(cr_))
     {
         pd_.broadcast(cr_);
@@ -525,7 +526,7 @@ void MolGen::Read(FILE            *fp,
                 static_cast<int>(pd_.getNatypes()), pd_fn);
         fprintf(fp, "---\n\n");
     }
-    /*Reading Molecules from allmols.dat*/
+    /* Reading Molecules from allmols.dat */
     if (MASTER(cr_))
     {
         MolPropRead(fn, mp);
@@ -541,8 +542,9 @@ void MolGen::Read(FILE            *fp,
                 ++mpi;
             }
         }
+        generate_index(&mp);
     }
-    /*Sort Molecules based on the number of atoms*/
+    /* Sort Molecules based on the number of atoms */
     if (MASTER(cr_))
     {
         std::sort(mp.begin(), mp.end(),
@@ -554,7 +556,10 @@ void MolGen::Read(FILE            *fp,
     }
     if (bCheckSupport && MASTER(cr_))
     {
-        /*Make a index of eemprop types to be either optimized or being kept constant*/
+        /* Make a index of eemprop types to be either optimized or 
+         * being kept constant.
+         * TODO: This should probably only be done for tune_eem
+         */
         make_index_count(&indexCount_,
                          pd_,
                          opt_elem,

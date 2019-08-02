@@ -140,6 +140,8 @@ void generate_composition(std::vector<MolProp> &mp,
 void generate_formula(std::vector<MolProp> &mp,
                       gmx_atomprop_t        ap);
 
+void generate_index(std::vector<MolProp> *mp);
+                    
 int merge_doubles(std::vector<alexandria::MolProp> &mp,
                   char *doubles, bool bForceMerge);
 

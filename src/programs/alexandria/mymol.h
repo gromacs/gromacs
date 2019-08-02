@@ -268,8 +268,6 @@ class MyMol
         double                         Hform_         = 0;
         // Target molecule energy for this compound
         double                         Emol_          = 0;
-        double                         OptEcalc_      = 0;
-        double                         OptForce2_     = 0;
         double                         isoPol_elec_   = 0;
         double                         isoPol_calc_   = 0;
         double                         anisoPol_elec_ = 0;
