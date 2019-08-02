@@ -109,8 +109,7 @@ do_force_lowlevel(t_forcerec                               *fr,
                   const t_mdatoms                          *md,
                   gmx::ArrayRefWithPadding<gmx::RVec>       coordinates,
                   history_t                                *hist,
-                  rvec                                     *forceForUseWithShiftForces,
-                  gmx::ForceWithVirial                     *forceWithVirial,
+                  gmx::ForceOutputs                        *forceOutputs,
                   gmx_enerdata_t                           *enerd,
                   t_fcdata                                 *fcd,
                   const matrix                              box,
@@ -122,6 +121,10 @@ do_force_lowlevel(t_forcerec                               *fr,
 {
     // TODO: Replace all uses of x by const coordinates
     rvec *x = as_rvec_array(coordinates.paddedArrayRef().data());
+
+    // TODO: Add the shift forces to forceOutputs
+    rvec *forceForUseWithShiftForces = forceOutputs->f();
+    auto &forceWithVirial            = forceOutputs->forceWithVirial();
 
     /* do QMMM first if requested */
     if (fr->bQMMM)
@@ -135,7 +138,7 @@ do_force_lowlevel(t_forcerec                               *fr,
     {
         /* foreign lambda component for walls */
         real dvdl_walls = do_walls(*ir, *fr, box, *md, x,
-                                   forceWithVirial, lambda[efptVDW],
+                                   &forceWithVirial, lambda[efptVDW],
                                    enerd->grpp.ener[egLJSR].data(), nrnb);
         enerd->dvdl_lin[efptVDW] += dvdl_walls;
     }
@@ -183,7 +186,7 @@ do_force_lowlevel(t_forcerec                               *fr,
 
         do_force_listed(wcycle, box, ir->fepvals, cr, ms,
                         idef, x, hist,
-                        forceForUseWithShiftForces, forceWithVirial,
+                        forceForUseWithShiftForces, &forceWithVirial,
                         fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
                         DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr,
                         flags);
@@ -251,7 +254,7 @@ do_force_lowlevel(t_forcerec                               *fr,
                                            x, box, mu_tot,
                                            ir->ewald_geometry,
                                            ir->epsilon_surface,
-                                           as_rvec_array(forceWithVirial->force_.data()),
+                                           as_rvec_array(forceWithVirial.force_.data()),
                                            &ewc_t.Vcorr_q,
                                            lambda[efptCOUL],
                                            &ewc_t.dvdl[efptCOUL]);
@@ -306,7 +309,7 @@ do_force_lowlevel(t_forcerec                               *fr,
                     wallcycle_start(wcycle, ewcPMEMESH);
                     status = gmx_pme_do(fr->pmedata,
                                         gmx::constArrayRefFromArray(coordinates.unpaddedConstArrayRef().data(), md->homenr - fr->n_tpi),
-                                        forceWithVirial->force_,
+                                        forceWithVirial.force_,
                                         md->chargeA, md->chargeB,
                                         md->sqrt_c6A, md->sqrt_c6B,
                                         md->sigmaA, md->sigmaB,
@@ -354,7 +357,7 @@ do_force_lowlevel(t_forcerec                               *fr,
 
         if (fr->ic->eeltype == eelEWALD)
         {
-            Vlr_q = do_ewald(ir, x, as_rvec_array(forceWithVirial->force_.data()),
+            Vlr_q = do_ewald(ir, x, as_rvec_array(forceWithVirial.force_.data()),
                              md->chargeA, md->chargeB,
                              box, cr, md->homenr,
                              ewaldOutput.vir_q, fr->ic->ewaldcoeff_q,
@@ -365,8 +368,8 @@ do_force_lowlevel(t_forcerec                               *fr,
         /* Note that with separate PME nodes we get the real energies later */
         // TODO it would be simpler if we just accumulated a single
         // long-range virial contribution.
-        forceWithVirial->addVirialContribution(ewaldOutput.vir_q);
-        forceWithVirial->addVirialContribution(ewaldOutput.vir_lj);
+        forceWithVirial.addVirialContribution(ewaldOutput.vir_q);
+        forceWithVirial.addVirialContribution(ewaldOutput.vir_lj);
         enerd->dvdl_lin[efptCOUL] += ewaldOutput.dvdl[efptCOUL];
         enerd->dvdl_lin[efptVDW]  += ewaldOutput.dvdl[efptVDW];
         enerd->term[F_COUL_RECIP]  = Vlr_q + ewaldOutput.Vcorr_q;

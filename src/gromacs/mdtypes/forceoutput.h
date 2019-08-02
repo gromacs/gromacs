@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -137,6 +137,38 @@ class ForceWithVirial
         const bool           computeVirial_; //!< True when algorithms are required to provide their virial contribution (for the current force evaluation)
     private:
         matrix               virial_;        //!< Virial accumulation buffer
+};
+
+/*! \libinternal \brief Force and virial output buffers for use in force computation
+ *
+ * TODO: Extend with shift forces
+ */
+class ForceOutputs
+{
+    public:
+        //! Constructor
+        ForceOutputs(rvec                 *f,
+                     gmx::ForceWithVirial  forceWithVirial) :
+            f_(f),
+            forceWithVirial_(forceWithVirial) {}
+
+        //! Returns a, deprecated, rvec pointer to the force buffer for use with shift forces
+        rvec *f()
+        {
+            return f_;
+        }
+
+        //! Returns a reference to the force with virial object
+        gmx::ForceWithVirial &forceWithVirial()
+        {
+            return forceWithVirial_;
+        }
+
+    private:
+        //! Force output buffer used by legacy modules (without SIMD padding)
+        rvec                 *f_;
+        //! Force with direct virial contribution (if there are any; without SIMD padding)
+        gmx::ForceWithVirial  forceWithVirial_;
 };
 
 }  // namespace gmx

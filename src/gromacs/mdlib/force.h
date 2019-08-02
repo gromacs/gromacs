@@ -39,6 +39,7 @@
 
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/utility/arrayref.h"
 
 class DDBalanceRegionHandler;
@@ -123,8 +124,7 @@ do_force_lowlevel(t_forcerec                               *fr,
                   const t_mdatoms                          *md,
                   gmx::ArrayRefWithPadding<gmx::RVec>       coordinates,
                   history_t                                *hist,
-                  rvec                                     *f_shortrange,
-                  gmx::ForceWithVirial                     *forceWithVirial,
+                  gmx::ForceOutputs                        *forceOutputs,
                   gmx_enerdata_t                           *enerd,
                   t_fcdata                                 *fcd,
                   const matrix                              box,
