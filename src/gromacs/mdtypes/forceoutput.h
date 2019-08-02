@@ -52,11 +52,63 @@
 #ifndef GMX_MDTYPES_FORCEOUTPUT_H
 #define GMX_MDTYPES_FORCEOUTPUT_H
 
+#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 
 namespace gmx
 {
+
+/*! \libinternal \brief Container for force and virial for algorithms that compute shift forces for virial calculation
+ *
+ * This force output class should be used when computing forces whos virial contribution
+ * is computed using the "single sum virial" algorithm (see the reference manual for
+ * details). To handle the virial contributions of forces working between periodic
+ * images correctly, so-called "shift forces" need to be accumulated for the different
+ * periodic images.
+ */
+class ForceWithShiftForces
+{
+    public:
+        /*! \brief Constructor
+         *
+         * \param[in] force          A force buffer that will be used for storing forces
+         * \param[in] computeVirial  True when algorithms are required to provide their virial contribution (for the current force evaluation)
+         * \param[in] shiftForces    A shift forces buffer of size SHIFTS, also needed with \p computeVirial = false
+         */
+        ForceWithShiftForces(const gmx::ArrayRefWithPadding<gmx::RVec> &force,
+                             const bool                                 computeVirial,
+                             const gmx::ArrayRef<gmx::RVec>            &shiftForces) :
+            force_(force),
+            computeVirial_(computeVirial),
+            shiftForces_(shiftForces) {}
+
+        //! Returns a, deprecated, rvec pointer to the force buffer
+        rvec *f()
+        {
+            return as_rvec_array(force_.paddedArrayRef().data());
+        }
+
+        //! Returns whether the virial needs to be computed
+        bool computeVirial() const
+        {
+            return computeVirial_;
+        }
+
+        //! Returns the shift forces buffer
+        gmx::ArrayRef<gmx::RVec> shiftForces()
+        {
+            return shiftForces_;
+        }
+
+    private:
+        //! The force buffer
+        gmx::ArrayRefWithPadding<gmx::RVec> force_;
+        //! True when virial computation is requested
+        bool                                computeVirial_;
+        //! A buffer for storing the shift forces, size SHIFTS
+        gmx::ArrayRef<gmx::RVec>            shiftForces_;
+};
 
 /*! \libinternal \brief Container for force and virial for algorithms that provide their own virial tensor contribution
  *
@@ -70,7 +122,8 @@ class ForceWithVirial
          * \param[in] force          A force buffer that will be used for storing forces
          * \param[in] computeVirial  True when algorithms are required to provide their virial contribution (for the current force evaluation)
          */
-        ForceWithVirial(ArrayRef<RVec> force, bool computeVirial) :
+        ForceWithVirial(const ArrayRef<RVec> &force,
+                        const bool            computeVirial) :
             force_(force),
             computeVirial_(computeVirial)
         {
@@ -140,35 +193,33 @@ class ForceWithVirial
 };
 
 /*! \libinternal \brief Force and virial output buffers for use in force computation
- *
- * TODO: Extend with shift forces
  */
 class ForceOutputs
 {
     public:
         //! Constructor
-        ForceOutputs(rvec                 *f,
-                     gmx::ForceWithVirial  forceWithVirial) :
-            f_(f),
+        ForceOutputs(const ForceWithShiftForces &forceWithShiftForces,
+                     const ForceWithVirial      &forceWithVirial) :
+            forceWithShiftForces_(forceWithShiftForces),
             forceWithVirial_(forceWithVirial) {}
 
         //! Returns a, deprecated, rvec pointer to the force buffer for use with shift forces
         rvec *f()
         {
-            return f_;
+            return forceWithShiftForces_.f();
         }
 
         //! Returns a reference to the force with virial object
-        gmx::ForceWithVirial &forceWithVirial()
+        ForceWithVirial &forceWithVirial()
         {
             return forceWithVirial_;
         }
 
     private:
         //! Force output buffer used by legacy modules (without SIMD padding)
-        rvec                 *f_;
+        ForceWithShiftForces forceWithShiftForces_;
         //! Force with direct virial contribution (if there are any; without SIMD padding)
-        gmx::ForceWithVirial  forceWithVirial_;
+        ForceWithVirial      forceWithVirial_;
 };
 
 }  // namespace gmx

@@ -726,12 +726,13 @@ setupForceOutputs(t_forcerec                          *fr,
 {
     wallcycle_sub_start(wcycle, ewcsCLEAR_FORCE_BUFFER);
 
-    /* Temporary solution until all routines take PaddedRVecVector */
-    rvec *const f = as_rvec_array(force.unpaddedArrayRef().data());
+    // TODO: Add the shift force buffer and use it
+    gmx::ForceWithShiftForces forceWithShiftForces(force, doVirial, gmx::ArrayRef<gmx::RVec>());
+
     if (bDoForces)
     {
         /* Clear the short- and long-range forces */
-        clear_rvecs_omp(fr->natoms_force_constr, f);
+        clear_rvecs_omp(fr->natoms_force_constr, forceWithShiftForces.f());
     }
 
     /* If we need to compute the virial, we might need a separate
@@ -740,7 +741,6 @@ setupForceOutputs(t_forcerec                          *fr,
      * the same force (f in legacy calls) buffer as other algorithms.
      */
     const bool useSeparateForceWithVirialBuffer = (bDoForces && (doVirial && fr->haveDirectVirialContributions));
-
 
     /* forceWithVirial uses the local atom range only */
     gmx::ForceWithVirial forceWithVirial(useSeparateForceWithVirialBuffer ?
@@ -764,7 +764,7 @@ setupForceOutputs(t_forcerec                          *fr,
 
     wallcycle_sub_stop(wcycle, ewcsCLEAR_FORCE_BUFFER);
 
-    return ForceOutputs(f, forceWithVirial);
+    return ForceOutputs(forceWithShiftForces, forceWithVirial);
 }
 
 
