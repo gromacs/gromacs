@@ -113,6 +113,9 @@
 
 static const bool c_enableGpuDD = (getenv("GMX_GPU_DD_COMMS") != nullptr);
 
+//! Whether the GPU versions of Leap-Frog integrator and LINCS and SHAKE constraints
+static const bool c_useGpuUpdateConstrain = (getenv("GMX_UPDATE_CONSTRAIN_GPU") != nullptr);
+
 namespace Nbnxm
 {
 
@@ -791,6 +794,12 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
     {
         copyCoord = false;
     }
+
+    if (c_useGpuUpdateConstrain)
+    {
+        copyCoord = false;
+    }
+
 
 
     // copy X-coordinate data to device

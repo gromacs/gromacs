@@ -1221,6 +1221,7 @@ void gmx::Simulator::do_md()
         int  bNSNextStep      = (ir->nstlist > 0  && (step+1) % ir->nstlist == 0);
         bool doInterSimSignal = (simulationsShareState && do_per_step(step, nstSignalComm));
         bool copybackVelocity = (bGStat || (!EI_VV(ir->eI) && do_per_step(step+1, nstglobalcomm)) || doInterSimSignal);
+        bool copyinVelocity   = (bGStat || (!EI_VV(ir->eI) && do_per_step(step, nstglobalcomm)) || doInterSimSignal);
 
         if (c_useGpuUpdateConstrain)
         {
@@ -1240,17 +1241,32 @@ void gmx::Simulator::do_md()
                 rvec* d_f    = static_cast<rvec *> (fr->nbv->get_gpu_frvec());
                 integrator->setXVFPointers(d_x, nullptr, nullptr, d_f);
 
+                integrator->copyCoordinatesToGpu(state->x.rvec_array());
             }
-            integrator->copyCoordinatesToGpu(state->x.rvec_array());
-            integrator->copyVelocitiesToGpu(state->v.rvec_array());
-            integrator->copyForcesToGpu(as_rvec_array(f.data()));
+
+            if (copyinVelocity)
+            {
+                integrator->copyVelocitiesToGpu(state->v.rvec_array());
+            }
+
+            if (bNS || bCalcVir)
+            {
+                integrator->copyForcesToGpu(as_rvec_array(f.data()));
+            }
 
             // This applies Leap-Frog, LINCS and SETTLE in a succession
             integrator->integrate(ir->delta_t, true, bCalcVir, shake_vir, ekind->tcstat[0].lambda);
 
             integrator->copyCoordinatesOnGpu();
-            integrator->copyCoordinatesFromGpu(state->x.rvec_array());
-            integrator->copyVelocitiesFromGpu(state->v.rvec_array());
+
+            if (bNSNextStep)
+            {
+                integrator->copyCoordinatesFromGpu(state->x.rvec_array());
+            }
+            if (copybackVelocity)
+            {
+                integrator->copyVelocitiesFromGpu(state->v.rvec_array());
+            }
         }
         else
         {

@@ -132,6 +132,9 @@ static const bool c_enableGpuDD = (getenv("GMX_GPU_DD_COMMS") != nullptr);
 /*! \brief environment variable to enable GPU P2P communication */
 static const bool c_enableGpuPmePpComms = (getenv("GMX_GPU_PME_PP_COMMS") != nullptr);
 
+//! Whether the GPU versions of Leap-Frog integrator and LINCS and SHAKE constraints
+static const bool c_useGpuUpdateConstrain = (getenv("GMX_UPDATE_CONSTRAIN_GPU") != nullptr);
+
 static void sum_forces(rvec f[], gmx::ArrayRef<const gmx::RVec> forceToAdd)
 {
     const int      end = forceToAdd.size();
@@ -616,10 +619,15 @@ static inline void launchPmeGpuSpread(gmx_pme_t      *pmedata,
                                       rvec            x[],
                                       int             flags,
                                       int             pmeFlags,
+                                      int             step,
                                       gmx_wallcycle_t wcycle)
 {
     pme_gpu_prepare_computation(pmedata, (flags & GMX_FORCE_DYNAMICBOX) != 0, box, wcycle, pmeFlags);
-    pme_gpu_launch_spread(pmedata, x, wcycle, PmeHostDeviceCopy::HostDeviceCopyTrue);
+    PmeHostDeviceCopy hdcopy = (step == 0 || !c_useGpuUpdateConstrain) ?
+        PmeHostDeviceCopy::HostDeviceCopyTrue :
+        PmeHostDeviceCopy::HostDeviceCopyFalse;
+
+    pme_gpu_launch_spread(pmedata, x, wcycle, hdcopy);
 }
 
 /*! \brief Launch the FFT and gather stages of PME GPU
@@ -951,7 +959,7 @@ void do_force(FILE                                     *fplog,
 
     if (useGpuPme)
     {
-        launchPmeGpuSpread(fr->pmedata, box, as_rvec_array(x.unpaddedArrayRef().data()), flags, pmeFlags, wcycle);
+        launchPmeGpuSpread(fr->pmedata, box, as_rvec_array(x.unpaddedArrayRef().data()), flags, pmeFlags, step, wcycle);
     }
 
     /* do gridding for pair search */
@@ -1592,7 +1600,7 @@ void do_force(FILE                                     *fplog,
         nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
                                       forceOut.f, pmeFptr,
                                       useGpuFBufOps, accumulateForce, wcycle);
-        if (useGpuFBufOps == BufferOpsUseGpu::True)
+        if (useGpuFBufOps == BufferOpsUseGpu::True && (bNS || !c_useGpuUpdateConstrain))
         {
             nbv->launch_copy_f_from_gpu(forceOut.f, Nbnxm::AtomLocality::Local);
             nbv->wait_stream_gpu(Nbnxm::AtomLocality::Local);
