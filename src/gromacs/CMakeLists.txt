@@ -196,12 +196,7 @@ if (GMX_USE_CUDA)
     # with keywords otherwise...
     set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
     if (NOT GMX_CLANG_CUDA)
-        # FindCUDA.cmake expects this library to already exist, so we
-        # create it here.
-        add_library(libgromacs_generated OBJECT "")
-        set_target_properties(libgromacs_generated PROPERTIES LINKER_LANGUAGE CXX)
         cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
-        list(APPEND libgromacs_object_library_dependencies libgromacs_generated)
     else()
         add_library(libgromacs ${LIBGROMACS_SOURCES})
     endif()
