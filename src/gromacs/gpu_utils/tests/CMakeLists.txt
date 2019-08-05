@@ -90,8 +90,8 @@ gmx_add_unit_test(GpuUtilsUnitTests gpu_utils-test
     )
 
 if(GMX_USE_CUDA)
-    target_link_libraries(gpu_utils-test gpu_utilstest_cuda)
+    target_link_libraries(gpu_utils-test PRIVATE gpu_utilstest_cuda)
 endif()
 if(GMX_USE_OPENCL)
-    target_link_libraries(gpu_utils-test ${OpenCL_LIBRARIES})
+    target_link_libraries(gpu_utils-test PRIVATE ${OpenCL_LIBRARIES})
 endif()

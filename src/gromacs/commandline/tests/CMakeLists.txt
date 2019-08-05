@@ -59,5 +59,5 @@ gmx_add_unit_test(CommandLineUnitTests commandline-test
                   cmdlineparser.cpp
                   cmdlineprogramcontext.cpp
                   filenm.cpp
-                  pargs.cpp
-                  $<TARGET_OBJECTS:onlinehelp-test-shared>)
+                  pargs.cpp)
+target_link_libraries(commandline-test PRIVATE onlinehelp-test-shared)
