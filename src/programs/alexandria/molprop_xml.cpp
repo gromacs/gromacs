@@ -967,8 +967,6 @@ void MolPropWrite(const char *fn, std::vector<alexandria::MolProp> mpt, gmx_bool
     xmlChar                    *libdtdname, *dtdname, *gmx;
     alexandria::MolPropIterator mp_it;
 
-    fprintf(stderr, "MolPropWrite entered.\n");
-    exit(1);
     gmx        = (xmlChar *) "molecules";
     dtdname    = (xmlChar *) "molprops.dtd";
     libdtdname = dtdname;

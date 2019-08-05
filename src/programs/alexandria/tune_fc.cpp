@@ -1049,6 +1049,14 @@ void Optimization::calcDeviation(bool calcAll)
                         debug  = dbcopy;
                         
                         double deltaEref  = spHF - optHF;
+                        if (deltaEref < 0)
+                        {
+                            gmx_fatal(FARGS, "Energy mismatch for %s. spHF = %g (%s) optHF = %g",
+                                      mymol.molProp()->getMolname().c_str(),
+                                      spHF,
+                                      ei->getDatafile().c_str(),
+                                      optHF);
+                        }
                         double deltaEalex = mymol.enerd_->term[F_EPOT] - mymol.Emol_;
                         molEnergyEntry->second.addE(jtype, deltaEref, deltaEalex);
 

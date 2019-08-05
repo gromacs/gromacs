@@ -2069,7 +2069,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     }
     T = 298.15;
     immStatus imm = immOK;
-    if (molProp()->getProp(MPO_ENERGY, (bQM ? iqmQM : iqmBoth),
+    if (molProp()->getProp(MPO_ENERGY, (bQM ? iqmQM : iqmExp),
                            lot, "", (char *)"DeltaHform", &value, &error, &T))
     {
         Hform_ = value;
