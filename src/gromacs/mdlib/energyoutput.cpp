@@ -1359,7 +1359,7 @@ void EnergyOutput::printAnnealingTemperatures(FILE *log, SimulationGroups *group
     }
 }
 
-void EnergyOutput::printAverages(FILE *log, SimulationGroups *groups)
+void EnergyOutput::printAverages(FILE *log, const SimulationGroups *groups)
 {
     if (ebin_->nsum_sim <= 0)
     {

@@ -217,7 +217,7 @@ class EnergyOutput
          * \param[in]   log      Where to print.
          * \param[in]   groups   Atom groups.
          */
-        void printAverages(FILE *log, SimulationGroups *groups);
+        void printAverages(FILE *log, const SimulationGroups *groups);
 
         /*! \brief Get the number of thermodynamic terms recorded.
          *
