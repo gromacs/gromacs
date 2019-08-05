@@ -940,7 +940,8 @@ std::string getCoolQuote()
         { "The Lord of the Rings can be confusing to follow because many of the bad minions look and sound familiar; that's why Tolkien gave them each an ORCid.", "Caroline Bartman" },
         { "Mendeleev's first attempt, the perfluoric table, was a total disaster, and his subsequent attempts, the perchloric and perbromic tables, were not favorably received. Only his fourth attempt, the periodic table, gained general acceptance.", "Anonymous" },
         { "Don’t bring an anecdote to a data fight.", "Molly Hodgdon" },
-        { "Give someone a program, you frustrate them for a day; teach them how to program, you frustrate them for a lifetime.", "David Leinweber" }
+        { "Give someone a program, you frustrate them for a day; teach them how to program, you frustrate them for a lifetime.", "David Leinweber" },
+        { "Or (horrors!) use Berendsen!", "Justin Lemkul" },
     };
 
     if (beCool())
