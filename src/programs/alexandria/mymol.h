@@ -567,8 +567,7 @@ class MyMol
          *                         Experimental speed-up for tune_fc.
          */
         void UpdateIdef(const Poldata   &pd,
-                        InteractionType  iType,
-                        bool             modifiedOnly);
+                        InteractionType  iType);
 
         /*! \brief
          * Get the force field

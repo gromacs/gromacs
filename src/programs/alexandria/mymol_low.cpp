@@ -706,7 +706,6 @@ void plist_to_mtop(const Poldata                   &pd,
         //mtop_->moltype[0].ilist[ftype].iatoms.resize(nratot, {0});
         /* For generating pairs */
         double fudgeLJ = pd.getFudgeLJ();
-        int k          = 0;
         for (auto j = pw.beginParam(); (j < pw.endParam()); ++j)
         {
             std::vector<real> c;
