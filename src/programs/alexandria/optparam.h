@@ -309,6 +309,10 @@ void Bayes<T>::MCMC()
     
     prevEval  = func_(param_.data());
     *minEval_ = prevEval;
+    if (debug)
+    {
+        fprintf(debug, "Initial chi2 value = %g\n", prevEval);
+    }
     for (int iter = 0; iter < nParam*maxIter(); iter++)
     {
         double beta = computeBeta(iter/nParam);

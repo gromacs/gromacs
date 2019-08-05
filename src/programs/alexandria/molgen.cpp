@@ -401,6 +401,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
     {
         case etuneEEM:
             doAddOptions(pargs, asize(pa_eem), pa_eem);
+            doAddOptions(pargs, asize(pa_zeta), pa_zeta);
             break;
         case etuneZETA:
             doAddOptions(pargs, asize(pa_zeta), pa_zeta);
