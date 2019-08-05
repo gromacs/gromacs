@@ -79,6 +79,11 @@ class MDAtoms
         {
             return mdatoms_.get();
         }
+        //! Const getter.
+        const t_mdatoms *mdatoms() const
+        {
+            return mdatoms_.get();
+        }
         /*! \brief Resizes memory.
          *
          * \throws std::bad_alloc  If out of memory.
