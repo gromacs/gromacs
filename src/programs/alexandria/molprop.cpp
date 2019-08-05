@@ -1076,6 +1076,7 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
+        dataSource_ = static_cast<DataSource>(gmx_recv_int(cr, src));
         gmx_recv_str(cr, src, &reference_);
         gmx_recv_str(cr, src, &conformation_);
         gmx_recv_str(cr, src, &program_);
@@ -1176,6 +1177,7 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
+        gmx_send_int(cr, dest, static_cast<int>(dataSource_));
         gmx_send_str(cr, dest, &reference_);
         gmx_send_str(cr, dest, &conformation_);
         gmx_send_str(cr, dest, &program_);
@@ -1190,7 +1192,6 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest)
         gmx_send_int(cr, dest, energy_.size());
         gmx_send_int(cr, dest, potential_.size());
         gmx_send_int(cr, dest, catom_.size());
-
 
         //! Send Polarizabilities
         for (auto dpi = BeginPolar(); (CS_OK == cs) && (dpi < EndPolar()); dpi++)
