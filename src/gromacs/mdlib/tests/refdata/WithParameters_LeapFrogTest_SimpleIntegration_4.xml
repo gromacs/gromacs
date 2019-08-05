@@ -1,0 +1,110 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="FinalPositions">
+    <Int Name="Length">10</Int>
+    <Atom>
+      <Real Name="XX">0.00099700000000000006</Real>
+      <Real Name="YY">6.4980019999999996</Real>
+      <Real Name="ZZ">0.0029990000000000004</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">1.0009984999999999</Real>
+      <Real Name="YY">5.4980010000000004</Real>
+      <Real Name="ZZ">0.0029995</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">2.0009990000000002</Real>
+      <Real Name="YY">4.498000666666667</Real>
+      <Real Name="ZZ">0.002999666666666667</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">3.00099925</Real>
+      <Real Name="YY">3.4980004999999998</Real>
+      <Real Name="ZZ">0.0029997500000000002</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">4.0009994000000004</Real>
+      <Real Name="YY">2.4980004</Real>
+      <Real Name="ZZ">0.0029997999999999999</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">5.0009994999999998</Real>
+      <Real Name="YY">1.4980003333333334</Real>
+      <Real Name="ZZ">0.0029998333333333331</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">6.0009995714285713</Real>
+      <Real Name="YY">0.49800028571428573</Real>
+      <Real Name="ZZ">0.0029998571428571431</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">7.0009996250000004</Real>
+      <Real Name="YY">-0.50199974999999997</Real>
+      <Real Name="ZZ">0.0029998749999999999</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">8.000999666666667</Real>
+      <Real Name="YY">-1.5019997777777778</Real>
+      <Real Name="ZZ">0.0029998888888888892</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">9.0009996999999995</Real>
+      <Real Name="YY">-2.5019998000000001</Real>
+      <Real Name="ZZ">0.0029998999999999998</Real>
+    </Atom>
+  </Sequence>
+  <Sequence Name="FinalVelocities">
+    <Int Name="Length">10</Int>
+    <Atom>
+      <Real Name="XX">0.997</Real>
+      <Real Name="YY">-1.998</Real>
+      <Real Name="ZZ">2.9990000000000001</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99850000000000005</Real>
+      <Real Name="YY">-1.9990000000000001</Real>
+      <Real Name="ZZ">2.9994999999999998</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.999</Real>
+      <Real Name="YY">-1.9993333333333334</Real>
+      <Real Name="ZZ">2.9996666666666667</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99924999999999997</Real>
+      <Real Name="YY">-1.9995000000000001</Real>
+      <Real Name="ZZ">2.9997500000000001</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99939999999999996</Real>
+      <Real Name="YY">-1.9996</Real>
+      <Real Name="ZZ">2.9998</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99950000000000006</Real>
+      <Real Name="YY">-1.9996666666666667</Real>
+      <Real Name="ZZ">2.9998333333333331</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99957142857142856</Real>
+      <Real Name="YY">-1.9997142857142858</Real>
+      <Real Name="ZZ">2.999857142857143</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99962499999999999</Real>
+      <Real Name="YY">-1.9997499999999999</Real>
+      <Real Name="ZZ">2.9998749999999998</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.9996666666666667</Real>
+      <Real Name="YY">-1.9997777777777779</Real>
+      <Real Name="ZZ">2.999888888888889</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99970000000000003</Real>
+      <Real Name="YY">-1.9998</Real>
+      <Real Name="ZZ">2.9998999999999998</Real>
+    </Atom>
+  </Sequence>
+</ReferenceData>
