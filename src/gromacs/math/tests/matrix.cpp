@@ -49,6 +49,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/math/vec.h"
+
 #include "testutils/testasserts.h"
 
 namespace gmx
@@ -198,6 +200,19 @@ TEST_F(MatrixTest, transposeOfSymmetricMatrix)
         for (int j = 0; j < 3; j++)
         {
             EXPECT_EQ(symmetricMat(i, j), transposedSymmetricMat(i, j));
+        }
+    }
+}
+
+TEST_F(MatrixTest, canCreateFromLegacyMatrix)
+{
+    matrix          legacyMatrix = { { 1, 2, 3}, { 4, 5, 6}, {7, 8, 9}};
+    const Matrix3x3 fromLegacy   = createMatrix3x3FromLegacyMatrix(legacyMatrix);
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            EXPECT_EQ(fromLegacy(i, j), legacyMatrix[i][j]);
         }
     }
 }

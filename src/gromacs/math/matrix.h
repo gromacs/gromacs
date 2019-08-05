@@ -45,6 +45,7 @@
 
 #include <array>
 
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/real.h"
 
 #include "multidimarray.h"
@@ -89,6 +90,22 @@ static Matrix3x3 transpose(Matrix3x3ConstSpan matrixView)
                       matrixView(0, 1), matrixView(1, 1), matrixView(2, 1),
                       matrixView(0, 2), matrixView(1, 2), matrixView(2, 2)});
 }
+
+//! Create new matrix type from legacy type.
+static Matrix3x3 createMatrix3x3FromLegacyMatrix(const matrix legacyMatrix)
+{
+    GMX_RELEASE_ASSERT(legacyMatrix, "Legacy matrix needs to be non nullptr");
+    Matrix3x3 newMatrix;
+    for (int i = 0; i < DIM; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            newMatrix(i, j) = legacyMatrix[i][j];
+        }
+    }
+    return newMatrix;
+}
+
 } // namespace gmx
 
 #endif
