@@ -769,7 +769,9 @@ void MolGen::Read(FILE            *fp,
                 nlocaltop += 1;
                 if (nullptr != debug)
                 {
-                    fprintf(debug, "Added molecule %s\n", mymol.molProp()->getMolname().c_str());
+                    fprintf(debug, "Added molecule %s. Hform = %g Emol = %g\n",
+                            mymol.molProp()->getMolname().c_str(),
+                            mymol.Hform_, mymol.Emol_);
                 }
             }
             gmx_send_int(cr_, 0, imm);

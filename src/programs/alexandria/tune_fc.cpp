@@ -1082,12 +1082,12 @@ void Optimization::calcDeviation(bool calcAll)
                         {
                             int angleType = poldata().findForces(eitANGLES)->fType();
                             int vdwType   = poldata().getVdwFtype();
-                            fprintf(debug, "spHF: %g  optHF: %g  DeltaEn: %g\n",
-                                    spHF, optHF, deltaEref);
+                            fprintf(debug, "spHF: %g  optHF: %g  deltaRef: %g  deltaEalex: %g\n",
+                                    spHF, optHF, deltaEref, deltaEalex);
                             fprintf(debug, "%s Chi2 %g Morse %g  "
                                     "Angle %g Langle %g PDIHS %g IDIHS %g Coul %g VdW %g POL %g  Force %g\n",
                                     mymol.molProp()->getMolname().c_str(),
-                                    gmx::square(deltaEalex),
+                                    gmx::square(deltaEalex-deltaEref),
                                     mymol.enerd_->term[F_MORSE],
                                     mymol.enerd_->term[angleType],
                                     mymol.enerd_->term[F_LINEAR_ANGLES],
@@ -1182,6 +1182,7 @@ double Optimization::objFunction(const double v[])
     calcDeviation(final());
     return energy(ermsTOT);
 }
+
 bool Optimization::optRun(FILE                   *fplog,
                           const gmx_output_env_t *oenv,
                           const char             *xvgconv,

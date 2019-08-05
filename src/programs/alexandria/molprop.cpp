@@ -1071,7 +1071,7 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
     CommunicationStatus            cs;
     ElectrostaticPotentialIterator epi;
     std::string                    jobtype;
-    int                            Npolar, Ndipole, Nenergy, Npotential, Natom;
+    int                            Npolar, Ndipole, Nenergy, Npotential, Natom, Nquadrupole;
 
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
@@ -1086,6 +1086,7 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
         jobtype_   = string2jobType(jobtype);
         Npolar     = gmx_recv_int(cr, src);
         Ndipole    = gmx_recv_int(cr, src);
+        Nquadrupole= gmx_recv_int(cr, src);
         Nenergy    = gmx_recv_int(cr, src);
         Npotential = gmx_recv_int(cr, src);
         Natom      = gmx_recv_int(cr, src);
@@ -1109,6 +1110,17 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
             if (CS_OK == cs)
             {
                 AddDipole(md);
+            }
+        }
+
+        //! Receive Quadrupoles
+        for (int n = 0; (CS_OK == cs) && (n < Nquadrupole); n++)
+        {
+            MolecularQuadrupole mq;
+            cs = mq.Receive(cr, src);
+            if (CS_OK == cs)
+            {
+                AddQuadrupole(mq);
             }
         }
 
@@ -1174,6 +1186,7 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &jobtype);
         gmx_send_int(cr, dest, polar_.size());
         gmx_send_int(cr, dest, dipole_.size());
+        gmx_send_int(cr, dest, quadrupole_.size());
         gmx_send_int(cr, dest, energy_.size());
         gmx_send_int(cr, dest, potential_.size());
         gmx_send_int(cr, dest, catom_.size());
@@ -1189,6 +1202,12 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest)
         for (auto dpi = BeginDipole(); (CS_OK == cs) && (dpi < EndDipole()); dpi++)
         {
             cs = dpi->Send(cr, dest);
+        }
+
+        //! Send Quadrupoles
+        for (auto dqi = BeginQuadrupole(); (CS_OK == cs) && (dqi < EndQuadrupole()); dqi++)
+        {
+            cs = dqi->Send(cr, dest);
         }
 
         //! Send Energies
