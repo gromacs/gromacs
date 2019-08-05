@@ -1006,7 +1006,7 @@ void Optimization::calcDeviation(bool calcAll)
                 {
                     if (fc.nbad() > 0)
                     {
-                        mymol.UpdateIdef(poldata(), fc.interactionType(), true);
+                        mymol.UpdateIdef(poldata(), fc.interactionType());
                     }
                 }
 
@@ -1014,7 +1014,7 @@ void Optimization::calcDeviation(bool calcAll)
                 {
                     if (nbp.nAT() > 0)
                     {
-                        mymol.UpdateIdef(poldata(), nbp.interactionType(), true);
+                        mymol.UpdateIdef(poldata(), nbp.interactionType());
                     }
                 }
                 mymol.f_.resizeWithPadding(natoms);

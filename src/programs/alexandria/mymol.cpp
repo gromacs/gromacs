@@ -2179,8 +2179,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
 }
 
 void MyMol::UpdateIdef(const Poldata   &pd,
-                       InteractionType  iType,
-                       bool             modifiedOnly)
+                       InteractionType  iType)
 {
     std::string params;
 

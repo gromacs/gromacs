@@ -267,7 +267,7 @@ void OptACM::calcDeviation()
                 {
                     if (bFitAlpha_)
                     {
-                        mymol.UpdateIdef(poldata(), eitPOLARIZATION, false);
+                        mymol.UpdateIdef(poldata(), eitPOLARIZATION);
                     }
                     mymol.computeForces(nullptr, commrec());
                 }
