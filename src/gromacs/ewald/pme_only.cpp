@@ -130,7 +130,8 @@ struct gmx_pme_pp {
 };
 
 /*! \brief environment variable to enable GPU P2P communication */
-static const bool c_enableGpuPmePpComms = (getenv("GMX_GPU_PME_PP_COMMS") != nullptr);
+//static const bool c_enableGpuPmePpComms = (getenv("GMX_GPU_PME_PP_COMMS") != nullptr);
+static const bool c_enableGpuPmePpComms = true;
 
 /*! \brief Initialize the PME-only side of the PME <-> PP communication */
 static std::unique_ptr<gmx_pme_pp> gmx_pme_pp_init(const t_commrec *cr)

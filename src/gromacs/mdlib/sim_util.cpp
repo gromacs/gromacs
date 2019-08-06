@@ -124,16 +124,20 @@ static const bool c_disableAlternatingWait = (getenv("GMX_DISABLE_ALTERNATING_GP
 // environment variable to enable GPU buffer ops, to allow incremental and optional
 // introduction of this functionality.
 // TODO eventially tie this in with other existing GPU flags.
-static const bool c_enableGpuBufOps = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
+//static const bool c_enableGpuBufOps = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
+static const bool c_enableGpuBufOps = true;
 
 /*! \brief environment variable to enable GPU P2P communication */
-static const bool c_enableGpuDD = (getenv("GMX_GPU_DD_COMMS") != nullptr);
+//static const bool c_enableGpuDD = (getenv("GMX_GPU_DD_COMMS") != nullptr);
+static const bool c_enableGpuDD = true;
 
 /*! \brief environment variable to enable GPU P2P communication */
-static const bool c_enableGpuPmePpComms = (getenv("GMX_GPU_PME_PP_COMMS") != nullptr);
+//static const bool c_enableGpuPmePpComms = (getenv("GMX_GPU_PME_PP_COMMS") != nullptr);
+static const bool c_enableGpuPmePpComms = true;
 
 //! Whether the GPU versions of Leap-Frog integrator and LINCS and SHAKE constraints
-static const bool c_useGpuUpdateConstrain = (getenv("GMX_UPDATE_CONSTRAIN_GPU") != nullptr);
+//static const bool c_useGpuUpdateConstrain = (getenv("GMX_UPDATE_CONSTRAIN_GPU") != nullptr);
+static const bool c_useGpuUpdateConstrain = true;
 
 static void sum_forces(rvec f[], gmx::ArrayRef<const gmx::RVec> forceToAdd)
 {

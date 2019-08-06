@@ -149,10 +149,12 @@
 using gmx::SimulationSignaller;
 
 //! Whether the GPU versions of Leap-Frog integrator and LINCS and SHAKE constraints
-static const bool c_useGpuUpdateConstrain = (getenv("GMX_UPDATE_CONSTRAIN_GPU") != nullptr);
+//static const bool c_useGpuUpdateConstrain = (getenv("GMX_UPDATE_CONSTRAIN_GPU") != nullptr);
+static const bool c_useGpuUpdateConstrain = true;
 
 /*! \brief environment variable to enable GPU P2P communication */
-static const bool c_enableGpuDD = (getenv("GMX_GPU_DD_COMMS") != nullptr);
+//static const bool c_enableGpuDD = (getenv("GMX_GPU_DD_COMMS") != nullptr);
+static const bool c_enableGpuDD = true;
 
 void gmx::Simulator::do_md()
 {

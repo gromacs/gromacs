@@ -78,7 +78,8 @@
 static constexpr bool c_useDelayedWait = false;
 
 /*! \brief environment variable to enable GPU P2P communication */
-static const bool c_enableGpuPmePpComms = (getenv("GMX_GPU_PME_PP_COMMS") != nullptr);
+//static const bool c_enableGpuPmePpComms = (getenv("GMX_GPU_PME_PP_COMMS") != nullptr);
+static const bool c_enableGpuPmePpComms = true;
 
 /*! \brief Wait for the pending data send requests to PME ranks to complete */
 static void gmx_pme_send_coeffs_coords_wait(gmx_domdec_t *dd)
