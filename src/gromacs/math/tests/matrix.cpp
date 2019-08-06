@@ -217,6 +217,19 @@ TEST_F(MatrixTest, canCreateFromLegacyMatrix)
     }
 }
 
+TEST_F(MatrixTest, canFillLegacyMatrix)
+{
+    matrix          legacyMatrix = {{ -2 }};
+    fillLegacyMatrix(matrix_, legacyMatrix);
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            EXPECT_EQ(legacyMatrix[i][j], matrix_(i, j));
+        }
+    }
+}
+
 } // namespace
 
 } // namespace test
