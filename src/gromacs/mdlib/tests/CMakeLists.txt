@@ -44,8 +44,7 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test
                   shake.cpp
                   simulationsignal.cpp
                   updategroups.cpp
-                  updategroupscog.cpp
-                  ${MDLIB_TEST_SOURCES})
+                  updategroupscog.cpp)
 
 # TODO: Make CUDA source to compile inside the testing framework
 if(GMX_USE_CUDA)
