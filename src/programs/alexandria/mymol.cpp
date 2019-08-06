@@ -1772,7 +1772,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     const char *qm_conf = "minimum";
     if (molProp()->getPropRef(MPO_DIPOLE, iqmQM, lot, qm_conf,
                               qm_type, &value, &error,
-                              &T, myref, mylot, vec, myQ))
+                              &T, &myref, &mylot, vec, myQ))
     {
         set_muQM(qtElec, vec);
         if (value > 0)
@@ -1798,7 +1798,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     T = -1;
     if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmQM, lot, qm_conf,
                               qm_type, &value, &error,
-                              &T, myref, mylot, vec, myQ))
+                              &T, &myref, &mylot, vec, myQ))
     {
         set_QQM(qtElec, myQ);
         rotate_tensor(Q_qm_[qtElec], Q_qm_[qtCalc]);
@@ -1828,7 +1828,7 @@ void MyMol::PrintTopology(FILE                   *fp,
         T = -1;
         if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM, lot, "",
                                   (char *)"electronic", &isoPol_elec_, &error,
-                                  &T, myref, mylot, vec, alpha_elec_))
+                                  &T, &myref, &mylot, vec, alpha_elec_))
         {
             CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
             snprintf(buf, sizeof(buf), "%s + Polarizability components (A^3)", lot);
@@ -2021,7 +2021,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                               (char *)mylot.c_str(), "",
                               (char *)"ESP charges",
                               &value, &error, &T,
-                              myref, mylot, q, quadrupole))
+                              &myref, &mylot, q, quadrupole))
     {
         setQandMoments(qtESP, natom, q);
         esp_dipole_found = true;
@@ -2031,7 +2031,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                               (char *)mylot.c_str(), "",
                               (char *)"Mulliken charges",
                               &value, &error, &T,
-                              myref, mylot, q, quadrupole))
+                              &myref, &mylot, q, quadrupole))
     {
         setQandMoments(qtMulliken, natom, q);
         if (esp_dipole_found && dipQM(qtMulliken) > 0)
@@ -2044,7 +2044,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                               (char *)mylot.c_str(), "",
                               (char *)"Hirshfeld charges",
                               &value, &error, &T,
-                              myref, mylot, q, quadrupole))
+                              &myref, &mylot, q, quadrupole))
     {
         setQandMoments(qtHirshfeld, natom, q);
         if (esp_dipole_found && dipQM(qtHirshfeld) > 0)
@@ -2058,7 +2058,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                               (char *)mylot.c_str(), "",
                               (char *)"CM5 charges",
                               &value, &error, &T,
-                              myref, mylot, q, quadrupole))
+                              &myref, &mylot, q, quadrupole))
     {
         setQandMoments(qtCM5, natom, q);
         if (esp_dipole_found && dipQM(qtCM5) > 0)
@@ -2118,7 +2118,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         T = -1;
         if (molProp()->getPropRef(MPO_DIPOLE, iqmQM, lot, "",
                                   (char *)"electronic",
-                                  &value, &error, &T, myref, mylot,
+                                  &value, &error, &T, &myref, &mylot,
                                   vec, quadrupole))
         {
             dip_exp_  = value;
@@ -2156,7 +2156,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         T = -1;
         if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmQM,
                                   lot, "", (char *)"electronic",
-                                  &value, &error, &T, myref, mylot,
+                                  &value, &error, &T, &myref, &mylot,
                                   vec, quadrupole))
         {
             set_QQM(qtElec, quadrupole);
@@ -2169,7 +2169,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM,
                                   lot, "", (char *)"electronic",
                                   &isoPol_elec_, &error, &T,
-                                  myref, mylot, vec, polar))
+                                  &myref, &mylot, vec, polar))
         {
             copy_mat(polar, alpha_elec_);
             CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);

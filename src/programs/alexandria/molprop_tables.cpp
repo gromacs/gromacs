@@ -960,7 +960,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                     if ((q->type().compare(exp_type) == 0) &&
                         mpi.getPropRef(mpo, iqmQM, q->lot(), "",
                                        q->type(), &calc_val, &calc_err, &T,
-                                       ref, mylot, rvec, quadrupole))
+                                       &ref, &mylot, rvec, quadrupole))
                     {
                         cd.push_back(CalcData(calc_val, calc_err, T, 1));
                         nqm++;

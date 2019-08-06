@@ -173,7 +173,11 @@ class AtomNum
          * \param[in] catom   Atom name
          * \param[in] cnumber Number of copies of this atom
          */
-        AtomNum(std::string catom, int cnumber) { SetAtom(catom); SetNumber(cnumber); }
+        AtomNum(const std::string &catom, int cnumber)
+        {
+            SetAtom(catom); 
+            SetNumber(cnumber); 
+        }
 
         /*! \brief
          * Return the name of the atom for this AtomNum
@@ -183,7 +187,7 @@ class AtomNum
         /*! \brief
          * Set the name of the atom for this AtomNum
          */
-        void SetAtom(std::string catom) { catom_ = catom; }
+        void SetAtom(const std::string &catom) { catom_ = catom; }
 
         /*! \brief
          * Set the name of the atom for this AtomNum
@@ -255,7 +259,10 @@ class MolecularComposition
          *
          * \param[in] compname  Name of the composition type
          */
-        MolecularComposition(std::string compname) { compname_ = compname; }
+        MolecularComposition(const std::string &compname)
+        { 
+            compname_ = compname;
+        }
 
         /*! \brief 
          * Return the composition name
@@ -265,7 +272,10 @@ class MolecularComposition
         /*! \brief
          * Set the composition name
          */
-        void SetCompName(std::string compname) { compname_ = compname; }
+        void SetCompName(const std::string &compname)
+        { 
+            compname_ = compname; 
+        }
 
         /*! \brief
          * Set the composition name
@@ -279,22 +289,12 @@ class MolecularComposition
          */
         void AddAtom(AtomNum an);
 
-        /*! \brief
-         * Remove the atom with name catom from the composition
-         *
-         *\param[in] catom   Atom name
-         */
-        void DeleteAtom(const char *catom)
-        {
-            std::string _str(catom); DeleteAtom(_str);
-        }
-
         /*! \brief 
          * Remove the atom with name catom from the composition
          *
          * \param[in] catom Atom name
          */
-        void DeleteAtom(std::string catom);
+        void DeleteAtom(const std::string &catom);
 
         /*! \brief 
          * Replace the oldatom by newatom
@@ -302,18 +302,8 @@ class MolecularComposition
          * \param[in] oldatom   Name of the old atom
          * \param[in] newatom   Name of the new atom
          */
-        void ReplaceAtom(const char *oldatom, const char *newatom)
-        {
-            std::string so(oldatom), sn(newatom); ReplaceAtom(so, sn);
-        }
-        
-        /*! \brief 
-         * Replace the oldatom by newatom
-         *
-         * \param[in] oldatom   Name of the old atom
-         * \param[in] newatom   Name of the new atom
-         */
-        void ReplaceAtom(std::string oldatom, std::string newatom);
+        void ReplaceAtom(const std::string &oldatom,
+                         const std::string &newatom);
 
         /*! \brief
          * Return iterator to begin looping over AtomNum
@@ -330,7 +320,7 @@ class MolecularComposition
          *
          * \param[in] an Atom number
          */
-        AtomNumIterator SearchAtom(std::string an);
+        AtomNumIterator SearchAtom(const std::string &an);
 
         /*! \brief
          * Return the number of atoms of a certain type
@@ -344,7 +334,7 @@ class MolecularComposition
          *
          *\param[in] atom Atom name
          */
-        int CountAtoms(std::string atom);
+        int CountAtoms(const std::string &atom);
 
         /*! \brief
          * Return the total number of atoms
@@ -409,7 +399,10 @@ class GenericProperty
          * \param[in] unit  Unit of the property
          * \param[in] T     Temperature
          */
-        GenericProperty(std::string type, std::string unit, double T, ePhase ep)
+        GenericProperty(const std::string &type,
+                        const std::string &unit,
+                        double             T,
+                        ePhase             ep)
         { SetType(type); SetUnit(unit); setTemperature(T); setPhase(ep); }
 
         /*! \brief
@@ -437,14 +430,14 @@ class GenericProperty
          *
          *\param[in] type  Type of property
          */
-        void SetType(std::string type);
+        void SetType(const std::string &type);
 
         /*! \brief
          * Set the unit of the property
          *
          *\param[in] unit Unit of the property
          */
-        void SetUnit(std::string unit);
+        void SetUnit(const std::string &unit);
 
         /*! \brief
          * Set the temperature of the property
@@ -499,7 +492,9 @@ class MolecularQuadrupole : public GenericProperty
         MolecularQuadrupole() {}
 
         //! Constructor initiating all elements of the quadrupole tensor
-        MolecularQuadrupole(std::string type, std::string unit, double T,
+        MolecularQuadrupole(const std::string &type,
+                            const std::string &unit,
+                            double T,
                             double xx, double yy, double zz,
                             double xy, double xz, double yz) : 
                             GenericProperty(type, unit, T, epGAS) 
@@ -572,7 +567,9 @@ class MolecularPolarizability : public GenericProperty
         MolecularPolarizability() {}
 
         //! Constructor initiating all elements of the quadrupole tensor
-        MolecularPolarizability(std::string type, std::string unit, double T,
+        MolecularPolarizability(const std::string &type,
+                                const std::string &unit,
+                                double T,
                                 double xx, double yy, double zz,
                                 double xy, double xz, double yz,
                                 double average, double error) 
@@ -659,7 +656,8 @@ class MolecularEnergy : public GenericProperty
         MolecularEnergy() {};
 
         //! Constructor storing all properties related to this energy term
-        MolecularEnergy(std::string type, std::string unit, 
+        MolecularEnergy(const std::string &type,
+                        const std::string &unit, 
                         double T, ePhase ep, double value, double error) 
                         : GenericProperty(type, unit, T, ep) 
                         { Set(value, error); };
@@ -720,7 +718,9 @@ class MolecularDipole : public GenericProperty
         MolecularDipole() {}
 
         //! Constructor storing all properties related to this dipole
-        MolecularDipole(std::string type, std::string unit, double T,
+        MolecularDipole(const std::string &type,
+                        const std::string &unit,
+                        double T,
                         double x, double y, double z, double aver, double error) 
                         : GenericProperty(type, unit, T, epGAS) 
                         { Set(x, y, z, aver, error); }
@@ -790,7 +790,8 @@ class ElectrostaticPotential
         ElectrostaticPotential() {}
 
         //! Constructor that set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
-        ElectrostaticPotential(std::string xyz_unit, std::string V_unit, 
+        ElectrostaticPotential(const std::string &xyz_unit,
+                               const std::string &V_unit, 
                                int espid, double x, double y, double z, double V) 
                                { Set(xyz_unit, V_unit, espid, x, y, z, V); };
 
@@ -800,7 +801,8 @@ class ElectrostaticPotential
                                { Set(xyz_unit, V_unit, espid, x, y, z, V); };
 
         //! Set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
-        void Set(std::string xyz_unit, std::string V_unit, 
+        void Set(const std::string &xyz_unit,
+                 const std::string &V_unit, 
                  int espid, double x, double y, double z, double V) 
                  { xyzUnit_ = xyz_unit; vUnit_ = V_unit; espID_ = espid; x_ = x; y_ = y; z_ = z; V_ = V; };
 
@@ -939,7 +941,10 @@ class AtomicCharge : public GenericProperty
         AtomicCharge() {}
 
         //! Constructor setting type, unit and charge itself
-        AtomicCharge(std::string type, std::string unit, double T, double q) 
+        AtomicCharge(const std::string &type,
+                     const std::string &unit,
+                     double             T,
+                     double             q) 
             : GenericProperty(type, unit, T, epGAS) { SetQ(q); };
 
         //! Set the charge to q
@@ -997,7 +1002,9 @@ class CalcAtom
         };
 
         //! Constructor initiating the name, type and atomid
-        CalcAtom(std::string name, std::string obtype, int atomid)
+        CalcAtom(const std::string &name,
+                 const std::string &obtype,
+                 int                atomid)
         {
             name_ = name; obType_ = obtype; atomID_ = atomid;
         };
@@ -1031,13 +1038,10 @@ class CalcAtom
         const std::string &ResidueName() const { return residueName_; }
 
         //! Set the unit of the coordinates of the atom
-        void SetUnit(std::string unit);
+        void SetUnit(const std::string &unit);
         
          //! Set the residue name for the atom
-        void SetResidue(std::string residueName) {residueName_ = residueName;}
-
-        //! Set the unit of the coordinates of the atom
-        void SetUnit(const char *unit) { std::string s(unit); SetUnit(s); }
+        void SetResidue(const std::string &residueName) {residueName_ = residueName;}
 
         //! Set the coordinates of the atom
         void SetCoords(double x, double y, double z) { x_ = x; y_ = y; z_ = z; }
@@ -1095,15 +1099,19 @@ class Experiment
         Experiment() { }
 
         //! Constructor initiating an Experiment with reference and conformation
-        Experiment(std::string reference, std::string conformation) :
+        Experiment(const std::string &reference, 
+                   const std::string &conformation) :
             dataSource_(dsExperiment), reference_(reference),
             conformation_(conformation), jobtype_(JOB_UNKNOWN)
         {}
 
         //! Constructor initiating a Calculation
-        Experiment(std::string program, std::string method,
-                   std::string basisset, std::string reference,
-                   std::string conformation, std::string datafile,
+        Experiment(const std::string &program, 
+                   const std::string &method,
+                   const std::string &basisset,
+                   const std::string &reference,
+                   const std::string &conformation,
+                   const std::string &datafile,
                    jobType jtype);
 
         //! Return the type of data
@@ -1221,7 +1229,7 @@ class Experiment
          * \param[out] quadrupole The quadrupole tensor
          * \return true on success
          */
-        bool getVal(const std::string  type, 
+        bool getVal(const std::string &type, 
                     MolPropObservable  mpo,
                     double            *value,
                     double            *error, 
@@ -1363,19 +1371,13 @@ class MolProp
         bool GenerateFormula(gmx_atomprop_t ap);
 
         //! Set the molname
-        void SetMolname(const char *molname) { molname_.assign(molname); }
-
-        //! Set the molname
-        void SetMolname(std::string molname) { molname_ = molname; }
+        void SetMolname(const std::string &molname) { molname_ = molname; }
 
         //! Return the molname
         const std::string &getMolname() const { return molname_; }
 
         //! Set the IUPAC name
-        void SetIupac(const char *iupac) { iupac_.assign(iupac); }
-
-        //! Set the IUPAC name
-        void SetIupac(std::string iupac) { iupac_ = iupac; }
+        void SetIupac(const std::string &iupac) { iupac_ = iupac; }
 
         //! Return IUPAC name or, if not found, the molname
         const std::string &getIupac() const
@@ -1391,28 +1393,19 @@ class MolProp
         }
 
         //! Set the CAS (Chemical Abstract Service) identifier, see http://www.cas.org/
-        void SetCas(const char *cas) { cas_.assign(cas); }
-
-        //! Set the CAS (Chemical Abstract Service) identifier, see http://www.cas.org/
-        void SetCas(std::string cas) { cas_.assign(cas); }
+        void SetCas(const std::string &cas) { cas_.assign(cas); }
 
         //! Return the CAS (Chemical Abstract Service) identifier, see http:://www.cas.org
         const std::string &getCas() const { return cas_; }
 
         //! Set the CID (Chemspider identifier) see http:://www.chemspider.com
-        void SetCid(const char *cid) { cid_.assign(cid); }
-
-        //! Set the CID (Chemspider identifier) see http:://www.chemspider.com
-        void SetCid(std::string cid) { cid_ = cid; }
+        void SetCid(const std::string &cid) { cid_ = cid; }
 
         //! Return the CID (Chemspider identifier) see http:://www.chemspider.com
         const std::string &getCid() const { return cid_; }
 
         //! Set the IUPAC International Chemical Identifier (InChI) see http://www.iupac.org/home/publications/e-resources/inchi.html
-        void SetInchi(const char *inchi) { inchi_.assign(inchi); }
-
-        //! Set the IUPAC International Chemical Identifier (InChI) see http://www.iupac.org/home/publications/e-resources/inchi.html
-        void SetInchi(std::string inchi) { inchi_ = inchi; }
+        void SetInchi(const std::string &inchi) { inchi_ = inchi; }
 
         //! Return the IUPAC International Chemical Identifier (InChI) see http://www.iupac.org/home/publications/e-resources/inchi.html
         const std::string &getInchi() const { return inchi_; }
@@ -1423,7 +1416,7 @@ class MolProp
                         const std::string &conf,
                         const std::string &type,
                         double *value, double *error, double *T,
-                        std::string &ref, std::string &mylot,
+                        std::string *ref, std::string *mylot,
                         rvec vec, tensor quadrupole);
 
         //! And another one
@@ -1485,7 +1478,7 @@ class MolProp
         MolecularComposition *LastMolecularComposition()   { return &(mol_comp_.back()); }
 
         //! Search for particular MolecularCompostion item or return EndMolecularComposition if not found
-        MolecularCompositionIterator SearchMolecularComposition(std::string str);
+        MolecularCompositionIterator SearchMolecularComposition(const std::string &str);
 
         //! Return number of atoms in the first composition if present, or 0 otherwise
         int NAtom();

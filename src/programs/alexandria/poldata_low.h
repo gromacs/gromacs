@@ -408,11 +408,11 @@ class ListedForce
          * \param[in] sigma       Uncertainty in the calculated reference value
          * \param[in] ntrain      Number of molecules in the training set
          */
-        ListedForce(const std::vector<std::string> atoms,
-                    std::string                    params,
-                    double                         refValue,
-                    double                         sigma,
-                    size_t                         ntrain);
+        ListedForce(const std::vector<std::string> &atoms,
+                    const std::string              &params,
+                    double                          refValue,
+                    double                          sigma,
+                    size_t                          ntrain);
                     
         /*! \brief
          * ListedForce constructor
@@ -424,12 +424,12 @@ class ListedForce
          * \param[in] ntrain      Number of molecules in the training set
          * \param[in] bondOrder   The order of the covalent bond
          */
-        ListedForce(const std::vector<std::string> atoms,
-                    std::string                    params,
-                    double                         refValue,
-                    double                         sigma,
-                    size_t                         ntrain,
-                    size_t                         bondOrder);
+        ListedForce(const std::vector<std::string> &atoms,
+                    const std::string              &params,
+                    double                          refValue,
+                    double                          sigma,
+                    size_t                          ntrain,
+                    size_t                          bondOrder);
 
         /*! \brief
          * Return the vector of atom bond types involved in the listed force

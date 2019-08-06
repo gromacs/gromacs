@@ -136,7 +136,8 @@ static void gmx_molprop_csv(const char *fn,
         {
             std::string ref, mylot;
             if (mpi->getPropRef(mpo[k], iqmExp,
-                                nullptr, nullptr, nullptr, &d, &err, &T, ref, mylot, vec,
+                                nullptr, nullptr, nullptr, &d, &err, &T, 
+                                &ref, &mylot, vec,
                                 quadrupole))
             {
                 fprintf(fp, ",\"%.4f\",\"%s\"", d, ref.c_str());

@@ -444,7 +444,7 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
                 {
                     std::string myref, mylot;
                     if (mpi->getPropRef(mpo, iqmBoth, lot, "", "",
-                                        &value, &error, &T, myref, mylot,
+                                        &value, &error, &T, &myref, &mylot,
                                         vec, quadrupole))
                     {
                         fprintf(gp, "%s|Train\n", iupac);

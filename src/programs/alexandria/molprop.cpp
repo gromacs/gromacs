@@ -84,7 +84,7 @@ DataSource dataSourceFromName(const std::string &name)
     gmx_fatal(FARGS, "No data source corresponding to %s", name.c_str());
 }
 
-void GenericProperty::SetType(std::string type)
+void GenericProperty::SetType(const std::string &type)
 {
     if ((type_.size() == 0) && (type.size() > 0))
     {
@@ -99,7 +99,7 @@ void GenericProperty::SetType(std::string type)
     }
 }
 
-void GenericProperty::SetUnit(std::string unit)
+void GenericProperty::SetUnit(const std::string &unit)
 {
     if ((unit_.size() == 0) && (unit.size() > 0))
     {
@@ -154,7 +154,7 @@ CommunicationStatus GenericProperty::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-void CalcAtom::SetUnit(std::string unit)
+void CalcAtom::SetUnit(const std::string &unit)
 {
     if ((unit_.size() == 0) && (unit.size() > 0))
     {
@@ -355,7 +355,7 @@ void MolecularComposition::AddAtom(AtomNum an)
     }
 }
 
-void MolecularComposition::DeleteAtom(std::string catom)
+void MolecularComposition::DeleteAtom(const std::string &catom)
 {
     AtomNumIterator ani;
 
@@ -365,7 +365,7 @@ void MolecularComposition::DeleteAtom(std::string catom)
     }
 }
 
-AtomNumIterator MolecularComposition::SearchAtom(std::string an)
+AtomNumIterator MolecularComposition::SearchAtom(const std::string &an)
 {
     AtomNumIterator ani;
 
@@ -379,7 +379,8 @@ AtomNumIterator MolecularComposition::SearchAtom(std::string an)
     return EndAtomNum();
 }
 
-void MolecularComposition::ReplaceAtom(std::string oldatom, std::string newatom)
+void MolecularComposition::ReplaceAtom(const std::string &oldatom,
+                                       const std::string &newatom)
 {
 
     for (auto i = BeginAtomNum(); (i < EndAtomNum()); i++)
@@ -392,7 +393,7 @@ void MolecularComposition::ReplaceAtom(std::string oldatom, std::string newatom)
     }
 }
 
-int MolecularComposition::CountAtoms(std::string atom)
+int MolecularComposition::CountAtoms(const std::string &atom)
 {
     for (auto i = BeginAtomNum(); (i < EndAtomNum()); i++)
     {
@@ -782,9 +783,12 @@ CommunicationStatus MolecularEnergy::Send(t_commrec *cr, int dest)
     return cs;
 }
 
-Experiment::Experiment(std::string program, std::string method,
-                       std::string basisset, std::string reference,
-                       std::string conformation, std::string datafile,
+Experiment::Experiment(const std::string &program,
+                       const std::string &method,
+                       const std::string &basisset,
+                       const std::string &reference,
+                       const std::string &conformation,
+                       const std::string &datafile,
                        jobType jtype)
     :
       dataSource_(dsTheory),
@@ -950,7 +954,7 @@ void Experiment::AddAtom(CalcAtom ca)
     }
 }
 
-bool Experiment::getVal(const std::string  type,
+bool Experiment::getVal(const std::string &type,
                         MolPropObservable  mpo,
                         double            *value,
                         double            *error,
@@ -1447,7 +1451,7 @@ int MolProp::Merge(std::vector<MolProp>::iterator src)
     return nwarn;
 }
 
-MolecularCompositionIterator MolProp::SearchMolecularComposition(std::string str)
+MolecularCompositionIterator MolProp::SearchMolecularComposition(const std::string &str)
 {
     return std::find_if(mol_comp_.begin(), mol_comp_.end(),
                         [str](MolecularComposition const &mc)
@@ -1668,7 +1672,7 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
                          const std::string &conf,
                          const std::string &type,
                          double *value, double *error, double *T,
-                         std::string &ref, std::string &mylot,
+                         std::string *ref, std::string *mylot,
                          rvec vec, tensor quad_polar)
 {
     bool   done = false;
@@ -1684,8 +1688,8 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
                 if (ei->getVal(type, mpo, value, error, T, vec, quad_polar) &&
                     bCheckTemperature(Told, *T))
                 {
-                    ref = ei->getReference();
-                    mylot.assign("Experiment");
+                    ref->assign(ei->getReference());
+                    mylot->assign("Experiment");
                     done = true;
                     break;
                 }
@@ -1706,8 +1710,8 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
                 if (ei->getVal(type, mpo, value, error, T, vec, quad_polar) &&
                     bCheckTemperature(Told, *T))
                 {
-                    ref = ei->getReference();
-                    mylot.assign("Experiment");
+                    ref->assign(ei->getReference());
+                    mylot->assign("Experiment");
                     done = true;
                     break;
                 }
@@ -1731,8 +1735,8 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
                 if  (ci->getVal(type.c_str(), mpo, value, error, T, vec, quad_polar) &&
                      bCheckTemperature(Told, *T))
                 {
-                    ref = ci->getReference();
-                    mylot.assign(lot);
+                    ref->assign(ci->getReference());
+                    mylot->assign(lot);
                     done = true;
                     break;
                 }
@@ -1787,7 +1791,7 @@ bool MolProp::getProp(MolPropObservable mpo, iqmType iQM,
     std::string myref, mylot;
 
     bReturn = getPropRef(mpo, iQM, lot, conf, type, value, &myerror, T,
-                         myref, mylot, vec, quad);
+                         &myref, &mylot, vec, quad);
     if (nullptr != error)
     {
         *error = myerror;

@@ -347,11 +347,11 @@ void ListedForce::MakeCondensed()
     }
 }
 
-ListedForce::ListedForce(const std::vector<std::string> atoms,
-                         std::string                    params,
-                         double                         refValue,
-                         double                         sigma,
-                         size_t                         ntrain)
+ListedForce::ListedForce(const std::vector<std::string> &atoms,
+                         const std::string              &params,
+                         double                          refValue,
+                         double                          sigma,
+                         size_t                          ntrain)
     :
       atoms_(atoms),
       params_(params),
@@ -364,12 +364,12 @@ ListedForce::ListedForce(const std::vector<std::string> atoms,
     MakeCondensed();
 }
 
-ListedForce::ListedForce(const std::vector<std::string> atoms,
-                         std::string                    params,
-                         double                         refValue,
-                         double                         sigma,
-                         size_t                         ntrain,
-                         size_t                         bondOrder)
+ListedForce::ListedForce(const std::vector<std::string> &atoms,
+                         const std::string              &params,
+                         double                          refValue,
+                         double                          sigma,
+                         size_t                          ntrain,
+                         size_t                          bondOrder)
     :
       atoms_(atoms),
       params_(params),
