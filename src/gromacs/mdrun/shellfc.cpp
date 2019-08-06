@@ -259,8 +259,8 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
  * \param[in]  mtop  Molecular topology.
  * \returns Array holding the number of particles of a type
  */
-static std::array<int, eptNR> countPtypes(FILE             *fplog,
-                                          const gmx_mtop_t *mtop)
+std::array<int, eptNR> countPtypes(FILE             *fplog,
+                                   const gmx_mtop_t *mtop)
 {
     std::array<int, eptNR> nptype = { { 0 } };
     /* Count number of shells, and find their indices */

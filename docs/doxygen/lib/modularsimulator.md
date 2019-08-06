@@ -395,6 +395,16 @@ during a velocity-verlet integrator. It is the responsibility of the
 simulator builder to place them at the right place of the
 integration algorithm.
 
+#### `ForceElement` and `ShellFCElement`
+The `ForceElement` and the `ShellFCElement` encapsulate the legacy
+calls to `do_force` and `do_shellfc`, respectively. It is the
+responsibility of the simulator builder to place them at the right
+place of the integration algorithm. Moving forward, a version of these
+elements which would allow to only calculate forces of subsets of
+degrees of freedom would be desirable to pave the way towards multiple
+time step integrators, allowing to integrate slower degrees of freedom
+at a different frequency than faster degrees of freedom.
+
 ## Data structures
 
 ### `StatePropagatorData`

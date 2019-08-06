@@ -127,6 +127,9 @@ void mdAlgorithmsSetupAtomData(const t_commrec  *cr,
 
     /* Note that with DD only flexible constraints, not shells, are supported
      * and these don't require setup in make_local_shells().
+     *
+     * TODO: This should only happen in ShellFCElement (it is called directly by the modular
+     *       simulator ShellFCElement already, but still used here by legacy simulators)
      */
     if (!usingDomDec && shellfc)
     {

@@ -42,6 +42,7 @@
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/atoms.h"
 
 class DDBalanceRegionHandler;
 struct gmx_enerdata_t;
@@ -109,5 +110,16 @@ void relax_shell_flexcon(FILE                                     *log,
 
 /* Print some final output */
 void done_shellfc(FILE *fplog, gmx_shellfc_t *shellfc, int64_t numSteps);
+
+/*! \brief Count the different particle types in a system
+ *
+ * Routine prints a warning to stderr in case an unknown particle type
+ * is encountered.
+ * \param[in]  fplog Print what we have found if not NULL
+ * \param[in]  mtop  Molecular topology.
+ * \returns Array holding the number of particles of a type
+ */
+std::array<int, eptNR> countPtypes(FILE             *fplog,
+                                   const gmx_mtop_t *mtop);
 
 #endif
