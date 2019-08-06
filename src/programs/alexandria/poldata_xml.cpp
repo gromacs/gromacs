@@ -349,6 +349,12 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
     /* Done processing attributes for this element. Let's see if we still need
      *  to interpret them.
      */
+    bool fixed = false;
+    if (NN(xbuf[exmlFIXED]))
+    {
+        fixed = (xbuf[exmlFIXED] == "true" ||
+                 xbuf[exmlFIXED] == "yes");
+    }
     switch (elem)
     {
         case exmlPOLTYPES:
@@ -460,19 +466,13 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 NN(xbuf[exmlVDWPARAMS]) &&
                 NN(xbuf[exmlEREF]))
             {
-                bool fixVdw = false;
-                if (NN(xbuf[exmlFIXED]))
-                {
-                    fixVdw = (xbuf[exmlFIXED] == "true" ||
-                              xbuf[exmlFIXED] == "yes");
-                }
                 pd.addAtype(xbuf[exmlELEM],
                             xbuf[exmlDESC],
                             xbuf[exmlATYPE],
                             xbuf[exmlPTYPE],
                             xbuf[exmlBTYPE],
                             xbuf[exmlZTYPE],
-                            fixVdw,
+                            fixed,
                             xbuf[exmlVDWPARAMS],
                             xbuf[exmlEREF]);
             }
@@ -521,6 +521,7 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 auto &force = pd.lastForces();
 
                 force.addForce(atoms, xbuf[exmlPARAMS].c_str(),
+                               fixed,
                                my_atof(xbuf[exmlREFVALUE].c_str()),
                                my_atof(xbuf[exmlSIGMA].c_str()),
                                atoi(xbuf[exmlNTRAIN].c_str()),
@@ -541,6 +542,7 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 auto &force  = pd.lastForces();
 
                 force.addForce(atoms, xbuf[exmlPARAMS].c_str(),
+                               fixed,
                                my_atof(xbuf[exmlREFVALUE].c_str()),
                                my_atof(xbuf[exmlSIGMA].c_str()),
                                atoi(xbuf[exmlNTRAIN].c_str()));
@@ -562,6 +564,7 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 auto &force = pd.lastForces();
 
                 force.addForce(atoms, xbuf[exmlPARAMS].c_str(),
+                               fixed,
                                my_atof(xbuf[exmlREFVALUE].c_str()),
                                my_atof(xbuf[exmlSIGMA].c_str()),
                                atoi(xbuf[exmlNTRAIN].c_str()));
@@ -744,7 +747,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
             add_xml_char(grandchild, exml_names(exmlZTYPE), aType->getZtype().c_str());
             add_xml_char(grandchild, exml_names(exmlVDWPARAMS), aType->getVdwparams().c_str());
             add_xml_char(grandchild, exml_names(exmlFIXED), 
-                         aType->fixVdw() ? "true" : "false");
+                         aType->fixed() ? "true" : "false");
             add_xml_char(grandchild, exml_names(exmlEREF), aType->getRefEnthalpy().c_str());
         }
     }

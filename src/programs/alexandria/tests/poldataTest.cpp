@@ -141,7 +141,7 @@ TEST_F(PoldataTest, addAtype){
         checker_.checkString(fa->getVdwparams(), vdwparams.c_str());
     }
     EXPECT_THROW_GMX(fa->setVdwparams(vdwparams), gmx::InvalidInputError);
-    fa->setFixVdw(false);
+    fa->setFixed(false);
     fa->setVdwparams(vdwparams);
 }
 

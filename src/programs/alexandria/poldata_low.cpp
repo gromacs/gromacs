@@ -125,7 +125,7 @@ Ffatype::Ffatype(const std::string &desc,
                  const std::string &btype,
                  const std::string &ztype,
                  const std::string &elem,
-                 bool               fixVdw,
+                 bool               fixed,
                  const std::string &vdwparams,
                  const std::string &refEnthalpy)
     :
@@ -135,7 +135,7 @@ Ffatype::Ffatype(const std::string &desc,
       btype_(btype),
       ztype_(ztype),
       elem_(elem),
-      fixVdw_(fixVdw),
+      fixed_(fixed),
       vdwparams_(vdwparams),
       refEnthalpy_(refEnthalpy)
 {}
@@ -152,7 +152,7 @@ CommunicationStatus Ffatype::Send(const t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &btype_);
         gmx_send_str(cr, dest, &ztype_);
         gmx_send_str(cr, dest, &elem_);
-        gmx_send_int(cr, dest, static_cast<int>(fixVdw_));
+        gmx_send_int(cr, dest, static_cast<int>(fixed_));
         gmx_send_str(cr, dest, &vdwparams_);
         gmx_send_str(cr, dest, &refEnthalpy_);
         if (nullptr != debug)
@@ -160,7 +160,7 @@ CommunicationStatus Ffatype::Send(const t_commrec *cr, int dest)
             fprintf(debug, "Sent Fftype %s %s %s %s %s(%s) %s %s, status %s\n",
                     desc_.c_str(), type_.c_str(), ptype_.c_str(),
                     btype_.c_str(), elem_.c_str(), vdwparams_.c_str(),
-                    fixVdw_ ? "fixed" : "free",
+                    fixed_ ? "fixed" : "free",
                     refEnthalpy_.c_str(), cs_name(cs));
             fflush(debug);
         }
@@ -181,7 +181,7 @@ CommunicationStatus Ffatype::Receive(const t_commrec *cr, int src)
         gmx_recv_str(cr, src, &btype_);
         gmx_recv_str(cr, src, &ztype_);
         gmx_recv_str(cr, src, &elem_);
-        fixVdw_ = static_cast<bool>(gmx_recv_int(cr, src));
+        fixed_ = static_cast<bool>(gmx_recv_int(cr, src));
         gmx_recv_str(cr, src, &vdwparams_);
         gmx_recv_str(cr, src, &refEnthalpy_);
 
@@ -190,7 +190,7 @@ CommunicationStatus Ffatype::Receive(const t_commrec *cr, int src)
             fprintf(debug, "Received Fftype %s %s %s %s %s(%s) %s %s, status %s\n",
                     desc_.c_str(), type_.c_str(), ptype_.c_str(),
                     btype_.c_str(), elem_.c_str(), vdwparams_.c_str(),
-                    fixVdw_ ? "fixed" : "free",
+                    fixed_ ? "fixed" : "free",
                     refEnthalpy_.c_str(), cs_name(cs));
             fflush(debug);
         }
@@ -349,12 +349,14 @@ void ListedForce::MakeCondensed()
 
 ListedForce::ListedForce(const std::vector<std::string> &atoms,
                          const std::string              &params,
+                         bool                            fixed,
                          double                          refValue,
                          double                          sigma,
                          size_t                          ntrain)
     :
       atoms_(atoms),
       params_(params),
+      fixed_(fixed),
       refValue_(refValue),
       sigma_(sigma),
       ntrain_(ntrain),
@@ -366,6 +368,7 @@ ListedForce::ListedForce(const std::vector<std::string> &atoms,
 
 ListedForce::ListedForce(const std::vector<std::string> &atoms,
                          const std::string              &params,
+                         bool                            fixed,
                          double                          refValue,
                          double                          sigma,
                          size_t                          ntrain,
@@ -373,6 +376,7 @@ ListedForce::ListedForce(const std::vector<std::string> &atoms,
     :
       atoms_(atoms),
       params_(params),
+      fixed_(fixed),
       refValue_(refValue),
       sigma_(sigma),
       ntrain_(ntrain),
@@ -634,6 +638,7 @@ bool ListedForces::setForceParams(const std::vector<std::string> &atoms,
 
 void ListedForces::addForce(const std::vector<std::string> &atoms,
                             const std::string              &params,
+                            bool                            fixed,
                             double                          refValue,
                             double                          sigma,
                             size_t                          ntrain)
@@ -642,12 +647,13 @@ void ListedForces::addForce(const std::vector<std::string> &atoms,
     {
         return;
     }
-    ListedForce force(atoms, params, refValue, sigma, ntrain);
+    ListedForce force(atoms, params, fixed, refValue, sigma, ntrain);
     force_.push_back(force);
 }
 
 void ListedForces::addForce(const std::vector<std::string> &atoms,
                             const std::string              &params,
+                            bool                            fixed,
                             double                          refValue,
                             double                          sigma,
                             size_t                          ntrain,
@@ -657,7 +663,7 @@ void ListedForces::addForce(const std::vector<std::string> &atoms,
     {
         return;
     }
-    ListedForce force(atoms, params, refValue, sigma, ntrain, bondOrder);
+    ListedForce force(atoms, params, fixed, refValue, sigma, ntrain, bondOrder);
     force_.push_back(force);
 }
 

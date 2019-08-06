@@ -178,7 +178,7 @@ void NonBondParams::analyzeIdef(const std::vector<MyMol> &mm,
             {
                 auto at  = *mymol.topology_->atoms.atomtype[i];
                 auto fat = pd.findAtype(at);
-                if (fat != pd.getAtypeEnd() && !fat->fixVdw())
+                if (fat != pd.getAtypeEnd() && !fat->fixed())
                 {
                     std::string typeName    = at;
                     std::string paramString = fat->getVdwparams();
@@ -389,7 +389,7 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
                         auto fs = pd.findForces(iType);
                         auto f  = fs->findForce(atoms);
 
-                        if (fs->forceEnd() != f)
+                        if (fs->forceEnd() != f && !f->fixed())
                         {
                             buf         = gmx::formatString("%s %s", aai.c_str(), aaj.c_str());
                             buf_reverse = gmx::formatString("%s %s", aaj.c_str(), aai.c_str());
@@ -409,7 +409,7 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
                             auto fs = pd.findForces(iType);
                             auto f  = fs->findForce(atoms);
 
-                            if (fs->forceEnd() != f)
+                            if (fs->forceEnd() != f && !f->fixed())
                             {
                                 buf         = gmx::formatString("%s %s %s", aai.c_str(),
                                                                 aaj.c_str(), aak.c_str());
@@ -434,7 +434,7 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
                             auto fs = pd.findForces(iType);
                             auto f  = fs->findForce(atoms);
 
-                            if (fs->forceEnd() != f)
+                            if (fs->forceEnd() != f && !f->fixed())
                             {
                                 buf          = gmx::formatString("%s %s %s %s", aai.c_str(),
                                                                  aaj.c_str(), aak.c_str(), aal.c_str());

@@ -460,7 +460,7 @@ static void update_pd(FILE *fp,      t_bonds *b,        Poldata &pd,
         sprintf(pbuf, "%g  %g", Dm, beta);
         round_numbers(&av, &sig); // Rounding the numbers to 1/10 pm and 1/10 degree
         atoms = {i.a1, i.a2};
-        morse->addForce(atoms, pbuf, av, sig, N, i.order);
+        morse->addForce(atoms, pbuf, false, av, sig, N, i.order);
 
         fprintf(fp, "bond-%s-%s-%d len %g sigma %g (pm) N = %d%s\n",
                 i.a1.c_str(), i.a2.c_str(), i.order, av, sig, N,
@@ -481,7 +481,7 @@ static void update_pd(FILE *fp,      t_bonds *b,        Poldata &pd,
         {   
             sprintf(pbuf, "%g  %g", kt, kub);
         }
-        angle->addForce(atoms, pbuf, av, sig, N);
+        angle->addForce(atoms, pbuf, false, av, sig, N);
 
         fprintf(fp, "harmonic_angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
                 i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), av, sig, N,
@@ -495,7 +495,7 @@ static void update_pd(FILE *fp,      t_bonds *b,        Poldata &pd,
         round_numbers(&av, &sig);
         atoms = {i.a1, i.a2, i.a3};
         sprintf(pbuf, "%g  %g",  klin, kub);
-        linear_angle->addForce(atoms, pbuf, av, sig, N);
+        linear_angle->addForce(atoms, pbuf, false, av, sig, N);
 
         fprintf(fp, "linear_angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
                 i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), av, sig, N,
@@ -509,7 +509,7 @@ static void update_pd(FILE *fp,      t_bonds *b,        Poldata &pd,
         sprintf(pbuf, "%g  6", kp);
         round_numbers(&av, &sig);
         atoms = {i.a1, i.a2, i.a3, i.a4};
-        proper_dihedral->addForce(atoms, pbuf, av, sig, N);
+        proper_dihedral->addForce(atoms, pbuf, false, av, sig, N);
 
         fprintf(fp, "dihedral-%s-%s-%s-%s angle %g sigma %g (deg)\n",
                 i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), i.a4.c_str(), av, sig);
@@ -522,7 +522,7 @@ static void update_pd(FILE *fp,      t_bonds *b,        Poldata &pd,
         sprintf(pbuf, "%g", kimp);
         round_numbers(&av, &sig);
         atoms = {i.a1, i.a2, i.a3, i.a4};
-        improper_dihedral->addForce(atoms, pbuf, av, sig, N);
+        improper_dihedral->addForce(atoms, pbuf, false, av, sig, N);
 
         fprintf(fp, "improper-%s-%s-%s-%s angle %g sigma %g (deg)\n",
                 i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), i.a4.c_str(), av, sig);

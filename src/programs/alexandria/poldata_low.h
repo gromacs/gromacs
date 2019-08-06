@@ -121,7 +121,7 @@ class Ffatype
          * \param[in] btype       Bond type
          * \param[in] ztype       Zeta type
          * \param[in] elem        Element name
-         * \param[in] fixVdw      Fix the Van der Waals parameters?
+         * \param[in] fixed       Fix the Van der Waals parameters?
          * \param[in] vdwparams   Van der Waals parameters
          * \param[in] refEnthalpy Reference Enthalpy of Formation
          */
@@ -131,7 +131,7 @@ class Ffatype
                 const std::string &btype,
                 const std::string &ztype,
                 const std::string &elem,
-                bool               fixVdw,
+                bool               fixed,
                 const std::string &vdwparams,
                 const std::string &refEnthalpy);
 
@@ -178,12 +178,12 @@ class Ffatype
         /*! \brief
          * Return whether the Van der Waals parameters are fixed
          */
-        bool fixVdw() const { return fixVdw_; }
+        bool fixed() const { return fixed_; }
 
         /*! \brief
          * Determine whether the Van der Waals parameters are fixed
          */
-        void setFixVdw(bool fixVdw) { fixVdw_ = fixVdw; }
+        void setFixed(bool fixed) { fixed_ = fixed; }
 
         /*! \brief
          * Set the Van der Waals parameters.
@@ -191,7 +191,7 @@ class Ffatype
          */ 
         void setVdwparams(const std::string &param) 
         {
-            if (!fixVdw_)
+            if (!fixed_)
             {
                 vdwparams_ = param;
             }
@@ -228,7 +228,7 @@ class Ffatype
         std::string btype_;
         std::string ztype_;
         std::string elem_;
-        bool        fixVdw_;
+        bool        fixed_;
         std::string vdwparams_;
         std::string refEnthalpy_;
         bool        modified_;
@@ -404,12 +404,14 @@ class ListedForce
          *
          * \param[in] atoms       A vector of atom bond types invloved in the listed force
          * \param[in] params      Listed force paramters
+         * \param[in] fixed       Set whether the parameters are mutable
          * \param[in] refvalue    The reference value such as the reference bond length
          * \param[in] sigma       Uncertainty in the calculated reference value
          * \param[in] ntrain      Number of molecules in the training set
          */
         ListedForce(const std::vector<std::string> &atoms,
                     const std::string              &params,
+                    bool                            fixed,
                     double                          refValue,
                     double                          sigma,
                     size_t                          ntrain);
@@ -419,6 +421,7 @@ class ListedForce
          *
          * \param[in] atoms       A vector of atom bond types invloved in the listed force
          * \param[in] params      Listed force paramters
+         * \param[in] fixed       Set whether the parameters are mutable
          * \param[in] refvalue    The reference value such as the reference bond length
          * \param[in] sigma       Uncertainty in the calculated reference value
          * \param[in] ntrain      Number of molecules in the training set
@@ -426,6 +429,7 @@ class ListedForce
          */
         ListedForce(const std::vector<std::string> &atoms,
                     const std::string              &params,
+                    bool                            fixed,
                     double                          refValue,
                     double                          sigma,
                     size_t                          ntrain,
@@ -448,9 +452,29 @@ class ListedForce
         const std::string &reverse_condensed_atoms() const { return reverse_condensed_atoms_; }
 
         /*! \brief
+         * Return whether the bonded parameters are fixed
+         */
+        bool fixed() const { return fixed_; }
+
+        /*! \brief
+         * Determine whether the bonded parameters are fixed
+         */
+        void setFixed(bool fixed) { fixed_ = fixed; }
+
+        /*! \brief
          * Set the listed force parameters
          */
-        void setParams(const std::string &params) { params_ = params; }
+        void setParams(const std::string &params)
+        {
+            if (fixed_)
+            {
+                GMX_THROW(gmx::InvalidInputError("It is not allowed to modify this bonded parameter"));
+            }
+            else
+            {
+                params_ = params;
+            }
+        }
 
         /*! \brief
          * Return the listed force parameters
@@ -518,6 +542,7 @@ class ListedForce
         std::string                    condensed_atoms_;
         std::string                    reverse_condensed_atoms_;
         std::string                    params_;
+        bool                           fixed_;
         double                         refValue_;
         double                         sigma_;
         size_t                         ntrain_;
@@ -646,12 +671,14 @@ class ListedForces
          *
          * \param[in] atoms       A vector of atom bond types invloved in the listed force
          * \param[in] params      Listed force paramters
+         * \param[in] fixed       Determines whether this parameter is mutable
          * \param[in] refvalue    The reference value such as the reference bond length
          * \param[in] sigma       Uncertainty in the calculated reference value
          * \param[in] ntrain      Number of molecules in the training set
          */
         void addForce(const std::vector<std::string> &atoms,
                       const std::string              &params,
+                      bool                            fixed,
                       double                          refValue,
                       double                          sigma,
                       size_t                          ntrain);
@@ -662,6 +689,7 @@ class ListedForces
          *
          * \param[in] atoms       A vector of atom bond types invloved in the listed force
          * \param[in] params      Listed force paramters
+         * \param[in] fixed       Determines whether this parameter is mutable
          * \param[in] refvalue    The reference value such as the reference bond length
          * \param[in] sigma       Uncertainty in the calculated reference value
          * \param[in] ntrain      Number of molecules in the training set
@@ -669,6 +697,7 @@ class ListedForces
          */
         void addForce(const std::vector<std::string> &atoms,
                       const std::string              &params,
+                      bool                            fixed,
                       double                          refValue,
                       double                          sigma,
                       size_t                          ntrain,
