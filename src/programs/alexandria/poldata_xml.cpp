@@ -166,7 +166,8 @@ enum {
       exmlNUMBER             = 85,
       exmlVTYPE              = 86,
       exmlANGLE              = 87,
-      exmlNR                 = 88
+      exmlFIXED              = 88,
+      exmlNR                 = 89
 };
 
 std::map<const std::string, int> xmlxxx = 
@@ -199,6 +200,7 @@ std::map<const std::string, int> xmlxxx =
      { "numbonds",               exmlNUMBONDS         },
      { "polarizability",         exmlPOLARIZABILITY   },
      { "sigma_pol",              exmlSIGPOL           },
+     { "fixed",                  exmlFIXED            },
      { "vdwparams",              exmlVDWPARAMS        },
      { "ref_enthalpy",           exmlEREF             },
      { "function",               exmlFUNCTION         },
@@ -458,12 +460,19 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 NN(xbuf[exmlVDWPARAMS]) &&
                 NN(xbuf[exmlEREF]))
             {
+                bool fixVdw = false;
+                if (NN(xbuf[exmlFIXED]))
+                {
+                    fixVdw = (xbuf[exmlFIXED] == "true" ||
+                              xbuf[exmlFIXED] == "yes");
+                }
                 pd.addAtype(xbuf[exmlELEM],
                             xbuf[exmlDESC],
                             xbuf[exmlATYPE],
                             xbuf[exmlPTYPE],
                             xbuf[exmlBTYPE],
                             xbuf[exmlZTYPE],
+                            fixVdw,
                             xbuf[exmlVDWPARAMS],
                             xbuf[exmlEREF]);
             }
@@ -734,6 +743,8 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
             add_xml_char(grandchild, exml_names(exmlBTYPE), aType->getBtype().c_str());
             add_xml_char(grandchild, exml_names(exmlZTYPE), aType->getZtype().c_str());
             add_xml_char(grandchild, exml_names(exmlVDWPARAMS), aType->getVdwparams().c_str());
+            add_xml_char(grandchild, exml_names(exmlFIXED), 
+                         aType->fixVdw() ? "true" : "false");
             add_xml_char(grandchild, exml_names(exmlEREF), aType->getRefEnthalpy().c_str());
         }
     }

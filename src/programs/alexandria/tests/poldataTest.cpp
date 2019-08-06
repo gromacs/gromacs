@@ -117,13 +117,14 @@ TEST_F(PoldataTest, addAtype){
     const std::string        btype        = "b_U";
           std::string        vdwparams    = "10.0 11.1 12.2";
     const std::string        ref_enthalpy = "1000";
-
+    bool                     fixVdw       = true;
     pd_.addAtype(elem,
                  desc,
                  atype,
                  ptype,
                  btype,
                  ztype,
+                 fixVdw,
                  vdwparams,
                  ref_enthalpy);
 
@@ -139,6 +140,9 @@ TEST_F(PoldataTest, addAtype){
         checker_.checkString(fa->getZtype(), ztype.c_str());
         checker_.checkString(fa->getVdwparams(), vdwparams.c_str());
     }
+    EXPECT_THROW_GMX(fa->setVdwparams(vdwparams), gmx::InvalidInputError);
+    fa->setFixVdw(false);
+    fa->setVdwparams(vdwparams);
 }
 
 

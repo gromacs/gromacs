@@ -125,6 +125,7 @@ Ffatype::Ffatype(const std::string &desc,
                  const std::string &btype,
                  const std::string &ztype,
                  const std::string &elem,
+                 bool               fixVdw,
                  const std::string &vdwparams,
                  const std::string &refEnthalpy)
     :
@@ -134,6 +135,7 @@ Ffatype::Ffatype(const std::string &desc,
       btype_(btype),
       ztype_(ztype),
       elem_(elem),
+      fixVdw_(fixVdw),
       vdwparams_(vdwparams),
       refEnthalpy_(refEnthalpy)
 {}
@@ -150,13 +152,15 @@ CommunicationStatus Ffatype::Send(const t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &btype_);
         gmx_send_str(cr, dest, &ztype_);
         gmx_send_str(cr, dest, &elem_);
+        gmx_send_int(cr, dest, static_cast<int>(fixVdw_));
         gmx_send_str(cr, dest, &vdwparams_);
         gmx_send_str(cr, dest, &refEnthalpy_);
         if (nullptr != debug)
         {
-            fprintf(debug, "Sent Fftype %s %s %s %s %s %s %s, status %s\n",
+            fprintf(debug, "Sent Fftype %s %s %s %s %s(%s) %s %s, status %s\n",
                     desc_.c_str(), type_.c_str(), ptype_.c_str(),
                     btype_.c_str(), elem_.c_str(), vdwparams_.c_str(),
+                    fixVdw_ ? "fixed" : "free",
                     refEnthalpy_.c_str(), cs_name(cs));
             fflush(debug);
         }
@@ -177,14 +181,16 @@ CommunicationStatus Ffatype::Receive(const t_commrec *cr, int src)
         gmx_recv_str(cr, src, &btype_);
         gmx_recv_str(cr, src, &ztype_);
         gmx_recv_str(cr, src, &elem_);
+        fixVdw_ = static_cast<bool>(gmx_recv_int(cr, src));
         gmx_recv_str(cr, src, &vdwparams_);
         gmx_recv_str(cr, src, &refEnthalpy_);
 
         if (nullptr != debug)
         {
-            fprintf(debug, "Received Fftype %s %s %s %s %s %s %s, status %s\n",
+            fprintf(debug, "Received Fftype %s %s %s %s %s(%s) %s %s, status %s\n",
                     desc_.c_str(), type_.c_str(), ptype_.c_str(),
                     btype_.c_str(), elem_.c_str(), vdwparams_.c_str(),
+                    fixVdw_ ? "fixed" : "free",
                     refEnthalpy_.c_str(), cs_name(cs));
             fflush(debug);
         }

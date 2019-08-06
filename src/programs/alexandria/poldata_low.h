@@ -121,6 +121,7 @@ class Ffatype
          * \param[in] btype       Bond type
          * \param[in] ztype       Zeta type
          * \param[in] elem        Element name
+         * \param[in] fixVdw      Fix the Van der Waals parameters?
          * \param[in] vdwparams   Van der Waals parameters
          * \param[in] refEnthalpy Reference Enthalpy of Formation
          */
@@ -130,6 +131,7 @@ class Ffatype
                 const std::string &btype,
                 const std::string &ztype,
                 const std::string &elem,
+                bool               fixVdw,
                 const std::string &vdwparams,
                 const std::string &refEnthalpy);
 
@@ -174,10 +176,30 @@ class Ffatype
         const std::string &getVdwparams() const { return vdwparams_; }
 
         /*! \brief
+         * Return whether the Van der Waals parameters are fixed
+         */
+        bool fixVdw() const { return fixVdw_; }
+
+        /*! \brief
+         * Determine whether the Van der Waals parameters are fixed
+         */
+        void setFixVdw(bool fixVdw) { fixVdw_ = fixVdw; }
+
+        /*! \brief
          * Set the Van der Waals parameters.
          * \param[in] param The string of parameters
          */ 
-        void setVdwparams(const std::string &param) {vdwparams_ = param; }
+        void setVdwparams(const std::string &param) 
+        {
+            if (!fixVdw_)
+            {
+                vdwparams_ = param;
+            }
+            else
+            {
+                GMX_THROW(gmx::InvalidInputError("It is not allowed to modify Van der Waals parameters"));
+            }
+        }
 
         /*! \brief
          * Set the modified flag
@@ -206,6 +228,7 @@ class Ffatype
         std::string btype_;
         std::string ztype_;
         std::string elem_;
+        bool        fixVdw_;
         std::string vdwparams_;
         std::string refEnthalpy_;
         bool        modified_;

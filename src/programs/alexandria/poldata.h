@@ -107,6 +107,7 @@ class Poldata
          **\param[in] ptype         The polarizability type defined for this element in Alexandria FF
          **\param[in] btype         The bond type defined for elem in Alexandria FF
          **\param[in] ztype         The zeta type defined for elem in Alexandria FF
+         **\param[in] fixvdw        Are these parameters mutable?
          **\param[in] vdwparams     The VDW parameters for elem in Alexandria FF. The number of VDW parameters is 2 for LJ and 3 for
          *                         Buckingham and Wang_Buckingham potentials
          **\param[in] ref_enthalpy  The reference enthalpy for elem
@@ -117,6 +118,7 @@ class Poldata
                        const std::string &ptype,
                        const std::string &btype,
                        const std::string &ztype,
+                       bool               fixvdw,
                        std::string       &vdwparams,
                        const std::string &ref_enthalpy);
 

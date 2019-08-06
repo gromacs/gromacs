@@ -74,6 +74,7 @@ void Poldata::addAtype(const std::string &elem,
                        const std::string &ptype,
                        const std::string &btype,
                        const std::string &ztype,
+                       bool               fixVdw,
                        std::string       &vdwparams,
                        const std::string &refEnthalpy)
 {
@@ -89,7 +90,7 @@ void Poldata::addAtype(const std::string &elem,
     if (i == alexandria_.size())
     {
         Ffatype sp(desc, atype, ptype, btype, ztype,
-                   elem, vdwparams, refEnthalpy);
+                   elem, fixVdw, vdwparams, refEnthalpy);
 
         alexandria_.push_back(sp);
     }

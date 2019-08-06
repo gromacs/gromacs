@@ -1081,18 +1081,23 @@ void Optimization::calcDeviation(bool calcAll)
                         if (nullptr != debug)
                         {
                             int angleType = poldata().findForces(eitANGLES)->fType();
+                            int pdihType  = poldata().findForces(eitPROPER_DIHEDRALS)->fType();
+                            int idihType  = poldata().findForces(eitIMPROPER_DIHEDRALS)->fType();
                             int vdwType   = poldata().getVdwFtype();
                             fprintf(debug, "spHF: %g  optHF: %g  deltaRef: %g  deltaEalex: %g\n",
                                     spHF, optHF, deltaEref, deltaEalex);
                             fprintf(debug, "%s Chi2 %g Morse %g  "
-                                    "Angle %g Langle %g PDIHS %g IDIHS %g Coul %g VdW %g POL %g  Force %g\n",
+                                    "%s %g Langle %g %s %g %s %g Coul %g VdW %g POL %g  Force %g\n",
                                     mymol.molProp()->getMolname().c_str(),
                                     gmx::square(deltaEalex-deltaEref),
                                     mymol.enerd_->term[F_MORSE],
+                                    interaction_function[angleType].name,
                                     mymol.enerd_->term[angleType],
                                     mymol.enerd_->term[F_LINEAR_ANGLES],
-                                    mymol.enerd_->term[F_PDIHS],
-                                    mymol.enerd_->term[F_IDIHS],
+                                    interaction_function[pdihType].name,
+                                    mymol.enerd_->term[pdihType],
+                                    interaction_function[idihType].name,
+                                    mymol.enerd_->term[idihType],
                                     mymol.enerd_->term[F_COUL_SR],
                                     mymol.enerd_->term[vdwType],
                                     mymol.enerd_->term[F_POLARIZATION],

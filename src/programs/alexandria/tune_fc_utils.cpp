@@ -178,7 +178,7 @@ void NonBondParams::analyzeIdef(const std::vector<MyMol> &mm,
             {
                 auto at  = *mymol.topology_->atoms.atomtype[i];
                 auto fat = pd.findAtype(at);
-                if (fat != pd.getAtypeEnd())
+                if (fat != pd.getAtypeEnd() && !fat->fixVdw())
                 {
                     std::string typeName    = at;
                     std::string paramString = fat->getVdwparams();
