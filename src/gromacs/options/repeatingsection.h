@@ -46,10 +46,11 @@
 #include <memory>
 #include <vector>
 
-#include "gromacs/options/abstractsection.h"
 #include "gromacs/options/ioptionscontainerwithsections.h"
-#include "gromacs/options/isectionstorage.h"
-#include "gromacs/options/valuestore.h"
+
+#include "abstractsection.h"
+#include "isectionstorage.h"
+#include "valuestore.h"
 
 namespace gmx
 {

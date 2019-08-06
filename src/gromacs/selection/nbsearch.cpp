@@ -62,13 +62,14 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/selection/position.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/mutex.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "position.h"
 
 namespace gmx
 {

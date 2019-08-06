@@ -50,11 +50,12 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/mutex.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "errorcodes.h"
 
 #if GMX_MPI
 #include "gromacs/utility/basenetwork.h"

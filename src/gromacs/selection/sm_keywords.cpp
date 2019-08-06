@@ -48,7 +48,6 @@
 #include <regex>
 #include <string>
 
-#include "gromacs/selection/position.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -58,6 +57,7 @@
 
 #include "keywords.h"
 #include "parsetree.h"
+#include "position.h"
 #include "scanner.h"
 #include "selelem.h"
 #include "selmethod.h"

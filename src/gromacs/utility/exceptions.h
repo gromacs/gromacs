@@ -59,8 +59,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
-#include "gromacs/utility/current_function.h"
 #include "gromacs/utility/gmxassert.h"
+
+#include "current_function.h"
 
 namespace gmx
 {

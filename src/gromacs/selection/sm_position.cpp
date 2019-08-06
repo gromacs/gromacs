@@ -42,13 +42,13 @@
 #include "gmxpre.h"
 
 #include "gromacs/selection/indexutil.h"
-#include "gromacs/selection/position.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "keywords.h"
 #include "poscalc.h"
+#include "position.h"
 #include "selelem.h"
 #include "selmethod.h"
 #include "selmethod_impl.h"

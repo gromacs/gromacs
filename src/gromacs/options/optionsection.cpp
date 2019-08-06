@@ -38,7 +38,7 @@
 
 #include <memory>
 
-#include "gromacs/options/isectionstorage.h"
+#include "isectionstorage.h"
 
 namespace gmx
 {

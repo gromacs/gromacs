@@ -46,8 +46,9 @@
 
 #include "gromacs/options/optionstoragetemplate.h"
 #include "gromacs/selection/selection.h"
-#include "gromacs/selection/selectionenums.h"
 #include "gromacs/selection/selectionoption.h"
+
+#include "selectionenums.h"
 
 namespace gmx
 {

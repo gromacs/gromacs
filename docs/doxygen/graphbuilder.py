@@ -380,8 +380,8 @@ class GraphBuilder(object):
                         .format(fromfile.get_relpath(), tofile.get_relpath()))
         elif fromfile.get_api_type() == DocType.library:
             return EdgeType.library
-        elif fromfile.is_public() or fromfile.is_installed():
-            if tofile.is_public() or tofile.is_installed():
+        elif fromfile.is_public():
+            if tofile.is_public():
                 return EdgeType.public
             else:
                 return EdgeType.undocumented
@@ -443,9 +443,6 @@ class GraphBuilder(object):
             style.append('filled')
             properties.append(fillcolor)
         rootdir = module.get_root_dir()
-        if rootdir.has_installed_files():
-            properties.append('color=".66 .5 1"')
-            properties.append('penwidth=3')
         nodename = 'module_' + re.subn(r'[-./]', '_', rootdir.get_relpath())[0]
         label = module.get_name()[7:]
         node = Node(nodename, label, style, properties)
@@ -530,7 +527,6 @@ def main():
     if not options.quiet:
         sys.stderr.write('Scanning source tree...\n')
     tree = GromacsTree(options.source_root, options.build_root, reporter)
-    tree.load_installed_file_list()
     if not options.quiet:
         sys.stderr.write('Reading source files...\n')
     tree.scan_files()

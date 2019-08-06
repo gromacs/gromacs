@@ -52,10 +52,11 @@
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/ioptionscontainerwithsections.h"
-#include "gromacs/options/isectionstorage.h"
 #include "gromacs/options/optionmanagercontainer.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsection.h"
+
+#include "isectionstorage.h"
 
 namespace gmx
 {

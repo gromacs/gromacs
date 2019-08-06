@@ -38,9 +38,7 @@
 This script checks for some issues in the Doxygen documentation, as well as
 general issues in the source code, mainly using Doxygen XML output and #include
 dependencies parsed from source files.  Part of the checks are generic, like
-checking that all documented entities have brief descriptions.  Other are
-specific to GROMACS, like checking that only installed headers contribute to
-the public API documentation.
+checking that all documented entities have brief descriptions.
 
 The checks should be self-evident from the source code of the script
 (they are also described in docs/dev-manual/gmxtree.rst).
@@ -102,29 +100,15 @@ def check_file(fileobj, tree, reporter):
 
     if fileobj.is_source_file():
         # TODO: Add rule to exclude examples from this check
-        if fileobj.is_installed():
-            reporter.file_error(fileobj, "source file is installed")
         if fileobj.get_doc_type() != DocType.internal:
             reporter.file_error(fileobj,
                     "source file documentation appears outside full documentation")
         elif fileobj.get_api_type() != DocType.internal:
             reporter.file_error(fileobj, "source file marked as non-internal")
-    elif fileobj.is_test_file() and fileobj.is_installed():
-        reporter.file_error(fileobj, "test file is installed")
-    elif fileobj.is_installed():
-        if fileobj.get_doc_type() != DocType.public:
+        elif fileobj.get_doc_type() < fileobj.get_api_type():
             reporter.file_error(fileobj,
-                    "public header has non-public documentation")
-    elif fileobj.get_doc_type() == DocType.public:
-        reporter.file_error(fileobj,
-                "non-installed header has public documentation")
-    elif fileobj.get_api_type() == DocType.public:
-        reporter.file_error(fileobj,
-                "non-installed header specified as part of public API")
-    elif fileobj.get_doc_type() < fileobj.get_api_type():
-        reporter.file_error(fileobj,
-                "API type ({0}) conflicts with documentation visibility ({1})"
-                .format(fileobj.get_api_type(), fileobj.get_doc_type()))
+                    "API type ({0}) conflicts with documentation visibility ({1})"
+                    .format(fileobj.get_api_type(), fileobj.get_doc_type()))
 
     if not fileobj.has_brief_description():
         reporter.file_error(fileobj,
@@ -157,10 +141,6 @@ def check_include(fileobj, includedfile, reporter):
                 "includes non-local file as {0}".format(includedfile))
     if not otherfile:
         return
-    if fileobj.is_installed() and not otherfile.is_installed():
-        reporter.code_issue(includedfile,
-                "installed header includes non-installed {0}"
-                .format(includedfile))
     filemodule = fileobj.get_module()
     othermodule = otherfile.get_module()
     if fileobj.is_documented() and otherfile.is_documented():
@@ -189,10 +169,7 @@ def check_class(classobj, reporter):
     if classobj.is_documented():
         classtype = classobj.get_doc_type()
         filetype = classobj.get_file_doc_type()
-        if classtype == DocType.public and not classobj.is_in_installed_file():
-            reporter.doc_error(classobj,
-                    "has public documentation, but is not in installed header")
-        elif filetype is not DocType.none and classtype > filetype:
+        if filetype is not DocType.none and classtype > filetype:
             reporter.doc_error(classobj,
                     "is in {0} file(s), but appears in {1} documentation"
                     .format(filetype, classtype))
@@ -406,7 +383,6 @@ def main():
         sys.stderr.write('Scanning source tree...\n')
     tree = GromacsTree(options.source_root, options.build_root, reporter)
     tree.load_git_attributes()
-    tree.load_installed_file_list()
     if not options.quiet:
         sys.stderr.write('Reading source files...\n')
     # TODO: The checking should be possible without storing everything in memory

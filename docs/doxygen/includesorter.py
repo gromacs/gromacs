@@ -41,13 +41,15 @@ the paths to use either relative paths or paths relative to src/.
 It groups includes in groups of related headers, sorts the headers
 alphabetically within each block, and inserts empty lines in between.
 It can be run as a standalone script, in which case it requires an up-to-date
-list of installed headers and Doxygen XML documentation to be present in the
+Doxygen XML documentation to be present in the
 build tree.  It can also be imported as a module to be embedded in other
 scripts.  In the latter case, the IncludeSorter provides the main interface.
 
 The sorting assumes some conventions (e.g., that system headers are included
 with angle brackets instead of quotes).  Generally, these conventions are
 checked by the check-source.py script.
+
+A more detailed description can be found in the developer manual.
 """
 
 import os.path
@@ -388,7 +390,6 @@ def main():
         sys.stderr.write('Build root required not specified.\n')
         sys.exit(2)
     tree = GromacsTree(options.source_root, options.build_root, reporter)
-    tree.load_installed_file_list()
     files = []
     for filename in filelist:
         fileobj = tree.get_file(os.path.abspath(filename))

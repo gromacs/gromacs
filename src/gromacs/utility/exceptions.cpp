@@ -54,12 +54,12 @@
 #include "thread_mpi/system_error.h"
 
 #include "gromacs/utility/basenetwork.h"
-#include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
+#include "errorcodes.h"
 #include "errorformat.h"
 
 namespace gmx

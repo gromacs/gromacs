@@ -45,9 +45,10 @@
 
 #include <vector>
 
-#include "gromacs/coordinateio/enums.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/ioptionscontainer.h"
+
+#include "enums.h"
 
 namespace gmx
 {

@@ -46,8 +46,9 @@
 
 #include <memory>
 
-#include "gromacs/coordinateio/enums.h"
 #include "gromacs/utility/classhelpers.h"
+
+#include "enums.h"
 
 struct t_trxframe;
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,9 +47,10 @@
 #define GMX_OPTIONS_ABSTRACTSECTION_H
 
 #include "gromacs/options/ioptionscontainerwithsections.h"
-#include "gromacs/options/isectionstorage.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"
+
+#include "isectionstorage.h"
 
 namespace gmx
 {

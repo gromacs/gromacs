@@ -42,12 +42,12 @@
 #include "gmxpre.h"
 
 #include "gromacs/math/vec.h"
-#include "gromacs/selection/position.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "position.h"
 #include "selmethod.h"
 #include "selmethod_impl.h"
 
