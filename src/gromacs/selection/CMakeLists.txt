@@ -58,18 +58,6 @@ endif()
 list(APPEND libgromacs_object_library_dependencies scanner)
 set(libgromacs_object_library_dependencies ${libgromacs_object_library_dependencies} PARENT_SCOPE)
 
-gmx_install_headers(
-    nbsearch.h
-    indexutil.h
-    position.h
-    selection.h
-    selectioncollection.h
-    selectionenums.h
-    selectionoption.h
-    selectionoptionbehavior.h
-    selectionoptionmanager.h
-    )
-
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

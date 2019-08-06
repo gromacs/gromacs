@@ -47,4 +47,3 @@ if(GMX_USE_CUDA)
        )
 endif()
 
-gmx_install_headers(simulationsignal.h)

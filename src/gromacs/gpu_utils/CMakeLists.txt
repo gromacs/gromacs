@@ -58,9 +58,6 @@ elseif(GMX_USE_CUDA)
         )
 endif()
 
-# workaround for the state - host allocator dependency
-gmx_install_headers(hostallocator.h)
-
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

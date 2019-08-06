@@ -51,8 +51,6 @@ if (GMX_FFT_MKL)
     gmx_add_libgromacs_sources(fft_mkl.cpp)
 endif()
 
-gmx_install_headers(fft.h)
-
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

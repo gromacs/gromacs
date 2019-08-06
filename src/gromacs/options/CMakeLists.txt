@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2010,2012,2013,2014,2015,2016,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -45,26 +45,6 @@ gmx_add_libgromacs_sources(
     optionsvisitor.cpp
     timeunitmanager.cpp
     treesupport.cpp
-    )
-
-gmx_install_headers(
-    abstractoption.h
-    abstractsection.h
-    basicoptions.h
-    filenameoption.h
-    filenameoptionmanager.h
-    ioptionsbehavior.h
-    ioptionscontainer.h
-    ioptionscontainerwithsections.h
-    isectionstorage.h
-    ivaluestore.h
-    optionfiletype.h
-    optionflags.h
-    options.h
-    optionsection.h
-    repeatingsection.h
-    timeunitmanager.h
-    valuestore.h
     )
 
 if (BUILD_TESTING)

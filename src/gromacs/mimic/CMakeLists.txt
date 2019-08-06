@@ -37,4 +37,3 @@ gmx_add_libgromacs_sources(
         utilities.cpp
 )
 
-gmx_install_headers()

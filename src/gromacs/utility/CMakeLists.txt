@@ -38,32 +38,13 @@ if (GMX_GPU AND NOT GMX_USE_OPENCL)
 endif()
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
 
-gmx_install_headers(
-    alignedallocator.h
-    allocator.h
-    arrayref.h
-    arraysize.h
-    basedefinitions.h
-    baseversion.h
-    classhelpers.h
-    cstringutil.h
-    current_function.h
-    datafilefinder.h
-    enumerationhelpers.h
-    errorcodes.h
-    exceptions.h
-    fatalerror.h
-    flags.h
-    fileptr.h
-    futil.h
-    gmxassert.h
-    init.h
-    programcontext.h
-    real.h
-    smalloc.h
-    stringutil.h
-    unique_cptr.h
-    )
+# TODO: (https://redmine.gromacs.org/issues/988) Find a new convention for defining public API.
+install(FILES
+        basedefinitions.h
+        current_function.h
+        gmxassert.h
+        real.h
+        DESTINATION include/gromacs/utility)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

@@ -63,9 +63,3 @@ else()
 endif()
 list(APPEND libgromacs_object_library_dependencies linearalgebra)
 set(libgromacs_object_library_dependencies ${libgromacs_object_library_dependencies} PARENT_SCOPE)
-
-gmx_install_headers(
-    eigensolver.h
-    matrix.h
-    sparsematrix.h
-    )
