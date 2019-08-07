@@ -54,32 +54,19 @@ MACRO(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
     ENDIF ()
 ENDMACRO(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
 
-# Set the real CMake variables for compiler flags. This should be a function
-# so we can have proper local variables while avoiding duplicating code.
-function(gmx_set_cmake_compiler_flags)
-    foreach(language C CXX)
-        # Copy the flags for the release build type to the build types
-        # that are modified forms of it. Ideally, the list of build
-        # types that are modifications of the Release build type would
-        # be set up elsewhere and passed to this function, but it is
-        # inconvenient in CMake to pass more than one list, and such a
-        # list is only used here.
-        foreach(build_type RELWITHDEBINFO RELWITHASSERT MINSIZEREL PROFILE)
-            set(GMXC_${language}FLAGS_${build_type} "${GMXC_${language}FLAGS_RELEASE}" "${GMXC_${language}FLAGS_${build_type}}")
-        endforeach()
-        # Copy the flags that are only used by the real Release build
-        # type. Used for, e.g., -Wno-array-bounds in Release to work around
-        # gcc-4.8 being a little too vocal about some perfectly good code,
-        # while using RelWithAssert (ie. without that suppression) in Jenkins.
-        #
-        # TODO check the behaviour of more recent gcc on the improved code
-        set(GMXC_${language}FLAGS_RELEASE "${GMXC_${language}FLAGS_RELEASE}" "${GMXC_${language}FLAGS_RELEASE_ONLY}")
-    endforeach()
+# Prepare some local variables so CUDA and non-CUDA code in targets
+# works the same way.
+function(gmx_target_compile_options_inner)
+    set (CFLAGS "${SIMD_C_FLAGS};${MPI_COMPILE_FLAGS};${EXTRA_C_FLAGS};${GMXC_CFLAGS}" PARENT_SCOPE)
+    set (CXXFLAGS "${SIMD_CXX_FLAGS};${MPI_COMPILE_FLAGS};${EXTRA_CXX_FLAGS};${GMXC_CXXFLAGS}" PARENT_SCOPE)
 endfunction()
 
-# Add compiler flags expected for all GROMACS build configurations,
-# and those expected for the current CMake build type (e.g. Release)
-# to TARGET.
+# Implementation function to add compiler flags expected for all
+# GROMACS build configurations, and those expected for the current
+# CMake build type (e.g. Release) to TARGET. Other GROMACS CMake code
+# is expected to use either gmx_target_compile_options(name_of_target)
+# or gmx_cuda_target_compile_options(name_of_variable) because CUDA
+# compilation has special requirements.
 #
 # Most targets (ie. libraries, executables) need compiler flags that
 # are characteristic of the build configuration. This function
@@ -88,20 +75,72 @@ endfunction()
 # that setting will apply globally, which means it applies also to
 # "external" code that the build of GROMACS might also build.
 function(gmx_target_compile_options TARGET)
-    if (NOT GMX_SKIP_DEFAULT_CFLAGS)
-        target_compile_options(${TARGET}
-            PRIVATE
-            $<$<COMPILE_LANGUAGE:C>:${SIMD_C_FLAGS};${MPI_COMPILE_FLAGS};${EXTRA_C_FLAGS};${GMXC_CFLAGS}>
-            $<$<COMPILE_LANGUAGE:CXX>:${SIMD_CXX_FLAGS};${MPI_COMPILE_FLAGS};${EXTRA_CXX_FLAGS};${GMXC_CXXFLAGS}>
-            )
-        foreach(build_type ${build_types_with_explicit_flags})
-            target_compile_options(${TARGET}
-                BEFORE PRIVATE
-                $<$<AND:$<COMPILE_LANGUAGE:C>,$<CONFIG:${build_type}>>:${GMXC_CFLAGS_${build_type}}>
-                $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:${build_type}>>:${GMXC_CXXFLAGS_${build_type}}>
-                )
-        endforeach()
+    if (GMX_SKIP_DEFAULT_CFLAGS)
+        return()
     endif()
+
+    # Prepare the generic compiler options
+    gmx_target_compile_options_inner()
+    target_compile_options(${TARGET}
+        PRIVATE
+        $<$<COMPILE_LANGUAGE:C>:${CFLAGS}>
+        $<$<COMPILE_LANGUAGE:CXX>:${CXXFLAGS}>
+        )
+    # Add compiler options for the build types
+    foreach(build_type ${build_types_with_explicit_flags})
+        target_compile_options(${TARGET}
+            BEFORE PRIVATE
+            $<$<AND:$<COMPILE_LANGUAGE:C>,$<CONFIG:${build_type}>>:${GMXC_CFLAGS_${build_type}}>
+            $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:${build_type}>>:${GMXC_CXXFLAGS_${build_type}}>
+            )
+    endforeach()
+    # Add the release-configuration compiler options to build
+    # configurations that derive from it.
+    foreach(build_type RELWITHDEBINFO RELWITHASSERT MINSIZEREL PROFILE)
+        target_compile_options(${TARGET}
+            BEFORE PRIVATE
+            $<$<AND:$<COMPILE_LANGUAGE:C>,$<CONFIG:${build_type}>>:${GMXC_CFLAGS_RELEASE}>
+            $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:${build_type}>>:${GMXC_CXXFLAGS_RELEASE}>
+            )
+    endforeach()
+    # Add those flags that we only want in the proper release build
+    # configuration.
+    target_compile_options(${TARGET}
+        BEFORE PRIVATE
+        $<$<AND:$<COMPILE_LANGUAGE:C>,$<CONFIG:RELEASE>>:${GMXC_CFLAGS_RELEASE_ONLY}>
+        $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:RELEASE>>:${GMXC_CXXFLAGS_RELEASE_ONLY}>
+        )
+endfunction()
+
+# The approach taken by FindCUDA.cmake is to require that the compiler
+# flags are known and present in a variable before creating the target
+# for the library. (Those get embedded in files that are generated at
+# the point of calling cuda_add_library, which does not create a
+# target that one could later call target_compile_options upon.) So,
+# this function instead returns appropriate content in
+# ${VARIABLE_NAME}, along with other such variables that are
+# specialized for the various build_types. Hopefully this will improve
+# when we use native CUDA language support in our CMake.
+function(gmx_cuda_target_compile_options VARIABLE_NAME)
+    if (GMX_SKIP_DEFAULT_CFLAGS)
+        set (CXXFLAGS "")
+    else()
+        gmx_target_compile_options_inner()
+    endif()
+
+    # Only C++ compilation is supported with CUDA code in GROMACS
+    set(${VARIABLE_NAME} ${CXXFLAGS} PARENT_SCOPE)
+
+    # Now organize the flags for different build
+    # configurations. First, the debug configuration.
+    set(${VARIABLE_NAME}_DEBUG "${GMXC_CXXFLAGS_DEBUG}" PARENT_SCOPE)
+    # Add those flags that we only want in the proper release build
+    # configuration.
+    set(${VARIABLE_NAME}_RELEASE "${GMXC_CXXFLAGS_RELEASE};${GMXC_CXXFLAGS_RELEASE_ONLY}" PARENT_SCOPE)
+    # Add the release flags to build configurations that derive from it
+    foreach(build_type RELWITHDEBINFO RELWITHASSERT MINSIZEREL PROFILE)
+        set(${VARIABLE_NAME}_${build_type} "${GMXC_CXXFLAGS_RELEASE};${GMXC_CXXFLAGS_${build_type}}" PARENT_SCOPE)
+    endforeach()
 endfunction()
 
 # Add the WARNING_FLAG to the compile options for TARGET if the
@@ -382,11 +421,6 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3;/wd161;/wd177;/wd411;/wd593;/wd981;/wd1418;/wd14
        (${CMAKE_CXX_COMPILER_ID} MATCHES unknown AND ${CMAKE_CXX_COMPILER} MATCHES ^FCC))
         GMX_TEST_CXXFLAG(CXXFLAG_GNUCOMPAT "-Xg;-w" GMXC_CXXFLAGS)
         GMX_TEST_CXXFLAG(CXXFLAG_OPT "-Kfast,reduction,swp,simd=2,uxsimd,fsimple;-x100" GMXC_CXXFLAGS)
-    endif()
-
-    # now actually set the flags:
-    if (NOT GMX_SKIP_DEFAULT_CFLAGS)
-        gmx_set_cmake_compiler_flags()
     endif()
 
 endmacro()

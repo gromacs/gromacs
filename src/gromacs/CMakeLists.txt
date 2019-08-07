@@ -179,7 +179,7 @@ if (GMX_USE_CUDA)
     # with keywords otherwise...
     set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
     if (NOT GMX_CLANG_CUDA)
-        cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
+        gmx_cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
     else()
         add_library(libgromacs ${LIBGROMACS_SOURCES})
     endif()
