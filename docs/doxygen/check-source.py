@@ -151,10 +151,6 @@ def check_include(fileobj, includedfile, reporter):
                     "{0} file includes {1} file {2}"
                     .format(filetype, othertype, includedfile))
     check_api = (otherfile.api_type_is_reliable() and filemodule != othermodule)
-    if check_api and otherfile.get_api_type() < DocType.library:
-        reporter.code_issue(includedfile,
-                "included file {0} is not documented as exposed outside its module"
-                .format(includedfile))
 
 def check_entity(entity, reporter):
     """Check documentation for a code construct."""
