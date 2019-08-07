@@ -96,7 +96,8 @@ enum class BondedKernelFlavor
 {
     ForcesSimdWhenAvailable,  //!< Compute only forces, use SIMD when available
     ForcesNoSimd,             //!< Compute only forces, do not use SIMD
-    ForcesAndVirialAndEnergy  //!< Compute forces, virial and energy (no SIMD)
+    ForcesAndVirialAndEnergy, //!< Compute forces, virial and energy (no SIMD)
+    Count                     //!< The number of flavors
 };
 
 /*! \brief Calculates bonded interactions for simple bonded types

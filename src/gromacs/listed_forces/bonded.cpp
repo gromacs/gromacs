@@ -71,6 +71,7 @@
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
@@ -868,13 +869,15 @@ real thole_pol(int nbonds,
     return V;
 }
 
-real angles(int nbonds,
-            const t_iatom forceatoms[], const t_iparams forceparams[],
-            const rvec x[], rvec4 f[], rvec fshift[],
-            const t_pbc *pbc, const t_graph *g,
-            real lambda, real *dvdlambda,
-            const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
-            int gmx_unused *global_atom_index)
+template <BondedKernelFlavor flavor>
+std::enable_if_t<flavor != BondedKernelFlavor::ForcesSimdWhenAvailable || !GMX_SIMD_HAVE_REAL, real>
+angles(int nbonds,
+       const t_iatom forceatoms[], const t_iparams forceparams[],
+       const rvec x[], rvec4 f[], rvec fshift[],
+       const t_pbc *pbc, const t_graph *g,
+       real lambda, real *dvdlambda,
+       const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+       int gmx_unused *global_atom_index)
 {
     int  i, ai, aj, ak, t1, t2, type;
     rvec r_ij, r_kj;
@@ -953,14 +956,15 @@ real angles(int nbonds,
 /* As angles, but using SIMD to calculate many angles at once.
  * This routines does not calculate energies and shift forces.
  */
-void
-angles_noener_simd(int nbonds,
-                   const t_iatom forceatoms[], const t_iparams forceparams[],
-                   const rvec x[], rvec4 f[],
-                   const t_pbc *pbc, const t_graph gmx_unused *g,
-                   real gmx_unused lambda,
-                   const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
-                   int gmx_unused *global_atom_index)
+template <BondedKernelFlavor flavor>
+std::enable_if_t<flavor == BondedKernelFlavor::ForcesSimdWhenAvailable, real>
+angles(int nbonds,
+       const t_iatom forceatoms[], const t_iparams forceparams[],
+       const rvec x[], rvec4 f[], rvec gmx_unused fshift[],
+       const t_pbc *pbc, const t_graph gmx_unused *g,
+       real gmx_unused lambda, real gmx_unused *dvdlambda,
+       const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+       int gmx_unused *global_atom_index)
 {
     const int            nfa1 = 4;
     int                  i, iu, s;
@@ -1089,6 +1093,8 @@ angles_noener_simd(int nbonds,
         transposeScatterDecrU<4>(reinterpret_cast<real *>(f), aj, f_ix_S + f_kx_S, f_iy_S + f_ky_S, f_iz_S + f_kz_S);
         transposeScatterIncrU<4>(reinterpret_cast<real *>(f), ak, f_kx_S, f_ky_S, f_kz_S);
     }
+
+    return 0;
 }
 
 #endif // GMX_SIMD_HAVE_REAL
@@ -1163,13 +1169,15 @@ real linear_angles(int nbonds,
     return vtot;
 }
 
-real urey_bradley(int nbonds,
-                  const t_iatom forceatoms[], const t_iparams forceparams[],
-                  const rvec x[], rvec4 f[], rvec fshift[],
-                  const t_pbc *pbc, const t_graph *g,
-                  real lambda, real *dvdlambda,
-                  const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
-                  int gmx_unused *global_atom_index)
+template <BondedKernelFlavor flavor>
+std::enable_if_t<flavor != BondedKernelFlavor::ForcesSimdWhenAvailable || !GMX_SIMD_HAVE_REAL, real>
+urey_bradley(int nbonds,
+             const t_iatom forceatoms[], const t_iparams forceparams[],
+             const rvec x[], rvec4 f[], rvec fshift[],
+             const t_pbc *pbc, const t_graph *g,
+             real lambda, real *dvdlambda,
+             const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+             int gmx_unused *global_atom_index)
 {
     int  i, m, ai, aj, ak, t1, t2, type, ki;
     rvec r_ij, r_kj, r_ik;
@@ -1276,13 +1284,15 @@ real urey_bradley(int nbonds,
 /* As urey_bradley, but using SIMD to calculate many potentials at once.
  * This routines does not calculate energies and shift forces.
  */
-void urey_bradley_noener_simd(int nbonds,
-                              const t_iatom forceatoms[], const t_iparams forceparams[],
-                              const rvec x[], rvec4 f[],
-                              const t_pbc *pbc, const t_graph gmx_unused *g,
-                              real gmx_unused lambda,
-                              const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
-                              int gmx_unused *global_atom_index)
+template <BondedKernelFlavor flavor>
+std::enable_if_t<flavor == BondedKernelFlavor::ForcesSimdWhenAvailable, real>
+urey_bradley(int nbonds,
+             const t_iatom forceatoms[], const t_iparams forceparams[],
+             const rvec x[], rvec4 f[], rvec gmx_unused fshift[],
+             const t_pbc *pbc, const t_graph gmx_unused *g,
+             real gmx_unused lambda, real gmx_unused *dvdlambda,
+             const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+             int gmx_unused *global_atom_index)
 {
     constexpr int            nfa1 = 4;
     alignas(GMX_SIMD_ALIGNMENT) std::int32_t    ai[GMX_SIMD_REAL_WIDTH];
@@ -1407,6 +1417,8 @@ void urey_bradley_noener_simd(int nbonds,
         transposeScatterDecrU<4>(reinterpret_cast<real *>(f), aj, f_ix_S + f_kx_S, f_iy_S + f_ky_S, f_iz_S + f_kz_S);
         transposeScatterIncrU<4>(reinterpret_cast<real *>(f), ak, f_kx_S, f_ky_S, f_kz_S);
     }
+
+    return 0;
 }
 
 #endif // GMX_SIMD_HAVE_REAL
@@ -1821,13 +1833,15 @@ real dopdihs_min(real cpA, real cpB, real phiA, real phiB, int mult,
     /* That was 40 flops */
 }
 
-real pdihs(int nbonds,
-           const t_iatom forceatoms[], const t_iparams forceparams[],
-           const rvec x[], rvec4 f[], rvec fshift[],
-           const t_pbc *pbc, const t_graph *g,
-           real lambda, real *dvdlambda,
-           const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
-           int gmx_unused *global_atom_index)
+template <BondedKernelFlavor flavor>
+std::enable_if_t<flavor == BondedKernelFlavor::ForcesAndVirialAndEnergy, real>
+pdihs(int nbonds,
+      const t_iatom forceatoms[], const t_iparams forceparams[],
+      const rvec x[], rvec4 f[], rvec fshift[],
+      const t_pbc *pbc, const t_graph *g,
+      real lambda, real *dvdlambda,
+      const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+      int gmx_unused *global_atom_index)
 {
     int  i, type, ai, aj, ak, al;
     int  t1, t2, t3;
@@ -1863,14 +1877,15 @@ real pdihs(int nbonds,
 }
 
 /* As pdihs above, but without calculating energies and shift forces */
-void
-pdihs_noener(int nbonds,
-             const t_iatom forceatoms[], const t_iparams forceparams[],
-             const rvec x[], rvec4 f[],
-             const t_pbc gmx_unused *pbc, const t_graph gmx_unused *g,
-             real lambda,
-             const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
-             int gmx_unused *global_atom_index)
+template <BondedKernelFlavor flavor>
+std::enable_if_t<flavor == BondedKernelFlavor::ForcesNoSimd || (!GMX_SIMD_HAVE_REAL &&flavor == BondedKernelFlavor::ForcesSimdWhenAvailable), real>
+pdihs(int nbonds,
+      const t_iatom forceatoms[], const t_iparams forceparams[],
+      const rvec x[], rvec4 f[], rvec gmx_unused fshift[],
+      const t_pbc gmx_unused *pbc, const t_graph gmx_unused *g,
+      real lambda, real gmx_unused *dvdlambda,
+      const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+      int gmx_unused *global_atom_index)
 {
     int  i, type, ai, aj, ak, al;
     int  t1, t2, t3;
@@ -1913,20 +1928,23 @@ pdihs_noener(int nbonds,
 
         do_dih_fup_noshiftf(ai, aj, ak, al, ddphi_tot, r_ij, r_kj, r_kl, m, n, f);
     }
+
+    return 0;
 }
 
 
 #if GMX_SIMD_HAVE_REAL
 
-/* As pdihs_noner above, but using SIMD to calculate many dihedrals at once */
-void
-pdihs_noener_simd(int nbonds,
-                  const t_iatom forceatoms[], const t_iparams forceparams[],
-                  const rvec x[], rvec4 f[],
-                  const t_pbc *pbc, const t_graph gmx_unused *g,
-                  real gmx_unused lambda,
-                  const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
-                  int gmx_unused *global_atom_index)
+/* As pdihs above, but using SIMD to calculate many dihedrals at once */
+template <BondedKernelFlavor flavor>
+std::enable_if_t<flavor == BondedKernelFlavor::ForcesSimdWhenAvailable, real>
+pdihs(int nbonds,
+      const t_iatom forceatoms[], const t_iparams forceparams[],
+      const rvec x[], rvec4 f[], rvec gmx_unused fshift[],
+      const t_pbc *pbc, const t_graph gmx_unused *g,
+      real gmx_unused lambda, real gmx_unused *dvdlambda,
+      const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+      int gmx_unused *global_atom_index)
 {
     const int             nfa1 = 5;
     int                   i, iu, s;
@@ -2028,20 +2046,23 @@ pdihs_noener_simd(int nbonds,
                                  nx_S, ny_S, nz_S,
                                  f);
     }
+
+    return 0;
 }
 
 /* This is mostly a copy of pdihs_noener_simd above, but with using
  * the RB potential instead of a harmonic potential.
  * This function can replace rbdihs() when no energy and virial are needed.
  */
-void
-rbdihs_noener_simd(int nbonds,
-                   const t_iatom forceatoms[], const t_iparams forceparams[],
-                   const rvec x[], rvec4 f[],
-                   const t_pbc *pbc, const t_graph gmx_unused *g,
-                   real gmx_unused lambda,
-                   const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
-                   int gmx_unused *global_atom_index)
+template <BondedKernelFlavor flavor>
+std::enable_if_t<flavor == BondedKernelFlavor::ForcesSimdWhenAvailable, real>
+rbdihs(int nbonds,
+       const t_iatom forceatoms[], const t_iparams forceparams[],
+       const rvec x[], rvec4 f[], rvec gmx_unused fshift[],
+       const t_pbc *pbc, const t_graph gmx_unused *g,
+       real gmx_unused lambda, real gmx_unused *dvdlambda,
+       const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+       int gmx_unused *global_atom_index)
 {
     const int             nfa1 = 5;
     int                   i, iu, s, j;
@@ -2158,6 +2179,8 @@ rbdihs_noener_simd(int nbonds,
                                  nx_S, ny_S, nz_S,
                                  f);
     }
+
+    return 0;
 }
 
 #endif // GMX_SIMD_HAVE_REAL
@@ -2768,13 +2791,15 @@ real cbtdihs(int nbonds,
     return vtot;
 }
 
-real rbdihs(int nbonds,
-            const t_iatom forceatoms[], const t_iparams forceparams[],
-            const rvec x[], rvec4 f[], rvec fshift[],
-            const t_pbc *pbc, const t_graph *g,
-            real lambda, real *dvdlambda,
-            const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
-            int gmx_unused *global_atom_index)
+template <BondedKernelFlavor flavor>
+std::enable_if_t<flavor != BondedKernelFlavor::ForcesSimdWhenAvailable || !GMX_SIMD_HAVE_REAL, real>
+rbdihs(int nbonds,
+       const t_iatom forceatoms[], const t_iparams forceparams[],
+       const rvec x[], rvec4 f[], rvec fshift[],
+       const t_pbc *pbc, const t_graph *g,
+       real lambda, real *dvdlambda,
+       const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+       int gmx_unused *global_atom_index)
 {
     const real c0 = 0.0, c1 = 1.0, c2 = 2.0, c3 = 3.0, c4 = 4.0, c5 = 5.0;
     int        type, ai, aj, ak, al, i, j;
@@ -3853,7 +3878,8 @@ struct BondedInteractions
 /*! \brief Lookup table of bonded interaction functions
  *
  * This must have as many entries as interaction_function in ifunc.cpp */
-constexpr std::array<BondedInteractions, F_NRE> c_bondedInteractionFunctions
+template<BondedKernelFlavor flavor>
+const std::array<BondedInteractions, F_NRE> c_bondedInteractionFunctions
     = {
     BondedInteractions {bonds, eNR_BONDS },                       // F_BONDS
     BondedInteractions {g96bonds, eNR_BONDS },                    // F_G96BONDS
@@ -3865,22 +3891,22 @@ constexpr std::array<BondedInteractions, F_NRE> c_bondedInteractionFunctions
     BondedInteractions {tab_bonds, eNR_TABBONDS },                // F_TABBONDS
     BondedInteractions {tab_bonds, eNR_TABBONDS },                // F_TABBONDSNC
     BondedInteractions {restraint_bonds, eNR_RESTRBONDS },        // F_RESTRBONDS
-    BondedInteractions {angles, eNR_ANGLES },                     // F_ANGLES
+    BondedInteractions {angles<flavor>, eNR_ANGLES },             // F_ANGLES
     BondedInteractions {g96angles, eNR_ANGLES },                  // F_G96ANGLES
     BondedInteractions {restrangles, eNR_ANGLES },                // F_RESTRANGLES
     BondedInteractions {linear_angles, eNR_ANGLES },              // F_LINEAR_ANGLES
     BondedInteractions {cross_bond_bond, eNR_CROSS_BOND_BOND },   // F_CROSS_BOND_BONDS
     BondedInteractions {cross_bond_angle, eNR_CROSS_BOND_ANGLE }, // F_CROSS_BOND_ANGLES
-    BondedInteractions {urey_bradley, eNR_UREY_BRADLEY },         // F_UREY_BRADLEY
+    BondedInteractions {urey_bradley<flavor>, eNR_UREY_BRADLEY }, // F_UREY_BRADLEY
     BondedInteractions {quartic_angles, eNR_QANGLES },            // F_QUARTIC_ANGLES
     BondedInteractions {tab_angles, eNR_TABANGLES },              // F_TABANGLES
-    BondedInteractions {pdihs, eNR_PROPER },                      // F_PDIHS
-    BondedInteractions {rbdihs, eNR_RB },                         // F_RBDIHS
+    BondedInteractions {pdihs<flavor>, eNR_PROPER },              // F_PDIHS
+    BondedInteractions {rbdihs<flavor>, eNR_RB },                 // F_RBDIHS
     BondedInteractions {restrdihs, eNR_PROPER },                  // F_RESTRDIHS
     BondedInteractions {cbtdihs, eNR_RB },                        // F_CBTDIHS
-    BondedInteractions {rbdihs, eNR_FOURDIH },                    // F_FOURDIHS
+    BondedInteractions {rbdihs<flavor>, eNR_FOURDIH },            // F_FOURDIHS
     BondedInteractions {idihs, eNR_IMPROPER },                    // F_IDIHS
-    BondedInteractions {pdihs, eNR_IMPROPER },                    // F_PIDIHS
+    BondedInteractions {pdihs<flavor>, eNR_IMPROPER },            // F_PIDIHS
     BondedInteractions {tab_dihs, eNR_TABDIHS },                  // F_TABDIHS
     BondedInteractions {unimplemented, eNR_CMAP },                // F_CMAP
     BondedInteractions {unimplemented, -1 },                      // F_GB12_NOLONGERUSED
@@ -3947,6 +3973,15 @@ constexpr std::array<BondedInteractions, F_NRE> c_bondedInteractionFunctions
     BondedInteractions {unimplemented, -1 },                      // F_DVDL_RESTRAINT
     BondedInteractions {unimplemented, -1 },                      // F_DVDL_TEMPERATURE
     };
+
+/*! \brief List of instantiated BondedInteractions list */
+const gmx::EnumerationArray < BondedKernelFlavor, std::array < BondedInteractions, F_NRE>> c_bondedInteractionFunctionsPerFlavor =
+{
+    c_bondedInteractionFunctions<BondedKernelFlavor::ForcesSimdWhenAvailable>,
+    c_bondedInteractionFunctions<BondedKernelFlavor::ForcesNoSimd>,
+    c_bondedInteractionFunctions<BondedKernelFlavor::ForcesAndVirialAndEnergy>
+};
+
 //! \endcond
 
 } // namespace
@@ -3962,84 +3997,19 @@ real calculateSimpleBond(const int ftype,
                          int gmx_unused *global_atom_index,
                          const BondedKernelFlavor bondedKernelFlavor)
 {
-    const bool computeForcesOnly = (bondedKernelFlavor == BondedKernelFlavor::ForcesSimdWhenAvailable ||
-                                    bondedKernelFlavor == BondedKernelFlavor::ForcesNoSimd);
-    real       v;
+    const BondedInteractions &bonded =
+        c_bondedInteractionFunctionsPerFlavor[bondedKernelFlavor][ftype];
 
-#if GMX_SIMD_HAVE_REAL
-    const bool useSimd           = (bondedKernelFlavor == BondedKernelFlavor::ForcesSimdWhenAvailable);
-
-    if (ftype == F_ANGLES && useSimd)
-    {
-        /* No energies, shift forces, dvdl */
-        angles_noener_simd(numForceatoms, forceatoms,
-                           forceparams,
-                           x, f,
-                           pbc, g, lambda, md, fcd,
-                           global_atom_index);
-        v = 0;
-    }
-    else if (ftype == F_UREY_BRADLEY && useSimd)
-    {
-        /* No energies, shift forces, dvdl */
-        urey_bradley_noener_simd(numForceatoms, forceatoms,
-                                 forceparams,
-                                 x, f,
-                                 pbc, g, lambda, md, fcd,
-                                 global_atom_index);
-        v = 0;
-    }
-    else if ((ftype == F_PDIHS || ftype == F_PIDIHS) && computeForcesOnly)
-#else
-    if ((ftype == F_PDIHS || ftype == F_PIDIHS) && computeForcesOnly)
-#endif
-    {
-        /* No energies, shift forces, dvdl */
-#if GMX_SIMD_HAVE_REAL
-        if (useSimd)
-        {
-            pdihs_noener_simd(numForceatoms, forceatoms,
-                              forceparams,
-                              x, f,
-                              pbc, g, lambda, md, fcd,
-                              global_atom_index);
-        }
-        else
-#endif
-        {
-            pdihs_noener(numForceatoms, forceatoms,
-                         forceparams,
-                         x, f,
-                         pbc, g, lambda, md, fcd,
-                         global_atom_index);
-        }
-        v = 0;
-    }
-#if GMX_SIMD_HAVE_REAL
-    else if ((ftype == F_RBDIHS || ftype == F_FOURDIHS) && useSimd)
-    {
-        /* No energies, shift forces, dvdl */
-        rbdihs_noener_simd(numForceatoms, forceatoms,
-                           forceparams,
-                           static_cast<const rvec*>(x), f,
-                           pbc, g, lambda, md, fcd,
-                           global_atom_index);
-        v = 0;
-    }
-#endif
-    else
-    {
-        v = c_bondedInteractionFunctions[ftype].function(numForceatoms, forceatoms,
-                                                         forceparams,
-                                                         x, f, fshift,
-                                                         pbc, g, lambda, dvdlambda,
-                                                         md, fcd, global_atom_index);
-    }
+    real v = bonded.function(numForceatoms, forceatoms,
+                             forceparams,
+                             x, f, fshift,
+                             pbc, g, lambda, dvdlambda,
+                             md, fcd, global_atom_index);
 
     return v;
 }
 
 int nrnbIndex(int ftype)
 {
-    return c_bondedInteractionFunctions[ftype].nrnbIndex;
+    return c_bondedInteractionFunctions<BondedKernelFlavor::ForcesAndVirialAndEnergy>[ftype].nrnbIndex;
 }
