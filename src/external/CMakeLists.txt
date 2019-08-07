@@ -57,6 +57,7 @@ if(BUILD_TESTING AND GMX_BUILD_UNITTESTS)
     if (WIN32)
         target_compile_definitions(gmock PRIVATE _SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING)
         target_compile_definitions(gtest PRIVATE _SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING)
+        target_compile_definitions(gtest_main PRIVATE _SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING)
     endif()
 
     set(GTEST_IS_THREADSAFE "${GTEST_IS_THREADSAFE}" PARENT_SCOPE)

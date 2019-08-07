@@ -44,8 +44,8 @@ already built as part of the gtest target, and this leads to duplicate
 definitions of extern symbols declared in gtest headers. Added the
 link-time dependency of gmock upon gtest that is now required.
 
-Both the gtest_main and gmock_main executables and libraries are not
-created, because GROMACS does not use them.
+The gmock_main executables and library are not created,
+because GROMACS does not use them.
 
 googletest-1.8.0 also assumes that streaming results to a socket is
 something you can always do on Linux, but the implementation uses
