@@ -547,17 +547,19 @@ class ListedForcesTest : public ::testing::TestWithParam<std::tuple<iListInput, 
             t_mdatoms         mdatoms    = {0};
             mdatoms.chargeA              = chargeA.data();
             OutputQuantities  output;
-            output.energy = bondedFunction(input_.ftype) (iatoms.size(),
-                                                          iatoms.data(),
-                                                          &input_.iparams,
-                                                          as_rvec_array(x_.data()),
-                                                          output.f, output.fshift,
-                                                          &pbc_,
-                                                          /* const struct t_graph *g */ nullptr,
-                                                          lambda, &output.dvdlambda,
-                                                          &mdatoms,
-                                                          /* struct t_fcdata * */ nullptr,
-                                                          ddgatindex.data());
+            output.energy = calculateSimpleBond(input_.ftype,
+                                                iatoms.size(),
+                                                iatoms.data(),
+                                                &input_.iparams,
+                                                as_rvec_array(x_.data()),
+                                                output.f, output.fshift,
+                                                &pbc_,
+                                                /* const struct t_graph *g */ nullptr,
+                                                lambda, &output.dvdlambda,
+                                                &mdatoms,
+                                                /* struct t_fcdata * */ nullptr,
+                                                ddgatindex.data(),
+                                                BondedKernelFlavor::ForcesAndVirialAndEnergy);
             // Internal consistency test of both test input
             // and bonded functions.
             EXPECT_TRUE((input_.fep || (output.dvdlambda == 0.0)));

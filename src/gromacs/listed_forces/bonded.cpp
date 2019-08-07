@@ -54,12 +54,15 @@
 
 #include <algorithm>
 
-#include "gromacs/listed_forces/pairs.h"
+#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/listed_forces/disre.h"
+#include "gromacs/listed_forces/orires.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/fcdata.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -76,6 +79,18 @@
 #include "restcbt.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+
+namespace
+{
+
+//! Type of CPU function to compute a bonded interaction.
+using BondedFunction = real(*)(int nbonds, const t_iatom iatoms[],
+                               const t_iparams iparams[],
+                               const rvec x[], rvec4 f[], rvec fshift[],
+                               const t_pbc *pbc, const t_graph *g,
+                               real lambda, real *dvdlambda,
+                               const t_mdatoms *md, t_fcdata *fcd,
+                               int *ddgatindex);
 
 /*! \brief Mysterious CMAP coefficient matrix */
 const int cmap_coeff_matrix[] = {
@@ -101,7 +116,7 @@ const int cmap_coeff_matrix[] = {
 /*! \brief Compute dx = xi - xj, modulo PBC if non-NULL
  *
  * \todo This kind of code appears in many places. Consolidate it */
-static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
+int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
 {
     if (pbc)
     {
@@ -113,6 +128,62 @@ static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
         return CENTRAL;
     }
 }
+
+} // namespace
+
+//! \cond
+real bond_angle(const rvec xi, const rvec xj, const rvec xk, const t_pbc *pbc,
+                rvec r_ij, rvec r_kj, real *costh,
+                int *t1, int *t2)
+/* Return value is the angle between the bonds i-j and j-k */
+{
+    /* 41 FLOPS */
+    real th;
+
+    *t1 = pbc_rvec_sub(pbc, xi, xj, r_ij); /*  3		*/
+    *t2 = pbc_rvec_sub(pbc, xk, xj, r_kj); /*  3		*/
+
+    *costh = cos_angle(r_ij, r_kj);        /* 25		*/
+    th     = std::acos(*costh);            /* 10		*/
+    /* 41 TOTAL	*/
+    return th;
+}
+
+real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
+               const t_pbc *pbc,
+               rvec r_ij, rvec r_kj, rvec r_kl, rvec m, rvec n,
+               int *t1, int *t2, int *t3)
+{
+    *t1 = pbc_rvec_sub(pbc, xi, xj, r_ij); /*  3        */
+    *t2 = pbc_rvec_sub(pbc, xk, xj, r_kj); /*  3		*/
+    *t3 = pbc_rvec_sub(pbc, xk, xl, r_kl); /*  3		*/
+
+    cprod(r_ij, r_kj, m);                  /*  9        */
+    cprod(r_kj, r_kl, n);                  /*  9		*/
+    real phi  = gmx_angle(m, n);           /* 49 (assuming 25 for atan2) */
+    real ipr  = iprod(r_ij, n);            /*  5        */
+    real sign = (ipr < 0.0) ? -1.0 : 1.0;
+    phi       = sign*phi;                  /*  1		*/
+    /* 82 TOTAL	*/
+    return phi;
+}
+//! \endcond
+
+void make_dp_periodic(real *dp)  /* 1 flop? */
+{
+    /* dp cannot be outside (-pi,pi) */
+    if (*dp >= M_PI)
+    {
+        *dp -= 2*M_PI;
+    }
+    else if (*dp < -M_PI)
+    {
+        *dp += 2*M_PI;
+    }
+}
+
+namespace
+{
 
 /*! \brief Morse potential bond
  *
@@ -331,8 +402,9 @@ real FENE_bonds(int nbonds,
     return vtot;
 }
 
-static real harmonic(real kA, real kB, real xA, real xB, real x, real lambda,
-                     real *V, real *F)
+/*! \brief Computes the potential and force for a harmonic potential with free-energy perturbation */
+real harmonic(real kA, real kB, real xA, real xB, real x, real lambda,
+              real *V, real *F)
 {
     const real half = 0.5;
     real       L1, kk, x0, dx, dx2;
@@ -459,7 +531,7 @@ real restraint_bonds(int nbonds,
             vbond       = 0.5*k*drh2;
             fbond       = -k*drh;
             *dvdlambda += 0.5*dk*drh2 - k*dlow*drh;
-        } /* 11 */
+        }   /* 11 */
         else if (dr <= up1)
         {
             vbond = 0;
@@ -472,7 +544,7 @@ real restraint_bonds(int nbonds,
             vbond       = 0.5*k*drh2;
             fbond       = -k*drh;
             *dvdlambda += 0.5*dk*drh2 - k*dup1*drh;
-        } /* 11	*/
+        }   /* 11	*/
         else
         {
             drh         = dr - up2;
@@ -729,9 +801,9 @@ real water_pol(int nbonds,
     return 0.5*vtot;
 }
 
-static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
-                       const t_pbc *pbc, real qq,
-                       rvec fshift[], real afac)
+real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
+                const t_pbc *pbc, real qq,
+                rvec fshift[], real afac)
 {
     rvec r12;
     real r12sq, r12_1, r12bar, v0, v1, fscal, ebar, fff;
@@ -794,23 +866,6 @@ real thole_pol(int nbonds,
     }
     /* 290 flops */
     return V;
-}
-
-real bond_angle(const rvec xi, const rvec xj, const rvec xk, const t_pbc *pbc,
-                rvec r_ij, rvec r_kj, real *costh,
-                int *t1, int *t2)
-/* Return value is the angle between the bonds i-j and j-k */
-{
-    /* 41 FLOPS */
-    real th;
-
-    *t1 = pbc_rvec_sub(pbc, xi, xj, r_ij); /*  3		*/
-    *t2 = pbc_rvec_sub(pbc, xk, xj, r_kj); /*  3		*/
-
-    *costh = cos_angle(r_ij, r_kj);        /* 25		*/
-    th     = std::acos(*costh);            /* 10		*/
-    /* 41 TOTAL	*/
-    return th;
 }
 
 real angles(int nbonds,
@@ -1440,25 +1495,6 @@ real quartic_angles(int nbonds,
     return vtot;
 }
 
-real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
-               const t_pbc *pbc,
-               rvec r_ij, rvec r_kj, rvec r_kl, rvec m, rvec n,
-               int *t1, int *t2, int *t3)
-{
-    *t1 = pbc_rvec_sub(pbc, xi, xj, r_ij); /*  3        */
-    *t2 = pbc_rvec_sub(pbc, xk, xj, r_kj); /*  3		*/
-    *t3 = pbc_rvec_sub(pbc, xk, xl, r_kl); /*  3		*/
-
-    cprod(r_ij, r_kj, m);                  /*  9        */
-    cprod(r_kj, r_kl, n);                  /*  9		*/
-    real phi  = gmx_angle(m, n);           /* 49 (assuming 25 for atan2) */
-    real ipr  = iprod(r_ij, n);            /*  5        */
-    real sign = (ipr < 0.0) ? -1.0 : 1.0;
-    phi       = sign*phi;                  /*  1		*/
-    /* 82 TOTAL	*/
-    return phi;
-}
-
 
 #if GMX_SIMD_HAVE_REAL
 
@@ -1466,7 +1502,7 @@ real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
  * also calculates the pre-factor required for the dihedral force update.
  * Note that bv and buf should be register aligned.
  */
-static inline void
+inline void
 dih_angle_simd(const rvec *x,
                const int *ai, const int *aj, const int *ak, const int *al,
                const real *pbc_simd,
@@ -1579,6 +1615,8 @@ dih_angle_simd(const rvec *x,
 
 #endif // GMX_SIMD_HAVE_REAL
 
+}      // namespace
+
 void do_dih_fup(int i, int j, int k, int l, real ddphi,
                 rvec r_ij, rvec r_kj, rvec r_kl,
                 rvec m, rvec n, rvec4 f[], rvec fshift[],
@@ -1646,8 +1684,11 @@ void do_dih_fup(int i, int j, int k, int l, real ddphi,
     /* 112 TOTAL    */
 }
 
-/* As do_dih_fup above, but without shift forces */
-static void
+namespace
+{
+
+/*! \brief As do_dih_fup above, but without shift forces */
+void
 do_dih_fup_noshiftf(int i, int j, int k, int l, real ddphi,
                     rvec r_ij, rvec r_kj, rvec r_kl,
                     rvec m, rvec n, rvec4 f[])
@@ -1688,7 +1729,7 @@ do_dih_fup_noshiftf(int i, int j, int k, int l, real ddphi,
 
 #if GMX_SIMD_HAVE_REAL
 /* As do_dih_fup_noshiftf above, but with SIMD and pre-calculated pre-factors */
-static inline void gmx_simdcall
+inline void gmx_simdcall
 do_dih_fup_noshiftf_simd(const int *ai, const int *aj, const int *ak, const int *al,
                          SimdReal p, SimdReal q,
                          SimdReal f_i_x,  SimdReal f_i_y,  SimdReal f_i_z,
@@ -1711,8 +1752,8 @@ do_dih_fup_noshiftf_simd(const int *ai, const int *aj, const int *ak, const int 
 }
 #endif // GMX_SIMD_HAVE_REAL
 
-static real dopdihs(real cpA, real cpB, real phiA, real phiB, int mult,
-                    real phi, real lambda, real *V, real *F)
+real dopdihs(real cpA, real cpB, real phiA, real phiB, int mult,
+             real phi, real lambda, real *V, real *F)
 {
     real v, dvdlambda, mdphi, v1, sdphi, ddphi;
     real L1   = 1.0 - lambda;
@@ -1736,7 +1777,7 @@ static real dopdihs(real cpA, real cpB, real phiA, real phiB, int mult,
     /* That was 40 flops */
 }
 
-static void
+void
 dopdihs_noener(real cpA, real cpB, real phiA, real phiB, int mult,
                real phi, real lambda, real *F)
 {
@@ -1754,10 +1795,9 @@ dopdihs_noener(real cpA, real cpB, real phiA, real phiB, int mult,
     /* That was 20 flops */
 }
 
-static real dopdihs_min(real cpA, real cpB, real phiA, real phiB, int mult,
-                        real phi, real lambda, real *V, real *F)
-/* similar to dopdihs, except for a minus sign  *
- * and a different treatment of mult/phi0       */
+/*! \brief Similar to \p dopdihs(), except for a minus sign and a different treatment of mult/phi0 */
+real dopdihs_min(real cpA, real cpB, real phiA, real phiB, int mult,
+                 real phi, real lambda, real *V, real *F)
 {
     real v, dvdlambda, mdphi, v1, sdphi, ddphi;
     real L1   = 1.0 - lambda;
@@ -1820,19 +1860,6 @@ real pdihs(int nbonds,
     }                                                 /* 223 TOTAL  */
 
     return vtot;
-}
-
-void make_dp_periodic(real *dp)  /* 1 flop? */
-{
-    /* dp cannot be outside (-pi,pi) */
-    if (*dp >= M_PI)
-    {
-        *dp -= 2*M_PI;
-    }
-    else if (*dp < -M_PI)
-    {
-        *dp += 2*M_PI;
-    }
 }
 
 /* As pdihs above, but without calculating energies and shift forces */
@@ -2200,12 +2227,13 @@ real idihs(int nbonds,
     return vtot;
 }
 
-static real low_angres(int nbonds,
-                       const t_iatom forceatoms[], const t_iparams forceparams[],
-                       const rvec x[], rvec4 f[], rvec fshift[],
-                       const t_pbc *pbc, const t_graph *g,
-                       real lambda, real *dvdlambda,
-                       gmx_bool bZAxis)
+/*! \brief Computes angle restraints of two different types */
+real low_angres(int nbonds,
+                const t_iatom forceatoms[], const t_iparams forceparams[],
+                const rvec x[], rvec4 f[], rvec fshift[],
+                const t_pbc *pbc, const t_graph *g,
+                real lambda, real *dvdlambda,
+                gmx_bool bZAxis)
 {
     int  i, m, type, ai, aj, ak, al;
     int  t1, t2;
@@ -2847,7 +2875,7 @@ real rbdihs(int nbonds,
 //! \endcond
 
 /*! \brief Mysterious undocumented function */
-static int
+int
 cmap_setup_grid_index(int ip, int grid_spacing, int *ipm1, int *ipp1, int *ipp2)
 {
     int im1, ip1, ip2;
@@ -2886,6 +2914,8 @@ cmap_setup_grid_index(int ip, int grid_spacing, int *ipm1, int *ipp1, int *ipp2)
     return ip;
 
 }
+
+} // namespace
 
 real
 cmap_dihs(int nbonds,
@@ -3275,6 +3305,8 @@ cmap_dihs(int nbonds,
     return vtot;
 }
 
+namespace
+{
 
 //! \cond
 /***********************************************************
@@ -3282,8 +3314,8 @@ cmap_dihs(int nbonds,
  *   G R O M O S  9 6   F U N C T I O N S
  *
  ***********************************************************/
-static real g96harmonic(real kA, real kB, real xA, real xB, real x, real lambda,
-                        real *V, real *F)
+real g96harmonic(real kA, real kB, real xA, real xB, real x, real lambda,
+                 real *V, real *F)
 {
     const real half = 0.5;
     real       L1, kk, x0, dx, dx2;
@@ -3356,10 +3388,10 @@ real g96bonds(int nbonds,
     return vtot;
 }
 
-static real g96bond_angle(const rvec xi, const rvec xj, const rvec xk, const t_pbc *pbc,
-                          rvec r_ij, rvec r_kj,
-                          int *t1, int *t2)
-/* Return value is the angle between the bonds i-j and j-k */
+/*! \brief Returns the cosine of the angle between the bonds i-j and j-k */
+real g96bond_angle(const rvec xi, const rvec xj, const rvec xk, const t_pbc *pbc,
+                   rvec r_ij, rvec r_kj,
+                   int *t1, int *t2)
 {
     real costh;
 
@@ -3594,9 +3626,10 @@ real cross_bond_angle(int nbonds,
     return vtot;
 }
 
-static real bonded_tab(const char *type, int table_nr,
-                       const bondedtable_t *table, real kA, real kB, real r,
-                       real lambda, real *V, real *F)
+/*! \brief Computes the potential and force for a tabulated potential */
+real bonded_tab(const char *type, int table_nr,
+                const bondedtable_t *table, real kA, real kB, real r,
+                real lambda, real *V, real *F)
 {
     real k, tabscale, *VFtab, rt, eps, eps2, Yt, Ft, Geps, Heps2, Fp, VV, FF;
     int  n0, nnn;
@@ -3811,4 +3844,202 @@ real tab_dihs(int nbonds,
     return vtot;
 }
 
+struct BondedInteractions
+{
+    BondedFunction function;
+    int            nrnbIndex;
+};
+
+/*! \brief Lookup table of bonded interaction functions
+ *
+ * This must have as many entries as interaction_function in ifunc.cpp */
+constexpr std::array<BondedInteractions, F_NRE> c_bondedInteractionFunctions
+    = {
+    BondedInteractions {bonds, eNR_BONDS },                       // F_BONDS
+    BondedInteractions {g96bonds, eNR_BONDS },                    // F_G96BONDS
+    BondedInteractions {morse_bonds, eNR_MORSE },                 // F_MORSE
+    BondedInteractions {cubic_bonds, eNR_CUBICBONDS },            // F_CUBICBONDS
+    BondedInteractions {unimplemented, -1 },                      // F_CONNBONDS
+    BondedInteractions {bonds, eNR_BONDS },                       // F_HARMONIC
+    BondedInteractions {FENE_bonds, eNR_FENEBONDS },              // F_FENEBONDS
+    BondedInteractions {tab_bonds, eNR_TABBONDS },                // F_TABBONDS
+    BondedInteractions {tab_bonds, eNR_TABBONDS },                // F_TABBONDSNC
+    BondedInteractions {restraint_bonds, eNR_RESTRBONDS },        // F_RESTRBONDS
+    BondedInteractions {angles, eNR_ANGLES },                     // F_ANGLES
+    BondedInteractions {g96angles, eNR_ANGLES },                  // F_G96ANGLES
+    BondedInteractions {restrangles, eNR_ANGLES },                // F_RESTRANGLES
+    BondedInteractions {linear_angles, eNR_ANGLES },              // F_LINEAR_ANGLES
+    BondedInteractions {cross_bond_bond, eNR_CROSS_BOND_BOND },   // F_CROSS_BOND_BONDS
+    BondedInteractions {cross_bond_angle, eNR_CROSS_BOND_ANGLE }, // F_CROSS_BOND_ANGLES
+    BondedInteractions {urey_bradley, eNR_UREY_BRADLEY },         // F_UREY_BRADLEY
+    BondedInteractions {quartic_angles, eNR_QANGLES },            // F_QUARTIC_ANGLES
+    BondedInteractions {tab_angles, eNR_TABANGLES },              // F_TABANGLES
+    BondedInteractions {pdihs, eNR_PROPER },                      // F_PDIHS
+    BondedInteractions {rbdihs, eNR_RB },                         // F_RBDIHS
+    BondedInteractions {restrdihs, eNR_PROPER },                  // F_RESTRDIHS
+    BondedInteractions {cbtdihs, eNR_RB },                        // F_CBTDIHS
+    BondedInteractions {rbdihs, eNR_FOURDIH },                    // F_FOURDIHS
+    BondedInteractions {idihs, eNR_IMPROPER },                    // F_IDIHS
+    BondedInteractions {pdihs, eNR_IMPROPER },                    // F_PIDIHS
+    BondedInteractions {tab_dihs, eNR_TABDIHS },                  // F_TABDIHS
+    BondedInteractions {unimplemented, eNR_CMAP },                // F_CMAP
+    BondedInteractions {unimplemented, -1 },                      // F_GB12_NOLONGERUSED
+    BondedInteractions {unimplemented, -1 },                      // F_GB13_NOLONGERUSED
+    BondedInteractions {unimplemented, -1 },                      // F_GB14_NOLONGERUSED
+    BondedInteractions {unimplemented, -1 },                      // F_GBPOL_NOLONGERUSED
+    BondedInteractions {unimplemented, -1 },                      // F_NPSOLVATION_NOLONGERUSED
+    BondedInteractions {unimplemented, eNR_NB14 },                // F_LJ14
+    BondedInteractions {unimplemented, -1 },                      // F_COUL14
+    BondedInteractions {unimplemented, eNR_NB14 },                // F_LJC14_Q
+    BondedInteractions {unimplemented, eNR_NB14 },                // F_LJC_PAIRS_NB
+    BondedInteractions {unimplemented, -1 },                      // F_LJ
+    BondedInteractions {unimplemented, -1 },                      // F_BHAM
+    BondedInteractions {unimplemented, -1 },                      // F_LJ_LR_NOLONGERUSED
+    BondedInteractions {unimplemented, -1 },                      // F_BHAM_LR_NOLONGERUSED
+    BondedInteractions {unimplemented, -1 },                      // F_DISPCORR
+    BondedInteractions {unimplemented, -1 },                      // F_COUL_SR
+    BondedInteractions {unimplemented, -1 },                      // F_COUL_LR_NOLONGERUSED
+    BondedInteractions {unimplemented, -1 },                      // F_RF_EXCL
+    BondedInteractions {unimplemented, -1 },                      // F_COUL_RECIP
+    BondedInteractions {unimplemented, -1 },                      // F_LJ_RECIP
+    BondedInteractions {unimplemented, -1 },                      // F_DPD
+    BondedInteractions {polarize, eNR_POLARIZE },                 // F_POLARIZATION
+    BondedInteractions {water_pol, eNR_WPOL },                    // F_WATER_POL
+    BondedInteractions {thole_pol, eNR_THOLE },                   // F_THOLE_POL
+    BondedInteractions {anharm_polarize, eNR_ANHARM_POL },        // F_ANHARM_POL
+    BondedInteractions {unimplemented, -1 },                      // F_POSRES
+    BondedInteractions {unimplemented, -1 },                      // F_FBPOSRES
+    BondedInteractions {ta_disres, eNR_DISRES },                  // F_DISRES
+    BondedInteractions {unimplemented, -1 },                      // F_DISRESVIOL
+    BondedInteractions {orires, eNR_ORIRES },                     // F_ORIRES
+    BondedInteractions {unimplemented, -1 },                      // F_ORIRESDEV
+    BondedInteractions {angres, eNR_ANGRES },                     // F_ANGRES
+    BondedInteractions {angresz, eNR_ANGRESZ },                   // F_ANGRESZ
+    BondedInteractions {dihres, eNR_DIHRES },                     // F_DIHRES
+    BondedInteractions {unimplemented, -1 },                      // F_DIHRESVIOL
+    BondedInteractions {unimplemented, -1 },                      // F_CONSTR
+    BondedInteractions {unimplemented, -1 },                      // F_CONSTRNC
+    BondedInteractions {unimplemented, -1 },                      // F_SETTLE
+    BondedInteractions {unimplemented, -1 },                      // F_VSITE2
+    BondedInteractions {unimplemented, -1 },                      // F_VSITE3
+    BondedInteractions {unimplemented, -1 },                      // F_VSITE3FD
+    BondedInteractions {unimplemented, -1 },                      // F_VSITE3FAD
+    BondedInteractions {unimplemented, -1 },                      // F_VSITE3OUT
+    BondedInteractions {unimplemented, -1 },                      // F_VSITE4FD
+    BondedInteractions {unimplemented, -1 },                      // F_VSITE4FDN
+    BondedInteractions {unimplemented, -1 },                      // F_VSITEN
+    BondedInteractions {unimplemented, -1 },                      // F_COM_PULL
+    BondedInteractions {unimplemented, -1 },                      // F_EQM
+    BondedInteractions {unimplemented, -1 },                      // F_EPOT
+    BondedInteractions {unimplemented, -1 },                      // F_EKIN
+    BondedInteractions {unimplemented, -1 },                      // F_ETOT
+    BondedInteractions {unimplemented, -1 },                      // F_ECONSERVED
+    BondedInteractions {unimplemented, -1 },                      // F_TEMP
+    BondedInteractions {unimplemented, -1 },                      // F_VTEMP_NOLONGERUSED
+    BondedInteractions {unimplemented, -1 },                      // F_PDISPCORR
+    BondedInteractions {unimplemented, -1 },                      // F_PRES
+    BondedInteractions {unimplemented, -1 },                      // F_DVDL_CONSTR
+    BondedInteractions {unimplemented, -1 },                      // F_DVDL
+    BondedInteractions {unimplemented, -1 },                      // F_DKDL
+    BondedInteractions {unimplemented, -1 },                      // F_DVDL_COUL
+    BondedInteractions {unimplemented, -1 },                      // F_DVDL_VDW
+    BondedInteractions {unimplemented, -1 },                      // F_DVDL_BONDED
+    BondedInteractions {unimplemented, -1 },                      // F_DVDL_RESTRAINT
+    BondedInteractions {unimplemented, -1 },                      // F_DVDL_TEMPERATURE
+    };
 //! \endcond
+
+} // namespace
+
+real calculateSimpleBond(const int ftype,
+                         const int numForceatoms, const t_iatom forceatoms[],
+                         const t_iparams forceparams[],
+                         const rvec x[], rvec4 f[], rvec fshift[],
+                         const struct t_pbc *pbc,
+                         const struct t_graph gmx_unused *g,
+                         const real lambda, real *dvdlambda,
+                         const t_mdatoms *md, t_fcdata *fcd,
+                         int gmx_unused *global_atom_index,
+                         const BondedKernelFlavor bondedKernelFlavor)
+{
+    const bool computeForcesOnly = (bondedKernelFlavor == BondedKernelFlavor::ForcesSimdWhenAvailable ||
+                                    bondedKernelFlavor == BondedKernelFlavor::ForcesNoSimd);
+    real       v;
+
+#if GMX_SIMD_HAVE_REAL
+    const bool useSimd           = (bondedKernelFlavor == BondedKernelFlavor::ForcesSimdWhenAvailable);
+
+    if (ftype == F_ANGLES && useSimd)
+    {
+        /* No energies, shift forces, dvdl */
+        angles_noener_simd(numForceatoms, forceatoms,
+                           forceparams,
+                           x, f,
+                           pbc, g, lambda, md, fcd,
+                           global_atom_index);
+        v = 0;
+    }
+    else if (ftype == F_UREY_BRADLEY && useSimd)
+    {
+        /* No energies, shift forces, dvdl */
+        urey_bradley_noener_simd(numForceatoms, forceatoms,
+                                 forceparams,
+                                 x, f,
+                                 pbc, g, lambda, md, fcd,
+                                 global_atom_index);
+        v = 0;
+    }
+    else if ((ftype == F_PDIHS || ftype == F_PIDIHS) && computeForcesOnly)
+#else
+    if ((ftype == F_PDIHS || ftype == F_PIDIHS) && computeForcesOnly)
+#endif
+    {
+        /* No energies, shift forces, dvdl */
+#if GMX_SIMD_HAVE_REAL
+        if (useSimd)
+        {
+            pdihs_noener_simd(numForceatoms, forceatoms,
+                              forceparams,
+                              x, f,
+                              pbc, g, lambda, md, fcd,
+                              global_atom_index);
+        }
+        else
+#endif
+        {
+            pdihs_noener(numForceatoms, forceatoms,
+                         forceparams,
+                         x, f,
+                         pbc, g, lambda, md, fcd,
+                         global_atom_index);
+        }
+        v = 0;
+    }
+#if GMX_SIMD_HAVE_REAL
+    else if ((ftype == F_RBDIHS || ftype == F_FOURDIHS) && useSimd)
+    {
+        /* No energies, shift forces, dvdl */
+        rbdihs_noener_simd(numForceatoms, forceatoms,
+                           forceparams,
+                           static_cast<const rvec*>(x), f,
+                           pbc, g, lambda, md, fcd,
+                           global_atom_index);
+        v = 0;
+    }
+#endif
+    else
+    {
+        v = c_bondedInteractionFunctions[ftype].function(numForceatoms, forceatoms,
+                                                         forceparams,
+                                                         x, f, fshift,
+                                                         pbc, g, lambda, dvdlambda,
+                                                         md, fcd, global_atom_index);
+    }
+
+    return v;
+}
+
+int nrnbIndex(int ftype)
+{
+    return c_bondedInteractionFunctions[ftype].nrnbIndex;
+}
