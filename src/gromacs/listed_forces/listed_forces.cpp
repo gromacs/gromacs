@@ -451,7 +451,7 @@ calc_one_bond(int thread,
             v = 0;
         }
 #endif
-        else if (ftype == F_PDIHS && computeForcesOnly)
+        else if ((ftype == F_PDIHS || ftype == F_PIDIHS) && computeForcesOnly)
         {
             /* No energies, shift forces, dvdl */
 #if GMX_SIMD_HAVE_REAL
@@ -475,7 +475,7 @@ calc_one_bond(int thread,
             v = 0;
         }
 #if GMX_SIMD_HAVE_REAL
-        else if (ftype == F_RBDIHS && bUseSIMD && computeForcesOnly)
+        else if ((ftype == F_RBDIHS || ftype == F_FOURDIHS) && bUseSIMD && computeForcesOnly)
         {
             /* No energies, shift forces, dvdl */
             rbdihs_noener_simd(nbn, idef->il[ftype].iatoms+nb0,

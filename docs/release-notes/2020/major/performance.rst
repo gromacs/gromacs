@@ -7,6 +7,9 @@ Performance improvements
    Also, please use the syntax :issue:`number` to reference issues on redmine, without the
    a space between the colon and number!
 
+Proper dihedrals of Fourier type and improper dihedrals of preriodic type are SIMD accelerated
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
 Avoid configuring the own-FFTW with AVX512 enabled when GROMACS does not use AVX512
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
