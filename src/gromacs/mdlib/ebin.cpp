@@ -133,6 +133,11 @@ int get_ebin_space(t_ebin *eb, int nener, const char *const enm[], const char *u
     return index;
 }
 
+// ICC 19 -O3 -msse2 generates wrong code. Lower optimization levels
+// and other SIMD levels seem fine, however.
+#if defined __ICC
+#  pragma intel optimization_level 2
+#endif
 void add_ebin(t_ebin *eb, int entryIndex, int nener, const real ener[], gmx_bool bSum)
 {
     int       i, m;
