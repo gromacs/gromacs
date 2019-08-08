@@ -218,7 +218,10 @@ void global_stat(const gmx_global_stat *gs,
             {
                 idedlo = add_binr(rb, 1, &(ekind->dekindl_old));
             }
-            ica   = add_binr(rb, 1, &(ekind->cosacc.mvcos));
+            if (ekind->cosacc.cos_accel != 0)
+            {
+                ica   = add_binr(rb, 1, &(ekind->cosacc.mvcos));
+            }
         }
     }
 
@@ -320,7 +323,10 @@ void global_stat(const gmx_global_stat *gs,
             {
                 extract_binr(rb, idedlo, 1, &(ekind->dekindl_old));
             }
-            extract_binr(rb, ica, 1, &(ekind->cosacc.mvcos));
+            if (ekind->cosacc.cos_accel != 0)
+            {
+                extract_binr(rb, ica, 1, &(ekind->cosacc.mvcos));
+            }
         }
     }
     if (bPres)
