@@ -573,15 +573,6 @@ if(WIN32)
     add_definitions(-DNOMINMAX)
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Darwin") #Work-around for cmake bug #10837
-    if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Intel" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-        set(CMAKE_INCLUDE_SYSTEM_FLAG_C "-isystem ")
-    endif()
-    if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Intel" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-isystem ")
-    endif()
-endif()
-
 option(GMX_BUILD_UNITTESTS "Build unit tests with BUILD_TESTING" ON)
 mark_as_advanced(GMX_BUILD_UNITTESTS)
 gmx_add_cache_dependency(GMX_BUILD_UNITTESTS BOOL BUILD_TESTING OFF)
