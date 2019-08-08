@@ -101,7 +101,8 @@ static const char *tpx_tag = TPX_TAG_RELEASE;
  * in this enumeration, and write code below that does the right thing
  * according to the value of file_version.
  */
-enum tpxv {
+enum tpxv
+{
     tpxv_ComputationalElectrophysiology = 96,                /**< support for ion/water position swaps (computational electrophysiology) */
     tpxv_Use64BitRandomSeed,                                 /**< change ld_seed from int to int64_t */
     tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, /**< potentials for supporting coarse-grained force fields */
@@ -121,8 +122,9 @@ enum tpxv {
     tpxv_AcceleratedWeightHistogram,                         /**< sampling with accelerated weight histogram method (AWH) */
     tpxv_RemoveImplicitSolvation,                            /**< removed support for implicit solvation */
     tpxv_PullPrevStepCOMAsReference,                         /**< Enabled using the COM of the pull group of the last frame as reference for PBC */
-    tpxv_MimicQMMM,                                          /**< Inroduced support for MiMiC QM/MM interface */
+    tpxv_MimicQMMM,                                          /**< Introduced support for MiMiC QM/MM interface */
     tpxv_PullAverage,                                        /**< Added possibility to output average pull force and position */
+    tpxv_GenericInternalParameters,                          /**< Added internal parameters for mdrun modules*/
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -1683,6 +1685,20 @@ static void do_inputrec(gmx::ISerializer         *serializer,
     if (serializer->reading())
     {
         ir->params = new gmx::KeyValueTreeObject(paramsBuilder.build());
+    }
+
+    if (file_version >= tpxv_GenericInternalParameters)
+    {
+        if (serializer->reading())
+        {
+            ir->internalParameters = std::make_unique<gmx::KeyValueTreeObject>(gmx::deserializeKeyValueTree(serializer));
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(ir->internalParameters != nullptr,
+                               "Parameters should be present when writing inputrec");
+            gmx::serializeKeyValueTree(*ir->internalParameters, serializer);
+        }
     }
 }
 

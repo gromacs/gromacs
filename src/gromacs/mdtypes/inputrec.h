@@ -587,6 +587,9 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
 
     //! KVT object that contains input parameters converted to the new style.
     gmx::KeyValueTreeObject *params;
+
+    //! KVT for storing simulation parameters that are not part of the mdp file.
+    std::unique_ptr<gmx::KeyValueTreeObject>  internalParameters;
 };
 
 int ir_optimal_nstcalcenergy(const t_inputrec *ir);

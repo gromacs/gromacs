@@ -142,6 +142,7 @@
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/loggerbuilder.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
@@ -798,6 +799,10 @@ int Mdrunner::mdrunner()
 
     // TODO: Error handling
     mdModules_->assignOptionsToModules(*inputrec->params, nullptr);
+    if (inputrec->internalParameters != nullptr)
+    {
+        mdModules_->notifier().notify(*inputrec->internalParameters);
+    }
 
     if (fplog != nullptr)
     {

@@ -101,6 +101,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
@@ -2416,6 +2417,15 @@ int gmx_grompp(int argc, char *argv[])
         {
             printf("%s\n", warn_buf);
         }
+    }
+
+    // Add the md modules internal parameters that are not mdp options
+    // e.g., atom indices
+
+    {
+        gmx::KeyValueTreeBuilder internalParameterBuilder;
+        mdModules.notifier().notify(&internalParameterBuilder);
+        ir->internalParameters = std::make_unique<gmx::KeyValueTreeObject>(internalParameterBuilder.build());
     }
 
     if (bVerbose)

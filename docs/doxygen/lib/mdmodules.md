@@ -191,3 +191,19 @@ To include a notification for your module,
     YourCallbackSignature argument();
     mdModules_.notifier().notify(argument);
   ```
+
+Storing non-mdp option module parameters
+----------------------------------------
+
+Some mdrun modules want to store data that is non-mdp input, e.g., the result of
+computation during setup. Atom indices of index groups are one example:
+they are evaluated from strings during grompp time and stored as list of
+integers in the run input file. During the mdrun setup the information to
+evaluate the index groups is no longer available.
+
+To store parameters, subscribe to the `KeyValueTreeBuilder*` notification that
+provides a handle to a KeyValueTreeBuilder that allows adding own information to
+that tree.
+
+To restore parameters, subscribe to the `const KeyValueTreeObject &`
+notification that returns the tree that is build by the KeyValueTreeBuilder*.

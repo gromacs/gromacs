@@ -677,6 +677,15 @@ static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
 
 static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
 {
+    // Make sure to destruct all previously set internal parameters properly
+    // before the block_bc on the inputrec overwrites them.
+    // They are expected to be null anyway, but we can't guarantee this here.
+    if (!SIMMASTER(cr))
+    {
+        // will call destructor on previously set parameters upon leaving this block
+        std::unique_ptr<gmx::KeyValueTreeObject> previouslySetInternalParametersOnNonMaster;
+        inputrec->internalParameters.swap(previouslySetInternalParametersOnNonMaster);
+    }
     // Note that this overwrites pointers in inputrec, so all pointer fields
     // Must be initialized separately below.
     block_bc(cr, *inputrec);
@@ -684,6 +693,7 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
     {
         gmx::InMemorySerializer serializer;
         gmx::serializeKeyValueTree(*inputrec->params, &serializer);
+        gmx::serializeKeyValueTree(*inputrec->internalParameters, &serializer);
         std::vector<char>       buffer = serializer.finishAndGetBuffer();
         size_t                  size   = buffer.size();
         block_bc(cr, size);
@@ -691,7 +701,7 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
     }
     else
     {
-        // block_bc() above overwrites the old pointer, so set it to a
+        // block_bc() of inputrec above overwrites the old pointer, so set it to a
         // reasonable value in case code below throws.
         inputrec->params = nullptr;
         std::vector<char> buffer;
@@ -700,6 +710,11 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
         nblock_abc(cr, size, &buffer);
         gmx::InMemoryDeserializer serializer(buffer, false);
         inputrec->params = new gmx::KeyValueTreeObject(
+                    gmx::deserializeKeyValueTree(&serializer));
+        // release is required because internalParameters' destructor will fail
+        // if block_bc() of inputrec overwrites the internalParameters pointer with garbage
+        auto gmx_unused releasedGarbagePointer = inputrec->internalParameters.release();
+        inputrec->internalParameters = std::make_unique<gmx::KeyValueTreeObject>(
                     gmx::deserializeKeyValueTree(&serializer));
     }
 

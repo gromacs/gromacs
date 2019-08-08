@@ -59,6 +59,7 @@ class IKeyValueTreeErrorHandler;
 class IKeyValueTreeTransformRules;
 class IMDOutputProvider;
 class KeyValueTreeObject;
+class KeyValueTreeBuilder;
 class IMDModule;
 class LocalAtomSetManager;
 
@@ -110,6 +111,8 @@ class MDModules
         //! Register callback function types for MDModules
         using notifier_type = registerMdModuleNotification<
                     CommunicationIsSetup,
+                    KeyValueTreeBuilder*,
+                    const KeyValueTreeObject &,
                     LocalAtomSetManager *
                     >::type;
 
