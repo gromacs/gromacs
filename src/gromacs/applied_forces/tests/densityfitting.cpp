@@ -73,7 +73,7 @@ namespace
 
 TEST(DensityFittingTest, Options)
 {
-    auto densityFittingModule(gmx::createDensityFittingModule());
+    auto densityFittingModule(gmx::DensityFittingModuleInfo::create());
 
     // Prepare MDP inputs
     gmx::KeyValueTreeBuilder mdpValueBuilder;

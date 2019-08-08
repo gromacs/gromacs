@@ -36,19 +36,29 @@
 #define GMX_APPLIED_FORCES_DENSITYFITTING_H
 
 #include <memory>
+#include <string>
 
 namespace gmx
 {
 
 class IMDModule;
 
-/*! \brief
- * Creates a module for applying forces to fit a given density.
+/*! \libinternal \brief Information about the density fitting module.
  *
- * Fitting an all-atom structure into an experimental cryo-EM density map is a
- * typical application.
+ * Provides name and method to create a density fitting module.
  */
-std::unique_ptr<IMDModule> createDensityFittingModule();
+struct DensityFittingModuleInfo
+{
+    /*! \brief
+     * Creates a module for applying forces to fit a given density.
+     *
+     * Fitting an all-atom structure into an experimental cryo-EM density map is a
+     * typical application.
+     */
+    static std::unique_ptr<IMDModule> create();
+    //! The name of the module
+    static const std::string          name_;
+};
 
 } // namespace gmx
 

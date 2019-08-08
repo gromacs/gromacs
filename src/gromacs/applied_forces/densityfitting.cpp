@@ -84,7 +84,7 @@ class DensityFittingOptions : public IMdpOptionProvider
          */
         void buildMdpOutput(KeyValueTreeObjectBuilder *builder) const override
         {
-            builder->addValue<bool>(inputSectionName_ + "-" + c_activeTag_,
+            builder->addValue<bool>(DensityFittingModuleInfo::name_ + "-" + c_activeTag_,
                                     active_);
         }
 
@@ -93,7 +93,7 @@ class DensityFittingOptions : public IMdpOptionProvider
          */
         void initMdpOptions(IOptionsContainerWithSections *options) override
         {
-            auto section = options->addSection(OptionSection(inputSectionName_.c_str()));
+            auto section = options->addSection(OptionSection(DensityFittingModuleInfo::name_.c_str()));
             section.addOption(
                     BooleanOption(c_activeTag_.c_str()).store(&active_));
         }
@@ -114,7 +114,6 @@ class DensityFittingOptions : public IMdpOptionProvider
 
     private:
         //! The name of the density-fitting module
-        const std::string     inputSectionName_ = "density-guided-simulation";
 
         const std::string     c_activeTag_             = "active";
         bool                  active_                  = false;
@@ -166,9 +165,11 @@ class DensityFitting final : public IMDModule,
 
 }   // namespace
 
-std::unique_ptr<IMDModule> createDensityFittingModule()
+std::unique_ptr<IMDModule> DensityFittingModuleInfo::create()
 {
     return std::unique_ptr<IMDModule>(new DensityFitting());
 }
+
+const std::string DensityFittingModuleInfo::name_ = "density-guided-simulation";
 
 } // namespace gmx
