@@ -63,10 +63,13 @@ COPY --from=gromacs /usr/local/gromacs /usr/local/gromacs
 ADD --chown=testing:testing src /home/testing/gmxapi/src
 ADD --chown=testing:testing src/gmxapi /home/testing/gmxapi/src/gmxapi
 
+# We use "--no-cache-dir" to reduce Docker image size. The other pip flags are
+# to eliminate network access and speed up the build, since we already know we
+# have installed the dependencies.
 RUN . $VENV/bin/activate && \
     . /usr/local/gromacs/bin/GMXRC && \
     (cd $HOME/gmxapi/src && \
-     pip install --no-cache-dir . \
+     pip install --no-cache-dir --no-deps --no-index --no-build-isolation . \
     )
 
 ADD --chown=testing:testing src/test /home/testing/gmxapi/test
