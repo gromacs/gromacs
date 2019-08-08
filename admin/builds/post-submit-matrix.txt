@@ -35,9 +35,9 @@ gcc-7 gpuhw=none cuda-10.0 openmp no-tng release-with-assert
 # TODO enable this
 # msvc-2017 double no-threadmpi no-prefer-static-libs release-with-assert
 
-# Test with SSE2 + double
 # Test newest icc at time of release
-icc-19 simd=sse2 double mkl release-with-assert
+# Test icc with SIMD in mixed precision in release mode
+icc-19 simd=sse2 mkl release
 
 # Test SSE4.1 SIMD
 # Test single-rank GPU
@@ -60,10 +60,6 @@ gcc-6 npme=1 nranks=2 opencl-1.2 gpuhw=nvidia simd=sse2 release
 # Test GPU-sharing among 4 PP ranks
 # Test no hwloc build, tests internal CPU topology detection (mainly for x86)
 gcc-5 gpuhw=nvidia nranks=4 gpu_id=1 cuda-10.0 no-hwloc release-with-assert
-
-# Test icc on Windows
-# Test icc with SIMD in mixed precision in release mode
-icc-18 msvc-2017 fftpack simd=avx2_256 release
 
 # Test ARM HPC compier toolchain with gcc-7
 #gcc-7 armhpc-18.2 openmp simd=ARM_NEON_ASIMD release

@@ -1262,15 +1262,15 @@ it works because we have tested it. We do test on Linux, Windows, and
 Mac with a range of compilers and libraries for a range of our
 configuration options. Every commit in our git source code repository
 is currently tested on x86 with a number of gcc versions ranging from 5.1
-through 8.1, version 19 of the Intel compiler, and Clang
-versions 3.6 through 7. For this, we use a variety of GNU/Linux
-flavors and versions as well as recent versions of Windows. Under
-Windows, we test both MSVC 2017 and version 16 of the Intel compiler.
+through 9.1, version 19 of the Intel compiler, and Clang
+versions 3.6 through 8. For this, we use a variety of GNU/Linux
+flavors and versions as well as Windows (where we test only MSVC 2017).
 Other compiler, library, and OS versions are tested less frequently.
 For details, you can
 have a look at the `continuous integration server used by GROMACS`_,
 which runs Jenkins_.
 
 We test irregularly on ARM v7, ARM v8, Cray, Fujitsu
-PRIMEHPC, Power8, Google Native Client and other environments, and
+PRIMEHPC, Power8, Power9,
+Google Native Client and other environments, and
 with other compilers and compiler versions, too.
