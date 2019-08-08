@@ -34,31 +34,57 @@
  */
 /*! \internal \file
  * \brief
- * Declares force provider for density fitting
+ * Declares options for density fitting
  *
  * \author Christian Blau <blau@kth.se>
  * \ingroup module_applied_forces
  */
-#ifndef GMX_APPLIED_FORCES_DENSITYFITTINGFORCEPROVIDER_H
-#define GMX_APPLIED_FORCES_DENSITYFITTINGFORCEPROVIDER_H
+#ifndef GMX_APPLIED_FORCES_DENSITYFITTINGOPTIONS_H
+#define GMX_APPLIED_FORCES_DENSITYFITTINGOPTIONS_H
 
-#include <memory>
+#include <string>
 
-#include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/mdtypes/imdpoptionprovider.h"
+
+#include "densityfittingparameters.h"
 
 namespace gmx
 {
-struct DensityFittingParameters;
 
-class DensityFittingForceProvider final : public IForceProvider
+/*! \internal
+ * \brief Input data storage for density fitting
+ */
+class DensityFittingOptions final : public IMdpOptionProvider
 {
     public:
-        DensityFittingForceProvider(const DensityFittingParameters &parameters);
-        void calculateForces(const ForceProviderInput &forceProviderInput,
-                             ForceProviderOutput      *forceProviderOutput) override;
+        //! From IMdpOptionProvider
+        void initMdpTransform(IKeyValueTreeTransformRules * rules) override;
 
+        /*! \brief
+         * Build mdp parameters for density fitting to be output after pre-processing.
+         * \param[in, out] builder the builder for the mdp options output KV-tree.
+         * \note This should be symmetrical to option initialization without
+         *       employing manual prefixing with the section name string once
+         *       the legacy code blocking this design is removed.
+         */
+        void buildMdpOutput(KeyValueTreeObjectBuilder *builder) const override;
+
+        /*! \brief
+         * Connect option name and data.
+         */
+        void initMdpOptions(IOptionsContainerWithSections *options) override;
+
+        //! Report if this set of options is active
+        bool active() const;
+
+        //! Process input options to parameters, including input file reading.
+        const DensityFittingParameters &buildParameters();
+
+    private:
+        const std::string        c_activeTag_ = "active";
+        DensityFittingParameters parameters_;
 };
 
-}      // namespace gmx
+} // namespace gmx
 
-#endif // GMX_APPLIED_FORCES_DENSITYFITTINGFORCEPROVIDER_H
+#endif

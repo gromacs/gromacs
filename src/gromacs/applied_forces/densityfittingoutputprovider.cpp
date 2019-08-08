@@ -34,31 +34,23 @@
  */
 /*! \internal \file
  * \brief
- * Declares force provider for density fitting
+ * Declares data structure for density fitting output
  *
  * \author Christian Blau <blau@kth.se>
  * \ingroup module_applied_forces
  */
-#ifndef GMX_APPLIED_FORCES_DENSITYFITTINGFORCEPROVIDER_H
-#define GMX_APPLIED_FORCES_DENSITYFITTINGFORCEPROVIDER_H
 
-#include <memory>
+#include "gmxpre.h"
 
-#include "gromacs/mdtypes/iforceprovider.h"
-
+#include "densityfittingoutputprovider.h"
 namespace gmx
 {
-struct DensityFittingParameters;
 
-class DensityFittingForceProvider final : public IForceProvider
-{
-    public:
-        DensityFittingForceProvider(const DensityFittingParameters &parameters);
-        void calculateForces(const ForceProviderInput &forceProviderInput,
-                             ForceProviderOutput      *forceProviderOutput) override;
+void DensityFittingOutputProvider::initOutput(FILE * /*fplog*/, int /*nfile*/,
+                                              const t_filenm /*fnm*/[], bool /*bAppendFiles*/, const gmx_output_env_t * /*oenv*/)
+{}
 
-};
+void DensityFittingOutputProvider::finishOutput()
+{}
 
-}      // namespace gmx
-
-#endif // GMX_APPLIED_FORCES_DENSITYFITTINGFORCEPROVIDER_H
+} // namespace gmx

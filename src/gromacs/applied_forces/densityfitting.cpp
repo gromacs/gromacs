@@ -43,81 +43,20 @@
 
 #include "densityfitting.h"
 
-#include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
-#include "gromacs/mdtypes/imdoutputprovider.h"
-#include "gromacs/mdtypes/imdpoptionprovider.h"
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/options/optionsection.h"
-#include "gromacs/utility/keyvaluetreebuilder.h"
-#include "gromacs/utility/keyvaluetreetransform.h"
-#include "gromacs/utility/stringutil.h"
 
 #include "densityfittingforceprovider.h"
-#include "densityfittingparameters.h"
+#include "densityfittingoptions.h"
+#include "densityfittingoutputprovider.h"
 
 namespace gmx
 {
 
+class IMdpOptionProvider;
+class DensityFittingForceProvider;
+
 namespace
 {
-
-/*! \internal
- * \brief Input data storage for density fitting
- */
-class DensityFittingOptions : public IMdpOptionProvider
-{
-    public:
-        DensityFittingOptions()
-        { }
-
-        //! From IMdpOptionProvider
-        void initMdpTransform(IKeyValueTreeTransformRules * /*transform*/ ) override
-        {}
-
-        /*! \brief
-         * Build mdp parameters for density fitting to be output after pre-processing.
-         * \param[in, out] builder the builder for the mdp options output KV-tree.
-         * \note This should be symmetrical to option initialization without
-         *       employing manual prefixing with the section name string once
-         *       the legacy code blocking this design is removed.
-         */
-        void buildMdpOutput(KeyValueTreeObjectBuilder *builder) const override
-        {
-            builder->addValue<bool>(DensityFittingModuleInfo::name_ + "-" + c_activeTag_,
-                                    active_);
-        }
-
-        /*! \brief
-         * Connect option name and data.
-         */
-        void initMdpOptions(IOptionsContainerWithSections *options) override
-        {
-            auto section = options->addSection(OptionSection(DensityFittingModuleInfo::name_.c_str()));
-            section.addOption(
-                    BooleanOption(c_activeTag_.c_str()).store(&active_));
-        }
-
-        //! Report if this set of options is active
-        bool active() const
-        {
-            return active_;
-        }
-
-        //! Process input options to parameters, including input file reading.
-        DensityFittingParameters buildParameters()
-        {
-            // read map to mrc-header and data vector
-            // convert mrcheader and data vector to grid data
-            return {};
-        }
-
-    private:
-        //! The name of the density-fitting module
-
-        const std::string     c_activeTag_             = "active";
-        bool                  active_                  = false;
-};
 
 /*! \internal
  * \brief Density fitting
@@ -125,8 +64,7 @@ class DensityFittingOptions : public IMdpOptionProvider
  * Class that implements the density fitting forces and potential
  * \note the virial calculation is not yet implemented
  */
-class DensityFitting final : public IMDModule,
-                             public IMDOutputProvider
+class DensityFitting final : public IMDModule
 {
     public:
         DensityFitting() = default;
@@ -146,19 +84,13 @@ class DensityFitting final : public IMDModule,
         }
 
         //! This MDModule provides its own output
-        IMDOutputProvider *outputProvider() override { return this; }
-
-        //! Initialize output
-        void initOutput(FILE * /*fplog*/, int /*nfile*/, const t_filenm /*fnm*/[],
-                        bool /*bAppendFiles*/, const gmx_output_env_t * /*oenv*/) override
-        {}
-
-        //! Finalizes output from a simulation run.
-        void finishOutput() override {}
+        IMDOutputProvider *outputProvider() override { return &densityFittingOutputProvider_; }
 
     private:
+        //! The output provider
+        DensityFittingOutputProvider                 densityFittingOutputProvider_;
         //! The options provided for density fitting
-        DensityFittingOptions densityFittingOptions_;
+        DensityFittingOptions                        densityFittingOptions_;
         //! Object that evaluates the forces
         std::unique_ptr<DensityFittingForceProvider> forceProvider_;
 };

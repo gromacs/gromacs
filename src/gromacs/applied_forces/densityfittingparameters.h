@@ -45,8 +45,15 @@
 namespace gmx
 {
 
-class DensityFittingParameters
+/*! \internal
+ * \brief Holding all directly user-provided parameters for density fitting.
+ *
+ * Also used for setting all default parameters.
+ */
+struct DensityFittingParameters
 {
+    //! Indicate if density fitting is active
+    bool active_ = false;
 };
 
 }      // namespace gmx
