@@ -85,12 +85,14 @@
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
-struct gmx_sd_const_t {
-    double em;
+struct gmx_sd_const_t
+{
+    double em = 0;
 };
 
-struct gmx_sd_sigma_t {
-    real V;
+struct gmx_sd_sigma_t
+{
+    real V = 0;
 };
 
 struct gmx_stochd_t

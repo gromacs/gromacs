@@ -50,36 +50,59 @@ struct SimulationGroups;
 struct t_inputrec;
 struct t_mdatoms;
 
-struct t_vcm_thread{
-    rvec      p    = {0};   /* Linear momentum                     */
-    rvec      x    = {0};   /* Center of mass                      */
-    rvec      j    = {0};   /* Angular momentum                    */
-    tensor    i    = {{0}}; /* Moment of inertia                   */
-    real      mass = 0;     /* Mass                                */
+struct t_vcm_thread
+{
+    //! Linear momentum
+    rvec      p    = {0};
+    //! Center of mass
+    rvec      x    = {0};
+    //! Angular momentum
+    rvec      j    = {0};
+    //! Moment of inertia
+    tensor    i    = {{0}};
+    //! Mass
+    real      mass = 0;
 };
 
 struct t_vcm
 {
-    int                       nr;         /* Number of groups                    */
-    int                       size;       /* Size of group arrays                */
-    int                       stride;     /* Stride for thread data              */
-    int                       mode;       /* One of the enums above              */
-    int                       ndim;       /* The number of dimensions for corr.  */
-    real                      timeStep;   /* The time step for COMM removal      */
-    std::vector<real>         group_ndf;  /* Number of degrees of freedom        */
-    std::vector<real>         group_mass; /* Mass per group                      */
-    std::vector<gmx::RVec>    group_p;    /* Linear momentum per group           */
-    std::vector<gmx::RVec>    group_v;    /* Linear velocity per group           */
-    std::vector<gmx::RVec>    group_x;    /* Center of mass per group            */
-    std::vector<gmx::RVec>    group_j;    /* Angular momentum per group          */
-    std::vector<gmx::RVec>    group_w;    /* Angular velocity (omega)            */
-    tensor                   *group_i;    /* Moment of inertia per group         */
-    std::vector<char *>       group_name; /* These two are copies to pointers in */
-    ivec                     *nFreeze;    /* Tells whether dimensions are frozen per freeze group */
-    std::vector<t_vcm_thread> thread_vcm; /* Temporary data per thread and group */
+    //! Number of groups
+    int                       nr = 0;
+    //! Size of group arrays
+    int                       size = 0;
+    //! Stride for thread data
+    int                       stride = 0;
+    //! One of the enums above
+    int                       mode = 0;
+    //! The number of dimensions for corr.
+    int                       ndim = 0;
+    //! The time step for COMM removal
+    real                      timeStep = 0;
+    //! Number of degrees of freedom
+    std::vector<real>         group_ndf;
+    //! Mass per group
+    std::vector<real>         group_mass;
+    //! Linear momentum per group
+    std::vector<gmx::RVec>    group_p;
+    //! Linear velocity per group
+    std::vector<gmx::RVec>    group_v;
+    //! Center of mass per group
+    std::vector<gmx::RVec>    group_x;
+    //! Angular momentum per group
+    std::vector<gmx::RVec>    group_j;
+    //! Angular velocity (omega)
+    std::vector<gmx::RVec>    group_w;
+    //! Moment of inertia per group
+    tensor                   *group_i = nullptr;
+    //! These two are copies to pointers in
+    std::vector<char *>       group_name;
+    //! Tells whether dimensions are frozen per freeze group
+    ivec                     *nFreeze = nullptr;
+    //! Temporary data per thread and group
+    std::vector<t_vcm_thread> thread_vcm;
 
-    // Tell whether the integrator conserves momentum
-    bool integratorConservesMomentum;
+    //! Tell whether the integrator conserves momentum
+    bool integratorConservesMomentum = false;
 
     t_vcm(const SimulationGroups &groups, const t_inputrec &ir);
     ~t_vcm();
