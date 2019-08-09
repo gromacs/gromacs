@@ -80,13 +80,16 @@ class LeapFrogCuda
          * Integrates the equation of motion using Leap-Frog algorithm.
          * Updates coordinates and velocities on the GPU.
          *
-         * \param[in]     d_x           Initial coordinates.
-         * \param[out]    d_xp          Place to save the resulting coordinates to.
-         * \param[in,out] d_v           Velocities (will be updated).
-         * \param[in]     d_f           Forces.
-         * \param[in]     dt            Timestep.
-         * \param[in]     doTempCouple  If the temperature coupling should be applied.
-         * \param[in]     tcstat        Temperature coupling data.
+         * \param[in]     d_x                    Initial coordinates.
+         * \param[out]    d_xp                   Place to save the resulting coordinates to.
+         * \param[in,out] d_v                    Velocities (will be updated).
+         * \param[in]     d_f                    Forces.
+         * \param[in]     dt                     Timestep.
+         * \param[in]     doTempCouple           If the temperature coupling should be applied.
+         * \param[in]     tcstat                 Temperature coupling data.
+         * \param[in]     doPressureCouple       If the temperature coupling should be applied.
+         * \param[in]     dtPressureCouple       Period between pressure coupling steps
+         * \param[in]     velocityScalingMatrix  Parrinello-Rahman velocity scaling matrix
          */
         void integrate(const float3                     *d_x,
                        float3                           *d_xp,
@@ -94,7 +97,10 @@ class LeapFrogCuda
                        const float3                     *d_f,
                        const real                        dt,
                        const bool                        doTempCouple,
-                       gmx::ArrayRef<const t_grp_tcstat> tcstat);
+                       gmx::ArrayRef<const t_grp_tcstat> tcstat,
+                       const bool                        doPressureCouple,
+                       const float                       dtPressureCouple,
+                       const matrix                      velocityScalingMatrix);
 
         /*! \brief Set the integrator
          *
@@ -152,6 +158,9 @@ class LeapFrogCuda
         int                    numTempScaleGroups_ = -1;
         //! Maximum size of the temperature coupling groups array
         int                    numTempScaleGroupsAlloc_ = -1;
+
+        //! Vector with diagonal elements of the pressure coupling velocity rescale factors
+        float3                 velocityScalingMatrixDiagonal_;
 
 };
 

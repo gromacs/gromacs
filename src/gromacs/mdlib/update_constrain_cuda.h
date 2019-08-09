@@ -82,19 +82,25 @@ class UpdateConstrainCuda
          * This will extract temperature scaling factors from tcstat, transform them into the plain
          * array and call the normal integrate method.
          *
-         * \param[in]  dt                 Timestep
-         * \param[in]  updateVelocities   If the velocities should be constrained.
-         * \param[in]  computeVirial      If virial should be updated.
-         * \param[out] virial             Place to save virial tensor.
-         * \param[in]  doTempCouple       If the temperature coupling should be performed.
-         * \param[in]  tcstat             Temperature coupling data.
+         * \param[in]  dt                     Timestep
+         * \param[in]  updateVelocities       If the velocities should be constrained.
+         * \param[in]  computeVirial          If virial should be updated.
+         * \param[out] virial                 Place to save virial tensor.
+         * \param[in]  doTempCouple           If the temperature coupling should be performed.
+         * \param[in]  tcstat                 Temperature coupling data.
+         * \param[in]  doPressureCouple       If the temperature coupling should be applied.
+         * \param[in]  dtPressureCouple       Period between pressure coupling steps
+         * \param[in]  velocityScalingMatrix  Parrinello-Rahman velocity scaling matrix
          */
         void integrate(real                              dt,
                        bool                              updateVelocities,
                        bool                              computeVirial,
                        tensor                            virial,
                        bool                              doTempCouple,
-                       gmx::ArrayRef<const t_grp_tcstat> tcstat);
+                       gmx::ArrayRef<const t_grp_tcstat> tcstat,
+                       bool                              doPressureCouple,
+                       float                             dtPressureCouple,
+                       const matrix                      velocityScalingMatrix);
 
         /*! \brief
          * Update data-structures (e.g. after NB search step).

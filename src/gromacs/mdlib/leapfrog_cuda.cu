@@ -85,6 +85,18 @@ enum class NumTempScaleValues
     Multiple   //!< Multiple T-scaling values, need to use T-group indices
 };
 
+/*! \brief Different variants of the Parrinello-Rahman velocity scaling
+ *
+ *  This is needed to template the kernel
+ *  \todo Unify with similar enum in CPU update module
+ */
+enum class VelocityScalingType
+{
+    None,      //!< Do not apply velocity scaling (not a PR-coupling run or step)
+    Diagonal,  //!< Apply velocity scaling using a diagonal matrix
+    Full       //!< Apply velocity scaling using a full matrix
+};
+
 /*! \brief Main kernel for Leap-Frog integrator.
  *
  *  Each GPU thread works with a single particle. Empty declaration is needed to
@@ -93,18 +105,21 @@ enum class NumTempScaleValues
  *  \todo Check if the force should be set to zero here.
  *  \todo This kernel can also accumulate incidental temperatures for each atom.
  *
- * \tparam        numTempScaleValues    The number of different T-couple values
- * \param[in]     numAtoms              Total number of atoms.
- * \param[in]     gm_x                  Coordinates before the timestep
- * \param[out]    gm_xp                 Coordinates after the timestep.
- * \param[in,out] gm_v                  Velocities to update.
- * \param[in]     gm_f                  Atomic forces.
- * \param[in]     gm_inverseMasses      Reciprocal masses.
- * \param[in]     dt                    Timestep.
- * \param[in]     gm_lambdas            Temperature scaling factors (one per group)
- * \param[in]     gm_tempScaleGroups    Mapping of atoms into groups.
+ * \tparam        numTempScaleValues             The number of different T-couple values.
+ * \tparam        velocityScaling                Type of the Parrinello-Rahman velocity rescaling.
+ * \param[in]     numAtoms                       Total number of atoms.
+ * \param[in]     gm_x                           Coordinates before the timestep
+ * \param[out]    gm_xp                          Coordinates after the timestep.
+ * \param[in,out] gm_v                           Velocities to update.
+ * \param[in]     gm_f                           Atomic forces.
+ * \param[in]     gm_inverseMasses               Reciprocal masses.
+ * \param[in]     dt                             Timestep.
+ * \param[in]     gm_lambdas                     Temperature scaling factors (one per group)
+ * \param[in]     gm_tempScaleGroups             Mapping of atoms into groups.
+ * \param[in]     dtPressureCouple               Time step for pressure coupling
+ * \param[in]     velocityScalingMatrixDiagonal  Diagonal elements of Parrinello-Rahman velocity scaling matrix
  */
-template<NumTempScaleValues numTempScaleValues>
+template<NumTempScaleValues numTempScaleValues, VelocityScalingType velocityScaling>
 __launch_bounds__(c_maxThreadsPerBlock)
 __global__ void leapfrog_kernel(const int                             numAtoms,
                                 const float3* __restrict__            gm_x,
@@ -114,9 +129,10 @@ __global__ void leapfrog_kernel(const int                             numAtoms,
                                 const float*  __restrict__            gm_inverseMasses,
                                 const float                           dt,
                                 const float*  __restrict__            gm_lambdas,
-                                const unsigned short*    __restrict__ gm_tempScaleGroups);
+                                const unsigned short*    __restrict__ gm_tempScaleGroups,
+                                const float3                          velocityScalingMatrixDiagonal);
 
-template<NumTempScaleValues numTempScaleValues>
+template<NumTempScaleValues numTempScaleValues, VelocityScalingType velocityScaling>
 __launch_bounds__(c_maxThreadsPerBlock)
 __global__ void leapfrog_kernel(const int                             numAtoms,
                                 const float3* __restrict__            gm_x,
@@ -126,35 +142,52 @@ __global__ void leapfrog_kernel(const int                             numAtoms,
                                 const float*  __restrict__            gm_inverseMasses,
                                 const float                           dt,
                                 const float*  __restrict__            gm_lambdas,
-                                const unsigned short*    __restrict__ gm_tempScaleGroups)
+                                const unsigned short*    __restrict__ gm_tempScaleGroups,
+                                const float3                          velocityScalingMatrixDiagonal)
 {
     int threadIndex = blockIdx.x*blockDim.x + threadIdx.x;
     if (threadIndex < numAtoms)
     {
-        float3 xi           = gm_x[threadIndex];
-        float3 vi           = gm_v[threadIndex];
-        float3 fi           = gm_f[threadIndex];
-        float  imi          = gm_inverseMasses[threadIndex];
-        float  imidt        = imi*dt;
+        float3 x           = gm_x[threadIndex];
+        float3 v           = gm_v[threadIndex];
+        float3 f           = gm_f[threadIndex];
+        float  im          = gm_inverseMasses[threadIndex];
+        float  imdt        = im*dt;
 
-        if (numTempScaleValues != NumTempScaleValues::None)
+        if (numTempScaleValues != NumTempScaleValues::None || velocityScaling != VelocityScalingType::None)
         {
-            float lambda = 1.0F;
-            if (numTempScaleValues == NumTempScaleValues::Single)
+            float3 vp = v;
+
+            if (numTempScaleValues != NumTempScaleValues::None)
             {
-                lambda    = gm_lambdas[0];
+                float lambda = 1.0F;
+                if (numTempScaleValues == NumTempScaleValues::Single)
+                {
+                    lambda    = gm_lambdas[0];
+                }
+                else if (numTempScaleValues == NumTempScaleValues::Multiple)
+                {
+                    int tempScaleGroup = gm_tempScaleGroups[threadIndex];
+                    lambda             = gm_lambdas[tempScaleGroup];
+                }
+                vp *= lambda;
             }
-            if (numTempScaleValues == NumTempScaleValues::Multiple)
+
+            if (velocityScaling == VelocityScalingType::Diagonal)
             {
-                int tempScaleGroup = gm_tempScaleGroups[threadIndex];
-                lambda             = gm_lambdas[tempScaleGroup];
+                vp.x -= velocityScalingMatrixDiagonal.x*v.x;
+                vp.y -= velocityScalingMatrixDiagonal.y*v.y;
+                vp.z -= velocityScalingMatrixDiagonal.z*v.z;
             }
-            vi           *= lambda;
+
+            v = vp;
         }
-        vi                 += fi*imidt;
-        xi                 += vi*dt;
-        gm_v[threadIndex]   = vi;
-        gm_xp[threadIndex]  = xi;
+
+        v += f*imdt;
+
+        x                  += v*dt;
+        gm_v[threadIndex]   = v;
+        gm_xp[threadIndex]  = x;
     }
     return;
 }
@@ -165,28 +198,56 @@ __global__ void leapfrog_kernel(const int                             numAtoms,
  * If zero is passed as an argument, it is assumed that no temperature coupling groups are used.
  *
  * \param[in]  numTempScaleValues  Numer of temperature coupling groups in the system
+ * \param[in]  velocityScaling     Type of the Parrinello-Rahman velocity scaling
  *
  * \retrun                         Pointer to CUDA kernel
  */
-inline auto selectLeapFrogKernelPtr(int numTempScaleValues)
+inline auto selectLeapFrogKernelPtr(int numTempScaleValues, VelocityScalingType velocityScaling)
 {
-    auto kernelPtr = leapfrog_kernel<NumTempScaleValues::None>;
+    auto kernelPtr = leapfrog_kernel<NumTempScaleValues::None, VelocityScalingType::None>;
 
-    if (numTempScaleValues == 0)
+    if (velocityScaling == VelocityScalingType::None)
     {
-        kernelPtr = leapfrog_kernel<NumTempScaleValues::None>;
+        if (numTempScaleValues == 0)
+        {
+            kernelPtr = leapfrog_kernel<NumTempScaleValues::None, VelocityScalingType::None>;
+        }
+        else if (numTempScaleValues == 1)
+        {
+            kernelPtr = leapfrog_kernel<NumTempScaleValues::Single, VelocityScalingType::None>;
+        }
+        else if (numTempScaleValues > 1)
+        {
+            kernelPtr = leapfrog_kernel<NumTempScaleValues::Multiple, VelocityScalingType::None>;
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(false, "Number of temperature coupling groups should be greater than zero (zero for no coupling).");
+        }
     }
-    else if (numTempScaleValues == 1)
+    else
+    if (velocityScaling == VelocityScalingType::Diagonal)
     {
-        kernelPtr = leapfrog_kernel<NumTempScaleValues::Single>;
-    }
-    else if (numTempScaleValues > 1)
-    {
-        kernelPtr = leapfrog_kernel<NumTempScaleValues::Multiple>;
+        if (numTempScaleValues == 0)
+        {
+            kernelPtr = leapfrog_kernel<NumTempScaleValues::None, VelocityScalingType::Diagonal>;
+        }
+        else if (numTempScaleValues == 1)
+        {
+            kernelPtr = leapfrog_kernel<NumTempScaleValues::Single, VelocityScalingType::Diagonal>;
+        }
+        else if (numTempScaleValues > 1)
+        {
+            kernelPtr = leapfrog_kernel<NumTempScaleValues::Multiple, VelocityScalingType::Diagonal>;
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(false, "Number of temperature coupling groups should be greater than zero (zero for no coupling).");
+        }
     }
     else
     {
-        GMX_RELEASE_ASSERT(false, "Number of temperature coupling groups should be greater than zero or zero for no coupling.");
+        GMX_RELEASE_ASSERT(false, "Only isotropic Parrinello-Rahman pressure coupling is supported.");
     }
     return kernelPtr;
 }
@@ -197,23 +258,39 @@ void LeapFrogCuda::integrate(const float3                      *d_x,
                              const float3                      *d_f,
                              const real                         dt,
                              const bool                         doTempCouple,
-                             gmx::ArrayRef<const t_grp_tcstat>  tcstat)
+                             gmx::ArrayRef<const t_grp_tcstat>  tcstat,
+                             const bool                         doPressureCouple,
+                             const float                        dtPressureCouple,
+                             const matrix                       velocityScalingMatrix)
 {
 
     ensureNoPendingCudaError("In CUDA version of Leap-Frog integrator");
 
-    auto kernelPtr          = leapfrog_kernel<NumTempScaleValues::None>;
-
-    if (doTempCouple)
+    auto kernelPtr          = leapfrog_kernel<NumTempScaleValues::None, VelocityScalingType::None>;
+    if (doTempCouple || doPressureCouple)
     {
-        GMX_ASSERT(numTempScaleValues_ == ssize(h_lambdas_), "Number of temperature scaling factors changed since it was set for the last time.");
-        for (int i = 0; i < numTempScaleValues_; i++)
+        if (doTempCouple)
         {
-            h_lambdas_[i] = tcstat[i].lambda;
+            GMX_ASSERT(numTempScaleValues_ == ssize(h_lambdas_), "Number of temperature scaling factors changed since it was set for the last time.");
+            for (int i = 0; i < numTempScaleValues_; i++)
+            {
+                h_lambdas_[i] = tcstat[i].lambda;
+            }
+            copyToDeviceBuffer(&d_lambdas_, h_lambdas_.data(),
+                               0, numTempScaleValues_, stream_, GpuApiCallBehavior::Async, nullptr);
         }
-        copyToDeviceBuffer(&d_lambdas_, h_lambdas_.data(),
-                           0, numTempScaleValues_, stream_, GpuApiCallBehavior::Async, nullptr);
-        kernelPtr = selectLeapFrogKernelPtr(numTempScaleValues_);
+        VelocityScalingType velocityScaling = VelocityScalingType::None;
+        if (doPressureCouple)
+        {
+            velocityScaling = VelocityScalingType::Diagonal;
+            GMX_ASSERT(velocityScalingMatrix[YY][XX] == 0 && velocityScalingMatrix[ZZ][XX] == 0 && velocityScalingMatrix[ZZ][YY] == 0 &&
+                       velocityScalingMatrix[XX][YY] == 0 && velocityScalingMatrix[XX][ZZ] == 0 && velocityScalingMatrix[YY][ZZ] == 0,
+                       "Fully anisotropic Parrinello-Rahman pressure coupling is not yet supported in GPU version of Leap-Frog integrator.");
+            velocityScalingMatrixDiagonal_ = make_float3(dtPressureCouple*velocityScalingMatrix[XX][XX],
+                                                         dtPressureCouple*velocityScalingMatrix[YY][YY],
+                                                         dtPressureCouple*velocityScalingMatrix[ZZ][ZZ]);
+        }
+        kernelPtr = selectLeapFrogKernelPtr(numTempScaleValues_, velocityScaling);
     }
 
     const auto            kernelArgs = prepareGpuKernelArguments(kernelPtr, kernelLaunchConfig_,
@@ -222,7 +299,8 @@ void LeapFrogCuda::integrate(const float3                      *d_x,
                                                                  &d_v,
                                                                  &d_f,
                                                                  &d_inverseMasses_, &dt,
-                                                                 &d_lambdas_, &d_tempScaleGroups_);
+                                                                 &d_lambdas_, &d_tempScaleGroups_,
+                                                                 &velocityScalingMatrixDiagonal_);
     launchGpuKernel(kernelPtr, kernelLaunchConfig_, nullptr, "leapfrog_kernel", kernelArgs);
 
     return;

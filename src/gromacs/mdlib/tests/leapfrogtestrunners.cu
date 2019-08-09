@@ -58,6 +58,7 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/leapfrog_cuda.cuh"
+#include "gromacs/mdlib/stat.h"
 #include "gromacs/mdtypes/group.h"
 
 namespace gmx
@@ -96,8 +97,11 @@ void integrateLeapFrogGpu(LeapFrogTestData *testData,
     bool doTempCouple = testData->numTCoupleGroups_ > 0;
     for (int step = 0; step < numSteps; step++)
     {
-
-        integrator->integrate(d_x, d_xp, d_v, d_f, testData->timestep_, doTempCouple, testData->kineticEnergyData_.tcstat);
+        // This follows the logic of the CPU-based implementation
+        bool doPressureCouple = testData->doPressureCouple_ && do_per_step(step + testData->inputRecord_.nstpcouple - 1, testData->inputRecord_.nstpcouple);
+        integrator->integrate(d_x, d_xp, d_v, d_f, testData->timestep_,
+                              doTempCouple, testData->kineticEnergyData_.tcstat,
+                              doPressureCouple, testData->dtPressureCouple_, testData->velocityScalingMatrix_);
 
         copyFromDeviceBuffer(h_xp, &d_xp, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
         copyToDeviceBuffer(&d_x,    h_xp, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);

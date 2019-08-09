@@ -76,13 +76,18 @@ void UpdateConstrainCuda::Impl::integrate(const real                        dt,
                                           const bool                        computeVirial,
                                           tensor                            virial,
                                           const bool                        doTempCouple,
-                                          gmx::ArrayRef<const t_grp_tcstat> tcstat)
+                                          gmx::ArrayRef<const t_grp_tcstat> tcstat,
+                                          const bool                        doPressureCouple,
+                                          const float                       dtPressureCouple,
+                                          const matrix                      velocityScalingMatrix)
 {
     // Clearing virial matrix
     // TODO There is no point in having separate virial matrix for constraints
     clear_mat(virial);
 
-    integrator_->integrate(d_x_, d_xp_, d_v_, d_f_, dt, doTempCouple, tcstat);
+    integrator_->integrate(d_x_, d_xp_, d_v_, d_f_, dt,
+                           doTempCouple, tcstat,
+                           doPressureCouple, dtPressureCouple, velocityScalingMatrix);
     lincsCuda_->apply(d_x_, d_xp_,
                       updateVelocities, d_v_, 1.0/dt,
                       computeVirial, virial);
@@ -199,9 +204,14 @@ void UpdateConstrainCuda::integrate(const real                        dt,
                                     const bool                        computeVirial,
                                     tensor                            virialScaled,
                                     const bool                        doTempCouple,
-                                    gmx::ArrayRef<const t_grp_tcstat> tcstat)
+                                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
+                                    const bool                        doPressureCouple,
+                                    const float                       dtPressureCouple,
+                                    const matrix                      pRVScalingMatrix)
 {
-    impl_->integrate(dt, updateVelocities, computeVirial, virialScaled, doTempCouple, tcstat);
+    impl_->integrate(dt, updateVelocities, computeVirial, virialScaled,
+                     doTempCouple, tcstat,
+                     doPressureCouple, dtPressureCouple, pRVScalingMatrix);
 }
 
 void UpdateConstrainCuda::set(const t_idef    &idef,

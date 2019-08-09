@@ -321,7 +321,7 @@ void gmx::LegacySimulator::do_md()
     {
         GMX_RELEASE_ASSERT(ir->eI == eiMD, "Only md integrator is supported on the GPU.");
         GMX_RELEASE_ASSERT(ir->etc != etcNOSEHOOVER, "Nose Hoover temperature coupling is not supported on the GPU.");
-        GMX_RELEASE_ASSERT(ir->epc == epcNO, "Pressure coupling is not supported on the GPU.");
+        GMX_RELEASE_ASSERT(ir->epc == epcNO || ir->epc == epcPARRINELLORAHMAN, "Only Parrinello Rahman pressure control is supported on the GPU.");
         GMX_RELEASE_ASSERT(!mdatoms->haveVsites, "Virtual sites are not supported on the GPU");
         GMX_RELEASE_ASSERT(ed == nullptr, "Essential dynamics is not supported with GPU-based update constraints.");
         GMX_LOG(mdlog.info).asParagraph().
@@ -1230,10 +1230,13 @@ void gmx::LegacySimulator::do_md()
             integrator->copyVelocitiesToGpu(state->v.rvec_array());
             integrator->copyForcesToGpu(as_rvec_array(f.data()));
 
-            // This applies Leap-Frog, LINCS and SETTLE in a succession
-            bool doTempCouple = (ir->etc != etcNO && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
+            bool doTempCouple     = (ir->etc != etcNO && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
+            bool doPressureCouple = (ir->epc == epcPARRINELLORAHMAN && do_per_step(step + ir->nstpcouple - 1, ir->nstpcouple));
 
-            integrator->integrate(ir->delta_t, true, bCalcVir, shake_vir, doTempCouple, ekind->tcstat);
+            // This applies Leap-Frog, LINCS and SETTLE in succession
+            integrator->integrate(ir->delta_t, true, bCalcVir, shake_vir,
+                                  doTempCouple, ekind->tcstat,
+                                  doPressureCouple, ir->nstpcouple*ir->delta_t, M);
 
             integrator->copyCoordinatesFromGpu(state->x.rvec_array());
             integrator->copyVelocitiesFromGpu(state->v.rvec_array());

@@ -107,22 +107,28 @@ struct LeapFrogTestParameters
     rvec f;
     //! Number of temperature coupling group (zero for no temperature coupling)
     int  numTCoupleGroups;
+    //! Number of steps between pressure coupling steps (zero for no pressure coupling).
+    int  nstpcouple;
 };
 
 //! The set of parameters combinations to run the test on
-const LeapFrogTestParameters parametersSets[] = {{  1, 0.001,    1, {0.0,  0.0, 0.0}, {0.0, 0.0, 0.0},  0},    // Zero velocity and force
-                                                 {  1, 0.001,    1, {0.0,  0.0, 0.0}, {-3.0, 2.0, -1.0}, 0},   // Zero velocity
-                                                 {  1, 0.001,    1, {1.0, -2.0, 3.0}, {0.0, 0.0, 0.0},  0},    // Zero force
-                                                 {  1, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 0},   // 1 particle
-                                                 { 10, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 0},   // 10 particles
-                                                 {100, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 0},   // 100 particles
-                                                 {300, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 0},   // 300 particles
-                                                 {  1, 0.0005,   1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 0},   // 0.0005 ps timestep
-                                                 {  1, 0.001,   10, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 0},   // 10 step
-                                                 {  1, 0.001,  100, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 0},   // 100 steps
-                                                 {100, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 1},   // 1 temperature couple group
-                                                 {100, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 2},   // 2 temperature couple groups
-                                                 {100, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 10}}; // 10 temperature couple groups
+const LeapFrogTestParameters parametersSets[] = {{  1, 0.001,    1, {0.0,  0.0, 0.0}, { 0.0, 0.0,  0.0},  0, 0},  // Zero velocity and force
+                                                 {  1, 0.001,    1, {0.0,  0.0, 0.0}, {-3.0, 2.0, -1.0},  0, 0},  // Zero velocity
+                                                 {  1, 0.001,    1, {1.0, -2.0, 3.0}, { 0.0, 0.0,  0.0},  0, 0},  // Zero force
+                                                 {  1, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0},  0, 0},  // 1 particle
+                                                 { 10, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0},  0, 0},  // 10 particles
+                                                 {100, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0},  0, 0},  // 100 particles
+                                                 {300, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0},  0, 0},  // 300 particles
+                                                 {  1, 0.0005,   1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0},  0, 0},  // 0.0005 ps timestep
+                                                 {  1, 0.001,   10, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0},  0, 0},  // 10 step
+                                                 {  1, 0.001,  100, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0},  0, 0},  // 100 steps
+                                                 {100, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0},  1, 0},  // 1 temperature couple group
+                                                 {100, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0},  2, 0},  // 2 temperature couple groups
+                                                 {100, 0.001,    1, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0}, 10, 0},  // 10 temperature couple groups
+                                                 {100, 0.001,   10, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0},  0, 1},  // With pressure coupling
+                                                 {100, 0.001,   10, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0},  2, 1},  // With both temperature and pressure coupling
+                                                 {100, 0.001,   10, {1.0, -2.0, 3.0}, {-3.0, 2.0, -1.0},  0, 3}}; // Do pressure coupling not on every step
+
 
 
 /*! \brief Test fixture for LeapFrog integrator.
@@ -230,15 +236,21 @@ TEST_P(LeapFrogTest, SimpleIntegration)
 
         LeapFrogTestParameters parameters = GetParam();
 
-        std::string            testDescription = formatString("Testing %s with %d atoms for %d timesteps with %d temperature coupling groups (dt = %f, v0=(%f, %f, %f), f0=(%f, %f, %f))",
+        std::string            testDescription = formatString("Testing %s with %d atoms for %d timesteps with %d temperature coupling groups and %s pressure coupling (dt = %f, v0=(%f, %f, %f), f0=(%f, %f, %f), nstpcouple = %d)",
                                                               runnerName.c_str(),
-                                                              parameters.numAtoms, parameters.numSteps, parameters.numTCoupleGroups, parameters.timestep,
+                                                              parameters.numAtoms, parameters.numSteps, parameters.numTCoupleGroups,
+                                                              parameters.nstpcouple == 0 ? "without" : "with",
+                                                              parameters.timestep,
                                                               parameters.v[XX], parameters.v[YY], parameters.v[ZZ],
-                                                              parameters.f[XX], parameters.f[YY], parameters.f[ZZ]);
+                                                              parameters.f[XX], parameters.f[YY], parameters.f[ZZ],
+                                                              parameters.nstpcouple);
         SCOPED_TRACE(testDescription);
 
         std::unique_ptr<LeapFrogTestData> testData =
-            std::make_unique<LeapFrogTestData>(parameters.numAtoms, parameters.timestep, parameters.v, parameters.f, parameters.numTCoupleGroups);
+            std::make_unique<LeapFrogTestData>(parameters.numAtoms, parameters.timestep,
+                                               parameters.v, parameters.f,
+                                               parameters.numTCoupleGroups,
+                                               parameters.nstpcouple);
 
         runner.second(testData.get(), parameters.numSteps);
 
@@ -249,7 +261,7 @@ TEST_P(LeapFrogTest, SimpleIntegration)
         FloatingPointTolerance tolerance = absoluteTolerance(parameters.numSteps*0.000005);
 
         // Test against the analytical solution (without temperature coupling)
-        if (parameters.numTCoupleGroups == 0)
+        if (parameters.numTCoupleGroups == 0 && parameters.nstpcouple == 0)
         {
             testAgainstAnalyticalSolution(tolerance, *testData, totalTime);
         }

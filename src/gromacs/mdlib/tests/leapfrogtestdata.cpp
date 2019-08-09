@@ -67,7 +67,7 @@ namespace gmx
 namespace test
 {
 
-LeapFrogTestData::LeapFrogTestData(int numAtoms, real timestep, const rvec v0, const rvec f0, int numTCoupleGroups) :
+LeapFrogTestData::LeapFrogTestData(int numAtoms, real timestep, const rvec v0, const rvec f0, int numTCoupleGroups, int nstpcouple) :
     numAtoms_(numAtoms),
     timestep_(timestep),
     x0_(numAtoms),
@@ -145,10 +145,8 @@ LeapFrogTestData::LeapFrogTestData(int numAtoms, real timestep, const rvec v0, c
         }
     }
 
-    // Data needed for current CPU-based implementation
     inputRecord_.eI      = eiMD;
     inputRecord_.delta_t = timestep_;
-    inputRecord_.epc     = epcNO;
 
     state_.flags = 0;
 
@@ -177,20 +175,45 @@ LeapFrogTestData::LeapFrogTestData(int numAtoms, real timestep, const rvec v0, c
     mdAtoms_.havePartiallyFrozenAtoms = false;
     mdAtoms_.cFREEZE                  = nullptr;
 
-    prVScalingMatrix_[XX][XX] = 1.0;
-    prVScalingMatrix_[XX][YY] = 0.0;
-    prVScalingMatrix_[XX][ZZ] = 0.0;
-
-    prVScalingMatrix_[YY][XX] = 0.0;
-    prVScalingMatrix_[YY][YY] = 1.0;
-    prVScalingMatrix_[YY][ZZ] = 0.0;
-
-    prVScalingMatrix_[ZZ][XX] = 0.0;
-    prVScalingMatrix_[ZZ][YY] = 0.0;
-    prVScalingMatrix_[ZZ][ZZ] = 1.0;
-
     update_ = std::make_unique<Update>(&inputRecord_, nullptr);
     update_->setNumAtoms(numAtoms);
+
+    doPressureCouple_ = (nstpcouple != 0);
+
+    if (doPressureCouple_)
+    {
+        inputRecord_.epc        = epcPARRINELLORAHMAN;
+        inputRecord_.nstpcouple = nstpcouple;
+        dtPressureCouple_       = inputRecord_.nstpcouple*inputRecord_.delta_t;
+
+        velocityScalingMatrix_[XX][XX] = 1.2;
+        velocityScalingMatrix_[XX][YY] = 0.0;
+        velocityScalingMatrix_[XX][ZZ] = 0.0;
+
+        velocityScalingMatrix_[YY][XX] = 0.0;
+        velocityScalingMatrix_[YY][YY] = 0.8;
+        velocityScalingMatrix_[YY][ZZ] = 0.0;
+
+        velocityScalingMatrix_[ZZ][XX] = 0.0;
+        velocityScalingMatrix_[ZZ][YY] = 0.0;
+        velocityScalingMatrix_[ZZ][ZZ] = 0.9;
+    }
+    else
+    {
+        inputRecord_.epc               = epcNO;
+        velocityScalingMatrix_[XX][XX] = 1.0;
+        velocityScalingMatrix_[XX][YY] = 0.0;
+        velocityScalingMatrix_[XX][ZZ] = 0.0;
+
+        velocityScalingMatrix_[YY][XX] = 0.0;
+        velocityScalingMatrix_[YY][YY] = 1.0;
+        velocityScalingMatrix_[YY][ZZ] = 0.0;
+
+        velocityScalingMatrix_[ZZ][XX] = 0.0;
+        velocityScalingMatrix_[ZZ][YY] = 0.0;
+        velocityScalingMatrix_[ZZ][ZZ] = 1.0;
+    }
+
 }
 
 LeapFrogTestData::~LeapFrogTestData()

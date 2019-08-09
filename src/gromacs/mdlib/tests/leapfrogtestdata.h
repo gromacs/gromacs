@@ -35,7 +35,7 @@
 /*! \internal \file
  * \brief Tests for the Leap-Frog integrator
  *
- * \todo Prepare for temperature and pressure controlled integrators.
+ * \todo Add anisotropic Parrinello-Rahman and other pressure coupling schemes
  * \todo Add PBC handling test.
  * \todo Reference values tests.
  *
@@ -102,14 +102,18 @@ class LeapFrogTestData
         t_fcdata                forceCalculationData_;
         //! Kinetic energy data (to disable non-equilibrium MD integration)
         gmx_ekindata_t          kineticEnergyData_;
-        //! Parrinnello-Rahman velocity rescalling matrix
-        matrix                  prVScalingMatrix_;
         //! Update data
         std::unique_ptr<Update> update_;
 
         //! Number of temperature coupling groups
         int                     numTCoupleGroups_;
 
+        //! If the pressure coupling is enabled
+        bool                    doPressureCouple_;
+        //! Period between pressure coupling steps
+        float                   dtPressureCouple_;
+        //! Matrix for Parrinello-Rahman velocity scaling
+        matrix                  velocityScalingMatrix_;
 
         /*! \brief Constructor.
          *
@@ -118,8 +122,10 @@ class LeapFrogTestData
          * \param[in]  v0                Initial velocity (same for all particles)
          * \param[in]  f0                External constant force, acting on all particles
          * \param[in]  numTCoupleGroups  Number of temperature coupling groups (zero for no temperature coupling)
+         * \param[in]  nstpcouple        Number of steps between pressure coupling steps (zero for no pressure coupling)
          */
-        LeapFrogTestData(int numAtoms, real timestep, const rvec v0, const rvec f0, int numTCoupleGroups);
+        LeapFrogTestData(int numAtoms, real timestep, const rvec v0, const rvec f0,
+                         int numTCoupleGroups, int nstpcouple);
 
         ~LeapFrogTestData();
 };

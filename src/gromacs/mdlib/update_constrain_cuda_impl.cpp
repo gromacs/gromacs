@@ -69,7 +69,10 @@ void UpdateConstrainCuda::integrate(gmx_unused const real                       
                                     gmx_unused const bool                        computeVirial,
                                     gmx_unused tensor                            virialScaled,
                                     gmx_unused const bool                        doTempCouple,
-                                    gmx_unused gmx::ArrayRef<const t_grp_tcstat> tcstat)
+                                    gmx_unused gmx::ArrayRef<const t_grp_tcstat> tcstat,
+                                    gmx_unused const bool                        doPressureCouple,
+                                    gmx_unused const float                       dtPressureCouple,
+                                    gmx_unused const matrix                      velocityScalingMatrix)
 {
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
 }
