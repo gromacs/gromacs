@@ -137,13 +137,12 @@ static void realloc_work(struct pme_solve_work_t *work, int nkx)
 
 void pme_init_all_work(struct pme_solve_work_t **work, int nthread, int nkx)
 {
-    int thread;
     /* Use fft5d, order after FFT is y major, z, x minor */
 
     snew(*work, nthread);
     /* Allocate the work arrays thread local to optimize memory access */
 #pragma omp parallel for num_threads(nthread) schedule(static)
-    for (thread = 0; thread < nthread; thread++)
+    for (int thread = 0; thread < nthread; thread++)
     {
         try
         {

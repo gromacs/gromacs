@@ -73,6 +73,8 @@ const int nstmin_harmonic          = 20;
 
 t_inputrec::t_inputrec()
 {
+    // TODO When this memset is removed, remove the suppression of
+    // gcc -Wno-class-memaccess in a CMakeLists.txt file.
     std::memset(this, 0, sizeof(*this)); // NOLINT(bugprone-undefined-memory-manipulation)
     snew(fepvals, 1);
     snew(expandedvals, 1);

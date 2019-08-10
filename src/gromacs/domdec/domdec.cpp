@@ -1308,6 +1308,7 @@ static void setup_neighbor_relations(gmx_domdec_t *dd)
     }
 
     int nzone  = (1 << dd->ndim);
+    GMX_ASSERT(dd->ndim < DIM, "Invalid number of dimensions");
     int nizone = (1 << std::max(dd->ndim - 1, 0));
     assert(nizone >= 1 && nizone <= DD_MAXIZONE);
 

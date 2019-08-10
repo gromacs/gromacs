@@ -256,11 +256,12 @@ static gmx_bool lambda_components_check(const lambda_components_t *lc,
     {
         return FALSE;
     }
-    if (name == nullptr && lc->names[index] == nullptr)
+    if ((name == nullptr) && (lc->names[index] == nullptr))
     {
         return TRUE;
     }
-    if ((name == nullptr) != (lc->names[index] == nullptr))
+    if (((name != nullptr) && (lc->names[index] == nullptr)) ||
+        ((name == nullptr) && (lc->names[index] != nullptr)))
     {
         return FALSE;
     }

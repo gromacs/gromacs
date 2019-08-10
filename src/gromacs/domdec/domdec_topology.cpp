@@ -1734,7 +1734,6 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
     int                izone, cg0, cg1;
     real               rc2;
     int                nbonded_local;
-    int                thread;
     gmx_reverse_top_t *rt;
 
     if (dd->reverse_top->bInterCGInteractions)
@@ -1781,7 +1780,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
 
         const int numThreads = rt->th_work.size();
 #pragma omp parallel for num_threads(numThreads) schedule(static)
-        for (thread = 0; thread < numThreads; thread++)
+        for (int thread = 0; thread < numThreads; thread++)
         {
             try
             {

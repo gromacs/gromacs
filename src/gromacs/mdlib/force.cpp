@@ -222,8 +222,6 @@ do_force_lowlevel(t_forcerec                               *fr,
             /* Calculate Ewald surface terms, when necessary */
             if (haveEwaldSurfaceTerms)
             {
-                int nthreads, t;
-
                 wallcycle_sub_start(wcycle, ewcsEWALD_CORRECTION);
 
                 if (fr->n_tpi > 0)
@@ -231,9 +229,9 @@ do_force_lowlevel(t_forcerec                               *fr,
                     gmx_fatal(FARGS, "TPI with PME currently only works in a 3D geometry with tin-foil boundary conditions");
                 }
 
-                nthreads = fr->nthread_ewc;
+                int nthreads = fr->nthread_ewc;
 #pragma omp parallel for num_threads(nthreads) schedule(static)
-                for (t = 0; t < nthreads; t++)
+                for (int t = 0; t < nthreads; t++)
                 {
                     try
                     {

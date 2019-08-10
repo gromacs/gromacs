@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -169,7 +169,7 @@ void printCopyright(gmx::TextWriter *writer)
             const int width = 18;
             char      buf[30];
             const int offset = centeringOffset(width, strlen(Contributors[i]));
-            GMX_RELEASE_ASSERT(strlen(Contributors[i]) + offset < asize(buf),
+            GMX_RELEASE_ASSERT(static_cast<int>(strlen(Contributors[i])) + offset < asize(buf),
                                "Formatting buffer is not long enough");
             std::fill(buf, buf+width, ' ');
             std::strcpy(buf+offset, Contributors[i]);

@@ -628,12 +628,11 @@ gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable *symtab)
         {nullptr,         &sm_permute},
     };
 
-    size_t                  i;
     int                     rc;
     bool                    bOk;
 
     bOk = true;
-    for (i = 0; i < asize(smtable_def); ++i)
+    for (int i = 0; i < asize(smtable_def); ++i)
     {
         gmx_ana_selmethod_t *method = smtable_def[i].method;
 

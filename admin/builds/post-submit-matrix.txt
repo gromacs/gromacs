@@ -20,7 +20,7 @@ gcc-5 simd=ARM_NEON_ASIMD release-with-assert
 # Test the mdrun-only build
 # Test newest gcc at time of release
 # TODO In combination with gmx from another build, arrange to run regressiontests
-gcc-7 mpi no-openmp fftpack mdrun-only
+gcc-9 mpi no-openmp fftpack mdrun-only
 
 # Test MPMD PME with thread-MPI
 # Test oldest supported icc
@@ -48,7 +48,7 @@ clang-6 simd=sse4.1 openmp nranks=1 gpuhw=nvidia cuda-9.0 clang_cuda
 # Test clang + OpenMP
 # Test clang in double precision
 # Test AVX_128_FMA SIMD + Double (Important for Simd4N=Simd4 and sizeof(SimdInt32)!=4*GMX_SIMD_REAL_WIDTH)
-clang-5 double openmp simd=avx_128_fma npme=1 nranks=2 mpi
+clang-8 double openmp simd=avx_128_fma npme=1 nranks=2 mpi
 
 # Test SSE2 SIMD
 # Test CMAKE_BUILD_TYPE=Release

@@ -1037,7 +1037,6 @@ static void calc_ke_part_normal(const rvec v[], const t_grpopts *opts, const t_m
     int                         g;
     gmx::ArrayRef<t_grp_tcstat> tcstat  = ekind->tcstat;
     gmx::ArrayRef<t_grp_acc>    grpstat = ekind->grpstat;
-    int                         nthread, thread;
 
     /* three main: VV with AveVel, vv with AveEkin, leap with AveEkin.  Leap with AveVel is also
        an option, but not supported now.
@@ -1062,10 +1061,10 @@ static void calc_ke_part_normal(const rvec v[], const t_grpopts *opts, const t_m
         }
     }
     ekind->dekindl_old = ekind->dekindl;
-    nthread            = gmx_omp_nthreads_get(emntUpdate);
+    int nthread        = gmx_omp_nthreads_get(emntUpdate);
 
 #pragma omp parallel for num_threads(nthread) schedule(static)
-    for (thread = 0; thread < nthread; thread++)
+    for (int thread = 0; thread < nthread; thread++)
     {
         // This OpenMP only loops over arrays and does not call any functions
         // or memory allocation. It should not be able to throw, so for now
@@ -1125,7 +1124,7 @@ static void calc_ke_part_normal(const rvec v[], const t_grpopts *opts, const t_m
     }
 
     ekind->dekindl = 0;
-    for (thread = 0; thread < nthread; thread++)
+    for (int thread = 0; thread < nthread; thread++)
     {
         for (g = 0; g < opts->ngtc; g++)
         {
@@ -1535,7 +1534,6 @@ update_sd_second_half(int64_t           step,
     }
     if (inputrec->eI == eiSD1)
     {
-        int nth, th;
         int homenr = md->homenr;
 
         /* Cast delta_t from double to real to make the integrators faster.
@@ -1549,10 +1547,10 @@ update_sd_second_half(int64_t           step,
 
         wallcycle_start(wcycle, ewcUPDATE);
 
-        nth = gmx_omp_nthreads_get(emntUpdate);
+        int nth = gmx_omp_nthreads_get(emntUpdate);
 
 #pragma omp parallel for num_threads(nth) schedule(static)
-        for (th = 0; th < nth; th++)
+        for (int th = 0; th < nth; th++)
         {
             try
             {

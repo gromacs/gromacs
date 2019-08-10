@@ -125,12 +125,10 @@ static void pme_calc_pidx_wrapper(gmx::ArrayRef<const gmx::RVec>  x,
                                   const matrix                    recipbox,
                                   PmeAtomComm                    *atc)
 {
-    int nthread, thread, slab;
-
-    nthread = atc->nthread;
+    int nthread = atc->nthread;
 
 #pragma omp parallel for num_threads(nthread) schedule(static)
-    for (thread = 0; thread < nthread; thread++)
+    for (int thread = 0; thread < nthread; thread++)
     {
         try
         {
@@ -144,9 +142,9 @@ static void pme_calc_pidx_wrapper(gmx::ArrayRef<const gmx::RVec>  x,
     }
     /* Non-parallel reduction, since nslab is small */
 
-    for (thread = 1; thread < nthread; thread++)
+    for (int thread = 1; thread < nthread; thread++)
     {
-        for (slab = 0; slab < atc->nslab; slab++)
+        for (int slab = 0; slab < atc->nslab; slab++)
         {
             atc->count_thread[0][slab] += atc->count_thread[thread][slab];
         }

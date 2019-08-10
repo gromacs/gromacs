@@ -470,7 +470,6 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     else
     {
         int t0_set;
-        int thread;
 
         /* Do the constraints, if present, on the first thread.
          * Do the settles on all other threads.
@@ -478,7 +477,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
         t0_set = ((!at2con_mt.empty() && dc->nthread > 1) ? 1 : 0);
 
 #pragma omp parallel for num_threads(dc->nthread) schedule(static)
-        for (thread = 0; thread < dc->nthread; thread++)
+        for (int thread = 0; thread < dc->nthread; thread++)
         {
             try
             {
@@ -524,7 +523,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
         }
 
         /* Combine the generate settles and requested indices */
-        for (thread = 1; thread < dc->nthread; thread++)
+        for (int thread = 1; thread < dc->nthread; thread++)
         {
             t_ilist   *ilst;
             int        ia;

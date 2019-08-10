@@ -2524,8 +2524,8 @@ int gmx_hbond(int argc, char *argv[])
     matrix                box;
     real                  t, ccut, dist = 0.0, ang = 0.0;
     double                max_nhb, aver_nhb, aver_dist;
-    int                   h = 0, i = 0, j, k = 0, ogrp, nsel;
-    int                   xi, yi, zi, ai;
+    int                   h  = 0, i = 0, j, k = 0, ogrp, nsel;
+    int                   xi = 0, yi, zi, ai;
     int                   xj, yj, zj, aj, xjj, yjj, zjj;
     gmx_bool              bSelected, bHBmap, bStop, bTwo, bBox, bTric;
     int                  *adist, *rdist;

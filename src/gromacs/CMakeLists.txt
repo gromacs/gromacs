@@ -210,6 +210,9 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(selection)
 endif()
 
+# Suppress a warning about our abuse of t_inputrec
+gmx_source_file_warning_suppression(mdtypes/inputrec.cpp -Wno-class-memaccess HAS_NO_CLASS_MEMACCESS)
+
 # Handle the object libraries that contain the source file
 # dependencies that need special handling because they are generated
 # or external code.

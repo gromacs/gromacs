@@ -1465,10 +1465,8 @@ void put_atoms_in_box(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x)
 
 void put_atoms_in_box_omp(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x, gmx_unused int nth)
 {
-    int t;
-
 #pragma omp parallel for num_threads(nth) schedule(static)
-    for (t = 0; t < nth; t++)
+    for (int t = 0; t < nth; t++)
     {
         try
         {

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -416,10 +416,9 @@ void init_dlgs(t_x11 *x11, t_gmx *gmx)
         { "bonds.dlg",    BondsCB  }
     };
     static t_mmb *mi[emNR] = { quit_mb,    help_mb,    about_mb,   ni_mb };
-    unsigned int i;
 
     snew(gmx->dlgs, edNR);
-    for (i = 0; (i < asize(di)); i++)
+    for (int i = 0; (i < asize(di)); i++)
     {
         gmx->dlgs[i] = ReadDlg(x11, gmx->wd->self, di[i].dlgfile,
                                di[i].dlgfile,
@@ -429,7 +428,7 @@ void init_dlgs(t_x11 *x11, t_gmx *gmx)
     gmx->dlgs[edFilter] = select_filter(x11, gmx);
 
     snew(gmx->mboxes, emNR);
-    for (i = 0; (i < emNR); i++)
+    for (int i = 0; (i < emNR); i++)
     {
         gmx->mboxes[i] = mi[i](x11, gmx);
     }

@@ -374,7 +374,7 @@ Constraints::Impl::apply(bool                  bLog,
     int         nsettle;
     t_pbc       pbc, *pbc_null;
     char        buf[22];
-    int         nth, th;
+    int         nth;
 
     wallcycle_start(wcycle, ewcCONSTR);
 
@@ -511,7 +511,7 @@ Constraints::Impl::apply(bool                  bLog,
         {
             case ConstraintVariable::Positions:
 #pragma omp parallel for num_threads(nth) schedule(static)
-                for (th = 0; th < nth; th++)
+                for (int th = 0; th < nth; th++)
                 {
                     try
                     {
@@ -546,7 +546,7 @@ Constraints::Impl::apply(bool                  bLog,
             case ConstraintVariable::Force:
             case ConstraintVariable::ForceDispl:
 #pragma omp parallel for num_threads(nth) schedule(static)
-                for (th = 0; th < nth; th++)
+                for (int th = 0; th < nth; th++)
                 {
                     try
                     {
