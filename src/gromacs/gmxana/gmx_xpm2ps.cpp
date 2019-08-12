@@ -233,7 +233,7 @@ static gmx_bool diff_maps(int nmap1, t_mapping *map1, int nmap2, t_mapping *map2
     return bDiff;
 }
 
-static void leg_discrete(t_psdata ps, real x0, real y0, char *label,
+static void leg_discrete(t_psdata *ps, real x0, real y0, char *label,
                          real fontsize, char *font, int nmap, t_mapping map[])
 {
     int   i;
@@ -263,7 +263,7 @@ static void leg_discrete(t_psdata ps, real x0, real y0, char *label,
     }
 }
 
-static void leg_continuous(t_psdata ps, real x0, real x, real y0, char *label,
+static void leg_continuous(t_psdata *ps, real x0, real x, real y0, char *label,
                            real fontsize, char *font,
                            int nmap, t_mapping map[],
                            int mapoffset)
@@ -307,7 +307,7 @@ static void leg_continuous(t_psdata ps, real x0, real x, real y0, char *label,
              - boxxh/2, yhh, map[nmap-1].desc, eXCenter);
 }
 
-static void leg_bicontinuous(t_psdata ps, real x0, real x, real y0, char *label1,
+static void leg_bicontinuous(t_psdata *ps, real x0, real x, real y0, char *label1,
                              char *label2, real fontsize, char *font,
                              int nmap1, t_mapping map1[], int nmap2, t_mapping map2[])
 {
@@ -360,7 +360,7 @@ static gmx_bool box_do_all_x_min_ticks(t_psrec *psr)
     return (psr->boxspacing > (1.5*psr->X.minorticklen));
 }
 
-static void draw_boxes(t_psdata ps, real x0, real y0, real w,
+static void draw_boxes(t_psdata *ps, real x0, real y0, real w,
                        int nmat, t_matrix mat[], t_psrec *psr)
 {
     char     buf[128];
@@ -517,7 +517,7 @@ static void draw_boxes(t_psdata ps, real x0, real y0, real w,
     }
 }
 
-static void draw_zerolines(t_psdata out, real x0, real y0, real w,
+static void draw_zerolines(t_psdata *out, real x0, real y0, real w,
                            int nmat, t_matrix mat[], t_psrec *psr)
 {
     real   xx, yy, dy, xx00, yy00;
@@ -791,7 +791,6 @@ static void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
                    int mapoffset)
 {
     char         *legend;
-    t_psdata      out;
     t_psrec       psrec, *psr;
     int           W, H;
     int           i, x, y, col, leg = 0;
@@ -910,16 +909,16 @@ static void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
         x += 5*DDD;
         y += 4*DDD;
     }
-    out = ps_open(outf, 0, 0, x, y);
-    ps_linewidth(out, static_cast<int>(psr->linewidth));
-    ps_init_rgb_box(out, psr->xboxsize, psr->yboxsize);
-    ps_init_rgb_nbox(out, psr->xboxsize, psr->yboxsize);
-    ps_translate(out, psr->xoffs, psr->yoffs);
+    t_psdata out = ps_open(outf, 0, 0, x, y);
+    ps_linewidth(&out, static_cast<int>(psr->linewidth));
+    ps_init_rgb_box(&out, psr->xboxsize, psr->yboxsize);
+    ps_init_rgb_nbox(&out, psr->xboxsize, psr->yboxsize);
+    ps_translate(&out, psr->xoffs, psr->yoffs);
 
     if (bFrame)
     {
-        ps_comment(out, "Here starts the BOX drawing");
-        draw_boxes(out, x0, y0, w, nmat, mat, psr);
+        ps_comment(&out, "Here starts the BOX drawing");
+        draw_boxes(&out, x0, y0, w, nmat, mat, psr);
     }
 
     for (i = 0; (i < nmat); i++)
@@ -927,8 +926,8 @@ static void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
         if (bTitle || (bTitleOnce && i == nmat-1) )
         {
             /* Print title, if any */
-            ps_rgb(out, BLACK);
-            ps_strfont(out, psr->titfont, psr->titfontsize);
+            ps_rgb(&out, BLACK);
+            ps_strfont(&out, psr->titfont, psr->titfontsize);
             std::string buf;
             if (!mat2 || (std::strcmp(mat[i].title, mat2[i].title) == 0))
             {
@@ -938,17 +937,17 @@ static void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
             {
                 buf = gmx::formatString("%s / %s", mat[i].title, mat2[i].title);
             }
-            ps_ctext(out, x0+w/2, y0+box_height(&(mat[i]), psr)+psr->titfontsize,
-                     buf.c_str(), eXCenter);
+            ps_ctext(&out, x0+w/2, y0+box_height(&(mat[i]), psr)+psr->titfontsize,
+                     buf, eXCenter);
         }
-        ps_comment(out, gmx::formatString("Here starts the filling of box #%d", i).c_str());
+        ps_comment(&out, gmx::formatString("Here starts the filling of box #%d", i).c_str());
         for (x = 0; (x < mat[i].nx); x++)
         {
             int nexty;
             int nextcol;
 
             xx = x0+x*psr->xboxsize;
-            ps_moveto(out, xx, y0);
+            ps_moveto(&out, xx, y0);
             y     = 0;
             bMap1 = ((mat2 == nullptr) || (x < y || (x == y && bFirstDiag)));
             if ((bDiag) || (x != y))
@@ -978,17 +977,17 @@ static void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
                     {
                         if (bMap1)
                         {
-                            ps_rgb_nbox(out, &(mat[i].map[col].rgb), nexty-y);
+                            ps_rgb_nbox(&out, &(mat[i].map[col].rgb), nexty-y);
                         }
                         else
                         {
                             assert(mat2);
-                            ps_rgb_nbox(out, &(mat2[i].map[col].rgb), nexty-y);
+                            ps_rgb_nbox(&out, &(mat2[i].map[col].rgb), nexty-y);
                         }
                     }
                     else
                     {
-                        ps_moverel(out, 0, psr->yboxsize);
+                        ps_moverel(&out, 0, psr->yboxsize);
                     }
                     y     = nexty;
                     bMap1 = bNextMap1;
@@ -1003,14 +1002,14 @@ static void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
     {
         /* reset y0 for first box */
         y0 = dh;
-        ps_comment(out, "Here starts the zero lines drawing");
-        draw_zerolines(out, x0, y0, w, nmat, mat, psr);
+        ps_comment(&out, "Here starts the zero lines drawing");
+        draw_zerolines(&out, x0, y0, w, nmat, mat, psr);
     }
 
     if (elegend != elNone)
     {
-        ps_comment(out, "Now it's legend time!");
-        ps_linewidth(out, static_cast<int>(psr->linewidth));
+        ps_comment(&out, "Now it's legend time!");
+        ps_linewidth(&out, static_cast<int>(psr->linewidth));
         if (mat2 == nullptr || elegend != elSecond)
         {
             bDiscrete = mat[0].bDiscrete;
@@ -1027,28 +1026,28 @@ static void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
         }
         if (bDiscrete)
         {
-            leg_discrete(out, psr->legfontsize, DDD, legend,
+            leg_discrete(&out, psr->legfontsize, DDD, legend,
                          psr->legfontsize, psr->legfont, leg_nmap, leg_map);
         }
         else
         {
             if (elegend != elBoth)
             {
-                leg_continuous(out, x0+w/2, w/2, DDD, legend,
+                leg_continuous(&out, x0+w/2, w/2, DDD, legend,
                                psr->legfontsize, psr->legfont, leg_nmap, leg_map,
                                mapoffset);
             }
             else
             {
                 assert(mat2);
-                leg_bicontinuous(out, x0+w/2, w, DDD, mat[0].legend, mat2[0].legend,
+                leg_bicontinuous(&out, x0+w/2, w, DDD, mat[0].legend, mat2[0].legend,
                                  psr->legfontsize, psr->legfont, nmap1, map1, nmap2, map2);
             }
         }
-        ps_comment(out, "Were there, dude");
+        ps_comment(&out, "Done processing");
     }
 
-    ps_close(out);
+    ps_close(&out);
 }
 
 static void make_axis_labels(int nmat, t_matrix *mat)

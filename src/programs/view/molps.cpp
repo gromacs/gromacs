@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,7 +52,7 @@
 
 #define MSIZE 4
 
-static void ps_draw_atom(t_psdata ps, int ai, iv2 vec2[], char **atomnm[])
+static void ps_draw_atom(t_psdata *ps, int ai, iv2 vec2[], char **atomnm[])
 {
     int xi, yi;
 
@@ -98,7 +98,7 @@ static bool local_pbc_dx(rvec x1, rvec x2)
     return true;
 }
 
-static void ps_draw_bond(t_psdata ps,
+static void ps_draw_bond(t_psdata *ps,
                          int ai, int aj, iv2 vec2[],
                          rvec x[], char **atomnm[])
 {
@@ -133,7 +133,7 @@ static void ps_draw_bond(t_psdata ps,
     }
 }
 
-static void ps_draw_objects(t_psdata ps, int nobj, t_object objs[], iv2 vec2[],
+static void ps_draw_objects(t_psdata *ps, int nobj, t_object objs[], iv2 vec2[],
                             rvec x[], char **atomnm[], bool bShowHydro)
 {
     int          i;
@@ -171,7 +171,7 @@ static void v4_to_iv2(vec4 x4, iv2 v2, int x0, int y0, real sx, real sy)
     v2[YY] = y0-sy*x4[YY]*inv_z;
 }
 
-static void draw_box(t_psdata ps, t_3dview *view, matrix box,
+static void draw_box(t_psdata *ps, t_3dview *view, matrix box,
                      int x0, int y0, real sx, real sy)
 {
     int  ivec[8][4] =  {
@@ -206,7 +206,7 @@ static void draw_box(t_psdata ps, t_3dview *view, matrix box,
     }
 }
 
-void ps_draw_mol(t_psdata ps, t_manager *man)
+void ps_draw_mol(t_psdata *ps, t_manager *man)
 {
     t_windata  *win;
     t_3dview   *view;

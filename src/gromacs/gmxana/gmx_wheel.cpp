@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,7 +81,6 @@ static void wheel(const char *fn, int nres, char *resnm[], int r0, real rot0, ch
     const real fontasp   = 0.6;
     const real fontwidth = fontsize*fontasp;
 
-    t_psdata   out;
     int        i, sl, slen;
     real       ring, inner, outer;
     real       xc, yc, box;
@@ -117,30 +116,30 @@ static void wheel(const char *fn, int nres, char *resnm[], int r0, real rot0, ch
 
     bPh = bPhobics(nres, resnm);
 
-    out = ps_open(fn, 0, 0, 2.0*box, 2.0*box);
+    t_psdata out = ps_open(fn, 0, 0, 2.0*box, 2.0*box);
     xc  = box;
     yc  = box;
 
-    ps_font(out, efontHELV, 1.5*fontsize);
-    ps_translate(out, xc, yc);
+    ps_font(&out, efontHELV, 1.5*fontsize);
+    ps_translate(&out, xc, yc);
     if (title)
     {
-        ps_ctext(out, 0, -fontsize*1.5/2.0, title, eXCenter);
+        ps_ctext(&out, 0, -fontsize*1.5/2.0, title, eXCenter);
     }
-    ps_font(out, efontHELV, fontsize);
-    ps_rotate(out, rot0);
+    ps_font(&out, efontHELV, fontsize);
+    ps_rotate(&out, rot0);
     for (i = 0; (i < nres); )
     {
         if (bPh[i])
         {
-            ps_color(out, gray, gray, gray);
-            ps_fillarcslice(out, 0, 0, inner, outer, -10, 10);
-            ps_color(out, 0, 0, 0);
+            ps_color(&out, gray, gray, gray);
+            ps_fillarcslice(&out, 0, 0, inner, outer, -10, 10);
+            ps_color(&out, 0, 0, 0);
         }
-        ps_arcslice(out, 0, 0, inner, outer, -10, 10);
+        ps_arcslice(&out, 0, 0, inner, outer, -10, 10);
 
-        ps_ctext(out, inner+fontwidth, -fontsize/2.0, rnms[i], eXLeft);
-        ps_rotate(out, -100);
+        ps_ctext(&out, inner+fontwidth, -fontsize/2.0, rnms[i], eXLeft);
+        ps_rotate(&out, -100);
         i++;
 
         if ((i % 18) == 0)
@@ -149,7 +148,7 @@ static void wheel(const char *fn, int nres, char *resnm[], int r0, real rot0, ch
             outer += ring;
         }
     }
-    ps_close(out);
+    ps_close(&out);
 }
 
 static void wheel2(const char *fn, int nres, char *resnm[], real rot0, char *title)
@@ -160,7 +159,6 @@ static void wheel2(const char *fn, int nres, char *resnm[], real rot0, char *tit
     const int  angle     = 9;
     const real fontwidth = fontsize*fontasp;
 
-    t_psdata   out;
     int        i, slen;
     real       ring, inner, outer;
     real       xc, yc, box;
@@ -176,32 +174,32 @@ static void wheel2(const char *fn, int nres, char *resnm[], real rot0, char *tit
     outer = inner+ring;
     box   = (1+gmx::exactDiv(nres, 2*angle))*outer;
 
-    out = ps_open(fn, 0, 0, 2.0*box, 2.0*box);
+    t_psdata out = ps_open(fn, 0, 0, 2.0*box, 2.0*box);
     xc  = box;
     yc  = box;
 
-    ps_font(out, efontHELV, 1.5*fontsize);
-    ps_translate(out, xc, yc);
-    ps_color(out, 0, 0, 0);
+    ps_font(&out, efontHELV, 1.5*fontsize);
+    ps_translate(&out, xc, yc);
+    ps_color(&out, 0, 0, 0);
     if (title)
     {
-        ps_ctext(out, 0, -fontsize*1.5/2.0, title, eXCenter);
+        ps_ctext(&out, 0, -fontsize*1.5/2.0, title, eXCenter);
     }
-    ps_font(out, efontHELV, fontsize);
+    ps_font(&out, efontHELV, fontsize);
 
-    ps_rotate(out, rot0);
+    ps_rotate(&out, rot0);
     for (i = 0; (i < nres); )
     {
         if ((i % 5) == 4)
         {
-            ps_color(out, gray, gray, 1.0);
-            ps_fillarcslice(out, 0, 0, inner, outer, -angle, angle);
-            ps_color(out, 0, 0, 0);
+            ps_color(&out, gray, gray, 1.0);
+            ps_fillarcslice(&out, 0, 0, inner, outer, -angle, angle);
+            ps_color(&out, 0, 0, 0);
         }
-        ps_arcslice(out, 0, 0, inner, outer, -angle, angle);
+        ps_arcslice(&out, 0, 0, inner, outer, -angle, angle);
 
-        ps_ctext(out, inner+fontwidth, -fontsize/2.0, resnm[i], eXLeft);
-        ps_rotate(out, -2*angle);
+        ps_ctext(&out, inner+fontwidth, -fontsize/2.0, resnm[i], eXLeft);
+        ps_rotate(&out, -2*angle);
         i++;
 
         if ((i % (2*angle)) == 0)
@@ -210,7 +208,7 @@ static void wheel2(const char *fn, int nres, char *resnm[], real rot0, char *tit
             outer += ring;
         }
     }
-    ps_close(out);
+    ps_close(&out);
 }
 
 int gmx_wheel(int argc, char *argv[])
