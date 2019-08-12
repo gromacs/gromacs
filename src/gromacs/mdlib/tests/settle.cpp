@@ -284,12 +284,12 @@ class SettleTest : public ::testing::TestWithParam<SettleTestParameters>
                                    const std::string                  &testDescription)
         {
             EXPECT_EQ(coordinates.size(), coordinatesRef.size());
-            for (unsigned i = 0; i < coordinates.size(); ++i)
+            for (index i = 0; i < ssize(coordinates); ++i)
             {
                 for (int d = 0; d < DIM; ++d)
                 {
                     EXPECT_REAL_EQ_TOL(coordinates[i][d], coordinatesRef[i][d], tolerance)
-                    << formatString("Different coordinates in GPU and CPU codes for particle %u component %d ", i, d)
+                    << formatString("Different coordinates in GPU and CPU codes for particle %zd component %d ", i, d)
                     << testDescription;
                 }
             }
