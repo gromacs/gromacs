@@ -45,14 +45,13 @@
 
 #include <vector>
 
+#include "gromacs/math/multidimarray.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdspan/extensions.h"
 #include "gromacs/mdspan/mdspan.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
-
-#include "multidimarray.h"
 
 namespace gmx
 {

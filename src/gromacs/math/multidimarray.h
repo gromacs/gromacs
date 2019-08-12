@@ -39,6 +39,7 @@
  * \author Christian Blau <cblau@gwdg.de>
  * \ingroup module_math
  * \ingroup module_mdspan
+ * \inlibraryapi
  */
 
 #ifndef GMX_MATH_MULTIDIMARRAY_H_

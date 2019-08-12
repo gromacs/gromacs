@@ -1313,12 +1313,6 @@ static void convert_mat(t_matrix *mat, t_mat *rms)
 
     rms->n1 = mat->nx;
     matrix2real(mat, rms->mat);
-    /* free input xpm matrix data */
-    for (i = 0; i < mat->nx; i++)
-    {
-        sfree(mat->matrix[i]);
-    }
-    sfree(mat->matrix);
 
     for (i = 0; i < mat->nx; i++)
     {
@@ -1428,7 +1422,6 @@ int gmx_cluster(int argc, char *argv[])
     t_topology         top;
     int                ePBC;
     t_atoms            useatoms;
-    t_matrix          *readmat = nullptr;
     real              *eigenvectors;
 
     int                isize = 0, ifsize = 0, iosize = 0;
@@ -1720,10 +1713,11 @@ int gmx_cluster(int argc, char *argv[])
         }
     }
 
+    std::vector<t_matrix> readmat;
     if (bReadMat)
     {
         fprintf(stderr, "Reading rms distance matrix ");
-        read_xpm_matrix(opt2fn("-dm", NFILE, fnm), &readmat);
+        readmat = read_xpm_matrix(opt2fn("-dm", NFILE, fnm));
         fprintf(stderr, "\n");
         if (readmat[0].nx != readmat[0].ny)
         {
@@ -1738,7 +1732,7 @@ int gmx_cluster(int argc, char *argv[])
 
         nf = readmat[0].nx;
         sfree(time);
-        time        = readmat[0].axis_x;
+        time        = readmat[0].axis_x.data();
         time_invfac = output_env_get_time_invfactor(oenv);
         for (i = 0; i < nf; i++)
         {
@@ -1748,7 +1742,7 @@ int gmx_cluster(int argc, char *argv[])
         rms = init_mat(readmat[0].nx, method == m_diagonalize);
         convert_mat(&(readmat[0]), rms);
 
-        nlevels = readmat[0].nmap;
+        nlevels = gmx::ssize(readmat[0].map);
     }
     else   /* !bReadMat */
     {
@@ -1959,7 +1953,7 @@ int gmx_cluster(int argc, char *argv[])
     if (bReadMat)
     {
         write_xpm(fp, 0, readmat[0].title, readmat[0].legend, readmat[0].label_x,
-                  readmat[0].label_y, nf, nf, readmat[0].axis_x, readmat[0].axis_y,
+                  readmat[0].label_y, nf, nf, readmat[0].axis_x.data(), readmat[0].axis_y.data(),
                   rms->mat, 0.0, rms->maxrms, rlo_top, rhi_top, &nlevels);
     }
     else

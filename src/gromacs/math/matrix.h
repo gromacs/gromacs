@@ -45,10 +45,9 @@
 
 #include <array>
 
+#include "gromacs/math/multidimarray.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/real.h"
-
-#include "multidimarray.h"
 
 namespace gmx
 {

@@ -43,6 +43,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <numeric>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -3326,17 +3327,17 @@ int gmx_hbond(int argc, char *argv[])
         {
             t_matrix mat;
             int      id, ia, hh, x, y;
-            mat.flags = mat.y0 = 0;
+            mat.flags = 0;
 
             if ((nframes > 0) && (hb->nrhb > 0))
             {
                 mat.nx = nframes;
                 mat.ny = hb->nrhb;
 
-                snew(mat.matrix, mat.nx);
-                for (x = 0; (x < mat.nx); x++)
+                mat.matrix.resize(mat.nx, mat.ny);
+                for (auto &value : mat.matrix.toArrayRef())
                 {
-                    snew(mat.matrix[x], mat.ny);
+                    value = 0;
                 }
                 y = 0;
                 for (id = 0; (id < hb->d.nrd); id++)
@@ -3353,7 +3354,7 @@ int gmx_hbond(int argc, char *argv[])
                                     {
                                         int nn0 = hb->hbmap[id][ia]->n0;
                                         range_check(y, 0, mat.ny);
-                                        mat.matrix[x+nn0][y] = static_cast<t_matelmt>(is_hb(hb->hbmap[id][ia]->h[hh], x));
+                                        mat.matrix(x+nn0, y) = static_cast<t_matelmt>(is_hb(hb->hbmap[id][ia]->h[hh], x));
                                     }
                                     y++;
                                 }
@@ -3361,36 +3362,25 @@ int gmx_hbond(int argc, char *argv[])
                         }
                     }
                 }
-                mat.axis_x = hb->time;
-                snew(mat.axis_y, mat.ny);
-                for (j = 0; j < mat.ny; j++)
+                std::copy(hb->time, hb->time + mat.nx, mat.axis_x.begin());
+                mat.axis_y.resize(mat.ny);
+                std::iota(mat.axis_y.begin(), mat.axis_y.end(), 0);
+                mat.title = (bContact ? "Contact Existence Map" :
+                             "Hydrogen Bond Existence Map");
+                mat.legend    = bContact ? "Contacts" : "Hydrogen Bonds";
+                mat.label_x   = output_env_get_xvgr_tlabel(oenv);
+                mat.label_y   = bContact ? "Contact Index" : "Hydrogen Bond Index";
+                mat.bDiscrete = true;
+                mat.map.resize(2);
+                for (auto &m : mat.map)
                 {
-                    mat.axis_y[j] = j;
-                }
-                sprintf(mat.title, bContact ? "Contact Existence Map" :
-                        "Hydrogen Bond Existence Map");
-                sprintf(mat.legend, bContact ? "Contacts" : "Hydrogen Bonds");
-                sprintf(mat.label_x, "%s", output_env_get_xvgr_tlabel(oenv).c_str());
-                sprintf(mat.label_y, bContact ? "Contact Index" : "Hydrogen Bond Index");
-                mat.bDiscrete = TRUE;
-                mat.nmap      = 2;
-                snew(mat.map, mat.nmap);
-                for (i = 0; i < mat.nmap; i++)
-                {
-                    mat.map[i].code.c1 = hbmap[i];
-                    mat.map[i].desc    = hbdesc[i];
-                    mat.map[i].rgb     = hbrgb[i];
+                    m.code.c1 = hbmap[i];
+                    m.desc    = hbdesc[i];
+                    m.rgb     = hbrgb[i];
                 }
                 fp = opt2FILE("-hbm", NFILE, fnm, "w");
                 write_xpm_m(fp, mat);
                 gmx_ffclose(fp);
-                for (x = 0; x < mat.nx; x++)
-                {
-                    sfree(mat.matrix[x]);
-                }
-                sfree(mat.axis_y);
-                sfree(mat.matrix);
-                sfree(mat.map);
             }
             else
             {

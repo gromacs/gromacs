@@ -51,7 +51,6 @@ gmx_install_headers(
     enxio.h
     filetypes.h
     gmxfio.h
-    matio.h
     mtxio.h
     oenv.h
     pdbio.h

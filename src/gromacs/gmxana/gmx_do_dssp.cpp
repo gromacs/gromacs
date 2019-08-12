@@ -42,6 +42,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <numeric>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -104,13 +105,11 @@ static int strip_dssp(FILE *tapeout, int nres,
 {
     static gmx_bool bFirst = TRUE;
     static char    *ssbuf;
-    static int      xsize, frame;
     char            buf[STRLEN+1];
     char            SSTP;
-    int             i, nr, iacc, nresidues;
+    int             nr, iacc, nresidues;
     int             naccf, naccb; /* Count hydrophobic and hydrophilic residues */
     real            iaccf, iaccb;
-    t_xpmelmt       c;
 
 
     /* Skip header */
@@ -178,39 +177,27 @@ static int strip_dssp(FILE *tapeout, int nres,
             fprintf(stderr, "%d residues were classified as hydrophobic and %d as hydrophilic.\n", naccb, naccf);
         }
 
-        sprintf(mat->title, "Secondary structure");
-        mat->legend[0] = 0;
-        sprintf(mat->label_x, "%s", output_env_get_time_label(oenv).c_str());
-        sprintf(mat->label_y, "Residue");
-        mat->bDiscrete = TRUE;
+        mat->title     = "Secondary structure";
+        mat->legend    = "";
+        mat->label_x   = output_env_get_time_label(oenv);
+        mat->label_y   = "Residue";
+        mat->bDiscrete = true;
         mat->ny        = nr;
-        snew(mat->axis_y, nr);
-        for (i = 0; i < nr; i++)
-        {
-            mat->axis_y[i] = i+1;
-        }
-        mat->axis_x = nullptr;
-        mat->matrix = nullptr;
-        xsize       = 0;
-        frame       = 0;
-        bFirst      = FALSE;
+        mat->axis_y.resize(nr);
+        std::iota(mat->axis_y.begin(), mat->axis_y.end(), 1);
+        mat->axis_x.resize(0);
+        mat->matrix.resize(0, 0);
+        bFirst      = false;
     }
-    if (frame >= xsize)
+    mat->axis_x.push_back(t);
+    mat->matrix.resize(mat->matrix.extent(0), nr);
+    mat->nx = mat->matrix.extent(0);
+    auto columnIndex = mat->nx - 1;
+    for (int i = 0; i < nr; i++)
     {
-        xsize += 10;
-        srenew(mat->axis_x, xsize);
-        srenew(mat->matrix, xsize);
+        t_xpmelmt c = {ssbuf[i], 0};
+        mat->matrix(columnIndex, i) = std::max(static_cast<t_matelmt>(0), searchcmap(mat->map, c));
     }
-    mat->axis_x[frame] = t;
-    snew(mat->matrix[frame], nr);
-    c.c2 = 0;
-    for (i = 0; i < nr; i++)
-    {
-        c.c1                  = ssbuf[i];
-        mat->matrix[frame][i] = std::max(static_cast<t_matelmt>(0), searchcmap(mat->nmap, mat->map, c));
-    }
-    frame++;
-    mat->nx = frame;
 
     if (fTArea)
     {
@@ -327,44 +314,35 @@ static void norm_acc(t_atoms *atoms, int nres,
 
 static void prune_ss_legend(t_matrix *mat)
 {
-    gmx_bool  *present;
-    int       *newnum;
-    int        i, r, f, newnmap;
-    t_mapping *newmap;
+    std::vector<bool>      isPresent(mat->map.size());
+    std::vector<int>       newnum(mat->map.size());
+    std::vector<t_mapping> newmap;
 
-    snew(present, mat->nmap);
-    snew(newnum, mat->nmap);
-
-    for (f = 0; f < mat->nx; f++)
+    for (int f = 0; f < mat->nx; f++)
     {
-        for (r = 0; r < mat->ny; r++)
+        for (int r = 0; r < mat->ny; r++)
         {
-            present[mat->matrix[f][r]] = TRUE;
+            isPresent[mat->matrix(f, r)] = true;
         }
     }
 
-    newnmap = 0;
-    newmap  = nullptr;
-    for (i = 0; i < mat->nmap; i++)
+    for (size_t i = 0; i < mat->map.size(); i++)
     {
         newnum[i] = -1;
-        if (present[i])
+        if (isPresent[i])
         {
-            newnum[i] = newnmap;
-            newnmap++;
-            srenew(newmap, newnmap);
-            newmap[newnmap-1] = mat->map[i];
+            newnum[i] = newmap.size();
+            newmap.emplace_back(mat->map[i]);
         }
     }
-    if (newnmap != mat->nmap)
+    if (newmap.size() != mat->map.size())
     {
-        mat->nmap = newnmap;
-        mat->map  = newmap;
-        for (f = 0; f < mat->nx; f++)
+        std::swap(mat->map, newmap);
+        for (int f = 0; f < mat->nx; f++)
         {
-            for (r = 0; r < mat->ny; r++)
+            for (int r = 0; r < mat->ny; r++)
             {
-                mat->matrix[f][r] = newnum[mat->matrix[f][r]];
+                mat->matrix(f, r) = newnum[mat->matrix(f, r)];
             }
         }
     }
@@ -392,7 +370,7 @@ static void write_sas_mat(const char *fn, real **accr, int nframe, int nres, t_m
         nlev = static_cast<int>(hi-lo+1);
         write_xpm(fp, 0, "Solvent Accessible Surface", "Surface (A^2)",
                   "Time", "Residue Index", nframe, nres,
-                  mat->axis_x, mat->axis_y, accr, lo, hi, rlo, rhi, &nlev);
+                  mat->axis_x.data(), mat->axis_y.data(), accr, lo, hi, rlo, rhi, &nlev);
         gmx_ffclose(fp);
     }
 }
@@ -400,20 +378,20 @@ static void write_sas_mat(const char *fn, real **accr, int nframe, int nres, t_m
 static void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
                        const gmx_output_env_t *oenv)
 {
-    FILE        *fp;
-    t_mapping   *map;
-    int          f, r, *count, *total, ss_count, total_count;
-    size_t       s;
-    const char** leg;
+    FILE                    *fp;
+    int                      ss_count, total_count;
 
-    map = mat->map;
-    snew(count, mat->nmap);
-    snew(total, mat->nmap);
-    snew(leg, mat->nmap+1);
-    leg[0] = "Structure";
-    for (s = 0; s < static_cast<size_t>(mat->nmap); s++)
+    gmx::ArrayRef<t_mapping> map = mat->map;
+    std::vector<int>         count(map.size());
+    std::vector<int>         total(map.size(), 0);
+    // This copying would not be necessary if xvgr_legend could take a
+    // view of string views
+    std::vector<std::string> leg;
+    leg.reserve(map.size()+1);
+    leg.emplace_back("Structure");
+    for (const auto &m : map)
     {
-        leg[s+1] = gmx_strdup(map[s].desc);
+        leg.emplace_back(m.desc);
     }
 
     fp = xvgropen(outfile, "Secondary Structure",
@@ -422,41 +400,37 @@ static void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string
     {
         fprintf(fp, "@ subtitle \"Structure = ");
     }
-    for (s = 0; s < std::strlen(ss_string); s++)
+    for (size_t s = 0; s < std::strlen(ss_string); s++)
     {
         if (s > 0)
         {
             fprintf(fp, " + ");
         }
-        for (f = 0; f < mat->nmap; f++)
+        for (const auto &m : map)
         {
-            if (ss_string[s] == map[f].code.c1)
+            if (ss_string[s] == m.code.c1)
             {
-                fprintf(fp, "%s", map[f].desc);
+                fprintf(fp, "%s", m.desc);
             }
         }
     }
     fprintf(fp, "\"\n");
-    xvgr_legend(fp, mat->nmap+1, leg, oenv);
+    xvgrLegend(fp, leg, oenv);
 
     total_count = 0;
-    for (s = 0; s < static_cast<size_t>(mat->nmap); s++)
-    {
-        total[s] = 0;
-    }
-    for (f = 0; f < mat->nx; f++)
+    for (int f = 0; f < mat->nx; f++)
     {
         ss_count = 0;
-        for (s = 0; s < static_cast<size_t>(mat->nmap); s++)
+        for (auto &c : count)
         {
-            count[s] = 0;
+            c = 0;
         }
-        for (r = 0; r < mat->ny; r++)
+        for (int r = 0; r < mat->ny; r++)
         {
-            count[mat->matrix[f][r]]++;
-            total[mat->matrix[f][r]]++;
+            count[mat->matrix(f, r)]++;
+            total[mat->matrix(f, r)]++;
         }
-        for (s = 0; s < static_cast<size_t>(mat->nmap); s++)
+        for (gmx::index s = 0; s != gmx::ssize(map); ++s)
         {
             if (std::strchr(ss_string, map[s].code.c1))
             {
@@ -465,31 +439,29 @@ static void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string
             }
         }
         fprintf(fp, "%8g %5d", mat->axis_x[f], ss_count);
-        for (s = 0; s < static_cast<size_t>(mat->nmap); s++)
+        for (const auto &c : count)
         {
-            fprintf(fp, " %5d", count[s]);
+            fprintf(fp, " %5d", c);
         }
         fprintf(fp, "\n");
     }
     /* now print column totals */
     fprintf(fp, "%-8s %5d", "# Totals", total_count);
-    for (s = 0; s < static_cast<size_t>(mat->nmap); s++)
+    for (const auto &t : total)
     {
-        fprintf(fp, " %5d", total[s]);
+        fprintf(fp, " %5d", t);
     }
     fprintf(fp, "\n");
 
     /* now print probabilities */
     fprintf(fp, "%-8s %5.2f", "# SS pr.", total_count / static_cast<real>(mat->nx * mat->ny));
-    for (s = 0; s < static_cast<size_t>(mat->nmap); s++)
+    for (const auto &t : total)
     {
-        fprintf(fp, " %5.2f", total[s] / static_cast<real>(mat->nx * mat->ny));
+        fprintf(fp, " %5.2f", t / static_cast<real>(mat->nx * mat->ny));
     }
     fprintf(fp, "\n");
 
     xvgrclose(fp);
-    sfree(leg);
-    sfree(count);
 }
 
 int gmx_do_dssp(int argc, char *argv[])
@@ -554,10 +526,10 @@ int gmx_do_dssp(int argc, char *argv[])
     int                nres, nr0, naccr, nres_plus_separators;
     gmx_bool          *bPhbres, bDoAccSurf;
     real               t;
-    int                i, j, natoms, nframe = 0;
+    int                natoms, nframe = 0;
     matrix             box = {{0}};
     int                gnx;
-    char              *grpnm, *ss_str;
+    char              *grpnm;
     int               *index;
     rvec              *xp, *x;
     int               *average_area;
@@ -602,7 +574,7 @@ int gmx_do_dssp(int argc, char *argv[])
     get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpnm);
     nres = 0;
     nr0  = -1;
-    for (i = 0; (i < gnx); i++)
+    for (int i = 0; (i < gnx); i++)
     {
         if (atoms->atom[index[i]].resind != nr0)
         {
@@ -687,8 +659,7 @@ int gmx_do_dssp(int argc, char *argv[])
         fTArea = nullptr;
     }
 
-    mat.map  = nullptr;
-    mat.nmap = readcmap(opt2fn("-map", NFILE, fnm), &(mat.map));
+    mat.map = readcmap(opt2fn("-map", NFILE, fnm));
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     if (natoms > atoms->nr)
@@ -714,7 +685,7 @@ int gmx_do_dssp(int argc, char *argv[])
         {
             naccr += 10;
             srenew(accr, naccr);
-            for (i = naccr-10; i < naccr; i++)
+            for (int i = naccr-10; i < naccr; i++)
             {
                 snew(accr[i], 2*atoms->nres-1);
             }
@@ -773,19 +744,17 @@ int gmx_do_dssp(int argc, char *argv[])
     if (opt2bSet("-ssdump", NFILE, fnm))
     {
         ss = opt2FILE("-ssdump", NFILE, fnm, "w");
-        snew(ss_str, nres+1);
         fprintf(ss, "%d\n", nres);
-        for (j = 0; j < mat.nx; j++)
+        for (gmx::index j = 0; j != mat.matrix.extent(0); ++j)
         {
-            for (i = 0; (i < mat.ny); i++)
+            auto row = mat.matrix.asView()[j];
+            for (gmx::index i = 0; i != row.extent(0); ++i)
             {
-                ss_str[i] = mat.map[mat.matrix[j][i]].code.c1;
+                fputc(mat.map[row[i]].code.c1, ss);
             }
-            ss_str[i] = '\0';
-            fprintf(ss, "%s\n", ss_str);
+            fputc('\n', ss);
         }
         gmx_ffclose(ss);
-        sfree(ss_str);
     }
     analyse_ss(fnSCount, &mat, ss_string, oenv);
 
@@ -793,7 +762,7 @@ int gmx_do_dssp(int argc, char *argv[])
     {
         write_sas_mat(fnArea, accr, nframe, nres_plus_separators, &mat);
 
-        for (i = 0; i < atoms->nres; i++)
+        for (int i = 0; i < atoms->nres; i++)
         {
             av_area[i] = (average_area[i] / static_cast<real>(nframe));
         }
@@ -804,7 +773,7 @@ int gmx_do_dssp(int argc, char *argv[])
         {
             acc = xvgropen(fnAArea, "Average Accessible Area",
                            "Residue", "A\\S2", oenv);
-            for (i = 0; (i < nres); i++)
+            for (int i = 0; (i < nres); i++)
             {
                 fprintf(acc, "%5d  %10g %10g\n", i+1, av_area[i], norm_av_area[i]);
             }

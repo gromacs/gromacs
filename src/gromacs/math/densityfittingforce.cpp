@@ -44,8 +44,7 @@
 #include "densityfittingforce.h"
 
 #include "gromacs/math/functions.h"
-
-#include "multidimarray.h"
+#include "gromacs/math/multidimarray.h"
 
 namespace gmx
 {

@@ -46,10 +46,9 @@
 #include <algorithm>
 #include <numeric>
 
+#include "gromacs/math/multidimarray.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/exceptions.h"
-
-#include "multidimarray.h"
 
 namespace gmx
 {

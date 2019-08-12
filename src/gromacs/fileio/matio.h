@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,26 +41,40 @@
 #include <stdio.h>
 
 #include <string>
+#include <vector>
 
 #include "gromacs/fileio/rgb.h"
+#include "gromacs/math/multidimarray.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-typedef struct {
-    char c1; /* should all be non-zero (and printable and not '"') */
-    char c2; /*
-              * should all be zero (single char color names: smaller xpm's)
-              * or should all be non-zero (double char color names: more colors)
-              */
-} t_xpmelmt;
+/*! \brief Models an XPM element
+ *
+ * \libinternal */
+struct t_xpmelmt
+{
+    //! Should all be non-zero (and printable and not '"')
+    char c1 = 0;
+    /*! \brief Should all be zero (single char color names: smaller xpm's)
+     * or should all be non-zero (double char color names: more colors). */
+    char c2 = 0;
+};
 
+//! Type of a matrix element
 typedef short t_matelmt;
 
-typedef struct {
-    t_xpmelmt   code; /* see comment for t_xpmelmt */
-    const char *desc;
+/*! \brief Maps an XPM element to an RGB color and a string description.
+ *
+ * \libinternal */
+struct t_mapping
+{
+    //! XPM element code
+    t_xpmelmt   code;
+    //! Description
+    const char *desc = nullptr;
+    //! RGB color
     t_rgb       rgb;
-} t_mapping;
+};
 
 #define MAT_SPATIAL_X (1<<0)
 #define MAT_SPATIAL_Y (1<<1)
@@ -69,44 +83,50 @@ typedef struct {
  * when set, there are n+1 axis ticks at the edges of the elements.
  */
 
-typedef struct {
-    unsigned int flags; /* The possible flags are defined above */
-    int          nx, ny;
-    int          y0;
-    char         title[256];
-    char         legend[256];
-    char         label_x[256];
-    char         label_y[256];
-    gmx_bool     bDiscrete;
-    real        *axis_x;
-    real        *axis_y;
-    t_matelmt  **matrix;
-    int          nmap;
-    t_mapping   *map;
-} t_matrix;
-/* title      matrix title
- * legend     label for the continuous legend
- * label_x    label for the x-axis
- * label_y    label for the y-axis
- * nx, ny     size of the matrix
- * axis_x[]   the x-ticklabels
- * axis_y[]   the y-ticklables
- * *matrix[]  element x,y is matrix[x][y]
- * nmap       number of color levels for the output(?)
- */
+//! Convenience typedef
+template <typename T>
+using DynamicMatrix2D = gmx::MultiDimArray < std::vector<T>, gmx::extents < gmx::dynamic_extent, gmx::dynamic_extent>>;
 
-gmx_bool matelmt_cmp(t_xpmelmt e1, t_xpmelmt e2);
+/*! \brief A matrix of integers, plus supporting values, such as used in XPM output
+ *
+ * \libinternal
+ *
+ * \todo nx and ny should probably be replaced by operations on the
+ * extent of matrix, but currently there is only limited ability to
+ * iterate over contents of matrix. */
+struct t_matrix
+{
+    //! Defines if x and y are spatial dimensions. See comments on MAT_*.
+    unsigned int               flags = 0;
+    //! Size of the matrix in x
+    int                        nx = 0;
+    //! Size of the matrix in y
+    int                        ny = 0;
+    //! Matrix title
+    std::string                title;
+    //! Label for the continuous legend
+    std::string                legend;
+    //! Label for the x-axis
+    std::string                label_x;
+    //! Label for the y-axis
+    std::string                label_y;
+    //! Whether the quantity described is discrete or continuous.
+    bool                       bDiscrete = false;
+    //! The x-ticklabels
+    std::vector<real>          axis_x;
+    //! The y-ticklabels
+    std::vector<real>          axis_y;
+    //! Element x,y is matrix(x, y)
+    DynamicMatrix2D<t_matelmt> matrix;
+    //! Color levels for the output(?)
+    std::vector<t_mapping>     map;
+};
 
-t_matelmt searchcmap(int n, t_mapping map[], t_xpmelmt c);
-/* Seach in the map for code 'c' and return entry number.
- * return -1 if not found
- */
+//! Seach in the \c map for code \c c and return its entry, or -1 if not found.
+t_matelmt searchcmap(gmx::ArrayRef<const t_mapping> map, t_xpmelmt c);
 
-int getcmap(FILE *in, const char *fn, t_mapping **map);
-/* Read the mapping table from in, return number of entries */
-
-int readcmap(const char *fn, t_mapping **map);
-/* Read the mapping table from fn, return number of entries */
+//! Read the mapping table from fn, return number of entries
+std::vector<t_mapping> readcmap(const char *fn);
 
 void printcmap(FILE *out, int n, t_mapping map[]);
 /* print mapping table to out */
@@ -114,8 +134,8 @@ void printcmap(FILE *out, int n, t_mapping map[]);
 void writecmap(const char *fn, int n, t_mapping map[]);
 /* print mapping table to fn */
 
-int read_xpm_matrix(const char *fnm, t_matrix **mat);
-/* Reads a number of matrices from .xpm file fnm and returns this number */
+//! Reads and returns a number of matrices from .xpm file \c fnm.
+std::vector<t_matrix> read_xpm_matrix(const char *fnm);
 
 real **matrix2real(t_matrix *in, real **out);
 /* Converts an matrix in a t_matrix struct to a matrix of reals

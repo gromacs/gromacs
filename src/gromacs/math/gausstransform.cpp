@@ -50,9 +50,8 @@
 #include <array>
 
 #include "gromacs/math/functions.h"
+#include "gromacs/math/multidimarray.h"
 #include "gromacs/math/utilities.h"
-
-#include "multidimarray.h"
 
 namespace gmx
 {
