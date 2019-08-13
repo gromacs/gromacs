@@ -941,7 +941,11 @@ void gmx::LegacySimulator::do_md()
                      ddBalanceRegionHandler);
         }
 
-        if (EI_VV(ir->eI) && startingBehavior == StartingBehavior::NewSimulation)
+        // VV integrators do not need the following velocity half step
+        // if it is the first step after starting from a checkpoint.
+        // That is, the half step is needed on all other steps, and
+        // also the first step when starting from a .tpr file.
+        if (EI_VV(ir->eI) && (!bFirstStep || startingBehavior == StartingBehavior::NewSimulation))
         /*  ############### START FIRST UPDATE HALF-STEP FOR VV METHODS############### */
         {
             rvec *vbuf = nullptr;
