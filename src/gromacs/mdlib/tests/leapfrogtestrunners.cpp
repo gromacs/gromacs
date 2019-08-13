@@ -73,8 +73,8 @@ namespace test
 void integrateLeapFrogSimple(LeapFrogTestData *testData,
                              int               numSteps)
 {
-    testData->state_.x.reserveWithPadding(testData->numAtoms_);
-    testData->state_.v.reserveWithPadding(testData->numAtoms_);
+    testData->state_.x.resizeWithPadding(testData->numAtoms_);
+    testData->state_.v.resizeWithPadding(testData->numAtoms_);
     for (int i = 0; i < testData->numAtoms_; i++)
     {
         testData->state_.x[i] = testData->x_[i];
@@ -94,7 +94,7 @@ void integrateLeapFrogSimple(LeapFrogTestData *testData,
                       &testData->kineticEnergyData_,
                       testData->prVScalingMatrix_,
                       testData->update_.get(),
-                      0,
+                      etrtNONE,
                       nullptr,
                       nullptr);
         finish_update(&testData->inputRecord_,
