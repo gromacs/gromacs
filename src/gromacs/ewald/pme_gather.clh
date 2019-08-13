@@ -351,7 +351,7 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
     }
 
 #if !defined(_AMD_SOURCE_) && !defined(_NVIDIA_SOURCE_)
-    /* This is only here for execution of e.g. 32-sized warps on 16-wide hardware; this was gmx_syncwarp() in CUDA.
+    /* This is only here for execution of e.g. 32-sized warps on 16-wide hardware; this was __syncwarp() in CUDA.
      * #2519
      */
     barrier(CLK_LOCAL_MEM_FENCE);

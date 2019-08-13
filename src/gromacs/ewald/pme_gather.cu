@@ -100,17 +100,17 @@ __device__ __forceinline__ void reduce_atom_forces(float3 * __restrict__ sm_forc
         static_assert(atomDataSize <= warp_size, "TODO: rework for atomDataSize > warp_size (order 8 or larger)");
         const int width = atomDataSize;
 
-        fx += gmx_shfl_down_sync(activeMask, fx, 1, width);
-        fy += gmx_shfl_up_sync  (activeMask, fy, 1, width);
-        fz += gmx_shfl_down_sync(activeMask, fz, 1, width);
+        fx += __shfl_down_sync(activeMask, fx, 1, width);
+        fy += __shfl_up_sync  (activeMask, fy, 1, width);
+        fz += __shfl_down_sync(activeMask, fz, 1, width);
 
         if (splineIndex & 1)
         {
             fx = fy;
         }
 
-        fx += gmx_shfl_down_sync(activeMask, fx, 2, width);
-        fz += gmx_shfl_up_sync  (activeMask, fz, 2, width);
+        fx += __shfl_down_sync(activeMask, fx, 2, width);
+        fz += __shfl_up_sync  (activeMask, fz, 2, width);
 
         if (splineIndex & 2)
         {
@@ -124,7 +124,7 @@ __device__ __forceinline__ void reduce_atom_forces(float3 * __restrict__ sm_forc
         // We have to just further reduce those groups of 4
         for (int delta = 4; delta < atomDataSize; delta <<= 1)
         {
-            fx += gmx_shfl_down_sync(activeMask, fx, delta, width);
+            fx += __shfl_down_sync(activeMask, fx, delta, width);
         }
 
         const int dimIndex = splineIndex;
@@ -194,7 +194,7 @@ __device__ __forceinline__ void reduce_atom_forces(float3 * __restrict__ sm_forc
                 }
             }
 
-            gmx_syncwarp();
+            __syncwarp();
 
             const float n         = read_grid_size(realGridSizeFP, dimIndex);
             const int   atomIndex = sourceIndex / minStride;
@@ -378,7 +378,7 @@ __global__ void pme_gather_kernel(const PmeGpuCudaKernelParams    kernelParams)
         sm_forces[forceIndexLocal] = result;
     }
 
-    gmx_syncwarp();
+    __syncwarp();
     assert(atomsPerBlock <= warp_size);
 
     /* Writing or adding the final forces component-wise, single warp */

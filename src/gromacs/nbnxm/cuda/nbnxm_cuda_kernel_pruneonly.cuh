@@ -217,7 +217,7 @@ nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const cu_nbparam_t,
             {
                 cjs[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = pl_cj4[j4].cj[tidxi];
             }
-            gmx_syncwarp(c_fullWarpMask);
+            __syncwarp(c_fullWarpMask);
 
 #pragma unroll 4
             for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
@@ -249,13 +249,13 @@ nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const cu_nbparam_t,
                             /* If _none_ of the atoms pairs are in rlistOuter
                                range, the bit corresponding to the current
                                cluster-pair in imask gets set to 0. */
-                            if (haveFreshList && !gmx_any_sync(c_fullWarpMask, r2 < rlistOuter_sq))
+                            if (haveFreshList && !__any_sync(c_fullWarpMask, r2 < rlistOuter_sq))
                             {
                                 imaskFull &= ~mask_ji;
                             }
                             /* If any atom pair is within range, set the bit
                                corresponding to the current cluster-pair. */
-                            if (gmx_any_sync(c_fullWarpMask, r2 < rlistInner_sq))
+                            if (__any_sync(c_fullWarpMask, r2 < rlistInner_sq))
                             {
                                 imaskNew |= mask_ji;
                             }
@@ -276,7 +276,7 @@ nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const cu_nbparam_t,
             plist.cj4[j4].imei[widx].imask = imaskNew;
         }
         // avoid shared memory WAR hazards between loop iterations
-        gmx_syncwarp(c_fullWarpMask);
+        __syncwarp(c_fullWarpMask);
     }
 }
 #endif /* FUNCTION_DECLARATION_ONLY */

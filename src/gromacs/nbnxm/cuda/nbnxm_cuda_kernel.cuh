@@ -390,7 +390,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
             {
                 cjs[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = pl_cj4[j4].cj[tidxi];
             }
-            gmx_syncwarp(c_fullWarpMask);
+            __syncwarp(c_fullWarpMask);
 
             /* Unrolling this loop
                - with pruning leads to register spilling;
@@ -438,7 +438,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                             /* If _none_ of the atoms pairs are in cutoff range,
                                the bit corresponding to the current
                                cluster-pair in imask gets set to 0. */
-                            if (!gmx_any_sync(c_fullWarpMask, r2 < rlist_sq))
+                            if (!__any_sync(c_fullWarpMask, r2 < rlist_sq))
                             {
                                 imask &= ~mask_ji;
                             }
@@ -609,7 +609,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
         }
         // avoid shared memory WAR hazards between loop iterations
-        gmx_syncwarp(c_fullWarpMask);
+        __syncwarp(c_fullWarpMask);
     }
 
     /* skip central shifts when summing shift forces */

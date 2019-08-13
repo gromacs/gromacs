@@ -252,13 +252,13 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
         const unsigned int activeMask = c_fullWarpMask;
 
         /* Making pair sums */
-        virxx  += gmx_shfl_down_sync(activeMask, virxx, 1, width);
-        viryy  += gmx_shfl_up_sync  (activeMask, viryy, 1, width);
-        virzz  += gmx_shfl_down_sync(activeMask, virzz, 1, width);
-        virxy  += gmx_shfl_up_sync  (activeMask, virxy, 1, width);
-        virxz  += gmx_shfl_down_sync(activeMask, virxz, 1, width);
-        viryz  += gmx_shfl_up_sync  (activeMask, viryz, 1, width);
-        energy += gmx_shfl_down_sync(activeMask, energy, 1, width);
+        virxx  += __shfl_down_sync(activeMask, virxx, 1, width);
+        viryy  += __shfl_up_sync  (activeMask, viryy, 1, width);
+        virzz  += __shfl_down_sync(activeMask, virzz, 1, width);
+        virxy  += __shfl_up_sync  (activeMask, virxy, 1, width);
+        virxz  += __shfl_down_sync(activeMask, virxz, 1, width);
+        viryz  += __shfl_up_sync  (activeMask, viryz, 1, width);
+        energy += __shfl_down_sync(activeMask, energy, 1, width);
         if (threadLocalId & 1)
         {
             virxx = viryy; // virxx now holds virxx and viryy pair sums
@@ -267,10 +267,10 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
         }
 
         /* Making quad sums */
-        virxx  += gmx_shfl_down_sync(activeMask, virxx, 2, width);
-        virzz  += gmx_shfl_up_sync  (activeMask, virzz, 2, width);
-        virxz  += gmx_shfl_down_sync(activeMask, virxz, 2, width);
-        energy += gmx_shfl_up_sync  (activeMask, energy, 2, width);
+        virxx  += __shfl_down_sync(activeMask, virxx, 2, width);
+        virzz  += __shfl_up_sync  (activeMask, virzz, 2, width);
+        virxz  += __shfl_down_sync(activeMask, virxz, 2, width);
+        energy += __shfl_up_sync  (activeMask, energy, 2, width);
         if (threadLocalId & 2)
         {
             virxx = virzz;  // virxx now holds quad sums of virxx, virxy, virzz and virxy
@@ -278,8 +278,8 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
         }
 
         /* Making octet sums */
-        virxx += gmx_shfl_down_sync(activeMask, virxx, 4, width);
-        virxz += gmx_shfl_up_sync  (activeMask, virxz, 4, width);
+        virxx += __shfl_down_sync(activeMask, virxx, 4, width);
+        virxz += __shfl_up_sync  (activeMask, virxz, 4, width);
         if (threadLocalId & 4)
         {
             virxx = virxz; // virxx now holds all 7 components' octet sums + unused paddings
@@ -289,7 +289,7 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
 #pragma unroll
         for (int delta = 8; delta < width; delta <<= 1)
         {
-            virxx += gmx_shfl_down_sync(activeMask, virxx, delta, width);
+            virxx += __shfl_down_sync(activeMask, virxx, delta, width);
         }
         /* Now first 7 threads of each warp have the full output contributions in virxx */
 
@@ -334,7 +334,7 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
 #pragma unroll
             for (int delta = stride; delta < warp_size; delta <<= 1)
             {
-                output += gmx_shfl_down_sync(activeMask, output, delta, warp_size);
+                output += __shfl_down_sync(activeMask, output, delta, warp_size);
             }
             /* Final output */
             if (validComponentIndex)
