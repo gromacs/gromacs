@@ -70,14 +70,14 @@ namespace test
 LeapFrogTestData::LeapFrogTestData(int numAtoms, real timestep, const rvec v0, const rvec f0) :
     numAtoms_(numAtoms),
     timestep_(timestep),
-    x0_(numAtoms_),
-    x_(numAtoms_),
-    xPrime_(numAtoms_),
-    v0_(numAtoms_),
-    v_(numAtoms_),
-    f_(numAtoms_),
-    inverseMasses_(numAtoms_),
-    inverseMassesPerDim_(numAtoms_)
+    x0_(numAtoms),
+    x_(numAtoms),
+    xPrime_(numAtoms),
+    v0_(numAtoms),
+    v_(numAtoms),
+    f_(numAtoms),
+    inverseMasses_(numAtoms),
+    inverseMassesPerDim_(numAtoms)
 {
     mdAtoms_.nr = numAtoms_;
 
@@ -143,6 +143,7 @@ LeapFrogTestData::LeapFrogTestData(int numAtoms, real timestep, const rvec v0, c
     mdAtoms_.homenr                   = numAtoms_;
     mdAtoms_.haveVsites               = false;
     mdAtoms_.havePartiallyFrozenAtoms = false;
+    mdAtoms_.cFREEZE                  = nullptr;
     snew(mdAtoms_.cTC, numAtoms_);
     for (int i = 0; i < numAtoms_; i++)
     {

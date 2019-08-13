@@ -125,8 +125,8 @@ class LeapFrogTest : public ::testing::TestWithParam<LeapFrogTestParameters>
 {
     public:
         //! Availiable runners (CPU and GPU versions of the Leap-Frog)
-        std::unordered_map <std::string, void(*)(LeapFrogTestData *testData,
-                                                 const int         numSteps)> runners_;
+        static std::unordered_map <std::string, void(*)(LeapFrogTestData *testData,
+                                                        const int         numSteps)> s_runners_;
         //! Reference data
         TestReferenceData                   refData_;
         //! Checker for reference data
@@ -135,13 +135,18 @@ class LeapFrogTest : public ::testing::TestWithParam<LeapFrogTestParameters>
         LeapFrogTest() :
             checker_(refData_.rootChecker())
         {
+        }
+
+        //! Setup the runners one for all parameters sets
+        static void SetUpTestCase()
+        {
             //
             // All runners should be registered here under appropriate conditions
             //
-            runners_["LeapFrogSimple"]  = integrateLeapFrogSimple;
-            if (GMX_GPU == GMX_GPU_CUDA && s_hasCompatibleGpus)
+            s_runners_["LeapFrogSimple"]  = integrateLeapFrogSimple;
+            if (GMX_GPU == GMX_GPU_CUDA && canComputeOnGpu())
             {
-                runners_["LeapFrogGpu"] = integrateLeapFrogGpu;
+                s_runners_["LeapFrogGpu"] = integrateLeapFrogGpu;
             }
         }
 
@@ -205,22 +210,15 @@ class LeapFrogTest : public ::testing::TestWithParam<LeapFrogTestParameters>
                 vRef.checkReal(v[ZZ], "ZZ");
             }
         }
-
-        //! Store whether any compatible GPUs exist.
-        static bool s_hasCompatibleGpus;
-        //! Before any test is run, work out whether any compatible GPUs exist.
-        static void SetUpTestCase()
-        {
-            s_hasCompatibleGpus = canComputeOnGpu();
-        }
 };
 
-bool LeapFrogTest::s_hasCompatibleGpus = false;
+std::unordered_map <std::string, void(*)(LeapFrogTestData *testData,
+                                         const int         numSteps)> LeapFrogTest::s_runners_;
 
 TEST_P(LeapFrogTest, SimpleIntegration)
 {
     // Cycle through all available runners
-    for (const auto &runner : runners_)
+    for (const auto &runner : s_runners_)
     {
         std::string            runnerName = runner.first;
 
