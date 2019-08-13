@@ -32,6 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_unit_test(PbcUtilityTests pbcutil-test
+gmx_add_unit_test(PbcutilUnitTest pbcutil-test
+                  pbc.cpp
                   pbcenums.cpp
                   )

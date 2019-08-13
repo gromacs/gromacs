@@ -1198,21 +1198,13 @@ void pbc_dx_d(const t_pbc *pbc, const dvec x1, const dvec x2, dvec dx)
 
 void calc_shifts(const matrix box, rvec shift_vec[])
 {
-    int k, l, m, d, n, test;
-
-    n = 0;
-    for (m = -D_BOX_Z; m <= D_BOX_Z; m++)
+    for (int n = 0, m = -D_BOX_Z; m <= D_BOX_Z; m++)
     {
-        for (l = -D_BOX_Y; l <= D_BOX_Y; l++)
+        for (int l = -D_BOX_Y; l <= D_BOX_Y; l++)
         {
-            for (k = -D_BOX_X; k <= D_BOX_X; k++, n++)
+            for (int k = -D_BOX_X; k <= D_BOX_X; k++, n++)
             {
-                test = XYZ2IS(k, l, m);
-                if (n != test)
-                {
-                    gmx_incons("inconsistent shift numbering");
-                }
-                for (d = 0; d < DIM; d++)
+                for (int d = 0; d < DIM; d++)
                 {
                     shift_vec[n][d] = k*box[XX][d] + l*box[YY][d] + m*box[ZZ][d];
                 }

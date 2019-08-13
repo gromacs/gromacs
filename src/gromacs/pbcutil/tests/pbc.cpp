@@ -34,16 +34,21 @@
  */
 /*! \internal \file
  * \brief
- * Tests PBC enumerations
+ * Tests PBC code
  *
- * \author Paul Bauer <paul.bauer.q@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_pbcutil
  */
 #include "gmxpre.h"
 
-#include "gromacs/pbcutil/pbcenums.h"
+#include "gromacs/pbcutil/pbc.h"
 
 #include <gtest/gtest.h>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/pbcutil/ishift.h"
+
+#include "testutils/refdata.h"
 
 namespace gmx
 {
@@ -51,19 +56,23 @@ namespace gmx
 namespace test
 {
 
-TEST(PbcEnumsTest, CenteringTypeNamesAreCorrect)
+TEST(PbcTest, CalcShiftsWorks)
 {
-    EXPECT_STREQ(centerTypeNames(CenteringType::Triclinic), "Triclinic");
-    EXPECT_STREQ(centerTypeNames(CenteringType::Rectangular), "Rectangular");
-    EXPECT_STREQ(centerTypeNames(CenteringType::Zero), "Zero-Based");
+    // Choose box vector entries whose magnitudes will lead to unique
+    // shift vector values when the largest box shift in any dimension
+    // is two.
+    const matrix box = {{ 0.01,     1, -100 },
+                        {  300, -0.03,    3 },
+                        {   -6,  -600, 0.06 }};
+    rvec         shiftVectors[SHIFTS];
+
+    calc_shifts(box, shiftVectors);
+
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    checker.checkSequence(std::begin(shiftVectors), std::end(shiftVectors), "ShiftVectors");
 }
 
-TEST(PbcEnumsTest, UnitCellTypeNamesAreCorrect)
-{
-    EXPECT_STREQ(unitCellTypeNames(UnitCellType::Triclinic), "Triclinic");
-    EXPECT_STREQ(unitCellTypeNames(UnitCellType::Rectangular), "Rectangular");
-    EXPECT_STREQ(unitCellTypeNames(UnitCellType::Compact), "Compact");
-}
 } // namespace test
 
 } // namespace gmx
