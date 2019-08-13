@@ -50,7 +50,7 @@ if(BUILD_TESTING AND GMX_BUILD_UNITTESTS)
         set(GTEST_IS_THREADSAFE 0)
     endif()
 
-    add_subdirectory(googletest)
+    add_subdirectory(googletest EXCLUDE_FROM_ALL)
     target_compile_definitions(gmock PRIVATE
                                _GNU_SOURCE=1
                                GTEST_CAN_STREAM_RESULTS=0)
