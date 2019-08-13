@@ -1,0 +1,32 @@
+# This file holds some additional scripting that is used for the automated
+# testing of the GROMACS project. The file is only processed when building as
+# part of the full GROMACS build.
+
+
+# Make sure pytest is found or produce a fatal error
+if(NOT GMXAPI_PYTEST_FOUND)
+    execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import pytest; print(pytest.__version__)"
+                    RESULT_VARIABLE pytest_not_found OUTPUT_VARIABLE pytest_version ERROR_QUIET)
+    if(pytest_not_found)
+        message(FATAL_ERROR "Running the tests requires pytest. Please install it manually"
+                " (try: ${PYTHON_EXECUTABLE} -m pip install pytest)")
+    elseif(pytest_version VERSION_LESS 3.0)
+        message(FATAL_ERROR "Running the tests requires pytest >= 3.0. Found: ${pytest_version}"
+                "Please update it (try: ${PYTHON_EXECUTABLE} -m pip install -U pytest)")
+    endif()
+    set(GMXAPI_PYTEST_FOUND TRUE CACHE INTERNAL "Suppress checking for Python pytest module.")
+endif()
+
+# TODO: (#2961) Let the Python package discover required resources instead of passing GMXBIN
+get_target_property(GMXBIN gmx RUNTIME_OUTPUT_DIRECTORY)
+get_target_property(GMXAPI_PYTHON_STAGING_DIR _gmxapi staging_dir)
+get_target_property(PLUGINPATH sampleplugin LIBRARY_OUTPUT_DIRECTORY)
+add_custom_target(gmxapi_extension_pytest
+                  COMMAND ${CMAKE_COMMAND} -E env GMXBIN=${GMXBIN} PYTHONPATH=${GMXAPI_PYTHON_STAGING_DIR}
+                  ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
+                  DEPENDS sampleplugin _gmxapi
+                  WORKING_DIRECTORY ${PLUGINPATH})
+# The current test fixtures require the `gmx` tool-wrapper executable.
+add_dependencies(gmxapi_extension_pytest gmx)
+
+add_dependencies(check gmxapi_extension_pytest)

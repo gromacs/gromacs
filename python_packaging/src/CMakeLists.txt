@@ -176,12 +176,12 @@ else()
         file(RELATIVE_PATH _relative_dir ${CMAKE_CURRENT_SOURCE_DIR} ${_absolute_dir})
         file(COPY ${_package_file} DESTINATION gmxapi_staging/${_relative_dir})
     endforeach()
-    file(COPY setup.py CMakeLists.txt DESTINATION gmxapi_staging)
+    file(COPY setup.py CMakeLists.txt DESTINATION ${GMXAPI_PYTHON_STAGING_DIR})
     # Set CMake variable pybind11_DIR to ${CMAKE_CURRENT_SOURCE_DIR}/external/pybind/tools
     # if re-invoking CMake (including via Python setuptools) for the files in gmxapi_staging.
 
-    # Unit test and build docs using PYTHONPATH=$CMAKE_CURRENT_BINARY_DIR/gmxapi_staging/gmxapi
-
+    # Unit test and build docs using PYTHONPATH=$CMAKE_CURRENT_BINARY_DIR/gmxapi_staging
+    set_target_properties(_gmxapi PROPERTIES staging_dir ${GMXAPI_PYTHON_STAGING_DIR})
     # Note: Integration testing for multiple Python versions and/or CMake-driven
     # sdist preparation could be performed with CMake custom_commands and custom_targets.
 endif()

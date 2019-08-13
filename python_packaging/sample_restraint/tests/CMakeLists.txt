@@ -89,3 +89,7 @@ target_link_libraries(bounding-test ensemblepotential Gromacs::gmxapi
                       GTest::Main)
 gtest_add_tests(TARGET bounding-test
                 TEST_LIST EnsembleBoundingPotentialPlugin)
+
+if (NOT GMXAPI_EXTENSION_MASTER_PROJECT)
+    include(CMakeGROMACS.txt)
+endif ()
