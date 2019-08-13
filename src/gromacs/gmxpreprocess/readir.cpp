@@ -57,6 +57,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdrun/mdmodules.h"
+#include "gromacs/mdrunutility/mdmodulenotification.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull_params.h"
@@ -3051,7 +3052,7 @@ static void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char
 void do_index(const char* mdparin, const char *ndx,
               gmx_mtop_t *mtop,
               bool bVerbose,
-              const gmx::MDModules::notifier_type &notifier,
+              const gmx::MdModulesNotifier &notifier,
               t_inputrec *ir,
               warninp_t wi)
 {
@@ -3400,7 +3401,7 @@ void do_index(const char* mdparin, const char *ndx,
 
     gmx::IndexGroupsAndNames defaultIndexGroupsAndNames(
             *defaultIndexGroups, gmx::arrayRefFromArray(gnames, defaultIndexGroups->nr));
-    notifier.notify(defaultIndexGroupsAndNames);
+    notifier.notifier_.notify(defaultIndexGroupsAndNames);
 
     auto accelerations          = gmx::splitString(is->acc);
     auto accelerationGroupNames = gmx::splitString(is->accgrps);

@@ -82,6 +82,7 @@
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdrun/mdmodules.h"
+#include "gromacs/mdrunutility/mdmodulenotification.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
@@ -2424,7 +2425,7 @@ int gmx_grompp(int argc, char *argv[])
 
     {
         gmx::KeyValueTreeBuilder internalParameterBuilder;
-        mdModules.notifier().notify(&internalParameterBuilder);
+        mdModules.notifier().notifier_.notify(&internalParameterBuilder);
         ir->internalParameters = std::make_unique<gmx::KeyValueTreeObject>(internalParameterBuilder.build());
     }
 

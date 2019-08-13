@@ -43,6 +43,7 @@
 
 #include "densityfitting.h"
 
+#include "gromacs/mdrunutility/mdmodulenotification.h"
 #include "gromacs/mdtypes/imdmodule.h"
 
 #include "densityfittingforceprovider.h"
@@ -67,7 +68,10 @@ namespace
 class DensityFitting final : public IMDModule
 {
     public:
-        DensityFitting() = default;
+        /*! \brief Construct the density fitting module.
+         * Allow the module to subscribe to notifications from MdModules
+         */
+        explicit DensityFitting(MdModulesNotifier * /*notifier*/){}
 
         //! From IMDModule; this class provides the mdpOptions itself
         IMdpOptionProvider *mdpOptionProvider() override { return &densityFittingOptions_; }
@@ -97,9 +101,9 @@ class DensityFitting final : public IMDModule
 
 }   // namespace
 
-std::unique_ptr<IMDModule> DensityFittingModuleInfo::create()
+std::unique_ptr<IMDModule> DensityFittingModuleInfo::create(MdModulesNotifier * notifier)
 {
-    return std::unique_ptr<IMDModule>(new DensityFitting());
+    return std::make_unique<DensityFitting>(notifier);
 }
 
 const std::string DensityFittingModuleInfo::name_ = "density-guided-simulation";

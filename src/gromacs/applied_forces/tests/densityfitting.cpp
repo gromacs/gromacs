@@ -48,6 +48,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdrunutility/mdmodulenotification.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
@@ -73,7 +74,8 @@ namespace
 
 TEST(DensityFittingTest, ForceOnSingleOption)
 {
-    auto densityFittingModule(DensityFittingModuleInfo::create());
+    MdModulesNotifier notifier;
+    auto densityFittingModule(DensityFittingModuleInfo::create(&notifier));
 
     // Prepare MDP inputs
     KeyValueTreeBuilder      mdpValueBuilder;

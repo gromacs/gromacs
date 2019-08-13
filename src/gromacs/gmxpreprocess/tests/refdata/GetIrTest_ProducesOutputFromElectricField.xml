@@ -317,5 +317,6 @@ userreal4                = 0
 electric-field-x         = 1.2 0 0 0
 electric-field-y         = 0 0 0 0
 electric-field-z         = 0 0 0 0
+density-guided-simulation-active = false
 </String>
 </ReferenceData>

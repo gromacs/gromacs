@@ -98,11 +98,11 @@
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/stophandler.h"
-#include "gromacs/mdrun/mdmodulenotification.h"
 #include "gromacs/mdrun/mdmodules.h"
 #include "gromacs/mdrun/simulationcontext.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/logging.h"
+#include "gromacs/mdrunutility/mdmodulenotification.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdrunutility/printtime.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
@@ -799,9 +799,11 @@ int Mdrunner::mdrunner()
 
     // TODO: Error handling
     mdModules_->assignOptionsToModules(*inputrec->params, nullptr);
+    const auto &mdModulesNotifier = mdModules_->notifier().notifier_;
+
     if (inputrec->internalParameters != nullptr)
     {
-        mdModules_->notifier().notify(*inputrec->internalParameters);
+        mdModulesNotifier.notify(*inputrec->internalParameters);
     }
 
     if (fplog != nullptr)
@@ -984,7 +986,6 @@ int Mdrunner::mdrunner()
                           useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes), *hwinfo->cpuInfo);
 
     LocalAtomSetManager atomSets;
-
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
@@ -992,7 +993,7 @@ int Mdrunner::mdrunner()
                                            &mtop, inputrec,
                                            box, positionsFromStatePointer(globalState.get()),
                                            &atomSets);
-        mdModules_->notifier().notify(&atomSets);
+        mdModulesNotifier.notify(&atomSets);
         // Note that local state still does not exist yet.
     }
     else
@@ -1287,7 +1288,7 @@ int Mdrunner::mdrunner()
     t_nrnb nrnb;
     if (thisRankHasDuty(cr, DUTY_PP))
     {
-        mdModules_->notifier().notify(CommunicationIsSetup {*cr});
+        mdModulesNotifier.notify(*cr);
         /* Initiate forcerecord */
         fr                 = new t_forcerec;
         fr->forceProviders = mdModules_->initForceProviders();

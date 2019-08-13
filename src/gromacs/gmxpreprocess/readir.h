@@ -40,12 +40,12 @@
 
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdrun/mdmodules.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx
 {
 class MDModules;
+struct MdModulesNotifier;
 }
 
 struct gmx_mtop_t;
@@ -128,7 +128,7 @@ void do_index(const char                         * mdparin,
               const char                          *ndx,
               gmx_mtop_t                          *mtop,
               bool                                 bVerbose,
-              const gmx::MDModules::notifier_type &notifier,
+              const gmx::MdModulesNotifier        &notifier,
               t_inputrec                          *ir,
               warninp_t                            wi);
 /* Read the index file and assign grp numbers to atoms.

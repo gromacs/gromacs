@@ -38,11 +38,11 @@
  *
  * \author Christian Blau <blau@kth.se>
  * \inlibraryapi
- * \ingroup module_mdrun
+ * \ingroup module_mdrunutility
  */
 
-#ifndef GMX_MDRUN_MDMODULENOTIFICATION_H
-#define GMX_MDRUN_MDMODULENOTIFICATION_H
+#ifndef GMX_MDRUNUTILITY_MDMODULENOTIFICATION_H
+#define GMX_MDRUNUTILITY_MDMODULENOTIFICATION_H
 
 #include <functional>
 #include <vector>
@@ -192,6 +192,22 @@ struct registerMdModuleNotification<CurrentCallParameter, CallParameter...>
     using next_type = typename registerMdModuleNotification<CallParameter...>::type;
     //! The type of the MdModuleNotification
     using type = MdModuleNotification<CurrentCallParameter, next_type>;
+};
+
+class KeyValueTreeObject;
+class KeyValueTreeBuilder;
+class LocalAtomSetManager;
+class IndexGroupsAndNames;
+
+struct MdModulesNotifier
+{
+//! Register callback function types for MdModule
+    registerMdModuleNotification<
+        const t_commrec &,
+        IndexGroupsAndNames,
+        KeyValueTreeBuilder *,
+        const KeyValueTreeObject &,
+        LocalAtomSetManager *>::type notifier_;
 };
 
 } // namespace gmx

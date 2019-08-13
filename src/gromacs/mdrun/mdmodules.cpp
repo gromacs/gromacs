@@ -38,8 +38,10 @@
 
 #include <memory>
 
+#include "gromacs/applied_forces/densityfitting.h"
 #include "gromacs/applied_forces/electricfield.h"
 #include "gromacs/imd/imd.h"
+#include "gromacs/mdrunutility/mdmodulenotification.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdoutputprovider.h"
@@ -62,7 +64,8 @@ class MDModules::Impl : public IMDOutputProvider
     public:
 
         Impl()
-            : field_(createElectricFieldModule()),
+            : densityFitting_(DensityFittingModuleInfo::create(&notifier_)),
+              field_(createElectricFieldModule()),
               imd_(createInteractiveMolecularDynamicsModule()),
               swapCoordinates_(createSwapCoordinatesModule())
         {
@@ -73,6 +76,7 @@ class MDModules::Impl : public IMDOutputProvider
             // Create a section for applied-forces modules
             auto appliedForcesOptions = options->addSection(OptionSection("applied-forces"));
             field_->mdpOptionProvider()->initMdpOptions(&appliedForcesOptions);
+            densityFitting_->mdpOptionProvider()->initMdpOptions(&appliedForcesOptions);
             // In future, other sections would also go here.
         }
 
@@ -81,12 +85,15 @@ class MDModules::Impl : public IMDOutputProvider
                         bool bAppendFiles, const gmx_output_env_t *oenv) override
         {
             field_->outputProvider()->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
+            densityFitting_->outputProvider()->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
         }
         void finishOutput() override
         {
             field_->outputProvider()->finishOutput();
+            densityFitting_->outputProvider()->finishOutput();
         }
 
+        std::unique_ptr<IMDModule>      densityFitting_;
         std::unique_ptr<IMDModule>      field_;
         std::unique_ptr<ForceProviders> forceProviders_;
         std::unique_ptr<IMDModule>      imd_;
@@ -104,7 +111,7 @@ class MDModules::Impl : public IMDOutputProvider
         std::vector< std::shared_ptr<IMDModule> > modules_;
 
         //! Manages resources and notifies the MD modules when available
-        MDModules::notifier_type notifier_;
+        MdModulesNotifier notifier_;
 };
 
 MDModules::MDModules() : impl_(new Impl)
@@ -119,11 +126,13 @@ void MDModules::initMdpTransform(IKeyValueTreeTransformRules *rules)
 {
     auto appliedForcesScope = rules->scopedTransform("/applied-forces");
     impl_->field_->mdpOptionProvider()->initMdpTransform(appliedForcesScope.rules());
+    impl_->densityFitting_->mdpOptionProvider()->initMdpTransform(appliedForcesScope.rules());
 }
 
 void MDModules::buildMdpOutput(KeyValueTreeObjectBuilder *builder)
 {
     impl_->field_->mdpOptionProvider()->buildMdpOutput(builder);
+    impl_->densityFitting_->mdpOptionProvider()->buildMdpOutput(builder);
 }
 
 void MDModules::assignOptionsToModules(const KeyValueTreeObject  &params,
@@ -161,6 +170,7 @@ ForceProviders *MDModules::initForceProviders()
                        "Force providers initialized multiple times");
     impl_->forceProviders_ = std::make_unique<ForceProviders>();
     impl_->field_->initForceProviders(impl_->forceProviders_.get());
+    impl_->densityFitting_->initForceProviders(impl_->forceProviders_.get());
     for (auto && module : impl_->modules_)
     {
         module->initForceProviders(impl_->forceProviders_.get());
@@ -173,7 +183,7 @@ void MDModules::add(std::shared_ptr<gmx::IMDModule> module)
     impl_->modules_.emplace_back(std::move(module));
 }
 
-const MDModules::notifier_type &MDModules::notifier()
+const MdModulesNotifier &MDModules::notifier()
 {
     return impl_->notifier_;
 }

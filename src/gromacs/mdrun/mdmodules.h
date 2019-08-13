@@ -43,7 +43,6 @@
 #ifndef GMX_MDRUN_MDMODULES_H
 #define GMX_MDRUN_MDMODULES_H
 
-#include "gromacs/mdrun/mdmodulenotification.h"
 #include "gromacs/utility/classhelpers.h"
 
 struct ForceProviders;
@@ -57,22 +56,9 @@ class KeyValueTreeObjectBuilder;
 class KeyValueTreeObject;
 class IKeyValueTreeErrorHandler;
 class IKeyValueTreeTransformRules;
-class IMDOutputProvider;
-class KeyValueTreeObject;
-class KeyValueTreeBuilder;
 class IMDModule;
-class LocalAtomSetManager;
-class IndexGroupsAndNames;
-
-/*! \libinternal \brief
- * \brief Signals that the communication record is set up and provides this record.
- */
-struct CommunicationIsSetup
-{
-    //! The communication record that is set up.
-    const t_commrec &communicationRecord_;
-};
-
+class IMDOutputProvider;
+struct MdModulesNotifier;
 
 /*! \libinternal \brief
  * Manages the collection of all modules used for mdrun.
@@ -108,15 +94,6 @@ class MDModules
     public:
         MDModules();
         ~MDModules();
-
-        //! Register callback function types for MDModules
-        using notifier_type = registerMdModuleNotification<
-                    CommunicationIsSetup,
-                    IndexGroupsAndNames,
-                    KeyValueTreeBuilder*,
-                    const KeyValueTreeObject &,
-                    LocalAtomSetManager *
-                    >::type;
 
         /*! \brief
          * Initializes a transform from mdp values to sectioned options.
@@ -190,11 +167,11 @@ class MDModules
          * MDModules should not change after some point, we should move this
          * to a builder class.
          */
-        void add(std::shared_ptr<gmx::IMDModule> module);
+        void add(std::shared_ptr<IMDModule> module);
 
         /*! \brief Return a handle to the callbacks.
          */
-        const notifier_type &notifier();
+        const MdModulesNotifier &notifier();
 
     private:
         class Impl;

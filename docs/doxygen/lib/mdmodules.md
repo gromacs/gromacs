@@ -159,13 +159,13 @@ Callbacks to modules during setup and simulation
 During setup and simulation, modules receive required information like topologies
 and local atom sets by subscribing to callback functions.
 
-To include a notification for your module,  
+To include a notification for your module
 
-* Add the function signature for the callback function to the `notifier_type`
-  in the MdModules class
+* Add the function signature for the callback function to the
+  `MdModulesNotifier` in `mdmodulenotification.h`,
 
   ```C++
-    notifier_type = registerMdModuleNotification<...,
+    registerMdModulesNotification<...,
                       YourCallbackSignature,
                       ...,
   ```
@@ -177,11 +177,11 @@ To include a notification for your module,
 
 * Add the function you want to subscribe with in the builder,
   `notifier->subscribe(yourFunction)`
-  
+
   * To subscribe class member functions of your module, you can use lambda expressions
 
   ```C++
-    notifier->subscribe([modulePointer = yourModule.get()]
+    notifier->notifier_.subscribe([modulePointer = yourModule.get()]
       (YourCallbackSignature argument){modulePointer(argument);});
   ```
 
@@ -189,7 +189,7 @@ To include a notification for your module,
 
   ```C++
     YourCallbackSignature argument();
-    mdModules_.notifier().notify(argument);
+    mdModules_.notifier().notifier_.notify(argument);
   ```
 
 Storing non-mdp option module parameters

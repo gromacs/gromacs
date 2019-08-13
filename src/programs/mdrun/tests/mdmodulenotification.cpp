@@ -43,7 +43,7 @@
 
 #include <gmock/gmock.h>
 
-#include "gromacs/mdrun/mdmodulenotification.h"
+#include "gromacs/mdrunutility/mdmodulenotification.h"
 
 namespace gmx
 {
