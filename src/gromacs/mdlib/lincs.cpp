@@ -2356,10 +2356,10 @@ bool constrain_lincs(bool computeRmsd,
             }
         }
 
-        int  p_imax;
-        real ncons_loc;
-        real p_ssd;
-        real p_max = 0;
+        int  p_imax    = 0;
+        real ncons_loc = 0;
+        real p_ssd     = 0;
+        real p_max     = 0;
         if (debug)
         {
             cconerr(*lincsd, xprime, pbc,

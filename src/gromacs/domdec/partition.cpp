@@ -1744,6 +1744,7 @@ get_zone_pulse_cgs(gmx_domdec_t *dd,
             }
             if (dim_ind == 2 && (zonei == 2 || zonei == 3))
             {
+                GMX_ASSERT(dim1 >= 0 && dim1 < DIM, "Must have a valid dimension index");
                 rn[dim1] += cg_cm[cg][dim1] - c->cr1[zone];
                 tric_sh   = 0;
                 for (i = dim1+1; i < DIM; i++)
@@ -1809,6 +1810,7 @@ get_zone_pulse_cgs(gmx_domdec_t *dd,
             if (bDistMB_pulse)
             {
                 clear_rvec(rb);
+                GMX_ASSERT(dim >= 0 && dim < DIM, "Must have a valid dimension index");
                 rb[dim] += cg_cm[cg][dim] - c->bc[dim_ind] + tric_sh;
                 if (rb[dim] > 0)
                 {

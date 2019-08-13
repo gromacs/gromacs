@@ -7,3 +7,8 @@ Improvements to |Gromacs| tools
    Also, please use the syntax :issue:`number` to reference issues on redmine, without the
    a space between the colon and number!
 
+Fixed bug in gmx order -calcdist
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The reference position for the distance calculation was calculated
+wrongly.
+

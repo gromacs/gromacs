@@ -395,6 +395,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             else if (md->cFREEZE)
             {
                 g = md->cFREEZE[i];
+                GMX_ASSERT(opts->nFreeze != nullptr, "Must have freeze groups to initialize masses");
                 if (opts->nFreeze[g][XX] && opts->nFreeze[g][YY] && opts->nFreeze[g][ZZ])
                 {
                     /* Set the mass of completely frozen particles to ALMOST_ZERO

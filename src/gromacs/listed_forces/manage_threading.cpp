@@ -208,7 +208,8 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
 {
     ilist_data_t ild[F_NRE];
 
-    assert(bt->nthreads > 0);
+    GMX_ASSERT(bt->nthreads > 0, "Must have positive number of threads");
+    const int numThreads = bt->nthreads;
 
     bt->haveBondeds      = false;
     int    numType       = 0;
@@ -248,12 +249,12 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
         if (nrToAssignToCpuThreads == 0)
         {
             /* No interactions, avoid all the integer math below */
-            for (int t = 0; t <= bt->nthreads; t++)
+            for (int t = 0; t <= numThreads; t++)
             {
                 bt->workDivision.setBound(fType, t, 0);
             }
         }
-        else if (bt->nthreads <= bt->max_nthread_uniform || fType == F_DISRES)
+        else if (numThreads <= bt->max_nthread_uniform || fType == F_DISRES)
         {
             /* On up to 4 threads, load balancing the bonded work
              * is more important than minimizing the reduction cost.
@@ -261,10 +262,10 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
 
             const int stride = 1 + NRAL(fType);
 
-            for (int t = 0; t <= bt->nthreads; t++)
+            for (int t = 0; t <= numThreads; t++)
             {
                 /* Divide equally over the threads */
-                int nr_t = (((nrToAssignToCpuThreads/stride)*t)/bt->nthreads)*stride;
+                int nr_t = (((nrToAssignToCpuThreads/stride)*t)/numThreads)*stride;
 
                 if (fType == F_DISRES)
                 {
@@ -314,7 +315,7 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
                 int t;
 
                 fprintf(debug, "%16s", interaction_function[f].name);
-                for (t = 0; t < bt->nthreads; t++)
+                for (t = 0; t < numThreads; t++)
                 {
                     fprintf(debug, " %4d",
                             (bt->workDivision.bound(f, t + 1) -

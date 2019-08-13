@@ -809,9 +809,13 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             sprintf(err_buf, "nstlog must be non-zero");
             CHECK(ir->nstlog == 0);
-            sprintf(err_buf, "nst-transition-matrix (%d) must be an integer multiple of nstlog (%d)",
-                    expand->nstTij, ir->nstlog);
-            CHECK((expand->nstTij % ir->nstlog) != 0);
+            // Avoid modulus by zero in the case that already triggered an error exit.
+            if (ir->nstlog != 0)
+            {
+                sprintf(err_buf, "nst-transition-matrix (%d) must be an integer multiple of nstlog (%d)",
+                        expand->nstTij, ir->nstlog);
+                CHECK((expand->nstTij % ir->nstlog) != 0);
+            }
         }
     }
 

@@ -35,7 +35,7 @@
 # These options need to match the node label in Jenkins and the
 # capabilities in releng/agents.py for the agent where the analysis is
 # intended to run.
-build_options = ['clang-6', 'clang-static-analyzer-6']
+build_options = ['clang-8', 'clang-static-analyzer-8']
 
 # Policy global variables
 use_stdlib_through_env_vars = False

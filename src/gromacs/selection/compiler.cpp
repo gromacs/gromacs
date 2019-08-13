@@ -282,6 +282,7 @@
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -2010,6 +2011,7 @@ evaluate_boolean_minmax_grps(const SelectionTreeElementPointer &sel,
     switch (sel->u.boolt)
     {
         case BOOL_NOT:
+            GMX_ASSERT(g != nullptr, "Need a valid group");
             gmx_ana_index_reserve(gmin, g->isize);
             gmx_ana_index_reserve(gmax, g->isize);
             gmx_ana_index_difference(gmax, g, sel->child->cdata->gmin);
@@ -2043,6 +2045,7 @@ evaluate_boolean_minmax_grps(const SelectionTreeElementPointer &sel,
         case BOOL_OR:
             /* We can assume here that the gmin of children do not overlap
              * because of the way _gmx_sel_evaluate_or() works. */
+            GMX_ASSERT(g != nullptr, "Need a valid group");
             gmx_ana_index_reserve(gmin, g->isize);
             gmx_ana_index_reserve(gmax, g->isize);
             gmx_ana_index_copy(gmin, sel->child->cdata->gmin, false);

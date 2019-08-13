@@ -70,6 +70,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 #define e2d(x) ENM2DEBYE*(x)
@@ -810,10 +811,11 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
     gmx_rmpbc_t    gpbc         = nullptr;
 
     gnx_tot = gnx[0];
-    if (ncos > 1)
+    if (ncos == 2)
     {
         gnx_tot += gnx[1];
     }
+    GMX_RELEASE_ASSERT(ncos == 1 || ncos == 2, "Invalid number of groups used with -ncos");
 
     vol_aver = 0.0;
 

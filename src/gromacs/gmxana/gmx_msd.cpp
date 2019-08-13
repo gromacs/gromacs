@@ -800,6 +800,7 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
         /* calculate the center of mass */
         if (!gnx_com.empty())
         {
+            GMX_RELEASE_ASSERT(index_com != nullptr, "Center-of-mass removal must have valid index group");
             calc_com(bMol, gnx_com[0], index_com[0], xa[cur], xa[prev], box,
                      &top->atoms, com);
         }

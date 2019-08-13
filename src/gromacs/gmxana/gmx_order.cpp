@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -381,9 +381,8 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
 {
     /* if permolecule = TRUE, order parameters will be calculed per molecule
      * and stored in slOrder with #slices = # molecules */
-    rvec *x0,                                    /* coordinates with pbc                           */
-    *x1,                                         /* coordinates without pbc                        */
-          dist;                                  /* vector between two atoms                       */
+    rvec        *x0,                             /* coordinates with pbc                           */
+    *x1;                                         /* coordinates without pbc                        */
     matrix       box;                            /* box (3x3)                                      */
     t_trxstatus *status;
     rvec         cossum,                         /* sum of vector angles for three axes            */
@@ -403,7 +402,7 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
     int         *slCount;                        /* nr. of atoms in one slice                      */
     real         sdbangle               = 0;     /* sum of these angles                            */
     gmx_bool     use_unitvector         = FALSE; /* use a specified unit vector instead of axis to specify unit normal*/
-    rvec         direction, com, dref, dvec;
+    rvec         direction, com;
     int          comsize, distsize;
     int         *comidx  = nullptr, *distidx = nullptr;
     char        *grpname = nullptr;
@@ -521,18 +520,19 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
             }
             svmul(1.0/comsize, com, com);
         }
+        rvec displacementFromReference;
         if (distcalc)
         {
-            dref[XX] = 0.0; dref[YY] = 0.0; dref[ZZ] = 0.0;
+            rvec dref = { 0.0, 0.0, 0.0 };
             for (j = 0; j < distsize; j++)
             {
-                rvec_inc(dist, x1[distidx[j]]);
+                rvec_inc(dref, x1[distidx[j]]);
             }
             svmul(1.0/distsize, dref, dref);
             if (radial)
             {
-                pbc_dx(&pbc, dref, com, dvec);
-                unitv(dvec, dvec);
+                pbc_dx(&pbc, dref, com, displacementFromReference);
+                unitv(displacementFromReference, displacementFromReference);
             }
         }
 
@@ -562,6 +562,7 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
 
                 if (bUnsat)
                 {
+                    rvec dist;
                     /* Using convention for unsaturated carbons */
                     /* first get Sz, the vector from Cn to Cn+1 */
                     rvec_sub(x1[a[index[i+1]+j]], x1[a[index[i]+j]], dist);
@@ -583,6 +584,7 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
                 }
                 else
                 {
+                    rvec dist;
                     /* get vector dist(Cn-1,Cn+1) for tail atoms */
                     rvec_sub(x1[a[index[i+1]+j]], x1[a[index[i-1]+j]], dist);
                     length = norm(dist); /* determine distance between two atoms */
@@ -660,7 +662,7 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
                     if (radial)
                     {
                         /* bin order parameter by arc distance from reference group*/
-                        arcdist            = gmx_angle(dvec, direction);
+                        arcdist            = gmx_angle(displacementFromReference, direction);
                         (*distvals)[j][i] += arcdist;
                     }
                     else if (i == 1)
@@ -669,10 +671,11 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
                         tmpdist = trace(box);  /* should be max value */
                         for (k = 0; k < distsize; k++)
                         {
-                            pbc_dx(&pbc, x1[distidx[k]], x1[a[index[i]+j]], dvec);
-                            /* at the moment, just remove dvec[axis] */
-                            dvec[axis] = 0;
-                            tmpdist    = std::min(tmpdist, norm2(dvec));
+                            rvec displacement;
+                            pbc_dx(&pbc, x1[distidx[k]], x1[a[index[i]+j]], displacement);
+                            /* at the moment, just remove displacement[axis] */
+                            displacement[axis] = 0;
+                            tmpdist            = std::min(tmpdist, norm2(displacement));
                         }
                         //fprintf(stderr, "Min dist %f; trace %f\n", tmpdist, trace(box));
                         (*distvals)[j][i] += std::sqrt(tmpdist);

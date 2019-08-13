@@ -708,11 +708,14 @@ nsc_dclm_pbc(const rvec *coords, const ArrayRef<const real> &radius, int nat,
     }
     if (mode & FLAG_DOTS)
     {
+        GMX_RELEASE_ASSERT(nu_dots != nullptr, "Must have valid nu_dots pointer");
         *nu_dots = lfnr;
+        GMX_RELEASE_ASSERT(lidots != nullptr, "Must have valid lidots pointer");
         *lidots  = dots;
     }
     if (mode & FLAG_ATOM_AREA)
     {
+        GMX_RELEASE_ASSERT(at_area != nullptr, "Must have valid at_area pointer");
         *at_area = atom_area;
     }
     *value_of_area = area;

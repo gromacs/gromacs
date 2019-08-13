@@ -42,6 +42,7 @@
 
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/stringutil.h"
@@ -119,8 +120,12 @@ class ThreadAffinityTestHelper
         void expectAffinitySetThatFails(int core)
         {
             using ::testing::Return;
+#ifndef __clang_analyzer__
             EXPECT_CALL(affinityAccess_, setCurrentThreadAffinityToCore(core))
                 .WillOnce(Return(false));
+#else
+            GMX_UNUSED_VALUE(core);
+#endif
         }
 
         void expectWarningMatchingRegex(const char *re)

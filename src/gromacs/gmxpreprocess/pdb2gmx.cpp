@@ -1750,6 +1750,7 @@ int pdb2gmx::run()
 
         if ((i == 0) || (this_chainnumber != prev_chainnumber) || (bWat_ != bPrevWat_))
         {
+            GMX_RELEASE_ASSERT(pdba_all.pdbinfo, "Must have pdbinfo from reading a PDB file if chain number is changing");
             this_chainstart = pdba_all.atom[i].resind;
             bMerged         = false;
             if (i > 0 && !bWat_)

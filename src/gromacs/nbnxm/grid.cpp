@@ -944,6 +944,7 @@ void Grid::fillCell(GridSetData                    *gridSetData,
 #if NBNXN_SEARCH_SIMD4_FLOAT_X_BB
         if (nbat->XFormat == nbatXYZQ)
         {
+            GMX_ASSERT(bb_work_aligned != nullptr, "Must have valid aligned work structure");
             calc_bounding_box_xxxx_simd4(numAtoms, nbat->x().data() + atomStart*nbat->xstride,
                                          bb_work_aligned, pbb_ptr);
         }

@@ -273,7 +273,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         oK1[i] = (KG*i)/P[1];
         #endif
     }
-    for (i = 0; i < P[0]-1; i++)
+    for (i = 0; P[0] > 0 && i < P[0]-1; i++)
     {
         N0[i] = oN0[i+1]-oN0[i];
         M0[i] = oM0[i+1]-oM0[i];
@@ -282,7 +282,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     N0[P[0]-1] = NG-oN0[P[0]-1];
     M0[P[0]-1] = MG-oM0[P[0]-1];
     K0[P[0]-1] = KG-oK0[P[0]-1];
-    for (i = 0; i < P[1]-1; i++)
+    for (i = 0; P[1] > 0 && i < P[1]-1; i++)
     {
         N1[i] = oN1[i+1]-oN1[i];
         M1[i] = oM1[i+1]-oM1[i];
@@ -296,7 +296,8 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
        C: contiguous dimension, and nP: number of processor in subcommunicator
        for that step */
 
-
+    GMX_ASSERT(prank[0] < P[0], "Must have valid rank within communicator size");
+    GMX_ASSERT(prank[1] < P[1], "Must have valid rank within communicator size");
     pM[0] = M0[prank[0]];
     oM[0] = oM0[prank[0]];
     pK[0] = K1[prank[1]];

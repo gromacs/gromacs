@@ -960,6 +960,7 @@ static void read_posres(gmx_mtop_t *mtop,
     }
 
     npbcdim = ePBC2npbcdim(ePBC);
+    GMX_RELEASE_ASSERT(npbcdim <= DIM, "Invalid npbcdim");
     clear_rvec(com);
     if (rc_scaling != erscNO)
     {

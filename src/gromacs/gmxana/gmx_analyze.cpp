@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -398,6 +398,11 @@ static void average(const char *avfile, int avbar_opt,
  */
 static real optimal_error_estimate(double sigma, const double fitparm[], real tTotal)
 {
+    // When sigma is zero, the fitparm data can be uninitialized
+    if (sigma == 0.0)
+    {
+        return 0;
+    }
     double ss = fitparm[1]*fitparm[0]+(1-fitparm[1])*fitparm[2];
     if ((tTotal <= 0) || (ss <= 0))
     {
@@ -484,10 +489,13 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
         }
         if (sig[s] == 0)
         {
-            ee   = 0;
-            a    = 1;
-            tau1 = 0;
-            tau2 = 0;
+            ee         = 0;
+            a          = 1;
+            tau1       = 0;
+            tau2       = 0;
+            fitparm[0] = 0;
+            fitparm[1] = 0;
+            fitparm[2] = 0;
         }
         else
         {

@@ -201,7 +201,7 @@ void gmx::LegacySimulator::do_rerun()
     bool                    doFreeEnergyPerturbation = false;
     unsigned int            force_flags;
     tensor                  force_vir, shake_vir, total_vir, pres;
-    t_trxstatus            *status;
+    t_trxstatus            *status = nullptr;
     rvec                    mu_tot;
     t_trxframe              rerun_fr;
     gmx_localtop_t          top;

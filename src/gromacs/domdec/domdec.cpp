@@ -1288,6 +1288,7 @@ static void setup_neighbor_relations(gmx_domdec_t *dd)
     ivec                    tmp, s;
     gmx_domdec_zones_t     *zones;
     gmx_domdec_ns_ranges_t *izone;
+    GMX_ASSERT(dd->ndim >= 0, "Must have non-negative number of dimensions for DD");
 
     for (d = 0; d < dd->ndim; d++)
     {

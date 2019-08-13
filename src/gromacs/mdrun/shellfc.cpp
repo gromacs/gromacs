@@ -78,6 +78,7 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct {
@@ -160,6 +161,8 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
     int                   i, m, s1, n1, n2, n3;
     real                  dt_1, fudge, tm, m1, m2, m3;
     rvec                 *ptr;
+
+    GMX_RELEASE_ASSERT(mass || mtop, "Must have masses or a way to look them up");
 
     /* We introduce a fudge factor for performance reasons: with this choice
      * the initial force on the shells is about a factor of two lower than

@@ -458,6 +458,8 @@ static real estimate_reciprocal(
     double t1 = 0.0;
 #endif
 
+    GMX_RELEASE_ASSERT(q != nullptr, "Must have charges");
+
     if (seed == 0)
     {
         seed = static_cast<int>(gmx::makeRandomSeed());

@@ -265,10 +265,18 @@ static gmx_bool lambda_components_check(const lambda_components_t *lc,
     {
         return FALSE;
     }
+    GMX_RELEASE_ASSERT((name != nullptr) || (name_length == 0),
+                       "If name is empty, the length of the substring to examine within it must be zero");
     len = std::strlen(lc->names[index]);
     if (len != name_length)
     {
         return FALSE;
+    }
+    if (name_length == 0)
+    {
+        // Everything matches a zero-length substring. This branch is
+        // needed because name could in principle be nullptr.
+        return TRUE;
     }
     return std::strncmp(lc->names[index], name, name_length) == 0;
 }

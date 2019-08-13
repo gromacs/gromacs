@@ -100,19 +100,19 @@ struct BiasCoupledToSystem
     BiasCoupledToSystem(Bias                    bias,
                         const std::vector<int> &pullCoordIndex);
 
-    Bias                   bias;           /**< The bias. */
-    const std::vector<int> pullCoordIndex; /**< The pull coordinates this bias acts on. */
+    Bias                   bias_;           /**< The bias. */
+    const std::vector<int> pullCoordIndex_; /**< The pull coordinates this bias acts on. */
 
     /* Here AWH can be extended to work on other coordinates than pull. */
 };
 
 BiasCoupledToSystem::BiasCoupledToSystem(Bias                    bias,
                                          const std::vector<int> &pullCoordIndex) :
-    bias(std::move(bias)),
-    pullCoordIndex(pullCoordIndex)
+    bias_(std::move(bias)),
+    pullCoordIndex_(pullCoordIndex)
 {
     /* We already checked for this in grompp, but check again here. */
-    GMX_RELEASE_ASSERT(static_cast<size_t>(bias.ndim()) == pullCoordIndex.size(), "The bias dimensionality should match the number of pull coordinates.");
+    GMX_RELEASE_ASSERT(static_cast<size_t>(bias_.ndim()) == pullCoordIndex_.size(), "The bias dimensionality should match the number of pull coordinates.");
 }
 
 Awh::Awh(FILE                 *fplog,
@@ -175,7 +175,7 @@ Awh::Awh(FILE                 *fplog,
         biasCoupledToSystem_.emplace_back(Bias(k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, inputRecord.delta_t, numSharingSimulations, biasInitFilename, thisRankWillDoIO),
                                           pullCoordIndex);
 
-        biasCoupledToSystem_.back().bias.printInitializationToLog(fplog);
+        biasCoupledToSystem_.back().bias_.printInitializationToLog(fplog);
     }
 
     /* Need to register the AWH coordinates to be allowed to apply forces to the pull coordinates. */
@@ -186,7 +186,7 @@ Awh::Awh(FILE                 *fplog,
         std::vector<size_t> pointSize;
         for (auto const &biasCts : biasCoupledToSystem_)
         {
-            pointSize.push_back(biasCts.bias.state().points().size());
+            pointSize.push_back(biasCts.bias_.state().points().size());
         }
         /* Ensure that the shared biased are compatible between simulations */
         biasesAreCompatibleForSharingBetweenSimulations(awhParams, pointSize, multiSimRecord_);
@@ -227,9 +227,9 @@ real Awh::applyBiasForcesAndUpdateBias(int                     ePBC,
          * pull coordinates.
          */
         awh_dvec coordValue = { 0, 0, 0, 0 };
-        for (int d = 0; d < biasCts.bias.ndim(); d++)
+        for (int d = 0; d < biasCts.bias_.ndim(); d++)
         {
-            coordValue[d] = get_pull_coord_value(pull_, biasCts.pullCoordIndex[d], &pbc);
+            coordValue[d] = get_pull_coord_value(pull_, biasCts.pullCoordIndex_[d], &pbc);
         }
 
         /* Perform an AWH biasing step: this means, at regular intervals,
@@ -242,11 +242,11 @@ real Awh::applyBiasForcesAndUpdateBias(int                     ePBC,
          *       to supports bias sharing within a single simulation.
          */
         gmx::ArrayRef<const double> biasForce =
-            biasCts.bias.calcForceAndUpdateBias(coordValue,
-                                                &biasPotential, &biasPotentialJump,
-                                                commRecord_,
-                                                multiSimRecord_,
-                                                t, step, seed_, fplog);
+            biasCts.bias_.calcForceAndUpdateBias(coordValue,
+                                                 &biasPotential, &biasPotentialJump,
+                                                 commRecord_,
+                                                 multiSimRecord_,
+                                                 t, step, seed_, fplog);
 
         awhPotential += biasPotential;
 
@@ -257,9 +257,9 @@ real Awh::applyBiasForcesAndUpdateBias(int                     ePBC,
          * The bias potential is returned at the end of this function,
          * so that it can be added externally to the correct energy data block.
          */
-        for (int d = 0; d < biasCts.bias.ndim(); d++)
+        for (int d = 0; d < biasCts.bias_.ndim(); d++)
         {
-            apply_external_pull_coord_force(pull_, biasCts.pullCoordIndex[d],
+            apply_external_pull_coord_force(pull_, biasCts.pullCoordIndex_[d],
                                             biasForce[d], &mdatoms,
                                             forceWithVirial);
         }
@@ -269,7 +269,7 @@ real Awh::applyBiasForcesAndUpdateBias(int                     ePBC,
             /* We might have skipped updates for part of the grid points.
              * Ensure all points are updated before writing out their data.
              */
-            biasCts.bias.doSkippedUpdatesForAllPoints();
+            biasCts.bias_.doSkippedUpdatesForAllPoints();
         }
     }
 
@@ -288,7 +288,7 @@ std::shared_ptr<AwhHistory> Awh::initHistoryFromState() const
 
         for (size_t k = 0; k < awhHistory->bias.size(); k++)
         {
-            biasCoupledToSystem_[k].bias.initHistoryFromState(&awhHistory->bias[k]);
+            biasCoupledToSystem_[k].bias_.initHistoryFromState(&awhHistory->bias[k]);
         }
 
         return awhHistory;
@@ -321,7 +321,7 @@ void Awh::restoreStateFromHistory(const AwhHistory *awhHistory)
 
     for (size_t k = 0; k < biasCoupledToSystem_.size(); k++)
     {
-        biasCoupledToSystem_[k].bias.restoreStateFromHistory(awhHistory ? &awhHistory->bias[k] : nullptr, commRecord_);
+        biasCoupledToSystem_[k].bias_.restoreStateFromHistory(awhHistory ? &awhHistory->bias[k] : nullptr, commRecord_);
     }
 }
 
@@ -339,7 +339,7 @@ void Awh::updateHistory(AwhHistory *awhHistory) const
 
     for (size_t k = 0; k < awhHistory->bias.size(); k++)
     {
-        biasCoupledToSystem_[k].bias.updateHistory(&awhHistory->bias[k]);
+        biasCoupledToSystem_[k].bias_.updateHistory(&awhHistory->bias[k]);
     }
 }
 
@@ -381,7 +381,7 @@ void Awh::writeToEnergyFrame(int64_t      step,
     int numSubblocks  = 0;
     for (auto &biasCoupledToSystem : biasCoupledToSystem_)
     {
-        numSubblocks += biasCoupledToSystem.bias.numEnergySubblocksToWrite();
+        numSubblocks += biasCoupledToSystem.bias_.numEnergySubblocksToWrite();
     }
     GMX_ASSERT(numSubblocks > 0, "We should always have data to write");
 
@@ -399,7 +399,7 @@ void Awh::writeToEnergyFrame(int64_t      step,
     int energySubblockCount = 0;
     for (auto &biasCoupledToSystem : biasCoupledToSystem_)
     {
-        energySubblockCount += biasCoupledToSystem.bias.writeToEnergySubblocks(&(awhEnergyBlock->sub[energySubblockCount]));
+        energySubblockCount += biasCoupledToSystem.bias_.writeToEnergySubblocks(&(awhEnergyBlock->sub[energySubblockCount]));
     }
 }
 

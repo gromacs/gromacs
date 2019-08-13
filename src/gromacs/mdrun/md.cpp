@@ -182,8 +182,7 @@ void gmx::LegacySimulator::do_md()
     gmx_bool                bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
     gmx_bool                bTemp, bPres, bTrotter;
     real                    dvdl_constr;
-    rvec                   *cbuf        = nullptr;
-    int                     cbuf_nalloc = 0;
+    std::vector<RVec>       cbuf;
     matrix                  lastbox;
     int                     lamnew  = 0;
     /* for FEP */
@@ -1213,13 +1212,8 @@ void gmx::LegacySimulator::do_md()
 
         if (ir->eI == eiVVAK)
         {
-            /* We probably only need md->homenr, not state->natoms */
-            if (state->natoms > cbuf_nalloc)
-            {
-                cbuf_nalloc = state->natoms;
-                srenew(cbuf, cbuf_nalloc);
-            }
-            copy_rvecn(as_rvec_array(state->x.data()), cbuf, 0, state->natoms);
+            cbuf.resize(state->x.size());
+            std::copy(state->x.begin(), state->x.end(), cbuf.begin());
         }
 
         if (c_useGpuUpdateConstrain)
@@ -1279,8 +1273,8 @@ void gmx::LegacySimulator::do_md()
                             );
             wallcycle_start(wcycle, ewcUPDATE);
             trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ4);
-            /* now we know the scaling, we can compute the positions again again */
-            copy_rvecn(cbuf, as_rvec_array(state->x.data()), 0, state->natoms);
+            /* now we know the scaling, we can compute the positions again */
+            std::copy(cbuf.begin(), cbuf.end(), state->x.begin());
 
             update_coords(step, ir, mdatoms, state, f.arrayRefWithPadding(), fcd,
                           ekind, M, &upd, etrtPOSITION, cr, constr);

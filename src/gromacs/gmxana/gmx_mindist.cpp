@@ -254,6 +254,7 @@ static void calc_dist(real rcut, gmx_bool bPBC, int ePBC, matrix box, rvec x[],
         j1     = nx1;
         index3 = index1;
     }
+    GMX_RELEASE_ASSERT(index1 != nullptr, "Need a valid index for plotting distances");
 
     rmin2 = 1e12;
     rmax2 = -1e12;
@@ -376,6 +377,7 @@ static void dist_plot(const char *fn, const char *afile, const char *dfile,
         }
         else
         {
+            GMX_RELEASE_ASSERT(ng > 1, "Must have more than one group with bMat");
             snew(leg, (ng*(ng-1))/2);
             for (i = j = 0; (i < ng-1); i++)
             {
@@ -492,6 +494,7 @@ static void dist_plot(const char *fn, const char *afile, const char *dfile,
         }
         else
         {
+            GMX_RELEASE_ASSERT(ng > 1, "Must have more than one group when not using -matrix");
             for (i = 1; (i < ng); i++)
             {
                 calc_dist(rcut, bPBC, ePBC, box, x0, gnx[0], gnx[i], index[0], index[i], bGroup,
@@ -799,6 +802,7 @@ int gmx_mindist(int argc, char *argv[])
         }
         gnx[0] = 1;
     }
+    GMX_RELEASE_ASSERT(!bMat || ng > 1, "Must have more than one group with bMat");
 
     if (resfnm)
     {

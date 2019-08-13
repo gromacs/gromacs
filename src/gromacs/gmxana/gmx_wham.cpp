@@ -1232,8 +1232,6 @@ static void getRandomIntArray(int nPull, int blockLength, int* randomArray, gmx:
         }
         randomArray[ipull] = ipullRandom;
     }
-    /*for (ipull=0; ipull<nPull; ipull++)
-       printf("%d ",randomArray[ipull]); printf("\n"); */
 }
 
 /*! \brief Set pull group information of a synthetic histogram
@@ -1641,7 +1639,6 @@ static void do_bootstrapping(const char *fnres, const char* fnprof, const char *
     switch (opt->bsMethod)
     {
         case bsMethod_hist:
-            snew(randomArray, nAllPull);
             printf("\n\nWhen computing statistical errors by bootstrapping entire histograms:\n");
             please_cite(stdout, "Hub2006");
             break;
@@ -1674,6 +1671,7 @@ static void do_bootstrapping(const char *fnres, const char* fnprof, const char *
         {
             case bsMethod_hist:
                 /* bootstrap complete histograms from given histograms */
+                srenew(randomArray, nAllPull);
                 getRandomIntArray(nAllPull, opt->histBootStrapBlockLength, randomArray, &opt->rng);
                 for (i = 0; i < nAllPull; i++)
                 {

@@ -50,6 +50,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "pme_grid.h"
@@ -874,6 +875,7 @@ void spread_on_grid(const gmx_pme_t *pme,
 
     nthread = pme->nthread;
     assert(nthread > 0);
+    GMX_ASSERT(grids != nullptr || !bSpread, "If there's no grid, we cannot be spreading");
 
 #ifdef PME_TIME_THREADS
     c1 = omp_cyc_start();
