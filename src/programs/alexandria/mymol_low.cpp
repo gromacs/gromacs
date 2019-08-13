@@ -542,7 +542,7 @@ void getBhamParams(const Poldata     &pd,
                    double            *c)
 {
     std::vector<std::vector<double> > vdw;
-    for(auto a : { ai, aj })
+    for (auto a : { ai, aj })
     {
         auto fai = pd.findAtype(a);
         if (fai != pd.getAtypeEnd())
@@ -594,7 +594,8 @@ void getBhamParams(const Poldata     &pd,
 
 void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                            t_atoms       *atoms,
-                           const Poldata &pd)
+                           const Poldata &pd,
+                           t_forcerec    *fr)
 {
     auto ntype  = mtop->ffparams.atnr;
     int  ntype2 = gmx::square(ntype);
@@ -608,7 +609,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
     }
     auto ftypeVdW   = pd.getVdwFtype();
     typedef struct
-    { 
+    {
         std::string name;
         int         ptype;
     } mytype;
@@ -637,7 +638,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                     i++, tn.name.c_str(), ptype_str[tn.ptype]);
         }
     }
-    // TODO: Use the symmetry in the matrix 
+    // TODO: Use the symmetry in the matrix
     for (auto i = 0; (i < ntype); i++)
     {
         if (mytypes[i].ptype == eptAtom)
@@ -650,23 +651,37 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                     mtop->ffparams.functype[idx] = ftypeVdW;
                     switch (ftypeVdW)
                     {
-                    case F_LJ:
+                        case F_LJ:
                         {
                             double c6, c12;
-                            getLjParams(pd, mytypes[i].name, 
+                            getLjParams(pd, mytypes[i].name,
                                         mytypes[j].name, &c6, &c12);
                             mtop->ffparams.iparams[idx].lj.c6  = c6;
                             mtop->ffparams.iparams[idx].lj.c12 = c12;
+                            if (nullptr != fr)
+                            {
+                                C6(fr->nbfp, ntype, i, j)  = c6*6.0;
+                                C12(fr->nbfp, ntype, i, j) = c12*12.0;
+                            }
                         }
                         break;
-                    case F_BHAM:
+                        case F_BHAM:
                         {
                             double a, b, c;
-                            getBhamParams(pd, mytypes[i].name, 
+                            getBhamParams(pd, mytypes[i].name,
                                           mytypes[j].name, &a, &b, &c);
                             mtop->ffparams.iparams[idx].bham.a = a;
                             mtop->ffparams.iparams[idx].bham.b = b;
                             mtop->ffparams.iparams[idx].bham.c = c;
+                            if (nullptr != fr)
+                            {
+                                BHAMA(fr->nbfp, ntype, i, j) = a;
+                                BHAMB(fr->nbfp, ntype, i, j) = b;
+                                /* nbfp now includes the 6.0 derivative prefactor */
+                                /* the 6.0 derivative prefactor is turned off for the modified BHAM implemented in nb_generic */
+                                /* BHAMC(nbfp, atnr, i, j) = idef->iparams[k].bham.c*6.0; */
+                                BHAMC(fr->nbfp, ntype, i, j) = c;
+                            }
                             if (debug)
                             {
                                 fprintf(debug, "idx = %3d a = %10g b = %10g c = %10g\n",
@@ -677,9 +692,9 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                             }
                         }
                         break;
-                    default:
-                        fprintf(stderr, "Invalid van der waals type %s\n",
-                                pd.getVdwFunction().c_str());
+                        default:
+                            fprintf(stderr, "Invalid van der waals type %s\n",
+                                    pd.getVdwFunction().c_str());
                     }
                 }
             }
@@ -710,34 +725,30 @@ void plist_to_mtop(const Poldata                   &pd,
         {
             std::vector<real> c;
             c.resize(MAXFORCEPARAM, 0);
-            int               l = 0;
             if (ftype == F_LJ14)
             {
                 int ati = mtop_->moltype[0].atoms.atom[j->a[0]].type;
                 int atj = mtop_->moltype[0].atoms.atom[j->a[1]].type;
                 int tp  = ati*mtop_->ffparams.atnr+atj;
-                c[l++] = mtop_->ffparams.iparams[tp].lj.c6*fudgeLJ;
-                c[l++] = mtop_->ffparams.iparams[tp].lj.c12*fudgeLJ;
+                c[0] = c[nrfp]   = mtop_->ffparams.iparams[tp].lj.c6*fudgeLJ;
+                c[1] = c[nrfp+1] = mtop_->ffparams.iparams[tp].lj.c12*fudgeLJ;
             }
             else
             {
-                for (; (l < nrfp); l++)
+                for (int l = 0; (l < nrfp); l++)
                 {
                     c[l] = j->c[l];
                     if (NOTSET == c[l])
                     {
                         c[l] = 0;
                     }
+                    c[l+nrfp] = c[l];
                 }
-            }
-            for (; (l < MAXFORCEPARAM); l++)
-            {
-                c[l] = 0;
             }
             double reppow = 12.0;
             int    type   = enter_params(&mtop_->ffparams, ftype, c.data(), 0, reppow, ffparamsSize, false);
             mtop_->moltype[0].ilist[ftype].iatoms.push_back(type);
-            for(int m = 0; m < interaction_function[ftype].nratoms; m++)
+            for (int m = 0; m < interaction_function[ftype].nratoms; m++)
             {
                 mtop_->moltype[0].ilist[ftype].iatoms.push_back(j->a[m]);
             }
@@ -745,13 +756,13 @@ void plist_to_mtop(const Poldata                   &pd,
     }
 }
 
-gmx_mtop_t *do_init_mtop(const Poldata            &pd,
-                         char                    **molname,
-                         t_atoms                  *atoms,
+gmx_mtop_t *do_init_mtop(const Poldata                   &pd,
+                         char                           **molname,
+                         t_atoms                         *atoms,
                          const std::vector<PlistWrapper> &plist,
-                         t_inputrec               *ir,
-                         t_symtab                 *symtab,
-                         const char               *tabfn)
+                         t_inputrec                      *ir,
+                         t_symtab                        *symtab,
+                         const char                      *tabfn)
 {
     gmx_mtop_t *mtop = new gmx_mtop_t();
     mtop->name     = molname;
@@ -819,7 +830,7 @@ gmx_mtop_t *do_init_mtop(const Poldata            &pd,
         }
     }
 
-    nonbondedFromPdToMtop(mtop, atoms, pd);
+    nonbondedFromPdToMtop(mtop, atoms, pd, nullptr);
 
     gmx_mtop_finalize(mtop);
     /* Create a charge group block */
@@ -1063,10 +1074,10 @@ int get_subtype(directive d, int ftype)
     return 1;
 }
 
-void print_bondeds(FILE                     *out,
-                   directive                 d,
-                   int                       plist_ftype,
-                   int                       print_ftype,
+void print_bondeds(FILE                            *out,
+                   directive                        d,
+                   int                              plist_ftype,
+                   int                              print_ftype,
                    const std::vector<PlistWrapper> &plist)
 {
     auto p = SearchPlist(plist, plist_ftype);
@@ -1099,16 +1110,16 @@ void print_bondeds(FILE                     *out,
     fprintf(out, "\n");
 }
 
-void write_top(FILE                     *out,
-               char                     *molname,
-               t_atoms                  *at,
-               gmx_bool                  bRTPresname,
+void write_top(FILE                            *out,
+               char                            *molname,
+               t_atoms                         *at,
+               gmx_bool                         bRTPresname,
                const std::vector<PlistWrapper> &plist,
-               t_excls                   excls[],
-               gpp_atomtype_t            atype,
-               int                      *cgnr,
-               int                       nrexcl,
-               const Poldata            &pd)
+               t_excls                          excls[],
+               gpp_atomtype_t                   atype,
+               int                             *cgnr,
+               int                              nrexcl,
+               const Poldata                   &pd)
 {
     if (at && atype && cgnr)
     {

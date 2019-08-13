@@ -152,7 +152,7 @@ CommunicationStatus Ffatype::Send(const t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &btype_);
         gmx_send_str(cr, dest, &ztype_);
         gmx_send_str(cr, dest, &elem_);
-        gmx_send_int(cr, dest, static_cast<int>(fixed_));
+        gmx_send_int(cr, dest, fixed_ ? 1 : 0);
         gmx_send_str(cr, dest, &vdwparams_);
         gmx_send_str(cr, dest, &refEnthalpy_);
         if (nullptr != debug)
@@ -181,7 +181,7 @@ CommunicationStatus Ffatype::Receive(const t_commrec *cr, int src)
         gmx_recv_str(cr, src, &btype_);
         gmx_recv_str(cr, src, &ztype_);
         gmx_recv_str(cr, src, &elem_);
-        fixed_ = static_cast<bool>(gmx_recv_int(cr, src));
+        fixed_ = (1 == gmx_recv_int(cr, src));
         gmx_recv_str(cr, src, &vdwparams_);
         gmx_recv_str(cr, src, &refEnthalpy_);
 
@@ -328,7 +328,7 @@ static std::string condense_atoms(const std::vector<std::string> atoms)
     if (!atoms.empty())
     {
         catoms = atoms[0];
-        for(size_t i = 1; i < atoms.size(); i++)
+        for (size_t i = 1; i < atoms.size(); i++)
         {
             catoms.append("-").append(atoms[i]);
         }
@@ -398,7 +398,7 @@ CommunicationStatus ListedForce::Send(const t_commrec *cr, int dest)
         gmx_send_int(cr, dest, static_cast<int>(ntrain_));
         gmx_send_int(cr, dest, static_cast<int>(bondOrder_));
         gmx_send_int(cr, dest, atoms_.size());
-
+        gmx_send_int(cr, dest, fixed_ ? 1 : 0);
         for (auto &atom : atoms_)
         {
             gmx_send_str(cr, dest, &atom);
@@ -428,7 +428,7 @@ CommunicationStatus ListedForce::Receive(const t_commrec *cr, int src)
         ntrain_    = static_cast<size_t>(gmx_recv_int(cr, src));
         bondOrder_ = static_cast<size_t>(gmx_recv_int(cr, src));
         natom      = gmx_recv_int(cr, src);
-
+        fixed_     = (1 == gmx_recv_int(cr, src));
         for (auto n = 0; n < natom; n++)
         {
             std::string atom;
@@ -551,31 +551,31 @@ CommunicationStatus ListedForces::Receive(const t_commrec *cr, int src)
 
 ListedForceIterator ListedForces::findForce(const std::vector<std::string> &atoms)
 {
-    auto catoms = condense_atoms(atoms);
-    ListedForceIterator fb = forceBegin(), fe = forceEnd();
+    auto                catoms = condense_atoms(atoms);
+    ListedForceIterator fb     = forceBegin(), fe = forceEnd();
     return std::find_if(fb, fe, [catoms](const ListedForce &force)
                         {
-                            return (catoms == force.condensed_atoms() || 
+                            return (catoms == force.condensed_atoms() ||
                                     catoms == force.reverse_condensed_atoms());
                         });
 }
 
 ListedForceConstIterator ListedForces::findForce(const std::vector<std::string> &atoms) const
 {
-    auto catoms = condense_atoms(atoms);
-    ListedForceConstIterator fb = forceBegin(), fe = forceEnd();
+    auto                     catoms = condense_atoms(atoms);
+    ListedForceConstIterator fb     = forceBegin(), fe = forceEnd();
     return std::find_if(fb, fe, [catoms](const ListedForce &force)
                         {
-                            return (catoms == force.condensed_atoms() || 
+                            return (catoms == force.condensed_atoms() ||
                                     catoms == force.reverse_condensed_atoms());
                         });
 }
 
 ListedForceIterator ListedForces::findForce(const std::vector<std::string> &atoms,
-                                            size_t                         bondOrder)
+                                            size_t                          bondOrder)
 {
-    auto catoms = condense_atoms(atoms);
-    ListedForceIterator fb = forceBegin(), fe = forceEnd();
+    auto                catoms = condense_atoms(atoms);
+    ListedForceIterator fb     = forceBegin(), fe = forceEnd();
     return std::find_if(fb, fe, [catoms, bondOrder](const ListedForce &force)
                         {
                             return (bondOrder == force.bondOrder() &&
@@ -584,11 +584,11 @@ ListedForceIterator ListedForces::findForce(const std::vector<std::string> &atom
                         });
 }
 
-ListedForceConstIterator ListedForces::findForce(const std::vector<std::string> &atoms, 
+ListedForceConstIterator ListedForces::findForce(const std::vector<std::string> &atoms,
                                                  size_t                          bondOrder) const
 {
-    auto catoms = condense_atoms(atoms);
-    ListedForceConstIterator fb = forceBegin(), fe = forceEnd();
+    auto                     catoms = condense_atoms(atoms);
+    ListedForceConstIterator fb     = forceBegin(), fe = forceEnd();
     return std::find_if(fb, fe, [catoms, bondOrder](const ListedForce &force)
                         {
                             return (bondOrder == force.bondOrder() &&
@@ -610,7 +610,7 @@ bool ListedForces::setForceParams(const std::vector<std::string> &atoms,
         force->setSigma(sigma);
         force->setNtrain(ntrain);
         force->setParams(params);
-        
+
         return true;
     }
     return false;
@@ -630,7 +630,7 @@ bool ListedForces::setForceParams(const std::vector<std::string> &atoms,
         force->setSigma(sigma);
         force->setNtrain(ntrain);
         force->setParams(params);
-        
+
         return true;
     }
     return false;
@@ -700,7 +700,7 @@ bool ListedForces::searchForce(std::vector<std::string> &atoms,
         *sigma     = force->sigma();
         *ntrain    = force->ntrain();
         params     = force->params();
-        
+
         return true;
     }
     return false;

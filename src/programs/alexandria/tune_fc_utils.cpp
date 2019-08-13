@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2019 
+ * Copyright (C) 2014-2019
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,16 +20,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
+
 #include "tune_fc_utils.h"
 
 #include "gromacs/topology/topology.h"
@@ -163,7 +163,7 @@ CommunicationStatus NonBondParams::Receive(t_commrec *cr, int src)
 }
 
 void NonBondParams::analyzeIdef(const std::vector<MyMol> &mm,
-                                const Poldata      &pd)
+                                const Poldata            &pd)
 {
     if (!bOpt_)
     {
@@ -176,25 +176,22 @@ void NonBondParams::analyzeIdef(const std::vector<MyMol> &mm,
             if (mymol.topology_->atoms.atom[i].ptype == eptAtom ||
                 mymol.topology_->atoms.atom[i].ptype == eptNucleus)
             {
-                auto at  = *mymol.topology_->atoms.atomtype[i];
-                auto fat = pd.findAtype(at);
+                std::string typeName        = *mymol.topology_->atoms.atomtype[i];
+                auto        fat             = pd.findAtype(typeName);
                 if (fat != pd.getAtypeEnd() && !fat->fixed())
                 {
-                    std::string typeName    = at;
-                    std::string paramString = fat->getVdwparams();
-                    int         index       = fat - pd.getAtypeBegin();
-                    auto        myat        = std::find_if(at_.begin(), at_.end(),
-                                                           [typeName](const AtomTypes &at)
-                                                           {
-                                                               return (at.name().compare(typeName) == 0);
-                                                           });
+                    auto myat = std::find_if(at_.begin(), at_.end(),
+                                             [typeName](const AtomTypes &myat)
+                                             {
+                                                 return (myat.name().compare(typeName) == 0);
+                                             });
                     if (myat != at_.end())
                     {
                         myat->inc();
                     }
                     else
                     {
-                        AtomTypes at(1, typeName, paramString, index);
+                        AtomTypes at(1, typeName, fat->getVdwparams(), fat - pd.getAtypeBegin());
                         addNonBonded(at);
                     }
                 }
@@ -267,12 +264,12 @@ void BondNames::setParamString(const std::string &params)
 
 void BondNames::extractParams()
 {
-    const auto p = gmx::splitString(params_);
-    int np = 1+static_cast<int>(p.size());
+    const auto p  = gmx::splitString(params_);
+    int        np = 1+static_cast<int>(p.size());
     if ((ftype_ == F_UREY_BRADLEY && np != 3) ||
         (ftype_ != F_UREY_BRADLEY && np != NRFPA(ftype_)))
     {
-        gmx_fatal(FARGS, "Number of parameters (%d) in gentop.dat does not match function type %s (%d)", np, 
+        gmx_fatal(FARGS, "Number of parameters (%d) in gentop.dat does not match function type %s (%d)", np,
                   interaction_function[ftype_].name, NRFPA(ftype_));
     }
     p_.resize(p.size(), 0.0);
@@ -499,7 +496,7 @@ void ForceConstants::dump(FILE *fp) const
 {
     if (bOpt_)
     {
-        int ntot = 0;
+        int         ntot = 0;
         fprintf(fp, "Interaction  Bondtypes             Copies Poldata entry\n");
         const char *name = interaction_function[ftype_].name;
         for (const auto &i : bn_)
@@ -518,6 +515,7 @@ void PoldataUpdate::execute(Poldata &pd)
     if (iType_ == eitVDW)
     {
         auto fat = pd.getAtypeBegin() + index_;
+        GMX_RELEASE_ASSERT(!fat->fixed(), "Fixed vdw parameters should not be here");
         fat->setVdwparams(paramString_);
         fat->setModified(true);
     }
@@ -525,6 +523,7 @@ void PoldataUpdate::execute(Poldata &pd)
     {
         auto fs = pd.findForces(iType_);
         auto f  = fs->forceBegin() + index_;
+        GMX_RELEASE_ASSERT(!f->fixed(), "Fixed listed force parameters should not be here");
         f->setParams(paramString_);
         f->setModified(true);
     }
@@ -540,7 +539,7 @@ void PoldataUpdate::dump(FILE *fp) const
         {
             fprintf(fp, " %g", p);
         }
-        fprintf(fp, "\n");        
+        fprintf(fp, "\n");
     }
 }
 
@@ -555,7 +554,7 @@ CommunicationStatus PoldataUpdate::Send(t_commrec *cr, int dest)
         gmx_send_int(cr, dest, index_);
         gmx_send_str(cr, dest, &paramString_);
         gmx_send_int(cr, dest, static_cast<int>(params_.size()));
-        for(const auto &p : params_)
+        for (const auto &p : params_)
         {
             gmx_send_double(cr, dest, p);
         }
@@ -574,7 +573,7 @@ CommunicationStatus PoldataUpdate::Receive(t_commrec *cr, int src)
         gmx_recv_str(cr, src, &paramString_);
         int n  = gmx_recv_int(cr, src);
         params_.clear();
-        for(int i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
             params_.push_back(gmx_recv_double(cr, src));
         }

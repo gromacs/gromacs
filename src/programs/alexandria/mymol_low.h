@@ -39,6 +39,7 @@
 #include <cstring>
 
 #include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/pbcutil/pbc.h"
 
 #include "gentop_core.h"
@@ -136,19 +137,20 @@ void getBhamParams(const Poldata     &pd,
 
 void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                            t_atoms       *atoms,
-                           const Poldata &pd);
-                           
+                           const Poldata &pd,
+                           t_forcerec    *fr);
+
 void plist_to_mtop(const Poldata                   &pd,
                    const std::vector<PlistWrapper> &plist,
                    gmx_mtop_t                      *mtop_);
 
-gmx_mtop_t *do_init_mtop(const Poldata            &pd,
-                         char                    **molname,
-                         t_atoms                  *atoms,
+gmx_mtop_t *do_init_mtop(const Poldata                   &pd,
+                         char                           **molname,
+                         t_atoms                         *atoms,
                          const std::vector<PlistWrapper> &plist,
-                         t_inputrec               *ir,
-                         t_symtab                 *symtab,
-                         const char               *tabfn);
+                         t_inputrec                      *ir,
+                         t_symtab                        *symtab,
+                         const char                      *tabfn);
 
 void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka);
 
@@ -168,22 +170,22 @@ void write_zeta_q2(QgenAcm                *qgen,
 
 int get_subtype(directive d, int ftype);
 
-void print_bondeds(FILE                     *out,
-                   directive                 d,
-                   int                       plist_ftype,
-                   int                       print_ftype,
+void print_bondeds(FILE                            *out,
+                   directive                        d,
+                   int                              plist_ftype,
+                   int                              print_ftype,
                    const std::vector<PlistWrapper> &plist);
 
-void write_top(FILE                     *out,
-               char                     *molname,
-               t_atoms                  *at,
-               gmx_bool                  bRTPresname,
+void write_top(FILE                            *out,
+               char                            *molname,
+               t_atoms                         *at,
+               gmx_bool                         bRTPresname,
                const std::vector<PlistWrapper> &plist,
-               t_excls                   excls[],
-               gpp_atomtype_t            atype,
-               int                      *cgnr,
-               int                       nrexcl,
-               const Poldata            &pd);
+               t_excls                          excls[],
+               gpp_atomtype_t                   atype,
+               int                             *cgnr,
+               int                              nrexcl,
+               const Poldata                   &pd);
 
 void print_top_header(FILE                    *fp,
                       const Poldata           &pd,

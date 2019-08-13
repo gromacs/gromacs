@@ -142,11 +142,11 @@ const char *immsg(immStatus imm)
 class MyForceProvider : public gmx::IForceProvider
 {
     private:
-    std::vector<double> efield_;
+        std::vector<double> efield_;
 
     public:
 
-        MyForceProvider() 
+        MyForceProvider()
         {
             efield_.resize(DIM, 0);
         }
@@ -219,7 +219,7 @@ MyMol::MyMol() : gvt_(evtALL)
     snew(enerd_, 1);
     snew(fcd_, 1);
     clear_mat(state_->box);
-    for(int m = 0; m < DIM; m++)
+    for (int m = 0; m < DIM; m++)
     {
         state_->box[m][m] = 10.0;
     }
@@ -838,26 +838,26 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         }
         svmul((1.0/atntot), coc_, coc_);
         /*Center of charge*/
-    
-        bool bAddShells = (iChargeDistributionModel == eqdAXpp || 
-                           iChargeDistributionModel == eqdAXpg || 
+
+        bool bAddShells = (iChargeDistributionModel == eqdAXpp ||
+                           iChargeDistributionModel == eqdAXpg ||
                            iChargeDistributionModel == eqdAXps);
         if (bAddShells)
         {
             addShells(pd, iChargeDistributionModel);
         }
-        char **molnameptr = put_symtab(symtab_, molProp()->getMolname().c_str());        
-        mtop_ = do_init_mtop(pd, molnameptr, &topology_->atoms, plist_, inputrec_, symtab_, tabfn); // Generate mtop        
+        char **molnameptr = put_symtab(symtab_, molProp()->getMolname().c_str());
+        mtop_ = do_init_mtop(pd, molnameptr, &topology_->atoms, plist_, inputrec_, symtab_, tabfn); // Generate mtop
         excls_to_blocka(topology_->atoms.nr, excls_, &(mtop_->moltype[0].excls));
         if (bAddShells)
-        {          
-            srenew(mtop_->atomtypes.atomnumber, get_atomtype_ntypes(atype_)); // Update mtop internals to account for shell type            
-            for(auto i = 0; i < get_atomtype_ntypes(atype_); i++)
+        {
+            srenew(mtop_->atomtypes.atomnumber, get_atomtype_ntypes(atype_)); // Update mtop internals to account for shell type
+            for (auto i = 0; i < get_atomtype_ntypes(atype_); i++)
             {
                 mtop_->atomtypes.atomnumber[i] = get_atomtype_atomnumber(i, atype_);
-            }            
-            mtop_->ffparams.atnr = get_atomtype_ntypes(atype_);            
-            shellfc_ = init_shell_flexcon(debug, mtop_, 0, 1, false); // Generate shell data structure
+            }
+            mtop_->ffparams.atnr = get_atomtype_ntypes(atype_);
+            shellfc_             = init_shell_flexcon(debug, mtop_, 0, 1, false); // Generate shell data structure
         }
         if (nullptr == ltop_)
         {
@@ -870,22 +870,22 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
 void MyMol::addShells(const Poldata          &pd,
                       ChargeDistributionModel iModel)
 {
-    int                 shell  = 0;
-    int                 nshell = 0;
-    double              pol    = 0;
-    double              sigpol = 0;
+    int                    shell  = 0;
+    int                    nshell = 0;
+    double                 pol    = 0;
+    double                 sigpol = 0;
 
-    std::vector<int>    renum;
-    std::vector<int>    inv_renum;
+    std::vector<int>       renum;
+    std::vector<int>       inv_renum;
 
-    char                buf[32];
-    char              **newname;
-    t_atoms            *newatoms;
-    t_excls            *newexcls;
+    char                   buf[32];
+    char                 **newname;
+    t_atoms               *newatoms;
+    t_excls               *newexcls;
     std::vector<gmx::RVec> newx;
-    t_param             p;
+    t_param                p;
 
-    auto                polarUnit = string2unit(pd.getPolarUnit().c_str());
+    auto                   polarUnit = string2unit(pd.getPolarUnit().c_str());
     if (-1 == polarUnit)
     {
         gmx_fatal(FARGS, "No such polarizability unit '%s'", pd.getPolarUnit().c_str());
@@ -943,14 +943,14 @@ void MyMol::addShells(const Poldata          &pd,
                             pol /= vsite->nvsite();
                         }
                     }
-                  
+
                     if (nexcl_ == 0)
                     {
                         /*
-                          This is an ugly hack to turn off the Polarize
-                          routine. If we can make nexcl_ = 0 work, it should
-                          be implemenetd in a nice way.
-                        */
+                           This is an ugly hack to turn off the Polarize
+                           routine. If we can make nexcl_ = 0 work, it should
+                           be implemenetd in a nice way.
+                         */
                         pol = 1e+10;
                     }
                     p.c[0] = convert2gmx(pol, polarUnit);
@@ -991,11 +991,11 @@ void MyMol::addShells(const Poldata          &pd,
     if (plist_.end() != pw)
     {
         /*
-          Exclude the vsites and the atoms from their own shell.
-          This step will be done if the number of exclusions is
-          bigger than zero, otherwsie, the vsite or the core will
-          interact with its own shell.
-        */
+           Exclude the vsites and the atoms from their own shell.
+           This step will be done if the number of exclusions is
+           bigger than zero, otherwsie, the vsite or the core will
+           interact with its own shell.
+         */
         if (nexcl_ > 0)
         {
             for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
@@ -1003,7 +1003,7 @@ void MyMol::addShells(const Poldata          &pd,
                 add_excl_pair(newexcls, j->a[0], j->a[1]);
             }
         }
-        
+
         // Make a copy of the exclusions of the Atom or Vsite for the shell.
         for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
         {
@@ -1195,17 +1195,17 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
     rvec          mu_tot      = { 0, 0, 0 };
     tensor        force_vir;
     clear_mat (force_vir);
-    for(int i = 0; i < mtop_->natoms; i++)
+    for (int i = 0; i < mtop_->natoms; i++)
     {
         clear_rvec(f_[i]);
     }
-    for(int i = 0; i < F_NRE; i++)
+    for (int i = 0; i < F_NRE; i++)
     {
         enerd_->term[i] = 0;
     }
-    for(int i = 0; i < enerd_->grpp.nener; i++)
+    for (int i = 0; i < enerd_->grpp.nener; i++)
     {
-        for(int j = 0; j < egNR; j++)
+        for (int j = 0; j < egNR; j++)
         {
             enerd_->grpp.ener[j][i] = 0;
         }
@@ -1255,7 +1255,7 @@ void MyMol::initQgresp(const Poldata             &pd,
     Qgresp_.setAtomSymmetry(symmetric_charges_);
     Qgresp_.setMolecularCharge(molProp()->getCharge());
     Qgresp_.summary(debug);
-    
+
     auto ci = molProp()->getLotPropType(lot, MPO_POTENTIAL, nullptr);
     if (ci != molProp()->EndExperiment())
     {
@@ -1354,7 +1354,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             int    cur       = 0;
             EspRms_          = 0;
             iter             = 0;
-            
+
             initQgresp(pd, iChargeDistributionModel, lot, watoms, maxESP);
             Qgresp_.optimizeCharges();
             Qgresp_.calcPot();
@@ -1513,7 +1513,7 @@ void MyMol::CalcDipole()
 {
     rvec mu;
     CalcDipole(mu);
-    set_muQM(qtCalc, mu);  
+    set_muQM(qtCalc, mu);
 }
 
 void MyMol::CalcDipole(rvec mu)
@@ -1625,9 +1625,9 @@ void MyMol::CalcPolarizability(double     efield,
                                t_commrec *cr,
                                FILE      *fplog)
 {
-    const double POLFAC = 29.957004; /* C.m**2.V*-1 to Å**3 */
+    const double        POLFAC = 29.957004; /* C.m**2.V*-1 to Å**3 */
     std::vector<double> field;
-    rvec         mu_ref, mu_tot;
+    rvec                mu_ref, mu_tot;
 
     field.resize(DIM, 0);
     myforce_->setField(field);
@@ -1766,7 +1766,7 @@ void MyMol::PrintTopology(FILE                   *fp,
              mu[XX], mu[YY], mu[ZZ],
              norm(mu));
     commercials.push_back(buf);
-    
+
     T = -1;
     const char *qm_type = "electronic";
     const char *qm_conf = "minimum";
@@ -2103,7 +2103,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             }
             else
             {
-                fprintf(stderr,"No zero-point energy for molecule %s.\n",
+                fprintf(stderr, "No zero-point energy for molecule %s.\n",
                         molProp()->getMolname().c_str());
                 imm = immNoData;
             }
@@ -2124,7 +2124,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             dip_exp_  = value;
             dip_err_  = error;
             set_muQM(qtElec, vec);
-            
+
             if (error <= 0)
             {
                 if (debug)
@@ -2136,7 +2136,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                 error = 0.1*value;
             }
             dip_weight_ = gmx::square(1.0/error);
-            
+
             if (!bZero && (dipQM(qtElec) - 0.0) < 1e-2)
             {
                 imm = immZeroDip;
@@ -2189,10 +2189,10 @@ void MyMol::UpdateIdef(const Poldata   &pd,
     }
     if (iType == eitVDW)
     {
-        nonbondedFromPdToMtop(mtop_, &topology_->atoms, pd);
+        nonbondedFromPdToMtop(mtop_, &topology_->atoms, pd, fr_);
         if (debug)
         {
-            pr_ffparams(debug, 0, "UpdateIdef", &mtop_->ffparams, FALSE);
+            pr_ffparams(debug, 0, "UpdateIdef Before", &mtop_->ffparams, FALSE);
         }
         return;
     }
@@ -2207,7 +2207,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
     // with the atomtype. That should speed up the code
     // below somewhat.
     std::vector<std::string> btype(mtop_->ffparams.atnr);
-    for(int i = 0; i < mtop_->natoms; i++)
+    for (int i = 0; i < mtop_->natoms; i++)
     {
         std::string bt;
         if (pd.atypeToBtype(*topology_->atoms.atomtype[i], bt))
@@ -2233,12 +2233,12 @@ void MyMol::UpdateIdef(const Poldata   &pd,
             }
             for (auto i = 0; i < ltop_->idef.il[ftype].nr; i += interaction_function[ftype].nratoms+1)
             {
-                auto  tp  = ltop_->idef.il[ftype].iatoms[i];
+                auto                     tp  = ltop_->idef.il[ftype].iatoms[i];
                 std::vector<std::string> atoms;
-                for(int j = 1; j < interaction_function[ftype].nratoms+1; j++)
+                for (int j = 1; j < interaction_function[ftype].nratoms+1; j++)
                 {
                     atoms.push_back(btype[topology_->atoms.atom[ltop_->idef.il[ftype].iatoms[i+j]].type]);
-                } 
+                }
                 double value, sigma;
                 size_t ntrain;
                 if (pd.searchForce(atoms, params, &value, &sigma, &ntrain, iType))
@@ -2247,28 +2247,28 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     auto parameters = gmx::splitString(params);
                     switch (ftype)
                     {
-                    case F_MORSE:
+                        case F_MORSE:
                         {
-                            mtop_->ffparams.iparams[tp].morse.b0A     =
-                                mtop_->ffparams.iparams[tp].morse.b0B =
-                                ltop_->idef.iparams[tp].morse.b0A     =
-                                ltop_->idef.iparams[tp].morse.b0B = bondLength;
+                            mtop_->ffparams.iparams[tp].morse.b0A         =
+                                mtop_->ffparams.iparams[tp].morse.b0B     =
+                                    ltop_->idef.iparams[tp].morse.b0A     =
+                                        ltop_->idef.iparams[tp].morse.b0B = bondLength;
                             GMX_RELEASE_ASSERT(parameters.size() == 2, "Need exactly two parameters for Morse bonds");
-                            mtop_->ffparams.iparams[tp].morse.cbA     =
-                                mtop_->ffparams.iparams[tp].morse.cbB = 
-                                ltop_->idef.iparams[tp].morse.cbA     =
-                                ltop_->idef.iparams[tp].morse.cbB = 
-                                gmx::doubleFromString(parameters[0].c_str());
-                            mtop_->ffparams.iparams[tp].morse.betaA     =
-                                mtop_->ffparams.iparams[tp].morse.betaB = 
-                                ltop_->idef.iparams[tp].morse.betaA     =
-                                ltop_->idef.iparams[tp].morse.betaB = 
-                                gmx::doubleFromString(parameters[1].c_str());
+                            mtop_->ffparams.iparams[tp].morse.cbA         =
+                                mtop_->ffparams.iparams[tp].morse.cbB     =
+                                    ltop_->idef.iparams[tp].morse.cbA     =
+                                        ltop_->idef.iparams[tp].morse.cbB =
+                                            gmx::doubleFromString(parameters[0].c_str());
+                            mtop_->ffparams.iparams[tp].morse.betaA         =
+                                mtop_->ffparams.iparams[tp].morse.betaB     =
+                                    ltop_->idef.iparams[tp].morse.betaA     =
+                                        ltop_->idef.iparams[tp].morse.betaB =
+                                            gmx::doubleFromString(parameters[1].c_str());
                         }
                         break;
-                    default:
-                        gmx_fatal(FARGS, "Unsupported bondtype %s in UpdateIdef",
-                                  fs->function().c_str()); 
+                        default:
+                            gmx_fatal(FARGS, "Unsupported bondtype %s in UpdateIdef",
+                                      fs->function().c_str());
                     }
                 }
             }
@@ -2279,12 +2279,12 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         {
             for (auto i = 0; i < ltop_->idef.il[ftype].nr; i += interaction_function[ftype].nratoms+1)
             {
-                auto  tp  = ltop_->idef.il[ftype].iatoms[i];
+                auto                     tp  = ltop_->idef.il[ftype].iatoms[i];
                 std::vector<std::string> atoms;
-                for(int j = 1; j < interaction_function[ftype].nratoms+1; j++)
+                for (int j = 1; j < interaction_function[ftype].nratoms+1; j++)
                 {
                     atoms.push_back(btype[topology_->atoms.atom[ltop_->idef.il[ftype].iatoms[i+j]].type]);
-                } 
+                }
                 double angle, sigma;
                 size_t ntrain;
                 if (pd.searchForce(atoms, params, &angle, &sigma, &ntrain, iType))
@@ -2293,75 +2293,75 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     auto r13        = calc_r13(pd, atoms[0], atoms[1], atoms[2], angle);
                     switch (ftype)
                     {
-                    case F_ANGLES:
+                        case F_ANGLES:
                         {
-                            mtop_->ffparams.iparams[tp].harmonic.rA     =
-                                mtop_->ffparams.iparams[tp].harmonic.rB = 
-                                ltop_->idef.iparams[tp].harmonic.rA     =
-                                ltop_->idef.iparams[tp].harmonic.rB = angle;
+                            mtop_->ffparams.iparams[tp].harmonic.rA         =
+                                mtop_->ffparams.iparams[tp].harmonic.rB     =
+                                    ltop_->idef.iparams[tp].harmonic.rA     =
+                                        ltop_->idef.iparams[tp].harmonic.rB = angle;
                             GMX_RELEASE_ASSERT(parameters.size() == 1, "Need exactly one parameters for Harmonic angles");
-                            mtop_->ffparams.iparams[tp].harmonic.krA     =
-                                mtop_->ffparams.iparams[tp].harmonic.krB = 
-                                ltop_->idef.iparams[tp].harmonic.krA     =
-                                ltop_->idef.iparams[tp].harmonic.krB = 
-                                gmx::doubleFromString(parameters[0].c_str());
+                            mtop_->ffparams.iparams[tp].harmonic.krA         =
+                                mtop_->ffparams.iparams[tp].harmonic.krB     =
+                                    ltop_->idef.iparams[tp].harmonic.krA     =
+                                        ltop_->idef.iparams[tp].harmonic.krB =
+                                            gmx::doubleFromString(parameters[0].c_str());
                         }
                         break;
-                    case F_UREY_BRADLEY:
+                        case F_UREY_BRADLEY:
                         {
-                            mtop_->ffparams.iparams[tp].u_b.thetaA     =
-                                mtop_->ffparams.iparams[tp].u_b.thetaB = 
-                                ltop_->idef.iparams[tp].u_b.thetaA     =
-                                ltop_->idef.iparams[tp].u_b.thetaB = angle;
-                            
-                            mtop_->ffparams.iparams[tp].u_b.r13A     =
-                                mtop_->ffparams.iparams[tp].u_b.r13B =
-                                ltop_->idef.iparams[tp].u_b.r13A     =
-                                ltop_->idef.iparams[tp].u_b.r13B = r13;
+                            mtop_->ffparams.iparams[tp].u_b.thetaA         =
+                                mtop_->ffparams.iparams[tp].u_b.thetaB     =
+                                    ltop_->idef.iparams[tp].u_b.thetaA     =
+                                        ltop_->idef.iparams[tp].u_b.thetaB = angle;
+
+                            mtop_->ffparams.iparams[tp].u_b.r13A         =
+                                mtop_->ffparams.iparams[tp].u_b.r13B     =
+                                    ltop_->idef.iparams[tp].u_b.r13A     =
+                                        ltop_->idef.iparams[tp].u_b.r13B = r13;
                             GMX_RELEASE_ASSERT(parameters.size() == 2, "Need exactly two parameters for Urey-Bradley angles");
-                            
-                            mtop_->ffparams.iparams[tp].u_b.kthetaA     =
-                                mtop_->ffparams.iparams[tp].u_b.kthetaB = 
-                                ltop_->idef.iparams[tp].u_b.kthetaA     =
-                                ltop_->idef.iparams[tp].u_b.kthetaB =
-                                gmx::doubleFromString(parameters[0].c_str());
-                            mtop_->ffparams.iparams[tp].u_b.kUBA     =
-                                mtop_->ffparams.iparams[tp].u_b.kUBB =
-                                ltop_->idef.iparams[tp].u_b.kUBA     =
-                                ltop_->idef.iparams[tp].u_b.kUBB = 
-                                gmx::doubleFromString(parameters[1].c_str());
+
+                            mtop_->ffparams.iparams[tp].u_b.kthetaA         =
+                                mtop_->ffparams.iparams[tp].u_b.kthetaB     =
+                                    ltop_->idef.iparams[tp].u_b.kthetaA     =
+                                        ltop_->idef.iparams[tp].u_b.kthetaB =
+                                            gmx::doubleFromString(parameters[0].c_str());
+                            mtop_->ffparams.iparams[tp].u_b.kUBA         =
+                                mtop_->ffparams.iparams[tp].u_b.kUBB     =
+                                    ltop_->idef.iparams[tp].u_b.kUBA     =
+                                        ltop_->idef.iparams[tp].u_b.kUBB =
+                                            gmx::doubleFromString(parameters[1].c_str());
                         }
                         break;
-                    case F_LINEAR_ANGLES:
+                        case F_LINEAR_ANGLES:
                         {
                             double relative_position = calc_relposition(pd, atoms[0], atoms[1], atoms[2]);
-                            
-                            mtop_->ffparams.iparams[tp].linangle.aA     =
-                                mtop_->ffparams.iparams[tp].linangle.aB =
-                                ltop_->idef.iparams[tp].linangle.aA     =
-                                ltop_->idef.iparams[tp].linangle.aB = relative_position;
-                            
-                            mtop_->ffparams.iparams[tp].linangle.r13A     =
-                                mtop_->ffparams.iparams[tp].linangle.r13B =
-                                ltop_->idef.iparams[tp].linangle.r13A     =
-                                ltop_->idef.iparams[tp].linangle.r13B = r13;
+
+                            mtop_->ffparams.iparams[tp].linangle.aA         =
+                                mtop_->ffparams.iparams[tp].linangle.aB     =
+                                    ltop_->idef.iparams[tp].linangle.aA     =
+                                        ltop_->idef.iparams[tp].linangle.aB = relative_position;
+
+                            mtop_->ffparams.iparams[tp].linangle.r13A         =
+                                mtop_->ffparams.iparams[tp].linangle.r13B     =
+                                    ltop_->idef.iparams[tp].linangle.r13A     =
+                                        ltop_->idef.iparams[tp].linangle.r13B = r13;
                             GMX_RELEASE_ASSERT(parameters.size() == 2, "Need exactly two parameters for Linear angles");
-                            
-                            mtop_->ffparams.iparams[tp].linangle.klinA     =
-                                mtop_->ffparams.iparams[tp].linangle.klinB =
-                                ltop_->idef.iparams[tp].linangle.klinA     =
-                                ltop_->idef.iparams[tp].linangle.klinB = 
-                                gmx::doubleFromString(parameters[0].c_str());
-                            mtop_->ffparams.iparams[tp].linangle.kUBA     =
-                                mtop_->ffparams.iparams[tp].linangle.kUBB =
-                                ltop_->idef.iparams[tp].linangle.kUBA     =
-                                ltop_->idef.iparams[tp].linangle.kUBB = 
-                                gmx::doubleFromString(parameters[1].c_str());
+
+                            mtop_->ffparams.iparams[tp].linangle.klinA         =
+                                mtop_->ffparams.iparams[tp].linangle.klinB     =
+                                    ltop_->idef.iparams[tp].linangle.klinA     =
+                                        ltop_->idef.iparams[tp].linangle.klinB =
+                                            gmx::doubleFromString(parameters[0].c_str());
+                            mtop_->ffparams.iparams[tp].linangle.kUBA         =
+                                mtop_->ffparams.iparams[tp].linangle.kUBB     =
+                                    ltop_->idef.iparams[tp].linangle.kUBA     =
+                                        ltop_->idef.iparams[tp].linangle.kUBB =
+                                            gmx::doubleFromString(parameters[1].c_str());
                         }
                         break;
-                    default:
-                        gmx_fatal(FARGS, "Unsupported angletype %s in UpdateIdef",
-                                  fs->function().c_str()); 
+                        default:
+                            gmx_fatal(FARGS, "Unsupported angletype %s in UpdateIdef",
+                                      fs->function().c_str());
                     }
                 }
             }
@@ -2372,12 +2372,12 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         {
             for (auto i = 0; i < ltop_->idef.il[ftype].nr; i += interaction_function[ftype].nratoms+1)
             {
-                auto  tp  = ltop_->idef.il[ftype].iatoms[i];
+                auto                     tp  = ltop_->idef.il[ftype].iatoms[i];
                 std::vector<std::string> atoms;
-                for(int j = 1; j < interaction_function[ftype].nratoms+1; j++)
+                for (int j = 1; j < interaction_function[ftype].nratoms+1; j++)
                 {
                     atoms.push_back(btype[topology_->atoms.atom[ltop_->idef.il[ftype].iatoms[i+j]].type]);
-                } 
+                }
                 double angle, sigma;
                 size_t ntrain;
                 if (pd.searchForce(atoms, params, &angle, &sigma, &ntrain, iType))
@@ -2385,44 +2385,44 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     auto parameters = gmx::splitString(params);
                     switch (ftype)
                     {
-                    case F_PDIHS:
+                        case F_PDIHS:
                         {
-                            mtop_->ffparams.iparams[tp].pdihs.phiA     =
-                                mtop_->ffparams.iparams[tp].pdihs.phiB =
-                                ltop_->idef.iparams[tp].pdihs.phiA     =
-                                ltop_->idef.iparams[tp].pdihs.phiB = angle;
-                            
+                            mtop_->ffparams.iparams[tp].pdihs.phiA         =
+                                mtop_->ffparams.iparams[tp].pdihs.phiB     =
+                                    ltop_->idef.iparams[tp].pdihs.phiA     =
+                                        ltop_->idef.iparams[tp].pdihs.phiB = angle;
+
                             GMX_RELEASE_ASSERT(parameters.size() == 2, "Need exactly two parameters for proper dihedrals");
-                            mtop_->ffparams.iparams[tp].pdihs.cpA     =
-                                mtop_->ffparams.iparams[tp].pdihs.cpB =
-                                ltop_->idef.iparams[tp].pdihs.cpA     =
-                                ltop_->idef.iparams[tp].pdihs.cpB =
-                                gmx::doubleFromString(parameters[0].c_str());
+                            mtop_->ffparams.iparams[tp].pdihs.cpA         =
+                                mtop_->ffparams.iparams[tp].pdihs.cpB     =
+                                    ltop_->idef.iparams[tp].pdihs.cpA     =
+                                        ltop_->idef.iparams[tp].pdihs.cpB =
+                                            gmx::doubleFromString(parameters[0].c_str());
                             /* Multiplicity for Proper Dihedral must be integer
                                This assumes that the second parameter is Multiplicity */
-                            mtop_->ffparams.iparams[tp].pdihs.mult = 
+                            mtop_->ffparams.iparams[tp].pdihs.mult =
                                 ltop_->idef.iparams[tp].pdihs.mult =
-                                atoi(parameters[1].c_str());
+                                    atoi(parameters[1].c_str());
                         }
                         break;
-                    case F_IDIHS:
+                        case F_IDIHS:
                         {
-                            mtop_->ffparams.iparams[tp].harmonic.rA     =
-                                mtop_->ffparams.iparams[tp].harmonic.rB =
-                                ltop_->idef.iparams[tp].harmonic.rA     =
-                                ltop_->idef.iparams[tp].harmonic.rB = angle;
-                            
+                            mtop_->ffparams.iparams[tp].harmonic.rA         =
+                                mtop_->ffparams.iparams[tp].harmonic.rB     =
+                                    ltop_->idef.iparams[tp].harmonic.rA     =
+                                        ltop_->idef.iparams[tp].harmonic.rB = angle;
+
                             GMX_RELEASE_ASSERT(parameters.size() == 1, "Need exactly one parameter for proper dihedrals");
-                            mtop_->ffparams.iparams[tp].harmonic.krA     =
-                                mtop_->ffparams.iparams[tp].harmonic.krB =
-                                ltop_->idef.iparams[tp].harmonic.krA     =
-                                ltop_->idef.iparams[tp].harmonic.krB =
-                                gmx::doubleFromString(parameters[0].c_str());
+                            mtop_->ffparams.iparams[tp].harmonic.krA         =
+                                mtop_->ffparams.iparams[tp].harmonic.krB     =
+                                    ltop_->idef.iparams[tp].harmonic.krA     =
+                                        ltop_->idef.iparams[tp].harmonic.krB =
+                                            gmx::doubleFromString(parameters[0].c_str());
                         }
                         break;
-                    default:
-                        gmx_fatal(FARGS, "Unsupported dihedral type %s in UpdateIdef",
-                                  fs->function().c_str()); 
+                        default:
+                            gmx_fatal(FARGS, "Unsupported dihedral type %s in UpdateIdef",
+                                      fs->function().c_str());
                     }
                 }
             }
@@ -2437,8 +2437,8 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                 auto ft = pw->getFtype();
                 for (auto i = 0; i < ltop_->idef.il[ft].nr; i += interaction_function[ft].nratoms+1)
                 {
-                    auto tp  = ltop_->idef.il[ft].iatoms[i];
-                    auto ai  = ltop_->idef.il[ft].iatoms[i+1];
+                    auto   tp  = ltop_->idef.il[ft].iatoms[i];
+                    auto   ai  = ltop_->idef.il[ft].iatoms[i+1];
                     double alpha, sigma;
                     if (pd.getAtypePol(*topology_->atoms.atomtype[ai], &alpha, &sigma))
                     {
