@@ -93,6 +93,13 @@ class MDModules::Impl : public IMDOutputProvider
             densityFitting_->outputProvider()->finishOutput();
         }
 
+        /*! \brief Manages callbacks and notifies the MD modules.
+         *
+         * \note The notifier must be constructed before the modules and shall
+         *       not be destructed before the modules are destructed.
+         */
+        MdModulesNotifier               notifier_;
+
         std::unique_ptr<IMDModule>      densityFitting_;
         std::unique_ptr<IMDModule>      field_;
         std::unique_ptr<ForceProviders> forceProviders_;
@@ -109,9 +116,6 @@ class MDModules::Impl : public IMDOutputProvider
          * \todo include field_ in modules_
          */
         std::vector< std::shared_ptr<IMDModule> > modules_;
-
-        //! Manages resources and notifies the MD modules when available
-        MdModulesNotifier notifier_;
 };
 
 MDModules::MDModules() : impl_(new Impl)

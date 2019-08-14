@@ -32,52 +32,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- * \brief
- * Declares parameters needed to evaluate forces and energies for density fitting
- *
- * \author Christian Blau <blau@kth.se>
- * \ingroup module_applied_forces
- */
-#ifndef GMX_APPLIED_FORCES_DENSITYFITTINGPARAMETERS_H
-#define GMX_APPLIED_FORCES_DENSITYFITTINGPARAMETERS_H
 
-#include <vector>
+#include "gmxpre.h"
 
-#include "gromacs/utility/basedefinitions.h"
+#include "densityfittingparameters.h"
 
 namespace gmx
 {
-
-/*! \internal
- * \brief Holding all directly user-provided parameters for density fitting.
- *
- * Also used for setting all default parameters.
- */
-struct DensityFittingParameters
+bool operator==(const DensityFittingParameters &lhs, const DensityFittingParameters &rhs)
 {
-    //! Indicate if density fitting is active
-    bool               active_ = false;
-    //! Indices of the atoms that shall be fit to the density
-    std::vector<index> indices_;
-};
+    if (lhs.active_ != rhs.active_)
+    {
+        return false;
+    }
+    if (lhs.indices_ != rhs.indices_)
+    {
+        return false;
+    }
+    return true;
+}
 
-/*! \brief Check if two structs holding density fitting parameters are equal.
- *
- * \param[in] lhs left hand side to be compared
- * \param[in] rhs right hand side to be compared
- * \returns true if all elements in DensityFittingParameters are equal, else false
- */
-bool operator==(const DensityFittingParameters &lhs, const DensityFittingParameters &rhs);
-
-/*! \brief Check if two structs holding density fitting parameters are not equal.
- *
- * \param[in] lhs left hand side to be compared
- * \param[in] rhs right hand side to be compared
- * \returns true if lhs is not equal rhs
- */
-bool operator!=(const DensityFittingParameters &lhs, const DensityFittingParameters &rhs);
+bool operator!=(const DensityFittingParameters &lhs, const DensityFittingParameters &rhs)
+{
+    return !(lhs == rhs);
+}
 
 }      // namespace gmx
-
-#endif // GMX_APPLIED_FORCES_DENSITYFITTINGPARAMETERS_H

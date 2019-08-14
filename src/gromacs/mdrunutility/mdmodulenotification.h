@@ -195,7 +195,7 @@ struct registerMdModuleNotification<CurrentCallParameter, CallParameter...>
 };
 
 class KeyValueTreeObject;
-class KeyValueTreeBuilder;
+class KeyValueTreeObjectBuilder;
 class LocalAtomSetManager;
 class IndexGroupsAndNames;
 
@@ -205,7 +205,7 @@ struct MdModulesNotifier
     registerMdModuleNotification<
         const t_commrec &,
         IndexGroupsAndNames,
-        KeyValueTreeBuilder *,
+        KeyValueTreeObjectBuilder,
         const KeyValueTreeObject &,
         LocalAtomSetManager *>::type notifier_;
 };

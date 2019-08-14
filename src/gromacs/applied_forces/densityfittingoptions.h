@@ -51,6 +51,10 @@
 namespace gmx
 {
 
+class IndexGroupsAndNames;
+class KeyValueTreeObject;
+class KeyValueTreeBuilder;
+
 /*! \internal
  * \brief Input data storage for density fitting
  */
@@ -80,8 +84,29 @@ class DensityFittingOptions final : public IMdpOptionProvider
         //! Process input options to parameters, including input file reading.
         const DensityFittingParameters &buildParameters();
 
+        /*! \brief Evaluate and store atom indices.
+         *
+         * During pre-processing, use the group string from the options to
+         * evaluate the indices of the atoms to be subject to forces from this
+         * module.
+         */
+        void setFitGroupIndices(const IndexGroupsAndNames &indexGroupsAndNames);
+
+        //! Store the paramers that are not mdp options in the tpr file
+        void writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBuilder);
+
+        //! Set the internal parameters that are stored in the tpr file
+        void readInternalParametersFromKvt(const KeyValueTreeObject &tree);
+
     private:
         const std::string        c_activeTag_ = "active";
+
+        /*! \brief Denote the .mdp option that defines the group of fit atoms.
+         * \note Changing this string will break .tpr backwards compability
+         */
+        const std::string        c_groupTag_  = "group";
+        std::string              groupString_ = "protein";
+
         DensityFittingParameters parameters_;
 };
 

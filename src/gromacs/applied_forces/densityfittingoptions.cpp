@@ -46,6 +46,8 @@
 #include "gromacs/applied_forces/densityfitting.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/optionsection.h"
+#include "gromacs/selection/indexutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/strconvert.h"
@@ -104,12 +106,20 @@ void addDensityFittingMdpOutputValue(KeyValueTreeObjectBuilder *builder,
 
 void DensityFittingOptions::initMdpTransform(IKeyValueTreeTransformRules * rules)
 {
+    const auto &stringIdentityTransform = [](std::string s){
+            return s;
+        };
     densityfittingMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_activeTag_);
+    densityfittingMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_groupTag_);
 }
 
 void DensityFittingOptions::buildMdpOutput(KeyValueTreeObjectBuilder *builder) const
 {
     addDensityFittingMdpOutputValue(builder, parameters_.active_, c_activeTag_);
+    if (parameters_.active_)
+    {
+        addDensityFittingMdpOutputValue(builder, groupString_, c_groupTag_);
+    }
 }
 
 void DensityFittingOptions::initMdpOptions(IOptionsContainerWithSections *options)
@@ -117,6 +127,7 @@ void DensityFittingOptions::initMdpOptions(IOptionsContainerWithSections *option
     auto section = options->addSection(OptionSection(DensityFittingModuleInfo::name_.c_str()));
 
     section.addOption(BooleanOption(c_activeTag_.c_str()).store(&parameters_.active_));
+    section.addOption(StringOption(c_groupTag_.c_str()).store(&groupString_));
 }
 
 bool DensityFittingOptions::active() const
@@ -127,6 +138,42 @@ bool DensityFittingOptions::active() const
 const DensityFittingParameters &DensityFittingOptions::buildParameters()
 {
     return parameters_;
+}
+
+void DensityFittingOptions::setFitGroupIndices(const IndexGroupsAndNames &indexGroupsAndNames)
+{
+    if (!parameters_.active_)
+    {
+        return;
+    }
+    parameters_.indices_ = indexGroupsAndNames.indices(groupString_);
+}
+
+void DensityFittingOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBuilder)
+{
+    auto groupIndexAdder = treeBuilder.addUniformArray<index>(DensityFittingModuleInfo::name_ + "-" + c_groupTag_);
+    for (const auto &indexValue : parameters_.indices_)
+    {
+        groupIndexAdder.addValue(indexValue);
+    }
+}
+
+void DensityFittingOptions::readInternalParametersFromKvt(const KeyValueTreeObject &tree)
+{
+    if (!parameters_.active_)
+    {
+        return;
+    }
+
+    if (!tree.keyExists(DensityFittingModuleInfo::name_ + "-" + c_groupTag_))
+    {
+        GMX_THROW(InconsistentInputError(
+                          "Cannot find atom index vector required for density guided simulation."));
+    }
+    auto kvtIndexArray = tree[DensityFittingModuleInfo::name_ + "-" + c_groupTag_].asArray().values();
+    parameters_.indices_.resize(kvtIndexArray.size());
+    std::transform(std::begin(kvtIndexArray), std::end(kvtIndexArray), std::begin(parameters_.indices_),
+                   [](const KeyValueTreeValue &val) { return val.cast<index>(); });
 }
 
 } // namespace gmx

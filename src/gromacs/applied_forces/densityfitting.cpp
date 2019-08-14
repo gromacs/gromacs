@@ -45,10 +45,12 @@
 
 #include "gromacs/mdrunutility/mdmodulenotification.h"
 #include "gromacs/mdtypes/imdmodule.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 
 #include "densityfittingforceprovider.h"
 #include "densityfittingoptions.h"
 #include "densityfittingoutputprovider.h"
+
 
 namespace gmx
 {
@@ -69,9 +71,42 @@ class DensityFitting final : public IMDModule
 {
     public:
         /*! \brief Construct the density fitting module.
-         * Allow the module to subscribe to notifications from MdModules
+         *
+         * \param[in] notifier allows the module to subscribe to notifications from MdModules.
+         *
+         * The density fitting code subscribes to these notifications:
+         *   - setting atom group indices in the densityFittingOptions_ by
+         *     taking a parmeter const IndexGroupsAndNames &
+         *   - storing its internal parameters in a tpr file by writing to a
+         *     key-value-tree during pre-processing by a function taking a
+         *     KeyValueTreeObjectBuilder as parameter
+         *   - reading its internal parameters from a key-value-tree during
+         *     simulation setup by taking a const KeyValueTreeObject & parameter
          */
-        explicit DensityFitting(MdModulesNotifier * /*notifier*/){}
+        explicit DensityFitting(MdModulesNotifier *notifier)
+        {
+            // Callbacks for several kinds of MdModuleNotification are created
+            // and subscribed, and will be dispatched correctly at run time
+            // based on the type of the parameter required by the lambda.
+
+            // Setting atom group indices
+            const auto setFitGroupIndicesFunction = [this](const IndexGroupsAndNames &indexGroupsAndNames) {
+                    densityFittingOptions_.setFitGroupIndices(indexGroupsAndNames);
+                };
+            notifier->notifier_.subscribe(setFitGroupIndicesFunction);
+
+            // Writing internal parameters during pre-processing
+            const auto writeInternalParametersFunction = [this](KeyValueTreeObjectBuilder treeBuilder) {
+                    densityFittingOptions_.writeInternalParametersToKvt(treeBuilder);
+                };
+            notifier->notifier_.subscribe(writeInternalParametersFunction);
+
+            // Reading internal parameters during simulation setup
+            const auto readInternalParametersFunction = [this](const KeyValueTreeObject &tree) {
+                    densityFittingOptions_.readInternalParametersFromKvt(tree);
+                };
+            notifier->notifier_.subscribe(readInternalParametersFunction);
+        }
 
         //! From IMDModule; this class provides the mdpOptions itself
         IMdpOptionProvider *mdpOptionProvider() override { return &densityFittingOptions_; }
