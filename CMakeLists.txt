@@ -361,6 +361,7 @@ check_include_files(time.h       HAVE_TIME_H)
 check_include_files(sys/time.h   HAVE_SYS_TIME_H)
 check_include_files(io.h         HAVE_IO_H)
 check_include_files(sched.h      HAVE_SCHED_H)
+check_include_files(xmmintrin.h  HAVE_XMMINTRIN_H)
 
 include(CheckCXXSymbolExists)
 check_cxx_symbol_exists(gettimeofday      sys/time.h   HAVE_GETTIMEOFDAY)
