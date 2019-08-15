@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,10 +39,10 @@
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \inlibraryapi
- * \ingroup module_gmxpreprocess
+ * \ingroup module_utility
  */
-#ifndef GMX_GMXPREPROCESS_KEYVALUETREEMDPWRITER_H
-#define GMX_GMXPREPROCESS_KEYVALUETREEMDPWRITER_H
+#ifndef GMX_UTILITY_KEYVALUETREEMDPWRITER_H
+#define GMX_UTILITY_KEYVALUETREEMDPWRITER_H
 
 namespace gmx
 {
