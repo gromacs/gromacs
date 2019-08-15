@@ -51,6 +51,7 @@
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/simd/simd.h"
 
+#include "boundingboxes.h"
 #include "grid.h"
 
 /* Working data for the actual i-supercell during pair search */

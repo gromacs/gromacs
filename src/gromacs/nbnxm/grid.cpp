@@ -61,6 +61,7 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
 
+#include "boundingboxes.h"
 #include "gridsetdata.h"
 #include "pairlistparams.h"
 

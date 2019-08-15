@@ -67,6 +67,7 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "boundingboxes.h"
 #include "clusterdistancekerneltype.h"
 #include "gridset.h"
 #include "pairlistset.h"
