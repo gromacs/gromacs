@@ -1678,46 +1678,6 @@ void do_dih_fup(int i, int j, int k, int l, real ddphi,
 namespace
 {
 
-/* As do_dih_fup above, but without shift forces */
-void
-do_dih_fup_noshiftf(int i, int j, int k, int l, real ddphi,
-                    rvec r_ij, rvec r_kj, rvec r_kl,
-                    rvec m, rvec n, rvec4 f[])
-{
-    rvec f_i, f_j, f_k, f_l;
-    rvec uvec, vvec, svec;
-    real iprm, iprn, nrkj, nrkj2, nrkj_1, nrkj_2;
-    real a, b, p, q, toler;
-
-    iprm  = iprod(m, m);       /*  5    */
-    iprn  = iprod(n, n);       /*  5	*/
-    nrkj2 = iprod(r_kj, r_kj); /*  5	*/
-    toler = nrkj2*GMX_REAL_EPS;
-    if ((iprm > toler) && (iprn > toler))
-    {
-        nrkj_1 = gmx::invsqrt(nrkj2); /* 10	*/
-        nrkj_2 = nrkj_1*nrkj_1;       /*  1	*/
-        nrkj   = nrkj2*nrkj_1;        /*  1	*/
-        a      = -ddphi*nrkj/iprm;    /* 11	*/
-        svmul(a, m, f_i);             /*  3	*/
-        b     = ddphi*nrkj/iprn;      /* 11	*/
-        svmul(b, n, f_l);             /*  3  */
-        p     = iprod(r_ij, r_kj);    /*  5	*/
-        p    *= nrkj_2;               /*  1	*/
-        q     = iprod(r_kl, r_kj);    /*  5	*/
-        q    *= nrkj_2;               /*  1	*/
-        svmul(p, f_i, uvec);          /*  3	*/
-        svmul(q, f_l, vvec);          /*  3	*/
-        rvec_sub(uvec, vvec, svec);   /*  3	*/
-        rvec_sub(f_i, svec, f_j);     /*  3	*/
-        rvec_add(f_l, svec, f_k);     /*  3	*/
-        rvec_inc(f[i], f_i);          /*  3	*/
-        rvec_dec(f[j], f_j);          /*  3	*/
-        rvec_dec(f[k], f_k);          /*  3	*/
-        rvec_inc(f[l], f_l);          /*  3	*/
-    }
-}
-
 #if GMX_SIMD_HAVE_REAL
 /* As do_dih_fup_noshiftf above, but with SIMD and pre-calculated pre-factors */
 inline void gmx_simdcall
@@ -1743,47 +1703,33 @@ do_dih_fup_noshiftf_simd(const int *ai, const int *aj, const int *ak, const int 
 }
 #endif // GMX_SIMD_HAVE_REAL
 
+/*! \brief Computes and returns the proper dihedral force
+ *
+ * With the appropriate kernel flavor, also computes and accumulates
+ * the energy and dV/dlambda.
+ */
+template <BondedKernelFlavor flavor>
 real dopdihs(real cpA, real cpB, real phiA, real phiB, int mult,
-             real phi, real lambda, real *V, real *F)
+             real phi, real lambda, real *V, real *dvdlambda)
 {
-    real v, dvdlambda, mdphi, v1, sdphi, ddphi;
-    real L1   = 1.0 - lambda;
-    real ph0  = (L1*phiA + lambda*phiB)*DEG2RAD;
-    real dph0 = (phiB - phiA)*DEG2RAD;
-    real cp   = L1*cpA + lambda*cpB;
+    const real L1    = 1.0 - lambda;
+    const real ph0   = (L1*phiA + lambda*phiB)*DEG2RAD;
+    const real dph0  = (phiB - phiA)*DEG2RAD;
+    const real cp    = L1*cpA + lambda*cpB;
 
-    mdphi =  mult*phi - ph0;
-    sdphi = std::sin(mdphi);
-    ddphi = -cp*mult*sdphi;
-    v1    = 1.0 + std::cos(mdphi);
-    v     = cp*v1;
+    const real mdphi =  mult*phi - ph0;
+    const real sdphi = std::sin(mdphi);
+    const real ddphi = -cp*mult*sdphi;
+    if (flavor == BondedKernelFlavor::ForcesAndVirialAndEnergy)
+    {
+        const real v1  = 1 + std::cos(mdphi);
+        *V            += cp*v1;
 
-    dvdlambda  = (cpB - cpA)*v1 + cp*dph0*sdphi;
+        *dvdlambda    += (cpB - cpA)*v1 + cp*dph0*sdphi;
+    }
 
-    *V = v;
-    *F = ddphi;
-
-    return dvdlambda;
-
+    return ddphi;
     /* That was 40 flops */
-}
-
-void
-dopdihs_noener(real cpA, real cpB, real phiA, real phiB, int mult,
-               real phi, real lambda, real *F)
-{
-    real mdphi, sdphi, ddphi;
-    real L1   = 1.0 - lambda;
-    real ph0  = (L1*phiA + lambda*phiB)*DEG2RAD;
-    real cp   = L1*cpA + lambda*cpB;
-
-    mdphi = mult*phi - ph0;
-    sdphi = std::sin(mdphi);
-    ddphi = -cp*mult*sdphi;
-
-    *F = ddphi;
-
-    /* That was 20 flops */
 }
 
 /*! \brief Similar to \p dopdihs(), except for a minus sign and a different treatment of mult/phi0 */
@@ -1813,7 +1759,7 @@ real dopdihs_min(real cpA, real cpB, real phiA, real phiB, int mult,
 }
 
 template <BondedKernelFlavor flavor>
-std::enable_if_t<flavor == BondedKernelFlavor::ForcesAndVirialAndEnergy, real>
+std::enable_if_t<flavor != BondedKernelFlavor::ForcesSimdWhenAvailable || !GMX_SIMD_HAVE_REAL, real>
 pdihs(int nbonds,
       const t_iatom forceatoms[], const t_iparams forceparams[],
       const rvec x[], rvec4 f[], rvec fshift[],
@@ -1822,99 +1768,54 @@ pdihs(int nbonds,
       const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
       int gmx_unused *global_atom_index)
 {
-    int  i, type, ai, aj, ak, al;
     int  t1, t2, t3;
     rvec r_ij, r_kj, r_kl, m, n;
-    real phi, ddphi, vpd, vtot;
 
-    vtot = 0.0;
+    real vtot = 0.0;
 
-    for (i = 0; (i < nbonds); )
+    for (int i = 0; i < nbonds; )
     {
-        type = forceatoms[i++];
-        ai   = forceatoms[i++];
-        aj   = forceatoms[i++];
-        ak   = forceatoms[i++];
-        al   = forceatoms[i++];
+        const int  ai  = forceatoms[i + 1];
+        const int  aj  = forceatoms[i + 2];
+        const int  ak  = forceatoms[i + 3];
+        const int  al  = forceatoms[i + 4];
 
-        phi = dih_angle(x[ai], x[aj], x[ak], x[al], pbc, r_ij, r_kj, r_kl, m, n,
-                        &t1, &t2, &t3);  /*  84      */
-        *dvdlambda += dopdihs(forceparams[type].pdihs.cpA,
-                              forceparams[type].pdihs.cpB,
-                              forceparams[type].pdihs.phiA,
-                              forceparams[type].pdihs.phiB,
-                              forceparams[type].pdihs.mult,
-                              phi, lambda, &vpd, &ddphi);
+        const real phi = dih_angle(x[ai], x[aj], x[ak], x[al], pbc, r_ij, r_kj, r_kl, m, n,
+                                   &t1, &t2, &t3); /*  84      */
 
-        vtot += vpd;
-        do_dih_fup<flavor>(ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n,
+        /* Loop over dihedrals working on the same atoms,
+         * so we avoid recalculating angles and distributing forces.
+         */
+        real ddphi_tot = 0;
+        do
+        {
+            const int type = forceatoms[i];
+            ddphi_tot +=
+                dopdihs<flavor>(forceparams[type].pdihs.cpA,
+                                forceparams[type].pdihs.cpB,
+                                forceparams[type].pdihs.phiA,
+                                forceparams[type].pdihs.phiB,
+                                forceparams[type].pdihs.mult,
+                                phi, lambda, &vtot, dvdlambda);
+
+            i += 5;
+        }
+        while (i < nbonds &&
+               forceatoms[i + 1] == ai &&
+               forceatoms[i + 2] == aj &&
+               forceatoms[i + 3] == ak &&
+               forceatoms[i + 4] == al);
+
+        do_dih_fup<flavor>(ai, aj, ak, al, ddphi_tot, r_ij, r_kj, r_kl, m, n,
                            f, fshift, pbc, g, x, t1, t2, t3); /* 112		*/
-
     }                                                         /* 223 TOTAL  */
 
     return vtot;
 }
 
-/* As pdihs above, but without calculating energies and shift forces */
-template <BondedKernelFlavor flavor>
-std::enable_if_t<flavor == BondedKernelFlavor::ForcesNoSimd || (!GMX_SIMD_HAVE_REAL &&flavor == BondedKernelFlavor::ForcesSimdWhenAvailable), real>
-pdihs(int nbonds,
-      const t_iatom forceatoms[], const t_iparams forceparams[],
-      const rvec x[], rvec4 f[], rvec gmx_unused fshift[],
-      const t_pbc gmx_unused *pbc, const t_graph gmx_unused *g,
-      real lambda, real gmx_unused *dvdlambda,
-      const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
-      int gmx_unused *global_atom_index)
-{
-    int  i, type, ai, aj, ak, al;
-    int  t1, t2, t3;
-    rvec r_ij, r_kj, r_kl, m, n;
-    real phi, ddphi_tot, ddphi;
-
-    for (i = 0; (i < nbonds); )
-    {
-        ai   = forceatoms[i+1];
-        aj   = forceatoms[i+2];
-        ak   = forceatoms[i+3];
-        al   = forceatoms[i+4];
-
-        phi = dih_angle(x[ai], x[aj], x[ak], x[al], pbc, r_ij, r_kj, r_kl, m, n,
-                        &t1, &t2, &t3);
-
-        ddphi_tot = 0;
-
-        /* Loop over dihedrals working on the same atoms,
-         * so we avoid recalculating angles and force distributions.
-         */
-        do
-        {
-            type = forceatoms[i];
-            dopdihs_noener(forceparams[type].pdihs.cpA,
-                           forceparams[type].pdihs.cpB,
-                           forceparams[type].pdihs.phiA,
-                           forceparams[type].pdihs.phiB,
-                           forceparams[type].pdihs.mult,
-                           phi, lambda, &ddphi);
-            ddphi_tot += ddphi;
-
-            i += 5;
-        }
-        while (i < nbonds &&
-               forceatoms[i+1] == ai &&
-               forceatoms[i+2] == aj &&
-               forceatoms[i+3] == ak &&
-               forceatoms[i+4] == al);
-
-        do_dih_fup_noshiftf(ai, aj, ak, al, ddphi_tot, r_ij, r_kj, r_kl, m, n, f);
-    }
-
-    return 0;
-}
-
-
 #if GMX_SIMD_HAVE_REAL
 
-/* As pdihs above, but using SIMD to calculate many dihedrals at once */
+/* As pdihs above, but using SIMD to calculate multiple dihedrals at once */
 template <BondedKernelFlavor flavor>
 std::enable_if_t<flavor == BondedKernelFlavor::ForcesSimdWhenAvailable, real>
 pdihs(int nbonds,
@@ -2029,7 +1930,7 @@ pdihs(int nbonds,
     return 0;
 }
 
-/* This is mostly a copy of pdihs_noener_simd above, but with using
+/* This is mostly a copy of the SIMD flavor of pdihs above, but with using
  * the RB potential instead of a harmonic potential.
  * This function can replace rbdihs() when no energy and virial are needed.
  */
