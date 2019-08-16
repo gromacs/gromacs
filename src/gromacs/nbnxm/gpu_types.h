@@ -56,7 +56,7 @@ using gmx_nbnxn_gpu_t = gmx_nbnxn_cuda_t;
 #endif
 
 #if GMX_GPU == GMX_GPU_NONE
-using gmx_nbnxn_gpu_t = int;
+typedef int gmx_nbnxn_gpu_t;
 #endif
 
 #endif // !DOXYGEN
