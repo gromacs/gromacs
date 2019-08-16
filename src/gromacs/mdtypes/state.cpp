@@ -277,3 +277,72 @@ void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix box)
         do_box_rel(ndim, ir->deform, box_rel, box, false);
     }
 }
+
+void initialize_lambdas(FILE               *fplog,
+                        const t_inputrec   &ir,
+                        bool                isMaster,
+                        int                *fep_state,
+                        gmx::ArrayRef<real> lambda,
+                        double             *lam0)
+{
+    /* TODO: Clean up initialization of fep_state and lambda in
+       t_state.  This function works, but could probably use a logic
+       rewrite to keep all the different types of efep straight. */
+
+    if ((ir.efep == efepNO) && (!ir.bSimTemp))
+    {
+        return;
+    }
+
+    const t_lambda *fep = ir.fepvals;
+    if (isMaster)
+    {
+        *fep_state = fep->init_fep_state; /* this might overwrite the checkpoint
+                                             if checkpoint is set -- a kludge is in for now
+                                             to prevent this.*/
+    }
+
+    for (int i = 0; i < efptNR; i++)
+    {
+        double thisLambda;
+        /* overwrite lambda state with init_lambda for now for backwards compatibility */
+        if (fep->init_lambda >= 0) /* if it's -1, it was never initialized */
+        {
+            thisLambda = fep->init_lambda;
+        }
+        else
+        {
+            thisLambda = fep->all_lambda[i][fep->init_fep_state];
+        }
+        if (isMaster)
+        {
+            lambda[i] = thisLambda;
+        }
+        if (lam0 != nullptr)
+        {
+            lam0[i] = thisLambda;
+        }
+    }
+    if (ir.bSimTemp)
+    {
+        /* need to rescale control temperatures to match current state */
+        for (int i = 0; i < ir.opts.ngtc; i++)
+        {
+            if (ir.opts.ref_t[i] > 0)
+            {
+                ir.opts.ref_t[i] = ir.simtempvals->temperatures[fep->init_fep_state];
+            }
+        }
+    }
+
+    /* Send to the log the information on the current lambdas */
+    if (fplog != nullptr)
+    {
+        fprintf(fplog, "Initial vector of lambda components:[ ");
+        for (const auto &l : lambda)
+        {
+            fprintf(fplog, "%10.4f ", l);
+        }
+        fprintf(fplog, "]\n");
+    }
+}

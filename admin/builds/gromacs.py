@@ -37,29 +37,33 @@ import os.path
 # Policy global variables
 use_stdlib_through_env_vars = False
 
-# These are accessible later in the script, just like other
-# declared options, via e.g. context.opts.release.
+# These are accessible later in the script, just like other declared
+# options, via e.g. context.opts.release.  Keep these in alphabetical
+# order for more convenient rebasing
 extra_options = {
+    'asan': Option.simple,
+    'buildfftw': Option.simple,
+    'clang_cuda': Option.bool,
+    'double': Option.simple,
+    'fftpack': Option.simple,
+    'gpu_id': Option.string,
+    'hwloc': Option.bool,
     'mdrun-only': Option.simple,
-    'static': Option.simple,
+    'mkl': Option.simple,
+    'mpiinplace': Option.bool,
+    'npme': Option.string,
+    'nranks': Option.string,
+    'openmp': Option.bool,
     'reference': Option.simple,
     'release': Option.simple,
     'release-with-assert': Option.simple,
     'release-with-debug-info': Option.simple,
-    'asan': Option.simple,
-    'tng' : Option.bool,
-    'mkl': Option.simple,
-    'fftpack': Option.simple,
-    'buildfftw': Option.simple,
-    'double': Option.simple,
+    'static': Option.simple,
     'thread-mpi': Option.bool,
-    'clang_cuda': Option.bool,
-    'openmp': Option.bool,
-    'nranks': Option.string,
-    'npme': Option.string,
-    'gpu_id': Option.string,
-    'hwloc': Option.bool,
-    'tng': Option.bool
+    'tng' : Option.bool,
+    # The following options cater for testing code in Jenkins that is
+    # currently behind feature flags in master branch.
+    'gpubufferops' : Option.bool,
 }
 
 extra_projects = [Project.REGRESSIONTESTS]
@@ -117,6 +121,8 @@ def do_build(context):
         cmake_opts['GMX_THREAD_MPI'] = 'OFF'
     if context.opts.mpi:
         cmake_opts['GMX_MPI'] = 'ON'
+    if context.opts.mpiinplace is False:
+        cmake_opts['GMX_MPI_IN_PLACE'] = 'OFF'
     if context.opts.openmp is False:
         cmake_opts['GMX_OPENMP'] = 'OFF'
     if context.opts.tng is False:
@@ -145,6 +151,10 @@ def do_build(context):
 
     if context.opts.hwloc is False:
         cmake_opts['GMX_HWLOC'] = 'OFF'
+    elif context.opts.hwloc is True:
+        cmake_opts['GMX_HWLOC'] = 'ON'
+    else:
+        cmake_opts['GMX_HWLOC'] = 'AUTO'
 
     if context.opts.tng is False:
         cmake_opts['GMX_USE_TNG'] = 'OFF'
@@ -161,6 +171,9 @@ def do_build(context):
     # produce a reasonable stack trace for them.
     if context.opts.asan:
         cmake_opts['GMX_HWLOC'] = 'OFF'
+
+    if context.opts.gpubufferops:
+        context.env.set_env_var('GMX_USE_GPU_BUFFER_OPS', "1")
 
     regressiontests_path = context.workspace.get_project_dir(Project.REGRESSIONTESTS)
 

@@ -541,9 +541,9 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen.
    code will work on the  AMD Bulldozer and Piledriver processors, it is significantly less
    efficient than the ``AVX_128_FMA`` choice above - do not be fooled
    to assume that 256 is better than 128 in this case.
-6. ``AVX2_128`` AMD Zen microarchitecture processors (2017);
+6. ``AVX2_128`` AMD Zen/Zen2 and Hygon Dhyana microarchitecture processors;
    it will enable AVX2 with 3-way fused multiply-add instructions.
-   While the Zen microarchitecture does support 256-bit AVX2 instructions,
+   While these microarchitectures do support 256-bit AVX2 instructions,
    hence ``AVX2_256`` is also supported, 128-bit will generally be faster,
    in particular when the non-bonded tasks run on the CPU -- hence
    the default ``AVX2_128``. With GPU offload however ``AVX2_256``

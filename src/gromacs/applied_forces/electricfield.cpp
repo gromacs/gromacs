@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * Declares data structure and utilities for electric fields
+ * Defines data structure and utilities for electric fields
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup module_applied_forces
@@ -45,13 +45,13 @@
 
 #include <cmath>
 
+#include <memory>
 #include <string>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
@@ -67,7 +67,6 @@
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/strconvert.h"
-#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -76,15 +75,15 @@ namespace
 {
 
 /*! \internal
- * \brief Declaration of storage unit for fields
+ * \brief Describes an applied electric field in a coordinate
+ * dimension.
+ *
+ * Can compute the applied field strength at a time, and supports
+ * operations to read and form corresponding .mdp contents.
  */
-class ElectricFieldData
+class ElectricFieldDimension
 {
     public:
-        ElectricFieldData() : a_(0), omega_(0), t0_(0), sigma_(0)
-        {
-        }
-
         /*! \brief
          * Adds an option section to specify parameters for this field component.
          */
@@ -123,17 +122,17 @@ class ElectricFieldData
         }
 
         //! Return the amplitude
-        real a()     const { return a_; }
+        real a() const { return a_; }
 
     private:
         //! Coeffient (V / nm)
-        real a_;
+        real a_ = 0;
         //! Frequency (1/ps)
-        real omega_;
+        real omega_ = 0;
         //! Central time point (ps) for pulse
-        real t0_;
+        real t0_ = 0;
         //! Width of pulse (ps, if zero there is no pulse)
-        real sigma_;
+        real sigma_ = 0;
 };
 
 /*! \internal
@@ -195,10 +194,10 @@ class ElectricField final : public IMDModule,
          */
         void printComponents(double t) const;
 
-        //! The field strength in each dimension
-        ElectricFieldData efield_[DIM];
+        //! The components of the applied electric field in each coordinate dimension
+        ElectricFieldDimension efield_[DIM];
         //! File pointer for electric field
-        FILE             *fpField_;
+        FILE                  *fpField_;
 };
 
 //! Converts dynamic parameters from new mdp format to (E0, omega, t0, sigma).
@@ -240,14 +239,13 @@ void ElectricField::initMdpOptions(IOptionsContainerWithSections *options)
 
 void ElectricField::buildMdpOutput(KeyValueTreeObjectBuilder *builder) const
 {
-    const char *const comment[] = {
-        "; Electric fields",
-        "; Format for electric-field-x, etc. is: four real variables:",
-        "; amplitude (V/nm), frequency omega (1/ps), time for the pulse peak (ps),",
-        "; and sigma (ps) width of the pulse. Omega = 0 means static field,",
-        "; sigma = 0 means no pulse, leaving the field to be a cosine function."
-    };
-    builder->addValue<std::string>("comment-electric-field", joinStrings(comment, "\n"));
+    std::string comment =
+        R"(; Electric fields
+; Format for electric-field-x, etc. is: four real variables:
+; amplitude (V/nm), frequency omega (1/ps), time for the pulse peak (ps),
+; and sigma (ps) width of the pulse. Omega = 0 means static field,
+; sigma = 0 means no pulse, leaving the field to be a cosine function.)";
+    builder->addValue<std::string>("comment-electric-field", comment);
     efield_[XX].buildMdpOutput(builder, "x");
     efield_[YY].buildMdpOutput(builder, "y");
     efield_[ZZ].buildMdpOutput(builder, "z");
@@ -260,7 +258,7 @@ void ElectricField::initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
     {
         please_cite(fplog, "Caleman2008a");
 
-        // Optional outpuf file showing the field, see manual.
+        // Optional output file showing the field, see manual.
         if (opt2bSet("-field", nfile, fnm))
         {
             if (bAppendFiles)
@@ -316,19 +314,19 @@ void ElectricField::calculateForces(const ForceProviderInput &forceProviderInput
         const t_commrec &cr      = forceProviderInput.cr_;
 
         // NOTE: The non-conservative electric field does not have a virial
-        rvec *f = as_rvec_array(forceProviderOutput->forceWithVirial_.force_.data());
+        ArrayRef<RVec> f = forceProviderOutput->forceWithVirial_.force_;
 
         for (int m = 0; (m < DIM); m++)
         {
-            real Ext = FIELDFAC*field(m, t);
+            const real fieldStrength = FIELDFAC*field(m, t);
 
-            if (Ext != 0)
+            if (fieldStrength != 0)
             {
                 // TODO: Check parallellism
-                for (int i = 0; i < mdatoms.homenr; ++i)
+                for (index i = 0; i != ssize(f); ++i)
                 {
                     // NOTE: Not correct with perturbed charges
-                    f[i][m] += mdatoms.chargeA[i]*Ext;
+                    f[i][m] += mdatoms.chargeA[i]*fieldStrength;
                 }
             }
         }
@@ -343,7 +341,7 @@ void ElectricField::calculateForces(const ForceProviderInput &forceProviderInput
 
 std::unique_ptr<IMDModule> createElectricFieldModule()
 {
-    return std::unique_ptr<IMDModule>(new ElectricField());
+    return std::make_unique<ElectricField>();
 }
 
 } // namespace gmx

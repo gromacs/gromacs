@@ -416,7 +416,7 @@ filter_ter(gmx::ArrayRef<MoleculePatchDatabase>                tb,
         bool        found = false;
         do
         {
-            if (gmx_strncasecmp(resname, s, 3) == 0)
+            if (gmx::equalCaseInsensitive(resname, s, 3))
             {
                 found = true;
                 list.push_back(it);

@@ -106,14 +106,12 @@ decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget          nonbon
                                                 const std::vector<int>   &userGpuTaskAssignment,
                                                 const EmulateGpuNonbonded emulateGpuNonbonded,
                                                 const bool                buildSupportsNonbondedOnGpu,
-                                                const bool                usingVerletScheme,
                                                 const bool                nonbondedOnGpuIsUseful,
                                                 const int                 numRanksPerSimulation)
 {
     // First, exclude all cases where we can't run NB on GPUs.
     if (nonbondedTarget == TaskTarget::Cpu ||
         emulateGpuNonbonded == EmulateGpuNonbonded::Yes ||
-        !usingVerletScheme ||
         !nonbondedOnGpuIsUseful ||
         !buildSupportsNonbondedOnGpu)
     {
@@ -242,7 +240,6 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarg
                                         const std::vector<int>    &userGpuTaskAssignment,
                                         const EmulateGpuNonbonded  emulateGpuNonbonded,
                                         const bool                 buildSupportsNonbondedOnGpu,
-                                        const bool                 usingVerletScheme,
                                         const bool                 nonbondedOnGpuIsUseful,
                                         const bool                 gpusWereDetected)
 {
@@ -282,18 +279,6 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarg
         {
             GMX_THROW(InconsistentInputError
                           ("GPU ID usage was specified, as was GPU emulation. Make no more than one of these choices."));
-        }
-
-        return false;
-    }
-
-    if (!usingVerletScheme)
-    {
-        if (nonbondedTarget == TaskTarget::Gpu)
-        {
-            GMX_THROW(InconsistentInputError
-                          ("Nonbonded interactions on the GPU were required, which requires using "
-                          "the Verlet scheme. Either use the Verlet scheme, or do not require using GPUs."));
         }
 
         return false;
@@ -446,7 +431,6 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
 
 bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
                                      const bool       useGpuForPme,
-                                     const bool       usingVerletScheme,
                                      const TaskTarget bondedTarget,
                                      const bool       canUseGpuForBonded,
                                      const bool       usingLJPme,
@@ -456,18 +440,6 @@ bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
 {
     if (bondedTarget == TaskTarget::Cpu)
     {
-        return false;
-    }
-
-    if (!usingVerletScheme)
-    {
-        if (bondedTarget == TaskTarget::Gpu)
-        {
-            GMX_THROW(InconsistentInputError
-                          ("Bonded interactions on the GPU were required, which requires using "
-                          "the Verlet scheme. Either use the Verlet scheme, or do not require using GPUs."));
-        }
-
         return false;
     }
 

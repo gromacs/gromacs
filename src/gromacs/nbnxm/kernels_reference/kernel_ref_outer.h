@@ -96,16 +96,19 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 (const NbnxnPairlistCpu     *nbl,
  const nbnxn_atomdata_t     *nbat,
  const interaction_const_t  *ic,
- rvec                       *shift_vec,
- real                       *f,
- real gmx_unused            *fshift
-#ifdef CALC_ENERGIES
- ,
- real                       *Vvdw,
- real                       *Vc
-#endif
-)
+ const rvec                 *shift_vec,
+ nbnxn_atomdata_output_t    *out)
 {
+    /* Unpack pointers for output */
+    real               *f      = out->f.data();
+#ifdef CALC_SHIFTFORCES
+    real               *fshift = out->fshift.data();
+#endif
+#ifdef CALC_ENERGIES
+    real               *Vvdw   = out->Vvdw.data();
+    real               *Vc     = out->Vc.data();
+#endif
+
     const nbnxn_cj_t   *l_cj;
     real                rcut2;
 #ifdef VDW_CUTOFF_CHECK

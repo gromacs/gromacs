@@ -50,7 +50,7 @@ struct t_atoms;
 struct t_excls;
 struct MoleculePatchDatabase;
 struct t_mols;
-struct InteractionTypeParameters;
+struct InteractionsOfType;
 struct t_resinfo;
 struct PreprocessResidue;
 struct DisulfideBond;
@@ -113,7 +113,7 @@ void print_top_mols(FILE *out,
 
 void write_top(FILE *out, const char *pr, const char *molname,
                t_atoms *at, bool bRTPresname,
-               int bts[], gmx::ArrayRef<const InteractionTypeParameters> plist, t_excls excls[],
+               int bts[], gmx::ArrayRef<const InteractionsOfType> plist, t_excls excls[],
                PreprocessingAtomTypes *atype, int *cgnr, int nrexcl);
 /* NOTE: nrexcl is not the size of *excl! */
 

@@ -1728,9 +1728,9 @@ static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
                              ir->eI == eiBD);
 
     /* In parallel, store we need to extract localWeights from weights at DD time */
-    std::vector<real>  &weights = ((cr && PAR(cr)) ? pg->globalWeights : pg->localWeights);
+    std::vector<real>         &weights = ((cr && PAR(cr)) ? pg->globalWeights : pg->localWeights);
 
-    const gmx_groups_t &groups  = mtop->groups;
+    const SimulationGroups    &groups  = mtop->groups;
 
     /* Count frozen dimensions and (weighted) mass */
     int    nfrozen = 0;
@@ -1746,7 +1746,7 @@ static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
             for (int d = 0; d < DIM; d++)
             {
                 if (pulldim_con[d] == 1 &&
-                    ir->opts.nFreeze[getGroupType(groups, egcFREEZE, ii)][d])
+                    ir->opts.nFreeze[getGroupType(groups, SimulationAtomGroupType::Freeze, ii)][d])
                 {
                     nfrozen++;
                 }
@@ -1786,13 +1786,13 @@ static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
             }
             else
             {
-                if (groups.grpnr[egcTC] == nullptr)
+                if (groups.groupNumbers[SimulationAtomGroupType::TemperatureCoupling].empty())
                 {
                     mbd = ir->delta_t/ir->opts.tau_t[0];
                 }
                 else
                 {
-                    mbd = ir->delta_t/ir->opts.tau_t[groups.grpnr[egcTC][ii]];
+                    mbd = ir->delta_t/ir->opts.tau_t[groups.groupNumbers[SimulationAtomGroupType::TemperatureCoupling][ii]];
                 }
             }
             w                   *= m/mbd;
@@ -2265,13 +2265,15 @@ static void destroy_pull(struct pull_t *pull)
     delete pull;
 }
 
-void preparePrevStepPullCom(const t_inputrec *ir, const t_mdatoms *md, t_state *state, const t_state *state_global, const t_commrec *cr, bool startingFromCheckpoint)
+void preparePrevStepPullCom(const t_inputrec *ir, pull_t *pull_work,
+                            const t_mdatoms *md, t_state *state, const t_state *state_global,
+                            const t_commrec *cr, bool startingFromCheckpoint)
 {
     if (!ir->pull || !ir->pull->bSetPbcRefToPrevStepCOM)
     {
         return;
     }
-    allocStatePrevStepPullCom(state, ir->pull_work);
+    allocStatePrevStepPullCom(state, pull_work);
     if (startingFromCheckpoint)
     {
         if (MASTER(cr))
@@ -2283,14 +2285,14 @@ void preparePrevStepPullCom(const t_inputrec *ir, const t_mdatoms *md, t_state *
             /* Only the master rank has the checkpointed COM from the previous step */
             gmx_bcast(sizeof(double) * state->pull_com_prev_step.size(), &state->pull_com_prev_step[0], cr);
         }
-        setPrevStepPullComFromState(ir->pull_work, state);
+        setPrevStepPullComFromState(pull_work, state);
     }
     else
     {
         t_pbc pbc;
         set_pbc(&pbc, ir->ePBC, state->box);
-        initPullComFromPrevStep(cr, ir->pull_work, md, &pbc, state->x.rvec_array());
-        updatePrevStepPullCom(ir->pull_work, state);
+        initPullComFromPrevStep(cr, pull_work, md, &pbc, state->x.rvec_array());
+        updatePrevStepPullCom(pull_work, state);
     }
 }
 

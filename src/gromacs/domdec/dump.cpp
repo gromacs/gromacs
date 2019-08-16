@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -176,7 +176,7 @@ void write_dd_pdb(const char *fn, int64_t step, const char *title,
         if (i < dd->comm->atomRanges.end(DDAtomRanges::Type::Zones))
         {
             c = 0;
-            while (i >= dd->atomGrouping().subRange(0, dd->comm->zones.cg_range[c + 1]).end())
+            while (i >= dd->comm->zones.cg_range[c + 1])
             {
                 c++;
             }

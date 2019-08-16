@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -250,7 +250,7 @@ static void get_input(const char *membed_input, real *xy_fac, real *xy_max, real
 
 /* Obtain the maximum and minimum coordinates of the group to be embedded */
 static int init_ins_at(t_block *ins_at, t_block *rest_at, t_state *state, pos_ins_t *pos_ins,
-                       gmx_groups_t *groups, int ins_grp_id, real xy_max)
+                       SimulationGroups *groups, int ins_grp_id, real xy_max)
 {
     int        i, gid, c = 0;
     real       xmin, xmax, ymin, ymax, zmin, zmax;
@@ -266,8 +266,8 @@ static int init_ins_at(t_block *ins_at, t_block *rest_at, t_state *state, pos_in
 
     for (i = 0; i < state->natoms; i++)
     {
-        gid = groups->grpnr[egcFREEZE][i];
-        if (groups->grps[egcFREEZE].nm_ind[gid] == ins_grp_id)
+        gid = groups->groupNumbers[SimulationAtomGroupType::Freeze][i];
+        if (groups->groups[SimulationAtomGroupType::Freeze][gid] == ins_grp_id)
         {
             xmin = std::min(xmin, x[i][XX]);
             xmax = std::max(xmax, x[i][XX]);
@@ -671,13 +671,13 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
 }
 
 /*remove all lipids and waters overlapping and update all important structures (e.g. state and mtop)*/
-static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state *state,
+static void rm_group(SimulationGroups *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state *state,
                      t_block *ins_at, pos_ins_t *pos_ins)
 {
     int             j, k, n, rm, mol_id, at, block;
     rvec           *x_tmp, *v_tmp;
     int            *list;
-    unsigned char  *new_egrp[egcNR];
+    gmx::EnumerationArray < SimulationAtomGroupType, std::vector < unsigned char>> new_egrp;
     gmx_bool        bRM;
     int             RMmolblock;
 
@@ -704,12 +704,12 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
     snew(x_tmp, state->natoms);
     snew(v_tmp, state->natoms);
 
-    for (int i = 0; i < egcNR; i++)
+    for (auto group : keysOf(groups->groupNumbers))
     {
-        if (groups->grpnr[i] != nullptr)
+        if (!groups->groupNumbers[group].empty())
         {
-            groups->ngrpnr[i] = state->natoms;
-            snew(new_egrp[i], state->natoms);
+            groups->groupNumbers[group].resize(state->natoms);
+            new_egrp[group].resize(state->natoms);
         }
     }
 
@@ -730,11 +730,11 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
 
         if (!bRM)
         {
-            for (j = 0; j < egcNR; j++)
+            for (auto group : keysOf(groups->groupNumbers))
             {
-                if (groups->grpnr[j] != nullptr)
+                if (!groups->groupNumbers[group].empty())
                 {
-                    new_egrp[j][i-rm] = groups->grpnr[j][i];
+                    new_egrp[group][i-rm] = groups->groupNumbers[group][i];
                 }
             }
             copy_rvec(x[i], x_tmp[i-rm]);
@@ -770,12 +770,11 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
     }
     sfree(v_tmp);
 
-    for (int i = 0; i < egcNR; i++)
+    for (auto group : keysOf(groups->groupNumbers))
     {
-        if (groups->grpnr[i] != nullptr)
+        if (!groups->groupNumbers[group].empty())
         {
-            sfree(groups->grpnr[i]);
-            groups->grpnr[i] = new_egrp[i];
+            groups->groupNumbers[group] = new_egrp[group];
         }
     }
 
@@ -962,48 +961,24 @@ void rescale_membed(int step_rel, gmx_membed_t *membed, rvec *x)
     resize(membed->r_ins, x, membed->pos_ins, membed->fac);
 }
 
-/* We would like gn to be const as well, but C doesn't allow this */
-/* TODO this is utility functionality (search for the index of a
-   string in a collection), so should be refactored and located more
-   centrally. Also, it nearly duplicates the same string in readir.c */
-static int search_string(const char *s, int ng, char *gn[])
-{
-    int i;
-
-    for (i = 0; (i < ng); i++)
-    {
-        if (gmx_strcasecmp(s, gn[i]) == 0)
-        {
-            return i;
-        }
-    }
-
-    gmx_fatal(FARGS,
-              "Group %s selected for embedding was not found in the index file.\n"
-              "Group names must match either [moleculetype] names or custom index group\n"
-              "names, in which case you must supply an index file to the '-n' option\n"
-              "of grompp.",
-              s);
-}
-
 gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_t *mtop,
                           t_inputrec *inputrec, t_state *state, t_commrec *cr, real *cpt)
 {
-    char                     *ins, **gnames;
-    int                       i, rm_bonded_at, fr_id, fr_i = 0, tmp_id, warn = 0;
-    int                       ng, j, max_lip_rm, ins_grp_id, ntype, lip_rm;
-    real                      prot_area;
-    rvec                     *r_ins = nullptr;
-    t_block                  *ins_at, *rest_at;
-    pos_ins_t                *pos_ins;
-    mem_t                    *mem_p;
-    rm_t                     *rm_p;
-    gmx_groups_t             *groups;
-    gmx_bool                  bExcl = FALSE;
-    t_atoms                   atoms;
-    t_pbc                    *pbc;
-    char                    **piecename = nullptr;
-    gmx_membed_t             *membed    = nullptr;
+    char                            *ins;
+    int                              i, rm_bonded_at, fr_id, fr_i = 0, tmp_id, warn = 0;
+    int                              ng, j, max_lip_rm, ins_grp_id, ntype, lip_rm;
+    real                             prot_area;
+    rvec                            *r_ins = nullptr;
+    t_block                         *ins_at, *rest_at;
+    pos_ins_t                       *pos_ins;
+    mem_t                           *mem_p;
+    rm_t                            *rm_p;
+    SimulationGroups                *groups;
+    gmx_bool                         bExcl = FALSE;
+    t_atoms                          atoms;
+    t_pbc                           *pbc;
+    char                           **piecename = nullptr;
+    gmx_membed_t                    *membed    = nullptr;
 
     /* input variables */
     real        xy_fac           = 0.5;
@@ -1060,17 +1035,33 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
             *cpt = -1;
         }
         groups = &(mtop->groups);
-        snew(gnames, groups->ngrpname);
-        for (i = 0; i < groups->ngrpname; i++)
+        std::vector<std::string> gnames;
+        for (const auto &groupName : groups->groupNames)
         {
-            gnames[i] = *(groups->grpname[i]);
+            gnames.emplace_back(*groupName);
         }
 
         atoms = gmx_mtop_global_atoms(mtop);
         snew(mem_p, 1);
         fprintf(stderr, "\nSelect a group to embed in the membrane:\n");
         get_index(&atoms, opt2fn_null("-mn", nfile, fnm), 1, &(ins_at->nr), &(ins_at->index), &ins);
-        ins_grp_id = search_string(ins, groups->ngrpname, gnames);
+
+        auto found = std::find_if(gnames.begin(), gnames.end(),
+                                  [&ins](const auto &name)
+                                  { return gmx::equalCaseInsensitive(ins, name); });
+
+        if (found == gnames.end())
+        {
+            gmx_fatal(FARGS,
+                      "Group %s selected for embedding was not found in the index file.\n"
+                      "Group names must match either [moleculetype] names or custom index group\n"
+                      "names, in which case you must supply an index file to the '-n' option\n"
+                      "of grompp.", ins);
+        }
+        else
+        {
+            ins_grp_id = std::distance(gnames.begin(), found);
+        }
         fprintf(stderr, "\nSelect a group to embed %s into (e.g. the membrane):\n", ins);
         get_index(&atoms, opt2fn_null("-mn", nfile, fnm), 1, &(mem_p->mem_at.nr), &(mem_p->mem_at.index), &(mem_p->name));
 
@@ -1136,7 +1127,7 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
 
         for (i = 0; i < inputrec->opts.ngfrz; i++)
         {
-            tmp_id = mtop->groups.grps[egcFREEZE].nm_ind[i];
+            tmp_id = mtop->groups.groups[SimulationAtomGroupType::Freeze][i];
             if (ins_grp_id == tmp_id)
             {
                 fr_id = tmp_id;
@@ -1157,7 +1148,7 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
             }
         }
 
-        ng = groups->grps[egcENER].nr;
+        ng = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
         if (ng == 1)
         {
             gmx_input("No energy groups defined. This is necessary for energy exclusion in the freeze group");
@@ -1170,12 +1161,12 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
                 if (inputrec->opts.egp_flags[ng*i+j] == EGP_EXCL)
                 {
                     bExcl = TRUE;
-                    if ( (groups->grps[egcENER].nm_ind[i] != ins_grp_id) ||
-                         (groups->grps[egcENER].nm_ind[j] != ins_grp_id) )
+                    if ( (groups->groups[SimulationAtomGroupType::EnergyOutput][i] != ins_grp_id) ||
+                         (groups->groups[SimulationAtomGroupType::EnergyOutput][j] != ins_grp_id) )
                     {
                         gmx_fatal(FARGS, "Energy exclusions \"%s\" and  \"%s\" do not match the group "
-                                  "to embed \"%s\"", *groups->grpname[groups->grps[egcENER].nm_ind[i]],
-                                  *groups->grpname[groups->grps[egcENER].nm_ind[j]], ins);
+                                  "to embed \"%s\"", *groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput][i]],
+                                  *groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput][j]], ins);
                     }
                 }
             }

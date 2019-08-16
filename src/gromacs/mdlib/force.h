@@ -45,14 +45,13 @@ class DDBalanceRegionHandler;
 struct gmx_edsam;
 struct gmx_enerdata_t;
 struct gmx_enfrot;
-struct gmx_groups_t;
-struct gmx_grppairener_t;
+struct SimulationGroups;
 struct gmx_localtop_t;
 struct gmx_multisim_t;
 struct gmx_vsite_t;
 struct gmx_wallcycle;
 class history_t;
-struct t_blocka;
+struct pull_t;
 struct t_commrec;
 struct t_fcdata;
 struct t_forcerec;
@@ -66,28 +65,11 @@ struct t_nrnb;
 namespace gmx
 {
 class Awh;
-class PpForceWorkload;
 class ForceWithVirial;
+class ImdSession;
+class PpForceWorkload;
 class MDLogger;
 }
-
-void init_enerdata(int ngener, int n_lambda, gmx_enerdata_t *enerd);
-/* Intializes the energy storage struct */
-
-void destroy_enerdata(gmx_enerdata_t *enerd);
-/* Free all memory associated with enerd */
-
-void reset_foreign_enerdata(gmx_enerdata_t *enerd);
-/* Resets only the foreign energy data */
-
-void reset_enerdata(gmx_enerdata_t *enerd);
-/* Resets the energy data */
-
-void sum_epot(gmx_grppairener_t *grpp, real *epot);
-/* Locally sum the non-bonded potential energy terms */
-
-void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda *fepvals);
-/* Sum the free energy contributions */
 
 void do_force(FILE                                     *log,
               const t_commrec                          *cr,
@@ -95,14 +77,12 @@ void do_force(FILE                                     *log,
               const t_inputrec                         *inputrec,
               gmx::Awh                                 *awh,
               gmx_enfrot                               *enforcedRotation,
+              gmx::ImdSession                          *imdSession,
+              pull_t                                   *pull_work,
               int64_t                                   step,
               t_nrnb                                   *nrnb,
               gmx_wallcycle                            *wcycle,
-              // TODO top can be const when the group scheme no longer
-              // builds exclusions during neighbor searching within
-              // do_force_cutsGROUP.
-              gmx_localtop_t                           *top,
-              const gmx_groups_t                       *groups,
+              const gmx_localtop_t                     *top,
               matrix                                    box,
               gmx::ArrayRefWithPadding<gmx::RVec>       coordinates,
               history_t                                *hist,
@@ -131,40 +111,28 @@ void do_force(FILE                                     *log,
  * f is always required.
  */
 
-void ns(FILE               *fplog,
-        t_forcerec         *fr,
-        matrix              box,
-        const gmx_groups_t *groups,
-        gmx_localtop_t     *top,
-        const t_mdatoms    *md,
-        const t_commrec    *cr,
-        t_nrnb             *nrnb,
-        gmx_bool            bFillGrid);
-/* Call the neighborsearcher */
 
-void do_force_lowlevel(t_forcerec   *fr,
-                       const t_inputrec *ir,
-                       const t_idef *idef,
-                       const t_commrec *cr,
-                       const gmx_multisim_t *ms,
-                       t_nrnb       *nrnb,
-                       gmx_wallcycle *wcycle,
-                       const t_mdatoms *md,
-                       rvec         x[],
-                       history_t    *hist,
-                       rvec         f_shortrange[],
-                       gmx::ForceWithVirial *forceWithVirial,
-                       gmx_enerdata_t *enerd,
-                       t_fcdata     *fcd,
-                       matrix       box,
-                       t_lambda     *fepvals,
-                       real         *lambda,
-                       const t_graph *graph,
-                       const t_blocka *excl,
-                       rvec         mu_tot[2],
-                       int          flags,
-                       float        *cycles_pme,
-                       const DDBalanceRegionHandler &ddBalanceRegionHandler);
+void
+do_force_lowlevel(t_forcerec                               *fr,
+                  const t_inputrec                         *ir,
+                  const t_idef                             *idef,
+                  const t_commrec                          *cr,
+                  const gmx_multisim_t                     *ms,
+                  t_nrnb                                   *nrnb,
+                  gmx_wallcycle                            *wcycle,
+                  const t_mdatoms                          *md,
+                  gmx::ArrayRefWithPadding<gmx::RVec>       coordinates,
+                  history_t                                *hist,
+                  rvec                                     *f_shortrange,
+                  gmx::ForceWithVirial                     *forceWithVirial,
+                  gmx_enerdata_t                           *enerd,
+                  t_fcdata                                 *fcd,
+                  const matrix                              box,
+                  const real                               *lambda,
+                  const t_graph                            *graph,
+                  const rvec                               *mu_tot,
+                  int                                       flags,
+                  const DDBalanceRegionHandler             &ddBalanceRegionHandler);
 /* Call all the force routines */
 
 #endif

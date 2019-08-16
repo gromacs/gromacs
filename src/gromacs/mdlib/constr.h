@@ -62,6 +62,7 @@ struct gmx_moltype_t;
 struct gmx_mtop_t;
 struct gmx_multisim_t;
 struct gmx_wallcycle;
+struct pull_t;
 struct t_blocka;
 struct t_commrec;
 struct t_ilist;
@@ -100,6 +101,7 @@ class Constraints
          * function. */
         Constraints(const gmx_mtop_t     &mtop,
                     const t_inputrec     &ir,
+                    pull_t               *pull_work,
                     FILE                 *log,
                     const t_mdatoms      &md,
                     const t_commrec      *cr,
@@ -289,6 +291,11 @@ bool inter_charge_group_constraints(const gmx_mtop_t &mtop);
 
 /*! \brief Returns whether there are inter charge group settles */
 bool inter_charge_group_settles(const gmx_mtop_t &mtop);
+
+/*! \brief Constrain the initial coordinates and velocities */
+void do_constrain_first(FILE *log, gmx::Constraints *constr,
+                        const t_inputrec *inputrec, const t_mdatoms *md,
+                        t_state *state);
 
 }  // namespace gmx
 

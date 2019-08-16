@@ -96,9 +96,10 @@ struct PbcAiuc
  * \param[out]  pbcAiuc     Pointer to PbcAiuc structure to be initialized.
  *
  */
-static void setPbcAiuc(int           numPbcDim,
-                       const matrix  box,
-                       PbcAiuc      *pbcAiuc)
+static inline
+void setPbcAiuc(int           numPbcDim,
+                const matrix  box,
+                PbcAiuc      *pbcAiuc)
 {
 
     pbcAiuc->invBoxDiagZ = 0.0f;

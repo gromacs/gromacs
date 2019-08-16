@@ -61,12 +61,8 @@ struct t_inputrec;
 
 /*! \brief Calculate long-range Ewald correction terms.
  *
- * For the group cutoff scheme (only), calculates the correction to
- * the Ewald sums (electrostatic and/or LJ) due to pairs excluded from
- * the long-ranged part.
- *
- * For both cutoff schemes, but only for Coulomb interactions,
- * calculates correction for surface dipole terms. */
+ * Calculate correction for electrostatic surface dipole terms.
+ */
 void
 ewald_LRcorrection(int numAtomsLocal,
                    const t_commrec *cr,
@@ -74,18 +70,14 @@ ewald_LRcorrection(int numAtomsLocal,
                    t_forcerec *fr,
                    const t_inputrec *ir,
                    const real *chargeA, const real *chargeB,
-                   const real *C6A, const real *C6B,
-                   const real *sigmaA, const real *sigmaB,
-                   const real *sigma3A, const real *sigma3B,
-                   gmx_bool bHaveChargeOrTypePerturbed,
-                   gmx_bool calc_excl_corr,
-                   const t_blocka *excl,
+                   gmx_bool bHaveChargePerturbed,
                    const rvec x[],
-                   matrix box, rvec mu_tot[],
+                   const matrix box,
+                   const rvec mu_tot[],
                    int ewald_geometry, real epsilon_surface,
-                   rvec *f, tensor vir_q, tensor vir_lj,
-                   real *Vcorr_q, real *Vcorr_lj,
-                   real lambda_q, real lambda_lj,
-                   real *dvdlambda_q, real *dvdlambda_lj);
+                   rvec *f,
+                   real *Vcorr_q,
+                   real lambda_q,
+                   real *dvdlambda_q);
 
 #endif

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2007, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,7 +81,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     gmx_bool              bSame, bTPRwarn = TRUE;
     /* Topology stuff */
     t_trxframe            fr;
-    t_tpxheader           tpxh;
+    TpxFileHeader         tpxh;
     gmx_mtop_t           *mtop = nullptr;
     int                   ePBC = -1;
     int                   ii, jj;
@@ -115,7 +115,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     if (tpr)
     {
         mtop = new gmx_mtop_t;
-        read_tpxheader(tpr, &tpxh, TRUE);
+        tpxh = readTpxHeader(tpr, true);
         if (tpxh.natoms != natoms)
         {
             gmx_fatal(FARGS, "tpr (%d atoms) and trajectory (%d atoms) do not match!",

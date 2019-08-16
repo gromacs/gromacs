@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -189,13 +189,17 @@ class MDLogger
 {
     public:
         //! Supported logging levels.
-        enum LogLevel
+        enum class LogLevel
         {
+            Error,
             Warning,
-            Info
+            Info,
+            Debug,
+            VerboseDebug,
+            Count
         };
         //! Number of logging levels.
-        static const int LogLevelCount = static_cast<int>(Info) + 1;
+        static const int LogLevelCount = static_cast<int>(LogLevel::Count);
 
         MDLogger();
         //! Creates a logger with the given targets.
@@ -203,6 +207,12 @@ class MDLogger
 
         //! For writing at LogLevel::Warning level.
         LogLevelHelper warning;
+        //! For writing at LogLevel::Error level.
+        LogLevelHelper error;
+        //! For writing at LogLevel::Debug level.
+        LogLevelHelper debug;
+        //! For writing at LogLevel::VerboseDebug level.
+        LogLevelHelper verboseDebug;
         //! For writing at LogLevel::Info level.
         LogLevelHelper info;
 };

@@ -47,7 +47,6 @@ namespace gmx
 class MDModules;
 }
 
-struct gmx_groups_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct pull_params_t;

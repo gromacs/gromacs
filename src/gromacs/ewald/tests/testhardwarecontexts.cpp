@@ -134,10 +134,5 @@ void PmeTestEnvironment::SetUp()
     }
 }
 
-void PmeTestEnvironment::TearDown()
-{
-    gmx_hardware_info_free();
-}
-
 }  // namespace test
 }  // namespace gmx

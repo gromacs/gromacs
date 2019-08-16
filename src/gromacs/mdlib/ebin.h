@@ -34,6 +34,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/* \internal \file
+ * \brief
+ * Declares structures and interfaces to store, compute and print current and average values for thermodynamics properties.
+ *
+ * The word 'energy' is used here in wide scope and refer to any thermodynamic quantity that can benefit from
+ * averaging (e.g. temperature, pressure).
+ *
+ * \ingroup module_mdlib
+ */
 #ifndef GMX_MDLIB_EBIN_H
 #define GMX_MDLIB_EBIN_H
 
@@ -44,74 +53,129 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
-/* This is a running averaging structure ('energy bin') for use during mdrun. */
+/* \brief Running averaging structure ('energy bin') to store thermodynamic values.
+ *
+ * Collects the data on thermodynamic parameters (energy terms, temperature,
+ * pressure etc.) during the run, including their current and average values.
+ *
+ * \todo Clean this structure from unused values.
+ */
 struct t_ebin
 {
+    //! Number of thermodynamic terms
     int             nener;
+    //! Name and units for each term
     gmx_enxnm_t    *enm;
+    //! Number of steps used for sum (for energy history)
     int64_t         nsteps;
+    //! Number of values added to the sum so far
     int64_t         nsum;
+    //! Term values: each structure stores current, running average and sum.
     t_energy       *e;
+    //! Total number of steps saved (for energy history)
     int64_t         nsteps_sim;
+    //! Total number of values added to sum (used when printing average values at the end of the run)
     int64_t         nsum_sim;
+    //! Energy values throughout the entire simulation: structure stores current, average and sum, but only sum value is used to compute averages
     t_energy       *e_sim;
 };
 
+/* \brief Type of expected output: normal or average.
+ */
 enum {
-    eprNORMAL, eprAVER, eprRMS, eprNR
+    eprNORMAL, eprAVER, eprNR
 };
 
+/*! \brief Create the structure to store thermodynamic properties*/
 t_ebin *mk_ebin();
-/* Create an energy bin */
 
-//! Empty the contents of \c eb.
+/*! \brief Destroy the \c eb structure.
+ *
+ * \param[in,out] eb  Pointer to the structure to destroy.
+ */
 void done_ebin(t_ebin *eb);
 
+/*! \brief Create space for the extra thermodynamic term(s) and register its(their) name(s).
+ *
+ * The enm array must be static, because the contents are not copied, only the pointers.
+ *
+ * \param[in] eb     Srtucture in which the space for the termodynamic terms shall be created..
+ * \param[in] nener  Number of thermodyamic terms to allocate memory for.
+ * \param[in] enm    Names of the terms.
+ * \param[in] unit   Units.
+ *
+ * \returns          A serial number (index) for the newly allocated terms.
+ */
 int get_ebin_space(t_ebin *eb, int nener, const char *const enm[], const char *unit);
 
-/* Create space in the energy bin and register names.
- * The enm array must be static, because the contents are not copied,
- * but only the pointers.
- * Function returns an entryIndex number that must be used in subsequent
- * calls to add_ebin.
+/*! \brief Add current value of the thermodynamic term(s) to the bin(s).
+ *
+ * Add nener reals (eg. energies, box-lengths, pressures) to the at position specified by \c entryIndex.
+ * If bSum is TRUE then the reals are also added to the sum and sum of squares.
+ *
+ * \param[in] eb          Structure that stores the thermodynamic values.
+ * \param[in] entryIndex  Internal index of the term(s) to add.
+ * \param[in] nener       Number of the terms to add.
+ * \param[in] ener        Value(s) of thermodynamic term(s) (nener ptc.)
+ * \param[in] bSum        If the average value should be accumulated for this term(s).
  */
-
 void add_ebin(t_ebin *eb, int entryIndex, int nener, const real ener[], gmx_bool bSum);
-/* Add nener reals (eg. energies, box-lengths, pressures) to the
- * energy bin at position entryIndex.
- * If bSum is TRUE then the reals are also added to the sum
- * and sum of squares.
- */
 
-/*! \brief Add values from \c ener to \c eb if the matching entry in
- * shouldUse is true.
+
+/*! \brief Add values from array to the bins if the matching entry in \c shouldUse is true.
  *
  * Caller must ensure that \c shouldUse and \c ener to have the same
  * size, and that \c eb has enough room for the number of true
- * entries in \c shouldUse. */
+ * entries in \c shouldUse.
+ *
+ * \param[in] eb          Structure that stores the thermodynamic values.
+ * \param[in] entryIndex  Internal index of the term(s).
+ * \param[in] shouldUse   Array of booleans that indicate which terms should be used.
+ * \param[in] ener        Values of thermodinamic terms to add.
+ * \param[in] bSum        If the average value should be accumulated for these terms.
+ */
 void add_ebin_indexed(t_ebin *eb, int entryIndex, gmx::ArrayRef<bool> shouldUse,
                       gmx::ArrayRef<const real> ener, gmx_bool bSum);
 
-void ebin_increase_count(t_ebin *eb, gmx_bool bSum);
-/* Increase the counters for the sums.
- * This routine should be called AFTER all add_ebin calls for this step.
+/*! \brief Increase the counters for the sums.
+ *
+ * This routine should be called after all add_ebin calls for this step.
+ *
+ * \param[in] increment   How much counts should be increased
+ * \param[in] eb          Structure that stores the thermodynamic values.
+ * \param[in] bSum        If the sums counters should be increased as well.
  */
+void ebin_increase_count(int increment, t_ebin *eb, gmx_bool bSum);
 
+
+/*! \brief Reset the average and fluctuation sums.
+ *
+ * \param[in] eb          Structure that stores the thermodynamic values.
+ */
 void reset_ebin_sums(t_ebin *eb);
-/* Reset the average and fluctuation sums */
+
 
 /*! \brief Print the contents of some energy bins.
  *
- * We will print nperline entries on a text line (advisory <=
- * 5). prmode may be any of the above listed enum values. tsteps is
- * used only when eprAVER or eprRMS is set. If bPrHead than the
+ * We will print \c nperline entries on a text line (advisory <=
+ * 5). \c prmode may be any of the above listed enum values. \c tsteps is
+ * used only when \c eprAVER is set. If \c bPrHead than the
  * header is printed.
  *
- * \c entryIndex and \c nener must be in [0, eb->nener), except that \c
- * nener -1 is interpreted as eb->nener.
+ * \c entryIndex and \c nener must be in [0,\c eb->nener), except that \c
+ * nener -1 is interpreted as \c eb->nener.
  *
- * \todo Callers should be refactored pass eb->nener, rather than
- * us implement and rely on this special behaviour of -1. */
+ * \todo Callers should be refactored to pass \c eb->nener, rather than
+ *       us implement and rely on this special behavior of -1.
+ *
+ * \param[in] fp          I/O pointer to print to.
+ * \param[in] eb          Structure that stores the thermodynamic values.
+ * \param[in] entryIndex  Internal index of the term(s).
+ * \param[in] nener       Number of the terms to print.
+ * \param[in] nperline    Number of values per line.
+ * \param[in] prmode      Print current (eprNORMAL) or average (eprAVER) values.
+ * \param[in] bPrHead     If the header should be printed.
+ */
 void pr_ebin(FILE *fp, t_ebin *eb, int entryIndex, int nener, int nperline,
              int prmode, gmx_bool bPrHead);
 

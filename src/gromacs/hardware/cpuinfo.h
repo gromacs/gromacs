@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,6 +87,7 @@ class CpuInfo
             Ibm,          //!< Only works on Linux (parsed from /proc/cpuinfo)
             Arm,          //!< Only works on Linux (parsed from /proc/cpuinfo)
             Oracle,       //!< Cannot detect anything else yet (no /proc/cpuinfo available)
+            Hygon,        //!< HygonGenuine
         };
 
         /*! \brief List of CPU features
@@ -147,7 +148,8 @@ class CpuInfo
             Ibm_Qpx,         //!< IBM QPX SIMD (BlueGene/Q)
             Ibm_Vmx,         //!< IBM VMX SIMD (Altivec on Power6 and later)
             Ibm_Vsx,         //!< IBM VSX SIMD (Power7 and later)
-            Fujitsu_HpcAce   //!< Fujitsu Sparc64 HPC-ACE
+            Fujitsu_HpcAce,  //!< Fujitsu Sparc64 HPC-ACE
+            X86_Hygon        //!< This is a Hygon x86 processor
         };
 
         /*! \libinternal \brief Entry with basic information for a single logical processor */

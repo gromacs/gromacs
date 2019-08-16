@@ -37,22 +37,167 @@
 
 #include <cstdio>
 
+#include <memory>
+
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 
 struct gmx_mtop_t;
+struct interaction_const_t;
 struct t_forcerec;
+struct t_forcetable;
 struct t_inputrec;
 
-/* Computes and sets the average C6 and C12 params for LJ corrections */
-void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
-                      const gmx_mtop_t *mtop);
+namespace gmx
+{
+class MDLogger;
+} // namespace gmx
 
-/* Computs and sets energy and virial correction parameters based on the cut-off and LJ-ewald coefficient */
-void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr);
+class DispersionCorrection
+{
+    public:
+        /*! \brief Constructor
+         *
+         * \param[in] mtop           The global topology
+         * \param[in] inputrec       The input record
+         * \param[in] useBuckingham  True when Buckingham is used instead of LJ
+         * \param[in] numAtomTypes   The number of non-bonded atom types
+         * \param[in] nonbondedForceParameters  The LJ or Bham parameter matrix stored as a flat list
+         * \param[in] ic             The nonbonded interaction parameters
+         * \param[in] tableFileName  Table file name, should != nullptr (checked)
+         */
+        DispersionCorrection(const gmx_mtop_t          &mtop,
+                             const t_inputrec          &inputrec,
+                             bool                       useBuckingham,
+                             int                        numAtomTypes,
+                             gmx::ArrayRef<const real>  nonbondedForceParameters,
+                             const interaction_const_t &ic,
+                             const char                *tableFileName);
 
-/* Computes and returns the dispersion correction for the pressure and energy */
-void calc_dispcorr(const t_inputrec *ir, const t_forcerec *fr,
-                   const matrix box, real lambda, tensor pres, tensor virial,
-                   real *prescorr, real *enercorr, real *dvdlcorr);
+        /*! \brief Print dispersion correction information to the log file
+         *
+         * \param[in] mdlog  The MD logger
+         */
+        void print(const gmx::MDLogger &mdlog) const;
+
+        /*! \brief Computes and sets energy and virial correction parameters
+         *
+         * Sets all parameters that are affected by the cut-off and/or the
+         * LJ-Ewald coefficient. Should be called before calling calculate()
+         * and whenever interaction settings change, e.g. PME tuning.
+         *
+         * \param[in] ic  The nonbonded interaction parameters
+         */
+        void setParameters(const interaction_const_t &ic);
+
+        /*! \internal
+         * \brief Struct for returning all dispersion correction quantities
+         */
+        struct Correction
+        {
+            /*! \brief Correct the virial tensor for the missing dispersion
+             *
+             * \param[in,out] virialTensor  The virial tensor to correct
+             */
+            void correctVirial(tensor virialTensor) const
+            {
+                for (int m = 0; m < DIM; m++)
+                {
+                    virialTensor[m][m] += virial;
+                }
+            }
+
+            /*! \brief Correct the pressure tensor for the missing dispersion
+             *
+             * \param[in,out] pressureTensor  The pressure tensor to correct
+             */
+            void correctPressure(tensor pressureTensor) const
+            {
+                for (int m = 0; m < DIM; m++)
+                {
+                    pressureTensor[m][m] += pressure;
+                }
+            }
+
+            real virial   = 0; //!< Scalar correction to the virial
+            real pressure = 0; //!< Scalar correction to the pressure
+            real energy   = 0; //!< Correction to the energy
+            real dvdl     = 0; //!< Correction to dH/dlambda
+        };
+
+        /*! \brief Computes and returns the dispersion correction for the pressure and energy
+         *
+         * \param[in]  box       The simulation unit cell
+         * \param[in]  lambda    The free-energy coupling parameter
+         */
+        Correction calculate(const matrix  box,
+                             real          lambda) const;
+
+    private:
+        /*! \internal \brief Parameters that depend on the topology only
+         */
+        class TopologyParams
+        {
+            public:
+                TopologyParams(const gmx_mtop_t          &mtop,
+                               const t_inputrec          &inputrec,
+                               bool                       useBuckingham,
+                               int                        numAtomTypes,
+                               gmx::ArrayRef<const real>  nonbondedForceParameters);
+
+                //! The number of atoms for computing the atom density
+                int                 numAtomsForDensity_;
+                //! The number of interactions to correct for, usually num. atoms/2
+                real                numCorrections_;
+                //! Average C6 coefficient for for topology A/B ([0]/[1])
+                std::array<real, 2> avcsix_;
+                //! Average C12 coefficient for for topology A/B ([0]/[1])
+                std::array<real, 2> avctwelve_;
+        };
+
+        /*! \internal \brief Parameters that depend on the interaction functions and topology
+         */
+        struct InteractionParams
+        {
+            public:
+                ~InteractionParams();
+
+                //! Table used for correcting modified LJ interactions
+                std::unique_ptr<t_forcetable> dispersionCorrectionTable_;
+
+                //! Dispersion energy shift constant
+                real enershiftsix_ = 0;
+                //! Repulsion energy shift constant
+                real enershifttwelve_ = 0;
+                //! Dispersion energy difference per atom per unit of volume
+                real enerdiffsix_ = 0;
+                //! Repulsion energy difference per atom per unit of volume
+                real enerdifftwelve_ = 0;
+                //! Dispersion virial difference per atom per unit of volume
+                real virdiffsix_ = 0;
+                //! Repulsion virial difference per atom per unit of volume
+                real virdifftwelve_ = 0;
+        };
+
+        //! Sets the interaction parameters
+        static void
+        setInteractionParameters(DispersionCorrection::InteractionParams *iParams,
+                                 const interaction_const_t               &ic,
+                                 const char                              *tableFileName);
+
+        //! Returns whether we correct both dispersion and repulsion
+        bool correctFullInteraction() const;
+
+        //! Type of dispersion correction
+        int               eDispCorr_;
+        //! Type of Van der Waals interaction
+        int               vdwType_;
+        //! Free-energy perturbation
+        int               eFep_;
+        //! Topology parameters
+        TopologyParams    topParams_;
+        //! Interaction parameters
+        InteractionParams iParams_;
+};
 
 #endif

@@ -32,6 +32,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal \file
+ * \brief
+ * Declares module creation function for applied electric fields
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \ingroup module_applied_forces
+ * \inlibraryapi
+ */
 #ifndef GMX_APPLIED_FORCES_ELECTRICFIELD_H
 #define GMX_APPLIED_FORCES_ELECTRICFIELD_H
 

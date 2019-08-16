@@ -21,13 +21,6 @@ These are thought to produce artefacts under some circumstances
 (unpublished results), were never well tested, are not widely used,
 and we need to simplify pdb2gmx.
 
-``gmx mdrun -gcom``
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-This feature sometimes overrides the effects of various .mdp settings
-in a way that is difficult to understand and report. A user who wants
-to do communication between PP ranks less often should choose their
-``nst*`` mdp options accordingly.
-
 Benchmarking options only available with ``gmx benchmark``
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Options such as ``-confout``, ``-resethway``, ``-resetstep`` are not

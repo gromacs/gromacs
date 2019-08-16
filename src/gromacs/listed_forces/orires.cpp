@@ -46,6 +46,7 @@
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -202,7 +203,7 @@ void init_orires(FILE                 *fplog,
     od->nref = 0;
     for (int i = 0; i < mtop->natoms; i++)
     {
-        if (getGroupType(mtop->groups, egcORFIT, i) == 0)
+        if (getGroupType(mtop->groups, SimulationAtomGroupType::OrientationRestraintsFit, i) == 0)
         {
             od->nref++;
         }
@@ -225,8 +226,8 @@ void init_orires(FILE                 *fplog,
     {
         const t_atom &local = atomP.atom();
         int           i     = atomP.globalAtomNumber();
-        if (mtop->groups.grpnr[egcORFIT] == nullptr ||
-            mtop->groups.grpnr[egcORFIT][i] == 0)
+        if (mtop->groups.groupNumbers[SimulationAtomGroupType::OrientationRestraintsFit].empty() ||
+            mtop->groups.groupNumbers[SimulationAtomGroupType::OrientationRestraintsFit][i] == 0)
         {
             /* Not correct for free-energy with changing masses */
             od->mref[j] = local.m;

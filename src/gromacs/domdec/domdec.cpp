@@ -55,6 +55,7 @@
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/ga2la.h"
+#include "gromacs/domdec/options.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
@@ -105,6 +106,11 @@
 #include "domdec_vsite.h"
 #include "redistribute.h"
 #include "utility.h"
+
+// TODO remove this when moving domdec into gmx namespace
+using gmx::DdRankOrder;
+using gmx::DlbOption;
+using gmx::DomdecOptions;
 
 static const char *edlbs_names[int(DlbState::nr)] = { "off", "auto", "locked", "on", "on" };
 
@@ -199,6 +205,12 @@ int ddglatnr(const gmx_domdec_t *dd, int i)
 t_block *dd_charge_groups_global(gmx_domdec_t *dd)
 {
     return &dd->comm->cgs_gl;
+}
+
+gmx::ArrayRef<const gmx::RangePartitioning> getUpdateGroupingPerMoleculetype(const gmx_domdec_t &dd)
+{
+    GMX_RELEASE_ASSERT(dd.comm, "Need a valid dd.comm");
+    return dd.comm->updateGroupingPerMoleculetype;
 }
 
 void dd_store_state(gmx_domdec_t *dd, t_state *state)
@@ -308,8 +320,6 @@ void dd_move_x(gmx_domdec_t             *dd,
 
     comm = dd->comm;
 
-    const gmx::RangePartitioning &atomGrouping = dd->atomGrouping();
-
     nzone   = 1;
     nat_tot = comm->atomRanges.numHomeAtoms();
     for (int d = 0; d < dd->ndim; d++)
@@ -328,46 +338,37 @@ void dd_move_x(gmx_domdec_t             *dd,
             int                        n          = 0;
             if (!bPBC)
             {
-                for (int g : ind.index)
+                for (int j : ind.index)
                 {
-                    for (int j : atomGrouping.block(g))
-                    {
-                        sendBuffer[n] = x[j];
-                        n++;
-                    }
+                    sendBuffer[n] = x[j];
+                    n++;
                 }
             }
             else if (!bScrew)
             {
-                for (int g : ind.index)
+                for (int j : ind.index)
                 {
-                    for (int j : atomGrouping.block(g))
+                    /* We need to shift the coordinates */
+                    for (int d = 0; d < DIM; d++)
                     {
-                        /* We need to shift the coordinates */
-                        for (int d = 0; d < DIM; d++)
-                        {
-                            sendBuffer[n][d] = x[j][d] + shift[d];
-                        }
-                        n++;
+                        sendBuffer[n][d] = x[j][d] + shift[d];
                     }
+                    n++;
                 }
             }
             else
             {
-                for (int g : ind.index)
+                for (int j : ind.index)
                 {
-                    for (int j : atomGrouping.block(g))
-                    {
-                        /* Shift x */
-                        sendBuffer[n][XX] = x[j][XX] + shift[XX];
-                        /* Rotate y and z.
-                         * This operation requires a special shift force
-                         * treatment, which is performed in calc_vir.
-                         */
-                        sendBuffer[n][YY] = box[YY][YY] - x[j][YY];
-                        sendBuffer[n][ZZ] = box[ZZ][ZZ] - x[j][ZZ];
-                        n++;
-                    }
+                    /* Shift x */
+                    sendBuffer[n][XX] = x[j][XX] + shift[XX];
+                    /* Rotate y and z.
+                     * This operation requires a special shift force
+                     * treatment, which is performed in calc_vir.
+                     */
+                    sendBuffer[n][YY] = box[YY][YY] - x[j][YY];
+                    sendBuffer[n][ZZ] = box[ZZ][ZZ] - x[j][ZZ];
+                    n++;
                 }
             }
 
@@ -421,8 +422,6 @@ void dd_move_f(gmx_domdec_t             *dd,
 
     comm = dd->comm;
 
-    const gmx::RangePartitioning &atomGrouping = dd->atomGrouping();
-
     nzone   = comm->zones.n/2;
     nat_tot = comm->atomRanges.end(DDAtomRanges::Type::Zones);
     for (int d = dd->ndim-1; d >= 0; d--)
@@ -475,16 +474,13 @@ void dd_move_f(gmx_domdec_t             *dd,
             int n = 0;
             if (!bShiftForcesNeedPbc)
             {
-                for (int g : ind.index)
+                for (int j : ind.index)
                 {
-                    for (int j : atomGrouping.block(g))
+                    for (int d = 0; d < DIM; d++)
                     {
-                        for (int d = 0; d < DIM; d++)
-                        {
-                            f[j][d] += receiveBuffer[n][d];
-                        }
-                        n++;
+                        f[j][d] += receiveBuffer[n][d];
                     }
+                    n++;
                 }
             }
             else if (!bScrew)
@@ -492,43 +488,37 @@ void dd_move_f(gmx_domdec_t             *dd,
                 /* fshift should always be defined if this function is
                  * called when bShiftForcesNeedPbc is true */
                 assert(nullptr != fshift);
-                for (int g : ind.index)
+                for (int j : ind.index)
                 {
-                    for (int j : atomGrouping.block(g))
+                    for (int d = 0; d < DIM; d++)
                     {
-                        for (int d = 0; d < DIM; d++)
-                        {
-                            f[j][d] += receiveBuffer[n][d];
-                        }
+                        f[j][d] += receiveBuffer[n][d];
+                    }
+                    /* Add this force to the shift force */
+                    for (int d = 0; d < DIM; d++)
+                    {
+                        fshift[is][d] += receiveBuffer[n][d];
+                    }
+                    n++;
+                }
+            }
+            else
+            {
+                for (int j : ind.index)
+                {
+                    /* Rotate the force */
+                    f[j][XX] += receiveBuffer[n][XX];
+                    f[j][YY] -= receiveBuffer[n][YY];
+                    f[j][ZZ] -= receiveBuffer[n][ZZ];
+                    if (fshift)
+                    {
                         /* Add this force to the shift force */
                         for (int d = 0; d < DIM; d++)
                         {
                             fshift[is][d] += receiveBuffer[n][d];
                         }
-                        n++;
                     }
-                }
-            }
-            else
-            {
-                for (int g : ind.index)
-                {
-                    for (int j : atomGrouping.block(g))
-                    {
-                        /* Rotate the force */
-                        f[j][XX] += receiveBuffer[n][XX];
-                        f[j][YY] -= receiveBuffer[n][YY];
-                        f[j][ZZ] -= receiveBuffer[n][ZZ];
-                        if (fshift)
-                        {
-                            /* Add this force to the shift force */
-                            for (int d = 0; d < DIM; d++)
-                            {
-                                fshift[is][d] += receiveBuffer[n][d];
-                            }
-                        }
-                        n++;
-                    }
+                    n++;
                 }
             }
         }
@@ -559,8 +549,6 @@ void dd_atom_spread_real(gmx_domdec_t *dd, real v[])
 
     comm = dd->comm;
 
-    const gmx::RangePartitioning &atomGrouping = dd->atomGrouping();
-
     nzone   = 1;
     nat_tot = comm->atomRanges.numHomeAtoms();
     for (int d = 0; d < dd->ndim; d++)
@@ -575,12 +563,9 @@ void dd_atom_spread_real(gmx_domdec_t *dd, real v[])
             DDBufferAccess<gmx::RVec> sendBufferAccess(comm->rvecBuffer, ind.nsend[nzone + 1]);
             gmx::ArrayRef<real>       sendBuffer = realArrayRefFromRvecArrayRef(sendBufferAccess.buffer);
             int                       n          = 0;
-            for (int g : ind.index)
+            for (int j : ind.index)
             {
-                for (int j : atomGrouping.block(g))
-                {
-                    sendBuffer[n++] = v[j];
-                }
+                sendBuffer[n++] = v[j];
             }
 
             DDBufferAccess<gmx::RVec> receiveBufferAccess(comm->rvecBuffer2, cd->receiveInPlace ? 0 : ind.nrecv[nzone + 1]);
@@ -621,8 +606,6 @@ void dd_atom_sum_real(gmx_domdec_t *dd, real v[])
     gmx_domdec_comm_dim_t *cd;
 
     comm = dd->comm;
-
-    const gmx::RangePartitioning &atomGrouping = dd->atomGrouping();
 
     nzone   = comm->zones.n/2;
     nat_tot = comm->atomRanges.end(DDAtomRanges::Type::Zones);
@@ -665,13 +648,10 @@ void dd_atom_sum_real(gmx_domdec_t *dd, real v[])
                        sendBuffer, receiveBuffer);
             /* Add the received forces */
             int n = 0;
-            for (int g : ind.index)
+            for (int j : ind.index)
             {
-                for (int j : atomGrouping.block(g))
-                {
-                    v[j] += receiveBuffer[n];
-                    n++;
-                }
+                v[j] += receiveBuffer[n];
+                n++;
             }
         }
         nzone /= 2;
@@ -687,7 +667,7 @@ real dd_cutoff_multibody(const gmx_domdec_t *dd)
     comm = dd->comm;
 
     r = -1;
-    if (comm->bInterCGBondeds)
+    if (comm->haveInterDomainMultiBodyBondeds)
     {
         if (comm->cutoff_mbody > 0)
         {
@@ -2175,8 +2155,6 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     /* Allocate the charge group/atom sorting struct */
     comm->sort = std::make_unique<gmx_domdec_sort_t>();
 
-    comm->bCGs = (ncg_mtop(mtop) < mtop->natoms);
-
     /* We need to decide on update groups early, as this affects communication distances */
     comm->useUpdateGroups = false;
     if (ir->cutoff_scheme == ecutsVERLET)
@@ -2185,16 +2163,10 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
         setupUpdateGroups(mdlog, *mtop, *ir, cutoffMargin, cr->nnodes, comm);
     }
 
-    comm->bInterCGBondeds = ((ncg_mtop(mtop) > gmx_mtop_num_molecules(*mtop)) ||
-                             mtop->bIntermolecularInteractions);
-    if (comm->bInterCGBondeds)
-    {
-        comm->bInterCGMultiBody = (multi_body_bondeds_count(mtop) > 0);
-    }
-    else
-    {
-        comm->bInterCGMultiBody = FALSE;
-    }
+    // TODO: Check whether all bondeds are within update groups
+    comm->haveInterDomainBondeds          = (mtop->natoms > gmx_mtop_num_molecules(*mtop) ||
+                                             mtop->bIntermolecularInteractions);
+    comm->haveInterDomainMultiBodyBondeds = (multi_body_bondeds_count(mtop) > 0);
 
     if (comm->useUpdateGroups)
     {
@@ -2253,7 +2225,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
      *       Note that we would need to improve the pairlist buffer case.
      */
 
-    if (comm->bInterCGBondeds)
+    if (comm->haveInterDomainBondeds)
     {
         if (options.minimumCommunicationRange > 0)
         {
@@ -2389,7 +2361,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                            !isDlbDisabled(comm),
                            options.dlbScaling,
                            comm->cellsize_limit, comm->cutoff,
-                           comm->bInterCGBondeds);
+                           comm->haveInterDomainBondeds);
 
         if (dd->nc[XX] == 0)
         {
@@ -2488,7 +2460,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
         comm->slb_frac[ZZ] = get_slb_frac(mdlog, "z", dd->nc[ZZ], options.cellSizeZ);
     }
 
-    if (comm->bInterCGBondeds && comm->cutoff_mbody == 0)
+    if (comm->haveInterDomainBondeds && comm->cutoff_mbody == 0)
     {
         if (comm->bBondComm || !isDlbDisabled(comm))
         {
@@ -2654,18 +2626,15 @@ static void writeSettings(gmx::TextWriter       *log,
         log->writeLine();
     }
 
-    gmx_bool bInterCGVsites = count_intercg_vsites(mtop) != 0;
+    const bool haveInterDomainVsites =
+        (countInterUpdategroupVsites(*mtop, comm->updateGroupingPerMoleculetype) != 0);
 
-    if (comm->bInterCGBondeds ||
-        bInterCGVsites ||
+    if (comm->haveInterDomainBondeds ||
+        haveInterDomainVsites ||
         dd->splitConstraints || dd->splitSettles)
     {
         std::string decompUnits;
-        if (comm->bCGs)
-        {
-            decompUnits = "charge groups";
-        }
-        else if (comm->useUpdateGroups)
+        if (comm->useUpdateGroups)
         {
             decompUnits = "atom groups";
         }
@@ -2694,7 +2663,7 @@ static void writeSettings(gmx::TextWriter       *log,
             }
         }
 
-        if (comm->bInterCGBondeds)
+        if (comm->haveInterDomainBondeds)
         {
             log->writeLineFormatted("%40s  %-7s %6.3f nm",
                                     "two-body bonded interactions", "(-rdd)",
@@ -2703,7 +2672,7 @@ static void writeSettings(gmx::TextWriter       *log,
                                     "multi-body bonded interactions", "(-rdd)",
                                     (comm->bBondComm || isDlbOn(dd->comm)) ? comm->cutoff_mbody : std::min(comm->cutoff, limit));
         }
-        if (bInterCGVsites)
+        if (haveInterDomainVsites)
         {
             log->writeLineFormatted("%40s  %-7s %6.3f nm",
                                     "virtual site constructions", "(-rcon)", limit);
@@ -2850,7 +2819,7 @@ gmx_bool dd_bonded_molpbc(const gmx_domdec_t *dd, int ePBC)
      * or we use domain decomposition for each periodic dimension,
      * we do not need to take pbc into account for the bonded interactions.
      */
-    return (ePBC != epbcNONE && dd->comm->bInterCGBondeds &&
+    return (ePBC != epbcNONE && dd->comm->haveInterDomainBondeds &&
             !(dd->nc[XX] > 1 &&
               dd->nc[YY] > 1 &&
               (dd->nc[ZZ] > 1 || ePBC == epbcXY)));

@@ -45,6 +45,7 @@
 
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -53,9 +54,17 @@
 
 struct nbnxn_atomdata_t;
 enum class GpuTaskCompletion;
+enum class GpuBufferOpsAccumulateForce;
+
+namespace gmx
+{
+class GpuBonded;
+}
 
 namespace Nbnxm
 {
+
+class Grid;
 
 /*! \brief
  * Launch asynchronously the xq buffer host to device copy.
@@ -66,13 +75,11 @@ namespace Nbnxm
  * \param [in]    nb        GPU nonbonded data.
  * \param [in]    nbdata    Host-side atom data structure.
  * \param [in]    aloc      Atom locality flag.
- * \param [in]    haveOtherWork  True if there are other tasks that require the nbnxn coordinate input.
  */
 GPU_FUNC_QUALIFIER
 void gpu_copy_xq_to_gpu(gmx_nbnxn_gpu_t gmx_unused               *nb,
                         const struct nbnxn_atomdata_t gmx_unused *nbdata,
-                        AtomLocality gmx_unused                   aloc,
-                        bool gmx_unused                           haveOtherWork) GPU_FUNC_TERM
+                        AtomLocality gmx_unused                   aloc) GPU_FUNC_TERM
 
 /*! \brief
  * Launch asynchronously the nonbonded force calculations.
@@ -130,17 +137,15 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t gmx_unused     *nb,
                                  int gmx_unused                  numParts) GPU_FUNC_TERM
 
 /*! \brief
- * Launch asynchronously the download of nonbonded forces from the GPU
+ * Launch asynchronously the download of short-range forces from the GPU
  * (and energies/shift forces if required).
- * When haveOtherWork=true, the copy-back is done even when there was
- * no non-bonded work.
  */
 GPU_FUNC_QUALIFIER
 void gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused *nb,
                         nbnxn_atomdata_t gmx_unused *nbatom,
                         int              gmx_unused  flags,
                         AtomLocality     gmx_unused  aloc,
-                        bool             gmx_unused  haveOtherWork) GPU_FUNC_TERM
+                        const bool       gmx_unused  copyBackNbForce) GPU_FUNC_TERM
 
 /*! \brief Attempts to complete nonbonded GPU task.
  *
@@ -168,7 +173,6 @@ void gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused *nb,
  * \param[in]  nb     The nonbonded data GPU structure
  * \param[in]  flags  Force flags
  * \param[in]  aloc   Atom locality identifier
- * \param[in]  haveOtherWork  Tells whether there is other work than non-bonded work in the nbnxn stream(s)
  * \param[out] e_lj   Pointer to the LJ energy output to accumulate into
  * \param[out] e_el   Pointer to the electrostatics energy output to accumulate into
  * \param[out] fshift Pointer to the shift force buffer to accumulate into
@@ -179,7 +183,6 @@ GPU_FUNC_QUALIFIER
 bool gpu_try_finish_task(gmx_nbnxn_gpu_t gmx_unused  *nb,
                          int             gmx_unused   flags,
                          AtomLocality    gmx_unused   aloc,
-                         bool            gmx_unused   haveOtherWork,
                          real            gmx_unused  *e_lj,
                          real            gmx_unused  *e_el,
                          rvec            gmx_unused  *fshift,
@@ -195,7 +198,6 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t gmx_unused  *nb,
  * \param[in] nb The nonbonded data GPU structure
  * \param[in] flags Force flags
  * \param[in] aloc Atom locality identifier
- * \param[in]  haveOtherWork  Tells whether there is other work than non-bonded work in the nbnxn stream(s)
  * \param[out] e_lj Pointer to the LJ energy output to accumulate into
  * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
  * \param[out] fshift Pointer to the shift force buffer to accumulate into
@@ -204,7 +206,6 @@ GPU_FUNC_QUALIFIER
 void gpu_wait_finish_task(gmx_nbnxn_gpu_t gmx_unused *nb,
                           int             gmx_unused  flags,
                           AtomLocality    gmx_unused  aloc,
-                          bool            gmx_unused  haveOtherWork,
                           real            gmx_unused *e_lj,
                           real            gmx_unused *e_el,
                           rvec            gmx_unused *fshift) GPU_FUNC_TERM
@@ -213,6 +214,96 @@ void gpu_wait_finish_task(gmx_nbnxn_gpu_t gmx_unused *nb,
 GPU_FUNC_QUALIFIER
 int gpu_pick_ewald_kernel_type(bool gmx_unused bTwinCut) GPU_FUNC_TERM_WITH_RETURN(-1)
 
-} // namespace Nbnxm
+/*! \brief Initialization for X buffer operations on GPU.
+ * Called on the NS step and performs (re-)allocations and memory copies. !*/
+CUDA_FUNC_QUALIFIER
+void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet gmx_unused &gridSet,
+                                gmx_nbnxn_gpu_t    gmx_unused *gpu_nbv) CUDA_FUNC_TERM
+
+/*! \brief X buffer operations on GPU: performs conversion from rvec to nb format.
+ */
+CUDA_FUNC_QUALIFIER
+void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid  gmx_unused &grid,
+                           bool               gmx_unused  setFillerCoords,
+                           gmx_nbnxn_gpu_t    gmx_unused *gpu_nbv,
+                           void               gmx_unused *xPmeDevicePtr,
+                           Nbnxm::AtomLocality gmx_unused locality,
+                           const rvec         gmx_unused *x,
+                           int                gmx_unused  gridId,
+                           int                gmx_unused  numColumnsMax) CUDA_FUNC_TERM
+
+/*! \brief Sync the nonlocal stream with dependent tasks in the local queue.
+ * \param[in] nb                   The nonbonded data GPU structure
+ * \param[in] interactionLocality  Local or NonLocal sync point
+ */
+CUDA_FUNC_QUALIFIER
+void nbnxnInsertNonlocalGpuDependency(const gmx_nbnxn_gpu_t gmx_unused    *nb,
+                                      const InteractionLocality gmx_unused interactionLocality) CUDA_FUNC_TERM
+
+/*! \brief Set up internal flags that indicate what type of short-range work there is.
+ *
+ * As nonbondeds and bondeds share input/output buffers and GPU queues,
+ * both are considered when checking for work in the current domain.
+ *
+ * This function is expected to be called every time the work-distribution
+ * can change (i.e. at search/domain decomposition steps).
+ *
+ * \param[inout]  nb         Pointer to the nonbonded GPU data structure
+ * \param[in]     gpuBonded  Pointer to the GPU bonded data structure
+ * \param[in]     iLocality  Interaction locality identifier
+ */
+GPU_FUNC_QUALIFIER
+void setupGpuShortRangeWork(gmx_nbnxn_gpu_t                  gmx_unused *nb,
+                            const gmx::GpuBonded             gmx_unused *gpuBonded,
+                            const Nbnxm::InteractionLocality gmx_unused  iLocality) GPU_FUNC_TERM
+
+/*! \brief Returns true if there is GPU short-range work for the given atom locality.
+ *
+ * Note that as, unlike nonbonded tasks, bonded tasks are not split into local/nonlocal,
+ * and therefore if there are GPU offloaded bonded interactions, this function will return
+ * true for both local and nonlocal atom range.
+ *
+ * \param[inout]  nb        Pointer to the nonbonded GPU data structure
+ * \param[in]     aLocality Atom locality identifier
+ */
+GPU_FUNC_QUALIFIER
+bool haveGpuShortRangeWork(const gmx_nbnxn_gpu_t     gmx_unused *nb,
+                           const Nbnxm::AtomLocality gmx_unused  aLocality) GPU_FUNC_TERM_WITH_RETURN(false)
+
+/*! \brief Initialization for F buffer operations on GPU */
+CUDA_FUNC_QUALIFIER
+void nbnxn_gpu_init_add_nbat_f_to_f(const int               gmx_unused *cell,
+                                    gmx_nbnxn_gpu_t         gmx_unused *gpu_nbv,
+                                    int                     gmx_unused  natoms_total) CUDA_FUNC_TERM
+
+/*! \brief F buffer operations on GPU: adds nb format force to rvec format. */
+CUDA_FUNC_QUALIFIER
+void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality           gmx_unused  atomLocality,
+                               gmx_nbnxn_gpu_t              gmx_unused *gpu_nbv,
+                               int                          gmx_unused  atomStart,
+                               int                          gmx_unused  nAtoms,
+                               GpuBufferOpsAccumulateForce     gmx_unused  accumulateForce) CUDA_FUNC_TERM
+
+/*! \brief Copy force buffer from CPU to GPU */
+CUDA_FUNC_QUALIFIER
+void nbnxn_launch_copy_f_to_gpu(const AtomLocality      gmx_unused  atomLocality,
+                                const Nbnxm::GridSet    gmx_unused &gridSet,
+                                gmx_nbnxn_gpu_t         gmx_unused *nb,
+                                rvec                    gmx_unused *f) CUDA_FUNC_TERM
+
+/*! \brief Copy force buffer from GPU to CPU */
+CUDA_FUNC_QUALIFIER
+void nbnxn_launch_copy_f_from_gpu(const AtomLocality      gmx_unused  atomLocality,
+                                  const Nbnxm::GridSet    gmx_unused &gridSet,
+                                  gmx_nbnxn_gpu_t         gmx_unused *nb,
+                                  rvec                    gmx_unused *f) CUDA_FUNC_TERM
+
+/*! \brief Wait for GPU stream to complete */
+CUDA_FUNC_QUALIFIER
+void nbnxn_wait_stream_gpu(const AtomLocality      gmx_unused  atomLocality,
+                           gmx_nbnxn_gpu_t         gmx_unused *nb) CUDA_FUNC_TERM
+
+
+}     // namespace Nbnxm
 
 #endif

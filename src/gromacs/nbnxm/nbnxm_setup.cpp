@@ -56,17 +56,26 @@
 #include "gromacs/nbnxm/nbnxm_simd.h"
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/nbnxm/pairlist_tuning.h"
-#include "gromacs/nbnxm/pairlistset.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 
 #include "gpu_types.h"
 #include "grid.h"
-#include "internal.h"
+#include "pairlistset.h"
+#include "pairlistsets.h"
+#include "pairsearch.h"
 
 namespace Nbnxm
 {
+
+/*! \brief Resources that can be used to execute non-bonded kernels on */
+enum class NonbondedResource : int
+{
+    Cpu,
+    Gpu,
+    EmulateGpu
+};
 
 /*! \brief Returns whether CPU SIMD support exists for the given inputrec
  *
@@ -293,17 +302,19 @@ pick_nbnxn_kernel(const gmx::MDLogger     &mdlog,
 
 } // namespace Nbnxm
 
-nonbonded_verlet_t::PairlistSets::PairlistSets(const NbnxnListParameters &listParams,
-                                               const bool                 haveMultipleDomains,
-                                               const int                  minimumIlistCountForGpuBalancing) :
-    params_(listParams),
+PairlistSets::PairlistSets(const PairlistParams &pairlistParams,
+                           const bool            haveMultipleDomains,
+                           const int             minimumIlistCountForGpuBalancing) :
+    params_(pairlistParams),
     minimumIlistCountForGpuBalancing_(minimumIlistCountForGpuBalancing)
 {
-    localSet_ = std::make_unique<nbnxn_pairlist_set_t>(params_);
+    localSet_ = std::make_unique<PairlistSet>(Nbnxm::InteractionLocality::Local,
+                                              params_);
 
     if (haveMultipleDomains)
     {
-        nonlocalSet_ = std::make_unique<nbnxn_pairlist_set_t>(params_);
+        nonlocalSet_ = std::make_unique<PairlistSet>(Nbnxm::InteractionLocality::NonLocal,
+                                                     params_);
     }
 }
 
@@ -381,12 +392,13 @@ init_nb_verlet(const gmx::MDLogger     &mdlog,
 
     const bool          haveMultipleDomains = (DOMAINDECOMP(cr) && cr->dd->nnodes > 1);
 
-    NbnxnListParameters listParams(kernelSetup.kernelType,
-                                   ir->rlist,
-                                   havePPDomainDecomposition(cr));
+    PairlistParams      pairlistParams(kernelSetup.kernelType,
+                                       bFEP_NonBonded,
+                                       ir->rlist,
+                                       havePPDomainDecomposition(cr));
 
     setupDynamicPairlistPruning(mdlog, ir, mtop, box, fr->ic,
-                                &listParams);
+                                &pairlistParams);
 
     int      enbnxninitcombrule;
     if (fr->ic->vdwtype == evdwCUT &&
@@ -415,10 +427,11 @@ init_nb_verlet(const gmx::MDLogger     &mdlog,
         enbnxninitcombrule = enbnxninitcombruleNONE;
     }
 
-    std::unique_ptr<nbnxn_atomdata_t> nbat =
-        std::make_unique<nbnxn_atomdata_t>(useGpu ? gmx::PinningPolicy::PinnedIfSupported : gmx::PinningPolicy::CannotBePinned);
+    auto pinPolicy = (useGpu ? gmx::PinningPolicy::PinnedIfSupported : gmx::PinningPolicy::CannotBePinned);
 
-    int mimimumNumEnergyGroupNonbonded = ir->opts.ngener;
+    auto nbat      = std::make_unique<nbnxn_atomdata_t>(pinPolicy);
+
+    int  mimimumNumEnergyGroupNonbonded = ir->opts.ngener;
     if (ir->opts.ngener - ir->nwall == 1)
     {
         /* We have only one non-wall energy group, we do not need energy group
@@ -443,7 +456,7 @@ init_nb_verlet(const gmx::MDLogger     &mdlog,
          * both local and non-local NB calculation on GPU */
         gpu_nbv = gpu_init(deviceInfo,
                            fr->ic,
-                           &listParams,
+                           pairlistParams,
                            nbat.get(),
                            cr->nodeid,
                            haveMultipleDomains);
@@ -451,21 +464,22 @@ init_nb_verlet(const gmx::MDLogger     &mdlog,
         minimumIlistCountForGpuBalancing = getMinimumIlistCountForGpuBalancing(gpu_nbv);
     }
 
-    std::unique_ptr<nonbonded_verlet_t::PairlistSets> pairlistSets =
-        std::make_unique<nonbonded_verlet_t::PairlistSets>(listParams,
-                                                           haveMultipleDomains,
-                                                           minimumIlistCountForGpuBalancing);
+    auto pairlistSets =
+        std::make_unique<PairlistSets>(pairlistParams,
+                                       haveMultipleDomains,
+                                       minimumIlistCountForGpuBalancing);
 
-    std::unique_ptr<nbnxn_search> nbs =
-        std::make_unique<nbnxn_search>(ir->ePBC,
-                                       DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
-                                       DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
-                                       listParams.pairlistType,
-                                       bFEP_NonBonded,
-                                       gmx_omp_nthreads_get(emntPairsearch));
+    auto pairSearch =
+        std::make_unique<PairSearch>(ir->ePBC,
+                                     DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
+                                     DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
+                                     pairlistParams.pairlistType,
+                                     bFEP_NonBonded,
+                                     gmx_omp_nthreads_get(emntPairsearch),
+                                     pinPolicy);
 
     return std::make_unique<nonbonded_verlet_t>(std::move(pairlistSets),
-                                                std::move(nbs),
+                                                std::move(pairSearch),
                                                 std::move(nbat),
                                                 kernelSetup,
                                                 gpu_nbv);
@@ -474,18 +488,18 @@ init_nb_verlet(const gmx::MDLogger     &mdlog,
 } // namespace Nbnxm
 
 nonbonded_verlet_t::nonbonded_verlet_t(std::unique_ptr<PairlistSets>      pairlistSets,
-                                       std::unique_ptr<nbnxn_search>      nbs_in,
+                                       std::unique_ptr<PairSearch>        pairSearch,
                                        std::unique_ptr<nbnxn_atomdata_t>  nbat_in,
                                        const Nbnxm::KernelSetup          &kernelSetup,
                                        gmx_nbnxn_gpu_t                   *gpu_nbv_ptr) :
     pairlistSets_(std::move(pairlistSets)),
-    nbs(std::move(nbs_in)),
+    pairSearch_(std::move(pairSearch)),
     nbat(std::move(nbat_in)),
     kernelSetup_(kernelSetup),
     gpu_nbv(gpu_nbv_ptr)
 {
     GMX_RELEASE_ASSERT(pairlistSets_, "Need valid pairlistSets");
-    GMX_RELEASE_ASSERT(nbs, "Need valid search object");
+    GMX_RELEASE_ASSERT(pairSearch_, "Need valid search object");
     GMX_RELEASE_ASSERT(nbat, "Need valid atomdata object");
 }
 

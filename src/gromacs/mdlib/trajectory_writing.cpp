@@ -41,7 +41,7 @@
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdoutf.h"
-#include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
@@ -65,7 +65,7 @@ do_md_trajectory_writing(FILE                     *fplog,
                          t_state                  *state,
                          t_state                  *state_global,
                          ObservablesHistory       *observablesHistory,
-                         gmx_mtop_t               *top_global,
+                         const gmx_mtop_t         *top_global,
                          t_forcerec               *fr,
                          gmx_mdoutf_t              outf,
                          const gmx::EnergyOutput  &energyOutput,
@@ -161,7 +161,7 @@ do_md_trajectory_writing(FILE                     *fplog,
                 energyOutput.fillEnergyHistory(observablesHistory->energyHistory.get());
             }
         }
-        mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global,
+        mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global->natoms,
                                          step, t, state, state_global, observablesHistory, f);
         if (bLastStep && step_rel == ir->nsteps &&
             bDoConfOut && MASTER(cr) &&

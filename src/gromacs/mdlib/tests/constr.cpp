@@ -35,6 +35,12 @@
 /*! \internal \file
  * \brief SHAKE and LINCS tests.
  *
+ * \todo Better tests for virial are needed.
+ * \todo Tests for bigger systems to test threads synchronization,
+ *       reduction, etc. on the GPU.
+ * \todo Tests for algorithms for derivatives.
+ * \todo Free-energy perturbation tests
+ *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  * \ingroup module_mdlib
  */
@@ -42,6 +48,8 @@
 #include "gmxpre.h"
 
 #include "gromacs/mdlib/constr.h"
+
+#include "config.h"
 
 #include <assert.h>
 
@@ -54,12 +62,13 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/gmxlib/nonbonded/nonbonded.h"
+#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/lincs.h"
 #include "gromacs/mdlib/shake.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -75,118 +84,40 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
+#include "constr_impl.h"
+
 namespace gmx
 {
 namespace test
 {
 
-/*! \brief
- * Constraints test data structure.
- *
- * Structure to collect all the necessary data, including system coordinates and topology,
- * constraints information, etc. The structure can be reset and reused.
- */
-struct ConstraintsTestData
+ConstraintsTestData::ConstraintsTestData(const std::string &title,
+                                         int numAtoms, std::vector<real> masses,
+                                         std::vector<int> constraints, std::vector<real> constraintsR0,
+                                         bool computeVirial, tensor virialScaledRef,
+                                         bool compute_dHdLambda, float dHdLambdaRef,
+                                         real initialTime, real timestep,
+                                         const std::vector<RVec> &x, const std::vector<RVec> &xPrime, const std::vector<RVec> &v,
+                                         real shakeTolerance, gmx_bool shakeUseSOR,
+                                         int lincsNumIterations, int lincsExpansionOrder, real lincsWarnAngle)
 {
-    public:
-        std::string           title_;                   //!< Human-friendly name for a system
-        int                   nAtom_;                   //!< Number of atoms
-        gmx_mtop_t            mtop_;                    //!< Topology
-        std::vector<real>     masses_;                  //!< Masses
-        std::vector<real>     invmass_;                 //!< Inverse masses
-        t_commrec             cr_;                      //!< Communication record
-        t_inputrec            ir_;                      //!< Input record (info that usually in .mdp file)
-        t_idef                idef_;                    //!< Local topology
-        t_mdatoms             md_;                      //!< MD atoms
-        gmx_multisim_t        ms_;                      //!< Multisim data
-        t_nrnb                nrnb_;                    //!< Computational time array (normally used in benchmarks)
-
-        real                  invdt_;                   //!< Inverse timestep
-        int                   nflexcon_   = 0;          //!< Number of flexible constraints
-        bool                  computeVirial_;           //!< Whether the virial should be computed
-        tensor                virialScaled_;            //!< Scaled virial
-        tensor                virialScaledRef_;         //!< Scaled virial (reference values)
-        bool                  compute_dHdLambda_;       //!< If the free energy is computed
-        real                  dHdLambda_;               //!< For free energy computation
-        real                  dHdLambdaRef_;            //!< For free energy computation (reference value)
-
-        std::vector<RVec>     x_;                       //!< Coordinates before the timestep
-        std::vector<RVec>     xPrime_;                  //!< Coordinates after timestep, output for the constraints
-        std::vector<RVec>     xPrime0_;                 //!< Backup for coordinates (for reset)
-        std::vector<RVec>     xPrime2_;                 //!< Intermediate set of coordinates used by LINCS and
-                                                        //!< SHAKE for different purposes
-        std::vector<RVec>     v_;                       //!< Velocities
-        std::vector<RVec>     v0_;                      //!< Backup for velocities (for reset)
-
-        // Fields to store constraints data for testing
-        std::vector<int>      constraints_;             //!< Constraints data (type1-i1-j1-type2-i2-j2-...)
-        std::vector<real>     constraintsR0_;           //!< Target lengths for all constraint types
-
-        /*! \brief
-         * Constructor for the object with all parameters and variables needed by constraints algorithms.
-         *
-         * This constructor assembles stubs for all the data structures, required to initialize
-         * and apply LINCS and SHAKE constraints. The coordinates and velocities before constraining
-         * are saved to allow for reset. The constraints data are stored for testing after constraints
-         * were applied.
-         *
-         * \param[in]  title              Human-friendly name of the system.
-         * \param[in]  nAtom              Number of atoms in the system.
-         * \param[in]  masses             Atom masses. Size of this vector should be equal to nAtom.
-         * \param[in]  constraints        List of constraints, organized in triples of integers.
-         *                                First integer is the index of type for a constraint, second
-         *                                and third are the indices of constrained atoms. The types
-         *                                of constraints should be sequential but not necessarily
-         *                                start from zero (which is the way they normally are in
-         *                                GROMACS).
-         * \param[in]  constraintsR0      Target values for bond lengths for bonds of each type. The
-         *                                size of this vector should be equal to the total number of
-         *                                unique types in constraints vector.
-         * \param[in]  computeVirial      Whether the virial should be computed.
-         * \param[in]  virialScaledRef    Reference values for scaled virial tensor.
-         * \param[in]  compute_dHdLambda  Whether free energy should be computed.
-         * \param[in]  dHdLambdaRef       Reference value for dHdLambda.
-         * \param[in]  initialTime        Initial time.
-         * \param[in]  timestep           Timestep.
-         * \param[in]  x                  Coordinates before integration step.
-         * \param[in]  xPrime             Coordinates after integration step, but before constraining.
-         * \param[in]  v                  Velocities before constraining.
-         * \param[in]  shakeTolerance     Target tolerance for SHAKE.
-         * \param[in]  shakeUseSOR        Use successive over-relaxation method for SHAKE iterations.
-         *                                The general formula is:
-         *                                   x_n+1 = (1-omega)*x_n + omega*f(x_n),
-         *                                where omega = 1 if SOR is off and may be < 1 if SOR is on.
-         * \param[in]  nLincsIter         Number of iterations used to compute the inverse matrix.
-         * \param[in]  nProjOrder         The order for algorithm that adjusts the direction of the
-         *                                bond after constraints are applied.
-         * \param[in]  lincsWarnAngle     The threshold value for the change in bond angle. When
-         *                                exceeded the program will issue a warning.
-         *
-         */
-        ConstraintsTestData(const std::string &title,
-                            int nAtom, std::vector<real> masses,
-                            std::vector<int> constraints, std::vector<real> constraintsR0,
-                            bool computeVirial, tensor virialScaledRef,
-                            bool compute_dHdLambda, float dHdLambdaRef,
-                            real initialTime, real timestep,
-                            const std::vector<RVec> &x, const std::vector<RVec> &xPrime, const std::vector<RVec> &v,
-                            real shakeTolerance, gmx_bool shakeUseSOR,
-                            int nLincsIter, int nProjOrder, real lincsWarnAngle)
+    // This is to trick Gerrit
+    {
         {
-            title_ = title;   // Human-friendly name of the system
-            nAtom_ = nAtom;   // Number of atoms
+            title_    = title;    // Human-friendly name of the system
+            numAtoms_ = numAtoms; // Number of atoms
 
             // Masses of atoms
             masses_ = masses;
-            invmass_.resize(nAtom); // Vector of inverse masses
+            invmass_.resize(numAtoms); // Vector of inverse masses
 
-            for (int i = 0; i < nAtom; i++)
+            for (int i = 0; i < numAtoms; i++)
             {
                 invmass_[i] = 1.0/masses.at(i);
             }
 
             // Saving constraints to check if they are satisfied after algorithm was applied
-            constraints_   = constraints;   // Constraints indexes (in type-i-j format)
+            constraints_   = constraints;   // Constraints indices (in type-i-j format)
             constraintsR0_ = constraintsR0; // Equilibrium distances for each type of constraint
 
             invdt_  = 1.0/timestep;         // Inverse timestep
@@ -209,8 +140,8 @@ struct ConstraintsTestData
             md_.nMassPerturbed = 0;
             md_.lambda         = 0.0;
             md_.invmass        = invmass_.data();
-            md_.nr             = nAtom;
-            md_.homenr         = nAtom;
+            md_.nr             = numAtoms;
+            md_.homenr         = numAtoms;
 
             // Virial evaluation
             computeVirial_ = computeVirial;
@@ -279,7 +210,7 @@ struct ConstraintsTestData
             interactionListEmpty.iatoms.resize(0);
 
             gmx_moltype_t molType;
-            molType.atoms.nr             = nAtom;
+            molType.atoms.nr             = numAtoms;
             molType.ilist.at(F_CONSTR)   = interactionList;
             molType.ilist.at(F_CONSTRNC) = interactionListEmpty;
             mtop_.moltype.push_back(molType);
@@ -289,7 +220,7 @@ struct ConstraintsTestData
             molBlock.nmol = 1;
             mtop_.molblock.push_back(molBlock);
 
-            mtop_.natoms = nAtom;
+            mtop_.natoms = numAtoms;
             mtop_.ffparams.iparams.resize(maxType + 1);
             for (int i = 0; i <= maxType; i++)
             {
@@ -298,69 +229,96 @@ struct ConstraintsTestData
             mtop_.bIntermolecularInteractions = false;
 
             // Coordinates and velocities
-            x_       = x;
-            xPrime_  = xPrime;
-            xPrime0_ = xPrime;
-            xPrime2_ = xPrime;
+            x_.resizeWithPadding(numAtoms);
+            xPrime_.resizeWithPadding(numAtoms);
+            xPrime0_.resizeWithPadding(numAtoms);
+            xPrime2_.resizeWithPadding(numAtoms);
 
-            v_  = v;
-            v0_ = v;
+            v_.resizeWithPadding(numAtoms);
+            v0_.resizeWithPadding(numAtoms);
+
+            std::copy(x.begin(), x.end(), x_.begin());
+            std::copy(xPrime.begin(), xPrime.end(), xPrime_.begin());
+            std::copy(xPrime.begin(), xPrime.end(), xPrime0_.begin());
+            std::copy(xPrime.begin(), xPrime.end(), xPrime2_.begin());
+
+            std::copy(v.begin(), v.end(), v_.begin());
+            std::copy(v.begin(), v.end(), v0_.begin());
 
             // SHAKE-specific parameters
-            ir_.shake_tol           = shakeTolerance;
-            ir_.bShakeSOR           = shakeUseSOR;
+            ir_.shake_tol            = shakeTolerance;
+            ir_.bShakeSOR            = shakeUseSOR;
 
             // LINCS-specific parameters
-            ir_.nLincsIter          = nLincsIter;
-            ir_.nProjOrder          = nProjOrder;
-            ir_.LincsWarnAngle      = lincsWarnAngle;
+            ir_.nLincsIter     = lincsNumIterations;
+            ir_.nProjOrder     = lincsExpansionOrder;
+            ir_.LincsWarnAngle = lincsWarnAngle;
         }
+    }
+}
 
-        /*! \brief
-         * Reset the data structure so it can be reused.
-         *
-         * Set the coordinates and velocities back to their values before
-         * constraining. The scaled virial tensor and dHdLambda are zeroed.
-         *
-         */
-        void reset()
+/*! \brief
+ * Reset the data structure so it can be reused.
+ *
+ * Set the coordinates and velocities back to their values before
+ * constraining. The scaled virial tensor and dHdLambda are zeroed.
+ *
+ */
+void ConstraintsTestData::reset()
+{
+    xPrime_  = xPrime0_;
+    xPrime2_ = xPrime0_;
+    v_       = v0_;
+
+    if (computeVirial_)
+    {
+        for (int i = 0; i < DIM; i++)
         {
-            xPrime_  = xPrime0_;
-            xPrime2_ = xPrime0_;
-            v_       = v0_;
-
-            if (computeVirial_)
+            for (int j = 0; j < DIM; j++)
             {
-                for (int i = 0; i < DIM; i++)
-                {
-                    for (int j = 0; j < DIM; j++)
-                    {
-                        virialScaled_[i][j] = 0;
-                    }
-                }
+                virialScaled_[i][j] = 0;
             }
-            dHdLambda_         = 0;
         }
+    }
+    dHdLambda_         = 0;
+}
 
-        /*! \brief
-         * Cleaning up the memory.
-         */
-        ~ConstraintsTestData()
-        {
-            sfree(idef_.il[F_CONSTR].iatoms);
-            sfree(idef_.iparams);
-        }
+/*! \brief
+ * Cleaning up the memory.
+ */
+ConstraintsTestData::~ConstraintsTestData()
+{
+    sfree(idef_.il[F_CONSTR].iatoms);
+    sfree(idef_.iparams);
+}
 
-};
+namespace
+{
 
 /*! \brief The two-dimensional parameter space for test.
  *
  * The test will run for all possible combinations of accessible
  * values of the:
  * 1. PBC setup ("PBCNONE" or "PBCXYZ")
- * 2. The algorithm ("SHAKE" or "LINCS").
+ * 2. The algorithm ("SHAKE", "LINCS" or "LINCS_GPU").
  */
 typedef std::tuple<std::string, std::string> ConstraintsTestParameters;
+
+//! Names of all availible algorithms
+std::vector<std::string> algorithmsNames;
+
+//! Method that fills and returns algorithmNames to the test macros.
+std::vector<std::string> getAlgorithmsNames()
+{
+    algorithmsNames.emplace_back("SHAKE");
+    algorithmsNames.emplace_back("LINCS");
+    std::string errorMessage;
+    if (GMX_GPU == GMX_GPU_CUDA && canDetectGpus(&errorMessage))
+    {
+        algorithmsNames.emplace_back("LINCS_CUDA");
+    }
+    return algorithmsNames;
+}
 
 /*! \brief Test fixture for constraints.
  *
@@ -419,95 +377,8 @@ class ConstraintsTest : public ::testing::TestWithParam<ConstraintsTestParameter
             algorithms_["SHAKE"] = applyShake;
             // LINCS
             algorithms_["LINCS"] = applyLincs;
-
-        }
-
-        /*! \brief
-         * Initialize and apply SHAKE constraints.
-         *
-         * \param[in] testData        Test data structure.
-         * \param[in] pbc             Periodic boundary data (not used in SHAKE).
-         */
-        static void applyShake(ConstraintsTestData *testData, t_pbc gmx_unused pbc)
-        {
-            shakedata* shaked = shake_init();
-            make_shake_sblock_serial(shaked, &testData->idef_, testData->md_);
-            bool       success = constrain_shake(
-                        nullptr,
-                        shaked,
-                        testData->invmass_.data(),
-                        testData->idef_,
-                        testData->ir_,
-                        as_rvec_array(testData->x_.data()),
-                        as_rvec_array(testData->xPrime_.data()),
-                        as_rvec_array(testData->xPrime2_.data()),
-                        &testData->nrnb_,
-                        testData->md_.lambda,
-                        &testData->dHdLambda_,
-                        testData->invdt_,
-                        as_rvec_array(testData->v_.data()),
-                        testData->computeVirial_,
-                        testData->virialScaled_,
-                        false,
-                        gmx::ConstraintVariable::Positions);
-            EXPECT_TRUE(success) << "Test failed with a false return value in SHAKE.";
-            done_shake(shaked);
-        }
-
-        /*! \brief
-         * Initialize and apply LINCS constraints.
-         *
-         * \param[in] testData        Test data structure.
-         * \param[in] pbc             Periodic boundary data.
-         */
-        static void applyLincs(ConstraintsTestData *testData, t_pbc pbc)
-        {
-
-            Lincs                *lincsd;
-            int                   maxwarn         = 100;
-            int                   warncount_lincs = 0;
-            gmx_omp_nthreads_set(emntLINCS, 1);
-
-            // Make blocka structure for faster LINCS setup
-            std::vector<t_blocka> at2con_mt;
-            at2con_mt.reserve(testData->mtop_.moltype.size());
-            for (const gmx_moltype_t &moltype : testData->mtop_.moltype)
-            {
-                // This function is in constr.cpp
-                at2con_mt.push_back(make_at2con(moltype,
-                                                testData->mtop_.ffparams.iparams,
-                                                flexibleConstraintTreatment(EI_DYNAMICS(testData->ir_.eI))));
-            }
-            // Initialize LINCS
-            lincsd = init_lincs(nullptr, testData->mtop_,
-                                testData->nflexcon_, at2con_mt,
-                                false,
-                                testData->ir_.nLincsIter, testData->ir_.nProjOrder);
-            set_lincs(testData->idef_, testData->md_, EI_DYNAMICS(testData->ir_.eI), &testData->cr_, lincsd);
-
-            // Evaluate constraints
-            bool sucess = constrain_lincs(false, testData->ir_, 0, lincsd, testData->md_,
-                                          &testData->cr_,
-                                          &testData->ms_,
-                                          as_rvec_array(testData->x_.data()),
-                                          as_rvec_array(testData->xPrime_.data()),
-                                          as_rvec_array(testData->xPrime2_.data()),
-                                          pbc.box, &pbc,
-                                          testData->md_.lambda, &testData->dHdLambda_,
-                                          testData->invdt_,
-                                          as_rvec_array(testData->v_.data()),
-                                          testData->computeVirial_, testData->virialScaled_,
-                                          gmx::ConstraintVariable::Positions,
-                                          &testData->nrnb_,
-                                          maxwarn, &warncount_lincs);
-            EXPECT_TRUE(sucess) << "Test failed with a false return value in LINCS.";
-            EXPECT_EQ(warncount_lincs, 0) << "There were warnings in LINCS.";
-            for (unsigned int i = 0; i < testData->mtop_.moltype.size(); i++)
-            {
-                sfree(at2con_mt.at(i).index);
-                sfree(at2con_mt.at(i).a);
-            }
-            done_lincs(lincsd);
+            // LINCS using CUDA (will only be called if CUDA is available)
+            algorithms_["LINCS_CUDA"] = applyLincsCuda;
         }
 
         /*! \brief
@@ -603,14 +474,14 @@ class ConstraintsTest : public ::testing::TestWithParam<ConstraintsTestParameter
 
             RVec comPrime0({0.0, 0.0, 0.0});
             RVec comPrime({0.0, 0.0, 0.0});
-            for (int i = 0; i < testData.nAtom_; i++)
+            for (int i = 0; i < testData.numAtoms_; i++)
             {
                 comPrime0 += testData.masses_[i]*testData.xPrime0_[i];
                 comPrime  += testData.masses_[i]*testData.xPrime_[i];
             }
 
-            comPrime0 /= testData.nAtom_;
-            comPrime  /= testData.nAtom_;
+            comPrime0 /= testData.numAtoms_;
+            comPrime  /= testData.numAtoms_;
 
             EXPECT_REAL_EQ_TOL(comPrime[XX], comPrime0[XX], tolerance)
             << "Center of mass was shifted by constraints in x-direction.";
@@ -634,13 +505,13 @@ class ConstraintsTest : public ::testing::TestWithParam<ConstraintsTestParameter
 
             RVec comV0({0.0, 0.0, 0.0});
             RVec comV({0.0, 0.0, 0.0});
-            for (int i = 0; i < testData.nAtom_; i++)
+            for (int i = 0; i < testData.numAtoms_; i++)
             {
                 comV0 += testData.masses_[i]*testData.v0_[i];
                 comV  += testData.masses_[i]*testData.v_[i];
             }
-            comV0 /= testData.nAtom_;
-            comV  /= testData.nAtom_;
+            comV0 /= testData.numAtoms_;
+            comV  /= testData.numAtoms_;
 
             EXPECT_REAL_EQ_TOL(comV[XX], comV0[XX], tolerance)
             << "Velocity of the center of mass in x-direction has been changed by constraints.";
@@ -648,29 +519,6 @@ class ConstraintsTest : public ::testing::TestWithParam<ConstraintsTestParameter
             << "Velocity of the center of mass in y-direction has been changed by constraints.";
             EXPECT_REAL_EQ_TOL(comV[ZZ], comV0[ZZ], tolerance)
             << "Velocity of the center of mass in z-direction has been changed by constraints.";
-        }
-
-        /*! \brief
-         * The test on the final coordinates (not used).
-         *
-         * Goes through all atoms and checks if the final positions correspond to the
-         * provided reference set of coordinates.
-         *
-         * \param[in] xPrimeRef       The reference set of coordinates.
-         * \param[in] tolerance       Tolerance for the coordinates test.
-         * \param[in] testData        Test data structure.
-         */
-        void checkFinalCoordinates(std::vector<RVec> xPrimeRef, FloatingPointTolerance tolerance,
-                                   const ConstraintsTestData &testData)
-        {
-            for (int i = 0; i < testData.nAtom_; i++)
-            {
-                for (int d = 0; d < DIM; d++)
-                {
-                    EXPECT_REAL_EQ_TOL(xPrimeRef.at(i)[d], testData.xPrime_[i][d], tolerance) << gmx::formatString(
-                            "Coordinates after constrains were applied differ from these in the reference set for atom #%d.", i);
-                }
-            }
         }
 
         /*! \brief
@@ -693,31 +541,11 @@ class ConstraintsTest : public ::testing::TestWithParam<ConstraintsTestParameter
                 }
             }
         }
-
-        /*! \brief
-         * The test for FEP (not used).
-         *
-         * Checks if the value of dH/dLambda is equal to the reference value.
-         * \todo Add tests for dHdLambda values.
-         *
-         * \param[in] dHdLambdaRef    Reference value.
-         * \param[in] tolerance       Tolerance.
-         * \param[in] testData        Test data structure.
-         */
-        void checkFEP(const real dHdLambdaRef, FloatingPointTolerance tolerance,
-                      const ConstraintsTestData &testData)
-        {
-            EXPECT_REAL_EQ_TOL(dHdLambdaRef, testData.dHdLambda_, tolerance) <<
-            "Computed value for dV/dLambda is not equal to the reference value. ";
-        }
-
-
-
 };
 
 TEST_P(ConstraintsTest, SingleConstraint){
-    std::string       title = "one constraint (e.g. OH)";
-    int               nAtom = 2;
+    std::string       title    = "one constraint (e.g. OH)";
+    int               numAtoms = 2;
 
     std::vector<real> masses        = {1.0, 12.0};
     std::vector<int>  constraints   = {0, 0, 1};
@@ -734,24 +562,24 @@ TEST_P(ConstraintsTest, SingleConstraint){
 
     tensor            virialScaledRef = {{-5.58e-04,  5.58e-04, 0.00e+00 },
                                          { 5.58e-04, -5.58e-04, 0.00e+00 },
-                                         { 0.00e+00,  0.00e+00, 0.00e+00 } };
+                                         { 0.00e+00,  0.00e+00, 0.00e+00 }};
 
     real              shakeTolerance         = 0.0001;
     gmx_bool          shakeUseSOR            = false;
 
-    int               lincsNIter             = 1;
-    int               lincsNProjOrder        = 4;
-    real              lincsWarnAngle         = 30.0;
+    int               lincsNIter                      = 1;
+    int               lincslincsExpansionOrder        = 4;
+    real              lincsWarnAngle                  = 30.0;
 
     std::unique_ptr<ConstraintsTestData>   testData = std::make_unique<ConstraintsTestData>
-            (title, nAtom, masses,
+            (title, numAtoms, masses,
             constraints, constraintsR0,
             true, virialScaledRef,
             false, 0,
             real(0.0), real(0.001),
             x, xPrime, v,
             shakeTolerance, shakeUseSOR,
-            lincsNIter, lincsNProjOrder, lincsWarnAngle);
+            lincsNIter, lincslincsExpansionOrder, lincsWarnAngle);
     std::string pbcName;
     std::string algorithmName;
     std::tie(pbcName, algorithmName) = GetParam();
@@ -771,11 +599,11 @@ TEST_P(ConstraintsTest, SingleConstraint){
 
 TEST_P(ConstraintsTest, TwoDisjointConstraints){
 
-    std::string       title         = "two disjoint constraints";
-    int               nAtom         = 4;
-    std::vector<real> masses        = {0.5, 1.0/3.0, 0.25, 1.0};
-    std::vector<int>  constraints   = {0, 0, 1, 1, 2, 3};
-    std::vector<real> constraintsR0 = {2.0, 1.0};
+    std::string       title            = "two disjoint constraints";
+    int               numAtoms         = 4;
+    std::vector<real> masses           = {0.5, 1.0/3.0, 0.25, 1.0};
+    std::vector<int>  constraints      = {0, 0, 1, 1, 2, 3};
+    std::vector<real> constraintsR0    = {2.0, 1.0};
 
 
     std::vector<RVec> x = {{  2.50, -3.10, 15.70 },
@@ -793,24 +621,26 @@ TEST_P(ConstraintsTest, TwoDisjointConstraints){
                            { 0.0, 0.0, 1.0 },
                            { 0.0, 0.0, 0.0 }};
 
-    tensor            virialScaledRef = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+    tensor            virialScaledRef = {{ 3.3e-03, -1.7e-04,  5.6e-04 },
+                                         {-1.7e-04,  8.9e-06, -2.8e-05 },
+                                         { 5.6e-04, -2.8e-05,  8.9e-05 }};
 
     real              shakeTolerance         = 0.0001;
     gmx_bool          shakeUseSOR            = false;
 
-    int               lincsNIter             = 1;
-    int               lincsNProjOrder        = 4;
-    real              lincsWarnAngle         = 30.0;
+    int               lincsNIter                      = 1;
+    int               lincslincsExpansionOrder        = 4;
+    real              lincsWarnAngle                  = 30.0;
 
     std::unique_ptr<ConstraintsTestData>   testData = std::make_unique<ConstraintsTestData>
-            (title, nAtom, masses,
+            (title, numAtoms, masses,
             constraints, constraintsR0,
-            false, virialScaledRef,
+            true, virialScaledRef,
             false, 0,
             real(0.0), real(0.001),
             x, xPrime, v,
             shakeTolerance, shakeUseSOR,
-            lincsNIter, lincsNProjOrder, lincsWarnAngle);
+            lincsNIter, lincslincsExpansionOrder, lincsWarnAngle);
 
     std::string pbcName;
     std::string algorithmName;
@@ -825,15 +655,17 @@ TEST_P(ConstraintsTest, TwoDisjointConstraints){
     checkCOMCoordinates(absoluteTolerance(0.0001), *testData);
     checkCOMVelocity(absoluteTolerance(0.0001), *testData);
 
+    checkVirialTensor(absoluteTolerance(0.0001), *testData);
+
 }
 
 TEST_P(ConstraintsTest, ThreeSequentialConstraints){
 
-    std::string       title         = "three atoms, connected longitudinally (e.g. CH2)";
-    int               nAtom         = 3;
-    std::vector<real> masses        = {1.0, 12.0, 16.0 };
-    std::vector<int>  constraints   = {0, 0, 1, 1, 1, 2};
-    std::vector<real> constraintsR0 = {0.1, 0.2};
+    std::string       title            = "three atoms, connected longitudinally (e.g. CH2)";
+    int               numAtoms         = 3;
+    std::vector<real> masses           = {1.0, 12.0, 16.0 };
+    std::vector<int>  constraints      = {0, 0, 1, 1, 1, 2};
+    std::vector<real> constraintsR0    = {0.1, 0.2};
 
     real              oneTenthOverSqrtTwo    = 0.1_real / std::sqrt(2.0_real);
     real              twoTenthsOverSqrtThree = 0.2_real / std::sqrt(3.0_real);
@@ -850,24 +682,26 @@ TEST_P(ConstraintsTest, ThreeSequentialConstraints){
                            { 0.0, 1.0, 0.0 },
                            { 0.0, 0.0, 1.0 }};
 
-    tensor            virialScaledRef = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+    tensor            virialScaledRef = {{ 4.14e-03, 4.14e-03, 3.31e-03},
+                                         { 4.14e-03, 4.14e-03, 3.31e-03},
+                                         { 3.31e-03, 3.31e-03, 3.31e-03}};
 
     real              shakeTolerance         = 0.0001;
     gmx_bool          shakeUseSOR            = false;
 
-    int               lincsNIter             = 1;
-    int               lincsNProjOrder        = 4;
-    real              lincsWarnAngle         = 30.0;
+    int               lincsNIter                      = 1;
+    int               lincslincsExpansionOrder        = 4;
+    real              lincsWarnAngle                  = 30.0;
 
     std::unique_ptr<ConstraintsTestData>   testData = std::make_unique<ConstraintsTestData>
-            (title, nAtom, masses,
+            (title, numAtoms, masses,
             constraints, constraintsR0,
-            false, virialScaledRef,
+            true, virialScaledRef,
             false, 0,
             real(0.0), real(0.001),
             x, xPrime, v,
             shakeTolerance, shakeUseSOR,
-            lincsNIter, lincsNProjOrder, lincsWarnAngle);
+            lincsNIter, lincslincsExpansionOrder, lincsWarnAngle);
 
     std::string pbcName;
     std::string algorithmName;
@@ -882,15 +716,17 @@ TEST_P(ConstraintsTest, ThreeSequentialConstraints){
     checkCOMCoordinates(absoluteTolerance(0.0001), *testData);
     checkCOMVelocity(absoluteTolerance(0.0001), *testData);
 
+    checkVirialTensor(absoluteTolerance(0.0001), *testData);
+
 }
 
 TEST_P(ConstraintsTest, ThreeConstraintsWithCentralAtom){
 
-    std::string       title         = "three atoms, connected to the central atom (e.g. CH3)";
-    int               nAtom         = 4;
-    std::vector<real> masses        = {12.0, 1.0, 1.0, 1.0 };
-    std::vector<int>  constraints   = {0, 0, 1, 0, 0, 2, 0, 0, 3};
-    std::vector<real> constraintsR0 = {0.1};
+    std::string       title            = "three atoms, connected to the central atom (e.g. CH3)";
+    int               numAtoms         = 4;
+    std::vector<real> masses           = {12.0, 1.0, 1.0, 1.0 };
+    std::vector<int>  constraints      = {0, 0, 1, 0, 0, 2, 0, 0, 3};
+    std::vector<real> constraintsR0    = {0.1};
 
 
     std::vector<RVec> x = {{ 0.00,  0.00,  0.00 },
@@ -908,24 +744,26 @@ TEST_P(ConstraintsTest, ThreeConstraintsWithCentralAtom){
                            { 1.0, 0.0, 0.0 },
                            { 1.0, 0.0, 0.0 }};
 
-    tensor            virialScaledRef = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+    tensor            virialScaledRef = {{7.14e-04, 0.00e+00, 0.00e+00},
+                                         {0.00e+00, 1.08e-03, 0.00e+00},
+                                         {0.00e+00, 0.00e+00, 1.15e-03}};
 
     real              shakeTolerance         = 0.0001;
     gmx_bool          shakeUseSOR            = false;
 
-    int               lincsNIter             = 1;
-    int               lincsNProjOrder        = 4;
-    real              lincsWarnAngle         = 30.0;
+    int               lincsNIter                      = 1;
+    int               lincslincsExpansionOrder        = 4;
+    real              lincsWarnAngle                  = 30.0;
 
     std::unique_ptr<ConstraintsTestData>   testData = std::make_unique<ConstraintsTestData>
-            (title, nAtom, masses,
+            (title, numAtoms, masses,
             constraints, constraintsR0,
-            false, virialScaledRef,
+            true, virialScaledRef,
             false, 0,
             real(0.0), real(0.001),
             x, xPrime, v,
             shakeTolerance, shakeUseSOR,
-            lincsNIter, lincsNProjOrder, lincsWarnAngle);
+            lincsNIter, lincslincsExpansionOrder, lincsWarnAngle);
 
     std::string pbcName;
     std::string algorithmName;
@@ -940,15 +778,16 @@ TEST_P(ConstraintsTest, ThreeConstraintsWithCentralAtom){
     checkCOMCoordinates(absoluteTolerance(0.0001), *testData);
     checkCOMVelocity(absoluteTolerance(0.0001), *testData);
 
+    checkVirialTensor(absoluteTolerance(0.0001), *testData);
 }
 
 TEST_P(ConstraintsTest, FourSequentialConstraints){
 
-    std::string       title         = "four atoms, connected longitudinally";
-    int               nAtom         = 4;
-    std::vector<real> masses        = {0.5, 1.0/3.0, 0.25, 1.0};
-    std::vector<int>  constraints   = {0, 0, 1, 1, 1, 2, 2, 2, 3};
-    std::vector<real> constraintsR0 = {2.0, 1.0, 1.0};
+    std::string       title            = "four atoms, connected longitudinally";
+    int               numAtoms         = 4;
+    std::vector<real> masses           = {0.5, 1.0/3.0, 0.25, 1.0};
+    std::vector<int>  constraints      = {0, 0, 1, 1, 1, 2, 2, 2, 3};
+    std::vector<real> constraintsR0    = {2.0, 1.0, 1.0};
 
 
     std::vector<RVec> x = {{  2.50, -3.10, 15.70 },
@@ -966,24 +805,26 @@ TEST_P(ConstraintsTest, FourSequentialConstraints){
                            { 0.0, 0.0, -4.0 },
                            { 0.0, 0.0, -1.0 }};
 
-    tensor            virialScaledRef = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+    tensor            virialScaledRef = {{ 1.15e-01, -4.20e-03,  2.12e-02},
+                                         {-4.20e-03,  1.70e-04, -6.41e-04},
+                                         { 2.12e-02, -6.41e-04,  5.45e-03}};
 
     real              shakeTolerance         = 0.0001;
     gmx_bool          shakeUseSOR            = false;
 
-    int               lincsNIter             = 4;
-    int               lincsNProjOrder        = 8;
-    real              lincsWarnAngle         = 30.0;
+    int               lincsNIter                      = 4;
+    int               lincslincsExpansionOrder        = 8;
+    real              lincsWarnAngle                  = 30.0;
 
     std::unique_ptr<ConstraintsTestData>   testData = std::make_unique<ConstraintsTestData>
-            (title, nAtom, masses,
+            (title, numAtoms, masses,
             constraints, constraintsR0,
-            false, virialScaledRef,
+            true, virialScaledRef,
             false, 0,
             real(0.0), real(0.001),
             x, xPrime, v,
             shakeTolerance, shakeUseSOR,
-            lincsNIter, lincsNProjOrder, lincsWarnAngle);
+            lincsNIter, lincslincsExpansionOrder, lincsWarnAngle);
 
     std::string pbcName;
     std::string algorithmName;
@@ -998,15 +839,17 @@ TEST_P(ConstraintsTest, FourSequentialConstraints){
     checkCOMCoordinates(absoluteTolerance(0.0001), *testData);
     checkCOMVelocity(absoluteTolerance(0.0001), *testData);
 
+    checkVirialTensor(absoluteTolerance(0.01), *testData);
+
 }
 
 TEST_P(ConstraintsTest, TriangleOfConstraints){
 
-    std::string       title         = "basic triangle (tree atoms, connected to each other)";
-    int               nAtom         = 3;
-    std::vector<real> masses        = {1.0, 1.0, 1.0};
-    std::vector<int>  constraints   = {0, 0, 1, 2, 0, 2, 1, 1, 2};
-    std::vector<real> constraintsR0 = {0.1, 0.1, 0.1};
+    std::string       title            = "basic triangle (tree atoms, connected to each other)";
+    int               numAtoms         = 3;
+    std::vector<real> masses           = {1.0, 1.0, 1.0};
+    std::vector<int>  constraints      = {0, 0, 1, 2, 0, 2, 1, 1, 2};
+    std::vector<real> constraintsR0    = {0.1, 0.1, 0.1};
 
     real              oneTenthOverSqrtTwo    = 0.1_real / std::sqrt(2.0_real);
 
@@ -1022,24 +865,26 @@ TEST_P(ConstraintsTest, TriangleOfConstraints){
                            { -2.0, -2.0, -2.0 },
                            {  1.0,  1.0,  1.0 }};
 
-    tensor            virialScaledRef = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+    tensor            virialScaledRef = {{ 6.00e-04, -1.61e-03,  1.01e-03},
+                                         {-1.61e-03,  2.53e-03, -9.25e-04},
+                                         { 1.01e-03, -9.25e-04, -8.05e-05}};
 
     real              shakeTolerance         = 0.0001;
     gmx_bool          shakeUseSOR            = false;
 
-    int               lincsNIter             = 1;
-    int               lincsNProjOrder        = 4;
-    real              lincsWarnAngle         = 30.0;
+    int               lincsNIter                      = 1;
+    int               lincslincsExpansionOrder        = 4;
+    real              lincsWarnAngle                  = 30.0;
 
     std::unique_ptr<ConstraintsTestData>   testData = std::make_unique<ConstraintsTestData>
-            (title, nAtom, masses,
+            (title, numAtoms, masses,
             constraints, constraintsR0,
-            false, virialScaledRef,
+            true, virialScaledRef,
             false, 0,
             real(0.0), real(0.001),
             x, xPrime, v,
             shakeTolerance, shakeUseSOR,
-            lincsNIter, lincsNProjOrder, lincsWarnAngle);
+            lincsNIter, lincslincsExpansionOrder, lincsWarnAngle);
 
     std::string pbcName;
     std::string algorithmName;
@@ -1054,12 +899,15 @@ TEST_P(ConstraintsTest, TriangleOfConstraints){
     checkCOMCoordinates(absoluteTolerance(0.0001), *testData);
     checkCOMVelocity(absoluteTolerance(0.0001), *testData);
 
+    checkVirialTensor(absoluteTolerance(0.00001), *testData);
+
 }
 
 
 INSTANTIATE_TEST_CASE_P(WithParameters, ConstraintsTest,
                             ::testing::Combine(::testing::Values("PBCNone", "PBCXYZ"),
-                                                   ::testing::Values("SHAKE", "LINCS")));
+                                                   ::testing::ValuesIn(getAlgorithmsNames())));
 
+} // namespace
 } // namespace test
 } // namespace gmx

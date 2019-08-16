@@ -142,6 +142,32 @@ TEST_F(MatrixTest, staticMultiDimArrayExtent)
     EXPECT_EQ(matrix_.extent(1), 3);
 }
 
+TEST_F(MatrixTest, determinantWorks)
+{
+    const Matrix3x3 mat = {{1.0, 2.0, 3.0,
+                            0.0, 1.0, 4.0,
+                            5.0, 6.0, 0.0}};
+    EXPECT_EQ(determinant(mat), 1);
+}
+
+TEST_F(MatrixTest, noninvertableDeterminantIsZero)
+{
+    const Matrix3x3 mat = {{1, 0, 0, 0, 1, 0, 0, 0, 0}};
+    EXPECT_EQ(determinant(mat), 0);
+}
+
+TEST_F(MatrixTest, determinantOfDiagonalMatrix)
+{
+    const Matrix3x3 mat = {{2, 0, 0, 0, 3, 0, 0, 0, 4}};
+    EXPECT_EQ(determinant(mat), 24);
+}
+
+TEST_F(MatrixTest, traceWorks)
+{
+    const Matrix3x3 mat = {{1.5, 9, 9, 9, 2.0, 9, 9, 9, 0.25}};
+    EXPECT_EQ(trace(mat), 3.75);
+}
+
 } // namespace
 
 } // namespace test

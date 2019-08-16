@@ -27,7 +27,8 @@ gcc-5 gpuhw=nvidia cuda-9.0 cmake-3.9.6 mpi npme=1 nranks=2 openmp
 # Test newest gcc supported by newest CUDA at time of release
 # Test thread-MPI with CUDA
 # Test SIMD implementation of pair search for GPU code-path
-gcc-7 gpuhw=nvidia gpu_id=1 cuda-10.0 thread-mpi openmp cmake-3.10.0 release-with-assert simd=avx2_256
+# Test hwloc-2 support
+gcc-8 gpuhw=nvidia gpu_id=1 cuda-10.1 thread-mpi openmp cmake-3.10.0 release-with-assert simd=avx2_256 hwloc libhwloc-2.0.4
 
 # Test with libcxx
 # Test with ThreadSanitizer + OpenMP + SIMD
@@ -63,26 +64,25 @@ msvc-2017 openmp release-with-assert
 # Test MKL
 # Test without any MPI
 # Test on CentOS (because cmake-3.9.6 is available there)
-# Test hwloc support
-icc-19 no-thread-mpi double openmp mkl cmake-3.9.6 simd=none release hwloc
+icc-19 no-thread-mpi double openmp mkl cmake-3.9.6 simd=none release
 
 # Test oldest supported cmake
 # Test NVIDIA OpenCL
 # Test external clFFT (for build speed)
 # Test MPI + OpenCL
 # Test AVX2_256 SIMD
-gcc-6 openmp gpuhw=nvidia opencl-1.2 clFFT-2.14 cmake-3.9.6 mpi simd=avx2_256
+# Test without MPI_IN_PLACE
+gcc-6 openmp gpuhw=nvidia opencl-1.2 clFFT-2.14 cmake-3.9.6 mpi no-mpiinplace simd=avx2_256
 
 # Test AMD OpenCL
 # Test external clFFT (for build speed)
-# Test AVX_128_FMA SIMD
 # Test newest gcc at time of release
-gcc-8 openmp simd=avx2_256 gpuhw=amd opencl-1.2 clFFT-2.14 buildfftw
+# Test hwloc-1 support
+gcc-8 openmp simd=avx2_256 gpuhw=amd opencl-1.2 clFFT-2.14 hwloc libhwloc-1.11.2
 
 # TODO
 # Test newest cmake at time of release
 # Add OpenMP support to ASAN build (but libomp.so in clang-4 reports leaks, so might need a suitable build or suppression)
-# Test hwloc-2 support
 # Test newest supported LTS Ubuntu
 # Test AVX-512 when hardware is available
 # Add tests that trigger make ocl-kernel

@@ -34,7 +34,7 @@
  */
 /*! \libinternal
  * \file
- * \brief Declares special case of 3x3 matrix frequently used.
+ * \brief Declares special case of 3x3 matrix frequently used, and associated functions.
  *
  * \author Christian Blau <cblau@gwdg.de>
  * \ingroup module_math
@@ -61,8 +61,25 @@ using BasicMatrix3x3 = MultiDimArray<std::array<ElementType, 3*3>, extents <3, 3
 /*! \brief Three-by-three real number matrix.
  * \note will replace the C-style real[3][3] "matrix"
  */
-using Matrix3x3 = BasicMatrix3x3<real>;
+using Matrix3x3          = BasicMatrix3x3<real>;
+//! Convenience alias for a matrix view
+using Matrix3x3Span      = Matrix3x3::view_type;
+//! Convenience alias for a const matrix view
+using Matrix3x3ConstSpan = Matrix3x3::const_view_type;
 
+//! Determinant of a 3x3 matrix
+constexpr real determinant(Matrix3x3ConstSpan matrix)
+{
+    return (  matrix(0, 0)*(matrix(1, 1)*matrix(2, 2)-matrix(2, 1)*matrix(1, 2))
+              -matrix(1, 0)*(matrix(0, 1)*matrix(2, 2)-matrix(2, 1)*matrix(0, 2))
+              +matrix(2, 0)*(matrix(0, 1)*matrix(1, 2)-matrix(1, 1)*matrix(0, 2)));
+}
+
+//! Calculates the trace of a 3x3 matrix view
+constexpr real trace(Matrix3x3ConstSpan matrixView)
+{
+    return matrixView(0, 0) + matrixView(1, 1) + matrixView(2, 2);
+}
 } // namespace gmx
 
 #endif

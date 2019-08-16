@@ -60,18 +60,13 @@ set(EXPECTED_DOXYGEN_VERSION 1.8.5)
 
 set(EXPECTED_SPHINX_VERSION 1.6.1)
 
-if (DEFINED PYTHON_EXECUTABLE)
-    # Keep quiet on subsequent runs of cmake
-    set(PythonInterp_FIND_QUIETLY ON)
+# By default, suppress output after first configuration.
+if(SPHINX_ALREADY_SEARCHED)
+    set(Sphinx_FIND_QUIETLY ON)
 endif()
-find_package(PythonInterp 2.7)
-
-
-if (NOT ${PYTHON_VERSION_MAJOR} EQUAL 3)
-    find_package(Sphinx ${EXPECTED_SPHINX_VERSION} QUIET COMPONENTS pygments)
-else()
-    MESSAGE(STATUS "Can not build documentation with Python 3")
-endif()
+find_package(Sphinx ${EXPECTED_SPHINX_VERSION} COMPONENTS pygments)
+set(SPHINX_ALREADY_SEARCHED TRUE CACHE BOOL "True if a search for Sphinx has already been done")
+mark_as_advanced(SPHINX_ALREADY_SEARCHED)
 
 # Even if we aren't going to make the full webpage, set up to put all
 # the documentation output in the same place, for convenience
@@ -113,10 +108,7 @@ elseif (BUILD_IS_INSOURCE)
     set(MANUAL_BUILD_NOT_POSSIBLE_REASON "the build is in-source")
 else()
     include(manual/UseLATEX.cmake)
-    if(${PYTHON_VERSION_MAJOR} EQUAL 3)
-        set(MANUAL_BUILD_IS_POSSIBLE OFF)
-        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "We can not build the documentation when using python3")
-    elseif(NOT SPHINX_FOUND)
+    if(NOT SPHINX_FOUND)
         set(MANUAL_BUILD_IS_POSSIBLE OFF)
         set(MANUAL_BUILD_NOT_POSSIBLE_REASON "Sphinx has not been found and is needed to create the LaTex input files")
     elseif(NOT PDFLATEX_COMPILER)
@@ -570,7 +562,7 @@ if (SPHINX_FOUND)
         DEPENDS sphinx-programs
         DEPENDS sphinx-input
         DEPENDS sphinx-image-conversion
-        DEPENDS manual 
+        DEPENDS manual
         COMMAND
             ${CMAKE_COMMAND} -E make_directory ${SPHINX_INPUT_DIR}/_static
         COMMAND
@@ -647,7 +639,7 @@ set(HTML_BUILD_NOT_POSSIBLE_REASON)
 set(HTML_BUILD_WARNINGS)
 
 # Next, turn it off if any of the preconditions are unsatisified
-if (NOT PYTHON_EXECUTABLE)
+if (NOT PythonInterp_FOUND)
     set(HTML_BUILD_IS_POSSIBLE OFF)
     set(HTML_BUILD_NOT_POSSIBLE_REASON "Python is required")
 elseif (NOT SPHINX_FOUND)

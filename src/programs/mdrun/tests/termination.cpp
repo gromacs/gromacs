@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,12 @@
  * \brief
  * Tests for the mdrun termination functionality
  *
+ * \todo This approach is not very elegant, but "stuff doesn't
+ * segfault or give a fatal error" is a useful result. We can improve
+ * it when we can mock out more do_md() functionality. Before that,
+ * we'd probably prefer not to run this test case in per-patchset
+ * verification, but this is the best we can do for now.
+ *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun_integration_tests
  */
@@ -44,6 +50,11 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/utility/path.h"
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textreader.h"
+
+#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
 #include "moduletest.h"
@@ -55,43 +66,271 @@ namespace test
 {
 
 //! Build a simple .mdp file
-static void organizeMdpFile(SimulationRunner *runner)
+static void organizeMdpFile(SimulationRunner *runner,
+                            int               nsteps = 2)
 {
     // Make sure -maxh has a chance to propagate
-    runner->useStringAsMdpFile("nsteps = 100\n"
-                               "tcoupl = v-rescale\n"
-                               "tc-grps = System\n"
-                               "tau-t = 1\n"
-                               "ref-t = 298\n");
+    runner->useStringAsMdpFile(formatString("nsteps = %d\n"
+                                            "tcoupl = v-rescale\n"
+                                            "tc-grps = System\n"
+                                            "tau-t = 1\n"
+                                            "ref-t = 298\n",
+                                            nsteps));
 }
 
 //! Convenience typedef
 typedef MdrunTestFixture MdrunTerminationTest;
 
-TEST_F(MdrunTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts)
+TEST_F(MdrunTerminationTest, CheckpointRestartAppendsByDefault)
 {
-    CommandLine       mdrunCaller;
-    mdrunCaller.append("mdrun");
-    TerminationHelper helper(&fileManager_, &mdrunCaller, &runner_);
+    runner_.cptFileName_ = fileManager_.getTemporaryFilePath(".cpt");
 
+    runner_.useTopGroAndNdxFromDatabase("spc2");
     organizeMdpFile(&runner_);
     EXPECT_EQ(0, runner_.callGrompp());
 
-    helper.runFirstMdrun(runner_.cptFileName_);
-    helper.runSecondMdrun();
+    SCOPED_TRACE("Running the first simulation part");
+    {
+        CommandLine firstPart;
+        firstPart.append("mdrun");
+        firstPart.addOption("-cpo", runner_.cptFileName_);
+        ASSERT_EQ(0, runner_.callMdrun(firstPart));
+        ASSERT_TRUE(File::exists(runner_.cptFileName_, File::returnFalseOnError)) <<
+        runner_.cptFileName_ << " was not found and should be";
+    }
+    SCOPED_TRACE("Running the second simulation part with default appending behavior");
+    {
+        runner_.changeTprNsteps(4);
+
+        CommandLine secondPart;
+        secondPart.append("mdrun");
+        secondPart.addOption("-cpi", runner_.cptFileName_);
+        ASSERT_EQ(0, runner_.callMdrun(secondPart));
+
+        auto logFileContents = TextReader::readFileToString(runner_.logFileName_);
+        EXPECT_NE(std::string::npos, logFileContents.find("Restarting from checkpoint, appending to previous log file")) << "appending was not detected";
+    }
 }
 
-TEST_F(MdrunTerminationTest, CheckpointRestartWorksWithNoAppend)
+TEST_F(MdrunTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts)
 {
-    CommandLine       mdrunCaller;
-    mdrunCaller.append("mdrun");
-    TerminationHelper helper(&fileManager_, &mdrunCaller, &runner_);
+    runner_.cptFileName_ = fileManager_.getTemporaryFilePath(".cpt");
 
+    runner_.useTopGroAndNdxFromDatabase("spc2");
+    organizeMdpFile(&runner_, 100);
+    EXPECT_EQ(0, runner_.callGrompp());
+
+    SCOPED_TRACE("Running the first simulation part with -maxh");
+    {
+        CommandLine firstPart;
+        firstPart.append("mdrun");
+        firstPart.addOption("-cpo", runner_.cptFileName_);
+        // Ensure maxh will trigger the halt, and that the signal will
+        // have time to be propagated.
+        //
+        // TODO It would be nicer to set nstlist in the .mdp file, but
+        // then it is not a command.
+        firstPart.addOption("-maxh", 1e-7);
+        firstPart.addOption("-nstlist", 1);
+        ASSERT_EQ(0, runner_.callMdrun(firstPart));
+        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError)) <<
+        runner_.cptFileName_ << " was not found";
+    }
+
+    SCOPED_TRACE("Running the second simulation part");
+    {
+        runner_.changeTprNsteps(102);
+
+        CommandLine secondPart;
+        secondPart.append("mdrun");
+        secondPart.addOption("-cpi", runner_.cptFileName_);
+        ASSERT_EQ(0, runner_.callMdrun(secondPart));
+
+        auto logFileContents = TextReader::readFileToString(runner_.logFileName_);
+        EXPECT_NE(std::string::npos, logFileContents.find("Writing checkpoint, step 102")) << "completion of restarted simulation was not detected";
+    }
+}
+
+TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterAppend)
+{
+    runner_.cptFileName_ = fileManager_.getTemporaryFilePath(".cpt");
+
+    runner_.useTopGroAndNdxFromDatabase("spc2");
     organizeMdpFile(&runner_);
     EXPECT_EQ(0, runner_.callGrompp());
 
-    helper.runFirstMdrun(runner_.cptFileName_);
-    helper.runSecondMdrunWithNoAppend();
+    SCOPED_TRACE("Running the first simulation part");
+    {
+        CommandLine firstPart;
+        firstPart.append("mdrun");
+        firstPart.addOption("-cpo", runner_.cptFileName_);
+        ASSERT_EQ(0, runner_.callMdrun(firstPart));
+        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError)) <<
+        runner_.cptFileName_ << " was not found";
+    }
+
+    SCOPED_TRACE("Running the second simulation part with -noappend");
+    {
+        runner_.changeTprNsteps(4);
+
+        CommandLine secondPart;
+        secondPart.append("mdrun");
+        secondPart.addOption("-cpi", runner_.cptFileName_);
+        secondPart.addOption("-cpo", runner_.cptFileName_);
+        secondPart.append("-noappend");
+        ASSERT_EQ(0, runner_.callMdrun(secondPart));
+
+        auto expectedLogFileName = fileManager_.getTemporaryFilePath(".part0002.log");
+        ASSERT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError)) <<
+        expectedLogFileName << " was not found";
+        auto expectedEdrFileName = fileManager_.getTemporaryFilePath(".part0002.edr");
+        ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError)) <<
+        expectedEdrFileName << " was not found";
+    }
+
+    SCOPED_TRACE("Running the third simulation part with -append, which will fail");
+    runner_.logFileName_ = fileManager_.getTemporaryFilePath(".part0002.log");
+    runner_.changeTprNsteps(6);
+
+    {
+        CommandLine thirdPart;
+        thirdPart.append("mdrun");
+        thirdPart.addOption("-cpi", runner_.cptFileName_);
+        thirdPart.addOption("-cpo", runner_.cptFileName_);
+        thirdPart.append("-append");
+        EXPECT_THROW_GMX(runner_.callMdrun(thirdPart), InconsistentInputError);
+    }
+    SCOPED_TRACE("Running the third simulation part with -noappend");
+    {
+        CommandLine thirdPart;
+        thirdPart.append("mdrun");
+        thirdPart.addOption("-cpi", runner_.cptFileName_);
+        thirdPart.addOption("-cpo", runner_.cptFileName_);
+        thirdPart.append("-noappend");
+        runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".part0003.edr");
+        ASSERT_EQ(0, runner_.callMdrun(thirdPart));
+
+        auto expectedLogFileName = fileManager_.getTemporaryFilePath(".part0003.log");
+        EXPECT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError)) <<
+        expectedLogFileName << " was not found";
+        auto expectedEdrFileName = fileManager_.getTemporaryFilePath(".part0003.edr");
+        ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError)) <<
+        expectedEdrFileName << " was not found";
+    }
+    SCOPED_TRACE("Running the fourth simulation part with default appending");
+    runner_.changeTprNsteps(8);
+    {
+        CommandLine fourthPart;
+        fourthPart.append("mdrun");
+        fourthPart.addOption("-cpi", runner_.cptFileName_);
+        fourthPart.addOption("-cpo", runner_.cptFileName_);
+        // TODO this is necessary, but ought not be. Is this the issue in Redmine #2804?
+        fourthPart.append("-noappend");
+        runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".part0004.edr");
+        runner_.logFileName_ = fileManager_.getTemporaryFilePath(".part0004.log");
+        ASSERT_EQ(0, runner_.callMdrun(fourthPart));
+
+        auto expectedLogFileName = fileManager_.getTemporaryFilePath(".part0004.log");
+        ASSERT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError)) <<
+        expectedLogFileName << " was not found";
+        auto expectedEdrFileName = fileManager_.getTemporaryFilePath(".part0004.edr");
+        ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError)) <<
+        expectedEdrFileName << " was not found";
+    }
+    SCOPED_TRACE("Running the fifth simulation part with no extra steps");
+    {
+        CommandLine fifthPart;
+        fifthPart.append("mdrun");
+        fifthPart.addOption("-cpi", runner_.cptFileName_);
+        fifthPart.addOption("-cpo", runner_.cptFileName_);
+        // TODO this is necessary, but ought not be. Is this the issue in Redmine #2804?
+        fifthPart.append("-noappend");
+        runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".part0005.edr");
+        runner_.logFileName_ = fileManager_.getTemporaryFilePath(".part0005.log");
+        ASSERT_EQ(0, runner_.callMdrun(fifthPart));
+
+        auto expectedLogFileName = fileManager_.getTemporaryFilePath(".part0005.log");
+        ASSERT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError)) <<
+        expectedLogFileName << " was not found";
+        auto expectedEdrFileName = fileManager_.getTemporaryFilePath(".part0005.edr");
+        ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError)) <<
+        expectedEdrFileName << " was not found";
+    }
+}
+
+TEST_F(MdrunTerminationTest, CheckpointRestartWorksEvenWithMissingCheckpointFile)
+{
+    runner_.cptFileName_ = fileManager_.getTemporaryFilePath(".cpt");
+
+    runner_.useTopGroAndNdxFromDatabase("spc2");
+    organizeMdpFile(&runner_);
+    EXPECT_EQ(0, runner_.callGrompp());
+
+    SCOPED_TRACE("Running the first simulation part");
+    {
+        CommandLine firstPart;
+        firstPart.append("mdrun");
+        firstPart.addOption("-cpo", runner_.cptFileName_);
+        ASSERT_EQ(0, runner_.callMdrun(firstPart));
+        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError)) <<
+        runner_.cptFileName_ << " was not found";
+    }
+
+    SCOPED_TRACE("Running the second simulation part after deleting the checkpoint file");
+    {
+        runner_.changeTprNsteps(4);
+
+        CommandLine secondPart;
+        secondPart.append("mdrun");
+        secondPart.addOption("-cpi", runner_.cptFileName_);
+        secondPart.addOption("-cpo", runner_.cptFileName_);
+
+        // Remove the checkpoint, so technically this can no longer be
+        // a restart. But it starts again from the beginning anyway.
+        //
+        // TODO what do we want the behaviour to be?
+        std::remove(runner_.cptFileName_.c_str());
+
+        ASSERT_EQ(0, runner_.callMdrun(secondPart));
+        auto logFileContents = TextReader::readFileToString(runner_.logFileName_);
+        EXPECT_EQ(std::string::npos, logFileContents.find("Restarting from checkpoint, appending to previous log file")) << "appending was not detected";
+    }
+}
+
+TEST_F(MdrunTerminationTest, CheckpointRestartWorksEvenWithAppendAndMissingCheckpointFile)
+{
+    runner_.cptFileName_ = fileManager_.getTemporaryFilePath(".cpt");
+
+    runner_.useTopGroAndNdxFromDatabase("spc2");
+    organizeMdpFile(&runner_);
+    EXPECT_EQ(0, runner_.callGrompp());
+
+    SCOPED_TRACE("Running the first simulation part");
+    {
+        CommandLine firstPart;
+        firstPart.append("mdrun");
+        firstPart.addOption("-cpo", runner_.cptFileName_);
+        ASSERT_EQ(0, runner_.callMdrun(firstPart));
+        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError)) <<
+        runner_.cptFileName_ << " was not found";
+    }
+
+    SCOPED_TRACE("Running the second simulation part with -append after deleting the checkpoint file");
+    {
+        runner_.changeTprNsteps(4);
+
+        CommandLine secondPart;
+        secondPart.append("mdrun");
+        secondPart.addOption("-cpi", runner_.cptFileName_);
+        secondPart.addOption("-cpo", runner_.cptFileName_);
+        secondPart.append("-append");
+
+        // Remove the checkpoint, so this can no longer be a
+        // restart.
+        std::remove(runner_.cptFileName_.c_str());
+
+        EXPECT_THROW_GMX(runner_.callMdrun(secondPart), InconsistentInputError);
+    }
 }
 
 }  // namespace test

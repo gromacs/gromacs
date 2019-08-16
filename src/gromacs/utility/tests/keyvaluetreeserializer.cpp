@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,12 @@
 namespace
 {
 
+//! Dummy function to raise assert for use of unimplemented function.
+void raiseAssert()
+{
+    GMX_RELEASE_ASSERT(false, "Unimplemented function");
+}
+
 class RefDataSerializer : public gmx::ISerializer
 {
     public:
@@ -66,9 +72,21 @@ class RefDataSerializer : public gmx::ISerializer
         {
             checker_.checkUChar(*value, nullptr);
         }
+        void doChar(char * /* value */) override
+        {
+            raiseAssert();
+        }
+        void doUShort(unsigned short * /* value */) override
+        {
+            raiseAssert();
+        }
         void doInt(int *value) override
         {
             checker_.checkInteger(*value, nullptr);
+        }
+        void doInt32(int32_t *value) override
+        {
+            checker_.checkInt32(*value, nullptr);
         }
         void doInt64(int64_t *value) override
         {
@@ -85,6 +103,18 @@ class RefDataSerializer : public gmx::ISerializer
         void doString(std::string *value) override
         {
             checker_.checkString(*value, nullptr);
+        }
+        void doReal(real * /* value */ ) override
+        {
+            raiseAssert();
+        }
+        void doIvec(ivec * /* value */) override
+        {
+            raiseAssert();
+        }
+        void doRvec(rvec * /* value */) override
+        {
+            raiseAssert();
         }
 
     private:
@@ -106,7 +136,7 @@ class KeyValueTreeSerializerTest : public ::testing::Test
             }
             std::vector<char>                 buffer = serializeTree(input);
             {
-                gmx::InMemoryDeserializer     deserializer(buffer);
+                gmx::InMemoryDeserializer     deserializer(buffer, false);
                 gmx::KeyValueTreeObject       output
                     = gmx::deserializeKeyValueTree(&deserializer);
                 checker.checkKeyValueTreeObject(output, "Input");
@@ -132,6 +162,8 @@ TEST_F(KeyValueTreeSerializerTest, EmptyTree)
 TEST_F(KeyValueTreeSerializerTest, SimpleObject)
 {
     builder_.rootObject().addValue<int>("foo", 1);
+    builder_.rootObject().addValue<int32_t>("foo32", 1);
+    builder_.rootObject().addValue<int64_t>("foo64", 1);
     builder_.rootObject().addValue<std::string>("bar", "a");
     builder_.rootObject().addValue<float>("f", 1.5);
     builder_.rootObject().addValue<double>("d", 2.5);

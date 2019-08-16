@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -161,6 +161,50 @@ TEST(StringUtilityTest, SplitAndTrimDelimitedString)
     EXPECT_THAT(splitAndTrimDelimitedString(" foo  ;  bar ; ", ';'), ElementsAre("foo", "bar", ""));
     EXPECT_THAT(splitAndTrimDelimitedString(" ;  foo\n ;  bar ;  ", ';'), ElementsAre("", "foo", "bar", ""));
     EXPECT_THAT(splitAndTrimDelimitedString(" foo  ; ; \tbar", ';'), ElementsAre("foo", "", "bar"));
+}
+
+TEST(StringUtilityTest, CanCompareCaseInsensitive)
+{
+    EXPECT_TRUE(equalCaseInsensitive("foo", "foo"));
+    EXPECT_FALSE(equalCaseInsensitive("foo", "bar"));
+    EXPECT_TRUE(equalCaseInsensitive("foo", "FOO"));
+    EXPECT_FALSE(equalCaseInsensitive("foo", "foobar"));
+    EXPECT_FALSE(equalCaseInsensitive("foobar", "foo"));
+}
+
+/*! \brief
+ * Helper to test that string comparison works with switched input positions.
+ *
+ * \param[in] foo First string to check.
+ * \param[in] bar Second string to check.
+ * \param[in] length Max comparison length to use.
+ * \param[in] expectedResult If we expect the result be a match between the strings or not.
+ */
+void checkEqualCaseInsensitive(const std::string &foo,
+                               const std::string &bar,
+                               int                length,
+                               bool               expectedResult)
+{
+    EXPECT_EQ(equalCaseInsensitive(foo, bar, length), expectedResult);
+    EXPECT_EQ(equalCaseInsensitive(bar, foo, length), expectedResult);
+}
+
+TEST(StringUtilityTest, CanCompareCaseInsensitiveInLength)
+{
+    checkEqualCaseInsensitive("foo", "bar", 0, true);
+    checkEqualCaseInsensitive("foo", "foo", 3, true);
+    checkEqualCaseInsensitive("foo", "bar", 3, false);
+    checkEqualCaseInsensitive("foo", "FOO", 3, true);
+    checkEqualCaseInsensitive("foo", "foobar", 3, true);
+    checkEqualCaseInsensitive("foo", "foobar", 5, false);
+    checkEqualCaseInsensitive("foo", "foobar", 6, false);
+    checkEqualCaseInsensitive("foo", "FooBAR", 3, true);
+    checkEqualCaseInsensitive("foo", "FooBAR", 5, false);
+    checkEqualCaseInsensitive("foo", "FooBAR", 6, false);
+    checkEqualCaseInsensitive("fooo", "foo", 3, true);
+    checkEqualCaseInsensitive("fooo", "foo", 4, false);
+    checkEqualCaseInsensitive("foobar", "foo", 4, false);
+    checkEqualCaseInsensitive("foobar", "foob", 4, true);
 }
 
 /********************************************************************

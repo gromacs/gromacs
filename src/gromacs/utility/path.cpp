@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -265,79 +265,118 @@ std::string Path::join(const std::string &path1,
     return path1 + cDirSeparator + path2 + cDirSeparator + path3;
 }
 
-std::string Path::getParentPath(const std::string &path)
+namespace
 {
-    /* Expects that the path doesn't contain "." or "..". If used on a path for
-     * which this isn't guaranteed realpath needs to be called first. */
-    size_t pos = path.find_last_of(cDirSeparators);
+
+/*! \brief Returns a view of the parent path (ie. directory
+ * components) of \c input ie. up to but excluding the last directory
+ * separator (if one exists).
+ *
+ * \returns A view of the parent-path components, or empty if no
+ * directory separator exists. */
+compat::string_view getParentPathView(const std::string &input)
+{
+    auto   inputView = compat::to_string_view(input);
+    size_t pos       = inputView.find_last_of(cDirSeparators);
     if (pos == std::string::npos)
     {
-        return std::string();
+        return compat::string_view();
     }
-    return path.substr(0, pos);
+    return inputView.substr(0, pos);
 }
 
-std::pair<std::string, std::string> Path::getParentPathAndBasename(const std::string &path)
+/*! \brief Returns a view of the filename \c in input ie. after the
+ * last directory separator (if one exists).
+ *
+ * \returns A view of the filename component. */
+compat::string_view getFilenameView(const compat::string_view input)
 {
-    /* Expects that the path doesn't contain "." or "..". If used on a path for
-     * which this isn't guaranteed realpath needs to be called first. */
-    size_t pos = path.find_last_of(cDirSeparators);
+    size_t pos = input.find_last_of(cDirSeparators);
     if (pos == std::string::npos)
     {
-        return std::make_pair(std::string(), path);
+        return input;
     }
-    return std::make_pair(path.substr(0, pos), path.substr(pos+1));
+    return input.substr(pos+1);
 }
 
-std::string Path::getFilename(const std::string &path)
+/*! \brief Returns a view of the stem of the filename in \c input.
+ *
+ * The search for the extension separator takes place only within the
+ * filename component, ie. omitting any leading directories.
+ *
+ * \returns  The view of the filename stem, or empty if none exists. */
+compat::string_view getStemView(const std::string &input)
 {
-    size_t pos = path.find_last_of(cDirSeparators);
-    if (pos == std::string::npos)
+    auto   filenameView               = getFilenameView(input);
+    size_t extensionSeparatorPosition = filenameView.find_last_of('.');
+    // If no separator is found, the returned view is of the whole filename.
+    return filenameView.substr(0, extensionSeparatorPosition);
+}
+
+/*! \brief Returns a view of the file extension of \c input, including the dot.
+ *
+ * The search for the extension separator takes place only within the
+ * filename component, ie. omitting any leading directories.
+ *
+ * \returns  The view of the file extension, or empty if none exists. */
+compat::string_view getExtensionView(const compat::string_view input)
+{
+    auto   filenameView               = getFilenameView(input);
+    size_t extensionSeparatorPosition = filenameView.find_last_of('.');
+    if (extensionSeparatorPosition == compat::string_view::npos)
     {
-        return path;
+        // No separator was found
+        return compat::string_view();
     }
-    return path.substr(pos+1);
+    return filenameView.substr(extensionSeparatorPosition);
 }
 
-bool Path::hasExtension(const std::string &path)
+}   // namespace
+
+std::string Path::getParentPath(const std::string &input)
 {
-    return getFilename(path).find('.') != std::string::npos;
+    return compat::to_string(getParentPathView(input));
 }
 
-std::string Path::stripExtension(const std::string &path)
+std::string Path::getFilename(const std::string &input)
 {
-    size_t dirSeparatorPos = path.find_last_of(cDirSeparators);
-    size_t extPos          = path.find_last_of('.');
-    if (extPos == std::string::npos
-        || (dirSeparatorPos != std::string::npos && extPos < dirSeparatorPos))
-    {
-        return path;
-    }
-    return path.substr(0, extPos);
+    return to_string(getFilenameView(input));
+}
+
+bool Path::hasExtension(const std::string &input)
+{
+    // This could be implemented with getStemView, but that search is
+    // less efficient than just finding the first of possibly multiple
+    // separator characters.
+    return getFilenameView(input).find('.') != std::string::npos;
+}
+
+bool Path::extensionMatches(const compat::string_view input,
+                            const compat::string_view extension)
+{
+    auto extensionWithSeparator = getExtensionView(input);
+    return (!extensionWithSeparator.empty() &&
+            extensionWithSeparator.substr(1) == extension);
+}
+
+std::string Path::stripExtension(const std::string &input)
+{
+    auto   pathView   = getParentPathView(input);
+    // Make sure the returned string will have room for the directory
+    // separator between the parent path and the stem, but only where
+    // it is needed.
+    size_t pathLength = pathView.empty() ? 0 : pathView.length() + 1;
+    auto   stemView   = getStemView(input);
+    return std::string(std::begin(input),
+                       std::begin(input) + pathLength + stemView.length());
 }
 
 std::string Path::concatenateBeforeExtension(const std::string &input, const std::string &stringToAdd)
 {
-    std::string output;
-    size_t      dirSeparatorPosition = input.find_last_of(cDirSeparators);
-    size_t      extSeparatorPosition = input.find_last_of('.');
-    bool        havePath             = (dirSeparatorPosition != std::string::npos);
-    // Make sure that if there's an extension-separator character,
-    // that it follows the last path-separator character (if any),
-    // before we interpret it as an extension separator.
-    bool haveExtension = (extSeparatorPosition != std::string::npos &&
-                          ((!havePath ||
-                            (extSeparatorPosition > dirSeparatorPosition))));
-    if (!haveExtension)
-    {
-        output = input + stringToAdd;
-    }
-    else
-    {
-        output  = input.substr(0, extSeparatorPosition);
-        output += stringToAdd;
-        output += std::string(input, extSeparatorPosition);
-    }
+    std::string output = stripExtension(input);
+    output += stringToAdd;
+    auto        extensionView = getExtensionView(input);
+    output.append(std::begin(extensionView), std::end(extensionView));
     return output;
 }
 

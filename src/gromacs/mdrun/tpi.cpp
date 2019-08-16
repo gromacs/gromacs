@@ -71,8 +71,6 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdlib/ns.h"
-#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vsite.h"
@@ -97,7 +95,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "integrator.h"
+#include "simulator.h"
 
 //! Global max algorithm
 static void global_max(t_commrec *cr, int *n)
@@ -134,12 +132,11 @@ static void realloc_bins(double **bin, int *nbin, int nbin_new)
 namespace gmx
 {
 
+// TODO: Convert to use the nbnxm kernels by putting the system and the teset molecule on two separate search grids
 void
-Integrator::do_tpi()
+Simulator::do_tpi()
 {
     gmx_localtop_t          top;
-    gmx_groups_t           *groups;
-    gmx_enerdata_t         *enerd;
     PaddedVector<gmx::RVec> f {};
     real                    lambda, t, temp, beta, drmax, epot;
     double                  embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
@@ -147,7 +144,7 @@ Integrator::do_tpi()
     t_trxframe              rerun_fr;
     gmx_bool                bDispCorr, bCharge, bRFExcl, bNotLastFrame, bStateChanged, bNS;
     tensor                  force_vir, shake_vir, vir, pres;
-    int                     cg_tp, a_tp0, a_tp1, ngid, gid_tp, nener, e;
+    int                     a_tp0, a_tp1, ngid, gid_tp, nener, e;
     rvec                   *x_mol;
     rvec                    mu_tot, x_init, dx, x_tp;
     int                     nnodes, frame;
@@ -163,7 +160,6 @@ Integrator::do_tpi()
     real                   *mass_cavity = nullptr, mass_tot;
     int                     nbin;
     double                  invbinw, *bin, refvolshift, logV, bUlogV;
-    real                    prescorr, enercorr, dvdlcorr;
     gmx_bool                bEnergyOutOfBounds;
     const char             *tpid_leg[2] = {"direct", "reweighted"};
     auto                    mdatoms     = mdAtoms->mdatoms();
@@ -190,7 +186,7 @@ Integrator::do_tpi()
 
     gmx_mtop_generate_local_top(*top_global, &top, inputrec->efep != efepNO);
 
-    groups = &top_global->groups;
+    SimulationGroups *groups = &top_global->groups;
 
     bCavity = (inputrec->eI == eiTPIC);
     if (bCavity)
@@ -267,8 +263,6 @@ Integrator::do_tpi()
     atoms2md(top_global, inputrec, -1, nullptr, top_global->natoms, mdAtoms);
     update_mdatoms(mdatoms, inputrec->fepvals->init_lambda);
 
-    snew(enerd, 1);
-    init_enerdata(groups->grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
     f.resizeWithPadding(top_global->natoms);
 
     /* Print to log file  */
@@ -277,12 +271,12 @@ Integrator::do_tpi()
     print_start(fplog, cr, walltime_accounting, "Test Particle Insertion");
 
     /* The last charge group is the group to be inserted */
-    cg_tp = top.cgs.nr - 1;
-    a_tp0 = top.cgs.index[cg_tp];
-    a_tp1 = top.cgs.index[cg_tp+1];
+    const t_atoms &atomsToInsert = top_global->moltype[top_global->molblock.back().type].atoms;
+    a_tp0 = top_global->natoms - atomsToInsert.nr;
+    a_tp1 = top_global->natoms;
     if (debug)
     {
-        fprintf(debug, "TPI cg %d, atoms %d-%d\n", cg_tp, a_tp0, a_tp1);
+        fprintf(debug, "TPI atoms %d-%d\n", a_tp0, a_tp1);
     }
 
     GMX_RELEASE_ASSERT(inputrec->rcoulomb <= inputrec->rlist && inputrec->rvdw <= inputrec->rlist, "Twin-range interactions are not supported with TPI");
@@ -302,6 +296,8 @@ Integrator::do_tpi()
     }
     bRFExcl = (bCharge && EEL_RF(fr->ic->eeltype));
 
+    // TODO: Calculate the center of geometry of the molecule to insert
+#if 0
     calc_cgcm(fplog, cg_tp, cg_tp+1, &(top.cgs), state_global->x.rvec_array(), fr->cg_cm);
     if (bCavity)
     {
@@ -319,6 +315,7 @@ Integrator::do_tpi()
             rvec_dec(x_mol[i], fr->cg_cm[cg_tp]);
         }
     }
+#endif
 
     if (fplog)
     {
@@ -351,8 +348,12 @@ Integrator::do_tpi()
         }
     }
 
-    ngid   = groups->grps[egcENER].nr;
+    ngid   = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
+    // TODO: Figure out which energy group to use
+#if 0
     gid_tp = GET_CGINFO_GID(fr->cginfo[cg_tp]);
+#endif
+    gid_tp = 0;
     nener  = 1 + ngid;
     if (bDispCorr)
     {
@@ -399,7 +400,7 @@ Integrator::do_tpi()
         for (i = 0; i < ngid; i++)
         {
             sprintf(str, "f. <U\\sVdW %s\\Ne\\S-\\betaU\\N>",
-                    *(groups->grpname[groups->grps[egcENER].nm_ind[i]]));
+                    *(groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput][i]]));
             leg[e++] = gmx_strdup(str);
         }
         if (bDispCorr)
@@ -412,7 +413,7 @@ Integrator::do_tpi()
             for (i = 0; i < ngid; i++)
             {
                 sprintf(str, "f. <U\\sCoul %s\\Ne\\S-\\betaU\\N>",
-                        *(groups->grpname[groups->grps[egcENER].nm_ind[i]]));
+                        *(groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput][i]]));
                 leg[e++] = gmx_strdup(str);
             }
             if (bRFExcl)
@@ -629,8 +630,11 @@ Integrator::do_tpi()
             clear_mat(vir);
             clear_mat(pres);
 
-            /* Set the charge group center of mass of the test particle */
+            /* Set the center of geometry mass of the test molecule */
+            // TODO: Compute and set the COG
+#if 0
             copy_rvec(x_init, fr->cg_cm[top.cgs.nr-1]);
+#endif
 
             /* Calc energy (no forces) on new positions.
              * Since we only need the intermolecular energy
@@ -647,8 +651,9 @@ Integrator::do_tpi()
             // might raise, then restore the old behaviour.
             std::fenv_t floatingPointEnvironment;
             std::feholdexcept(&floatingPointEnvironment);
-            do_force(fplog, cr, ms, inputrec, nullptr, nullptr,
-                     step, nrnb, wcycle, &top, &top_global->groups,
+            do_force(fplog, cr, ms, inputrec, nullptr, nullptr, imdSession,
+                     pull_work,
+                     step, nrnb, wcycle, &top,
                      state_global->box, state_global->x.arrayRefWithPadding(), &state_global->hist,
                      f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
                      state_global->lambda,
@@ -664,14 +669,21 @@ Integrator::do_tpi()
             bStateChanged = FALSE;
             bNS           = FALSE;
 
-            /* Calculate long range corrections to pressure and energy */
-            calc_dispcorr(inputrec, fr, state_global->box,
-                          lambda, pres, vir, &prescorr, &enercorr, &dvdlcorr);
-            /* figure out how to rearrange the next 4 lines MRS 8/4/2009 */
-            enerd->term[F_DISPCORR]  = enercorr;
-            enerd->term[F_EPOT]     += enercorr;
-            enerd->term[F_PRES]     += prescorr;
-            enerd->term[F_DVDL_VDW] += dvdlcorr;
+            if (fr->dispersionCorrection)
+            {
+                /* Calculate long range corrections to pressure and energy */
+                const DispersionCorrection::Correction correction =
+                    fr->dispersionCorrection->calculate(state_global->box, lambda);
+                /* figure out how to rearrange the next 4 lines MRS 8/4/2009 */
+                enerd->term[F_DISPCORR] = correction.energy;
+                enerd->term[F_EPOT]    += correction.energy;
+                enerd->term[F_PRES]    += correction.pressure;
+                enerd->term[F_DVDL]    += correction.dvdl;
+            }
+            else
+            {
+                enerd->term[F_DISPCORR]  = 0;
+            }
 
             epot               = enerd->term[F_EPOT];
             bEnergyOutOfBounds = FALSE;

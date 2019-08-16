@@ -59,7 +59,10 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
+#include "gromacs/nbnxm/gridset.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_gpu.h"
+#include "gromacs/nbnxm/pairlistsets.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -203,7 +206,7 @@ static int pick_ewald_kernel_type(bool                     bTwinCut)
 /*! Copies all parameters related to the cut-off from ic to nbp */
 static void set_cutoff_parameters(cu_nbparam_t              *nbp,
                                   const interaction_const_t *ic,
-                                  const NbnxnListParameters *listParams)
+                                  const PairlistParams      &listParams)
 {
     nbp->ewald_beta        = ic->ewaldcoeff_q;
     nbp->sh_ewald          = ic->sh_ewald;
@@ -212,9 +215,9 @@ static void set_cutoff_parameters(cu_nbparam_t              *nbp,
     nbp->c_rf              = ic->c_rf;
     nbp->rvdw_sq           = ic->rvdw * ic->rvdw;
     nbp->rcoulomb_sq       = ic->rcoulomb * ic->rcoulomb;
-    nbp->rlistOuter_sq     = listParams->rlistOuter * listParams->rlistOuter;
-    nbp->rlistInner_sq     = listParams->rlistInner * listParams->rlistInner;
-    nbp->useDynamicPruning = listParams->useDynamicPruning;
+    nbp->rlistOuter_sq     = listParams.rlistOuter * listParams.rlistOuter;
+    nbp->rlistInner_sq     = listParams.rlistInner * listParams.rlistInner;
+    nbp->useDynamicPruning = listParams.useDynamicPruning;
 
     nbp->sh_lj_ewald       = ic->sh_lj_ewald;
     nbp->ewaldcoeff_lj     = ic->ewaldcoeff_lj;
@@ -228,7 +231,7 @@ static void set_cutoff_parameters(cu_nbparam_t              *nbp,
 /*! Initializes the nonbonded parameter data structure. */
 static void init_nbparam(cu_nbparam_t                   *nbp,
                          const interaction_const_t      *ic,
-                         const NbnxnListParameters      *listParams,
+                         const PairlistParams           &listParams,
                          const nbnxn_atomdata_t::Params &nbatParams)
 {
     int         ntypes;
@@ -339,8 +342,7 @@ static void init_nbparam(cu_nbparam_t                   *nbp,
 /*! Re-generate the GPU Ewald force table, resets rlist, and update the
  *  electrostatic type switching to twin cut-off (or back) if needed. */
 void gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
-                                  const interaction_const_t   *ic,
-                                  const NbnxnListParameters   *listParams)
+                                  const interaction_const_t   *ic)
 {
     if (!nbv || !nbv->useGpu())
     {
@@ -348,7 +350,7 @@ void gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
     }
     cu_nbparam_t *nbp   = nbv->gpu_nbv->nbparam;
 
-    set_cutoff_parameters(nbp, ic, listParams);
+    set_cutoff_parameters(nbp, ic, nbv->pairlistSets().params());
 
     nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw);
 
@@ -405,7 +407,7 @@ static void init_timings(gmx_wallclock_gpu_nbnxn_t *t)
 /*! Initializes simulation constant data. */
 static void cuda_init_const(gmx_nbnxn_cuda_t               *nb,
                             const interaction_const_t      *ic,
-                            const NbnxnListParameters      *listParams,
+                            const PairlistParams           &listParams,
                             const nbnxn_atomdata_t::Params &nbatParams)
 {
     init_atomdata_first(nb->atdat, nbatParams.numTypes);
@@ -418,7 +420,7 @@ static void cuda_init_const(gmx_nbnxn_cuda_t               *nb,
 gmx_nbnxn_cuda_t *
 gpu_init(const gmx_device_info_t   *deviceInfo,
          const interaction_const_t *ic,
-         const NbnxnListParameters *listParams,
+         const PairlistParams      &listParams,
          const nbnxn_atomdata_t    *nbat,
          int                        /*rank*/,
          gmx_bool                   bLocalAndNonlocal)
@@ -493,6 +495,19 @@ gpu_init(const gmx_device_info_t   *deviceInfo,
     cuda_set_cacheconfig();
 
     cuda_init_const(nb, ic, listParams, nbat->params());
+
+    nb->natoms                   = 0;
+    nb->natoms_alloc             = 0;
+    nb->atomIndicesSize          = 0;
+    nb->atomIndicesSize_alloc    = 0;
+    nb->ncxy_na                  = 0;
+    nb->ncxy_na_alloc            = 0;
+    nb->ncxy_ind                 = 0;
+    nb->ncxy_ind_alloc           = 0;
+    nb->nfrvec                   = 0;
+    nb->nfrvec_alloc             = 0;
+    nb->ncell                    = 0;
+    nb->ncell_alloc              = 0;
 
     if (debug)
     {
@@ -855,6 +870,114 @@ rvec *gpu_get_fshift(gmx_nbnxn_gpu_t *nb)
     assert(nb);
 
     return reinterpret_cast<rvec *>(nb->atdat->fshift);
+}
+
+/* Initialization for X buffer operations on GPU. */
+/* TODO  Remove explicit pinning from host arrays from here and manage in a more natural way*/
+void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
+                                gmx_nbnxn_gpu_t                 *gpu_nbv)
+{
+    cudaStream_t                     stream    = gpu_nbv->stream[InteractionLocality::Local];
+    bool                             bDoTime   = gpu_nbv->bDoTime;
+    const int maxNumColumns                    = gridSet.numColumnsMax();
+
+    reallocateDeviceBuffer(&gpu_nbv->cxy_na, maxNumColumns*gridSet.grids().size(),
+                           &gpu_nbv->ncxy_na, &gpu_nbv->ncxy_na_alloc, nullptr);
+    reallocateDeviceBuffer(&gpu_nbv->cxy_ind, maxNumColumns*gridSet.grids().size(),
+                           &gpu_nbv->ncxy_ind, &gpu_nbv->ncxy_ind_alloc, nullptr);
+
+    for (unsigned int g = 0; g < gridSet.grids().size(); g++)
+    {
+
+        const Nbnxm::Grid  &grid       = gridSet.grids()[g];
+
+        const int           numColumns        = grid.numColumns();
+        const int          *atomIndices       = gridSet.atomIndices().data();
+        const int           atomIndicesSize   = gridSet.atomIndices().size();
+        const int          *cxy_na            = grid.cxy_na().data();
+        const int          *cxy_ind           = grid.cxy_ind().data();
+        const int           numRealAtomsTotal = gridSet.numRealAtomsTotal();
+
+        reallocateDeviceBuffer(&gpu_nbv->xrvec, numRealAtomsTotal, &gpu_nbv->natoms, &gpu_nbv->natoms_alloc, nullptr);
+        reallocateDeviceBuffer(&gpu_nbv->atomIndices, atomIndicesSize, &gpu_nbv->atomIndicesSize, &gpu_nbv->atomIndicesSize_alloc, nullptr);
+
+        if (atomIndicesSize > 0)
+        {
+
+            if (bDoTime)
+            {
+                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.openTimingRegion(stream);
+            }
+
+            copyToDeviceBuffer(&gpu_nbv->atomIndices, atomIndices, 0, atomIndicesSize, stream, GpuApiCallBehavior::Async, nullptr);
+
+            if (bDoTime)
+            {
+                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.closeTimingRegion(stream);
+            }
+
+        }
+
+        if (numColumns > 0)
+        {
+            if (bDoTime)
+            {
+                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.openTimingRegion(stream);
+            }
+
+            int* destPtr = &gpu_nbv->cxy_na[maxNumColumns*g];
+            copyToDeviceBuffer(&destPtr, cxy_na, 0, numColumns, stream, GpuApiCallBehavior::Async, nullptr);
+
+            if (bDoTime)
+            {
+                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.closeTimingRegion(stream);
+            }
+
+            if (bDoTime)
+            {
+                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.openTimingRegion(stream);
+            }
+
+            destPtr = &gpu_nbv->cxy_ind[maxNumColumns*g];
+            copyToDeviceBuffer(&destPtr, cxy_ind, 0, numColumns, stream, GpuApiCallBehavior::Async, nullptr);
+
+            if (bDoTime)
+            {
+                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.closeTimingRegion(stream);
+            }
+
+        }
+    }
+
+    // The above data is transferred on the local stream but is a
+    // dependency of the nonlocal stream (specifically the nonlocal X
+    // buf ops kernel).  We therefore set a dependency to ensure
+    // that the nonlocal stream waits on the local stream here.
+    // This call records an event in the local stream:
+    nbnxnInsertNonlocalGpuDependency(gpu_nbv, Nbnxm::InteractionLocality::Local);
+    // ...and this call instructs the nonlocal stream to wait on that event:
+    nbnxnInsertNonlocalGpuDependency(gpu_nbv, Nbnxm::InteractionLocality::NonLocal);
+
+    return;
+}
+
+/* Initialization for F buffer operations on GPU. */
+void nbnxn_gpu_init_add_nbat_f_to_f(const int                *cell,
+                                    gmx_nbnxn_gpu_t          *gpu_nbv,
+                                    int                       natoms_total)
+{
+
+    cudaStream_t         stream  = gpu_nbv->stream[InteractionLocality::Local];
+
+    reallocateDeviceBuffer(&gpu_nbv->frvec, natoms_total, &gpu_nbv->nfrvec, &gpu_nbv->nfrvec_alloc, nullptr);
+
+    if (natoms_total > 0)
+    {
+        reallocateDeviceBuffer(&gpu_nbv->cell, natoms_total, &gpu_nbv->ncell, &gpu_nbv->ncell_alloc, nullptr);
+        copyToDeviceBuffer(&gpu_nbv->cell, cell, 0, natoms_total, stream, GpuApiCallBehavior::Async, nullptr);
+    }
+
+    return;
 }
 
 } // namespace Nbnxm

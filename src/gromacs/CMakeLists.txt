@@ -136,6 +136,7 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(correlationfunctions)
     add_subdirectory(statistics)
     add_subdirectory(analysisdata)
+    add_subdirectory(coordinateio)
     add_subdirectory(selection)
     add_subdirectory(trajectoryanalysis)
     add_subdirectory(energyanalysis)
@@ -256,6 +257,14 @@ a clFFT package, or use the latest GROMACS 2018 point release.")
     endif()
 endif()
 
+# Permit GROMACS code to include externally developed headers, such as
+# the functionality from the nonstd project that we use for
+# gmx::compat::optional. These are included as system headers so that
+# no warnings are issued from them.
+#
+# TODO Perhaps generalize this for all headers from src/external
+target_include_directories(libgromacs SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
+
 # Recent versions of gcc and clang give warnings on scanner.cpp, which
 # is a generated source file. These are awkward to suppress inline, so
 # we do it in the compilation command (after testing that the compiler
@@ -324,7 +333,10 @@ set_target_properties(libgromacs PROPERTIES
 gmx_manage_lmfit()
 target_link_libraries(libgromacs PRIVATE lmfit)
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^6\.0")
+# Fix everything found by the latest version of clang that we use in
+# Jenkins testing. This should be updated when we update the latest
+# tested version of clang.
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^7\.0")
    target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS}>)
 endif()
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")

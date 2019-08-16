@@ -83,6 +83,13 @@ function (gmx_add_gtest_executable EXENAME)
             APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
         set_property(TARGET ${EXENAME}
             APPEND PROPERTY COMPILE_DEFINITIONS "${EXTRA_COMPILE_DEFINITIONS}")
+
+        # Permit GROMACS code to include externally developed headers,
+        # such as the functionality from the nonstd project that we
+        # use for gmx::compat::optional. These are included as system
+        # headers so that no warnings are issued from them.
+        target_include_directories(${EXENAME} SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
+
         if(GMX_CLANG_TIDY)
             set_target_properties(${EXENAME} PROPERTIES CXX_CLANG_TIDY
                 "${CLANG_TIDY_EXE};-warnings-as-errors=*;-header-filter=.*")

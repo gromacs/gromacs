@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,46 +58,65 @@
 #ifndef GMX_MDRUNUTILITY_HANDLERESTART_H
 #define GMX_MDRUNUTILITY_HANDLERESTART_H
 
+#include "gromacs/mdrunutility/logging.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_multisim_t;
 struct t_commrec;
 struct t_filenm;
 
+namespace gmx
+{
+
+enum class AppendingBehavior;
+
+//! Enumeration for describing how mdrun is (re)starting
+enum class StartingBehavior
+{
+    //! Restarting with appending, if a checkpoint is supplied and other conditions are met.
+    RestartWithAppending,
+    //! Restarting without appending, when a checkpoint is supplied.
+    RestartWithoutAppending,
+    //! Not restarting
+    NewSimulation
+};
+
 /*! \brief Handle startup of mdrun, particularly regarding -cpi and -append
  *
  * If there is a checkpoint file, then prepare to start from that
- * state. If restarting from a checkpoint file and appending is requested with
- * tryToAppendFiles, we will set doAppendFiles to true on return if all files
- * were found correctly. If some files are not found when appending should be
- * done, we will instead issue a fatal error to avoid unintentional problems.
+ * state. If possible/required, do so with appending. If some files
+ * are not found when appending should be done, we will instead issue
+ * a fatal error to avoid unintentional problems.
  *
- * If there is no checkpoint file, we assume it is the first part of a new run,
- * and in this case we silently set doAppendFiles to false on return.
+ * If there is no checkpoint file, we return a value to indicate a new
+ * simulation is starting.
  *
  * On return, \p fnm is updated with suffix strings for part numbers if we are
- * doing a restart from checkpoint and are not appending. The routine also does
- * communication to coordinate behaviour between all ranks of a simulation,
- * and/or simulations.
+ * doing a restart from checkpoint and are not appending.
+ *
+ * The routine also does communication to coordinate behaviour between
+ * all simulations, including for error conditions.
+ *
+ * \throws FileIOError             When the filesystem behavior prevents the
+ *                                 user's choices being implemented.
+ * \throws InconsistentInputError  When the users's choices cannot be implemented.
+ * \throws GromacsException        On ranks upon which the error condition was
+ *                                 not detected.
  *
  * \param[in]    cr                 Communication structure
  * \param[in]    ms                 Handles multi-simulations.
- * \param[in]    bTryToAppendFiles  Whether appending is requested (from mdrun)
- * \param[in]    NFILE              Size of fnm struct
+ * \param[in]    appendingBehavior  User choice for appending
+ * \param[in]    nfile              Size of fnm struct
  * \param[inout] fnm                Filename parameters to mdrun
- * \param[out]   bDoAppendFiles     True on return if we will do appending.
- *                                  Note that the routine will generate a fatal
- *                                  error for some scenarios where appending is
- *                                  requested but the necessary files not found.
- * \param[out]   bStartFromCpt      True on return if we found the checkpoint
- *                                  and will use it to restart.
- */
-void handleRestart(t_commrec            *cr,
-                   const gmx_multisim_t *ms,
-                   gmx_bool              bTryToAppendFiles,
-                   int                   NFILE,
-                   t_filenm              fnm[],
-                   bool                 *bDoAppendFiles,
-                   bool                 *bStartFromCpt);
+ *
+ * \return  Description of how mdrun is starting */
+std::tuple<StartingBehavior, LogFilePtr>
+handleRestart(t_commrec            *cr,
+              const gmx_multisim_t *ms,
+              AppendingBehavior     appendingBehavior,
+              int                   nfile,
+              t_filenm              fnm[]);
+
+} // namespace gmx
 
 #endif

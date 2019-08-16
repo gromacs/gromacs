@@ -28,3 +28,5 @@ CheckOptions:
     value:         1
   - key:           readability-implicit-bool-conversion.AllowPointerConditions
     value:         1
+  - key:           bugprone-dangling-handle.HandleClasses
+    value:         std::basic_string_view; nonstd::sv_lite::basic_string_view

@@ -59,7 +59,8 @@
 #include "gromacs/mdlib/boxdeformation.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/group.h"
@@ -142,43 +143,6 @@ PaddedVector<RVec> * Update::xp()
 BoxDeformation * Update::deform() const
 {
     return impl_->deform;
-}
-
-static bool isTemperatureCouplingStep(int64_t step, const t_inputrec *ir)
-{
-    /* We should only couple after a step where energies were determined (for leapfrog versions)
-       or the step energies are determined, for velocity verlet versions */
-    int offset;
-    if (EI_VV(ir->eI))
-    {
-        offset = 0;
-    }
-    else
-    {
-        offset = 1;
-    }
-    return ir->etc != etcNO &&
-           (ir->nsttcouple == 1 ||
-            do_per_step(step + ir->nsttcouple - offset, ir->nsttcouple));
-}
-
-static bool isPressureCouplingStep(int64_t step, const t_inputrec *ir)
-{
-    GMX_ASSERT(ir->epc != epcMTTK, "MTTK pressure coupling is not handled here");
-
-    int offset;
-    if (ir->epc == epcBERENDSEN)
-    {
-        offset = 0;
-    }
-    else
-    {
-        offset = 1;
-    }
-    /* We should only couple after a step where pressures were determined */
-    return ir->epc != etcNO &&
-           (ir->nstpcouple == 1 ||
-            do_per_step(step + ir->nstpcouple - offset, ir->nstpcouple));
 }
 
 /*! \brief Sets the velocities of virtual sites to zero */
@@ -563,11 +527,12 @@ static void do_update_md(int                         start,
                          const matrix                M)
 {
     GMX_ASSERT(nrend == start || xprime != x, "For SIMD optimization certain compilers need to have xprime != x");
+    GMX_ASSERT(ir->eI == eiMD, "Leap-frog integrator was called while another integrator was requested");
 
     /* Note: Berendsen pressure scaling is handled after do_update_md() */
-    bool doTempCouple       = isTemperatureCouplingStep(step, ir);
+    bool doTempCouple       = (ir->etc != etcNO && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
     bool doNoseHoover       = (ir->etc == etcNOSEHOOVER && doTempCouple);
-    bool doParrinelloRahman = (ir->epc == epcPARRINELLORAHMAN && isPressureCouplingStep(step, ir));
+    bool doParrinelloRahman = (ir->epc == epcPARRINELLORAHMAN && do_per_step(step + ir->nstpcouple - 1, ir->nstpcouple));
     bool doPROffDiagonal    = (doParrinelloRahman && (M[YY][XX] != 0 || M[ZZ][XX] != 0 || M[ZZ][YY] != 0));
 
     real dtPressureCouple   = (doParrinelloRahman ? ir->nstpcouple*dt : 0);
@@ -916,7 +881,7 @@ doSDUpdateGeneral(const gmx_stochd_t &sd,
                   const rvec x[], rvec xprime[], rvec v[], const rvec f[],
                   int64_t step, int seed, const int *gatindex)
 {
-    // cTC, cACC and cFreeze can be nullptr any time, but various
+    // cTC, cACC and cFREEZE can be nullptr any time, but various
     // instantiations do not make sense with particular pointer
     // values.
     if (updateType == SDUpdate::ForcesOnly)
@@ -1253,16 +1218,18 @@ static void calc_ke_part_visc(const matrix box, const rvec x[], const rvec v[],
     inc_nrnb(nrnb, eNR_EKIN, homenr);
 }
 
-void calc_ke_part(const t_state *state, const t_grpopts *opts, const t_mdatoms *md,
-                  gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
+void calc_ke_part(
+        rvec *x, rvec *v, matrix box,
+        const t_grpopts *opts, const t_mdatoms *md,
+        gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
     if (ekind->cosacc.cos_accel == 0)
     {
-        calc_ke_part_normal(state->v.rvec_array(), opts, md, ekind, nrnb, bEkinAveVel);
+        calc_ke_part_normal(v, opts, md, ekind, nrnb, bEkinAveVel);
     }
     else
     {
-        calc_ke_part_visc(state->box, state->x.rvec_array(), state->v.rvec_array(), opts, md, ekind, nrnb, bEkinAveVel);
+        calc_ke_part_visc(box, x, v, opts, md, ekind, nrnb, bEkinAveVel);
     }
 }
 
@@ -1275,8 +1242,9 @@ extern void init_ekinstate(ekinstate_t *ekinstate, const t_inputrec *ir)
     ekinstate->ekinscalef_nhc.resize(ekinstate->ekin_n);
     ekinstate->ekinscaleh_nhc.resize(ekinstate->ekin_n);
     ekinstate->vscale_nhc.resize(ekinstate->ekin_n);
-    ekinstate->dekindl = 0;
-    ekinstate->mvcos   = 0;
+    ekinstate->dekindl          = 0;
+    ekinstate->mvcos            = 0;
+    ekinstate->hasReadEkinState = false;
 }
 
 void update_ekinstate(ekinstate_t *ekinstate, const gmx_ekindata_t *ekind)
@@ -1358,19 +1326,35 @@ void update_tcouple(int64_t           step,
                     const t_mdatoms  *md)
 
 {
+    // This condition was explicitly checked in previous version, but should have never been satisfied
+    GMX_ASSERT(!(EI_VV(inputrec->eI) &&
+                 (inputrecNvtTrotter(inputrec) || inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec))),
+               "Temperature coupling was requested with velocity verlet and trotter");
+
     bool doTemperatureCoupling = false;
 
-    /* if using vv with trotter decomposition methods, we do this elsewhere in the code */
-    if (!(EI_VV(inputrec->eI) &&
-          (inputrecNvtTrotter(inputrec) || inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec))))
+    // For VV temperature coupling parameters are updated on the current
+    // step, for the others - one step before.
+    if (inputrec->etc == etcNO)
     {
-        doTemperatureCoupling = isTemperatureCouplingStep(step, inputrec);
+        doTemperatureCoupling = false;
+    }
+    else if (EI_VV(inputrec->eI))
+    {
+        doTemperatureCoupling = do_per_step(step, inputrec->nsttcouple);
+    }
+    else
+    {
+        doTemperatureCoupling = do_per_step(step + inputrec->nsttcouple - 1, inputrec->nsttcouple);
     }
 
     if (doTemperatureCoupling)
     {
         real dttc = inputrec->nsttcouple*inputrec->delta_t;
 
+        //TODO: berendsen_tcoupl(...), nosehoover_tcoupl(...) and vrescale_tcoupl(...) update
+        //      temperature coupling parameters, which should be reflected in the name of these
+        //      subroutines
         switch (inputrec->etc)
         {
             case etcNO:
@@ -1395,7 +1379,8 @@ void update_tcouple(int64_t           step,
     }
     else
     {
-        /* Set the T scaling lambda to 1 to have no scaling */
+        // Set the T scaling lambda to 1 to have no scaling
+        // TODO: Do we have to do it on every non-t-couple step?
         for (int i = 0; (i < inputrec->opts.ngtc); i++)
         {
             ekind->tcstat[i].lambda = 1.0;
@@ -1441,7 +1426,7 @@ void update_pcouple_before_coordinates(FILE             *fplog,
      * Trotter P-coupling is handled by separate calls to trotter_update().
      */
     if (inputrec->epc == epcPARRINELLORAHMAN &&
-        isPressureCouplingStep(step, inputrec))
+        do_per_step(step + inputrec->nstpcouple - 1, inputrec->nstpcouple))
     {
         real dtpc = inputrec->nstpcouple*inputrec->delta_t;
 
@@ -1711,7 +1696,7 @@ void update_pcouple_after_coordinates(FILE             *fplog,
         case (epcNO):
             break;
         case (epcBERENDSEN):
-            if (isPressureCouplingStep(step, inputrec))
+            if (do_per_step(step, inputrec->nstpcouple))
             {
                 real   dtpc = inputrec->nstpcouple*dt;
                 matrix mu;
@@ -1725,7 +1710,7 @@ void update_pcouple_after_coordinates(FILE             *fplog,
             }
             break;
         case (epcPARRINELLORAHMAN):
-            if (isPressureCouplingStep(step, inputrec))
+            if (do_per_step(step + inputrec->nstpcouple - 1, inputrec->nstpcouple))
             {
                 /* The box velocities were updated in do_pr_pcoupl,
                  * but we dont change the box vectors until we get here
@@ -1785,18 +1770,18 @@ void update_pcouple_after_coordinates(FILE             *fplog,
     }
 }
 
-void update_coords(int64_t                             step,
-                   const t_inputrec                   *inputrec, /* input record and box stuff	*/
-                   const t_mdatoms                    *md,
-                   t_state                            *state,
-                   gmx::ArrayRefWithPadding<gmx::RVec> f,
-                   const t_fcdata                     *fcd,
-                   const gmx_ekindata_t               *ekind,
-                   const matrix                        M,
-                   Update                             *upd,
-                   int                                 UpdatePart,
-                   const t_commrec                    *cr, /* these shouldn't be here -- need to think about it */
-                   const gmx::Constraints             *constr)
+void update_coords(int64_t                                   step,
+                   const t_inputrec                         *inputrec, /* input record and box stuff	*/
+                   const t_mdatoms                          *md,
+                   t_state                                  *state,
+                   gmx::ArrayRefWithPadding<const gmx::RVec> f,
+                   const t_fcdata                           *fcd,
+                   const gmx_ekindata_t                     *ekind,
+                   const matrix                              M,
+                   Update                                   *upd,
+                   int                                       UpdatePart,
+                   const t_commrec                          *cr, /* these shouldn't be here -- need to think about it */
+                   const gmx::Constraints                   *constr)
 {
     gmx_bool bDoConstr = (nullptr != constr);
 

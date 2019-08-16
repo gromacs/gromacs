@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,10 +38,10 @@
 #ifndef GMX_MDLIB_COMPUTE_IO_H
 #define GMX_MDLIB_COMPUTE_IO_H
 
-struct gmx_groups_t;
+struct SimulationGroups;
 struct t_inputrec;
 
-double compute_io(const t_inputrec *ir, int natoms, const gmx_groups_t *groups,
+double compute_io(const t_inputrec *ir, int natoms, const SimulationGroups &groups,
                   int nrener, int nrepl);
 /* Return total output to be written from this simulation. */
 

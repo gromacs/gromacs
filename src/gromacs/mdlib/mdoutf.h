@@ -53,6 +53,7 @@ struct t_inputrec;
 
 namespace gmx
 {
+enum class StartingBehavior;
 class IMDOutputProvider;
 struct MdrunOptions;
 }
@@ -73,7 +74,8 @@ gmx_mdoutf_t init_mdoutf(FILE                    *fplog,
                          const t_inputrec        *ir,
                          gmx_mtop_t              *mtop,
                          const gmx_output_env_t  *oenv,
-                         gmx_wallcycle_t          wcycle);
+                         gmx_wallcycle_t          wcycle,
+                         gmx::StartingBehavior    startingBehavior);
 
 /*! \brief Getter for file pointer */
 ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of);
@@ -100,11 +102,23 @@ void done_mdoutf(gmx_mdoutf_t of);
  * determined by the mdof_flags defined below. Data is collected to
  * the master node only when necessary. Without domain decomposition
  * only data from state_local is used and state_global is ignored.
+ *
+ * \param[in] fplog              File handler to log file.
+ * \param[in] cr                 Communication record.
+ * \param[in] of                 File handler to trajectory file.
+ * \param[in] mdof_flags         Flags indicating what data is written.
+ * \param[in] natoms             The total number of atoms in the system.
+ * \param[in] step               The current time step.
+ * \param[in] t                  The current time.
+ * \param[in] state_local        Pointer to the local state object.
+ * \param[in] state_global       Pointer to the global state object.
+ * \param[in] observablesHistory Pointer to the ObservableHistory object.
+ * \param[in] f_local            The local forces.
  */
 void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                                       gmx_mdoutf_t of,
                                       int mdof_flags,
-                                      gmx_mtop_t *top_global,
+                                      int natoms,
                                       int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
                                       ObservablesHistory *observablesHistory,

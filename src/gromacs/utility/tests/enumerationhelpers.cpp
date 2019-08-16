@@ -46,6 +46,8 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/utility/arrayref.h"
+
 namespace gmx
 {
 namespace
@@ -87,7 +89,7 @@ TEST(EnumerationHelpersTest, EnumerationWrapperWorks)
 TEST(EnumerationHelpersTest, EnumerationArrayWorks)
 {
     using FooArray = EnumerationArray<Foo, std::string>;
-    const FooArray FooStrings { {
+    const FooArray fooStrings { {
                                     "Bar", "Baz", "Fooz"
                                 } };
 
@@ -98,22 +100,29 @@ TEST(EnumerationHelpersTest, EnumerationArrayWorks)
         EXPECT_EQ(static_cast<int>(k), i++);
     }
 
+    // Keys give you the constants associated with each array index.
+    i = 0;
+    for (auto k : keysOf(fooStrings))
+    {
+        EXPECT_EQ(static_cast<int>(k), i++);
+    }
+
     // Using iterators and operator[] gives the array values.
     i = 0;
-    for (const auto &s : FooStrings)
+    for (const auto &s : fooStrings)
     {
-        EXPECT_EQ(s, FooStrings[i++]);
+        EXPECT_EQ(s, fooStrings[i++]);
     }
 
     // Using reverse iterators gives the array values.
     i = 2;
-    for (auto s = FooStrings.rbegin(); s != FooStrings.rend(); ++s)
+    for (auto s = fooStrings.rbegin(); s != fooStrings.rend(); ++s)
     {
-        EXPECT_EQ((*s), FooStrings[i--]);
+        EXPECT_EQ((*s), fooStrings[i--]);
     }
 
     // Incrementing iterators works
-    auto x = std::begin(FooStrings);
+    auto x = std::begin(fooStrings);
     EXPECT_EQ(*x, "Bar");
     ++x;
     EXPECT_EQ(*x, "Baz");
@@ -121,9 +130,32 @@ TEST(EnumerationHelpersTest, EnumerationArrayWorks)
     EXPECT_EQ(*x, "Fooz");
 
     // Operator[] can be used with enumeration values.
-    EXPECT_EQ(FooStrings[Foo::Bar], "Bar");
-    EXPECT_EQ(FooStrings[Foo::Baz], "Baz");
-    EXPECT_EQ(FooStrings[Foo::Fooz], "Fooz");
+    EXPECT_EQ(fooStrings[Foo::Bar], "Bar");
+    EXPECT_EQ(fooStrings[Foo::Baz], "Baz");
+    EXPECT_EQ(fooStrings[Foo::Fooz], "Fooz");
+}
+
+//! Helper function
+void func(ArrayRef<const int> a)
+{
+    EXPECT_EQ(3, a[1]);
+}
+
+TEST(EnumerationHelpersTest, ArrayRefOfEnumerationArrayWorks)
+{
+    using FooArray = EnumerationArray<Foo, int>;
+
+    FooArray counts = { { 2, 3, 1 } };
+
+    // Test that explicit conversion works
+    ArrayRef<const int> arrayRef(counts);
+    EXPECT_EQ(3, arrayRef[1]);
+
+    // Test that implicit conversion works
+    func(counts);
+
+    // Note that ArrayRef<int> arrayRef(counts) does not compile, as
+    // expected, but we can't test for that.
 }
 
 } // namespace

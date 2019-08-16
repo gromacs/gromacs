@@ -68,7 +68,7 @@ namespace gmx
  *                           comma is accceptable (and required to specify a
  *                           single ID that is larger than 9).
  *
- * \returns  A vector of unique list of GPU IDs.
+ * \returns  A vector of unique GPU IDs.
  *
  * \throws   std::bad_alloc     If out of memory.
  *           InvalidInputError  If an invalid character is found (ie not a digit or ',') or if
@@ -76,6 +76,32 @@ namespace gmx
  */
 std::vector<int>
 parseUserGpuIdString(const std::string &gpuIdString);
+
+/*! \brief Implement GPU ID selection by returning the available GPU
+ * IDs that are compatible.
+ *
+ * If the string supplied by the user is empty, then return the IDs of
+ * all compatible GPUs. Otherwise, check the user specified compatible
+ * GPUs and return their IDs.
+ *
+ * \param[in]  gpuInfo                Information detected about GPUs
+ * \param[in]  gpuIdsAvailableString  String like "013" or "0,1,3" typically
+ *                                    supplied by the user to mdrun -gpu_id.
+ *                                    Must contain only unique decimal digits, or only decimal
+ *                                    digits separated by comma delimiters. A terminal
+ *                                    comma is accceptable (and required to specify a
+ *                                    single ID that is larger than 9).
+ *
+ * \returns  A vector of unique compatible GPU IDs.
+ *
+ * \throws   std::bad_alloc     If out of memory.
+ *           InvalidInputError  If an invalid character is found (ie not a digit or ',') or if
+ *                              identifiers are duplicated in the specifier list.
+ *           InvalidInputError  If gpuIdsAvailableString specifies GPU IDs that are
+ *                              not compatible.
+ */
+std::vector<int> makeGpuIdsToUse(const gmx_gpu_info_t &gpuInfo,
+                                 const std::string    &gpuIdsAvailableString);
 
 /*! \brief Parse a GPU ID specifier string into a container describing device ID to task mapping.
  *

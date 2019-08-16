@@ -758,22 +758,13 @@ cases.
     performance. If available, using ``-bonded gpu`` is expected
     to improve the ability of DLB to maximize performance.
 
-``-gcom``
-    During the simulation :ref:`gmx mdrun` must communicate between all ranks to
-    compute quantities such as kinetic energy. By default, this
-    happens whenever plausible, and is influenced by a lot of
-    :ref:`mdp options. <mdp-general>` The period between communication phases
-    must be a multiple of :mdp:`nstlist`, and defaults to
-    the minimum of :mdp:`nstcalcenergy` and :mdp:`nstlist`.
-    ``mdrun -gcom`` sets the number of steps that must elapse between
-    such communication phases, which can improve performance when
-    running on a lot of ranks. Note that this means that _e.g._
-    temperature coupling algorithms will
-    effectively remain at constant energy until the next
-    communication phase. :ref:`gmx mdrun` will always honor the
-    setting of ``mdrun -gcom``, by changing :mdp:`nstcalcenergy`,
-    :mdp:`nstenergy`, :mdp:`nstlog`, :mdp:`nsttcouple` and/or
-    :mdp:`nstpcouple` if necessary.
+During the simulation :ref:`gmx mdrun` must communicate between all
+PP ranks to compute quantities such as kinetic energy for log file
+reporting, or perhaps temperature coupling. By default, this happens
+whenever necessary to honor several :ref:`mdp options <mdp-general>`,
+so that the period between communication phases is the least common
+denominator of :mdp:`nstlist`, :mdp:`nstcalcenergy`,
+:mdp:`nsttcouple`, and :mdp:`nstpcouple`.
 
 Note that ``-tunepme`` has more effect when there is more than one
 :term:`node`, because the cost of communication for the PP and PME
@@ -1325,8 +1316,8 @@ Run setup
   :ref:`gmx tune_pme` can help automate this search.
 * For massively parallel runs (also ``gmx mdrun -multidir``), or with a slow
   network, global communication can become a bottleneck and you can reduce it
-  with ``gmx mdrun -gcom`` (note that this does affect the frequency of
-  temperature and pressure coupling).
+  by choosing larger periods for algorithms such as temperature and
+  pressure coupling).
 
 Checking and improving performance
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1345,7 +1336,7 @@ Checking and improving performance
   list to do more non-bonded computation to keep energy drift constant).
 
   * If ``Comm. energies`` takes a lot of time (a note will be printed in the log
-    file), increase nstcalcenergy or use ``mdrun -gcom``.
+    file), increase nstcalcenergy.
   * If all communication takes a lot of time, you might be running on too many
     cores, or you could try running combined MPI/OpenMP parallelization with 2
     or 4 OpenMP threads per MPI process.

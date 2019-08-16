@@ -205,12 +205,11 @@ static void hide_label(t_x11 *x11, t_manager *man, int x, int y)
 void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
               const char *status)
 {
-    t_tpxheader       sh;
     t_atoms          *at;
     bool             *bB;
     int               i;
 
-    read_tpxheader(status, &sh, true);
+    TpxFileHeader     sh = readTpxHeader(status, true);
     snew(man->ix, sh.natoms);
     snew(man->zz, sh.natoms);
     snew(man->col, sh.natoms);

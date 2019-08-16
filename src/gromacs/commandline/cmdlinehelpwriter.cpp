@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -495,11 +495,11 @@ class CommandLineHelpWriter::Impl
         void formatBugs(const HelpWriterContext &context);
 
         //! Options object to use for generating help.
-        const Options               &options_;
+        const Options              &options_;
         //! Help text.
-        std::string                  helpText_;
+        std::string                 helpText_;
         //! List of bugs/knows issues.
-        ArrayRef<const char *const>  bugs_;
+        std::vector<std::string>    bugs_;
 };
 
 void CommandLineHelpWriter::Impl::formatBugs(const HelpWriterContext &context)
@@ -509,10 +509,9 @@ void CommandLineHelpWriter::Impl::formatBugs(const HelpWriterContext &context)
         return;
     }
     context.writeTitle("Known Issues");
-    ArrayRef<const char *const>::const_iterator i;
-    for (i = bugs_.begin(); i != bugs_.end(); ++i)
+    for (const auto &i : bugs_)
     {
-        const char *const       bug = *i;
+        const char *const       bug = i.c_str();
         context.writeTextBlock(formatString("* %s", bug));
     }
 }
@@ -546,9 +545,16 @@ CommandLineHelpWriter::setHelpText(const ArrayRef<const char *const> &help)
 }
 
 CommandLineHelpWriter &
+CommandLineHelpWriter::setKnownIssues(ArrayRef<const std::string> bugs)
+{
+    impl_->bugs_ = std::vector<std::string>(bugs.begin(), bugs.end());
+    return *this;
+}
+
+CommandLineHelpWriter &
 CommandLineHelpWriter::setKnownIssues(const ArrayRef<const char *const> &bugs)
 {
-    impl_->bugs_ = bugs;
+    impl_->bugs_ = std::vector<std::string>(bugs.begin(), bugs.end());
     return *this;
 }
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,6 +70,7 @@ class t_state;
 
 namespace gmx
 {
+enum class StartingBehavior;
 class Constraints;
 class EssentialDynamics
 {
@@ -116,7 +117,7 @@ void do_edsam(const t_inputrec *ir, int64_t step,
  * \param globalState       The global state, only used on the master rank.
  * \param oh                The observables history container.
  * \param oenv              The output environment information.
- * \param bAppend           Append to existing output files?
+ * \param startingBehavior  Describes whether this is a restart appending to output files
  *
  * \returns                 A pointer to the ED data structure.
  */
@@ -131,7 +132,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
         const t_state          *globalState,
         ObservablesHistory     *oh,
         const gmx_output_env_t *oenv,
-        gmx_bool                bAppend);
+        gmx::StartingBehavior   startingBehavior);
 
 /*! \brief Make a selection of the home atoms for the ED groups.
  *

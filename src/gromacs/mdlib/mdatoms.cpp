@@ -124,11 +124,11 @@ makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
     snew(md, 1);
     mdAtoms->mdatoms_.reset(md);
 
-    md->nenergrp = mtop.groups.grps[egcENER].nr;
+    md->nenergrp = mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size();
     md->bVCMgrps = FALSE;
     for (int i = 0; i < mtop.natoms; i++)
     {
-        if (getGroupType(mtop.groups, egcVCM, i) > 0)
+        if (getGroupType(mtop.groups, SimulationAtomGroupType::MassCenterVelocityRemoval, i) > 0)
         {
             md->bVCMgrps = TRUE;
         }
@@ -212,9 +212,9 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
 
     opts = &ir->opts;
 
-    const gmx_groups_t &groups = mtop->groups;
+    const SimulationGroups    &groups = mtop->groups;
 
-    auto                md = mdAtoms->mdatoms();
+    auto                       md = mdAtoms->mdatoms();
     /* nindex>=0 indicates DD where we use an index */
     if (nindex >= 0)
     {
@@ -300,11 +300,11 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
          * Therefore, when adding code, the user should use something like:
          * gprnrU1 = (md->cU1==NULL ? 0 : md->cU1[localatindex])
          */
-        if (mtop->groups.grpnr[egcUser1] != nullptr)
+        if (!mtop->groups.groupNumbers[SimulationAtomGroupType::User1].empty())
         {
             srenew(md->cU1, md->nalloc);
         }
-        if (mtop->groups.grpnr[egcUser2] != nullptr)
+        if (!mtop->groups.groupNumbers[SimulationAtomGroupType::User2].empty())
         {
             srenew(md->cU2, md->nalloc);
         }
@@ -315,7 +315,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         }
     }
 
-    int molb = 0;
+    int molb          = 0;
 
     nthreads = gmx_omp_nthreads_get(emntDefault);
 #pragma omp parallel for num_threads(nthreads) schedule(static) firstprivate(molb)
@@ -339,7 +339,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
 
             if (md->cFREEZE)
             {
-                md->cFREEZE[i] = getGroupType(groups, egcFREEZE, ag);
+                md->cFREEZE[i] = getGroupType(groups, SimulationAtomGroupType::Freeze, ag);
             }
             if (EI_ENERGY_MINIMIZATION(ir->eI))
             {
@@ -367,7 +367,8 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                 else
                 {
                     /* The friction coefficient is mass/tau_t */
-                    fac = ir->delta_t/opts->tau_t[md->cTC ? groups.grpnr[egcTC][ag] : 0];
+                    fac = ir->delta_t/opts->tau_t[md->cTC ?
+                                                  groups.groupNumbers[SimulationAtomGroupType::TemperatureCoupling][ag] : 0];
                     mA  = 0.5*atom.m*fac;
                     mB  = 0.5*atom.mB*fac;
                 }
@@ -464,35 +465,35 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             md->ptype[i]    = atom.ptype;
             if (md->cTC)
             {
-                md->cTC[i]    = groups.grpnr[egcTC][ag];
+                md->cTC[i]    = groups.groupNumbers[SimulationAtomGroupType::TemperatureCoupling][ag];
             }
-            md->cENER[i]    = getGroupType(groups, egcENER, ag);
+            md->cENER[i]    = getGroupType(groups, SimulationAtomGroupType::EnergyOutput, ag);
             if (md->cACC)
             {
-                md->cACC[i]   = groups.grpnr[egcACC][ag];
+                md->cACC[i]   = groups.groupNumbers[SimulationAtomGroupType::Acceleration][ag];
             }
             if (md->cVCM)
             {
-                md->cVCM[i]       = groups.grpnr[egcVCM][ag];
+                md->cVCM[i]       = groups.groupNumbers[SimulationAtomGroupType::MassCenterVelocityRemoval][ag];
             }
             if (md->cORF)
             {
-                md->cORF[i]       = getGroupType(groups, egcORFIT, ag);
+                md->cORF[i]       = getGroupType(groups, SimulationAtomGroupType::OrientationRestraintsFit, ag);
             }
 
             if (md->cU1)
             {
-                md->cU1[i]        = groups.grpnr[egcUser1][ag];
+                md->cU1[i]        = groups.groupNumbers[SimulationAtomGroupType::User1][ag];
             }
             if (md->cU2)
             {
-                md->cU2[i]        = groups.grpnr[egcUser2][ag];
+                md->cU2[i]        = groups.groupNumbers[SimulationAtomGroupType::User2][ag];
             }
 
             if (ir->bQMMM)
             {
-                if (groups.grpnr[egcQMMM] == nullptr ||
-                    groups.grpnr[egcQMMM][ag] < groups.grps[egcQMMM].nr-1)
+                if (groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics].empty() ||
+                    groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics][ag] < groups.groups[SimulationAtomGroupType::QuantumMechanics].size()-1)
                 {
                     md->bQM[i]      = TRUE;
                 }

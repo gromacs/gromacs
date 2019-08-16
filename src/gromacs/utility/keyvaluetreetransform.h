@@ -301,7 +301,7 @@ class KeyValueTreeTransformRuleBuilder
         KeyValueTreeTransformRuleBuilder(KeyValueTreeTransformRuleBuilder &&)            = default;
         //! Supports returning the builder from IKeyValueTreeTransformRules::addRule().
         KeyValueTreeTransformRuleBuilder &operator=(KeyValueTreeTransformRuleBuilder &&) = default;
-        ~KeyValueTreeTransformRuleBuilder();
+        ~KeyValueTreeTransformRuleBuilder(); // NOLINT(bugprone-exception-escape)
 
         /*! \brief
          * Specifies a rule that maps a value at given path.

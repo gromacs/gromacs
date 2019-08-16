@@ -60,11 +60,11 @@ struct t_forcerec;
 struct t_idef;
 struct t_inputrec;
 
+/*! \brief The number on bonded function types supported on GPUs */
+static constexpr int numFTypesOnGpu = 8;
+
 namespace gmx
 {
-
-/*! \brief The number on bonded function types supported on GPUs */
-constexpr int c_numFtypesOnGpu = 8;
 
 /*! \brief List of all bonded function types supported on GPUs
  *
@@ -73,7 +73,7 @@ constexpr int c_numFtypesOnGpu = 8;
  * \note The function types in the list are ordered on increasing value.
  * \note Currently bonded are only supported with CUDA, not with OpenCL.
  */
-constexpr std::array<int, c_numFtypesOnGpu> ftypesOnGpu =
+constexpr std::array<int, numFTypesOnGpu> fTypesOnGpu =
 {
     F_BONDS,
     F_ANGLES,
@@ -131,10 +131,10 @@ class GpuBonded
         /*! \brief Returns whether there are bonded interactions
          * assigned to the GPU */
         bool haveInteractions() const;
-        /*! \brief Launches bonded kernels on a GPU */
-        void launchKernels(const t_forcerec *fr,
-                           int               forceFlags,
-                           const matrix      box);
+        /*! \brief Launches bonded kernel on a GPU */
+        void launchKernel(const t_forcerec *fr,
+                          int               forceFlags,
+                          const matrix      box);
         /*! \brief Launches the transfer of computed bonded energies. */
         void launchEnergyTransfer();
         /*! \brief Waits on the energy transfer, and accumulates bonded energies to \c enerd. */

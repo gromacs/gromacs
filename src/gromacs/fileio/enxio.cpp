@@ -1149,7 +1149,7 @@ static real find_energy(const char *name, int nre, gmx_enxnm_t *enm,
 }
 
 
-void get_enx_state(const char *fn, real t, const gmx_groups_t *groups, t_inputrec *ir,
+void get_enx_state(const char *fn, real t, const SimulationGroups &groups, t_inputrec *ir,
                    t_state *state)
 {
     /* Should match the names in mdebin.c */
@@ -1208,8 +1208,8 @@ void get_enx_state(const char *fn, real t, const gmx_groups_t *groups, t_inputre
 
         for (i = 0; i < state->ngtc; i++)
         {
-            ni   = groups->grps[egcTC].nm_ind[i];
-            bufi = *(groups->grpname[ni]);
+            ni   = groups.groups[SimulationAtomGroupType::TemperatureCoupling][i];
+            bufi = *(groups.groupNames[ni]);
             for (j = 0; (j < state->nhchainlength); j++)
             {
                 if (inputrecNvtTrotter(ir))

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -195,14 +195,6 @@ struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     int                           ncg_home = 0;
     /* Global atom group indices for the home and all non-home groups */
     std::vector<int>              globalAtomGroupIndices;
-    /* The atom groups for the home and all non-home groups, todo: make private */
-    gmx::RangePartitioning        atomGrouping_;
-    const gmx::RangePartitioning &atomGrouping() const
-    {
-        return atomGrouping_;
-    }
-    /* Local atom to local atom-group index, only used for checking bondeds */
-    std::vector<int> localAtomGroupFromAtom;
 
     /* Index from the local atoms to the global atoms, covers home and received zones */
     std::vector<int> globalAtomIndices;

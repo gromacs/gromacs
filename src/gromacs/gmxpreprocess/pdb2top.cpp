@@ -672,7 +672,7 @@ void print_top_mols(FILE *out,
 
 void write_top(FILE *out, const char *pr, const char *molname,
                t_atoms *at, bool bRTPresname,
-               int bts[], gmx::ArrayRef<const InteractionTypeParameters> plist, t_excls excls[],
+               int bts[], gmx::ArrayRef<const InteractionsOfType> plist, t_excls excls[],
                PreprocessingAtomTypes *atype, int *cgnr, int nrexcl)
 /* NOTE: nrexcl is not the size of *excl! */
 {
@@ -711,7 +711,7 @@ void write_top(FILE *out, const char *pr, const char *molname,
 
 
 
-static void do_ssbonds(InteractionTypeParameters *ps, t_atoms *atoms,
+static void do_ssbonds(InteractionsOfType *ps, t_atoms *atoms,
                        gmx::ArrayRef<const DisulfideBond> ssbonds, bool bAllowMissing)
 {
     for (const auto &bond : ssbonds)
@@ -731,7 +731,7 @@ static void do_ssbonds(InteractionTypeParameters *ps, t_atoms *atoms,
     }
 }
 
-static void at2bonds(InteractionTypeParameters *psb, gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
+static void at2bonds(InteractionsOfType *psb, gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
                      t_atoms *atoms,
                      gmx::ArrayRef<const gmx::RVec> x,
                      real long_bond_dist, real short_bond_dist)
@@ -813,7 +813,7 @@ static void at2bonds(InteractionTypeParameters *psb, gmx::ArrayRef<MoleculePatch
     }
 }
 
-static bool pcompar(const InteractionType &a, const InteractionType &b)
+static bool pcompar(const InteractionOfType &a, const InteractionOfType &b)
 {
     int                d;
 
@@ -831,7 +831,7 @@ static bool pcompar(const InteractionType &a, const InteractionType &b)
     }
 }
 
-static void clean_bonds(InteractionTypeParameters *ps)
+static void clean_bonds(InteractionsOfType *ps)
 {
     if (ps->size() > 0)
     {
@@ -1143,10 +1143,8 @@ static bool atomname_cmp_nr(const char *anm, const MoleculePatch *patch, int *nr
         }
         else
         {
-            std::string tmp = anm;
-            tmp.erase(tmp.end() - 1);
-            return (tmp.length() == patch->nname.length() &&
-                    gmx::equalCaseInsensitive(tmp, patch->nname));
+            return (strlen(anm) == patch->nname.length() + 1 &&
+                    gmx_strncasecmp(anm, patch->nname.c_str(), patch->nname.length()) == 0);
         }
     }
 }
@@ -1334,7 +1332,7 @@ void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue>     usedPpResidue
 }
 
 #define NUM_CMAP_ATOMS 5
-static void gen_cmap(InteractionTypeParameters *psb, gmx::ArrayRef<const PreprocessResidue> usedPpResidues, t_atoms *atoms)
+static void gen_cmap(InteractionsOfType *psb, gmx::ArrayRef<const PreprocessResidue> usedPpResidues, t_atoms *atoms)
 {
     int         residx;
     const char *ptr;
@@ -1464,7 +1462,7 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
              bool bDeuterate, bool bChargeGroups, bool bCmap,
              bool bRenumRes, bool bRTPresname)
 {
-    std::array<InteractionTypeParameters, F_NRE> plist;
+    std::array<InteractionsOfType, F_NRE>        plist;
     t_excls                                     *excls;
     t_nextnb                                     nnb;
     int                                         *cgnr;

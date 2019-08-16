@@ -58,7 +58,7 @@ class PhysicalNodeCommunicator;
 }
 
 //! Destroy a forcerec.
-void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups);
+void done_forcerec(t_forcerec *fr, int numMolBlocks);
 
 /*! \brief Print the contents of the forcerec to a file
  *
@@ -148,12 +148,6 @@ void forcerec_set_excl_load(t_forcerec           *fr,
  * \param[in]  box The simulation box
  */
 void update_forcerec(t_forcerec *fr, matrix box);
-
-gmx_bool uses_simple_tables(int                       cutoff_scheme,
-                            const nonbonded_verlet_t *nbv);
-/* Returns whether simple tables (i.e. not for use with GPUs) are used
- * with the type of kernel indicated.
- */
 
 void free_gpu_resources(t_forcerec                          *fr,
                         const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator);

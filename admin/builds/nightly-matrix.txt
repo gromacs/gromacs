@@ -23,3 +23,7 @@ clang-3.9 no-openmp simd=ARM_NEON_ASIMD release-with-assert
 # Test icc with SIMD in mixed precision in release mode
 # Test icc with MPI
 icc-19 mpi release simd=avx2_256 no-hwloc
+
+# Test AVX_128_FMA SIMD in mixed precision
+# Test build of downloaded FFTW
+gcc-5 openmp simd=avx_128_fma cmake-3.11.4 buildfftw

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,12 +71,15 @@ LogEntryWriter &LogEntryWriter::appendTextFormatted(gmx_fmtstr const char *fmt, 
 }
 
 MDLogger::MDLogger()
-    : warning(nullptr), info(nullptr)
+    : warning(nullptr), error(nullptr), debug(nullptr), verboseDebug(nullptr), info(nullptr)
 {
 }
 
 MDLogger::MDLogger(ILogTarget *targets[LogLevelCount])
     : warning(getTarget(targets, LogLevel::Warning)),
+      error(getTarget(targets, LogLevel::Error)),
+      debug(getTarget(targets, LogLevel::Debug)),
+      verboseDebug(getTarget(targets, LogLevel::VerboseDebug)),
       info(getTarget(targets, LogLevel::Info))
 {
 }

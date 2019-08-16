@@ -104,7 +104,7 @@ TEST_F(PrEbinTest, HandlesAverages)
     {
         add_ebin(ebin, first, 1, &values[0], bSum);
         add_ebin(ebin, second, 1, &values[1], bSum);
-        ebin_increase_count(ebin, bSum);
+        ebin_increase_count(1, ebin, bSum);
     }
 
     // Test pr_ebin

@@ -67,20 +67,26 @@ if(${GMX_SIMD_ACTIVE} MATCHES "^(SSE|AVX)" AND APPLE)
     set(_fftw_simd_support_level "--enable-sse2")
 elseif(${GMX_SIMD_ACTIVE} MATCHES "^(SSE)")
     set(_fftw_simd_support_level "--enable-sse2")
-elseif(${GMX_SIMD_ACTIVE} MATCHES "^(AVX)")
+elseif(${GMX_SIMD_ACTIVE} MATCHES "^(AVX)" AND NOT ${GMX_SIMD_ACTIVE} MATCHES "^(AVX_512)")
     # Testing shows FFTW configured with --enable-sse2 --enable-avx is
     # slightly faster on most architectures than --enable-sse2 alone.
     # Support for --enable-avx2 was only added in 3.3.5, but
     # configuring with it is at worst a warning, even on an earlier
     # version.
+    # On platforms capable of AVX512 where we are building with AVX2,
+    # enabling AVX512 risks clock-throttling the entire mdrun if
+    # fftw happens to pick up an AVX512 kernel (which is not unlikely
+    # as fftw tuning is known to produce highly varying results).
+    set(_fftw_simd_support_level --enable-sse2;--enable-avx;--enable-avx2)
+elseif(${GMX_SIMD_ACTIVE} MATCHES "^(AVX_512)")
     # MSVC, GCC < 4.9, Clang < 3.9 do not support AVX-512, so
     # we should not enable it.
-if(MSVC OR (CMAKE_COMPILER_IS_GNUCC AND CMAKE_C_COMPILER_VERSION VERSION_LESS 4.9.0) OR
-   (CMAKE_C_COMPILER_ID MATCHES "Clang" AND CMAKE_C_COMPILER_VERSION VERSION_LESS 3.9.0))
-    set(_fftw_simd_support_level --enable-sse2;--enable-avx;--enable-avx2)
-else()
-    set(_fftw_simd_support_level --enable-sse2;--enable-avx;--enable-avx2;--enable-avx512)
-endif()
+    if(MSVC OR (CMAKE_COMPILER_IS_GNUCC AND CMAKE_C_COMPILER_VERSION VERSION_LESS 4.9.0) OR
+       (CMAKE_C_COMPILER_ID MATCHES "Clang" AND CMAKE_C_COMPILER_VERSION VERSION_LESS 3.9.0))
+        set(_fftw_simd_support_level --enable-sse2;--enable-avx;--enable-avx2)
+    else()
+        set(_fftw_simd_support_level --enable-sse2;--enable-avx;--enable-avx2;--enable-avx512)
+    endif()
 elseif(${GMX_SIMD_ACTIVE} MATCHES "^(VSX)")
     set(_fftw_simd_support_level --enable-vsx)
 endif()

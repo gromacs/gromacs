@@ -487,7 +487,6 @@ int gmx_nmeig(int argc, char *argv[])
     real                  *eigenvectors;
     real                   qcvtot, qutot, qcv, qu;
     int                    i, j, k;
-    t_tpxheader            tpx;
     real                   value, omega, nu;
     real                   factor_gmx_to_omega2;
     real                   factor_omega_to_wavenumber;
@@ -519,7 +518,7 @@ int gmx_nmeig(int argc, char *argv[])
     }
 
     /* Read tpr file for volume and number of harmonic terms */
-    read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &tpx, TRUE);
+    TpxFileHeader tpx = readTpxHeader(ftp2fn(efTPR, NFILE, fnm), true);
     snew(top_x, tpx.natoms);
 
     int natoms_tpx;

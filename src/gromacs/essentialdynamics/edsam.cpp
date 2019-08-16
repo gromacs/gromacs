@@ -59,8 +59,9 @@
 #include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/groupcoord.h"
-#include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/update.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/edsamhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -1120,13 +1121,13 @@ static void get_flood_energies(t_edpar *edi, real Vfl[], int nnames)
  * gmx make_edi can be used to create an .edi input file.
  */
 static std::unique_ptr<gmx::EssentialDynamics> ed_open(
-        int                     natoms,
-        ObservablesHistory     *oh,
-        const char             *ediFileName,
-        const char             *edoFileName,
-        gmx_bool                bAppend,
-        const gmx_output_env_t *oenv,
-        const t_commrec        *cr)
+        int                         natoms,
+        ObservablesHistory         *oh,
+        const char                 *ediFileName,
+        const char                 *edoFileName,
+        const gmx::StartingBehavior startingBehavior,
+        const gmx_output_env_t     *oenv,
+        const t_commrec            *cr)
 {
     auto        edHandle = std::make_unique<gmx::EssentialDynamics>();
     auto        ed       = edHandle->getLegacyED();
@@ -1157,7 +1158,7 @@ static std::unique_ptr<gmx::EssentialDynamics> ed_open(
         init_edsamstate(*ed, EDstate);
 
         /* The master opens the ED output file */
-        if (bAppend)
+        if (startingBehavior == gmx::StartingBehavior::RestartWithAppending)
         {
             ed->edo = gmx_fio_fopen(edoFileName, "a+");
         }
@@ -2644,17 +2645,17 @@ static void write_edo_legend(gmx_edsam * ed, int nED, const gmx_output_env_t *oe
 /* Init routine for ED and flooding. Calls init_edi in a loop for every .edi-cycle
  * contained in the input file, creates a NULL terminated list of t_edpar structures */
 std::unique_ptr<gmx::EssentialDynamics> init_edsam(
-        const gmx::MDLogger    &mdlog,
-        const char             *ediFileName,
-        const char             *edoFileName,
-        const gmx_mtop_t       *mtop,
-        const t_inputrec       *ir,
-        const t_commrec        *cr,
-        gmx::Constraints       *constr,
-        const t_state          *globalState,
-        ObservablesHistory     *oh,
-        const gmx_output_env_t *oenv,
-        gmx_bool                bAppend)
+        const gmx::MDLogger        &mdlog,
+        const char                 *ediFileName,
+        const char                 *edoFileName,
+        const gmx_mtop_t           *mtop,
+        const t_inputrec           *ir,
+        const t_commrec            *cr,
+        gmx::Constraints           *constr,
+        const t_state              *globalState,
+        ObservablesHistory         *oh,
+        const gmx_output_env_t     *oenv,
+        const gmx::StartingBehavior startingBehavior)
 {
     int      i, avindex;
     rvec    *x_pbc  = nullptr;                    /* positions of the whole MD system with pbc removed  */
@@ -2681,7 +2682,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
                    "gmx grompp and the related .mdp options may change also.");
 
     /* Open input and output files, allocate space for ED data structure */
-    auto edHandle = ed_open(mtop->natoms, oh, ediFileName, edoFileName, bAppend, oenv, cr);
+    auto edHandle = ed_open(mtop->natoms, oh, ediFileName, edoFileName, startingBehavior, oenv, cr);
     auto ed       = edHandle->getLegacyED();
     GMX_RELEASE_ASSERT(constr != nullptr, "Must have valid constraints object");
     constr->saveEdsamPointer(ed);

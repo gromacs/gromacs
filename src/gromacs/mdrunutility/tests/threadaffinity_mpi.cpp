@@ -63,7 +63,7 @@ TEST(ThreadAffinityMultiRankTest, PinsWithOffsetAndStride)
 {
     GMX_MPI_TEST(4);
     ThreadAffinityTestHelper helper;
-    helper.setAffinityOption(threadaffON);
+    helper.setAffinityOption(ThreadAffinity::On);
     helper.setOffsetAndStride(1, 2);
     helper.setLogicalProcessorCount(8);
     helper.expectWarningMatchingRegex("Applying core pinning offset 1");
@@ -87,7 +87,7 @@ TEST(ThreadAffinityMultiRankTest, DoesNothingWhenDisabled)
 {
     GMX_MPI_TEST(4);
     ThreadAffinityTestHelper helper;
-    helper.setAffinityOption(threadaffOFF);
+    helper.setAffinityOption(ThreadAffinity::Off);
     helper.setLogicalProcessorCount(4);
     helper.setAffinity(1);
 }
@@ -105,7 +105,7 @@ TEST(ThreadAffinityMultiRankTest, HandlesTooManyThreadsWithForce)
 {
     GMX_MPI_TEST(4);
     ThreadAffinityTestHelper helper;
-    helper.setAffinityOption(threadaffON);
+    helper.setAffinityOption(ThreadAffinity::On);
     helper.setLogicalProcessorCount(6);
     helper.expectWarningMatchingRegex("Oversubscribing the CPU");
     helper.setAffinity(2);
@@ -137,7 +137,7 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsOnMasterOnly)
 {
     GMX_MPI_TEST(4);
     ThreadAffinityTestHelper helper;
-    helper.setAffinityOption(threadaffON);
+    helper.setAffinityOption(ThreadAffinity::On);
     setupNodes(&helper, {{2, 1}});
     helper.expectWarningMatchingRegexIf("Oversubscribing the CPU", isMaster() || currentNode() == 1);
     if (currentNode() == 0)
@@ -152,7 +152,7 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsOnNonMasterOnly)
 {
     GMX_MPI_TEST(4);
     ThreadAffinityTestHelper helper;
-    helper.setAffinityOption(threadaffON);
+    helper.setAffinityOption(ThreadAffinity::On);
     setupNodes(&helper, {{1, 2}});
     helper.expectWarningMatchingRegexIf("Oversubscribing the CPU", currentNode() == 0);
     if (currentNode() == 1)
@@ -167,7 +167,7 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, HandlesUnknownHardwareOnNonMaster)
 {
     GMX_MPI_TEST(4);
     ThreadAffinityTestHelper helper;
-    helper.setAffinityOption(threadaffON);
+    helper.setAffinityOption(ThreadAffinity::On);
     setupNodes(&helper, {{2, 0}});
     helper.expectWarningMatchingRegexIf("No information on available cores", isMaster() || currentNode() == 1);
     if (currentNode() == 0)
@@ -210,7 +210,7 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, HandlesInvalidOffsetOnNonMasterOnly
 {
     GMX_MPI_TEST(4);
     ThreadAffinityTestHelper helper;
-    helper.setAffinityOption(threadaffON);
+    helper.setAffinityOption(ThreadAffinity::On);
     helper.setOffsetAndStride(2, 0);
     setupNodes(&helper, {{4, 2}});
     helper.expectWarningMatchingRegex("Applying core pinning offset 2");
@@ -227,7 +227,7 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, HandlesInvalidStrideOnNonMasterOnly
 {
     GMX_MPI_TEST(4);
     ThreadAffinityTestHelper helper;
-    helper.setAffinityOption(threadaffON);
+    helper.setAffinityOption(ThreadAffinity::On);
     helper.setOffsetAndStride(0, 2);
     setupNodes(&helper, {{4, 2}});
     helper.expectWarningMatchingRegexIf("Requested stride too large", isMaster() || currentNode() == 1);

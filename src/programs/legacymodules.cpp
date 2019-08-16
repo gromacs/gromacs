@@ -59,7 +59,14 @@
 #include "gromacs/tools/check.h"
 #include "gromacs/tools/convert_tpr.h"
 #include "gromacs/tools/dump.h"
+#include "gromacs/tools/eneconv.h"
+#include "gromacs/tools/make_ndx.h"
+#include "gromacs/tools/mk_angndx.h"
+#include "gromacs/tools/pme_error.h"
 #include "gromacs/tools/report_methods.h"
+#include "gromacs/tools/trjcat.h"
+#include "gromacs/tools/trjconv.h"
+#include "gromacs/tools/tune_pme.h"
 
 #include "mdrun/mdrun_main.h"
 #include "view/view.h"
@@ -174,8 +181,10 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
 {
     registerModule(manager, &gmx_check, "check",
                    "Check and compare files");
-    registerModule(manager, &gmx::gmx_dump, "dump",
-                   "Make binary files human readable");
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
+            manager, gmx::DumpInfo::name,
+            gmx::DumpInfo::shortDescription,
+            &gmx::DumpInfo::create);
     registerModule(manager, &gmx_grompp, "grompp",
                    "Make a run input file");
     registerModule(manager, &gmx_convert_tpr, "convert-tpr",

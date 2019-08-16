@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,10 +92,27 @@ int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision)
 #endif
 }
 
+int xdr_int32(XDR *xdrs, int32_t *i)
+{
+    // Note that this implementation assumes that an int is at least
+    // 32 bits, which is not strictly required by the language, but
+    // good enough in practice on 32- or 64-bit systems. GROMACS
+    // requires 64-bit systems.
+    static_assert(sizeof(int) >= 4, "XDR handling assumes that an int32_t can be stored in an int");
+    int temporary = static_cast<int>(*i);
+    int ret       = xdr_int(xdrs, &temporary);
+    *i = static_cast<int32_t>(temporary);
+
+    return ret;
+}
+
 int xdr_int64(XDR *xdrs, int64_t *i)
 {
-    /* This routine stores values compatible with xdr_int64_t */
-
+    // Note that this implementation assumes that an int is at least
+    // 32 bits, which is not strictly required by the language, but
+    // good enough in practice on 32- or 64-bit systems. GROMACS
+    // requires 64-bit systems.
+    static_assert(2*sizeof(int) >= 8, "XDR handling assumes that an int64_t can be stored in two ints");
     int                  imaj, imin;
     int                  ret;
 

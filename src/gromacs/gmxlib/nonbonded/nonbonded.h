@@ -37,40 +37,10 @@
 #ifndef GMX_GMXLIB_NONBONDED_NONBONDED_H
 #define GMX_GMXLIB_NONBONDED_NONBONDED_H
 
-#include <stdio.h>
-
-#include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/mdtypes/nblist.h"
-#include "gromacs/topology/block.h"
-#include "gromacs/utility/basedefinitions.h"
-
-struct gmx_grppairener_t;
-struct t_forcerec;
-
-void
-gmx_nonbonded_set_kernel_pointers(t_nblist *   nl);
-
-
 #define GMX_NONBONDED_DO_FORCE          (1<<1)
 #define GMX_NONBONDED_DO_SHIFTFORCE     (1<<2)
 #define GMX_NONBONDED_DO_FOREIGNLAMBDA  (1<<3)
 #define GMX_NONBONDED_DO_POTENTIAL      (1<<4)
 #define GMX_NONBONDED_DO_SR             (1<<5)
-
-void
-do_nonbonded(const t_forcerec  *fr,
-             rvec               x[],
-             rvec               f_shortrange[],
-             const t_mdatoms   *md,
-             const t_blocka    *excl,
-             gmx_grppairener_t *grppener,
-             t_nrnb            *nrnb,
-             real              *lambda,
-             real               dvdlambda[],
-             int                nls,
-             int                eNL,
-             int                flags);
 
 #endif

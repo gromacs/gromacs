@@ -508,7 +508,7 @@ void write_hconf_indexed_p(FILE *out, const char *title, const t_atoms *atoms,
     fflush(out);
 }
 
-void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop,
+void write_hconf_mtop(FILE *out, const char *title, const gmx_mtop_t *mtop,
                       const rvec *x, const rvec *v, const matrix box)
 {
     fprintf(out, "%s\n", (title && title[0]) ? title : gmx::bromacs().c_str());

@@ -56,6 +56,11 @@ struct t_nrnb;
 struct gmx_wallcycle;
 struct VsiteThread;
 
+namespace gmx
+{
+class RangePartitioning;
+}
+
 /* The start and end values of for the vsite indices in the ftype enum.
  * The validity of these values is checked in init_vsite.
  * This is used to avoid loops over all ftypes just to get the vsite entries.
@@ -74,10 +79,8 @@ struct gmx_vsite_t
 
     ~gmx_vsite_t();
 
-    gmx_bool                  bHaveChargeGroups;         /* Do we have charge groups?               */
-    int                       n_intercg_vsite;           /* The number of inter charge group vsites */
-    std::vector<VsitePbc>     vsite_pbc_molt;            /* The pbc atoms for intercg vsites        */
-    std::unique_ptr<VsitePbc> vsite_pbc_loc;             /* The local pbc atoms                     */
+    /* The number of vsites that cross update groups, when =0 no PBC treatment is needed */
+    int                       numInterUpdategroupVsites;
     int                       nthreads;                  /* Number of threads used for vsites       */
     std::vector < std::unique_ptr < VsiteThread>> tData; /* Thread local vsites and work structs    */
     std::vector<int>          taskIndex;                 /* Work array                              */
@@ -131,8 +134,13 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
 /* Return the number of non-linear virtual site constructions in the system */
 int countNonlinearVsites(const gmx_mtop_t &mtop);
 
-int count_intercg_vsites(const gmx_mtop_t *mtop);
-/* Returns the number of virtual sites that cross charge groups */
+/* Return the number of virtual sites that cross update groups
+ *
+ * \param[in] mtop                           The global topology
+ * \param[in] updateGroupingPerMoleculetype  Update grouping per molecule type, pass empty when not using update groups
+ */
+int countInterUpdategroupVsites(const gmx_mtop_t                            &mtop,
+                                gmx::ArrayRef<const gmx::RangePartitioning>  updateGroupingPerMoleculetype);
 
 /* Initialize the virtual site struct,
  *

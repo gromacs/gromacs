@@ -137,7 +137,7 @@ void calc_listed_lambda(const t_idef *idef,
  * on the set of listed interactions */
 void
 do_force_listed(struct gmx_wallcycle           *wcycle,
-                matrix                          box,
+                const matrix                    box,
                 const t_lambda                 *fepvals,
                 const t_commrec                *cr,
                 const gmx_multisim_t           *ms,

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,28 +41,8 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
-struct t_blocka;
 struct t_forcerec;
-struct t_graph;
 struct t_inputrec;
-struct t_mdatoms;
-struct t_pbc;
-
-real RF_excl_correction(const t_forcerec *fr,
-                        const t_graph    *g,
-                        const t_mdatoms  *mdatoms,
-                        const t_blocka   *excl,
-                        bool              usingDomainDecomposition,
-                        rvec              x[],
-                        rvec              f[],
-                        rvec             *fshift,
-                        const t_pbc      *pbc,
-                        real              lambda,
-                        real             *dvdlambda);
-/* Calculate the reaction-field energy correction for this node:
- * epsfac q_i q_j (k_rf r_ij^2 - c_rf)
- * and force correction for all excluded pairs, including self pairs.
- */
 
 void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf,
                 real Rc, real Temp,

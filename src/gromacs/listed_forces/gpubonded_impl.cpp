@@ -58,9 +58,9 @@ namespace gmx
 //! Returns whether there are any interactions in ilists suitable for a GPU.
 static bool someInteractionsCanRunOnGpu(const InteractionLists &ilists)
 {
-    for (int ftype : ftypesOnGpu)
+    for (int fType : fTypesOnGpu)
     {
-        if (!ilists[ftype].iatoms.empty())
+        if (!ilists[fType].iatoms.empty())
         {
             // Perturbation is not implemented in the GPU bonded
             // kernels. If all the interactions were actually
@@ -143,10 +143,6 @@ bool inputSupportsGpuBondeds(const t_inputrec &ir,
     {
         errorReasons.emplace_back("No supported bonded interactions are present");
     }
-    if (ir.cutoff_scheme == ecutsGROUP)
-    {
-        errorReasons.emplace_back("group cutoff scheme");
-    }
     if (!EI_DYNAMICS(ir.eI))
     {
         errorReasons.emplace_back("not a dynamical integrator");
@@ -192,9 +188,9 @@ GpuBonded::haveInteractions() const
 }
 
 void
-GpuBonded::launchKernels(const t_forcerec * /* fr */,
-                         int            /* forceFlags */,
-                         const matrix   /* box */)
+GpuBonded::launchKernel(const t_forcerec * /* fr */,
+                        int            /* forceFlags */,
+                        const matrix   /* box */)
 {
 }
 

@@ -47,7 +47,14 @@ static void pr_cmap(FILE *fp, int indent, const char *title,
     int  i, j, nelem;
     real dx, idx;
 
-    dx    = 360.0 / cmap_grid->grid_spacing;
+    if (cmap_grid->grid_spacing != 0)
+    {
+        dx    = 360.0 / cmap_grid->grid_spacing;
+    }
+    else
+    {
+        dx = 0;
+    }
     nelem = cmap_grid->grid_spacing*cmap_grid->grid_spacing;
 
     if (available(fp, cmap_grid, indent, title))

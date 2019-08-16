@@ -148,6 +148,12 @@ class ekinstate_t
         std::vector<double>  vscale_nhc;     //!< Nose-Hoover velocity scaling factors
         real                 dekindl;        //!< dEkin/dlambda, with free-energy
         real                 mvcos;          //!< Cosine(z) component of the momentum, for viscosity calculations
+        /*! \brief Whether KE terms have been read from the checkpoint.
+         *
+         * Only used for managing whether the call to compute_globals
+         * before we enter the MD loop should compute these quantities
+         * fresh, or not. */
+        bool hasReadEkinState;
 };
 
 /*! \brief Free-energy sampling history struct
@@ -314,5 +320,20 @@ positionsFromStatePointer(const t_state *state)
         return {};
     }
 };
+
+/*! \brief Fills fep_state, lambda, and lam0 if needed
+ *
+ * If FEP or simulated tempering is in use:
+ *
+ *    fills non-null lam0 with the initial lambda values, and
+ *    on master rank fills fep_state and lambda.
+ *
+ * Reports the initial lambda state to the log file. */
+void initialize_lambdas(FILE               *fplog,
+                        const t_inputrec   &ir,
+                        bool                isMaster,
+                        int                *fep_state,
+                        gmx::ArrayRef<real> lambda,
+                        double             *lam0);
 
 #endif

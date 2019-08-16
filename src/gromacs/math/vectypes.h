@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,7 @@
 
 #include <cmath>
 
+#include <algorithm>
 #include <type_traits>
 
 #include "gromacs/utility/gmxassert.h"
@@ -207,6 +208,12 @@ class BasicVector
             return {real(x_[0]), real(x_[1]), real(x_[2])};
         }
 
+        //! cast to IVec
+        BasicVector<int> toIVec() const
+        {
+            return { static_cast<int>(x_[0]), static_cast<int>(x_[1]), static_cast<int>(x_[2]) };
+        }
+
         //! cast to DVec
         BasicVector<double> toDVec() const
         {
@@ -288,6 +295,33 @@ template <typename ValueType> static inline
 ValueType dot(BasicVector<ValueType> a, BasicVector<ValueType> b)
 {
     return a.dot(b);
+}
+
+/*! \brief
+ * Multiply two vectors element by element and return the result.
+ */
+template <typename VectorType>
+static inline VectorType scaleByVector(const VectorType &a, const VectorType &b)
+{
+    return {a[0] * b[0], a[1] * b[1], a[2] * b[2]};
+}
+
+/*! \brief
+ * Return the element-wise minimum of two vectors.
+ */
+template <typename VectorType>
+static inline VectorType elementWiseMin(const VectorType &a, const VectorType &b)
+{
+    return {std::min(a[0], b[0]), std::min(a[1], b[1]), std::min(a[2], b[2])};
+}
+
+/*! \brief
+ * Return the element-wise maximum of two vectors.
+ */
+template <typename VectorType>
+static inline VectorType elementWiseMax(const VectorType &a, const VectorType &b)
+{
+    return {std::max(a[0], b[0]), std::max(a[1], b[1]), std::max(a[2], b[2])};
 }
 
 /*! \brief

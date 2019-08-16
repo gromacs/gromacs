@@ -57,7 +57,9 @@
 
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/defaultinitializationallocator.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "pme_gpu_types_host.h"
 
@@ -129,9 +131,7 @@ struct pme_grid_comm_t
 /*! \brief Data structure for grid overlap communication in a single dimension */
 struct pme_overlap_t
 {
-#if GMX_MPI
     MPI_Comm                     mpi_comm;       //!< MPI communcator
-#endif
     int                          nnodes;         //!< Number of ranks
     int                          nodeid;         //!< Unique rank identifcator
     std::vector<int>             s2g0;           //!< The local interpolation grid start
@@ -142,63 +142,150 @@ struct pme_overlap_t
     std::vector<real>            recvbuf;        //!< Shared buffer for receiving
 };
 
+template<typename T>
+using AlignedVector = std::vector < T, gmx::AlignedAllocator < T>>;
+
+template<typename T>
+using FastVector = std::vector < T, gmx::DefaultInitializationAllocator < T>>;
+
 /*! \brief Data structure for organizing particle allocation to threads */
-typedef struct {
-    int *n;      /* Cumulative counts of the number of particles per thread */
-    int  nalloc; /* Allocation size of i */
-    int *i;      /* Particle indices ordered on thread index (n) */
-} thread_plist_t;
+struct AtomToThreadMap
+{
+    //! Cumulative counts of the number of particles per thread
+    int             *n = nullptr;
+    //! Storage buffer for n
+    std::vector<int> nBuffer;
+    //! Particle indices ordered on thread index (n)
+    FastVector<int>  i;
+};
 
 /*! \brief Helper typedef for spline vectors */
 typedef real *splinevec[DIM];
 
+/*! \internal
+ * \brief Coefficients for theta or dtheta
+ */
+class SplineCoefficients
+{
+    public:
+        //! Reallocate for use with up to nalloc coefficients
+        void realloc(int nalloc);
+
+        //! Pointers to the coefficient buffer for x, y, z
+        splinevec           coefficients = { nullptr };
+    private:
+        //! Storage for x coefficients
+        std::vector<real>   bufferX_;
+        //! Storage for y coefficients
+        std::vector<real>   bufferY_;
+        //! Storage for z coefficients, aligned for SIMD load
+        AlignedVector<real> bufferZ_;
+};
+
 /*! \brief Data structure for beta-spline interpolation */
-typedef struct {
-    int       n;
-    int      *ind;
-    splinevec theta;
-    real     *ptr_theta_z;
-    splinevec dtheta;
-    real     *ptr_dtheta_z;
-} splinedata_t;
+struct splinedata_t
+{
+    int                 n      = 0;
+    FastVector<int>     ind;
+    SplineCoefficients  theta;
+    SplineCoefficients  dtheta;
+    int                 nalloc = 0;
+};
 
-/*! \brief Data structure for coordinating transfer between PP and PME ranks*/
-struct pme_atomcomm_t{
-    int      dimind;        /* The index of the dimension, 0=x, 1=y */
-    int      nslab;
-    int      nodeid;
-#if GMX_MPI
-    MPI_Comm mpi_comm;
-#endif
+/*! \brief PME slab MPI communication setup */
+struct SlabCommSetup
+{
+    //! The nodes to send x and q to with DD
+    int node_dest;
+    //! The nodes to receive x and q from with DD
+    int node_src;
+    //! Index for commnode into the buffers
+    int buf_index;
+    //! The number of atoms to receive
+    int rcount;
+};
 
-    int     *node_dest;     /* The nodes to send x and q to with DD */
-    int     *node_src;      /* The nodes to receive x and q from with DD */
-    int     *buf_index;     /* Index for commnode into the buffers */
+/*! \internal
+ * \brief Data structure for coordinating transfers between PME ranks along one dimension
+ *
+ * Also used for passing coordinates, coefficients and forces to and from PME routines.
+ */
+class PmeAtomComm
+{
+    public:
+        //! Constructor, \p PmeMpiCommunicator is the communicator for this dimension
+        PmeAtomComm(MPI_Comm PmeMpiCommunicator,
+                    int      numThreads,
+                    int      pmeOrder,
+                    int      dimIndex,
+                    bool     doSpread);
 
-    int      maxshift;
+        //! Set the atom count and when necessary resizes atom buffers
+        void setNumAtoms(int numAtoms);
 
-    int      npd;
-    int      pd_nalloc;
-    int     *pd;
-    int     *count;         /* The number of atoms to send to each node */
-    int    **count_thread;
-    int     *rcount;        /* The number of atoms to receive */
+        //! Returns the atom count
+        int numAtoms() const
+        {
+            return numAtoms_;
+        }
 
-    int      n;
-    int      nalloc;
-    rvec    *x;
-    real    *coefficient;
-    rvec    *f;
-    gmx_bool bSpread;       /* These coordinates are used for spreading */
-    int      pme_order;
-    ivec    *idx;
-    rvec    *fractx;            /* Fractional coordinate relative to
-                                 * the lower cell boundary
-                                 */
-    int             nthread;
-    int            *thread_idx; /* Which thread should spread which coefficient */
-    thread_plist_t *thread_plist;
-    splinedata_t   *spline;
+        //! Returns the number of atoms to send to each rank
+        gmx::ArrayRef<int> sendCount()
+        {
+            GMX_ASSERT(!count_thread.empty(), "Need at least one thread_count");
+            return count_thread[0];
+        }
+
+        //! The index of the dimension, 0=x, 1=y
+        int      dimind = 0;
+        //! The number of slabs and ranks this dimension is decomposed over
+        int      nslab  = 1;
+        //! Our MPI rank index
+        int      nodeid = 0;
+        //! Communicator for this dimension
+        MPI_Comm mpi_comm;
+
+        //! Communication setup for each slab, only present with nslab > 1
+        std::vector<SlabCommSetup> slabCommSetup;
+        //! The maximum communication distance counted in MPI ranks
+        int                        maxshift = 0;
+
+        //! The target slab index for each particle
+        FastVector<int>                    pd;
+        //! Target particle counts for each slab, for each thread
+        std::vector < std::vector < int>>  count_thread;
+
+    private:
+        //! The number of atoms
+        int                            numAtoms_ = 0;
+    public:
+        //! The coordinates
+        gmx::ArrayRef<const gmx::RVec> x;
+        //! The coefficient, charges or LJ C6
+        gmx::ArrayRef<const real>      coefficient;
+        //! The forces
+        gmx::ArrayRef<gmx::RVec>       f;
+        //! Coordinate buffer, used only with nslab > 1
+        FastVector<gmx::RVec>          xBuffer;
+        //! Coefficient buffer, used only with nslab > 1
+        FastVector<real>               coefficientBuffer;
+        //! Force buffer, used only with nslab > 1
+        FastVector<gmx::RVec>          fBuffer;
+        //! Tells whether these coordinates are used for spreading
+        bool                           bSpread;
+        //! The PME order
+        int                            pme_order;
+        //! The grid index per atom
+        FastVector<gmx::IVec>          idx;
+        //! Fractional atom coordinates relative to the lower cell boundary
+        FastVector<gmx::RVec>          fractx;
+
+        //! The number of threads to use in PME
+        int                            nthread;
+        //! Thread index for each atom
+        FastVector<int>                thread_idx;
+        std::vector<AtomToThreadMap>   threadMap;
+        std::vector<splinedata_t>      spline;
 };
 
 /*! \brief Data structure for a single PME grid */
@@ -320,7 +407,7 @@ struct gmx_pme_t {            //NOLINT(clang-analyzer-optin.performance.Padding)
     int                      *nnx, *nny, *nnz;
     real                     *fshx, *fshy, *fshz;
 
-    pme_atomcomm_t            atc[2]; /* Indexed on decomposition index */
+    std::vector<PmeAtomComm>  atc; /* Indexed on decomposition index */
     matrix                    recipbox;
     real                      boxVolume;
     splinevec                 bsp_mod;
@@ -329,13 +416,15 @@ struct gmx_pme_t {            //NOLINT(clang-analyzer-optin.performance.Padding)
      * for spreading/gathering (in serial), or the C6 coefficient for
      * local atoms (in parallel).  lb_buf2 is only used in parallel,
      * and stores the sigma values for local atoms. */
-    real                 *lb_buf1, *lb_buf2;
-    int                   lb_buf_nalloc; /* Allocation size for the above buffers. */
+    FastVector<real>          lb_buf1;
+    FastVector<real>          lb_buf2;
 
-    pme_overlap_t         overlap[2];    /* Indexed on dimension, 0=x, 1=y */
+    pme_overlap_t             overlap[2]; /* Indexed on dimension, 0=x, 1=y */
 
-    pme_atomcomm_t        atc_energy;    /* Only for gmx_pme_calc_energy */
+    /* Atom step for energy only calculation in gmx_pme_calc_energy() */
+    std::unique_ptr<PmeAtomComm> atc_energy;
 
+    /* Communication buffers */
     rvec                 *bufv;          /* Communication buffer */
     real                 *bufr;          /* Communication buffer */
     int                   buf_nalloc;    /* The communication buffer size */

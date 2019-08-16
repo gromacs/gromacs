@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 #
 # This file is part of the GROMACS molecular simulation package.
 #
@@ -92,6 +92,9 @@ class IncludedFile(object):
             return '<{0}>'.format(self._included_path)
         else:
             return '"{0}"'.format(self._included_path)
+
+    def __lt__(self, other):
+        return str(self) < str(other)
 
     def is_system(self):
         return self._is_system
@@ -361,7 +364,7 @@ class File(object):
 
         The return value is empty if find_define_file_uses() has not been called,
         as well as for headers that declare these defines."""
-        return set(self._used_defines.iterkeys())
+        return set(self._used_defines.keys())
 
     def get_used_defines(self, define_file):
         """Return set of defines used in this file for a given file like config.h.
@@ -585,7 +588,7 @@ class Module(object):
         return self._group
 
     def get_dependencies(self):
-        return self._dependencies.itervalues()
+        return self._dependencies.values()
 
 class Namespace(object):
 
@@ -814,7 +817,7 @@ class GromacsTree(object):
         if only_files:
             filelist = only_files
         else:
-            filelist = self._files.itervalues()
+            filelist = self._files.values()
         define_files = list(self.get_checked_define_files())
         for define_file in list(define_files):
             if isinstance(define_file, GeneratedFile) and \
@@ -969,8 +972,8 @@ class GromacsTree(object):
         args = ['git', 'check-attr', '--stdin', 'filter']
         git_check_attr = subprocess.Popen(args, stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE, cwd=self._source_root)
-        filelist = '\n'.join(map(File.get_relpath, self._files.itervalues()))
-        filters = git_check_attr.communicate(filelist)[0]
+        filelist = '\n'.join(map(File.get_relpath, self._files.values()))
+        filters = git_check_attr.communicate(filelist.encode())[0].decode()
         for fileinfo in filters.splitlines():
             path, dummy, value = fileinfo.split(': ')
             fileobj = self._files.get(path)
@@ -990,7 +993,7 @@ class GromacsTree(object):
                 args.extend(['-e', define])
             args.extend(['--', '*.cpp', '*.c', '*.cu', '*.h', '*.cuh'])
             define_re = r'\b(?:' + '|'.join(all_defines)+ r')\b'
-            output = subprocess.check_output(args, cwd=self._source_root)
+            output = subprocess.check_output(args, cwd=self._source_root).decode()
             for line in output.splitlines():
                 (filename, text) = line.split('\0')
                 fileobj = self._files.get(filename)
@@ -1060,11 +1063,11 @@ class GromacsTree(object):
 
     def get_files(self):
         """Get iterable for all files in the source tree."""
-        return self._files.itervalues()
+        return self._files.values()
 
     def get_modules(self):
         """Get iterable for all modules in the source tree."""
-        return self._modules.itervalues()
+        return self._modules.values()
 
     def get_classes(self):
         """Get iterable for all classes in the source tree."""

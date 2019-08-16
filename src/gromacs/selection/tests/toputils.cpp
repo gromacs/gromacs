@@ -47,6 +47,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <numeric>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
@@ -204,6 +205,69 @@ void TopologyManager::initAtomTypes(const ArrayRef<const char *const> &types)
         atoms.atomtype[i] = &atomtypes_[j];
     }
     atoms.haveType = TRUE;
+}
+
+void TopologyManager::initTopology(const int numMoleculeTypes,
+                                   const int numMoleculeBlocks)
+{
+    GMX_RELEASE_ASSERT(mtop_ == nullptr, "Topology initialized more than once");
+    mtop_ = std::make_unique<gmx_mtop_t>();
+    mtop_->moltype.resize(numMoleculeTypes);
+    mtop_->molblock.resize(numMoleculeBlocks);
+}
+
+void TopologyManager::setMoleculeType(const int                 moleculeTypeIndex,
+                                      const ArrayRef<const int> residueSizes)
+{
+    GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
+
+    // Make a molecule block that refers to a new molecule type
+    auto &newMoleculeType = mtop_->moltype[moleculeTypeIndex];
+    auto &atoms           = newMoleculeType.atoms;
+
+    auto  numAtomsInMolecule = std::accumulate(residueSizes.begin(), residueSizes.end(), 0);
+    init_t_atoms(&atoms, numAtomsInMolecule, FALSE);
+    atoms.nres = residueSizes.size();
+
+    // Fill the residues in the molecule type
+    int      residueIndex = 0;
+    auto     residueSize  = std::begin(residueSizes);
+    for (int i = 0;
+         i < atoms.nr && residueSize != std::end(residueSizes);
+         ++residueSize, ++residueIndex)
+    {
+        for (int j = 0;
+             i < atoms.nr && j < *residueSize;
+             ++i, ++j)
+        {
+            atoms.atom[i].resind = residueIndex;
+            atoms.atom[i].m      = (i % 3 == 0 ? 2.0 : 1.0);
+        }
+    }
+    atoms.nres     = residueIndex;
+    atoms.haveMass = true;
+}
+
+void TopologyManager::setMoleculeBlock(const int moleculeBlockIndex,
+                                       const int moleculeTypeIndex,
+                                       const int numMoleculesToAdd)
+{
+    GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
+
+    auto &newMoleculeBlock = mtop_->molblock[moleculeBlockIndex];
+    newMoleculeBlock.type = moleculeTypeIndex;
+    newMoleculeBlock.nmol = numMoleculesToAdd;
+
+    mtop_->natoms += numMoleculesToAdd * mtop_->moltype[moleculeTypeIndex].atoms.nr;
+}
+
+void TopologyManager::finalizeTopology()
+{
+    GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
+
+    mtop_->maxres_renum        = 0;
+    mtop_->haveMoleculeIndices = true;
+    gmx_mtop_finalize(mtop_.get());
 }
 
 void TopologyManager::initUniformResidues(int residueSize)

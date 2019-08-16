@@ -56,7 +56,7 @@ struct gmx_hw_info_t;
 struct gmx_gpu_opt_t;
 struct gmx_pme_t;                              // only used in pme_gpu_reinit
 struct gmx_wallclock_gpu_pme_t;
-struct pme_atomcomm_t;
+class PmeAtomComm;
 struct t_complex;
 
 namespace gmx
@@ -443,6 +443,8 @@ GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu                *GPU_FUNC_ARGUMENT(
                                        const float           *GPU_FUNC_ARGUMENT(h_grid)
                                        ) GPU_FUNC_TERM
 
+/*! \brief Return pointer to device copy of coordinate data. */
+GPU_FUNC_QUALIFIER void * pme_gpu_get_kernelparam_coordinates(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM_WITH_RETURN(nullptr)
 
 /* The inlined convenience PME GPU status getters */
 
@@ -594,7 +596,7 @@ enum class PmeLayoutTransform
  * \param[in]  transform  Layout transform type
  */
 GPU_FUNC_QUALIFIER void pme_gpu_transform_spline_atom_data(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu),
-                                                           const pme_atomcomm_t *GPU_FUNC_ARGUMENT(atc),
+                                                           const PmeAtomComm *GPU_FUNC_ARGUMENT(atc),
                                                            PmeSplineDataType GPU_FUNC_ARGUMENT(type),
                                                            int GPU_FUNC_ARGUMENT(dimIndex),
                                                            PmeLayoutTransform GPU_FUNC_ARGUMENT(transform)) GPU_FUNC_TERM

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_groups_t;
+struct SimulationGroups;
 struct t_energy;
 struct t_enxframe;
 struct t_fileio;
@@ -176,7 +176,7 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr);
 /* Reads enx_frames, memory in fr is (re)allocated if necessary */
 
 void get_enx_state(const char *fn, real t,
-                   const gmx_groups_t *groups, t_inputrec *ir,
+                   const SimulationGroups &groups, t_inputrec *ir,
                    t_state *state);
 /*
  * Reads state variables from enx file fn at time t.

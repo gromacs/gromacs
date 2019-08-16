@@ -52,7 +52,7 @@
 
 #include "hackblock.h"
 
-void add_param(InteractionTypeParameters *ps,
+void add_param(InteractionsOfType        *ps,
                int                        ai,
                int                        aj,
                gmx::ArrayRef<const real>  c,
@@ -65,56 +65,56 @@ void add_param(InteractionTypeParameters *ps,
     std::vector<int>  atoms = {ai, aj};
     std::vector<real> forceParm(c.begin(), c.end());
 
-    ps->interactionTypes.emplace_back(InteractionType(atoms, forceParm, s ? s : ""));
+    ps->interactionTypes.emplace_back(InteractionOfType(atoms, forceParm, s ? s : ""));
 }
 
-void add_imp_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al, real c0, real c1,
+void add_imp_param(InteractionsOfType *ps, int ai, int aj, int ak, int al, real c0, real c1,
                    const char *s)
 {
     std::vector<int>  atoms     = {ai, aj, ak, al};
     std::vector<real> forceParm = {c0, c1};
-    ps->interactionTypes.emplace_back(InteractionType(atoms, forceParm, s ? s : ""));
+    ps->interactionTypes.emplace_back(InteractionOfType(atoms, forceParm, s ? s : ""));
 }
 
-void add_dih_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al, real c0, real c1,
+void add_dih_param(InteractionsOfType *ps, int ai, int aj, int ak, int al, real c0, real c1,
                    real c2, const char *s)
 {
     std::vector<int>  atoms     = {ai, aj, ak, al};
     std::vector<real> forceParm = {c0, c1, c2};
-    ps->interactionTypes.emplace_back(InteractionType(atoms, forceParm, s ? s : ""));
+    ps->interactionTypes.emplace_back(InteractionOfType(atoms, forceParm, s ? s : ""));
 }
 
-void add_cmap_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al, int am, const char *s)
+void add_cmap_param(InteractionsOfType *ps, int ai, int aj, int ak, int al, int am, const char *s)
 {
     std::vector<int> atoms = {ai, aj, ak, al, am};
-    ps->interactionTypes.emplace_back(InteractionType(atoms, {}, s ? s : ""));
+    ps->interactionTypes.emplace_back(InteractionOfType(atoms, {}, s ? s : ""));
 }
 
-void add_vsite2_atoms(InteractionTypeParameters *ps, int ai, int aj, int ak)
+void add_vsite2_atoms(InteractionsOfType *ps, int ai, int aj, int ak)
 {
     std::vector<int> atoms = {ai, aj, ak};
-    ps->interactionTypes.emplace_back(InteractionType(atoms, {}));
+    ps->interactionTypes.emplace_back(InteractionOfType(atoms, {}));
 }
 
-void add_vsite2_param(InteractionTypeParameters *ps, int ai, int aj, int ak, real c0)
+void add_vsite2_param(InteractionsOfType *ps, int ai, int aj, int ak, real c0)
 {
     std::vector<int>  atoms     = {ai, aj, ak};
     std::vector<real> forceParm = {c0};
-    ps->interactionTypes.emplace_back(InteractionType(atoms, forceParm));
+    ps->interactionTypes.emplace_back(InteractionOfType(atoms, forceParm));
 }
 
-void add_vsite3_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al,
+void add_vsite3_param(InteractionsOfType *ps, int ai, int aj, int ak, int al,
                       real c0, real c1)
 {
     std::vector<int>  atoms     = {ai, aj, ak, al};
     std::vector<real> forceParm = {c0, c1};
-    ps->interactionTypes.emplace_back(InteractionType(atoms, forceParm));
+    ps->interactionTypes.emplace_back(InteractionOfType(atoms, forceParm));
 }
 
-void add_vsite3_atoms(InteractionTypeParameters *ps, int ai, int aj, int ak, int al, bool bSwapParity)
+void add_vsite3_atoms(InteractionsOfType *ps, int ai, int aj, int ak, int al, bool bSwapParity)
 {
     std::vector<int>  atoms = {ai, aj, ak, al};
-    ps->interactionTypes.emplace_back(InteractionType(atoms, {}));
+    ps->interactionTypes.emplace_back(InteractionOfType(atoms, {}));
 
     if (bSwapParity)
     {
@@ -122,10 +122,10 @@ void add_vsite3_atoms(InteractionTypeParameters *ps, int ai, int aj, int ak, int
     }
 }
 
-void add_vsite4_atoms(InteractionTypeParameters *ps, int ai, int aj, int ak, int al, int am)
+void add_vsite4_atoms(InteractionsOfType *ps, int ai, int aj, int ak, int al, int am)
 {
     std::vector<int> atoms = {ai, aj, ak, al, am};
-    ps->interactionTypes.emplace_back(InteractionType(atoms, {}));
+    ps->interactionTypes.emplace_back(InteractionOfType(atoms, {}));
 }
 
 int search_jtype(const PreprocessResidue &localPpResidue, const char *name, bool bNterm)

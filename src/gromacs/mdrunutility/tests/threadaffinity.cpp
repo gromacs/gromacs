@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,7 @@ class ThreadAffinityTest : public ::testing::Test
 
 TEST_F(ThreadAffinityTest, DoesNothingWhenDisabled)
 {
-    helper_.setAffinityOption(threadaffOFF);
+    helper_.setAffinityOption(ThreadAffinity::Off);
     helper_.setAffinity(1);
 }
 
@@ -88,7 +88,7 @@ TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooManyAutoSetThreads)
 
 TEST_F(ThreadAffinityTest, DoesNothingWithUnknownHardware)
 {
-    helper_.setAffinityOption(threadaffON);
+    helper_.setAffinityOption(ThreadAffinity::On);
     helper_.setLogicalProcessorCount(0);
     helper_.expectWarningMatchingRegex("No information on available cores");
     helper_.setAffinity(2);
@@ -96,7 +96,7 @@ TEST_F(ThreadAffinityTest, DoesNothingWithUnknownHardware)
 
 TEST_F(ThreadAffinityTest, DoesNothingWithTooManyThreads)
 {
-    helper_.setAffinityOption(threadaffON);
+    helper_.setAffinityOption(ThreadAffinity::On);
     helper_.setLogicalProcessorCount(4);
     helper_.expectWarningMatchingRegex("Oversubscribing the CPU");
     helper_.setAffinity(8);
@@ -104,7 +104,7 @@ TEST_F(ThreadAffinityTest, DoesNothingWithTooManyThreads)
 
 TEST_F(ThreadAffinityTest, DoesNothingWithTooLargeOffset)
 {
-    helper_.setAffinityOption(threadaffON);
+    helper_.setAffinityOption(ThreadAffinity::On);
     helper_.setOffsetAndStride(2, 0);
     helper_.setLogicalProcessorCount(4);
     helper_.expectWarningMatchingRegex("Applying core pinning offset 2");
@@ -114,7 +114,7 @@ TEST_F(ThreadAffinityTest, DoesNothingWithTooLargeOffset)
 
 TEST_F(ThreadAffinityTest, DoesNothingWithTooLargeStride)
 {
-    helper_.setAffinityOption(threadaffON);
+    helper_.setAffinityOption(ThreadAffinity::On);
     helper_.setOffsetAndStride(0, 2);
     helper_.setLogicalProcessorCount(4);
     helper_.expectWarningMatchingRegex("Requested stride too large");
@@ -131,7 +131,7 @@ TEST_F(ThreadAffinityTest, PinsSingleThreadWithAuto)
 
 TEST_F(ThreadAffinityTest, PinsSingleThreadWhenForced)
 {
-    helper_.setAffinityOption(threadaffON);
+    helper_.setAffinityOption(ThreadAffinity::On);
     helper_.setLogicalProcessorCount(2);
     helper_.expectPinningMessage(false, 2);
     helper_.expectAffinitySet(0);
@@ -140,7 +140,7 @@ TEST_F(ThreadAffinityTest, PinsSingleThreadWhenForced)
 
 TEST_F(ThreadAffinityTest, PinsSingleThreadWithOffsetWhenForced)
 {
-    helper_.setAffinityOption(threadaffON);
+    helper_.setAffinityOption(ThreadAffinity::On);
     helper_.setOffsetAndStride(2, 0);
     helper_.setLogicalProcessorCount(4);
     helper_.expectWarningMatchingRegex("Applying core pinning offset 2");
@@ -171,7 +171,7 @@ TEST_F(ThreadAffinityTest, PinsMultipleThreadsWithAuto)
 
 TEST_F(ThreadAffinityTest, PinsMultipleThreadsWithStrideWhenForced)
 {
-    helper_.setAffinityOption(threadaffON);
+    helper_.setAffinityOption(ThreadAffinity::On);
     helper_.setOffsetAndStride(0, 2);
     helper_.setLogicalProcessorCount(4);
     helper_.expectPinningMessage(true, 2);
@@ -190,7 +190,7 @@ TEST_F(ThreadAffinityTest, PinsWithAutoAndFewerAutoSetThreads)
 
 TEST_F(ThreadAffinityTest, HandlesPinningFailureWithOneThreadFailing)
 {
-    helper_.setAffinityOption(threadaffON);
+    helper_.setAffinityOption(ThreadAffinity::On);
     helper_.setLogicalProcessorCount(2);
     helper_.expectPinningMessage(false, 1);
     helper_.expectGenericFailureMessage();

@@ -46,6 +46,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/pullhistory.h"
@@ -386,13 +387,13 @@ static void set_legend_for_coord_components(const pull_coord_work_t *pcrd, int c
 static FILE *open_pull_out(const char *fn, struct pull_t *pull,
                            const gmx_output_env_t *oenv,
                            gmx_bool bCoord,
-                           const gmx::ContinuationOptions &continuationOptions)
+                           const bool restartWithAppending)
 {
     FILE  *fp;
     int    nsets, m;
     char **setname, buf[50];
 
-    if (continuationOptions.appendFiles)
+    if (restartWithAppending)
     {
         fp = gmx_fio_fopen(fn, "a+");
     }
@@ -499,11 +500,11 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
     return fp;
 }
 
-void init_pull_output_files(pull_t                         *pull,
-                            int                             nfile,
-                            const t_filenm                  fnm[],
-                            const gmx_output_env_t         *oenv,
-                            const gmx::ContinuationOptions &continuationOptions)
+void init_pull_output_files(pull_t                     *pull,
+                            int                         nfile,
+                            const t_filenm              fnm[],
+                            const gmx_output_env_t     *oenv,
+                            const gmx::StartingBehavior startingBehavior)
 {
     /* Check for px and pf filename collision, if we are writing
        both files */
@@ -516,6 +517,7 @@ void init_pull_output_files(pull_t                         *pull,
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
+    bool restartWithAppending = startingBehavior == gmx::StartingBehavior::RestartWithAppending;
     if ((pull->params.nstxout != 0) &&
         (pull->params.nstfout != 0) &&
         (px_filename == pf_filename))
@@ -530,9 +532,9 @@ void init_pull_output_files(pull_t                         *pull,
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             pull->out_x = open_pull_out(px_appended.c_str(), pull, oenv,
-                                        TRUE, continuationOptions);
+                                        TRUE, restartWithAppending);
             pull->out_f = open_pull_out(pf_appended.c_str(), pull, oenv,
-                                        FALSE, continuationOptions);
+                                        FALSE, restartWithAppending);
             return;
         }
         else
@@ -545,12 +547,12 @@ void init_pull_output_files(pull_t                         *pull,
     if (pull->params.nstxout != 0)
     {
         pull->out_x = open_pull_out(opt2fn("-px", nfile, fnm), pull, oenv,
-                                    TRUE, continuationOptions);
+                                    TRUE, restartWithAppending);
     }
     if (pull->params.nstfout != 0)
     {
         pull->out_f = open_pull_out(opt2fn("-pf", nfile, fnm), pull, oenv,
-                                    FALSE, continuationOptions);
+                                    FALSE, restartWithAppending);
     }
 }
 

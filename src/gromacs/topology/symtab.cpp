@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,14 +49,14 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
-#define BUFSIZE         1024
-#define TABLESIZE       5
+constexpr int c_trimSize   = 1024;
+constexpr int c_maxBufSize = 5;
 
 static char *trim_string(const char *s, char *out, int maxlen)
 /*
  * Returns a pointer to a static area which contains a copy
  * of s without leading or trailing spaces. Strings are
- * truncated to BUFSIZE positions.
+ * truncated to c_trimSize positions.
  *
  * TODO This partially duplicates code in trim(), but perhaps
  * replacing symtab with a std::map is a better fix.
@@ -81,9 +81,9 @@ static char *trim_string(const char *s, char *out, int maxlen)
             break;
         }
     }
-    if (len >= BUFSIZE)
+    if (len >= c_trimSize)
     {
-        len = BUFSIZE-1;
+        len = c_trimSize-1;
     }
     for (i = 0; i < len; i++)
     {
@@ -141,7 +141,7 @@ static t_symbuf *new_symbuf()
     t_symbuf *symbuf;
 
     snew(symbuf, 1);
-    symbuf->bufsize = TABLESIZE;
+    symbuf->bufsize = c_maxBufSize;
     snew(symbuf->buf, symbuf->bufsize);
     symbuf->next = nullptr;
 

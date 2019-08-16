@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,9 +52,6 @@
 struct gmx_enfrot;
 struct gmx_enfrotgrp;
 struct pull_params_t;
-struct pull_t;
-struct t_gmx_IMD;
-typedef struct t_swap *gmx_swapcoords_t;
 
 namespace gmx
 {
@@ -286,8 +283,6 @@ struct t_IMD
     int              nat;
     //! The global indices of the interactive atoms
     int             *ind;
-    //! Stores non-inputrec IMD data
-    t_gmx_IMD       *setup;
 };
 
 struct t_swapGroup
@@ -326,8 +321,6 @@ struct t_swapcoords
     int                      ngrp;
     //! All swap groups, including split and solvent
     t_swapGroup             *grp;
-    //! Swap private data accessible in swapcoords.cpp
-    gmx_swapcoords_t         si_priv;
 };
 
 struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
@@ -537,9 +530,6 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     gmx_bool       bPull;
     //! The data for center of mass pulling
     pull_params_t *pull;
-    // TODO: Remove this by converting pull into a ForceProvider
-    //! The COM pull force calculation data structure
-    pull_t *pull_work;
 
     /* AWH bias data */
     //! Whether to use AWH biasing for PMF calculations
@@ -558,7 +548,7 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Swap data structure.
     t_swapcoords                 *swap;
 
-    //! Whether to do an interactive MD session
+    //! Whether the tpr makes an interactive MD session possible.
     gmx_bool               bIMD;
     //! Interactive molecular dynamics
     t_IMD                 *imd;

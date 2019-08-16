@@ -57,6 +57,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/mdsetup.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
@@ -65,7 +66,6 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/imd/imd.h"
 #include "gromacs/listed_forces/manage_threading.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
@@ -75,6 +75,7 @@
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/ebin.h"
+#include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/expanded.h"
 #include "gromacs/mdlib/force.h"
@@ -83,20 +84,19 @@
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdoutf.h"
-#include "gromacs/mdlib/mdsetup.h"
 #include "gromacs/mdlib/membed.h"
-#include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/resethandler.h"
-#include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/sighandler.h"
-#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/simulationsignal.h"
+#include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/trajectory_writing.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdrunutility/handlerestart.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdrunutility/printtime.h"
 #include "gromacs/mdtypes/awh_history.h"
 #include "gromacs/mdtypes/awh_params.h"
@@ -114,12 +114,11 @@
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/state.h"
-#include "gromacs/mimic/MimicCommunicator.h"
-#include "gromacs/mimic/MimicUtils.h"
+#include "gromacs/mimic/communicator.h"
+#include "gromacs/mimic/utilities.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
-#include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/atoms.h"
@@ -134,27 +133,26 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "integrator.h"
 #include "replicaexchange.h"
+#include "shellfc.h"
+#include "simulator.h"
 
 using gmx::SimulationSignaller;
 
-void gmx::Integrator::do_mimic()
+void gmx::Simulator::do_mimic()
 {
     t_inputrec              *ir   = inputrec;
     int64_t                  step, step_rel;
     double                   t, lam0[efptNR];
     bool                     isLastStep               = false;
     bool                     doFreeEnergyPerturbation = false;
-    int                      force_flags;
+    unsigned int             force_flags;
     tensor                   force_vir, shake_vir, total_vir, pres;
     rvec                     mu_tot;
     gmx_localtop_t           top;
-    gmx_enerdata_t          *enerd;
     PaddedVector<gmx::RVec>  f {};
     gmx_global_stat_t        gstat;
     t_graph                 *graph = nullptr;
-    gmx_groups_t            *groups;
     gmx_shellfc_t           *shellfc;
 
     double                   cycles;
@@ -223,20 +221,15 @@ void gmx::Integrator::do_mimic()
     }
 
     ir->nstxout_compressed                   = 0;
-    groups                                   = &top_global->groups;
+    SimulationGroups *groups                        = &top_global->groups;
     top_global->intermolecularExclusionGroup = genQmmmIndices(*top_global);
 
     initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda, lam0);
     init_nrnb(nrnb);
 
-    gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, top_global, oenv, wcycle);
-    gmx::EnergyOutput energyOutput;
-    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, ir, mdoutf_get_fp_dhdl(outf), true);
-
-    /* Energy terms and groups */
-    snew(enerd, 1);
-    init_enerdata(top_global->groups.grps[egcENER].nr, ir->fepvals->n_lambda,
-                  enerd);
+    gmx_mdoutf        *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, top_global, oenv, wcycle,
+                                          StartingBehavior::NewSimulation);
+    gmx::EnergyOutput  energyOutput(mdoutf_get_fp_ene(outf), top_global, ir, pull_work, mdoutf_get_fp_dhdl(outf), true);
 
     /* Kinetic energy data */
     std::unique_ptr<gmx_ekindata_t> eKinData = std::make_unique<gmx_ekindata_t>();
@@ -253,7 +246,7 @@ void gmx::Integrator::do_mimic()
                                  ir->nstcalcenergy, DOMAINDECOMP(cr));
 
     {
-        double io = compute_io(ir, top_global->natoms, groups, energyOutput.numEnergyTerms(), 1);
+        double io = compute_io(ir, top_global->natoms, *groups, energyOutput.numEnergyTerms(), 1);
         if ((io > 2000) && MASTER(cr))
         {
             fprintf(stderr,
@@ -276,7 +269,8 @@ void gmx::Integrator::do_mimic()
 
         /* Distribute the charge groups over the nodes from the master node */
         dd_partition_system(fplog, mdlog, ir->init_step, cr, TRUE, 1,
-                            state_global, *top_global, ir,
+                            state_global, *top_global, ir, imdSession,
+                            pull_work,
                             state, &f, mdAtoms, &top, fr,
                             vsite, constr,
                             nrnb, nullptr, FALSE);
@@ -317,13 +311,15 @@ void gmx::Integrator::do_mimic()
                               CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
         bool   bSumEkinhOld = false;
         t_vcm *vcm          = nullptr;
-        compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
+        compute_globals(fplog, gstat, cr, ir, fr, ekind,
+                        state->x.rvec_array(), state->v.rvec_array(), state->box, state->lambda[efptVDW],
+                        mdatoms, nrnb, vcm,
                         nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                         constr, &nullSignaller, state->box,
                         &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags);
     }
     checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
-                                    top_global, &top, state,
+                                    top_global, &top, state->x.rvec_array(), state->box,
                                     &shouldCheckNumberOfBondedInteractions);
 
     if (MASTER(cr))
@@ -407,7 +403,8 @@ void gmx::Integrator::do_mimic()
             const bool bMasterState = true;
             dd_partition_system(fplog, mdlog, step, cr,
                                 bMasterState, nstglobalcomm,
-                                state_global, *top_global, ir,
+                                state_global, *top_global, ir, imdSession,
+                                pull_work,
                                 state, &f, mdAtoms, &top, fr,
                                 vsite, constr,
                                 nrnb, wcycle,
@@ -417,7 +414,7 @@ void gmx::Integrator::do_mimic()
 
         if (MASTER(cr))
         {
-            print_ebin_header(fplog, step, t); /* can we improve the information printed here? */
+            energyOutput.printHeader(fplog, step, t); /* can we improve the information printed here? */
         }
 
         if (ir->efep != efepNO)
@@ -437,10 +434,16 @@ void gmx::Integrator::do_mimic()
             /* Now is the time to relax the shells */
             relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose,
                                 enforcedRotation, step,
-                                ir, bNS, force_flags, &top,
+                                ir, imdSession, pull_work, bNS, force_flags, &top,
                                 constr, enerd, fcd,
-                                state, f.arrayRefWithPadding(), force_vir, mdatoms,
-                                nrnb, wcycle, graph, groups,
+                                state->natoms,
+                                state->x.arrayRefWithPadding(),
+                                state->v.arrayRefWithPadding(),
+                                state->box,
+                                state->lambda,
+                                &state->hist,
+                                f.arrayRefWithPadding(), force_vir, mdatoms,
+                                nrnb, wcycle, graph,
                                 shellfc, fr, ppForceWorkload, t, mu_tot,
                                 vsite,
                                 ddBalanceRegionHandler);
@@ -454,8 +457,9 @@ void gmx::Integrator::do_mimic()
              */
             Awh       *awh = nullptr;
             gmx_edsam *ed  = nullptr;
-            do_force(fplog, cr, ms, ir, awh, enforcedRotation,
-                     step, nrnb, wcycle, &top, groups,
+            do_force(fplog, cr, ms, ir, awh, enforcedRotation, imdSession,
+                     pull_work,
+                     step, nrnb, wcycle, &top,
                      state->box, state->x.arrayRefWithPadding(), &state->hist,
                      f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
@@ -513,7 +517,9 @@ void gmx::Integrator::do_mimic()
             t_vcm              *vcm              = nullptr;
             SimulationSignaller signaller(&signals, cr, ms, doInterSimSignal, doIntraSimSignal);
 
-            compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
+            compute_globals(fplog, gstat, cr, ir, fr, ekind,
+                            state->x.rvec_array(), state->v.rvec_array(), state->box, state->lambda[efptVDW],
+                            mdatoms, nrnb, vcm,
                             wcycle, enerd, nullptr, nullptr, nullptr, nullptr, mu_tot,
                             constr, &signaller,
                             state->box,
@@ -522,7 +528,7 @@ void gmx::Integrator::do_mimic()
                             | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
                             );
             checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
-                                            top_global, &top, state,
+                                            top_global, &top, state->x.rvec_array(), state->box,
                                             &shouldCheckNumberOfBondedInteractions);
         }
 
@@ -577,10 +583,11 @@ void gmx::Integrator::do_mimic()
             const bool do_dr  = ir->nstdisreout != 0;
             const bool do_or  = ir->nstorireout != 0;
 
+            energyOutput.printAnnealingTemperatures(do_log ? fplog : nullptr, groups, &(ir->opts));
             energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or,
                                                do_log ? fplog : nullptr,
                                                step, t,
-                                               eprNORMAL, fcd, groups, &(ir->opts), awh);
+                                               fcd, awh);
 
             if (do_per_step(step, ir->nstlog))
             {
@@ -592,7 +599,7 @@ void gmx::Integrator::do_mimic()
         }
 
         /* Print the remaining wall clock time for the run */
-        if (isMasterSimMasterRank(ms, cr) &&
+        if (isMasterSimMasterRank(ms, MASTER(cr)) &&
             (mdrunOptions.verbose || gmx_got_usr_signal()))
         {
             if (shellfc)
@@ -636,14 +643,5 @@ void gmx::Integrator::do_mimic()
 
     done_shellfc(fplog, shellfc, step_rel);
 
-    // Clean up swapcoords
-    if (ir->eSwapCoords != eswapNO)
-    {
-        finish_swapcoords(ir->swap);
-    }
-
     walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
-
-    destroy_enerdata(enerd);
-    sfree(enerd);
 }

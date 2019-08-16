@@ -126,7 +126,9 @@ static const char *wcsn[ewcsNR] =
     "Restraints F",
     "Listed buffer ops.",
     "Nonbonded pruning",
-    "Nonbonded F",
+    "Nonbonded F kernel",
+    "Nonbonded F clear",
+    "Nonbonded FEP",
     "Launch NB GPU tasks",
     "Launch Bonded GPU tasks",
     "Launch PME GPU tasks",
@@ -1073,7 +1075,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
     {
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                 "NOTE: %d %% of the run time was spent communicating energies,\n"
-                "      you might want to use the -gcom option of mdrun\n",
+                "      you might want to increase some nst* mdp options\n",
                 gmx::roundToInt(100*cyc_sum[ewcMoveE]/tot));
     }
 }

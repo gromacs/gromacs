@@ -51,6 +51,7 @@ gmx_add_gtest_executable(
     # files with code for tests
     compressed_x_output.cpp
     grompp.cpp
+    helpwriting.cpp
     initialconstraints.cpp
     interactiveMD.cpp
     pmetest.cpp

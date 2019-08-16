@@ -39,6 +39,8 @@
 
 #include <stdio.h>
 
+#include <vector>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/unique_cptr.h"
@@ -96,11 +98,8 @@ typedef struct t_pdbinfo
     int      uij[6];            /* Anisotropic B-factor                 */
 } t_pdbinfo;
 
-typedef struct t_grps
-{
-    int   nr;                   /* Number of different groups           */
-    int  *nm_ind;               /* Index in the group names             */
-} t_grps;
+//! Contains indices into group names for different groups.
+using AtomGroupIndices = std::vector<int>;
 
 typedef struct t_atoms
 {

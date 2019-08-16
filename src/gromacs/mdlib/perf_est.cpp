@@ -63,18 +63,6 @@
  * that the numbers need to be adjusted.
  */
 
-/* Cost of a pair interaction in the "group" cut-off scheme */
-static const double c_group_fq        = 18.0;
-static const double c_group_qlj_cut   = 18.0;
-static const double c_group_qlj_tab   = 24.0;
-static const double c_group_lj_cut    = 12.0;
-static const double c_group_lj_tab    = 21.0;
-/* Cost of 1 water with one Q/LJ atom */
-static const double c_group_qljw_cut  = 24.0;
-static const double c_group_qljw_tab  = 27.0;
-/* Cost of 1 water with one Q atom or with 1/3 water (LJ negligible) */
-static const double c_group_qw        = 21.0;
-
 /* Cost of a pair interaction in the "Verlet" cut-off scheme, QEXP is Ewald */
 static const double c_nbnxn_lj        =  2.5;
 static const double c_nbnxn_qrf_lj    =  2.9;
@@ -271,129 +259,6 @@ void count_bonded_distances(const gmx_mtop_t *mtop, const t_inputrec *ir,
     }
 }
 
-static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
-                          const matrix box,
-                          int *nq_tot, int *nlj_tot,
-                          double *cost_pp,
-                          gmx_bool *bChargePerturbed, gmx_bool *bTypePerturbed)
-{
-    int            atnr, cg, a0, ncqlj, ncq, nclj;
-    gmx_bool       bBHAM, bLJcut, bWater, bQ, bLJ;
-    int            nw, nqlj, nq, nlj;
-    double         fq, fqlj, flj, fqljw, fqw;
-
-    bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
-
-    bLJcut = ((ir->vdwtype == evdwCUT) && !bBHAM);
-
-    /* Computational cost of bonded, non-bonded and PME calculations.
-     * This will be machine dependent.
-     * The numbers here are accurate for Intel Core2 and AMD Athlon 64
-     * in single precision. In double precision PME mesh is slightly cheaper,
-     * although not so much that the numbers need to be adjusted.
-     */
-    fq    = c_group_fq;
-    fqlj  = (bLJcut ? c_group_qlj_cut : c_group_qlj_tab);
-    flj   = (bLJcut ? c_group_lj_cut  : c_group_lj_tab);
-    /* Cost of 1 water with one Q/LJ atom */
-    fqljw = (bLJcut ? c_group_qljw_cut : c_group_qljw_tab);
-    /* Cost of 1 water with one Q atom or with 1/3 water (LJ negligible) */
-    fqw   = c_group_qw;
-
-    gmx::ArrayRef<const t_iparams> iparams = mtop->ffparams.iparams;
-    atnr              = mtop->ffparams.atnr;
-    nw                = 0;
-    nqlj              = 0;
-    nq                = 0;
-    nlj               = 0;
-    *bChargePerturbed = FALSE;
-    *bTypePerturbed   = FALSE;
-    for (const gmx_molblock_t &molb : mtop->molblock)
-    {
-        const gmx_moltype_t *molt = &mtop->moltype[molb.type];
-        const t_atom        *atom = molt->atoms.atom;
-        int                  a    = 0;
-        for (cg = 0; cg < molt->cgs.nr; cg++)
-        {
-            bWater = !bBHAM;
-            ncqlj  = 0;
-            ncq    = 0;
-            nclj   = 0;
-            a0     = a;
-            while (a < molt->cgs.index[cg+1])
-            {
-                bQ  = (atom[a].q != 0 || atom[a].qB != 0);
-                bLJ = (iparams[(atnr+1)*atom[a].type].lj.c6  != 0 ||
-                       iparams[(atnr+1)*atom[a].type].lj.c12 != 0);
-                if (atom[a].q != atom[a].qB)
-                {
-                    *bChargePerturbed = TRUE;
-                }
-                if (atom[a].type != atom[a].typeB)
-                {
-                    *bTypePerturbed = TRUE;
-                }
-                /* This if this atom fits into water optimization */
-                if (!((a == a0   &&  bQ &&  bLJ) ||
-                      (a == a0+1 &&  bQ && !bLJ) ||
-                      (a == a0+2 &&  bQ && !bLJ && atom[a].q == atom[a-1].q) ||
-                      (a == a0+3 && !bQ &&  bLJ)))
-                {
-                    bWater = FALSE;
-                }
-                if (bQ && bLJ)
-                {
-                    ncqlj++;
-                }
-                else
-                {
-                    if (bQ)
-                    {
-                        ncq++;
-                    }
-                    if (bLJ)
-                    {
-                        nclj++;
-                    }
-                }
-                a++;
-            }
-            if (bWater)
-            {
-                nw   += molb.nmol;
-            }
-            else
-            {
-                nqlj += molb.nmol*ncqlj;
-                nq   += molb.nmol*ncq;
-                nlj  += molb.nmol*nclj;
-            }
-        }
-    }
-
-    *nq_tot  = nq  + nqlj + nw*3;
-    *nlj_tot = nlj + nqlj + nw;
-
-    if (debug)
-    {
-        fprintf(debug, "nw %d nqlj %d nq %d nlj %d\n", nw, nqlj, nq, nlj);
-    }
-
-    /* For the PP non-bonded cost it is (unrealistically) assumed
-     * that all atoms are distributed homogeneously in space.
-     * Factor 3 is used because a water molecule has 3 atoms
-     * (and TIP4P effectively has 3 interactions with (water) atoms)).
-     */
-    *cost_pp = 0.5*(fqljw*nw*nqlj +
-                    fqw  *nw*(3*nw + nq) +
-                    fqlj *nqlj*nqlj +
-                    fq   *nq*(3*nw + nqlj + nq) +
-                    flj  *nlj*(nw + nqlj + nlj))
-        *4/3*M_PI*ir->rlist*ir->rlist*ir->rlist/det(box);
-
-    *cost_pp *= simd_cycle_factor(bHaveSIMD);
-}
-
 static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
                            const matrix box,
                            int *nq_tot, int *nlj_tot,
@@ -526,18 +391,9 @@ float pme_load_estimate(const gmx_mtop_t *mtop, const t_inputrec *ir,
     cost_bond = c_bond*(ndistance_c   *simd_cycle_factor(FALSE) +
                         ndistance_simd*simd_cycle_factor(bHaveSIMD));
 
-    if (ir->cutoff_scheme == ecutsGROUP)
-    {
-        pp_group_load(mtop, ir, box,
-                      &nq_tot, &nlj_tot, &cost_pp,
-                      &bChargePerturbed, &bTypePerturbed);
-    }
-    else
-    {
-        pp_verlet_load(mtop, ir, box,
-                       &nq_tot, &nlj_tot, &cost_pp,
-                       &bChargePerturbed, &bTypePerturbed);
-    }
+    pp_verlet_load(mtop, ir, box,
+                   &nq_tot, &nlj_tot, &cost_pp,
+                   &bChargePerturbed, &bTypePerturbed);
 
     cost_redist = 0;
     cost_spread = 0;

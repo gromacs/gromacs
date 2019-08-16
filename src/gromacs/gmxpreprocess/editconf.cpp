@@ -210,9 +210,7 @@ static void read_bfac(const char *fn, int *n_bfac, double **bfac_val, int **bfac
     fprintf(stderr, "Reading %d B-factors from %s\n", *n_bfac, fn);
     for (i = 0; (i < *n_bfac); i++)
     {
-        /*fprintf(stderr, "Line %d: %s",i,bfac_lines[i]);*/
         sscanf(bfac_lines[i], "%d %lf", &(*bfac_nr)[i], &(*bfac_val)[i]);
-        /*fprintf(stderr," nr %d val %g\n",(*bfac_nr)[i],(*bfac_val)[i]);*/
     }
 
 }
@@ -735,7 +733,7 @@ int gmx_editconf(int argc, char *argv[])
         return 0;
     }
     fprintf(stdout, "Note that major changes are planned in future for "
-            "editconf, to improve usability and utility.");
+            "editconf, to improve usability and utility.\n");
 
     bIndex     = opt2bSet("-n", NFILE, fnm) || bNDEF;
     bMead      = opt2bSet("-mead", NFILE, fnm);
@@ -783,20 +781,22 @@ int gmx_editconf(int argc, char *argv[])
         printf("Incompatible options -mead and -grasp. Turning off -grasp\n");
         bGrasp = FALSE;
     }
-    if (bGrasp && (outftp != efPDB))
+    if ((bGrasp || bCONECT) && (outftp != efPDB))
     {
         gmx_fatal(FARGS, "Output file should be a .pdb file"
-                  " when using the -grasp option\n");
+                  " when using the -grasp or -connect options\n");
     }
-    if ((bMead || bGrasp) && (fn2ftp(infile) != efTPR))
+    if ((bMead || bGrasp || bCONECT) && (fn2ftp(infile) != efTPR))
     {
         gmx_fatal(FARGS, "Input file should be a .tpr file"
-                  " when using the -mead option\n");
+                  " when using the -mead or -connect options\n");
     }
 
-    t_topology top_tmp;
-    read_tps_conf(infile, &top_tmp, &ePBC, &x, &v, box, FALSE);
-    t_atoms   &atoms = top_tmp.atoms;
+    t_symtab  symtab;
+    char     *name;
+    t_atoms   atoms;
+    open_symtab(&symtab);
+    readConfAndAtoms(infile, &symtab, &name, &atoms, &ePBC, &x, &v, box);
     natom = atoms.nr;
     if (atoms.pdbinfo == nullptr)
     {
@@ -1266,12 +1266,12 @@ int gmx_editconf(int argc, char *argv[])
         if (outftp == efPDB)
         {
             out = gmx_ffopen(outfile, "w");
-            write_pdbfile_indexed(out, *top_tmp.name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, FALSE);
+            write_pdbfile_indexed(out, name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, FALSE);
             gmx_ffclose(out);
         }
         else
         {
-            write_sto_conf_indexed(outfile, *top_tmp.name, &atoms, x, bHaveV ? v : nullptr, ePBC, box, isize, index);
+            write_sto_conf_indexed(outfile, name, &atoms, x, bHaveV ? v : nullptr, ePBC, box, isize, index);
         }
     }
     else
@@ -1321,7 +1321,7 @@ int gmx_editconf(int argc, char *argv[])
             {
                 index[i] = i;
             }
-            write_pdbfile_indexed(out, *top_tmp.name, &atoms, x, ePBC, box, ' ', -1, atoms.nr, index, conect,
+            write_pdbfile_indexed(out, name, &atoms, x, ePBC, box, ' ', -1, atoms.nr, index, conect,
                                   outftp == efPQR);
             sfree(index);
             if (bLegend)
@@ -1337,10 +1337,12 @@ int gmx_editconf(int argc, char *argv[])
         }
         else
         {
-            write_sto_conf(outfile, *top_tmp.name, &atoms, x, bHaveV ? v : nullptr, ePBC, box);
+            write_sto_conf(outfile, name, &atoms, x, bHaveV ? v : nullptr, ePBC, box);
         }
     }
-    done_top(&top_tmp);
+    done_atom(&atoms);
+    done_symtab(&symtab);
+    sfree(name);
     if (x)
     {
         sfree(x);

@@ -136,18 +136,18 @@ void update_pcouple_after_coordinates(FILE             *fplog,
                                       t_nrnb           *nrnb,
                                       gmx::Update      *upd);
 
-void update_coords(int64_t                             step,
-                   const t_inputrec                   *inputrec, /* input record and box stuff	*/
-                   const t_mdatoms                    *md,
-                   t_state                            *state,
-                   gmx::ArrayRefWithPadding<gmx::RVec> f, /* forces on home particles */
-                   const t_fcdata                     *fcd,
-                   const gmx_ekindata_t               *ekind,
-                   const matrix                        M,
-                   gmx::Update                        *upd,
-                   int                                 bUpdatePart,
-                   const t_commrec                    *cr, /* these shouldn't be here -- need to think about it */
-                   const gmx::Constraints             *constr);
+void update_coords(int64_t                                   step,
+                   const t_inputrec                         *inputrec, /* input record and box stuff	*/
+                   const t_mdatoms                          *md,
+                   t_state                                  *state,
+                   gmx::ArrayRefWithPadding<const gmx::RVec> f, /* forces on home particles */
+                   const t_fcdata                           *fcd,
+                   const gmx_ekindata_t                     *ekind,
+                   const matrix                              M,
+                   gmx::Update                              *upd,
+                   int                                       bUpdatePart,
+                   const t_commrec                          *cr, /* these shouldn't be here -- need to think about it */
+                   const gmx::Constraints                   *constr);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
@@ -200,8 +200,10 @@ void finish_update(const t_inputrec       *inputrec,
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-void calc_ke_part(const t_state *state, const t_grpopts *opts, const t_mdatoms *md,
-                  gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel);
+void calc_ke_part(
+        rvec *x, rvec *v, matrix box,
+        const t_grpopts *opts, const t_mdatoms *md,
+        gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel);
 /*
  * Compute the partial kinetic energy for home particles;
  * will be accumulated in the calling routine.

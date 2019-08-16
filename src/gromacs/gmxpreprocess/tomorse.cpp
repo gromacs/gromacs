@@ -211,11 +211,11 @@ void convert_harmonics(gmx::ArrayRef<MoleculeInformation> mols, PreprocessingAto
         {
             if ((interaction_function[bb].flags & IF_BTYPE) && (bb != F_MORSE))
             {
-                int nrharm  = mol.plist[bb].size();
+                int nrharm  = mol.interactions[bb].size();
 
                 /* Now loop over the harmonics, trying to convert them */
-                for (auto harmonic = mol.plist[bb].interactionTypes.begin();
-                     harmonic != mol.plist[bb].interactionTypes.end(); )
+                for (auto harmonic = mol.interactions[bb].interactionTypes.begin();
+                     harmonic != mol.interactions[bb].interactionTypes.end(); )
                 {
                     int  ni   = harmonic->ai();
                     int  nj   = harmonic->aj();
@@ -230,9 +230,9 @@ void convert_harmonics(gmx::ArrayRef<MoleculeInformation> mols, PreprocessingAto
                         real              beta           = std::sqrt(kb/(2*edis));
                         std::vector<int>  atoms          = {ni, nj};
                         std::vector<real> forceParam     = {b0, edis, beta};
-                        mol.plist[F_MORSE].interactionTypes.emplace_back(
-                                InteractionType(atoms, forceParam));
-                        harmonic = mol.plist[bb].interactionTypes.erase(harmonic);
+                        mol.interactions[F_MORSE].interactionTypes.emplace_back(
+                                InteractionOfType(atoms, forceParam));
+                        harmonic = mol.interactions[bb].interactionTypes.erase(harmonic);
                     }
                     else
                     {
@@ -240,7 +240,7 @@ void convert_harmonics(gmx::ArrayRef<MoleculeInformation> mols, PreprocessingAto
                     }
                 }
 
-                int newHarmonics = mol.plist[bb].size();
+                int newHarmonics = mol.interactions[bb].size();
                 fprintf(stderr, "Converted %d out of %d %s to morse bonds for mol %d\n",
                         nrharm-newHarmonics, nrharm, interaction_function[bb].name, i);
             }

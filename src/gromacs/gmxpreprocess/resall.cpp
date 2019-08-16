@@ -92,7 +92,7 @@ PreprocessingAtomTypes read_atype(const char *ffdir, t_symtab *tab)
             if (sscanf(buf, "%s%lf", name, &m) == 2)
             {
                 a->m = m;
-                at.addType(tab, *a, name, InteractionType({}, {}), 0, 0);
+                at.addType(tab, *a, name, InteractionOfType({}, {}), 0, 0);
                 fprintf(stderr, "\rAtomtype %d", ++nratt);
                 fflush(stderr);
             }
@@ -154,7 +154,7 @@ static bool read_atoms(FILE *in, char *line,
                       "database", buf1, r0->resname.c_str());
         }
         r0->atom.back().type = j;
-        r0->atom.back().m    = atype->atomMassAFromAtomType(j);
+        r0->atom.back().m    = atype->atomMassFromAtomType(j);
     }
 
     return TRUE;
@@ -333,7 +333,7 @@ void readResidueDatabase(const std::string &rrdb, std::vector<PreprocessResidue>
     {
         gmx_fatal(FARGS, "in .rtp file at line:\n%s\n", line);
     }
-    if (gmx_strncasecmp("bondedtypes", header, 5) == 0)
+    if (gmx::equalCaseInsensitive("bondedtypes", header, 5))
     {
         get_a_line(in, line, STRLEN);
         if ((nparam = sscanf(line, "%d %d %d %d %d %d %d %d",
@@ -376,7 +376,7 @@ void readResidueDatabase(const std::string &rrdb, std::vector<PreprocessResidue>
         print_resall_header(stderr, gmx::arrayRefFromArray(&header_settings, 1));
     }
     /* We don't know the current size of rrtp, but simply realloc immediately */
-    auto oldArrayEnd = rtpDBEntry->end() - 1;
+    auto oldArrayEnd = rtpDBEntry->end();
     while (!feof(in))
     {
         /* Initialise rtp entry structure */
@@ -406,7 +406,7 @@ void readResidueDatabase(const std::string &rrdb, std::vector<PreprocessResidue>
                     /* header is an bonded directive */
                     bError = !read_bondeds(bt, in, line, res);
                 }
-                else if (gmx_strncasecmp("atoms", header, 5) == 0)
+                else if (gmx::equalCaseInsensitive("atoms", header, 5))
                 {
                     /* header is the atoms directive */
                     bError = !read_atoms(in, line, res, tab, atype);
@@ -433,7 +433,7 @@ void readResidueDatabase(const std::string &rrdb, std::vector<PreprocessResidue>
 
         auto found = std::find_if(rtpDBEntry->begin(), rtpDBEntry->end()-1,
                                   [&res](const PreprocessResidue &entry)
-                                  { return gmx::equalCaseInsensitive(res->resname, entry.resname); });
+                                  { return gmx::equalCaseInsensitive(entry.resname, res->resname); });
 
         if (found == rtpDBEntry->end() - 1)
         {
@@ -503,7 +503,7 @@ static int neq_str_sign(const char *a1, const char *a2)
     if (lm >= 1 &&
         ((l1 == l2+1 && is_sign(a1[l1-1])) ||
          (l2 == l1+1 && is_sign(a2[l2-1]))) &&
-        gmx_strncasecmp(a1, a2, lm) == 0)
+        gmx::equalCaseInsensitive(a1, a2, lm))
     {
         return lm;
     }

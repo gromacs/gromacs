@@ -164,7 +164,7 @@ class MultiDimArray
                                                     view_(data_.data(), o.view_.extents())
         {}
         //! Copy assignment
-        MultiDimArray &operator=(const MultiDimArray &o) noexcept
+        MultiDimArray &operator=(const MultiDimArray &o)
         {
             data_ = o.data_;
             view_ = view_type(data_.data(), o.view_.extents());

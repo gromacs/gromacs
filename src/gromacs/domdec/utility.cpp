@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -127,24 +127,8 @@ void dd_check_alloc_ncg(t_forcerec              *fr,
                         PaddedVector<gmx::RVec> *f,
                         int                      numChargeGroups)
 {
-    if (numChargeGroups > fr->cg_nalloc)
-    {
-        if (debug)
-        {
-            fprintf(debug, "Reallocating forcerec: currently %d, required %d, allocating %d\n", fr->cg_nalloc, numChargeGroups, over_alloc_dd(numChargeGroups));
-        }
-        fr->cg_nalloc = over_alloc_dd(numChargeGroups);
-        srenew(fr->cginfo, fr->cg_nalloc);
-        if (fr->cutoff_scheme == ecutsGROUP)
-        {
-            srenew(fr->cg_cm, fr->cg_nalloc);
-        }
-    }
-    if (fr->cutoff_scheme == ecutsVERLET)
-    {
-        /* We don't use charge groups, we use x in state to set up
-         * the atom communication.
-         */
-        dd_resize_state(state, f, numChargeGroups);
-    }
+    fr->cginfo.resize(numChargeGroups);
+
+    /* We use x during the setup of the atom communication */
+    dd_resize_state(state, f, numChargeGroups);
 }

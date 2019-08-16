@@ -365,9 +365,10 @@ static void sync_ocl_event(cl_command_queue stream, cl_event *ocl_event)
 /*! \brief Launch asynchronously the xq buffer host to device copy. */
 void gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
                         const nbnxn_atomdata_t *nbatom,
-                        const AtomLocality      atomLocality,
-                        const bool              haveOtherWork)
+                        const AtomLocality      atomLocality)
 {
+    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+
     const InteractionLocality iloc = gpuAtomToInteractionLocality(atomLocality);
 
     /* local/nonlocal offset and length used for xq and f */
@@ -389,7 +390,7 @@ void gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
        we always call the local local x+q copy (and the rest of the local
        work in nbnxn_gpu_launch_kernel().
      */
-    if (!haveOtherWork && canSkipWork(*nb, iloc))
+    if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(*nb, iloc))
     {
         plist->haveFreshList = false;
 
@@ -470,9 +471,6 @@ void gpu_launch_kernel(gmx_nbnxn_ocl_t                  *nb,
                        const int                         flags,
                        const Nbnxm::InteractionLocality  iloc)
 {
-    /* OpenCL kernel launch-related stuff */
-    cl_kernel            nb_kernel = nullptr;  /* fn pointer to the nonbonded kernel */
-
     cl_atomdata_t       *adat    = nb->atdat;
     cl_nbparam_t        *nbp     = nb->nbparam;
     cl_plist_t          *plist   = nb->plist[iloc];
@@ -494,7 +492,7 @@ void gpu_launch_kernel(gmx_nbnxn_ocl_t                  *nb,
        clearing. All these operations, except for the local interaction kernel,
        are needed for the non-local interactions. The skip of the local kernel
        call is taken care of later in this function. */
-    if (canSkipWork(*nb, iloc))
+    if (canSkipNonbondedWork(*nb, iloc))
     {
         plist->haveFreshList = false;
 
@@ -523,13 +521,6 @@ void gpu_launch_kernel(gmx_nbnxn_ocl_t                  *nb,
         t->interaction[iloc].nb_k.openTimingRegion(stream);
     }
 
-    /* get the pointer to the kernel flavor we need to use */
-    nb_kernel = select_nbnxn_kernel(nb,
-                                    nbp->eeltype,
-                                    nbp->vdwtype,
-                                    bCalcEner,
-                                    (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune));
-
     /* kernel launch config */
 
     KernelLaunchConfig config;
@@ -554,25 +545,32 @@ void gpu_launch_kernel(gmx_nbnxn_ocl_t                  *nb,
 
     auto          *timingEvent  = bDoTime ? t->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
     constexpr char kernelName[] = "k_calc_nb";
+    const auto     kernel       = select_nbnxn_kernel(nb,
+                                                      nbp->eeltype,
+                                                      nbp->vdwtype,
+                                                      bCalcEner,
+                                                      (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune));
+
+
     if (useLjCombRule(nb->nbparam->vdwtype))
     {
-        const auto kernelArgs = prepareGpuKernelArguments(nb_kernel, config,
+        const auto kernelArgs = prepareGpuKernelArguments(kernel, config,
                                                           &nbparams_params, &adat->xq, &adat->f, &adat->e_lj, &adat->e_el, &adat->fshift,
                                                           &adat->lj_comb,
                                                           &adat->shift_vec, &nbp->nbfp_climg2d, &nbp->nbfp_comb_climg2d, &nbp->coulomb_tab_climg2d,
                                                           &plist->sci, &plist->cj4, &plist->excl, &bCalcFshift);
 
-        launchGpuKernel(nb_kernel, config, timingEvent, kernelName, kernelArgs);
+        launchGpuKernel(kernel, config, timingEvent, kernelName, kernelArgs);
     }
     else
     {
-        const auto kernelArgs = prepareGpuKernelArguments(nb_kernel, config,
+        const auto kernelArgs = prepareGpuKernelArguments(kernel, config,
                                                           &adat->ntypes,
                                                           &nbparams_params, &adat->xq, &adat->f, &adat->e_lj, &adat->e_el, &adat->fshift,
                                                           &adat->atom_types,
                                                           &adat->shift_vec, &nbp->nbfp_climg2d, &nbp->nbfp_comb_climg2d, &nbp->coulomb_tab_climg2d,
                                                           &plist->sci, &plist->cj4, &plist->excl, &bCalcFshift);
-        launchGpuKernel(nb_kernel, config, timingEvent, kernelName, kernelArgs);
+        launchGpuKernel(kernel, config, timingEvent, kernelName, kernelArgs);
     }
 
     if (bDoTime)
@@ -678,7 +676,6 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t           *nb,
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
     int       num_threads_z = getOclPruneKernelJ4Concurrency(nb->dev_info->vendor_e);
-    cl_kernel pruneKernel   = selectPruneKernel(nb->kernel_pruneonly, plist->haveFreshList);
 
     /* kernel launch config */
     KernelLaunchConfig config;
@@ -706,6 +703,7 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t           *nb,
 
     auto          *timingEvent  = bDoTime ? timer->fetchNextEvent() : nullptr;
     constexpr char kernelName[] = "k_pruneonly";
+    const auto     pruneKernel  = selectPruneKernel(nb->kernel_pruneonly, plist->haveFreshList);
     const auto     kernelArgs   = prepareGpuKernelArguments(pruneKernel, config,
                                                             &nbparams_params, &adat->xq, &adat->shift_vec,
                                                             &plist->sci, &plist->cj4, &plist->imask, &numParts, &part);
@@ -733,12 +731,14 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t           *nb,
  * Launch asynchronously the download of nonbonded forces from the GPU
  * (and energies/shift forces if required).
  */
-void gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
-                        struct nbnxn_atomdata_t       *nbatom,
-                        const int                      flags,
-                        const AtomLocality             aloc,
-                        const bool                     haveOtherWork)
+void gpu_launch_cpyback(gmx_nbnxn_ocl_t                          *nb,
+                        struct nbnxn_atomdata_t                  *nbatom,
+                        const int                                 flags,
+                        const AtomLocality                        aloc,
+                        const bool                    gmx_unused  copyBackNbForce)
 {
+    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+
     cl_int gmx_unused cl_error;
     int               adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
 
@@ -755,7 +755,7 @@ void gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
 
 
     /* don't launch non-local copy-back if there was no non-local work to do */
-    if (!haveOtherWork && canSkipWork(*nb, iloc))
+    if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(*nb, iloc))
     {
         /* TODO An alternative way to signal that non-local work is
            complete is to use a clEnqueueMarker+clEnqueueBarrier

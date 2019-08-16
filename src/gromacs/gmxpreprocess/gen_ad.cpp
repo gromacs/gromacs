@@ -64,16 +64,16 @@
 #include "resall.h"
 
 #define DIHEDRAL_WAS_SET_IN_RTP 0
-static bool was_dihedral_set_in_rtp(const InteractionType &dih)
+static bool was_dihedral_set_in_rtp(const InteractionOfType &dih)
 {
     // This is a bad way to check this, but I don't know how to make this better now.
     gmx::ArrayRef<const real> forceParam = dih.forceParam();
     return forceParam[MAXFORCEPARAM-1] == DIHEDRAL_WAS_SET_IN_RTP;
 }
 
-typedef bool (*peq)(const InteractionType &p1, const InteractionType &p2);
+typedef bool (*peq)(const InteractionOfType &p1, const InteractionOfType &p2);
 
-static bool acomp(const InteractionType &a1, const InteractionType &a2)
+static bool acomp(const InteractionOfType &a1, const InteractionOfType &a2)
 {
     int            ac;
 
@@ -91,7 +91,7 @@ static bool acomp(const InteractionType &a1, const InteractionType &a2)
     }
 }
 
-static bool pcomp(const InteractionType &a1, const InteractionType &a2)
+static bool pcomp(const InteractionOfType &a1, const InteractionOfType &a2)
 {
     int            pc;
 
@@ -105,7 +105,7 @@ static bool pcomp(const InteractionType &a1, const InteractionType &a2)
     }
 }
 
-static bool dcomp(const InteractionType &d1, const InteractionType &d2)
+static bool dcomp(const InteractionOfType &d1, const InteractionOfType &d2)
 {
     int            dc;
 
@@ -150,19 +150,19 @@ static bool dcomp(const InteractionType &d1, const InteractionType &d2)
 }
 
 
-static bool is_dihedral_on_same_bond(const InteractionType &p1, const InteractionType &p2)
+static bool is_dihedral_on_same_bond(const InteractionOfType &p1, const InteractionOfType &p2)
 {
     return ((p1.aj() == p2.aj()) && (p1.ak() == p2.ak())) ||
            ((p1.aj() == p2.ak()) && (p1.ak() == p2.aj()));
 }
 
 
-static bool preq(const InteractionType &p1, const InteractionType &p2)
+static bool preq(const InteractionOfType &p1, const InteractionOfType &p2)
 {
     return (p1.ai() == p2.ai()) && (p1.aj() == p2.aj());
 }
 
-static void rm2par(std::vector<InteractionType> *p, peq eq)
+static void rm2par(std::vector<InteractionOfType> *p, peq eq)
 {
     if (p->empty())
     {
@@ -183,9 +183,9 @@ static void rm2par(std::vector<InteractionType> *p, peq eq)
     }
 }
 
-static void cppar(gmx::ArrayRef<const InteractionType>          types,
-                  gmx::ArrayRef<InteractionTypeParameters>      plist,
-                  int                                           ftype)
+static void cppar(gmx::ArrayRef<const InteractionOfType>          types,
+                  gmx::ArrayRef<InteractionsOfType>               plist,
+                  int                                             ftype)
 {
     /* Keep old stuff */
     for (const auto &type : types)
@@ -194,7 +194,7 @@ static void cppar(gmx::ArrayRef<const InteractionType>          types,
     }
 }
 
-static bool idcomp(const InteractionType &a, const InteractionType &b)
+static bool idcomp(const InteractionOfType &a, const InteractionOfType &b)
 {
     int            d;
 
@@ -216,7 +216,7 @@ static bool idcomp(const InteractionType &a, const InteractionType &b)
     }
 }
 
-static void sort_id(gmx::ArrayRef<InteractionType> ps)
+static void sort_id(gmx::ArrayRef<InteractionOfType> ps)
 {
     if (ps.size() > 1)
     {
@@ -254,21 +254,21 @@ static int n_hydro(gmx::ArrayRef<const int> a, char ***atomname)
 
 /* Clean up the dihedrals (both generated and read from the .rtp
  * file). */
-static std::vector<InteractionType> clean_dih(gmx::ArrayRef<const InteractionType> dih,
-                                              gmx::ArrayRef<const InteractionType> improper,
-                                              t_atoms *atoms, bool bKeepAllGeneratedDihedrals,
-                                              bool bRemoveDihedralIfWithImproper)
+static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionOfType> dih,
+                                                gmx::ArrayRef<const InteractionOfType> improper,
+                                                t_atoms *atoms, bool bKeepAllGeneratedDihedrals,
+                                                bool bRemoveDihedralIfWithImproper)
 {
     /* Construct the list of the indices of the dihedrals
      * (i.e. generated or read) that might be kept. */
-    std::vector < std::pair < InteractionType, int>> newDihedrals;
+    std::vector < std::pair < InteractionOfType, int>> newDihedrals;
     if (bKeepAllGeneratedDihedrals)
     {
         fprintf(stderr, "Keeping all generated dihedrals\n");
         int i = 0;
         for (const auto &dihedral : dih)
         {
-            newDihedrals.emplace_back(std::pair<InteractionType, int>(dihedral, i++));
+            newDihedrals.emplace_back(std::pair<InteractionOfType, int>(dihedral, i++));
         }
     }
     else
@@ -288,7 +288,7 @@ static std::vector<InteractionType> clean_dih(gmx::ArrayRef<const InteractionTyp
                 dihedral == dih.begin() ||
                 !is_dihedral_on_same_bond(*dihedral, *(dihedral-1)))
             {
-                newDihedrals.emplace_back(std::pair<InteractionType, int>(*dihedral, i++));
+                newDihedrals.emplace_back(std::pair<InteractionOfType, int>(*dihedral, i++));
             }
         }
     }
@@ -351,7 +351,7 @@ static std::vector<InteractionType> clean_dih(gmx::ArrayRef<const InteractionTyp
             dihedral = newDihedrals.erase(dihedral);
         }
     }
-    std::vector<InteractionType> finalDihedrals;
+    std::vector<InteractionOfType> finalDihedrals;
     finalDihedrals.reserve(newDihedrals.size());
     for (const auto &param : newDihedrals)
     {
@@ -360,11 +360,11 @@ static std::vector<InteractionType> clean_dih(gmx::ArrayRef<const InteractionTyp
     return finalDihedrals;
 }
 
-static std::vector<InteractionType> get_impropers(t_atoms                             *atoms,
-                                                  gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
-                                                  bool                                 bAllowMissing)
+static std::vector<InteractionOfType> get_impropers(t_atoms                             *atoms,
+                                                    gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
+                                                    bool                                 bAllowMissing)
 {
-    std::vector<InteractionType> improper;
+    std::vector<InteractionOfType> improper;
 
     /* Add all the impropers from the residue database to the list. */
     int start     = 0;
@@ -394,7 +394,7 @@ static std::vector<InteractionType> get_impropers(t_atoms                       
                 if (!bStop)
                 {
                     /* Not broken out */
-                    improper.emplace_back(InteractionType(ai, {}, bondeds.s));
+                    improper.emplace_back(InteractionOfType(ai, {}, bondeds.s));
                 }
             }
             while ((start < atoms->nr) && (atoms->atom[start].resind == i))
@@ -614,19 +614,19 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 
 /* Generate pairs, angles and dihedrals from .rtp settings */
 void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
-             gmx::ArrayRef<InteractionTypeParameters> plist, t_excls excls[], gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
+             gmx::ArrayRef<InteractionsOfType> plist, t_excls excls[], gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
              bool bAllowMissing)
 {
     /* These are the angles, dihedrals and pairs that we generate
      * from the bonds. The ones that are already there from the rtp file
      * will be retained.
      */
-    std::vector<InteractionType>   ang;
-    std::vector<InteractionType>   dih;
-    std::vector<InteractionType>   pai;
-    std::vector<InteractionType>   improper;
+    std::vector<InteractionOfType>   ang;
+    std::vector<InteractionOfType>   dih;
+    std::vector<InteractionOfType>   pai;
+    std::vector<InteractionOfType>   improper;
 
-    std::array<std::string, 4>     anm;
+    std::array<std::string, 4>       anm;
 
     if (!globalPatches.empty())
     {
@@ -701,7 +701,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidu
                             }
                             while (res < maxres);
                         }
-                        ang.push_back(InteractionType(atomNumbers, {}, name));
+                        ang.push_back(InteractionOfType(atomNumbers, {}, name));
                     }
                     /* Generate every dihedral, 1-4 exclusion and 1-4 interaction
                        only once */
@@ -756,7 +756,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidu
                                                    if the dihedral was in the rtp list.
                                                  */
                                                 nFound++;
-                                                dih.push_back(InteractionType(atomNumbers, {}, name));
+                                                dih.push_back(InteractionOfType(atomNumbers, {}, name));
                                                 dih.back().setForceParameter(MAXFORCEPARAM-1, DIHEDRAL_WAS_SET_IN_RTP);
                                             }
                                         }
@@ -766,7 +766,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidu
                                 if (nFound == 0)
                                 {
                                     std::vector<int> atoms = {i, j1, k1, l1};
-                                    dih.push_back(InteractionType(atoms, {},   ""));
+                                    dih.push_back(InteractionOfType(atoms, {},   ""));
                                 }
 
                                 int nbd = nb_dist(nnb, i, l1);
@@ -785,7 +785,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidu
                                             !(is_hydro(atoms, i1) && is_hydro(atoms, i2)))
                                         {
                                             std::vector<int> atoms = {i1, i2};
-                                            pai.push_back(InteractionType(atoms, {}, ""));
+                                            pai.push_back(InteractionOfType(atoms, {}, ""));
                                         }
                                     }
                                 }
@@ -840,7 +840,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidu
                 {
                     bondeds.match = true;
                     /* Incrementing nang means we save this angle */
-                    ang.push_back(InteractionType(atomNumbers, {}, bondeds.s));
+                    ang.push_back(InteractionOfType(atomNumbers, {}, bondeds.s));
                 }
             }
 
@@ -878,7 +878,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidu
                 {
                     bondeds.match = true;
                     /* Incrementing ndih means we save this dihedral */
-                    dih.push_back(InteractionType(atomNumbers, {}, bondeds.s));
+                    dih.push_back(InteractionOfType(atomNumbers, {}, bondeds.s));
                 }
             }
         }

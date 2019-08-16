@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -339,6 +339,47 @@ TEST(RVecTest, CanDoDotProductOfRVec)
     EXPECT_EQ(10, c);
 }
 
+TEST(RVecTest, CanScaleByVector)
+{
+    RVec a(1, 2, 3);
+    RVec b(3, 2, 1);
+    RVec scaled = scaleByVector(a, b);
+    EXPECT_REAL_EQ(3, scaled[XX]);
+    EXPECT_REAL_EQ(4, scaled[YY]);
+    EXPECT_REAL_EQ(3, scaled[ZZ]);
+}
+
+TEST(RVecTest, asIVec)
+{
+    RVec a(1.2, 2.7, -3e3);
+    auto asIvec = a.toIVec();
+
+    EXPECT_REAL_EQ(1, asIvec[XX]);
+    EXPECT_REAL_EQ(2, asIvec[YY]);
+    EXPECT_REAL_EQ(-3000, asIvec[ZZ]);
+}
+
+TEST(RVecTest, elementWiseMin)
+{
+    RVec a(1, 2, 3);
+    RVec b(3, 2, 1);
+    auto minAB = elementWiseMin(a, b);
+
+    EXPECT_REAL_EQ(1, minAB[XX]);
+    EXPECT_REAL_EQ(2, minAB[YY]);
+    EXPECT_REAL_EQ(1, minAB[ZZ]);
+}
+
+TEST(RVecTest, elementWiseMax)
+{
+    RVec a(1, 2, 3);
+    RVec b(3, 2, 1);
+    auto maxAB = elementWiseMax(a, b);
+
+    EXPECT_REAL_EQ(3, maxAB[XX]);
+    EXPECT_REAL_EQ(2, maxAB[YY]);
+    EXPECT_REAL_EQ(3, maxAB[ZZ]);
+}
 
 /*! \brief
  * Helper function for testing DVec to dvec conversions.

@@ -44,7 +44,7 @@
 
 class PreprocessingAtomTypes;
 struct t_atoms;
-struct InteractionTypeParameters;
+struct InteractionsOfType;
 struct PreprocessResidue;
 struct t_symtab;
 
@@ -52,11 +52,11 @@ struct t_symtab;
 
 void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, PreprocessingAtomTypes *atype,
                t_atoms *at, t_symtab *symtab, std::vector<gmx::RVec> *x,
-               gmx::ArrayRef<InteractionTypeParameters> plist, int *dummy_type[], int *cgnr[],
+               gmx::ArrayRef<InteractionsOfType> plist, int *dummy_type[], int *cgnr[],
                real mHmult, bool bVSiteAromatics,
                const char *ffdir);
 
-void do_h_mass(InteractionTypeParameters *psb, int vsite_type[], t_atoms *at, real mHmult,
+void do_h_mass(InteractionsOfType *psb, int vsite_type[], t_atoms *at, real mHmult,
                bool bDeuterate);
 
 #endif

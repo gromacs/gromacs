@@ -57,6 +57,7 @@
 #include <algorithm>
 
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"

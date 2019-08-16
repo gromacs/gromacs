@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,7 @@ void write_hconf_indexed_p(FILE *out, const char *title, const t_atoms *atoms,
                            int nx, const int index[],
                            const rvec *x, const rvec *v, const matrix box);
 
-void write_hconf_mtop(FILE *out, const char *title, struct gmx_mtop_t *mtop,
+void write_hconf_mtop(FILE *out, const char *title, const gmx_mtop_t *mtop,
                       const rvec *x, const rvec *v, const matrix box);
 
 void write_hconf_p(FILE *out, const char *title, const t_atoms *atoms,

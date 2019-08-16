@@ -59,6 +59,7 @@
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/domdec/localatomsetmanager.h"
+#include "gromacs/domdec/mdsetup.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/network.h"
@@ -69,7 +70,6 @@
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdlib/mdsetup.h"
 #include "gromacs/mdlib/nsgrid.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -441,30 +441,25 @@ static void set_zones_ncg_home(gmx_domdec_t *dd)
 }
 
 //! Restore atom groups for the charge groups.
-static void restoreAtomGroups(gmx_domdec_t *dd,
-                              const int *gcgs_index, const t_state *state)
+static void restoreAtomGroups(gmx_domdec_t  *dd,
+                              const t_state *state)
 {
     gmx::ArrayRef<const int>  atomGroupsState        = state->cg_gl;
 
     std::vector<int>         &globalAtomGroupIndices = dd->globalAtomGroupIndices;
-    gmx::RangePartitioning   &atomGrouping           = dd->atomGrouping_;
 
     globalAtomGroupIndices.resize(atomGroupsState.size());
-    atomGrouping.clear();
 
     /* Copy back the global charge group indices from state
      * and rebuild the local charge group to atom index.
      */
     for (gmx::index i = 0; i < atomGroupsState.ssize(); i++)
     {
-        const int atomGroupGlobal  = atomGroupsState[i];
-        const int groupSize        = gcgs_index[atomGroupGlobal + 1] - gcgs_index[atomGroupGlobal];
-        globalAtomGroupIndices[i]  = atomGroupGlobal;
-        atomGrouping.appendBlock(groupSize);
+        globalAtomGroupIndices[i] = atomGroupsState[i];
     }
 
     dd->ncg_home = atomGroupsState.size();
-    dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, atomGrouping.fullRange().end());
+    dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, atomGroupsState.ssize());
 
     set_zones_ncg_home(dd);
 }
@@ -473,16 +468,12 @@ static void restoreAtomGroups(gmx_domdec_t *dd,
 static void dd_set_cginfo(gmx::ArrayRef<const int> index_gl, int cg0, int cg1,
                           t_forcerec *fr, char *bLocalCG)
 {
-    cginfo_mb_t *cginfo_mb;
-    int         *cginfo;
-    int          cg;
-
     if (fr != nullptr)
     {
-        cginfo_mb = fr->cginfo_mb;
-        cginfo    = fr->cginfo;
+        const cginfo_mb_t *cginfo_mb = fr->cginfo_mb;
+        gmx::ArrayRef<int> cginfo    = fr->cginfo;
 
-        for (cg = cg0; cg < cg1; cg++)
+        for (int cg = cg0; cg < cg1; cg++)
         {
             cginfo[cg] = ddcginfo(cginfo_mb, index_gl[cg]);
         }
@@ -490,7 +481,7 @@ static void dd_set_cginfo(gmx::ArrayRef<const int> index_gl, int cg0, int cg1,
 
     if (bLocalCG != nullptr)
     {
-        for (cg = cg0; cg < cg1; cg++)
+        for (int cg = cg0; cg < cg1; cg++)
         {
             bLocalCG[index_gl[cg]] = TRUE;
         }
@@ -499,13 +490,12 @@ static void dd_set_cginfo(gmx::ArrayRef<const int> index_gl, int cg0, int cg1,
 
 //! Makes the mappings between global and local atom indices during DD repartioning.
 static void make_dd_indices(gmx_domdec_t *dd,
-                            const int *gcgs_index, int cg_start)
+                            const int     atomStart)
 {
     const int                 numZones               = dd->comm->zones.n;
     const int                *zone2cg                = dd->comm->zones.cg_range;
     const int                *zone_ncg1              = dd->comm->zone_ncg1;
     gmx::ArrayRef<const int>  globalAtomGroupIndices = dd->globalAtomGroupIndices;
-    const gmx_bool            bCGs                   = dd->comm->bCGs;
 
     std::vector<int>         &globalAtomIndices      = dd->globalAtomIndices;
     gmx_ga2la_t              &ga2la                  = *dd->ga2la;
@@ -516,14 +506,14 @@ static void make_dd_indices(gmx_domdec_t *dd,
     }
 
     /* Make the local to global and global to local atom index */
-    int a = dd->atomGrouping().subRange(cg_start, cg_start).begin();
+    int a = atomStart;
     globalAtomIndices.resize(a);
     for (int zone = 0; zone < numZones; zone++)
     {
         int cg0;
         if (zone == 0)
         {
-            cg0 = cg_start;
+            cg0 = atomStart;
         }
         else
         {
@@ -541,21 +531,9 @@ static void make_dd_indices(gmx_domdec_t *dd,
                 zone1 += numZones;
             }
             int cg_gl = globalAtomGroupIndices[cg];
-            if (bCGs)
-            {
-                for (int a_gl = gcgs_index[cg_gl]; a_gl < gcgs_index[cg_gl+1]; a_gl++)
-                {
-                    globalAtomIndices.push_back(a_gl);
-                    ga2la.insert(a_gl, {a, zone1});
-                    a++;
-                }
-            }
-            else
-            {
-                globalAtomIndices.push_back(cg_gl);
-                ga2la.insert(cg_gl, {a, zone1});
-                a++;
-            }
+            globalAtomIndices.push_back(cg_gl);
+            ga2la.insert(cg_gl, {a, zone1});
+            a++;
         }
     }
 }
@@ -1407,19 +1385,20 @@ void set_dd_dlb_max_cutoff(t_commrec *cr, real cutoff)
     }
 }
 
-//! Merges charge-group buffers.
+//! Merge atom buffers.
 static void merge_cg_buffers(int ncell,
                              gmx_domdec_comm_dim_t *cd, int pulse,
                              int  *ncg_cell,
                              gmx::ArrayRef<int> index_gl,
                              const int  *recv_i,
-                             rvec *cg_cm,    rvec *recv_vr,
-                             gmx::ArrayRef<int> cgindex,
-                             cginfo_mb_t *cginfo_mb, int *cginfo)
+                             gmx::ArrayRef<gmx::RVec> x,
+                             gmx::ArrayRef<const gmx::RVec> recv_vr,
+                             cginfo_mb_t *cginfo_mb,
+                             gmx::ArrayRef<int> cginfo)
 {
     gmx_domdec_ind_t *ind, *ind_p;
-    int               p, cell, c, cg, cg0, cg1, cg_gl, nat;
-    int               shift, shift_at;
+    int               p, cell, c, cg, cg0, cg1, cg_gl;
+    int               shift;
 
     ind = &cd->ind[pulse];
 
@@ -1433,13 +1412,11 @@ static void merge_cg_buffers(int ncell,
             /* Move the cg's present from previous grid pulses */
             cg0                = ncg_cell[ncell+cell];
             cg1                = ncg_cell[ncell+cell+1];
-            cgindex[cg1+shift] = cgindex[cg1];
             for (cg = cg1-1; cg >= cg0; cg--)
             {
-                index_gl[cg+shift] = index_gl[cg];
-                copy_rvec(cg_cm[cg], cg_cm[cg+shift]);
-                cgindex[cg+shift] = cgindex[cg];
-                cginfo[cg+shift]  = cginfo[cg];
+                index_gl[cg + shift] = index_gl[cg];
+                x[cg + shift]        = x[cg];
+                cginfo[cg + shift]   = cginfo[cg];
             }
             /* Correct the already stored send indices for the shift */
             for (p = 1; p <= pulse; p++)
@@ -1461,32 +1438,20 @@ static void merge_cg_buffers(int ncell,
 
     /* Merge in the communicated buffers */
     shift    = 0;
-    shift_at = 0;
     cg0      = 0;
     for (cell = 0; cell < ncell; cell++)
     {
         cg1 = ncg_cell[ncell+cell+1] + shift;
-        if (shift_at > 0)
-        {
-            /* Correct the old cg indices */
-            for (cg = ncg_cell[ncell+cell]; cg < cg1; cg++)
-            {
-                cgindex[cg+1] += shift_at;
-            }
-        }
         for (cg = 0; cg < ind->nrecv[cell]; cg++)
         {
-            /* Copy this charge group from the buffer */
+            /* Copy this atom from the buffer */
             index_gl[cg1] = recv_i[cg0];
-            copy_rvec(recv_vr[cg0], cg_cm[cg1]);
-            /* Add it to the cgindex */
+            x[cg1]        = recv_vr[cg0];
+            /* Copy information */
             cg_gl          = index_gl[cg1];
             cginfo[cg1]    = ddcginfo(cginfo_mb, cg_gl);
-            nat            = GET_CGINFO_NATOMS(cginfo[cg1]);
-            cgindex[cg1+1] = cgindex[cg1] + nat;
             cg0++;
             cg1++;
-            shift_at += nat;
         }
         shift                 += ind->nrecv[cell];
         ncg_cell[ncell+cell+1] = cg1;
@@ -1496,8 +1461,7 @@ static void merge_cg_buffers(int ncell,
 //! Makes a range partitioning for the atom groups wthin a cell
 static void make_cell2at_index(gmx_domdec_comm_dim_t        *cd,
                                int                           nzone,
-                               int                           atomGroupStart,
-                               const gmx::RangePartitioning &atomGroups)
+                               int                           atomGroupStart)
 {
     /* Store the atom block boundaries for easy copying of communication buffers
      */
@@ -1506,10 +1470,9 @@ static void make_cell2at_index(gmx_domdec_comm_dim_t        *cd,
     {
         for (gmx_domdec_ind_t &ind : cd->ind)
         {
-            const auto range    = atomGroups.subRange(g, g + ind.nrecv[zone]);
-            ind.cell2at0[zone]  = range.begin();
-            ind.cell2at1[zone]  = range.end();
+            ind.cell2at0[zone]  = g;
             g                  += ind.nrecv[zone];
+            ind.cell2at1[zone]  = g;
         }
     }
 }
@@ -1652,7 +1615,6 @@ get_zone_pulse_cgs(gmx_domdec_t *dd,
                    int zonei, int zone,
                    int cg0, int cg1,
                    gmx::ArrayRef<const int> globalAtomGroupIndices,
-                   const gmx::RangePartitioning &atomGroups,
                    int dim, int dim_ind,
                    int dim0, int dim1, int dim2,
                    real r_comm2, real r_bcomm2,
@@ -1668,7 +1630,7 @@ get_zone_pulse_cgs(gmx_domdec_t *dd,
                    gmx_bool bDist2B,
                    gmx_bool bDistMB,
                    rvec *cg_cm,
-                   const int *cginfo,
+                   gmx::ArrayRef<const int> cginfo,
                    std::vector<int>     *localAtomGroups,
                    dd_comm_setup_work_t *work)
 {
@@ -1893,7 +1855,7 @@ get_zone_pulse_cgs(gmx_domdec_t *dd,
             }
             vbuf.emplace_back(posPbc[XX], posPbc[YY], posPbc[ZZ]);
 
-            nat += atomGroups.block(cg).size();
+            nat += 1;
         }
     }
 
@@ -1920,7 +1882,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
 {
     int                    dim_ind, dim, dim0, dim1, dim2, dimd, nat_tot;
     int                    nzone, nzone_send, zone, zonei, cg0, cg1;
-    int                    c, i, cg, cg_gl, nrcg;
+    int                    c, i, cg, cg_gl;
     int                   *zone_cg_range, pos_cg;
     gmx_domdec_comm_t     *comm;
     gmx_domdec_zones_t    *zones;
@@ -1928,7 +1890,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
     cginfo_mb_t           *cginfo_mb;
     gmx_bool               bBondComm, bDist2B, bDistMB, bDistBonded;
     dd_corners_t           corners;
-    rvec                  *cg_cm, *normal, *v_d, *v_0 = nullptr, *v_1 = nullptr;
+    rvec                  *normal, *v_d, *v_0 = nullptr, *v_1 = nullptr;
     real                   skew_fac2_d, skew_fac_01;
     rvec                   sf2_round;
 
@@ -1949,22 +1911,10 @@ static void setup_dd_communication(gmx_domdec_t *dd,
         comm->dth.resize(numThreads);
     }
 
-    switch (fr->cutoff_scheme)
-    {
-        case ecutsGROUP:
-            cg_cm = fr->cg_cm;
-            break;
-        case ecutsVERLET:
-            cg_cm = state->x.rvec_array();
-            break;
-        default:
-            gmx_incons("unimplemented");
-    }
-
     bBondComm = comm->bBondComm;
 
     /* Do we need to determine extra distances for multi-body bondeds? */
-    bDistMB = (comm->bInterCGMultiBody && isDlbOn(dd->comm) && dd->ndim > 1);
+    bDistMB = (comm->haveInterDomainMultiBodyBondeds && isDlbOn(dd->comm) && dd->ndim > 1);
 
     /* Do we need to determine extra distances for only two-body bondeds? */
     bDist2B = (bBondComm && !bDistMB);
@@ -2131,7 +2081,6 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                         /* Get the cg's for this pulse in this zone */
                         get_zone_pulse_cgs(dd, zonei, zone, cg0_th, cg1_th,
                                            dd->globalAtomGroupIndices,
-                                           dd->atomGrouping(),
                                            dim, dim_ind, dim0, dim1, dim2,
                                            r_comm2, r_bcomm2,
                                            box, distanceIsTriclinic,
@@ -2139,7 +2088,8 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                                            v_d, v_0, v_1, &corners, sf2_round,
                                            bDistBonded, bBondComm,
                                            bDist2B, bDistMB,
-                                           cg_cm, fr->cginfo,
+                                           state->x.rvec_array(),
+                                           fr->cginfo,
                                            th == 0 ? &ind->index : &work.localAtomGroupBuffer,
                                            &work);
                     }
@@ -2214,19 +2164,12 @@ static void setup_dd_communication(gmx_domdec_t *dd,
 
             /* Make space for cg_cm */
             dd_check_alloc_ncg(fr, state, f, pos_cg + ind->nrecv[nzone]);
-            if (fr->cutoff_scheme == ecutsGROUP)
-            {
-                cg_cm = fr->cg_cm;
-            }
-            else
-            {
-                cg_cm = state->x.rvec_array();
-            }
-            /* Communicate cg_cm */
+
+            /* Communicate the coordinates */
             gmx::ArrayRef<gmx::RVec> rvecBufferRef;
             if (cd->receiveInPlace)
             {
-                rvecBufferRef = gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec *>(cg_cm + pos_cg), ind->nrecv[nzone]);
+                rvecBufferRef = gmx::makeArrayRef(state->x).subArray(pos_cg, ind->nrecv[nzone]);
             }
             else
             {
@@ -2245,8 +2188,6 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                     {
                         cg_gl                              = dd->globalAtomGroupIndices[pos_cg];
                         fr->cginfo[pos_cg]                 = ddcginfo(cginfo_mb, cg_gl);
-                        nrcg                               = GET_CGINFO_NATOMS(fr->cginfo[pos_cg]);
-                        dd->atomGrouping_.appendBlock(nrcg);
                         if (bBondComm)
                         {
                             /* Update the charge group presence,
@@ -2267,13 +2208,9 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             else
             {
                 /* This part of the code is never executed with bBondComm. */
-                std::vector<int> &atomGroupsIndex = dd->atomGrouping_.rawIndex();
-                atomGroupsIndex.resize(numAtomGroupsNew + 1);
-
                 merge_cg_buffers(nzone, cd, p, zone_cg_range,
                                  dd->globalAtomGroupIndices, integerBufferRef.data(),
-                                 cg_cm, as_rvec_array(rvecBufferRef.data()),
-                                 atomGroupsIndex,
+                                 state->x, rvecBufferRef,
                                  fr->cginfo_mb, fr->cginfo);
                 pos_cg += ind->nrecv[nzone];
             }
@@ -2282,7 +2219,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
         if (!cd->receiveInPlace)
         {
             /* Store the atom block for easy copying of communication buffers */
-            make_cell2at_index(cd, nzone, zone_cg_range[nzone], dd->atomGrouping());
+            make_cell2at_index(cd, nzone, zone_cg_range[nzone]);
         }
         nzone += nzone;
     }
@@ -2357,7 +2294,7 @@ static void set_zones_size(gmx_domdec_t *dd,
     zones = &comm->zones;
 
     /* Do we need to determine extra distances for multi-body bondeds? */
-    bDistMB = (comm->bInterCGMultiBody && isDlbOn(dd->comm) && dd->ndim > 1);
+    bDistMB = (comm->haveInterDomainMultiBodyBondeds && isDlbOn(dd->comm) && dd->ndim > 1);
 
     for (z = zone_start; z < zone_end; z++)
     {
@@ -2584,17 +2521,6 @@ static void set_zones_size(gmx_domdec_t *dd,
     }
 }
 
-//! Comparator for sorting charge groups.
-static bool comp_cgsort(const gmx_cgsort_t &a, const gmx_cgsort_t &b)
-{
-
-    if (a.nsc == b.nsc)
-    {
-        return a.ind_gl < b.ind_gl;
-    }
-    return a.nsc < b.nsc;
-}
-
 /*! \brief Order data in \p dataToSort according to \p sort
  *
  * Note: both buffers should have at least \p sort.size() elements.
@@ -2638,161 +2564,11 @@ orderVector(gmx::ArrayRef<const gmx_cgsort_t>  sort,
     orderVector<T>(sort, vectorToSort, *workVector);
 }
 
-//! Order vectors of atoms.
-static void order_vec_atom(const gmx::RangePartitioning      *atomGroups,
-                           gmx::ArrayRef<const gmx_cgsort_t>  sort,
-                           gmx::ArrayRef<gmx::RVec>           v,
-                           gmx::ArrayRef<gmx::RVec>           buf)
-{
-    if (atomGroups == nullptr)
-    {
-        /* Avoid the useless loop of the atoms within a cg */
-        orderVector(sort, v, buf);
-
-        return;
-    }
-
-    /* Order the data */
-    int a = 0;
-    for (const gmx_cgsort_t &entry : sort)
-    {
-        for (int i : atomGroups->block(entry.ind))
-        {
-            copy_rvec(v[i], buf[a]);
-            a++;
-        }
-    }
-    int atot = a;
-
-    /* Copy back to the original array */
-    for (int a = 0; a < atot; a++)
-    {
-        copy_rvec(buf[a], v[a]);
-    }
-}
-
-//! Returns whether a < b */
-static bool compareCgsort(const gmx_cgsort_t &a,
-                          const gmx_cgsort_t &b)
-{
-    return (a.nsc < b.nsc ||
-            (a.nsc == b.nsc && a.ind_gl < b.ind_gl));
-}
-
-//! Do sorting of charge groups.
-static void orderedSort(gmx::ArrayRef<const gmx_cgsort_t>  stationary,
-                        gmx::ArrayRef<gmx_cgsort_t>        moved,
-                        std::vector<gmx_cgsort_t>         *sort1)
-{
-    /* The new indices are not very ordered, so we qsort them */
-    std::sort(moved.begin(), moved.end(), comp_cgsort);
-
-    /* stationary is already ordered, so now we can merge the two arrays */
-    sort1->resize(stationary.size() + moved.size());
-    std::merge(stationary.begin(), stationary.end(),
-               moved.begin(), moved.end(),
-               sort1->begin(),
-               compareCgsort);
-}
-
-/*! \brief Set the sorting order for systems with charge groups, returned in sort->sort.
- *
- * The order is according to the global charge group index.
- * This adds and removes charge groups that moved between domains.
- */
-static void dd_sort_order(const gmx_domdec_t *dd,
-                          const t_forcerec   *fr,
-                          int                 ncg_home_old,
-                          gmx_domdec_sort_t  *sort)
-{
-    const int *a          = fr->ns->grid->cell_index;
-
-    const int  movedValue = NSGRID_SIGNAL_MOVED_FAC*fr->ns->grid->ncells;
-
-    if (ncg_home_old >= 0 && !sort->sorted.empty())
-    {
-        GMX_RELEASE_ASSERT(sort->sorted.size() == static_cast<size_t>(ncg_home_old),
-                           "The sorting buffer should contain the old home charge group indices");
-
-        std::vector<gmx_cgsort_t> &stationary = sort->stationary;
-        std::vector<gmx_cgsort_t> &moved      = sort->moved;
-
-        /* The charge groups that remained in the same ns grid cell
-         * are completely ordered. So we can sort efficiently by sorting
-         * the charge groups that did move into the stationary list.
-         * Note: push_back() seems to be slightly slower than direct access.
-         */
-        stationary.clear();
-        moved.clear();
-        for (int i = 0; i < dd->ncg_home; i++)
-        {
-            /* Check if this cg did not move to another node */
-            if (a[i] < movedValue)
-            {
-                gmx_cgsort_t entry;
-                entry.nsc    = a[i];
-                entry.ind_gl = dd->globalAtomGroupIndices[i];
-                entry.ind    = i;
-
-                if (i >= ncg_home_old || a[i] != sort->sorted[i].nsc)
-                {
-                    /* This cg is new on this node or moved ns grid cell */
-                    moved.push_back(entry);
-                }
-                else
-                {
-                    /* This cg did not move */
-                    stationary.push_back(entry);
-                }
-            }
-        }
-
-        if (debug)
-        {
-            fprintf(debug, "ordered sort cgs: stationary %zu moved %zu\n",
-                    stationary.size(), moved.size());
-        }
-        /* Sort efficiently */
-        orderedSort(stationary, moved, &sort->sorted);
-    }
-    else
-    {
-        std::vector<gmx_cgsort_t> &cgsort   = sort->sorted;
-        cgsort.clear();
-        cgsort.reserve(dd->ncg_home);
-        int                        numCGNew = 0;
-        for (int i = 0; i < dd->ncg_home; i++)
-        {
-            /* Sort on the ns grid cell indices
-             * and the global topology index
-             */
-            gmx_cgsort_t entry;
-            entry.nsc    = a[i];
-            entry.ind_gl = dd->globalAtomGroupIndices[i];
-            entry.ind    = i;
-            cgsort.push_back(entry);
-            if (cgsort[i].nsc < movedValue)
-            {
-                numCGNew++;
-            }
-        }
-        if (debug)
-        {
-            fprintf(debug, "qsort cgs: %d new home %d\n", dd->ncg_home, numCGNew);
-        }
-        /* Determine the order of the charge groups using qsort */
-        std::sort(cgsort.begin(), cgsort.end(), comp_cgsort);
-
-        /* Remove the charge groups which are no longer at home here */
-        cgsort.resize(numCGNew);
-    }
-}
-
 //! Returns the sorting order for atoms based on the nbnxn grid order in sort
 static void dd_sort_order_nbnxn(const t_forcerec          *fr,
                                 std::vector<gmx_cgsort_t> *sort)
 {
-    gmx::ArrayRef<const int> atomOrder = nbnxn_get_atomorder(fr->nbv->nbs.get());
+    gmx::ArrayRef<const int> atomOrder = fr->nbv->getLocalAtomOrder();
 
     /* Using push_back() instead of this resize results in much slower code */
     sort->resize(atomOrder.size());
@@ -2810,37 +2586,20 @@ static void dd_sort_order_nbnxn(const t_forcerec          *fr,
 }
 
 //! Returns the sorting state for DD.
-static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state *state,
-                          int ncg_home_old)
+static void dd_sort_state(gmx_domdec_t *dd, t_forcerec *fr, t_state *state)
 {
     gmx_domdec_sort_t *sort = dd->comm->sort.get();
 
-    switch (fr->cutoff_scheme)
-    {
-        case ecutsGROUP:
-            dd_sort_order(dd, fr, ncg_home_old, sort);
-            break;
-        case ecutsVERLET:
-            dd_sort_order_nbnxn(fr, &sort->sorted);
-            break;
-        default:
-            gmx_incons("unimplemented");
-    }
-
-    const gmx::RangePartitioning &atomGrouping = dd->atomGrouping();
+    dd_sort_order_nbnxn(fr, &sort->sorted);
 
     /* We alloc with the old size, since cgindex is still old */
-    GMX_ASSERT(atomGrouping.numBlocks() == dd->ncg_home, "atomGroups and dd should be consistent");
-    DDBufferAccess<gmx::RVec>     rvecBuffer(dd->comm->rvecBuffer, atomGrouping.fullRange().end());
-
-    const gmx::RangePartitioning *atomGroupsPtr = (dd->comm->bCGs ? &atomGrouping : nullptr);
+    DDBufferAccess<gmx::RVec>     rvecBuffer(dd->comm->rvecBuffer, dd->ncg_home);
 
     /* Set the new home atom/charge group count */
     dd->ncg_home = sort->sorted.size();
     if (debug)
     {
-        fprintf(debug, "Set the new home %s count to %d\n",
-                dd->comm->bCGs ? "charge group" : "atom",
+        fprintf(debug, "Set the new home atom count to %d\n",
                 dd->ncg_home);
     }
 
@@ -2850,63 +2609,26 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
 
     if (state->flags & (1 << estX))
     {
-        order_vec_atom(atomGroupsPtr, cgsort, state->x, rvecBuffer.buffer);
+        orderVector(cgsort, makeArrayRef(state->x), rvecBuffer.buffer);
     }
     if (state->flags & (1 << estV))
     {
-        order_vec_atom(atomGroupsPtr, cgsort, state->v, rvecBuffer.buffer);
+        orderVector(cgsort, makeArrayRef(state->v), rvecBuffer.buffer);
     }
     if (state->flags & (1 << estCGP))
     {
-        order_vec_atom(atomGroupsPtr, cgsort, state->cg_p, rvecBuffer.buffer);
-    }
-
-    if (fr->cutoff_scheme == ecutsGROUP)
-    {
-        /* Reorder cgcm */
-        gmx::ArrayRef<gmx::RVec> cgcmRef = gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec *>(cgcm[0]), cgsort.size());
-        orderVector(cgsort, cgcmRef, rvecBuffer.buffer);
+        orderVector(cgsort, makeArrayRef(state->cg_p), rvecBuffer.buffer);
     }
 
     /* Reorder the global cg index */
     orderVector<int>(cgsort, dd->globalAtomGroupIndices, &sort->intBuffer);
     /* Reorder the cginfo */
-    orderVector<int>(cgsort, gmx::arrayRefFromArray(fr->cginfo, cgsort.size()), &sort->intBuffer);
-    /* Rebuild the local cg index */
-    if (dd->comm->bCGs)
-    {
-        /* We make a new, ordered atomGroups object and assign it to
-         * the old one. This causes some allocation overhead, but saves
-         * a copy back of the whole index.
-         */
-        gmx::RangePartitioning ordered;
-        for (const gmx_cgsort_t &entry : cgsort)
-        {
-            ordered.appendBlock(atomGrouping.block(entry.ind).size());
-        }
-        dd->atomGrouping_ = ordered;
-    }
-    else
-    {
-        dd->atomGrouping_.setAllBlocksSizeOne(dd->ncg_home);
-    }
+    orderVector<int>(cgsort, fr->cginfo, &sort->intBuffer);
     /* Set the home atom number */
-    dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, dd->atomGrouping().fullRange().end());
+    dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, dd->ncg_home);
 
-    if (fr->cutoff_scheme == ecutsVERLET)
-    {
-        /* The atoms are now exactly in grid order, update the grid order */
-        nbnxn_set_atomorder(fr->nbv->nbs.get());
-    }
-    else
-    {
-        /* Copy the sorted ns cell indices back to the ns grid struct */
-        for (gmx::index i = 0; i < cgsort.ssize(); i++)
-        {
-            fr->ns->grid->cell_index[i] = cgsort[i].nsc;
-        }
-        fr->ns->grid->nr = cgsort.size();
-    }
+    /* The atoms are now exactly in grid order, update the grid order */
+    fr->nbv->setLocalAtomOrder();
 }
 
 //! Accumulates load statistics.
@@ -3006,6 +2728,8 @@ void dd_partition_system(FILE                    *fplog,
                          t_state                 *state_global,
                          const gmx_mtop_t        &top_global,
                          const t_inputrec        *ir,
+                         gmx::ImdSession         *imdSession,
+                         pull_t                  *pull_work,
                          t_state                 *state_local,
                          PaddedVector<gmx::RVec> *f,
                          gmx::MDAtoms            *mdAtoms,
@@ -3020,13 +2744,12 @@ void dd_partition_system(FILE                    *fplog,
     gmx_domdec_t      *dd;
     gmx_domdec_comm_t *comm;
     gmx_ddbox_t        ddbox = {0};
-    t_block           *cgs_gl;
     int64_t            step_pcoupl;
     rvec               cell_ns_x0, cell_ns_x1;
-    int                ncgindex_set, ncg_home_old = -1, ncg_moved, nat_f_novirsum;
+    int                ncgindex_set, ncg_moved, nat_f_novirsum;
     gmx_bool           bBoxChanged, bNStGlobalComm, bDoDLB, bCheckWhetherToTurnDlbOn, bLogLoad;
-    gmx_bool           bRedist, bResortAll;
-    ivec               ncells_old = {0, 0, 0}, ncells_new = {0, 0, 0}, np;
+    gmx_bool           bRedist;
+    ivec               np;
     real               grid_density;
     char               sbuf[22];
 
@@ -3229,8 +2952,6 @@ void dd_partition_system(FILE                    *fplog,
         comm->n_load_have++;
     }
 
-    cgs_gl = &comm->cgs_gl;
-
     bRedist = FALSE;
     if (bMasterState)
     {
@@ -3247,16 +2968,8 @@ void dd_partition_system(FILE                    *fplog,
 
         distributeState(mdlog, dd, top_global, state_global, ddbox, state_local, f);
 
-        dd_make_local_cgs(dd, &top_local->cgs);
-
         /* Ensure that we have space for the new distribution */
         dd_check_alloc_ncg(fr, state_local, f, dd->ncg_home);
-
-        if (fr->cutoff_scheme == ecutsGROUP)
-        {
-            calc_cgcm(fplog, 0, dd->ncg_home,
-                      &top_local->cgs, state_local->x.rvec_array(), fr->cg_cm);
-        }
 
         inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
 
@@ -3278,16 +2991,9 @@ void dd_partition_system(FILE                    *fplog,
         clearDDStateIndices(dd, 0, 0);
 
         /* Restore the atom group indices from state_local */
-        restoreAtomGroups(dd, cgs_gl->index, state_local);
-        make_dd_indices(dd, cgs_gl->index, 0);
+        restoreAtomGroups(dd, state_local);
+        make_dd_indices(dd, 0);
         ncgindex_set = dd->ncg_home;
-
-        if (fr->cutoff_scheme == ecutsGROUP)
-        {
-            /* Redetermine the cg COMs */
-            calc_cgcm(fplog, 0, dd->ncg_home,
-                      &top_local->cgs, state_local->x.rvec_array(), fr->cg_cm);
-        }
 
         inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
 
@@ -3306,7 +3012,10 @@ void dd_partition_system(FILE                    *fplog,
         clearDDStateIndices(dd, dd->ncg_home, comm->atomRanges.numHomeAtoms());
         ncgindex_set = 0;
 
-        /* Avoid global communication for dim's without pbc and -gcom */
+        /* To avoid global communication, we do not recompute the extent
+         * of the system for dims without pbc. Therefore we need to copy
+         * the previously computed values when we do not communicate.
+         */
         if (!bNStGlobalComm)
         {
             copy_rvec(comm->box0, ddbox.box0    );
@@ -3318,7 +3027,7 @@ void dd_partition_system(FILE                    *fplog,
         bBoxChanged = TRUE;
         bRedist     = TRUE;
     }
-    /* For dim's without pbc and -gcom */
+    /* Copy needed for dim's without pbc when avoiding communication */
     copy_rvec(ddbox.box0, comm->box0    );
     copy_rvec(ddbox.box_size, comm->box_size);
 
@@ -3338,8 +3047,6 @@ void dd_partition_system(FILE                    *fplog,
 
     /* Check if we should sort the charge groups */
     const bool bSortCG = (bMasterState || bRedist);
-
-    ncg_home_old = dd->ncg_home;
 
     /* When repartitioning we mark atom groups that will move to neighboring
      * DD cells, but we do not move them right away for performance reasons.
@@ -3367,10 +3074,11 @@ void dd_partition_system(FILE                    *fplog,
         wallcycle_sub_stop(wcycle, ewcsDD_REDIST);
     }
 
+    // TODO: Integrate this code in the nbnxm module
     get_nsgrid_boundaries(ddbox.nboundeddim, state_local->box,
                           dd, &ddbox,
                           &comm->cell_x0, &comm->cell_x1,
-                          dd->ncg_home, fr->cg_cm,
+                          dd->ncg_home, as_rvec_array(state_local->x.data()),
                           cell_ns_x0, cell_ns_x1, &grid_density);
 
     if (bBoxChanged)
@@ -3378,20 +3086,6 @@ void dd_partition_system(FILE                    *fplog,
         comm_dd_ns_cell_sizes(dd, &ddbox, cell_ns_x0, cell_ns_x1, step);
     }
 
-    switch (fr->cutoff_scheme)
-    {
-        case ecutsGROUP:
-            copy_ivec(fr->ns->grid->n, ncells_old);
-            grid_first(fplog, fr->ns->grid, dd, &ddbox,
-                       state_local->box, cell_ns_x0, cell_ns_x1,
-                       fr->rlist, grid_density);
-            break;
-        case ecutsVERLET:
-            nbnxn_get_ncells(fr->nbv->nbs.get(), &ncells_old[XX], &ncells_old[YY]);
-            break;
-        default:
-            gmx_incons("unimplemented");
-    }
     /* We need to store tric_dir for dd_get_ns_ranges called from ns.c */
     copy_ivec(ddbox.tric_dir, comm->tric_dir);
 
@@ -3410,53 +3104,25 @@ void dd_partition_system(FILE                    *fplog,
          */
         set_zones_ncg_home(dd);
 
-        switch (fr->cutoff_scheme)
-        {
-            case ecutsVERLET:
-                set_zones_size(dd, state_local->box, &ddbox, 0, 1, ncg_moved);
+        set_zones_size(dd, state_local->box, &ddbox, 0, 1, ncg_moved);
 
-                nbnxn_put_on_grid(fr->nbv.get(), state_local->box,
-                                  0,
-                                  comm->zones.size[0].bb_x0,
-                                  comm->zones.size[0].bb_x1,
-                                  comm->updateGroupsCog.get(),
-                                  0, dd->ncg_home,
-                                  comm->zones.dens_zone0,
-                                  fr->cginfo,
-                                  state_local->x,
-                                  ncg_moved, bRedist ? comm->movedBuffer.data() : nullptr);
-
-                nbnxn_get_ncells(fr->nbv->nbs.get(), &ncells_new[XX], &ncells_new[YY]);
-                break;
-            case ecutsGROUP:
-                fill_grid(&comm->zones, fr->ns->grid, dd->ncg_home,
-                          0, dd->ncg_home, fr->cg_cm);
-
-                copy_ivec(fr->ns->grid->n, ncells_new);
-                break;
-            default:
-                gmx_incons("unimplemented");
-        }
-
-        bResortAll = bMasterState;
-
-        /* Check if we can user the old order and ns grid cell indices
-         * of the charge groups to sort the charge groups efficiently.
-         */
-        if (ncells_new[XX] != ncells_old[XX] ||
-            ncells_new[YY] != ncells_old[YY] ||
-            ncells_new[ZZ] != ncells_old[ZZ])
-        {
-            bResortAll = TRUE;
-        }
+        nbnxn_put_on_grid(fr->nbv.get(), state_local->box,
+                          0,
+                          comm->zones.size[0].bb_x0,
+                          comm->zones.size[0].bb_x1,
+                          comm->updateGroupsCog.get(),
+                          0, dd->ncg_home,
+                          comm->zones.dens_zone0,
+                          fr->cginfo,
+                          state_local->x,
+                          ncg_moved, bRedist ? comm->movedBuffer.data() : nullptr);
 
         if (debug)
         {
             fprintf(debug, "Step %s, sorting the %d home charge groups\n",
                     gmx_step_str(step, sbuf), dd->ncg_home);
         }
-        dd_sort_state(dd, fr->cg_cm, fr, state_local,
-                      bResortAll ? -1 : ncg_home_old);
+        dd_sort_state(dd, fr, state_local);
 
         /* After sorting and compacting we set the correct size */
         dd_resize_state(state_local, f, comm->atomRanges.numHomeAtoms());
@@ -3492,7 +3158,7 @@ void dd_partition_system(FILE                    *fplog,
     setup_dd_communication(dd, state_local->box, &ddbox, fr, state_local, f);
 
     /* Set the indices */
-    make_dd_indices(dd, cgs_gl->index, ncgindex_set);
+    make_dd_indices(dd, ncgindex_set);
 
     /* Set the charge group boundaries for neighbor searching */
     set_cg_boundaries(&comm->zones);
@@ -3522,8 +3188,8 @@ void dd_partition_system(FILE                    *fplog,
     dd_make_local_top(dd, &comm->zones, dd->npbcdim, state_local->box,
                       comm->cellsize_min, np,
                       fr,
-                      fr->cutoff_scheme == ecutsGROUP ? fr->cg_cm : state_local->x.rvec_array(),
-                      vsite, top_global, top_local);
+                      state_local->x.rvec_array(),
+                      top_global, top_local);
 
     wallcycle_sub_stop(wcycle, ewcsDD_MAKETOP);
 
@@ -3537,7 +3203,7 @@ void dd_partition_system(FILE                    *fplog,
         switch (range)
         {
             case DDAtomRanges::Type::Vsites:
-                if (vsite && vsite->n_intercg_vsite)
+                if (vsite && vsite->numInterUpdategroupVsites)
                 {
                     n = dd_make_local_vsites(dd, n, top_local->idef.il);
                 }
@@ -3546,7 +3212,7 @@ void dd_partition_system(FILE                    *fplog,
                 if (dd->splitConstraints || dd->splitSettles)
                 {
                     /* Only for inter-cg constraints we need special code */
-                    n = dd_make_local_constraints(dd, n, &top_global, fr->cginfo,
+                    n = dd_make_local_constraints(dd, n, &top_global, fr->cginfo.data(),
                                                   constr, ir->nProjOrder,
                                                   top_local->idef.il);
                 }
@@ -3570,7 +3236,7 @@ void dd_partition_system(FILE                    *fplog,
 
     if (fr->haveDirectVirialContributions)
     {
-        if (vsite && vsite->n_intercg_vsite)
+        if (vsite && vsite->numInterUpdategroupVsites)
         {
             nat_f_novirsum = comm->atomRanges.end(DDAtomRanges::Type::Vsites);
         }
@@ -3622,7 +3288,7 @@ void dd_partition_system(FILE                    *fplog,
     if (ir->bPull)
     {
         /* Update the local pull groups */
-        dd_make_local_pull_groups(cr, ir->pull_work);
+        dd_make_local_pull_groups(cr, pull_work);
     }
 
     if (dd->atomSets != nullptr)
@@ -3632,7 +3298,7 @@ void dd_partition_system(FILE                    *fplog,
     }
 
     /* Update the local atoms to be communicated via the IMD protocol if bIMD is TRUE. */
-    dd_make_local_IMD_atoms(ir->bIMD, dd, ir->imd);
+    imdSession->dd_make_local_IMD_atoms(dd);
 
     add_dd_statistics(dd);
 
@@ -3685,14 +3351,15 @@ void checkNumberOfBondedInteractions(const gmx::MDLogger  &mdlog,
                                      int                   totalNumberOfBondedInteractions,
                                      const gmx_mtop_t     *top_global,
                                      const gmx_localtop_t *top_local,
-                                     const t_state        *state,
+                                     const rvec           *x,
+                                     const matrix          box,
                                      bool                 *shouldCheckNumberOfBondedInteractions)
 {
     if (*shouldCheckNumberOfBondedInteractions)
     {
         if (totalNumberOfBondedInteractions != cr->dd->nbonded_global)
         {
-            dd_print_missing_interactions(mdlog, cr, totalNumberOfBondedInteractions, top_global, top_local, state); // Does not return
+            dd_print_missing_interactions(mdlog, cr, totalNumberOfBondedInteractions, top_global, top_local, x, box); // Does not return
         }
         *shouldCheckNumberOfBondedInteractions = false;
     }

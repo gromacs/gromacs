@@ -196,8 +196,37 @@ class basic_mdspan
          */
         constexpr basic_mdspan( pointer ptr, const mapping_type &m, const accessor_type &a ) noexcept
             : acc_(a), map_( m ), ptr_(ptr) {}
-
-        /*! \brief Brace operator to access multidimenisonal array element.
+        /*! \brief Construct mdspan from multidimensional arrays implemented with mdspan
+         *
+         * Requires the container to have a view_type describing the mdspan, which is
+         * accessible through an asView() call
+         *
+         *  This allows functions to declare mdspans as arguments, but take e.g. multidimensional
+         *  arrays implicitly during the function call
+         * \tparam U container type
+         * \param[in] other mdspan-implementing container
+         */
+        template<typename U,
+                 typename = typename std::enable_if<
+                         std::is_same<typename std::remove_reference<U>::type::view_type::element_type,
+                                      ElementType>::value>::type>
+        constexpr basic_mdspan(U &&other) : basic_mdspan(other.asView()) {}
+        /*! \brief Construct mdspan of const Elements from multidimensional arrays implemented with mdspan
+         *
+         * Requires the container to have a const_view_type describing the mdspan, which is
+         * accessible through an asConstView() call
+         *
+         *  This allows functions to declare mdspans as arguments, but take e.g. multidimensional
+         *  arrays implicitly during the function call
+         * \tparam U container type
+         * \param[in] other mdspan-implementing container
+         */
+        template<typename U,
+                 typename = typename std::enable_if<
+                         std::is_same<typename std::remove_reference<U>::type::const_view_type::element_type,
+                                      ElementType>::value>::type>
+        constexpr basic_mdspan(const U &other) : basic_mdspan(other.asConstView()) {}
+        /*! \brief Brace operator to access multidimensional array element.
          * \param[in] indices The multidimensional indices of the object.
          * Requires rank() == sizeof...(IndexType). Slicing is implemented via sub_span.
          * \returns reference to element at indices.

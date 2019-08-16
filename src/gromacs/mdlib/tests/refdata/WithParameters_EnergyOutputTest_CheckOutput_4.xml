@@ -1,0 +1,4581 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <File Name="EnergyFile">
+    <Sequence Name="EnergyTerms">
+      <Int Name="Length">97</Int>
+      <EnergyTerm>
+        <String Name="Name">LJ-14</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coulomb-14</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ (SR)</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Disper. corr.</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coulomb (SR)</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul. recip.</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ recip.</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">COM Pull En.</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Quantum En.</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Potential</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Kinetic En.</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Total Energy</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Temperature</String>
+        <String Name="Units">K</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres. DC</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pressure</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">dVremain/dl</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">dEkin/dl</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">dVcoul/dl</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">dVvdw/dl</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">dVbonded/dl</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">dVrestraint/dl</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Constr. rmsd</String>
+        <String Name="Units"></String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ShakeVir-XX</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ShakeVir-XY</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ShakeVir-XZ</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ShakeVir-YX</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ShakeVir-YY</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ShakeVir-YZ</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ShakeVir-ZX</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ShakeVir-ZY</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ShakeVir-ZZ</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ForceVir-XX</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ForceVir-XY</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ForceVir-XZ</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ForceVir-YX</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ForceVir-YY</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ForceVir-YZ</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ForceVir-ZX</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ForceVir-ZY</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ForceVir-ZZ</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Vir-XX</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Vir-XY</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Vir-XZ</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Vir-YX</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Vir-YY</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Vir-YZ</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Vir-ZX</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Vir-ZY</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Vir-ZZ</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres-XX</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres-XY</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres-XZ</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres-YX</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres-YY</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres-YZ</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres-ZX</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres-ZY</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres-ZZ</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">#Surf*SurfTen</String>
+        <String Name="Units">bar nm</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Mu-X</String>
+        <String Name="Units">D</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Mu-Y</String>
+        <String Name="Units">D</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Mu-Z</String>
+        <String Name="Units">D</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">2CosZ*Vel-X</String>
+        <String Name="Units">nm/ps</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">1/Viscosity</String>
+        <String Name="Units">m s/kg</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-SR:Protein-Protein</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-SR:Protein-Protein</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-14:Protein-Protein</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-14:Protein-Protein</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-SR:Protein-Water</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-SR:Protein-Water</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-14:Protein-Water</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-14:Protein-Water</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-SR:Protein-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-SR:Protein-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-14:Protein-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-14:Protein-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-SR:Water-Water</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-SR:Water-Water</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-14:Water-Water</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-14:Water-Water</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-SR:Water-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-SR:Water-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-14:Water-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-14:Water-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-SR:Lipid-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-SR:Lipid-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-14:Lipid-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-14:Lipid-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">T-Protein</String>
+        <String Name="Units">K</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">T-Water</String>
+        <String Name="Units">K</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">T-Lipid</String>
+        <String Name="Units">K</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Ux-Protein</String>
+        <String Name="Units">nm/ps</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Uy-Protein</String>
+        <String Name="Units">nm/ps</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Uz-Protein</String>
+        <String Name="Units">nm/ps</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Ux-Lipid</String>
+        <String Name="Units">nm/ps</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Uy-Lipid</String>
+        <String Name="Units">nm/ps</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Uz-Lipid</String>
+        <String Name="Units">nm/ps</String>
+      </EnergyTerm>
+    </Sequence>
+    <Sequence Name="Frames">
+      <Int Name="Length">10</Int>
+      <Frame>
+        <Real Name="Time">10.1</Real>
+        <Real Name="Timestep">0.001</Real>
+        <String Name="Step">0</String>
+        <String Name="NumSteps">0</String>
+        <Sequence Name="EnergyTerms">
+          <Int Name="Length">97</Int>
+          <EnergyTerm>
+            <String Name="Name">LJ-14</String>
+            <Real Name="Value">11.499999999999995</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb-14</String>
+            <Real Name="Value">11.599999999999994</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ (SR)</String>
+            <Real Name="Value">10.299999999999999</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Disper. corr.</String>
+            <Real Name="Value">12.499999999999991</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb (SR)</String>
+            <Real Name="Value">10.399999999999999</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul. recip.</String>
+            <Real Name="Value">11.299999999999995</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ recip.</String>
+            <Real Name="Value">11.399999999999995</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">COM Pull En.</String>
+            <Real Name="Value">12.89999999999999</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Quantum En.</String>
+            <Real Name="Value">11.099999999999996</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Potential</String>
+            <Real Name="Value">10.499999999999998</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Kinetic En.</String>
+            <Real Name="Value">10.599999999999998</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Total Energy</String>
+            <Real Name="Value">10.699999999999998</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Temperature</String>
+            <Real Name="Value">10.799999999999997</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres. DC</String>
+            <Real Name="Value">12.599999999999991</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pressure</String>
+            <Real Name="Value">10.899999999999997</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVremain/dl</String>
+            <Real Name="Value">12.399999999999991</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dEkin/dl</String>
+            <Real Name="Value">12.299999999999992</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVcoul/dl</String>
+            <Real Name="Value">11.899999999999993</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVvdw/dl</String>
+            <Real Name="Value">11.999999999999993</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVbonded/dl</String>
+            <Real Name="Value">12.099999999999993</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVrestraint/dl</String>
+            <Real Name="Value">12.199999999999992</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Constr. rmsd</String>
+            <Real Name="Value">0</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XX</String>
+            <Real Name="Value">20.800000000000047</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XY</String>
+            <Real Name="Value">20.900000000000048</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XZ</String>
+            <Real Name="Value">21.00000000000005</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YX</String>
+            <Real Name="Value">21.100000000000051</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YY</String>
+            <Real Name="Value">21.200000000000053</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YZ</String>
+            <Real Name="Value">21.300000000000054</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZX</String>
+            <Real Name="Value">21.400000000000055</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZY</String>
+            <Real Name="Value">21.500000000000057</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZZ</String>
+            <Real Name="Value">21.600000000000058</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XX</String>
+            <Real Name="Value">21.70000000000006</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XY</String>
+            <Real Name="Value">21.800000000000061</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XZ</String>
+            <Real Name="Value">21.900000000000063</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YX</String>
+            <Real Name="Value">22.000000000000064</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YY</String>
+            <Real Name="Value">22.100000000000065</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YZ</String>
+            <Real Name="Value">22.200000000000067</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZX</String>
+            <Real Name="Value">22.300000000000068</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZY</String>
+            <Real Name="Value">22.40000000000007</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZZ</String>
+            <Real Name="Value">22.500000000000071</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XX</String>
+            <Real Name="Value">22.600000000000072</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XY</String>
+            <Real Name="Value">22.700000000000074</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XZ</String>
+            <Real Name="Value">22.800000000000075</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YX</String>
+            <Real Name="Value">22.900000000000077</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YY</String>
+            <Real Name="Value">23.000000000000078</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YZ</String>
+            <Real Name="Value">23.10000000000008</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZX</String>
+            <Real Name="Value">23.200000000000081</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZY</String>
+            <Real Name="Value">23.300000000000082</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZZ</String>
+            <Real Name="Value">23.400000000000084</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XX</String>
+            <Real Name="Value">23.500000000000085</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XY</String>
+            <Real Name="Value">23.600000000000087</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XZ</String>
+            <Real Name="Value">23.700000000000088</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YX</String>
+            <Real Name="Value">23.80000000000009</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YY</String>
+            <Real Name="Value">23.900000000000091</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YZ</String>
+            <Real Name="Value">24.000000000000092</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZX</String>
+            <Real Name="Value">24.100000000000094</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZY</String>
+            <Real Name="Value">24.200000000000095</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZZ</String>
+            <Real Name="Value">24.300000000000097</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">#Surf*SurfTen</String>
+            <Real Name="Value">12.420000000000204</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-X</String>
+            <Real Name="Value">24.400000000000098</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Y</String>
+            <Real Name="Value">24.500000000000099</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Z</String>
+            <Real Name="Value">24.600000000000101</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">2CosZ*Vel-X</String>
+            <Real Name="Value">18.90000000000002</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">1/Viscosity</String>
+            <Real Name="Value">45729160.574543945</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Protein</String>
+            <Real Name="Value">13.099999999999989</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Protein</String>
+            <Real Name="Value">13.199999999999989</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Protein</String>
+            <Real Name="Value">13.399999999999988</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Protein</String>
+            <Real Name="Value">13.499999999999988</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Water</String>
+            <Real Name="Value">13.599999999999987</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Water</String>
+            <Real Name="Value">13.699999999999987</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Water</String>
+            <Real Name="Value">13.899999999999986</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Water</String>
+            <Real Name="Value">13.999999999999986</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Lipid</String>
+            <Real Name="Value">14.099999999999985</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Lipid</String>
+            <Real Name="Value">14.199999999999985</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Lipid</String>
+            <Real Name="Value">14.399999999999984</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Lipid</String>
+            <Real Name="Value">14.499999999999984</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Water</String>
+            <Real Name="Value">15.099999999999982</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Water</String>
+            <Real Name="Value">15.199999999999982</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Water</String>
+            <Real Name="Value">15.399999999999981</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Water</String>
+            <Real Name="Value">15.49999999999998</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Lipid</String>
+            <Real Name="Value">15.59999999999998</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Lipid</String>
+            <Real Name="Value">15.69999999999998</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Lipid</String>
+            <Real Name="Value">15.899999999999979</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Lipid</String>
+            <Real Name="Value">15.999999999999979</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Lipid-Lipid</String>
+            <Real Name="Value">17.099999999999994</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Lipid-Lipid</String>
+            <Real Name="Value">17.199999999999996</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Lipid-Lipid</String>
+            <Real Name="Value">17.399999999999999</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Lipid-Lipid</String>
+            <Real Name="Value">17.5</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Protein</String>
+            <Real Name="Value">17.600000000000001</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Water</String>
+            <Real Name="Value">17.800000000000004</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Lipid</String>
+            <Real Name="Value">18.000000000000007</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Protein</String>
+            <Real Name="Value">18.20000000000001</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Protein</String>
+            <Real Name="Value">18.300000000000011</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Protein</String>
+            <Real Name="Value">18.400000000000013</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Lipid</String>
+            <Real Name="Value">18.500000000000014</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Lipid</String>
+            <Real Name="Value">18.600000000000016</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Lipid</String>
+            <Real Name="Value">18.700000000000017</Real>
+          </EnergyTerm>
+        </Sequence>
+      </Frame>
+      <Frame>
+        <Real Name="Time">27.500000000000142</Real>
+        <Real Name="Timestep">0.001</Real>
+        <String Name="Step">100</String>
+        <String Name="NumSteps">0</String>
+        <Sequence Name="EnergyTerms">
+          <Int Name="Length">97</Int>
+          <EnergyTerm>
+            <String Name="Name">LJ-14</String>
+            <Real Name="Value">28.900000000000162</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb-14</String>
+            <Real Name="Value">29.000000000000163</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ (SR)</String>
+            <Real Name="Value">27.700000000000145</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Disper. corr.</String>
+            <Real Name="Value">29.900000000000176</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb (SR)</String>
+            <Real Name="Value">27.800000000000146</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul. recip.</String>
+            <Real Name="Value">28.700000000000159</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ recip.</String>
+            <Real Name="Value">28.800000000000161</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">COM Pull En.</String>
+            <Real Name="Value">30.300000000000182</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Quantum En.</String>
+            <Real Name="Value">28.500000000000156</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Potential</String>
+            <Real Name="Value">27.900000000000148</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Kinetic En.</String>
+            <Real Name="Value">28.000000000000149</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Total Energy</String>
+            <Real Name="Value">28.100000000000151</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Temperature</String>
+            <Real Name="Value">28.200000000000152</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres. DC</String>
+            <Real Name="Value">30.000000000000178</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pressure</String>
+            <Real Name="Value">28.300000000000153</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVremain/dl</String>
+            <Real Name="Value">29.800000000000175</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dEkin/dl</String>
+            <Real Name="Value">29.700000000000173</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVcoul/dl</String>
+            <Real Name="Value">29.300000000000168</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVvdw/dl</String>
+            <Real Name="Value">29.400000000000169</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVbonded/dl</String>
+            <Real Name="Value">29.500000000000171</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVrestraint/dl</String>
+            <Real Name="Value">29.600000000000172</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Constr. rmsd</String>
+            <Real Name="Value">0</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XX</String>
+            <Real Name="Value">38.200000000000294</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XY</String>
+            <Real Name="Value">38.300000000000296</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XZ</String>
+            <Real Name="Value">38.400000000000297</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YX</String>
+            <Real Name="Value">38.500000000000298</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YY</String>
+            <Real Name="Value">38.6000000000003</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YZ</String>
+            <Real Name="Value">38.700000000000301</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZX</String>
+            <Real Name="Value">38.800000000000303</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZY</String>
+            <Real Name="Value">38.900000000000304</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZZ</String>
+            <Real Name="Value">39.000000000000306</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XX</String>
+            <Real Name="Value">39.100000000000307</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XY</String>
+            <Real Name="Value">39.200000000000308</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XZ</String>
+            <Real Name="Value">39.30000000000031</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YX</String>
+            <Real Name="Value">39.400000000000311</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YY</String>
+            <Real Name="Value">39.500000000000313</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YZ</String>
+            <Real Name="Value">39.600000000000314</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZX</String>
+            <Real Name="Value">39.700000000000315</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZY</String>
+            <Real Name="Value">39.800000000000317</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZZ</String>
+            <Real Name="Value">39.900000000000318</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XX</String>
+            <Real Name="Value">40.00000000000032</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XY</String>
+            <Real Name="Value">40.100000000000321</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XZ</String>
+            <Real Name="Value">40.200000000000323</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YX</String>
+            <Real Name="Value">40.300000000000324</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YY</String>
+            <Real Name="Value">40.400000000000325</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YZ</String>
+            <Real Name="Value">40.500000000000327</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZX</String>
+            <Real Name="Value">40.600000000000328</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZY</String>
+            <Real Name="Value">40.70000000000033</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZZ</String>
+            <Real Name="Value">40.800000000000331</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XX</String>
+            <Real Name="Value">40.900000000000333</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XY</String>
+            <Real Name="Value">41.000000000000334</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XZ</String>
+            <Real Name="Value">41.100000000000335</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YX</String>
+            <Real Name="Value">41.200000000000337</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YY</String>
+            <Real Name="Value">41.300000000000338</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YZ</String>
+            <Real Name="Value">41.40000000000034</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZX</String>
+            <Real Name="Value">41.500000000000341</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZY</String>
+            <Real Name="Value">41.600000000000342</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZZ</String>
+            <Real Name="Value">41.700000000000344</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">#Surf*SurfTen</String>
+            <Real Name="Value">22.8600000000005</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-X</String>
+            <Real Name="Value">41.800000000000345</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Y</String>
+            <Real Name="Value">41.900000000000347</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Z</String>
+            <Real Name="Value">42.000000000000348</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">2CosZ*Vel-X</String>
+            <Real Name="Value">36.300000000000267</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">1/Viscosity</String>
+            <Real Name="Value">31880480.329959076</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Protein</String>
+            <Real Name="Value">30.500000000000185</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Protein</String>
+            <Real Name="Value">30.600000000000186</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Protein</String>
+            <Real Name="Value">30.800000000000189</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Protein</String>
+            <Real Name="Value">30.90000000000019</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Water</String>
+            <Real Name="Value">31.000000000000192</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Water</String>
+            <Real Name="Value">31.100000000000193</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Water</String>
+            <Real Name="Value">31.300000000000196</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Water</String>
+            <Real Name="Value">31.400000000000198</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Lipid</String>
+            <Real Name="Value">31.500000000000199</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Lipid</String>
+            <Real Name="Value">31.6000000000002</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Lipid</String>
+            <Real Name="Value">31.800000000000203</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Lipid</String>
+            <Real Name="Value">31.900000000000205</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Water</String>
+            <Real Name="Value">32.500000000000213</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Water</String>
+            <Real Name="Value">32.600000000000215</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Water</String>
+            <Real Name="Value">32.800000000000217</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Water</String>
+            <Real Name="Value">32.900000000000219</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Lipid</String>
+            <Real Name="Value">33.00000000000022</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Lipid</String>
+            <Real Name="Value">33.100000000000222</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Lipid</String>
+            <Real Name="Value">33.300000000000225</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Lipid</String>
+            <Real Name="Value">33.400000000000226</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Lipid-Lipid</String>
+            <Real Name="Value">34.500000000000242</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Lipid-Lipid</String>
+            <Real Name="Value">34.600000000000243</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Lipid-Lipid</String>
+            <Real Name="Value">34.800000000000246</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Lipid-Lipid</String>
+            <Real Name="Value">34.900000000000247</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Protein</String>
+            <Real Name="Value">35.000000000000249</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Water</String>
+            <Real Name="Value">35.200000000000252</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Lipid</String>
+            <Real Name="Value">35.400000000000254</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Protein</String>
+            <Real Name="Value">35.600000000000257</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Protein</String>
+            <Real Name="Value">35.700000000000259</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Protein</String>
+            <Real Name="Value">35.80000000000026</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Lipid</String>
+            <Real Name="Value">35.900000000000261</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Lipid</String>
+            <Real Name="Value">36.000000000000263</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Lipid</String>
+            <Real Name="Value">36.100000000000264</Real>
+          </EnergyTerm>
+        </Sequence>
+      </Frame>
+      <Frame>
+        <Real Name="Time">44.900000000000389</Real>
+        <Real Name="Timestep">0.001</Real>
+        <String Name="Step">200</String>
+        <String Name="NumSteps">0</String>
+        <Sequence Name="EnergyTerms">
+          <Int Name="Length">97</Int>
+          <EnergyTerm>
+            <String Name="Name">LJ-14</String>
+            <Real Name="Value">46.300000000000409</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb-14</String>
+            <Real Name="Value">46.400000000000411</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ (SR)</String>
+            <Real Name="Value">45.100000000000392</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Disper. corr.</String>
+            <Real Name="Value">47.300000000000423</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb (SR)</String>
+            <Real Name="Value">45.200000000000394</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul. recip.</String>
+            <Real Name="Value">46.100000000000406</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ recip.</String>
+            <Real Name="Value">46.200000000000408</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">COM Pull En.</String>
+            <Real Name="Value">47.700000000000429</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Quantum En.</String>
+            <Real Name="Value">45.900000000000404</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Potential</String>
+            <Real Name="Value">45.300000000000395</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Kinetic En.</String>
+            <Real Name="Value">45.400000000000396</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Total Energy</String>
+            <Real Name="Value">45.500000000000398</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Temperature</String>
+            <Real Name="Value">45.600000000000399</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres. DC</String>
+            <Real Name="Value">47.400000000000425</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pressure</String>
+            <Real Name="Value">45.700000000000401</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVremain/dl</String>
+            <Real Name="Value">47.200000000000422</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dEkin/dl</String>
+            <Real Name="Value">47.100000000000421</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVcoul/dl</String>
+            <Real Name="Value">46.700000000000415</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVvdw/dl</String>
+            <Real Name="Value">46.800000000000416</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVbonded/dl</String>
+            <Real Name="Value">46.900000000000418</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVrestraint/dl</String>
+            <Real Name="Value">47.000000000000419</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Constr. rmsd</String>
+            <Real Name="Value">0</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XX</String>
+            <Real Name="Value">55.600000000000541</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XY</String>
+            <Real Name="Value">55.700000000000543</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XZ</String>
+            <Real Name="Value">55.800000000000544</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YX</String>
+            <Real Name="Value">55.900000000000546</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YY</String>
+            <Real Name="Value">56.000000000000547</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YZ</String>
+            <Real Name="Value">56.100000000000549</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZX</String>
+            <Real Name="Value">56.20000000000055</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZY</String>
+            <Real Name="Value">56.300000000000551</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZZ</String>
+            <Real Name="Value">56.400000000000553</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XX</String>
+            <Real Name="Value">56.500000000000554</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XY</String>
+            <Real Name="Value">56.600000000000556</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XZ</String>
+            <Real Name="Value">56.700000000000557</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YX</String>
+            <Real Name="Value">56.800000000000558</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YY</String>
+            <Real Name="Value">56.90000000000056</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YZ</String>
+            <Real Name="Value">57.000000000000561</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZX</String>
+            <Real Name="Value">57.100000000000563</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZY</String>
+            <Real Name="Value">57.200000000000564</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZZ</String>
+            <Real Name="Value">57.300000000000566</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XX</String>
+            <Real Name="Value">57.400000000000567</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XY</String>
+            <Real Name="Value">57.500000000000568</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XZ</String>
+            <Real Name="Value">57.60000000000057</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YX</String>
+            <Real Name="Value">57.700000000000571</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YY</String>
+            <Real Name="Value">57.800000000000573</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YZ</String>
+            <Real Name="Value">57.900000000000574</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZX</String>
+            <Real Name="Value">58.000000000000576</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZY</String>
+            <Real Name="Value">58.100000000000577</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZZ</String>
+            <Real Name="Value">58.200000000000578</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XX</String>
+            <Real Name="Value">58.30000000000058</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XY</String>
+            <Real Name="Value">58.400000000000581</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XZ</String>
+            <Real Name="Value">58.500000000000583</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YX</String>
+            <Real Name="Value">58.600000000000584</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YY</String>
+            <Real Name="Value">58.700000000000585</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YZ</String>
+            <Real Name="Value">58.800000000000587</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZX</String>
+            <Real Name="Value">58.900000000000588</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZY</String>
+            <Real Name="Value">59.00000000000059</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZZ</String>
+            <Real Name="Value">59.100000000000591</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">#Surf*SurfTen</String>
+            <Real Name="Value">33.3000000000008</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-X</String>
+            <Real Name="Value">59.200000000000593</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Y</String>
+            <Real Name="Value">59.300000000000594</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Z</String>
+            <Real Name="Value">59.400000000000595</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">2CosZ*Vel-X</String>
+            <Real Name="Value">53.700000000000514</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">1/Viscosity</String>
+            <Real Name="Value">28744423.420179497</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Protein</String>
+            <Real Name="Value">47.900000000000432</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Protein</String>
+            <Real Name="Value">48.000000000000433</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Protein</String>
+            <Real Name="Value">48.200000000000436</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Protein</String>
+            <Real Name="Value">48.300000000000438</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Water</String>
+            <Real Name="Value">48.400000000000439</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Water</String>
+            <Real Name="Value">48.500000000000441</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Water</String>
+            <Real Name="Value">48.700000000000443</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Water</String>
+            <Real Name="Value">48.800000000000445</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Lipid</String>
+            <Real Name="Value">48.900000000000446</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Lipid</String>
+            <Real Name="Value">49.000000000000448</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Lipid</String>
+            <Real Name="Value">49.20000000000045</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Lipid</String>
+            <Real Name="Value">49.300000000000452</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Water</String>
+            <Real Name="Value">49.90000000000046</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Water</String>
+            <Real Name="Value">50.000000000000462</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Water</String>
+            <Real Name="Value">50.200000000000465</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Water</String>
+            <Real Name="Value">50.300000000000466</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Lipid</String>
+            <Real Name="Value">50.400000000000468</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Lipid</String>
+            <Real Name="Value">50.500000000000469</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Lipid</String>
+            <Real Name="Value">50.700000000000472</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Lipid</String>
+            <Real Name="Value">50.800000000000473</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Lipid-Lipid</String>
+            <Real Name="Value">51.900000000000489</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Lipid-Lipid</String>
+            <Real Name="Value">52.00000000000049</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Lipid-Lipid</String>
+            <Real Name="Value">52.200000000000493</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Lipid-Lipid</String>
+            <Real Name="Value">52.300000000000495</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Protein</String>
+            <Real Name="Value">52.400000000000496</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Water</String>
+            <Real Name="Value">52.600000000000499</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Lipid</String>
+            <Real Name="Value">52.800000000000502</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Protein</String>
+            <Real Name="Value">53.000000000000504</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Protein</String>
+            <Real Name="Value">53.100000000000506</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Protein</String>
+            <Real Name="Value">53.200000000000507</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Lipid</String>
+            <Real Name="Value">53.300000000000509</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Lipid</String>
+            <Real Name="Value">53.40000000000051</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Lipid</String>
+            <Real Name="Value">53.500000000000512</Real>
+          </EnergyTerm>
+        </Sequence>
+      </Frame>
+      <Frame>
+        <Real Name="Time">62.300000000000637</Real>
+        <Real Name="Timestep">0.001</Real>
+        <String Name="Step">300</String>
+        <String Name="NumSteps">0</String>
+        <Sequence Name="EnergyTerms">
+          <Int Name="Length">97</Int>
+          <EnergyTerm>
+            <String Name="Name">LJ-14</String>
+            <Real Name="Value">63.700000000000657</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb-14</String>
+            <Real Name="Value">63.800000000000658</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ (SR)</String>
+            <Real Name="Value">62.500000000000639</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Disper. corr.</String>
+            <Real Name="Value">64.700000000000614</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb (SR)</String>
+            <Real Name="Value">62.600000000000641</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul. recip.</String>
+            <Real Name="Value">63.500000000000654</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ recip.</String>
+            <Real Name="Value">63.600000000000655</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">COM Pull En.</String>
+            <Real Name="Value">65.100000000000591</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Quantum En.</String>
+            <Real Name="Value">63.300000000000651</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Potential</String>
+            <Real Name="Value">62.700000000000642</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Kinetic En.</String>
+            <Real Name="Value">62.800000000000644</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Total Energy</String>
+            <Real Name="Value">62.900000000000645</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Temperature</String>
+            <Real Name="Value">63.000000000000647</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres. DC</String>
+            <Real Name="Value">64.800000000000608</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pressure</String>
+            <Real Name="Value">63.100000000000648</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVremain/dl</String>
+            <Real Name="Value">64.60000000000062</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dEkin/dl</String>
+            <Real Name="Value">64.500000000000625</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVcoul/dl</String>
+            <Real Name="Value">64.100000000000648</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVvdw/dl</String>
+            <Real Name="Value">64.200000000000642</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVbonded/dl</String>
+            <Real Name="Value">64.300000000000637</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVrestraint/dl</String>
+            <Real Name="Value">64.400000000000631</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Constr. rmsd</String>
+            <Real Name="Value">0</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XX</String>
+            <Real Name="Value">73.000000000000142</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XY</String>
+            <Real Name="Value">73.100000000000136</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XZ</String>
+            <Real Name="Value">73.200000000000131</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YX</String>
+            <Real Name="Value">73.300000000000125</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YY</String>
+            <Real Name="Value">73.400000000000119</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YZ</String>
+            <Real Name="Value">73.500000000000114</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZX</String>
+            <Real Name="Value">73.600000000000108</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZY</String>
+            <Real Name="Value">73.700000000000102</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZZ</String>
+            <Real Name="Value">73.800000000000097</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XX</String>
+            <Real Name="Value">73.900000000000091</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XY</String>
+            <Real Name="Value">74.000000000000085</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XZ</String>
+            <Real Name="Value">74.10000000000008</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YX</String>
+            <Real Name="Value">74.200000000000074</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YY</String>
+            <Real Name="Value">74.300000000000068</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YZ</String>
+            <Real Name="Value">74.400000000000063</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZX</String>
+            <Real Name="Value">74.500000000000057</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZY</String>
+            <Real Name="Value">74.600000000000051</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZZ</String>
+            <Real Name="Value">74.700000000000045</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XX</String>
+            <Real Name="Value">74.80000000000004</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XY</String>
+            <Real Name="Value">74.900000000000034</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XZ</String>
+            <Real Name="Value">75.000000000000028</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YX</String>
+            <Real Name="Value">75.100000000000023</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YY</String>
+            <Real Name="Value">75.200000000000017</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YZ</String>
+            <Real Name="Value">75.300000000000011</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZX</String>
+            <Real Name="Value">75.400000000000006</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZY</String>
+            <Real Name="Value">75.5</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZZ</String>
+            <Real Name="Value">75.599999999999994</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XX</String>
+            <Real Name="Value">75.699999999999989</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XY</String>
+            <Real Name="Value">75.799999999999983</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XZ</String>
+            <Real Name="Value">75.899999999999977</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YX</String>
+            <Real Name="Value">75.999999999999972</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YY</String>
+            <Real Name="Value">76.099999999999966</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YZ</String>
+            <Real Name="Value">76.19999999999996</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZX</String>
+            <Real Name="Value">76.299999999999955</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZY</String>
+            <Real Name="Value">76.399999999999949</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZZ</String>
+            <Real Name="Value">76.499999999999943</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">#Surf*SurfTen</String>
+            <Real Name="Value">43.7399999999976</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-X</String>
+            <Real Name="Value">76.599999999999937</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Y</String>
+            <Real Name="Value">76.699999999999932</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Z</String>
+            <Real Name="Value">76.799999999999926</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">2CosZ*Vel-X</String>
+            <Real Name="Value">71.10000000000025</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">1/Viscosity</String>
+            <Real Name="Value">27357920.464811537</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Protein</String>
+            <Real Name="Value">65.30000000000058</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Protein</String>
+            <Real Name="Value">65.400000000000574</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Protein</String>
+            <Real Name="Value">65.600000000000563</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Protein</String>
+            <Real Name="Value">65.700000000000557</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Water</String>
+            <Real Name="Value">65.800000000000551</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Water</String>
+            <Real Name="Value">65.900000000000546</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Water</String>
+            <Real Name="Value">66.100000000000534</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Water</String>
+            <Real Name="Value">66.200000000000529</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Lipid</String>
+            <Real Name="Value">66.300000000000523</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Lipid</String>
+            <Real Name="Value">66.400000000000517</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Lipid</String>
+            <Real Name="Value">66.600000000000506</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Lipid</String>
+            <Real Name="Value">66.7000000000005</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Water</String>
+            <Real Name="Value">67.300000000000466</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Water</String>
+            <Real Name="Value">67.40000000000046</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Water</String>
+            <Real Name="Value">67.600000000000449</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Water</String>
+            <Real Name="Value">67.700000000000443</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Lipid</String>
+            <Real Name="Value">67.800000000000438</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Lipid</String>
+            <Real Name="Value">67.900000000000432</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Lipid</String>
+            <Real Name="Value">68.100000000000421</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Lipid</String>
+            <Real Name="Value">68.200000000000415</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Lipid-Lipid</String>
+            <Real Name="Value">69.300000000000352</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Lipid-Lipid</String>
+            <Real Name="Value">69.400000000000347</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Lipid-Lipid</String>
+            <Real Name="Value">69.600000000000335</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Lipid-Lipid</String>
+            <Real Name="Value">69.70000000000033</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Protein</String>
+            <Real Name="Value">69.800000000000324</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Water</String>
+            <Real Name="Value">70.000000000000313</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Lipid</String>
+            <Real Name="Value">70.200000000000301</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Protein</String>
+            <Real Name="Value">70.40000000000029</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Protein</String>
+            <Real Name="Value">70.500000000000284</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Protein</String>
+            <Real Name="Value">70.600000000000279</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Lipid</String>
+            <Real Name="Value">70.700000000000273</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Lipid</String>
+            <Real Name="Value">70.800000000000267</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Lipid</String>
+            <Real Name="Value">70.900000000000261</Real>
+          </EnergyTerm>
+        </Sequence>
+      </Frame>
+      <Frame>
+        <Real Name="Time">79.699999999999761</Real>
+        <Real Name="Timestep">0.001</Real>
+        <String Name="Step">400</String>
+        <String Name="NumSteps">0</String>
+        <Sequence Name="EnergyTerms">
+          <Int Name="Length">97</Int>
+          <EnergyTerm>
+            <String Name="Name">LJ-14</String>
+            <Real Name="Value">81.099999999999682</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb-14</String>
+            <Real Name="Value">81.199999999999676</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ (SR)</String>
+            <Real Name="Value">79.89999999999975</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Disper. corr.</String>
+            <Real Name="Value">82.099999999999625</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb (SR)</String>
+            <Real Name="Value">79.999999999999744</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul. recip.</String>
+            <Real Name="Value">80.899999999999693</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ recip.</String>
+            <Real Name="Value">80.999999999999687</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">COM Pull En.</String>
+            <Real Name="Value">82.499999999999602</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Quantum En.</String>
+            <Real Name="Value">80.699999999999704</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Potential</String>
+            <Real Name="Value">80.099999999999739</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Kinetic En.</String>
+            <Real Name="Value">80.199999999999733</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Total Energy</String>
+            <Real Name="Value">80.299999999999727</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Temperature</String>
+            <Real Name="Value">80.399999999999721</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres. DC</String>
+            <Real Name="Value">82.199999999999619</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pressure</String>
+            <Real Name="Value">80.499999999999716</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVremain/dl</String>
+            <Real Name="Value">81.999999999999631</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dEkin/dl</String>
+            <Real Name="Value">81.899999999999636</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVcoul/dl</String>
+            <Real Name="Value">81.499999999999659</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVvdw/dl</String>
+            <Real Name="Value">81.599999999999653</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVbonded/dl</String>
+            <Real Name="Value">81.699999999999648</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVrestraint/dl</String>
+            <Real Name="Value">81.799999999999642</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Constr. rmsd</String>
+            <Real Name="Value">0</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XX</String>
+            <Real Name="Value">90.399999999999153</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XY</String>
+            <Real Name="Value">90.499999999999147</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XZ</String>
+            <Real Name="Value">90.599999999999142</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YX</String>
+            <Real Name="Value">90.699999999999136</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YY</String>
+            <Real Name="Value">90.79999999999913</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YZ</String>
+            <Real Name="Value">90.899999999999125</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZX</String>
+            <Real Name="Value">90.999999999999119</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZY</String>
+            <Real Name="Value">91.099999999999113</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZZ</String>
+            <Real Name="Value">91.199999999999108</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XX</String>
+            <Real Name="Value">91.299999999999102</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XY</String>
+            <Real Name="Value">91.399999999999096</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XZ</String>
+            <Real Name="Value">91.499999999999091</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YX</String>
+            <Real Name="Value">91.599999999999085</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YY</String>
+            <Real Name="Value">91.699999999999079</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YZ</String>
+            <Real Name="Value">91.799999999999073</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZX</String>
+            <Real Name="Value">91.899999999999068</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZY</String>
+            <Real Name="Value">91.999999999999062</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZZ</String>
+            <Real Name="Value">92.099999999999056</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XX</String>
+            <Real Name="Value">92.199999999999051</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XY</String>
+            <Real Name="Value">92.299999999999045</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XZ</String>
+            <Real Name="Value">92.399999999999039</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YX</String>
+            <Real Name="Value">92.499999999999034</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YY</String>
+            <Real Name="Value">92.599999999999028</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YZ</String>
+            <Real Name="Value">92.699999999999022</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZX</String>
+            <Real Name="Value">92.799999999999017</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZY</String>
+            <Real Name="Value">92.899999999999011</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZZ</String>
+            <Real Name="Value">92.999999999999005</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XX</String>
+            <Real Name="Value">93.099999999999</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XY</String>
+            <Real Name="Value">93.199999999998994</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XZ</String>
+            <Real Name="Value">93.299999999998988</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YX</String>
+            <Real Name="Value">93.399999999998983</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YY</String>
+            <Real Name="Value">93.499999999998977</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YZ</String>
+            <Real Name="Value">93.599999999998971</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZX</String>
+            <Real Name="Value">93.699999999998965</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZY</String>
+            <Real Name="Value">93.79999999999896</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZZ</String>
+            <Real Name="Value">93.899999999998954</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">#Surf*SurfTen</String>
+            <Real Name="Value">54.179999999996419</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-X</String>
+            <Real Name="Value">93.999999999998948</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Y</String>
+            <Real Name="Value">94.099999999998943</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Z</String>
+            <Real Name="Value">94.199999999998937</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">2CosZ*Vel-X</String>
+            <Real Name="Value">88.499999999999261</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">1/Viscosity</String>
+            <Real Name="Value">26576254.15580143</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Protein</String>
+            <Real Name="Value">82.699999999999591</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Protein</String>
+            <Real Name="Value">82.799999999999585</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Protein</String>
+            <Real Name="Value">82.999999999999574</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Protein</String>
+            <Real Name="Value">83.099999999999568</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Water</String>
+            <Real Name="Value">83.199999999999562</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Water</String>
+            <Real Name="Value">83.299999999999557</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Water</String>
+            <Real Name="Value">83.499999999999545</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Water</String>
+            <Real Name="Value">83.59999999999954</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Lipid</String>
+            <Real Name="Value">83.699999999999534</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Lipid</String>
+            <Real Name="Value">83.799999999999528</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Lipid</String>
+            <Real Name="Value">83.999999999999517</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Lipid</String>
+            <Real Name="Value">84.099999999999511</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Water</String>
+            <Real Name="Value">84.699999999999477</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Water</String>
+            <Real Name="Value">84.799999999999471</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Water</String>
+            <Real Name="Value">84.99999999999946</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Water</String>
+            <Real Name="Value">85.099999999999454</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Lipid</String>
+            <Real Name="Value">85.199999999999449</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Lipid</String>
+            <Real Name="Value">85.299999999999443</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Lipid</String>
+            <Real Name="Value">85.499999999999432</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Lipid</String>
+            <Real Name="Value">85.599999999999426</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Lipid-Lipid</String>
+            <Real Name="Value">86.699999999999363</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Lipid-Lipid</String>
+            <Real Name="Value">86.799999999999358</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Lipid-Lipid</String>
+            <Real Name="Value">86.999999999999346</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Lipid-Lipid</String>
+            <Real Name="Value">87.099999999999341</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Protein</String>
+            <Real Name="Value">87.199999999999335</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Water</String>
+            <Real Name="Value">87.399999999999324</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Lipid</String>
+            <Real Name="Value">87.599999999999312</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Protein</String>
+            <Real Name="Value">87.799999999999301</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Protein</String>
+            <Real Name="Value">87.899999999999295</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Protein</String>
+            <Real Name="Value">87.999999999999289</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Lipid</String>
+            <Real Name="Value">88.099999999999284</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Lipid</String>
+            <Real Name="Value">88.199999999999278</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Lipid</String>
+            <Real Name="Value">88.299999999999272</Real>
+          </EnergyTerm>
+        </Sequence>
+      </Frame>
+      <Frame>
+        <Real Name="Time">97.099999999998772</Real>
+        <Real Name="Timestep">0.001</Real>
+        <String Name="Step">500</String>
+        <String Name="NumSteps">0</String>
+        <Sequence Name="EnergyTerms">
+          <Int Name="Length">97</Int>
+          <EnergyTerm>
+            <String Name="Name">LJ-14</String>
+            <Real Name="Value">98.499999999998693</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb-14</String>
+            <Real Name="Value">98.599999999998687</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ (SR)</String>
+            <Real Name="Value">97.299999999998761</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Disper. corr.</String>
+            <Real Name="Value">99.499999999998636</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb (SR)</String>
+            <Real Name="Value">97.399999999998755</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul. recip.</String>
+            <Real Name="Value">98.299999999998704</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ recip.</String>
+            <Real Name="Value">98.399999999998698</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">COM Pull En.</String>
+            <Real Name="Value">99.899999999998613</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Quantum En.</String>
+            <Real Name="Value">98.099999999998715</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Potential</String>
+            <Real Name="Value">97.499999999998749</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Kinetic En.</String>
+            <Real Name="Value">97.599999999998744</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Total Energy</String>
+            <Real Name="Value">97.699999999998738</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Temperature</String>
+            <Real Name="Value">97.799999999998732</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres. DC</String>
+            <Real Name="Value">99.59999999999863</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pressure</String>
+            <Real Name="Value">97.899999999998727</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVremain/dl</String>
+            <Real Name="Value">99.399999999998641</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dEkin/dl</String>
+            <Real Name="Value">99.299999999998647</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVcoul/dl</String>
+            <Real Name="Value">98.89999999999867</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVvdw/dl</String>
+            <Real Name="Value">98.999999999998664</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVbonded/dl</String>
+            <Real Name="Value">99.099999999998658</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVrestraint/dl</String>
+            <Real Name="Value">99.199999999998653</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Constr. rmsd</String>
+            <Real Name="Value">0</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XX</String>
+            <Real Name="Value">107.79999999999816</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XY</String>
+            <Real Name="Value">107.89999999999816</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XZ</String>
+            <Real Name="Value">107.99999999999815</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YX</String>
+            <Real Name="Value">108.09999999999815</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YY</String>
+            <Real Name="Value">108.19999999999814</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YZ</String>
+            <Real Name="Value">108.29999999999814</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZX</String>
+            <Real Name="Value">108.39999999999813</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZY</String>
+            <Real Name="Value">108.49999999999812</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZZ</String>
+            <Real Name="Value">108.59999999999812</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XX</String>
+            <Real Name="Value">108.69999999999811</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XY</String>
+            <Real Name="Value">108.79999999999811</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XZ</String>
+            <Real Name="Value">108.8999999999981</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YX</String>
+            <Real Name="Value">108.9999999999981</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YY</String>
+            <Real Name="Value">109.09999999999809</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YZ</String>
+            <Real Name="Value">109.19999999999808</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZX</String>
+            <Real Name="Value">109.29999999999808</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZY</String>
+            <Real Name="Value">109.39999999999807</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZZ</String>
+            <Real Name="Value">109.49999999999807</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XX</String>
+            <Real Name="Value">109.59999999999806</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XY</String>
+            <Real Name="Value">109.69999999999806</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XZ</String>
+            <Real Name="Value">109.79999999999805</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YX</String>
+            <Real Name="Value">109.89999999999804</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YY</String>
+            <Real Name="Value">109.99999999999804</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YZ</String>
+            <Real Name="Value">110.09999999999803</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZX</String>
+            <Real Name="Value">110.19999999999803</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZY</String>
+            <Real Name="Value">110.29999999999802</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZZ</String>
+            <Real Name="Value">110.39999999999802</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XX</String>
+            <Real Name="Value">110.49999999999801</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XY</String>
+            <Real Name="Value">110.599999999998</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XZ</String>
+            <Real Name="Value">110.699999999998</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YX</String>
+            <Real Name="Value">110.79999999999799</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YY</String>
+            <Real Name="Value">110.89999999999799</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YZ</String>
+            <Real Name="Value">110.99999999999798</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZX</String>
+            <Real Name="Value">111.09999999999798</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZY</String>
+            <Real Name="Value">111.19999999999797</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZZ</String>
+            <Real Name="Value">111.29999999999797</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">#Surf*SurfTen</String>
+            <Real Name="Value">64.61999999999523</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-X</String>
+            <Real Name="Value">111.39999999999796</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Y</String>
+            <Real Name="Value">111.49999999999795</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Z</String>
+            <Real Name="Value">111.59999999999795</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">2CosZ*Vel-X</String>
+            <Real Name="Value">105.89999999999827</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">1/Viscosity</String>
+            <Real Name="Value">26074526.385001335</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Protein</String>
+            <Real Name="Value">100.0999999999986</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Protein</String>
+            <Real Name="Value">100.1999999999986</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Protein</String>
+            <Real Name="Value">100.39999999999858</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Protein</String>
+            <Real Name="Value">100.49999999999858</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Water</String>
+            <Real Name="Value">100.59999999999857</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Water</String>
+            <Real Name="Value">100.69999999999857</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Water</String>
+            <Real Name="Value">100.89999999999856</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Water</String>
+            <Real Name="Value">100.99999999999855</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Lipid</String>
+            <Real Name="Value">101.09999999999854</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Lipid</String>
+            <Real Name="Value">101.19999999999854</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Lipid</String>
+            <Real Name="Value">101.39999999999853</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Lipid</String>
+            <Real Name="Value">101.49999999999852</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Water</String>
+            <Real Name="Value">102.09999999999849</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Water</String>
+            <Real Name="Value">102.19999999999848</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Water</String>
+            <Real Name="Value">102.39999999999847</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Water</String>
+            <Real Name="Value">102.49999999999847</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Lipid</String>
+            <Real Name="Value">102.59999999999846</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Lipid</String>
+            <Real Name="Value">102.69999999999845</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Lipid</String>
+            <Real Name="Value">102.89999999999844</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Lipid</String>
+            <Real Name="Value">102.99999999999844</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Lipid-Lipid</String>
+            <Real Name="Value">104.09999999999837</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Lipid-Lipid</String>
+            <Real Name="Value">104.19999999999837</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Lipid-Lipid</String>
+            <Real Name="Value">104.39999999999836</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Lipid-Lipid</String>
+            <Real Name="Value">104.49999999999835</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Protein</String>
+            <Real Name="Value">104.59999999999835</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Water</String>
+            <Real Name="Value">104.79999999999833</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Lipid</String>
+            <Real Name="Value">104.99999999999832</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Protein</String>
+            <Real Name="Value">105.19999999999831</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Protein</String>
+            <Real Name="Value">105.29999999999831</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Protein</String>
+            <Real Name="Value">105.3999999999983</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Lipid</String>
+            <Real Name="Value">105.49999999999829</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Lipid</String>
+            <Real Name="Value">105.59999999999829</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Lipid</String>
+            <Real Name="Value">105.69999999999828</Real>
+          </EnergyTerm>
+        </Sequence>
+      </Frame>
+      <Frame>
+        <Real Name="Time">114.49999999999778</Real>
+        <Real Name="Timestep">0.001</Real>
+        <String Name="Step">600</String>
+        <String Name="NumSteps">0</String>
+        <Sequence Name="EnergyTerms">
+          <Int Name="Length">97</Int>
+          <EnergyTerm>
+            <String Name="Name">LJ-14</String>
+            <Real Name="Value">115.8999999999977</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb-14</String>
+            <Real Name="Value">115.9999999999977</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ (SR)</String>
+            <Real Name="Value">114.69999999999777</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Disper. corr.</String>
+            <Real Name="Value">116.89999999999765</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb (SR)</String>
+            <Real Name="Value">114.79999999999777</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul. recip.</String>
+            <Real Name="Value">115.69999999999771</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ recip.</String>
+            <Real Name="Value">115.79999999999771</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">COM Pull En.</String>
+            <Real Name="Value">117.29999999999762</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Quantum En.</String>
+            <Real Name="Value">115.49999999999773</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Potential</String>
+            <Real Name="Value">114.89999999999776</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Kinetic En.</String>
+            <Real Name="Value">114.99999999999775</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Total Energy</String>
+            <Real Name="Value">115.09999999999775</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Temperature</String>
+            <Real Name="Value">115.19999999999774</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres. DC</String>
+            <Real Name="Value">116.99999999999764</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pressure</String>
+            <Real Name="Value">115.29999999999774</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVremain/dl</String>
+            <Real Name="Value">116.79999999999765</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dEkin/dl</String>
+            <Real Name="Value">116.69999999999766</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVcoul/dl</String>
+            <Real Name="Value">116.29999999999768</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVvdw/dl</String>
+            <Real Name="Value">116.39999999999768</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVbonded/dl</String>
+            <Real Name="Value">116.49999999999767</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVrestraint/dl</String>
+            <Real Name="Value">116.59999999999766</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Constr. rmsd</String>
+            <Real Name="Value">0</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XX</String>
+            <Real Name="Value">125.19999999999717</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XY</String>
+            <Real Name="Value">125.29999999999717</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XZ</String>
+            <Real Name="Value">125.39999999999716</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YX</String>
+            <Real Name="Value">125.49999999999716</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YY</String>
+            <Real Name="Value">125.59999999999715</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YZ</String>
+            <Real Name="Value">125.69999999999715</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZX</String>
+            <Real Name="Value">125.79999999999714</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZY</String>
+            <Real Name="Value">125.89999999999714</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZZ</String>
+            <Real Name="Value">125.99999999999713</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XX</String>
+            <Real Name="Value">126.09999999999712</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XY</String>
+            <Real Name="Value">126.19999999999712</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XZ</String>
+            <Real Name="Value">126.29999999999711</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YX</String>
+            <Real Name="Value">126.39999999999711</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YY</String>
+            <Real Name="Value">126.4999999999971</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YZ</String>
+            <Real Name="Value">126.5999999999971</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZX</String>
+            <Real Name="Value">126.69999999999709</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZY</String>
+            <Real Name="Value">126.79999999999708</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZZ</String>
+            <Real Name="Value">126.89999999999708</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XX</String>
+            <Real Name="Value">126.99999999999707</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XY</String>
+            <Real Name="Value">127.09999999999707</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XZ</String>
+            <Real Name="Value">127.19999999999706</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YX</String>
+            <Real Name="Value">127.29999999999706</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YY</String>
+            <Real Name="Value">127.39999999999705</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YZ</String>
+            <Real Name="Value">127.49999999999704</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZX</String>
+            <Real Name="Value">127.59999999999704</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZY</String>
+            <Real Name="Value">127.69999999999703</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZZ</String>
+            <Real Name="Value">127.79999999999703</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XX</String>
+            <Real Name="Value">127.89999999999702</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XY</String>
+            <Real Name="Value">127.99999999999702</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XZ</String>
+            <Real Name="Value">128.09999999999701</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YX</String>
+            <Real Name="Value">128.199999999997</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YY</String>
+            <Real Name="Value">128.299999999997</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YZ</String>
+            <Real Name="Value">128.39999999999699</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZX</String>
+            <Real Name="Value">128.49999999999699</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZY</String>
+            <Real Name="Value">128.59999999999698</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZZ</String>
+            <Real Name="Value">128.69999999999698</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">#Surf*SurfTen</String>
+            <Real Name="Value">75.059999999994048</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-X</String>
+            <Real Name="Value">128.79999999999697</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Y</String>
+            <Real Name="Value">128.89999999999696</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Z</String>
+            <Real Name="Value">128.99999999999696</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">2CosZ*Vel-X</String>
+            <Real Name="Value">123.29999999999728</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">1/Viscosity</String>
+            <Real Name="Value">25725196.507160403</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Protein</String>
+            <Real Name="Value">117.49999999999761</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Protein</String>
+            <Real Name="Value">117.59999999999761</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Protein</String>
+            <Real Name="Value">117.7999999999976</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Protein</String>
+            <Real Name="Value">117.89999999999759</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Water</String>
+            <Real Name="Value">117.99999999999758</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Water</String>
+            <Real Name="Value">118.09999999999758</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Water</String>
+            <Real Name="Value">118.29999999999757</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Water</String>
+            <Real Name="Value">118.39999999999756</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Lipid</String>
+            <Real Name="Value">118.49999999999756</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Lipid</String>
+            <Real Name="Value">118.59999999999755</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Lipid</String>
+            <Real Name="Value">118.79999999999754</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Lipid</String>
+            <Real Name="Value">118.89999999999753</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Water</String>
+            <Real Name="Value">119.4999999999975</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Water</String>
+            <Real Name="Value">119.59999999999749</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Water</String>
+            <Real Name="Value">119.79999999999748</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Water</String>
+            <Real Name="Value">119.89999999999748</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Lipid</String>
+            <Real Name="Value">119.99999999999747</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Lipid</String>
+            <Real Name="Value">120.09999999999746</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Lipid</String>
+            <Real Name="Value">120.29999999999745</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Lipid</String>
+            <Real Name="Value">120.39999999999745</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Lipid-Lipid</String>
+            <Real Name="Value">121.49999999999739</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Lipid-Lipid</String>
+            <Real Name="Value">121.59999999999738</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Lipid-Lipid</String>
+            <Real Name="Value">121.79999999999737</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Lipid-Lipid</String>
+            <Real Name="Value">121.89999999999736</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Protein</String>
+            <Real Name="Value">121.99999999999736</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Water</String>
+            <Real Name="Value">122.19999999999735</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Lipid</String>
+            <Real Name="Value">122.39999999999733</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Protein</String>
+            <Real Name="Value">122.59999999999732</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Protein</String>
+            <Real Name="Value">122.69999999999732</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Protein</String>
+            <Real Name="Value">122.79999999999731</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Lipid</String>
+            <Real Name="Value">122.89999999999731</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Lipid</String>
+            <Real Name="Value">122.9999999999973</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Lipid</String>
+            <Real Name="Value">123.09999999999729</Real>
+          </EnergyTerm>
+        </Sequence>
+      </Frame>
+      <Frame>
+        <Real Name="Time">131.89999999999679</Real>
+        <Real Name="Timestep">0.001</Real>
+        <String Name="Step">700</String>
+        <String Name="NumSteps">0</String>
+        <Sequence Name="EnergyTerms">
+          <Int Name="Length">97</Int>
+          <EnergyTerm>
+            <String Name="Name">LJ-14</String>
+            <Real Name="Value">133.29999999999671</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb-14</String>
+            <Real Name="Value">133.39999999999671</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ (SR)</String>
+            <Real Name="Value">132.09999999999678</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Disper. corr.</String>
+            <Real Name="Value">134.29999999999666</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb (SR)</String>
+            <Real Name="Value">132.19999999999678</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul. recip.</String>
+            <Real Name="Value">133.09999999999673</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ recip.</String>
+            <Real Name="Value">133.19999999999672</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">COM Pull En.</String>
+            <Real Name="Value">134.69999999999663</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Quantum En.</String>
+            <Real Name="Value">132.89999999999674</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Potential</String>
+            <Real Name="Value">132.29999999999677</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Kinetic En.</String>
+            <Real Name="Value">132.39999999999677</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Total Energy</String>
+            <Real Name="Value">132.49999999999676</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Temperature</String>
+            <Real Name="Value">132.59999999999675</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres. DC</String>
+            <Real Name="Value">134.39999999999665</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pressure</String>
+            <Real Name="Value">132.69999999999675</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVremain/dl</String>
+            <Real Name="Value">134.19999999999666</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dEkin/dl</String>
+            <Real Name="Value">134.09999999999667</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVcoul/dl</String>
+            <Real Name="Value">133.69999999999669</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVvdw/dl</String>
+            <Real Name="Value">133.79999999999669</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVbonded/dl</String>
+            <Real Name="Value">133.89999999999668</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVrestraint/dl</String>
+            <Real Name="Value">133.99999999999667</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Constr. rmsd</String>
+            <Real Name="Value">0</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XX</String>
+            <Real Name="Value">142.59999999999619</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XY</String>
+            <Real Name="Value">142.69999999999618</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XZ</String>
+            <Real Name="Value">142.79999999999617</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YX</String>
+            <Real Name="Value">142.89999999999617</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YY</String>
+            <Real Name="Value">142.99999999999616</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YZ</String>
+            <Real Name="Value">143.09999999999616</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZX</String>
+            <Real Name="Value">143.19999999999615</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZY</String>
+            <Real Name="Value">143.29999999999615</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZZ</String>
+            <Real Name="Value">143.39999999999614</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XX</String>
+            <Real Name="Value">143.49999999999613</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XY</String>
+            <Real Name="Value">143.59999999999613</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XZ</String>
+            <Real Name="Value">143.69999999999612</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YX</String>
+            <Real Name="Value">143.79999999999612</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YY</String>
+            <Real Name="Value">143.89999999999611</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YZ</String>
+            <Real Name="Value">143.99999999999611</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZX</String>
+            <Real Name="Value">144.0999999999961</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZY</String>
+            <Real Name="Value">144.19999999999609</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZZ</String>
+            <Real Name="Value">144.29999999999609</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XX</String>
+            <Real Name="Value">144.39999999999608</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XY</String>
+            <Real Name="Value">144.49999999999608</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XZ</String>
+            <Real Name="Value">144.59999999999607</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YX</String>
+            <Real Name="Value">144.69999999999607</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YY</String>
+            <Real Name="Value">144.79999999999606</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YZ</String>
+            <Real Name="Value">144.89999999999606</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZX</String>
+            <Real Name="Value">144.99999999999605</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZY</String>
+            <Real Name="Value">145.09999999999604</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZZ</String>
+            <Real Name="Value">145.19999999999604</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XX</String>
+            <Real Name="Value">145.29999999999603</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XY</String>
+            <Real Name="Value">145.39999999999603</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XZ</String>
+            <Real Name="Value">145.49999999999602</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YX</String>
+            <Real Name="Value">145.59999999999602</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YY</String>
+            <Real Name="Value">145.69999999999601</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YZ</String>
+            <Real Name="Value">145.799999999996</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZX</String>
+            <Real Name="Value">145.899999999996</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZY</String>
+            <Real Name="Value">145.99999999999599</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZZ</String>
+            <Real Name="Value">146.09999999999599</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">#Surf*SurfTen</String>
+            <Real Name="Value">85.499999999992852</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-X</String>
+            <Real Name="Value">146.19999999999598</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Y</String>
+            <Real Name="Value">146.29999999999598</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Z</String>
+            <Real Name="Value">146.39999999999597</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">2CosZ*Vel-X</String>
+            <Real Name="Value">140.69999999999629</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">1/Viscosity</String>
+            <Real Name="Value">25467985.076439701</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Protein</String>
+            <Real Name="Value">134.89999999999662</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Protein</String>
+            <Real Name="Value">134.99999999999662</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Protein</String>
+            <Real Name="Value">135.19999999999661</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Protein</String>
+            <Real Name="Value">135.2999999999966</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Water</String>
+            <Real Name="Value">135.3999999999966</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Water</String>
+            <Real Name="Value">135.49999999999659</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Water</String>
+            <Real Name="Value">135.69999999999658</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Water</String>
+            <Real Name="Value">135.79999999999657</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Lipid</String>
+            <Real Name="Value">135.89999999999657</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Lipid</String>
+            <Real Name="Value">135.99999999999656</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Lipid</String>
+            <Real Name="Value">136.19999999999655</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Lipid</String>
+            <Real Name="Value">136.29999999999654</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Water</String>
+            <Real Name="Value">136.89999999999651</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Water</String>
+            <Real Name="Value">136.9999999999965</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Water</String>
+            <Real Name="Value">137.19999999999649</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Water</String>
+            <Real Name="Value">137.29999999999649</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Lipid</String>
+            <Real Name="Value">137.39999999999648</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Lipid</String>
+            <Real Name="Value">137.49999999999648</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Lipid</String>
+            <Real Name="Value">137.69999999999646</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Lipid</String>
+            <Real Name="Value">137.79999999999646</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Lipid-Lipid</String>
+            <Real Name="Value">138.8999999999964</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Lipid-Lipid</String>
+            <Real Name="Value">138.99999999999639</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Lipid-Lipid</String>
+            <Real Name="Value">139.19999999999638</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Lipid-Lipid</String>
+            <Real Name="Value">139.29999999999637</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Protein</String>
+            <Real Name="Value">139.39999999999637</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Water</String>
+            <Real Name="Value">139.59999999999636</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Lipid</String>
+            <Real Name="Value">139.79999999999634</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Protein</String>
+            <Real Name="Value">139.99999999999633</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Protein</String>
+            <Real Name="Value">140.09999999999633</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Protein</String>
+            <Real Name="Value">140.19999999999632</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Lipid</String>
+            <Real Name="Value">140.29999999999632</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Lipid</String>
+            <Real Name="Value">140.39999999999631</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Lipid</String>
+            <Real Name="Value">140.49999999999631</Real>
+          </EnergyTerm>
+        </Sequence>
+      </Frame>
+      <Frame>
+        <Real Name="Time">149.2999999999958</Real>
+        <Real Name="Timestep">0.001</Real>
+        <String Name="Step">800</String>
+        <String Name="NumSteps">0</String>
+        <Sequence Name="EnergyTerms">
+          <Int Name="Length">97</Int>
+          <EnergyTerm>
+            <String Name="Name">LJ-14</String>
+            <Real Name="Value">150.69999999999573</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb-14</String>
+            <Real Name="Value">150.79999999999572</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ (SR)</String>
+            <Real Name="Value">149.49999999999579</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Disper. corr.</String>
+            <Real Name="Value">151.69999999999567</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb (SR)</String>
+            <Real Name="Value">149.59999999999579</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul. recip.</String>
+            <Real Name="Value">150.49999999999574</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ recip.</String>
+            <Real Name="Value">150.59999999999573</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">COM Pull En.</String>
+            <Real Name="Value">152.09999999999565</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Quantum En.</String>
+            <Real Name="Value">150.29999999999575</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Potential</String>
+            <Real Name="Value">149.69999999999578</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Kinetic En.</String>
+            <Real Name="Value">149.79999999999578</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Total Energy</String>
+            <Real Name="Value">149.89999999999577</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Temperature</String>
+            <Real Name="Value">149.99999999999577</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres. DC</String>
+            <Real Name="Value">151.79999999999566</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pressure</String>
+            <Real Name="Value">150.09999999999576</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVremain/dl</String>
+            <Real Name="Value">151.59999999999567</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dEkin/dl</String>
+            <Real Name="Value">151.49999999999568</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVcoul/dl</String>
+            <Real Name="Value">151.0999999999957</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVvdw/dl</String>
+            <Real Name="Value">151.1999999999957</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVbonded/dl</String>
+            <Real Name="Value">151.29999999999569</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVrestraint/dl</String>
+            <Real Name="Value">151.39999999999569</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Constr. rmsd</String>
+            <Real Name="Value">0</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XX</String>
+            <Real Name="Value">159.9999999999952</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XY</String>
+            <Real Name="Value">160.09999999999519</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XZ</String>
+            <Real Name="Value">160.19999999999519</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YX</String>
+            <Real Name="Value">160.29999999999518</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YY</String>
+            <Real Name="Value">160.39999999999517</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YZ</String>
+            <Real Name="Value">160.49999999999517</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZX</String>
+            <Real Name="Value">160.59999999999516</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZY</String>
+            <Real Name="Value">160.69999999999516</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZZ</String>
+            <Real Name="Value">160.79999999999515</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XX</String>
+            <Real Name="Value">160.89999999999515</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XY</String>
+            <Real Name="Value">160.99999999999514</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XZ</String>
+            <Real Name="Value">161.09999999999513</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YX</String>
+            <Real Name="Value">161.19999999999513</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YY</String>
+            <Real Name="Value">161.29999999999512</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YZ</String>
+            <Real Name="Value">161.39999999999512</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZX</String>
+            <Real Name="Value">161.49999999999511</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZY</String>
+            <Real Name="Value">161.59999999999511</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZZ</String>
+            <Real Name="Value">161.6999999999951</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XX</String>
+            <Real Name="Value">161.79999999999509</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XY</String>
+            <Real Name="Value">161.89999999999509</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XZ</String>
+            <Real Name="Value">161.99999999999508</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YX</String>
+            <Real Name="Value">162.09999999999508</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YY</String>
+            <Real Name="Value">162.19999999999507</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YZ</String>
+            <Real Name="Value">162.29999999999507</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZX</String>
+            <Real Name="Value">162.39999999999506</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZY</String>
+            <Real Name="Value">162.49999999999505</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZZ</String>
+            <Real Name="Value">162.59999999999505</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XX</String>
+            <Real Name="Value">162.69999999999504</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XY</String>
+            <Real Name="Value">162.79999999999504</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XZ</String>
+            <Real Name="Value">162.89999999999503</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YX</String>
+            <Real Name="Value">162.99999999999503</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YY</String>
+            <Real Name="Value">163.09999999999502</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YZ</String>
+            <Real Name="Value">163.19999999999501</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZX</String>
+            <Real Name="Value">163.29999999999501</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZY</String>
+            <Real Name="Value">163.399999999995</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZZ</String>
+            <Real Name="Value">163.499999999995</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">#Surf*SurfTen</String>
+            <Real Name="Value">95.93999999999167</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-X</String>
+            <Real Name="Value">163.59999999999499</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Y</String>
+            <Real Name="Value">163.69999999999499</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Z</String>
+            <Real Name="Value">163.79999999999498</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">2CosZ*Vel-X</String>
+            <Real Name="Value">158.0999999999953</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">1/Viscosity</String>
+            <Real Name="Value">25270699.653898191</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Protein</String>
+            <Real Name="Value">152.29999999999563</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Protein</String>
+            <Real Name="Value">152.39999999999563</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Protein</String>
+            <Real Name="Value">152.59999999999562</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Protein</String>
+            <Real Name="Value">152.69999999999561</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Water</String>
+            <Real Name="Value">152.79999999999561</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Water</String>
+            <Real Name="Value">152.8999999999956</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Water</String>
+            <Real Name="Value">153.09999999999559</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Water</String>
+            <Real Name="Value">153.19999999999558</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Lipid</String>
+            <Real Name="Value">153.29999999999558</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Lipid</String>
+            <Real Name="Value">153.39999999999557</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Lipid</String>
+            <Real Name="Value">153.59999999999556</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Lipid</String>
+            <Real Name="Value">153.69999999999555</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Water</String>
+            <Real Name="Value">154.29999999999552</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Water</String>
+            <Real Name="Value">154.39999999999552</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Water</String>
+            <Real Name="Value">154.5999999999955</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Water</String>
+            <Real Name="Value">154.6999999999955</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Lipid</String>
+            <Real Name="Value">154.79999999999549</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Lipid</String>
+            <Real Name="Value">154.89999999999549</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Lipid</String>
+            <Real Name="Value">155.09999999999548</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Lipid</String>
+            <Real Name="Value">155.19999999999547</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Lipid-Lipid</String>
+            <Real Name="Value">156.29999999999541</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Lipid-Lipid</String>
+            <Real Name="Value">156.3999999999954</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Lipid-Lipid</String>
+            <Real Name="Value">156.59999999999539</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Lipid-Lipid</String>
+            <Real Name="Value">156.69999999999538</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Protein</String>
+            <Real Name="Value">156.79999999999538</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Water</String>
+            <Real Name="Value">156.99999999999537</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Lipid</String>
+            <Real Name="Value">157.19999999999536</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Protein</String>
+            <Real Name="Value">157.39999999999534</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Protein</String>
+            <Real Name="Value">157.49999999999534</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Protein</String>
+            <Real Name="Value">157.59999999999533</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Lipid</String>
+            <Real Name="Value">157.69999999999533</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Lipid</String>
+            <Real Name="Value">157.79999999999532</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Lipid</String>
+            <Real Name="Value">157.89999999999532</Real>
+          </EnergyTerm>
+        </Sequence>
+      </Frame>
+      <Frame>
+        <Real Name="Time">166.69999999999482</Real>
+        <Real Name="Timestep">0.001</Real>
+        <String Name="Step">900</String>
+        <String Name="NumSteps">0</String>
+        <Sequence Name="EnergyTerms">
+          <Int Name="Length">97</Int>
+          <EnergyTerm>
+            <String Name="Name">LJ-14</String>
+            <Real Name="Value">168.09999999999474</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb-14</String>
+            <Real Name="Value">168.19999999999473</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ (SR)</String>
+            <Real Name="Value">166.8999999999948</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Disper. corr.</String>
+            <Real Name="Value">169.09999999999468</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb (SR)</String>
+            <Real Name="Value">166.9999999999948</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul. recip.</String>
+            <Real Name="Value">167.89999999999475</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ recip.</String>
+            <Real Name="Value">167.99999999999474</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">COM Pull En.</String>
+            <Real Name="Value">169.49999999999466</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Quantum En.</String>
+            <Real Name="Value">167.69999999999476</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Potential</String>
+            <Real Name="Value">167.09999999999479</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Kinetic En.</String>
+            <Real Name="Value">167.19999999999479</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Total Energy</String>
+            <Real Name="Value">167.29999999999478</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Temperature</String>
+            <Real Name="Value">167.39999999999478</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres. DC</String>
+            <Real Name="Value">169.19999999999467</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pressure</String>
+            <Real Name="Value">167.49999999999477</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVremain/dl</String>
+            <Real Name="Value">168.99999999999469</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dEkin/dl</String>
+            <Real Name="Value">168.89999999999469</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVcoul/dl</String>
+            <Real Name="Value">168.49999999999471</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVvdw/dl</String>
+            <Real Name="Value">168.59999999999471</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVbonded/dl</String>
+            <Real Name="Value">168.6999999999947</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVrestraint/dl</String>
+            <Real Name="Value">168.7999999999947</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Constr. rmsd</String>
+            <Real Name="Value">0</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XX</String>
+            <Real Name="Value">177.39999999999421</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XY</String>
+            <Real Name="Value">177.4999999999942</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XZ</String>
+            <Real Name="Value">177.5999999999942</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YX</String>
+            <Real Name="Value">177.69999999999419</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YY</String>
+            <Real Name="Value">177.79999999999418</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YZ</String>
+            <Real Name="Value">177.89999999999418</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZX</String>
+            <Real Name="Value">177.99999999999417</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZY</String>
+            <Real Name="Value">178.09999999999417</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZZ</String>
+            <Real Name="Value">178.19999999999416</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XX</String>
+            <Real Name="Value">178.29999999999416</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XY</String>
+            <Real Name="Value">178.39999999999415</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XZ</String>
+            <Real Name="Value">178.49999999999415</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YX</String>
+            <Real Name="Value">178.59999999999414</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YY</String>
+            <Real Name="Value">178.69999999999413</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YZ</String>
+            <Real Name="Value">178.79999999999413</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZX</String>
+            <Real Name="Value">178.89999999999412</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZY</String>
+            <Real Name="Value">178.99999999999412</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZZ</String>
+            <Real Name="Value">179.09999999999411</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XX</String>
+            <Real Name="Value">179.19999999999411</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XY</String>
+            <Real Name="Value">179.2999999999941</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XZ</String>
+            <Real Name="Value">179.39999999999409</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YX</String>
+            <Real Name="Value">179.49999999999409</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YY</String>
+            <Real Name="Value">179.59999999999408</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YZ</String>
+            <Real Name="Value">179.69999999999408</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZX</String>
+            <Real Name="Value">179.79999999999407</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZY</String>
+            <Real Name="Value">179.89999999999407</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZZ</String>
+            <Real Name="Value">179.99999999999406</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XX</String>
+            <Real Name="Value">180.09999999999405</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XY</String>
+            <Real Name="Value">180.19999999999405</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XZ</String>
+            <Real Name="Value">180.29999999999404</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YX</String>
+            <Real Name="Value">180.39999999999404</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YY</String>
+            <Real Name="Value">180.49999999999403</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YZ</String>
+            <Real Name="Value">180.59999999999403</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZX</String>
+            <Real Name="Value">180.69999999999402</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZY</String>
+            <Real Name="Value">180.79999999999401</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZZ</String>
+            <Real Name="Value">180.89999999999401</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">#Surf*SurfTen</String>
+            <Real Name="Value">106.37999999999047</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-X</String>
+            <Real Name="Value">180.999999999994</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Y</String>
+            <Real Name="Value">181.099999999994</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Z</String>
+            <Real Name="Value">181.19999999999399</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">2CosZ*Vel-X</String>
+            <Real Name="Value">175.49999999999432</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">1/Viscosity</String>
+            <Real Name="Value">25114582.899403647</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Protein</String>
+            <Real Name="Value">169.69999999999465</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Protein</String>
+            <Real Name="Value">169.79999999999464</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Protein</String>
+            <Real Name="Value">169.99999999999463</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Protein</String>
+            <Real Name="Value">170.09999999999462</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Water</String>
+            <Real Name="Value">170.19999999999462</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Water</String>
+            <Real Name="Value">170.29999999999461</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Water</String>
+            <Real Name="Value">170.4999999999946</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Water</String>
+            <Real Name="Value">170.59999999999459</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Lipid</String>
+            <Real Name="Value">170.69999999999459</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Lipid</String>
+            <Real Name="Value">170.79999999999458</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Lipid</String>
+            <Real Name="Value">170.99999999999457</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Lipid</String>
+            <Real Name="Value">171.09999999999457</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Water</String>
+            <Real Name="Value">171.69999999999453</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Water</String>
+            <Real Name="Value">171.79999999999453</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Water</String>
+            <Real Name="Value">171.99999999999451</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Water</String>
+            <Real Name="Value">172.09999999999451</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Lipid</String>
+            <Real Name="Value">172.1999999999945</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Lipid</String>
+            <Real Name="Value">172.2999999999945</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Lipid</String>
+            <Real Name="Value">172.49999999999449</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Lipid</String>
+            <Real Name="Value">172.59999999999448</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Lipid-Lipid</String>
+            <Real Name="Value">173.69999999999442</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Lipid-Lipid</String>
+            <Real Name="Value">173.79999999999441</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Lipid-Lipid</String>
+            <Real Name="Value">173.9999999999944</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Lipid-Lipid</String>
+            <Real Name="Value">174.0999999999944</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Protein</String>
+            <Real Name="Value">174.19999999999439</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Water</String>
+            <Real Name="Value">174.39999999999438</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Lipid</String>
+            <Real Name="Value">174.59999999999437</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Protein</String>
+            <Real Name="Value">174.79999999999436</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Protein</String>
+            <Real Name="Value">174.89999999999435</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Protein</String>
+            <Real Name="Value">174.99999999999434</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Lipid</String>
+            <Real Name="Value">175.09999999999434</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Lipid</String>
+            <Real Name="Value">175.19999999999433</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Lipid</String>
+            <Real Name="Value">175.29999999999433</Real>
+          </EnergyTerm>
+        </Sequence>
+      </Frame>
+    </Sequence>
+  </File>
+  <Int Name="Number of Energy Terms">97</Int>
+  <String Name="log">Current ref_t for group Water:     25.7
+Current ref_t for group Lipid:     25.8
+
+   Energies (kJ/mol)
+          LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
+    1.15000e+01    1.16000e+01    1.03000e+01    1.25000e+01    1.04000e+01
+   Coul. recip.      LJ recip.   COM Pull En.    Quantum En.      Potential
+    1.13000e+01    1.14000e+01    1.29000e+01    1.11000e+01    1.05000e+01
+    Kinetic En.   Total Energy    Temperature Pres. DC (bar) Pressure (bar)
+    1.06000e+01    1.07000e+01    1.08000e+01    1.26000e+01    1.09000e+01
+    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl
+    1.24000e+01    1.23000e+01    1.19000e+01    1.20000e+01    1.21000e+01
+ dVrestraint/dl   Constr. rmsd
+    1.22000e+01    0.00000e+00
+
+Current ref_t for group Water:     43.1
+Current ref_t for group Lipid:     43.2
+
+   Energies (kJ/mol)
+          LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
+    2.89000e+01    2.90000e+01    2.77000e+01    2.99000e+01    2.78000e+01
+   Coul. recip.      LJ recip.   COM Pull En.    Quantum En.      Potential
+    2.87000e+01    2.88000e+01    3.03000e+01    2.85000e+01    2.79000e+01
+    Kinetic En.   Total Energy    Temperature Pres. DC (bar) Pressure (bar)
+    2.80000e+01    2.81000e+01    2.82000e+01    3.00000e+01    2.83000e+01
+    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl
+    2.98000e+01    2.97000e+01    2.93000e+01    2.94000e+01    2.95000e+01
+ dVrestraint/dl   Constr. rmsd
+    2.96000e+01    0.00000e+00
+
+Current ref_t for group Water:     60.5
+Current ref_t for group Lipid:     60.6
+
+   Energies (kJ/mol)
+          LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
+    4.63000e+01    4.64000e+01    4.51000e+01    4.73000e+01    4.52000e+01
+   Coul. recip.      LJ recip.   COM Pull En.    Quantum En.      Potential
+    4.61000e+01    4.62000e+01    4.77000e+01    4.59000e+01    4.53000e+01
+    Kinetic En.   Total Energy    Temperature Pres. DC (bar) Pressure (bar)
+    4.54000e+01    4.55000e+01    4.56000e+01    4.74000e+01    4.57000e+01
+    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl
+    4.72000e+01    4.71000e+01    4.67000e+01    4.68000e+01    4.69000e+01
+ dVrestraint/dl   Constr. rmsd
+    4.70000e+01    0.00000e+00
+
+Current ref_t for group Water:     77.9
+Current ref_t for group Lipid:     78.0
+
+   Energies (kJ/mol)
+          LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
+    6.37000e+01    6.38000e+01    6.25000e+01    6.47000e+01    6.26000e+01
+   Coul. recip.      LJ recip.   COM Pull En.    Quantum En.      Potential
+    6.35000e+01    6.36000e+01    6.51000e+01    6.33000e+01    6.27000e+01
+    Kinetic En.   Total Energy    Temperature Pres. DC (bar) Pressure (bar)
+    6.28000e+01    6.29000e+01    6.30000e+01    6.48000e+01    6.31000e+01
+    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl
+    6.46000e+01    6.45000e+01    6.41000e+01    6.42000e+01    6.43000e+01
+ dVrestraint/dl   Constr. rmsd
+    6.44000e+01    0.00000e+00
+
+Current ref_t for group Water:     95.3
+Current ref_t for group Lipid:     95.4
+
+   Energies (kJ/mol)
+          LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
+    8.11000e+01    8.12000e+01    7.99000e+01    8.21000e+01    8.00000e+01
+   Coul. recip.      LJ recip.   COM Pull En.    Quantum En.      Potential
+    8.09000e+01    8.10000e+01    8.25000e+01    8.07000e+01    8.01000e+01
+    Kinetic En.   Total Energy    Temperature Pres. DC (bar) Pressure (bar)
+    8.02000e+01    8.03000e+01    8.04000e+01    8.22000e+01    8.05000e+01
+    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl
+    8.20000e+01    8.19000e+01    8.15000e+01    8.16000e+01    8.17000e+01
+ dVrestraint/dl   Constr. rmsd
+    8.18000e+01    0.00000e+00
+
+Current ref_t for group Water:    112.7
+Current ref_t for group Lipid:    112.8
+
+   Energies (kJ/mol)
+          LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
+    9.85000e+01    9.86000e+01    9.73000e+01    9.95000e+01    9.74000e+01
+   Coul. recip.      LJ recip.   COM Pull En.    Quantum En.      Potential
+    9.83000e+01    9.84000e+01    9.99000e+01    9.81000e+01    9.75000e+01
+    Kinetic En.   Total Energy    Temperature Pres. DC (bar) Pressure (bar)
+    9.76000e+01    9.77000e+01    9.78000e+01    9.96000e+01    9.79000e+01
+    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl
+    9.94000e+01    9.93000e+01    9.89000e+01    9.90000e+01    9.91000e+01
+ dVrestraint/dl   Constr. rmsd
+    9.92000e+01    0.00000e+00
+
+Current ref_t for group Water:    130.1
+Current ref_t for group Lipid:    130.2
+
+   Energies (kJ/mol)
+          LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
+    1.15900e+02    1.16000e+02    1.14700e+02    1.16900e+02    1.14800e+02
+   Coul. recip.      LJ recip.   COM Pull En.    Quantum En.      Potential
+    1.15700e+02    1.15800e+02    1.17300e+02    1.15500e+02    1.14900e+02
+    Kinetic En.   Total Energy    Temperature Pres. DC (bar) Pressure (bar)
+    1.15000e+02    1.15100e+02    1.15200e+02    1.17000e+02    1.15300e+02
+    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl
+    1.16800e+02    1.16700e+02    1.16300e+02    1.16400e+02    1.16500e+02
+ dVrestraint/dl   Constr. rmsd
+    1.16600e+02    0.00000e+00
+
+Current ref_t for group Water:    147.5
+Current ref_t for group Lipid:    147.6
+
+   Energies (kJ/mol)
+          LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
+    1.33300e+02    1.33400e+02    1.32100e+02    1.34300e+02    1.32200e+02
+   Coul. recip.      LJ recip.   COM Pull En.    Quantum En.      Potential
+    1.33100e+02    1.33200e+02    1.34700e+02    1.32900e+02    1.32300e+02
+    Kinetic En.   Total Energy    Temperature Pres. DC (bar) Pressure (bar)
+    1.32400e+02    1.32500e+02    1.32600e+02    1.34400e+02    1.32700e+02
+    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl
+    1.34200e+02    1.34100e+02    1.33700e+02    1.33800e+02    1.33900e+02
+ dVrestraint/dl   Constr. rmsd
+    1.34000e+02    0.00000e+00
+
+Current ref_t for group Water:    164.9
+Current ref_t for group Lipid:    165.0
+
+   Energies (kJ/mol)
+          LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
+    1.50700e+02    1.50800e+02    1.49500e+02    1.51700e+02    1.49600e+02
+   Coul. recip.      LJ recip.   COM Pull En.    Quantum En.      Potential
+    1.50500e+02    1.50600e+02    1.52100e+02    1.50300e+02    1.49700e+02
+    Kinetic En.   Total Energy    Temperature Pres. DC (bar) Pressure (bar)
+    1.49800e+02    1.49900e+02    1.50000e+02    1.51800e+02    1.50100e+02
+    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl
+    1.51600e+02    1.51500e+02    1.51100e+02    1.51200e+02    1.51300e+02
+ dVrestraint/dl   Constr. rmsd
+    1.51400e+02    0.00000e+00
+
+Current ref_t for group Water:    182.3
+Current ref_t for group Lipid:    182.4
+
+   Energies (kJ/mol)
+          LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
+    1.68100e+02    1.68200e+02    1.66900e+02    1.69100e+02    1.67000e+02
+   Coul. recip.      LJ recip.   COM Pull En.    Quantum En.      Potential
+    1.67900e+02    1.68000e+02    1.69500e+02    1.67700e+02    1.67100e+02
+    Kinetic En.   Total Energy    Temperature Pres. DC (bar) Pressure (bar)
+    1.67200e+02    1.67300e+02    1.67400e+02    1.69200e+02    1.67500e+02
+    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl
+    1.69000e+02    1.68900e+02    1.68500e+02    1.68600e+02    1.68700e+02
+ dVrestraint/dl   Constr. rmsd
+    1.68800e+02    0.00000e+00
+
+Current ref_t for group Water:    182.3
+Current ref_t for group Lipid:    182.4
+
+	&lt;======  ###############  ==&gt;
+	&lt;====  A V E R A G E S  ====&gt;
+	&lt;==  ###############  ======&gt;
+
+	Statistics over 10 steps using 10 frames
+
+   Energies (kJ/mol)
+          LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
+    8.98000e+01    8.99000e+01    8.86000e+01    9.08000e+01    8.87000e+01
+   Coul. recip.      LJ recip.   COM Pull En.    Quantum En.      Potential
+    8.96000e+01    8.97000e+01    9.12000e+01    8.94000e+01    8.88000e+01
+    Kinetic En.   Total Energy    Temperature Pres. DC (bar) Pressure (bar)
+    8.89000e+01    8.90000e+01    8.91000e+01    9.09000e+01    8.92000e+01
+    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl
+    9.07000e+01    9.06000e+01    9.02000e+01    9.03000e+01    9.04000e+01
+ dVrestraint/dl   Constr. rmsd
+    9.05000e+01    0.00000e+00
+
+   Constraint Virial (kJ/mol)
+    9.91000e+01    9.92000e+01    9.93000e+01
+    9.94000e+01    9.95000e+01    9.96000e+01
+    9.97000e+01    9.98000e+01    9.99000e+01
+
+   Force Virial (kJ/mol)
+    1.00000e+02    1.00100e+02    1.00200e+02
+    1.00300e+02    1.00400e+02    1.00500e+02
+    1.00600e+02    1.00700e+02    1.00800e+02
+
+   Total Virial (kJ/mol)
+    1.00900e+02    1.01000e+02    1.01100e+02
+    1.01200e+02    1.01300e+02    1.01400e+02
+    1.01500e+02    1.01600e+02    1.01700e+02
+
+   Pressure (bar)
+    1.01800e+02    1.01900e+02    1.02000e+02
+    1.02100e+02    1.02200e+02    1.02300e+02
+    1.02400e+02    1.02500e+02    1.02600e+02
+
+   Total Dipole (D)
+    1.02700e+02    1.02800e+02    1.02900e+02
+
+  Epot (kJ/mol)        Coul-SR          LJ-SR        Coul-14          LJ-14   
+Protein-Protein    9.14000e+01    9.15000e+01    9.17000e+01    9.18000e+01
+  Protein-Water    9.19000e+01    9.20000e+01    9.22000e+01    9.23000e+01
+  Protein-Lipid    9.24000e+01    9.25000e+01    9.27000e+01    9.28000e+01
+    Water-Water    9.34000e+01    9.35000e+01    9.37000e+01    9.38000e+01
+    Water-Lipid    9.39000e+01    9.40000e+01    9.42000e+01    9.43000e+01
+    Lipid-Lipid    9.54000e+01    9.55000e+01    9.57000e+01    9.58000e+01
+
+      T-Protein        T-Water        T-Lipid
+    9.59000e+01    9.61000e+01    9.63000e+01
+
+          Group             Ux             Uy             Uz
+        Protein    9.65000e+01    9.66000e+01    9.67000e+01
+          Lipid    9.68000e+01    9.69000e+01    9.70000e+01
+
+</String>
+</ReferenceData>

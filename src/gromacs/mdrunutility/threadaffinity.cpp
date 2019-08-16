@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -396,7 +396,7 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
 {
     int *localityOrder = nullptr;
 
-    if (hw_opt->thread_affinity == threadaffOFF)
+    if (hw_opt->threadAffinity == ThreadAffinity::Off)
     {
         /* Nothing to do */
         return;
@@ -430,7 +430,7 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
     }
 
     bool affinityIsAutoAndNumThreadsIsNotAuto =
-        (hw_opt->thread_affinity == threadaffAUTO &&
+        (hw_opt->threadAffinity == ThreadAffinity::Auto &&
          !hw_opt->totNumThreadsIsAuto);
     bool issuedWarning;
     bool validLayout
@@ -458,13 +458,97 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
     }
 }
 
+/* Detects and returns whether we have the default affinity mask
+ *
+ * Returns true when we can query thread affinities and CPU count is
+ * consistent and we have default affinity mask on all ranks.
+ *
+ * Should be called simultaneously by all MPI ranks.
+ */
+static bool detectDefaultAffinityMask(const int nthreads_hw_avail)
+{
+    bool      detectedDefaultAffinityMask = true;
+
+#if HAVE_SCHED_AFFINITY
+    cpu_set_t mask_current;
+    CPU_ZERO(&mask_current);
+    int       ret;
+    if ((ret = sched_getaffinity(0, sizeof(cpu_set_t), &mask_current)) != 0)
+    {
+        /* failed to query affinity mask, will just return */
+        if (debug)
+        {
+            fprintf(debug, "Failed to query affinity mask (error %d)", ret);
+        }
+        detectedDefaultAffinityMask = false;
+    }
+
+    /* Before proceeding with the actual check, make sure that the number of
+     * detected CPUs is >= the CPUs in the current set.
+     * We need to check for CPU_COUNT as it was added only in glibc 2.6. */
+#ifdef CPU_COUNT
+    if (detectedDefaultAffinityMask &&
+        nthreads_hw_avail < CPU_COUNT(&mask_current))
+    {
+        if (debug)
+        {
+            fprintf(debug, "%d hardware threads detected, but %d was returned by CPU_COUNT",
+                    nthreads_hw_avail, CPU_COUNT(&mask_current));
+        }
+        detectedDefaultAffinityMask = false;
+    }
+#endif /* CPU_COUNT */
+
+    if (detectedDefaultAffinityMask)
+    {
+        /* Here we check whether all bits of the affinity mask are set.
+         * Note that this mask can change while the program is executing,
+         * e.g. by the system dynamically enabling or disabling cores or
+         * by some scheduler changing the affinities. Thus we can not assume
+         * that the result is the same on all ranks within a node
+         * when running this code at different times.
+         */
+        bool allBitsAreSet = true;
+        for (int i = 0; (i < nthreads_hw_avail && i < CPU_SETSIZE); i++)
+        {
+            allBitsAreSet = allBitsAreSet && (CPU_ISSET(i, &mask_current) != 0);
+        }
+        if (debug)
+        {
+            fprintf(debug, "%s affinity mask found\n",
+                    allBitsAreSet ? "Default" : "Non-default");
+        }
+        if (!allBitsAreSet)
+        {
+            detectedDefaultAffinityMask = false;
+        }
+    }
+#else
+    GMX_UNUSED_VALUE(nthreads_hw_avail);
+#endif /* HAVE_SCHED_AFFINITY */
+
+#if GMX_MPI
+    int mpiIsInitialized;
+    MPI_Initialized(&mpiIsInitialized);
+    if (mpiIsInitialized)
+    {
+        bool detectedDefaultAffinityMaskOnAllRanks;
+        MPI_Allreduce(&detectedDefaultAffinityMask,
+                      &detectedDefaultAffinityMaskOnAllRanks,
+                      1, MPI_C_BOOL, MPI_LAND, MPI_COMM_WORLD);
+        detectedDefaultAffinityMask = detectedDefaultAffinityMaskOnAllRanks;
+    }
+#endif
+
+    return detectedDefaultAffinityMask;
+}
+
 /* Check the process affinity mask and if it is found to be non-zero,
  * will honor it and disable mdrun internal affinity setting.
  * Note that this will only work on Linux as we use a GNU feature.
  */
 void
 gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
-                              const t_commrec     *cr,
                               gmx_hw_opt_t        *hw_opt,
                               int  gmx_unused      nthreads_hw_avail,
                               gmx_bool             bAfterOpenmpInit)
@@ -478,97 +562,26 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
          * thread-MPI whether it should do pinning when spawning threads.
          * TODO: the above no longer holds, we should move these checks later
          */
-        if (hw_opt->thread_affinity != threadaffOFF)
+        if (hw_opt->threadAffinity != ThreadAffinity::Off)
         {
             char *message;
             if (!gmx_omp_check_thread_affinity(&message))
             {
                 /* We only pin automatically with totNumThreadsIsAuto=true */
-                if (hw_opt->thread_affinity == threadaffON ||
+                if (hw_opt->threadAffinity == ThreadAffinity::On ||
                     hw_opt->totNumThreadsIsAuto)
                 {
                     GMX_LOG(mdlog.warning).asParagraph().appendText(message);
                 }
                 sfree(message);
-                hw_opt->thread_affinity = threadaffOFF;
+                hw_opt->threadAffinity = ThreadAffinity::Off;
             }
         }
-
-        /* With thread-MPI this is needed as pinning might get turned off,
-         * which needs to be known before starting thread-MPI.
-         * With thread-MPI hw_opt is processed here on the master rank
-         * and passed to the other ranks later, so we only do this on master.
-         */
-        if (!SIMMASTER(cr))
-        {
-            return;
-        }
-#if !GMX_THREAD_MPI
-        return;
-#endif
     }
 
-#if HAVE_SCHED_AFFINITY
-    int       ret;
-    cpu_set_t mask_current;
-
-    if (hw_opt->thread_affinity == threadaffOFF)
+    if (!detectDefaultAffinityMask(nthreads_hw_avail))
     {
-        /* internal affinity setting is off, don't bother checking process affinity */
-        return;
-    }
-
-    CPU_ZERO(&mask_current);
-    if ((ret = sched_getaffinity(0, sizeof(cpu_set_t), &mask_current)) != 0)
-    {
-        /* failed to query affinity mask, will just return */
-        if (debug)
-        {
-            fprintf(debug, "Failed to query affinity mask (error %d)", ret);
-        }
-        return;
-    }
-
-    /* Before proceeding with the actual check, make sure that the number of
-     * detected CPUs is >= the CPUs in the current set.
-     * We need to check for CPU_COUNT as it was added only in glibc 2.6. */
-#ifdef CPU_COUNT
-    if (nthreads_hw_avail < CPU_COUNT(&mask_current))
-    {
-        if (debug)
-        {
-            fprintf(debug, "%d hardware threads detected, but %d was returned by CPU_COUNT",
-                    nthreads_hw_avail, CPU_COUNT(&mask_current));
-        }
-        return;
-    }
-#endif /* CPU_COUNT */
-
-    gmx_bool bAllSet = TRUE;
-    for (int i = 0; (i < nthreads_hw_avail && i < CPU_SETSIZE); i++)
-    {
-        bAllSet = bAllSet && (CPU_ISSET(i, &mask_current) != 0);
-    }
-
-#if GMX_MPI
-    int isInitialized;
-    MPI_Initialized(&isInitialized);
-    /* Before OpenMP initialization, thread-MPI is not yet initialized.
-     * With thread-MPI bAllSet will be the same on all MPI-ranks, but the
-     * MPI_Allreduce then functions as a barrier before setting affinities.
-     */
-    if (isInitialized)
-    {
-        gmx_bool  bAllSet_All;
-
-        MPI_Allreduce(&bAllSet, &bAllSet_All, 1, MPI_C_BOOL, MPI_LAND, MPI_COMM_WORLD);
-        bAllSet = bAllSet_All;
-    }
-#endif
-
-    if (!bAllSet)
-    {
-        if (hw_opt->thread_affinity == threadaffAUTO)
+        if (hw_opt->threadAffinity == ThreadAffinity::Auto)
         {
             if (!bAfterOpenmpInit)
             {
@@ -581,7 +594,7 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
                         "Non-default thread affinity set probably by the OpenMP library,\n"
                         "disabling internal thread affinity");
             }
-            hw_opt->thread_affinity = threadaffOFF;
+            hw_opt->threadAffinity = ThreadAffinity::Off;
         }
         else
         {
@@ -593,18 +606,5 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
                         gmx::getProgramContext().displayName());
             }
         }
-
-        if (debug)
-        {
-            fprintf(debug, "Non-default affinity mask found\n");
-        }
     }
-    else
-    {
-        if (debug)
-        {
-            fprintf(debug, "Default affinity mask found\n");
-        }
-    }
-#endif /* HAVE_SCHED_AFFINITY */
 }

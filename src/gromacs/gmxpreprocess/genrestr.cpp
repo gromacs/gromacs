@@ -47,6 +47,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
@@ -111,7 +112,7 @@ int gmx_genrestr(int argc, char *argv[])
 #define npargs asize(pa)
 
     gmx_output_env_t *oenv;
-    t_atoms          *atoms = nullptr;
+    t_atoms           atoms;
     int               i, j, k;
     FILE             *out;
     int               igrp;
@@ -156,24 +157,25 @@ int gmx_genrestr(int argc, char *argv[])
         gmx_fatal(FARGS, "disre_dist should be >= 0");
     }
 
-    const char *title = "";
+    const char *title        = "";
+    bool        haveTopology = false;
     if (xfn != nullptr)
     {
         fprintf(stderr, "\nReading structure file\n");
-        t_topology *top = nullptr;
-        snew(top, 1);
-        read_tps_conf(xfn, top, nullptr, &x, &v, box, FALSE);
-        title = *top->name;
-        atoms = &top->atoms;
-        if (atoms->pdbinfo == nullptr)
+        gmx_mtop_t mtop;
+        readConfAndTopology(xfn, &haveTopology, &mtop, nullptr, &x, &v, box);
+        title = *mtop.name;
+        atoms = gmx_mtop_global_atoms(&mtop);
+        if (atoms.pdbinfo == nullptr)
         {
-            snew(atoms->pdbinfo, atoms->nr);
+            snew(atoms.pdbinfo, atoms.nr);
         }
+        haveTopology = true;
     }
 
     if (bFreeze)
     {
-        if (!atoms || !atoms->pdbinfo)
+        if (!haveTopology || !atoms.pdbinfo)
         {
             gmx_fatal(FARGS, "No B-factors in input file %s, use a pdb file next time.",
                       xfn);
@@ -181,9 +183,9 @@ int gmx_genrestr(int argc, char *argv[])
 
         out = opt2FILE("-of", NFILE, fnm, "w");
         fprintf(out, "[ freeze ]\n");
-        for (i = 0; (i < atoms->nr); i++)
+        for (i = 0; (i < atoms.nr); i++)
         {
-            if (atoms->pdbinfo[i].bfac <= freeze_level)
+            if (atoms.pdbinfo[i].bfac <= freeze_level)
             {
                 fprintf(out, "%d\n", i+1);
             }
@@ -194,7 +196,7 @@ int gmx_genrestr(int argc, char *argv[])
     {
         printf("Select group to generate %s matrix from\n",
                bConstr ? "constraint" : "distance restraint");
-        get_index(atoms, nfn, 1, &igrp, &ind_grp, &gn_grp);
+        get_index(&atoms, nfn, 1, &igrp, &ind_grp, &gn_grp);
 
         out = ftp2FILE(efITP, NFILE, fnm, "w");
         if (bConstr)
@@ -246,7 +248,7 @@ int gmx_genrestr(int argc, char *argv[])
     else
     {
         printf("Select group to position restrain\n");
-        get_index(atoms, nfn, 1, &igrp, &ind_grp, &gn_grp);
+        get_index(&atoms, nfn, 1, &igrp, &ind_grp, &gn_grp);
 
         out = ftp2FILE(efITP, NFILE, fnm, "w");
         fprintf(out, "; position restraints for %s of %s\n\n", gn_grp, title);
@@ -263,6 +265,7 @@ int gmx_genrestr(int argc, char *argv[])
     {
         sfree(x);
         sfree(v);
+        done_atom(&atoms);
     }
 
     return 0;

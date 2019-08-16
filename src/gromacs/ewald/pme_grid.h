@@ -36,8 +36,6 @@
 #ifndef GMX_EWALD_PME_GRID_H
 #define GMX_EWALD_PME_GRID_H
 
-#include "config.h"
-
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -58,10 +56,8 @@ constexpr int c_pmeNeighborUnitcellCount = 2*c_pmeMaxUnitcellShift + 1;
 struct pmegrid_t;
 struct pmegrids_t;
 
-#if GMX_MPI
 void
 gmx_sum_qgrid_dd(gmx_pme_t *pme, real *grid, int direction);
-#endif
 
 int
 copy_pmegrid_to_fftgrid(const gmx_pme_t *pme, const real *pmegrid, real *fftgrid, int grid_index);

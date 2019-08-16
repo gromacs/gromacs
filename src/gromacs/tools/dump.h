@@ -35,15 +35,19 @@
 #ifndef GMX_TOOLS_DUMP_H
 #define GMX_TOOLS_DUMP_H
 
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
+
 namespace gmx
 {
 
-/*! \brief Implements gmx dump
- *
- * \param[in] argc  argc value passed to main().
- * \param[in] argv  argv array passed to main().
- */
-int gmx_dump(int argc, char *argv[]);
+class DumpInfo
+{
+
+    public:
+        static const char name[];
+        static const char shortDescription[];
+        static ICommandLineOptionsModulePointer create();
+};
 
 }   // namespace gmx
 

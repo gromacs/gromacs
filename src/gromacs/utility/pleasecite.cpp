@@ -422,6 +422,10 @@ void please_cite(FILE *fp, const char *key)
     fflush(fp);
 }
 
+namespace
+{
+
+//! Write a message to \c fp to request citation also of the source-code DOI.
 void
 writeSourceDoi(FILE *fp)
 {
@@ -447,4 +451,23 @@ writeSourceDoi(FILE *fp)
     fprintf(fp, "%s%s\n", "https://doi.org/", doiString.c_str());
     fprintf(fp, "-------- -------- --- Thank You --- -------- --------\n\n");
     fflush(fp);
+}
+
+} // namespace
+
+void pleaseCiteGromacs(FILE *fplog)
+{
+    if (fplog == nullptr)
+    {
+        return;
+    }
+
+    please_cite(fplog, "Abraham2015");
+    please_cite(fplog, "Pall2015");
+    please_cite(fplog, "Pronk2013");
+    please_cite(fplog, "Hess2008b");
+    please_cite(fplog, "Spoel2005a");
+    please_cite(fplog, "Lindahl2001a");
+    please_cite(fplog, "Berendsen95a");
+    writeSourceDoi(fplog);
 }

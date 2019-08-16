@@ -34,6 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
+/*! \internal \file
+ *
+ * \brief This file contains function definitions for redistributing
+ * atoms over the PME domains
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_ewald
+ */
+
 #include "gmxpre.h"
 
 #include "pme_redistribute.h"
@@ -50,17 +60,18 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "pme_internal.h"
-#include "pme_simd.h"
 
+//! Calculate the slab indices and store in \p atc, store counts in \p count
 static void pme_calc_pidx(int start, int end,
-                          matrix recipbox, rvec x[],
-                          pme_atomcomm_t *atc, int *count)
+                          const matrix recipbox, const rvec x[],
+                          PmeAtomComm *atc, int *count)
 {
-    int   nslab, i;
-    int   si;
-    real *xptr, s;
-    real  rxx, ryx, rzx, ryy, rzy;
-    int  *pd;
+    int         nslab, i;
+    int         si;
+    const real *xptr;
+    real        s;
+    real        rxx, ryx, rzx, ryy, rzy;
+    int        *pd;
 
     /* Calculate PME task index (pidx) for each grid index.
      * Here we always assign equally sized slabs to each node
@@ -68,7 +79,7 @@ static void pme_calc_pidx(int start, int end,
      */
 
     nslab = atc->nslab;
-    pd    = atc->pd;
+    pd    = atc->pd.data();
 
     /* Reset the count */
     for (i = 0; i < nslab; i++)
@@ -109,8 +120,10 @@ static void pme_calc_pidx(int start, int end,
     }
 }
 
-static void pme_calc_pidx_wrapper(int natoms, matrix recipbox, rvec x[],
-                                  pme_atomcomm_t *atc)
+//! Wrapper function for calculating slab indices, stored in \p atc
+static void pme_calc_pidx_wrapper(gmx::ArrayRef<const gmx::RVec>  x,
+                                  const matrix                    recipbox,
+                                  PmeAtomComm                    *atc)
 {
     int nthread, thread, slab;
 
@@ -121,9 +134,11 @@ static void pme_calc_pidx_wrapper(int natoms, matrix recipbox, rvec x[],
     {
         try
         {
+            const int natoms = x.ssize();
             pme_calc_pidx(natoms* thread   /nthread,
                           natoms*(thread+1)/nthread,
-                          recipbox, x, atc, atc->count_thread[thread]);
+                          recipbox, as_rvec_array(x.data()),
+                          atc, atc->count_thread[thread].data());
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
@@ -138,83 +153,97 @@ static void pme_calc_pidx_wrapper(int natoms, matrix recipbox, rvec x[],
     }
 }
 
-static void realloc_splinevec(splinevec th, real **ptr_z, int nalloc)
+#ifndef DOXYGEN
+
+void SplineCoefficients::realloc(const int nalloc)
 {
     const int padding = 4;
-    int       i;
 
-    srenew(th[XX], nalloc);
-    srenew(th[YY], nalloc);
-    /* In z we add padding, this is only required for the aligned SIMD code */
-    sfree_aligned(*ptr_z);
-    snew_aligned(*ptr_z, nalloc+2*padding, SIMD4_ALIGNMENT);
-    th[ZZ] = *ptr_z + padding;
-
-    for (i = 0; i < padding; i++)
-    {
-        (*ptr_z)[               i] = 0;
-        (*ptr_z)[padding+nalloc+i] = 0;
-    }
+    bufferX_.resize(nalloc);
+    coefficients[XX] = bufferX_.data();
+    bufferY_.resize(nalloc);
+    coefficients[YY] = bufferY_.data();
+    /* In z we add padding, this is only required for the aligned 4-wide SIMD code */
+    bufferZ_.resize(nalloc + 2*padding);
+    coefficients[ZZ] = bufferZ_.data() + padding;
 }
 
-static void pme_realloc_splinedata(splinedata_t *spline, pme_atomcomm_t *atc)
-{
-    int i;
+#endif // !DOXYGEN
 
-    srenew(spline->ind, atc->nalloc);
+//! Reallocates all buffers in \p spline to fit atoms in \p atc
+static void pme_realloc_splinedata(splinedata_t         *spline,
+                                   const PmeAtomComm    *atc)
+{
+    if (spline->nalloc >= atc->x.ssize() &&
+        spline->nalloc >= atc->numAtoms())
+    {
+        return;
+    }
+
+    spline->nalloc = std::max(atc->x.capacity(), static_cast<size_t>(atc->numAtoms()));
+    spline->ind.resize(spline->nalloc);
     /* Initialize the index to identity so it works without threads */
-    for (i = 0; i < atc->nalloc; i++)
+    for (int i = 0; i < spline->nalloc; i++)
     {
         spline->ind[i] = i;
     }
 
-    realloc_splinevec(spline->theta, &spline->ptr_theta_z,
-                      atc->pme_order*atc->nalloc);
-    realloc_splinevec(spline->dtheta, &spline->ptr_dtheta_z,
-                      atc->pme_order*atc->nalloc);
+    spline->theta.realloc(atc->pme_order*spline->nalloc);
+    spline->dtheta.realloc(atc->pme_order*spline->nalloc);
 }
 
-void pme_realloc_atomcomm_things(pme_atomcomm_t *atc)
+#ifndef DOXYGEN
+
+void PmeAtomComm::setNumAtoms(const int numAtoms)
 {
-    int nalloc_old, i;
+    numAtoms_ = numAtoms;
 
-    /* We have to avoid a NULL pointer for atc->x to avoid
-     * possible fatal errors in MPI routines.
-     */
-    if (atc->n > atc->nalloc || atc->nalloc == 0)
+    if (nslab > 1)
     {
-        nalloc_old  = atc->nalloc;
-        atc->nalloc = over_alloc_dd(std::max(atc->n, 1));
-
-        if (atc->nslab > 1)
+        /* We have to avoid a NULL pointer for atc->x to avoid
+         * possible fatal errors in MPI routines.
+         */
+        xBuffer.resize(numAtoms_);
+        if (xBuffer.capacity() == 0)
         {
-            srenew(atc->x, atc->nalloc);
-            srenew(atc->coefficient, atc->nalloc);
-            srenew(atc->f, atc->nalloc);
-            for (i = nalloc_old; i < atc->nalloc; i++)
-            {
-                clear_rvec(atc->f[i]);
-            }
+            xBuffer.reserve(1);
         }
-        if (atc->bSpread)
+        x = xBuffer;
+        coefficientBuffer.resize(numAtoms_);
+        if (coefficientBuffer.capacity() == 0)
         {
-            srenew(atc->fractx, atc->nalloc);
-            srenew(atc->idx, atc->nalloc);
+            coefficientBuffer.reserve(1);
+        }
+        coefficient = coefficientBuffer;
+        const int nalloc_old = fBuffer.size();
+        fBuffer.resize(numAtoms_);
+        for (int i = nalloc_old; i < numAtoms_; i++)
+        {
+            clear_rvec(fBuffer[i]);
+        }
+        f = fBuffer;
+    }
+    if (bSpread)
+    {
+        fractx.resize(numAtoms_);
+        idx.resize(numAtoms_);
 
-            if (atc->nthread > 1)
-            {
-                srenew(atc->thread_idx, atc->nalloc);
-            }
+        if (nthread > 1)
+        {
+            thread_idx.resize(numAtoms_);
+        }
 
-            for (i = 0; i < atc->nthread; i++)
-            {
-                pme_realloc_splinedata(&atc->spline[i], atc);
-            }
+        for (int i = 0; i < nthread; i++)
+        {
+            pme_realloc_splinedata(&spline[i], this);
         }
     }
 }
 
-static void pme_dd_sendrecv(pme_atomcomm_t gmx_unused *atc,
+#endif // !DOXYGEN
+
+//! Communicates buffers between rank separated by \p shift slabs
+static void pme_dd_sendrecv(PmeAtomComm gmx_unused *atc,
                             gmx_bool gmx_unused bBackward, int gmx_unused shift,
                             void gmx_unused *buf_s, int gmx_unused nbyte_s,
                             void gmx_unused *buf_r, int gmx_unused nbyte_r)
@@ -225,13 +254,13 @@ static void pme_dd_sendrecv(pme_atomcomm_t gmx_unused *atc,
 
     if (!bBackward)
     {
-        dest = atc->node_dest[shift];
-        src  = atc->node_src[shift];
+        dest = atc->slabCommSetup[shift].node_dest;
+        src  = atc->slabCommSetup[shift].node_src;
     }
     else
     {
-        dest = atc->node_src[shift];
-        src  = atc->node_dest[shift];
+        dest = atc->slabCommSetup[shift].node_src;
+        src  = atc->slabCommSetup[shift].node_dest;
     }
 
     if (nbyte_s > 0 && nbyte_r > 0)
@@ -257,31 +286,32 @@ static void pme_dd_sendrecv(pme_atomcomm_t gmx_unused *atc,
 #endif
 }
 
-static void dd_pmeredist_pos_coeffs(struct gmx_pme_t *pme,
-                                    int n, gmx_bool bX, rvec *x, const real *data,
-                                    pme_atomcomm_t *atc)
+//! Redistristributes \p data and optionally coordinates between MPI ranks
+static void dd_pmeredist_pos_coeffs(gmx_pme_t                      *pme,
+                                    const gmx_bool                  bX,
+                                    gmx::ArrayRef<const gmx::RVec>  x,
+                                    const real                     *data,
+                                    PmeAtomComm                    *atc)
 {
-    int *commnode, *buf_index;
-    int  nnodes_comm, i, nsend, local_pos, buf_pos, node, scount, rcount;
-
-    commnode  = atc->node_dest;
-    buf_index = atc->buf_index;
+    int  nnodes_comm, i, local_pos, buf_pos, node;
 
     nnodes_comm = std::min(2*atc->maxshift, atc->nslab-1);
 
-    nsend = 0;
+    auto sendCount = atc->sendCount();
+    int  nsend     = 0;
     for (i = 0; i < nnodes_comm; i++)
     {
-        buf_index[commnode[i]] = nsend;
-        nsend                 += atc->count[commnode[i]];
+        const int commnode                 = atc->slabCommSetup[i].node_dest;
+        atc->slabCommSetup[commnode].buf_index  = nsend;
+        nsend                                  += sendCount[commnode];
     }
     if (bX)
     {
-        if (atc->count[atc->nodeid] + nsend != n)
+        if (sendCount[atc->nodeid] + nsend != x.ssize())
         {
-            gmx_fatal(FARGS, "%d particles communicated to PME rank %d are more than 2/3 times the cut-off out of the domain decomposition cell of their charge group in dimension %c.\n"
+            gmx_fatal(FARGS, "%zd particles communicated to PME rank %d are more than 2/3 times the cut-off out of the domain decomposition cell of their charge group in dimension %c.\n"
                       "This usually means that your system is not well equilibrated.",
-                      n - (atc->count[atc->nodeid] + nsend),
+                      x.ssize() - (sendCount[atc->nodeid] + nsend),
                       pme->nodeid, 'x'+atc->dimind);
         }
 
@@ -292,27 +322,28 @@ static void dd_pmeredist_pos_coeffs(struct gmx_pme_t *pme,
             srenew(pme->bufr, pme->buf_nalloc);
         }
 
-        atc->n = atc->count[atc->nodeid];
+        int numAtoms = sendCount[atc->nodeid];
         for (i = 0; i < nnodes_comm; i++)
         {
-            scount = atc->count[commnode[i]];
+            const int commnode = atc->slabCommSetup[i].node_dest;
+            int       scount   = sendCount[commnode];
             /* Communicate the count */
             if (debug)
             {
                 fprintf(debug, "dimind %d PME rank %d send to rank %d: %d\n",
-                        atc->dimind, atc->nodeid, commnode[i], scount);
+                        atc->dimind, atc->nodeid, commnode, scount);
             }
             pme_dd_sendrecv(atc, FALSE, i,
                             &scount, sizeof(int),
-                            &atc->rcount[i], sizeof(int));
-            atc->n += atc->rcount[i];
+                            &atc->slabCommSetup[i].rcount, sizeof(int));
+            numAtoms += atc->slabCommSetup[i].rcount;
         }
 
-        pme_realloc_atomcomm_things(atc);
+        atc->setNumAtoms(numAtoms);
     }
 
     local_pos = 0;
-    for (i = 0; i < n; i++)
+    for (gmx::index i = 0; i < x.ssize(); i++)
     {
         node = atc->pd[i];
         if (node == atc->nodeid)
@@ -320,28 +351,29 @@ static void dd_pmeredist_pos_coeffs(struct gmx_pme_t *pme,
             /* Copy direct to the receive buffer */
             if (bX)
             {
-                copy_rvec(x[i], atc->x[local_pos]);
+                copy_rvec(x[i], atc->xBuffer[local_pos]);
             }
-            atc->coefficient[local_pos] = data[i];
+            atc->coefficientBuffer[local_pos] = data[i];
             local_pos++;
         }
         else
         {
             /* Copy to the send buffer */
+            int &buf_index = atc->slabCommSetup[node].buf_index;
             if (bX)
             {
-                copy_rvec(x[i], pme->bufv[buf_index[node]]);
+                copy_rvec(x[i], pme->bufv[buf_index]);
             }
-            pme->bufr[buf_index[node]] = data[i];
-            buf_index[node]++;
+            pme->bufr[buf_index] = data[i];
+            buf_index++;
         }
     }
 
     buf_pos = 0;
     for (i = 0; i < nnodes_comm; i++)
     {
-        scount = atc->count[commnode[i]];
-        rcount = atc->rcount[i];
+        const int scount = atc->sendCount()[atc->slabCommSetup[i].node_dest];
+        const int rcount = atc->slabCommSetup[i].rcount;
         if (scount > 0 || rcount > 0)
         {
             if (bX)
@@ -349,36 +381,33 @@ static void dd_pmeredist_pos_coeffs(struct gmx_pme_t *pme,
                 /* Communicate the coordinates */
                 pme_dd_sendrecv(atc, FALSE, i,
                                 pme->bufv[buf_pos], scount*sizeof(rvec),
-                                atc->x[local_pos], rcount*sizeof(rvec));
+                                atc->xBuffer[local_pos], rcount*sizeof(rvec));
             }
             /* Communicate the coefficients */
             pme_dd_sendrecv(atc, FALSE, i,
                             pme->bufr+buf_pos, scount*sizeof(real),
-                            atc->coefficient+local_pos, rcount*sizeof(real));
+                            atc->coefficientBuffer.data() + local_pos, rcount*sizeof(real));
             buf_pos   += scount;
-            local_pos += atc->rcount[i];
+            local_pos += atc->slabCommSetup[i].rcount;
         }
     }
 }
 
-void dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
-                    int n, rvec *f,
+void dd_pmeredist_f(struct gmx_pme_t *pme, PmeAtomComm *atc,
+                    gmx::ArrayRef<gmx::RVec> f,
                     gmx_bool bAddF)
 {
-    int *commnode, *buf_index;
-    int  nnodes_comm, local_pos, buf_pos, i, scount, rcount, node;
-
-    commnode  = atc->node_dest;
-    buf_index = atc->buf_index;
+    int  nnodes_comm, local_pos, buf_pos, i, node;
 
     nnodes_comm = std::min(2*atc->maxshift, atc->nslab-1);
 
-    local_pos = atc->count[atc->nodeid];
+    local_pos = atc->sendCount()[atc->nodeid];
     buf_pos   = 0;
     for (i = 0; i < nnodes_comm; i++)
     {
-        scount = atc->rcount[i];
-        rcount = atc->count[commnode[i]];
+        const int commnode = atc->slabCommSetup[i].node_dest;
+        const int scount   = atc->slabCommSetup[i].rcount;
+        const int rcount   = atc->sendCount()[commnode];
         if (scount > 0 || rcount > 0)
         {
             /* Communicate the forces */
@@ -387,14 +416,14 @@ void dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
                             pme->bufv[buf_pos], rcount*sizeof(rvec));
             local_pos += scount;
         }
-        buf_index[commnode[i]] = buf_pos;
-        buf_pos               += rcount;
+        atc->slabCommSetup[commnode].buf_index  = buf_pos;
+        buf_pos                                += rcount;
     }
 
     local_pos = 0;
     if (bAddF)
     {
-        for (i = 0; i < n; i++)
+        for (gmx::index i = 0; i < f.ssize(); i++)
         {
             node = atc->pd[i];
             if (node == atc->nodeid)
@@ -406,14 +435,14 @@ void dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
             else
             {
                 /* Add from the receive buffer */
-                rvec_inc(f[i], pme->bufv[buf_index[node]]);
-                buf_index[node]++;
+                rvec_inc(f[i], pme->bufv[atc->slabCommSetup[node].buf_index]);
+                atc->slabCommSetup[node].buf_index++;
             }
         }
     }
     else
     {
-        for (i = 0; i < n; i++)
+        for (gmx::index i = 0; i < f.ssize(); i++)
         {
             node = atc->pd[i];
             if (node == atc->nodeid)
@@ -425,51 +454,41 @@ void dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
             else
             {
                 /* Copy from the receive buffer */
-                copy_rvec(pme->bufv[buf_index[node]], f[i]);
-                buf_index[node]++;
+                copy_rvec(pme->bufv[atc->slabCommSetup[node].buf_index], f[i]);
+                atc->slabCommSetup[node].buf_index++;
             }
         }
     }
 }
 
 void
-do_redist_pos_coeffs(struct gmx_pme_t *pme, const t_commrec *cr, int start, int homenr,
-                     gmx_bool bFirst, rvec x[], real *data)
+do_redist_pos_coeffs(struct gmx_pme_t *pme, const t_commrec *cr,
+                     gmx_bool bFirst, gmx::ArrayRef<const gmx::RVec> x, const real *data)
 {
-    int             d;
-    pme_atomcomm_t *atc;
-    atc = &pme->atc[0];
-
-    for (d = pme->ndecompdim - 1; d >= 0; d--)
+    for (int d = pme->ndecompdim - 1; d >= 0; d--)
     {
-        int             n_d;
-        rvec           *x_d;
-        real           *param_d;
-
+        gmx::ArrayRef<const gmx::RVec>  xRef;
+        const real                     *param_d;
         if (d == pme->ndecompdim - 1)
         {
-            n_d     = homenr;
-            x_d     = x + start;
+            /* Start out with the local coordinates and charges */
+            xRef    = x;
             param_d = data;
         }
         else
         {
-            n_d     = pme->atc[d + 1].n;
-            x_d     = atc->x;
-            param_d = atc->coefficient;
+            /* Redistribute the data collected along the previous dimension */
+            const PmeAtomComm &atc = pme->atc[d + 1];
+            xRef                   = atc.x;
+            param_d                = atc.coefficient.data();
         }
-        atc      = &pme->atc[d];
-        atc->npd = n_d;
-        if (atc->npd > atc->pd_nalloc)
-        {
-            atc->pd_nalloc = over_alloc_dd(atc->npd);
-            srenew(atc->pd, atc->pd_nalloc);
-        }
-        pme_calc_pidx_wrapper(n_d, pme->recipbox, x_d, atc);
+        PmeAtomComm &atc = pme->atc[d];
+        atc.pd.resize(xRef.size());
+        pme_calc_pidx_wrapper(xRef, pme->recipbox, &atc);
         /* Redistribute x (only once) and qA/c6A or qB/c6B */
         if (DOMAINDECOMP(cr))
         {
-            dd_pmeredist_pos_coeffs(pme, n_d, bFirst, x_d, param_d, atc);
+            dd_pmeredist_pos_coeffs(pme, bFirst, xRef, param_d, &atc);
         }
     }
 }

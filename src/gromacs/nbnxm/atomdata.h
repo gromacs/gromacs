@@ -44,6 +44,7 @@
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/real.h"
 
+#include "gpu_types.h"
 #include "locality.h"
 
 namespace gmx
@@ -51,17 +52,20 @@ namespace gmx
 class MDLogger;
 }
 
-struct gmx_wallcycle;
 struct nbnxn_atomdata_t;
-struct nbnxn_search;
 struct nonbonded_verlet_t;
 struct t_mdatoms;
 struct tMPI_Atomic;
 
+enum class BufferOpsUseGpu;
+
 namespace Nbnxm
 {
+class GridSet;
 enum class KernelType;
 }
+
+enum class GpuBufferOpsAccumulateForce;
 
 /* Convenience type for vector with aligned memory */
 template<typename T>
@@ -295,10 +299,10 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
                          int n_energygroups,
                          int nout);
 
-void nbnxn_atomdata_set(nbnxn_atomdata_t    *nbat,
-                        const nbnxn_search  *nbs,
-                        const t_mdatoms     *mdatoms,
-                        const int           *atinfo);
+void nbnxn_atomdata_set(nbnxn_atomdata_t     *nbat,
+                        const Nbnxm::GridSet &gridSet,
+                        const t_mdatoms      *mdatoms,
+                        const int            *atinfo);
 
 /* Copy the shift vectors to nbat */
 void nbnxn_atomdata_copy_shiftvec(gmx_bool          dynamic_box,
@@ -308,15 +312,65 @@ void nbnxn_atomdata_copy_shiftvec(gmx_bool          dynamic_box,
 /* Copy x to nbat->x.
  * FillLocal tells if the local filler particle coordinates should be zeroed.
  */
-void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search  *nbs,
-                                     Nbnxm::AtomLocality  locality,
-                                     gmx_bool             FillLocal,
-                                     rvec                *x,
-                                     nbnxn_atomdata_t    *nbat,
-                                     gmx_wallcycle       *wcycle);
+template <bool useGpu>
+void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet       &gridSet,
+                                     Nbnxm::AtomLocality         locality,
+                                     gmx_bool                    FillLocal,
+                                     const rvec                 *x,
+                                     nbnxn_atomdata_t           *nbat,
+                                     gmx_nbnxn_gpu_t            *gpu_nbv,
+                                     void                       *xPmeDevicePtr);
+
+extern template
+void nbnxn_atomdata_copy_x_to_nbat_x<true>(const Nbnxm::GridSet &,
+                                           const Nbnxm::AtomLocality,
+                                           gmx_bool,
+                                           const rvec*,
+                                           nbnxn_atomdata_t *,
+                                           gmx_nbnxn_gpu_t*,
+                                           void *);
+extern template
+void nbnxn_atomdata_copy_x_to_nbat_x<false>(const Nbnxm::GridSet &,
+                                            const Nbnxm::AtomLocality,
+                                            gmx_bool,
+                                            const rvec*,
+                                            nbnxn_atomdata_t *,
+                                            gmx_nbnxn_gpu_t*,
+                                            void *);
+
+//! Add the computed forces to \p f, an internal reduction might be performed as well
+template <bool  useGpu>
+void reduceForces(nbnxn_atomdata_t                   *nbat,
+                  Nbnxm::AtomLocality                 locality,
+                  const Nbnxm::GridSet               &gridSet,
+                  rvec                               *f,
+                  gmx_nbnxn_gpu_t                    *gpu_nbv,
+                  GpuBufferOpsAccumulateForce         accumulateForce);
+
+
+extern template
+void reduceForces<true>(nbnxn_atomdata_t             *nbat,
+                        const Nbnxm::AtomLocality     locality,
+                        const Nbnxm::GridSet         &gridSet,
+                        rvec                         *f,
+                        gmx_nbnxn_gpu_t              *gpu_nbv,
+                        GpuBufferOpsAccumulateForce   accumulateForce);
+
+extern template
+void reduceForces<false>(nbnxn_atomdata_t             *nbat,
+                         const Nbnxm::AtomLocality     locality,
+                         const Nbnxm::GridSet         &gridSet,
+                         rvec                         *f,
+                         gmx_nbnxn_gpu_t              *gpu_nbv,
+                         GpuBufferOpsAccumulateForce   accumulateForce);
 
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
                                               rvec                   *fshift);
 
+/* Get the atom start index and number of atoms for a given locality */
+void nbnxn_get_atom_range(Nbnxm::AtomLocality              atomLocality,
+                          const Nbnxm::GridSet            &gridSet,
+                          int                             *atomStart,
+                          int                             *nAtoms);
 #endif

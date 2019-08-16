@@ -54,23 +54,24 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/txtdump.h"
 
-const char *gtypes[egcNR+1] = {
-    "T-Coupling", "Energy Mon.", "Acceleration", "Freeze",
-    "User1", "User2", "VCM", "Compressed X", "Or. Res. Fit", "QMMM", nullptr
-};
+static gmx::EnumerationArray<SimulationAtomGroupType, const char *>
+c_simulationAtomGroupTypeShortNames
+    = { {
+            "T-Coupling",
+            "Energy Mon.",
+            "Acceleration",
+            "Freeze",
+            "User1",
+            "User2",
+            "VCM",
+            "Compressed X",
+            "Or. Res. Fit",
+            "QMMM"
+        } };
 
-static void init_groups(gmx_groups_t *groups)
+const char *shortName(SimulationAtomGroupType type)
 {
-    groups->ngrpname = 0;
-    groups->grpname  = nullptr;
-    for (int g = 0; g < egcNR; g++)
-    {
-        groups->grps[g].nr     = 0;
-        groups->grps[g].nm_ind = nullptr;
-        groups->ngrpnr[g]      = 0;
-        groups->grpnr[g]       = nullptr;
-    }
-
+    return c_simulationAtomGroupTypeShortNames[type];
 }
 
 void init_top(t_topology *top)
@@ -101,31 +102,9 @@ gmx_moltype_t::~gmx_moltype_t()
     done_blocka(&excls);
 }
 
-void done_gmx_groups_t(gmx_groups_t *g)
-{
-    int i;
-
-    for (i = 0; (i < egcNR); i++)
-    {
-        if (nullptr != g->grps[i].nm_ind)
-        {
-            sfree(g->grps[i].nm_ind);
-            g->grps[i].nm_ind = nullptr;
-        }
-        if (nullptr != g->grpnr[i])
-        {
-            sfree(g->grpnr[i]);
-            g->grpnr[i] = nullptr;
-        }
-    }
-    /* The contents of this array is in symtab, don't free it here */
-    sfree(g->grpname);
-}
-
 gmx_mtop_t::gmx_mtop_t()
 {
     init_atomtypes(&atomtypes);
-    init_groups(&groups);
     open_symtab(&symtab);
 }
 
@@ -136,7 +115,6 @@ gmx_mtop_t::~gmx_mtop_t()
     moltype.clear();
     molblock.clear();
     done_atomtypes(&atomtypes);
-    done_gmx_groups_t(&groups);
 }
 
 void done_top(t_topology *top)
@@ -175,7 +153,6 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
 
 gmx_localtop_t::gmx_localtop_t()
 {
-    init_block_null(&cgs);
     init_blocka_null(&excls);
     init_idef(&idef);
     init_atomtypes(&atomtypes);
@@ -186,7 +163,6 @@ gmx_localtop_t::~gmx_localtop_t()
     if (!useInDomainDecomp_)
     {
         done_idef(&idef);
-        done_block(&cgs);
         done_blocka(&excls);
         done_atomtypes(&atomtypes);
     }
@@ -247,45 +223,49 @@ bool gmx_mtop_has_pdbinfo(const gmx_mtop_t *mtop)
     return mtop->moltype.empty() || mtop->moltype[0].atoms.havePdbInfo;
 }
 
-static void pr_grps(FILE *fp, const char *title, const t_grps grps[], char **grpname[])
+static void pr_grps(FILE                                 *fp,
+                    const char                           *title,
+                    gmx::ArrayRef<const AtomGroupIndices> grps,
+                    char                               ***grpname)
 {
-    int i, j;
-
-    for (i = 0; (i < egcNR); i++)
+    int index = 0;
+    for (const auto &group : grps)
     {
-        fprintf(fp, "%s[%-12s] nr=%d, name=[", title, gtypes[i], grps[i].nr);
-        for (j = 0; (j < grps[i].nr); j++)
+        fprintf(fp, "%s[%-12s] nr=%zu, name=[", title, c_simulationAtomGroupTypeShortNames[index], group.size());
+        for (const auto &entry : group)
         {
-            fprintf(fp, " %s", *(grpname[grps[i].nm_ind[j]]));
+            fprintf(fp, " %s", *(grpname[entry]));
         }
         fprintf(fp, "]\n");
+        index++;
     }
 }
 
 static void pr_groups(FILE *fp, int indent,
-                      const gmx_groups_t *groups,
+                      const SimulationGroups &groups,
                       gmx_bool bShowNumbers)
 {
-    int nat_max, i, g;
-
-    pr_grps(fp, "grp", groups->grps, groups->grpname);
-    pr_strings(fp, indent, "grpname", groups->grpname, groups->ngrpname, bShowNumbers);
+    pr_grps(fp,
+            "grp",
+            groups.groups,
+            const_cast<char ***>(groups.groupNames.data()));
+    pr_strings(fp, indent, "grpname", const_cast<char ***>(groups.groupNames.data()), groups.groupNames.size(), bShowNumbers);
 
     pr_indent(fp, indent);
     fprintf(fp, "groups          ");
-    for (g = 0; g < egcNR; g++)
+    for (const auto &group : c_simulationAtomGroupTypeShortNames)
     {
-        printf(" %5.5s", gtypes[g]);
+        printf(" %5.5s", group);
     }
     printf("\n");
 
     pr_indent(fp, indent);
     fprintf(fp, "allocated       ");
-    nat_max = 0;
-    for (g = 0; g < egcNR; g++)
+    int nat_max = 0;
+    for (auto group : keysOf(groups.groups))
     {
-        printf(" %5d", groups->ngrpnr[g]);
-        nat_max = std::max(nat_max, groups->ngrpnr[g]);
+        printf(" %5d", groups.numberOfGroupNumbers(group));
+        nat_max = std::max(nat_max, groups.numberOfGroupNumbers(group));
     }
     printf("\n");
 
@@ -293,7 +273,7 @@ static void pr_groups(FILE *fp, int indent,
     {
         pr_indent(fp, indent);
         fprintf(fp, "groupnr[%5s] =", "*");
-        for (g = 0; g < egcNR; g++)
+        for (auto gmx_unused group : keysOf(groups.groups))
         {
             fprintf(fp, "  %3d ", 0);
         }
@@ -301,14 +281,15 @@ static void pr_groups(FILE *fp, int indent,
     }
     else
     {
-        for (i = 0; i < nat_max; i++)
+        for (int i = 0; i < nat_max; i++)
         {
             pr_indent(fp, indent);
             fprintf(fp, "groupnr[%5d] =", i);
-            for (g = 0; g < egcNR; g++)
+            for (auto group : keysOf(groups.groups))
             {
                 fprintf(fp, "  %3d ",
-                        groups->grpnr[g] ? groups->grpnr[g][i] : 0);
+                        !groups.groupNumbers[group].empty() ?
+                        groups.groupNumbers[group][i] : 0);
             }
             fprintf(fp, "\n");
         }
@@ -390,7 +371,7 @@ void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
             pr_moltype(fp, indent, "moltype", &mtop->moltype[mt], mt,
                        &mtop->ffparams, bShowNumbers, bShowParameters);
         }
-        pr_groups(fp, indent, &mtop->groups, bShowNumbers);
+        pr_groups(fp, indent, mtop->groups, bShowNumbers);
     }
 }
 
@@ -667,32 +648,32 @@ void compareMtopAB(FILE *fp, const gmx_mtop_t &mtop1, real relativeTolerance, re
     compareMoletypeAB(fp, mtop1.moltype, relativeTolerance, absoluteTolerance);
 }
 
-void compareAtomGroups(FILE *fp, const gmx_groups_t &g0, const gmx_groups_t &g1,
+void compareAtomGroups(FILE *fp, const SimulationGroups &g0, const SimulationGroups &g1,
                        int natoms0, int natoms1)
 {
     fprintf(fp, "comparing groups\n");
 
-    for (int i = 0; i < egcNR; i++)
+    for (auto group : keysOf(g0.groups))
     {
-        std::string buf = gmx::formatString("grps[%d].nr", i);
-        cmp_int(fp, buf.c_str(), -1, g0.grps[i].nr, g1.grps[i].nr);
-        if (g0.grps[i].nr == g1.grps[i].nr)
+        std::string buf = gmx::formatString("grps[%d].nr", static_cast<int>(group));
+        cmp_int(fp, buf.c_str(), -1, g0.groups[group].size(), g1.groups[group].size());
+        if (g0.groups[group].size() == g1.groups[group].size())
         {
-            for (int j = 0; j < g0.grps[i].nr; j++)
+            for (int j = 0; j < gmx::ssize(g0.groups[group]); j++)
             {
-                buf = gmx::formatString("grps[%d].name[%d]", i, j);
+                buf = gmx::formatString("grps[%d].name[%d]", static_cast<int>(group), j);
                 cmp_str(fp, buf.c_str(), -1,
-                        *g0.grpname[g0.grps[i].nm_ind[j]],
-                        *g1.grpname[g1.grps[i].nm_ind[j]]);
+                        *g0.groupNames[g0.groups[group][j]],
+                        *g1.groupNames[g1.groups[group][j]]);
             }
         }
-        cmp_int(fp, "ngrpnr", i, g0.ngrpnr[i], g1.ngrpnr[i]);
-        if (g0.ngrpnr[i] == g1.ngrpnr[i] && natoms0 == natoms1 &&
-            (g0.grpnr[i] != nullptr || g1.grpnr[i] != nullptr))
+        cmp_int(fp, "ngrpnr", static_cast<int>(group), g0.numberOfGroupNumbers(group), g1.numberOfGroupNumbers(group));
+        if (g0.numberOfGroupNumbers(group) == g1.numberOfGroupNumbers(group) && natoms0 == natoms1 &&
+            (!g0.groupNumbers[group].empty() || !g1.groupNumbers[group].empty()))
         {
             for (int j = 0; j < natoms0; j++)
             {
-                cmp_int(fp, gtypes[i], j, getGroupType(g0, i, j), getGroupType(g1, i, j));
+                cmp_int(fp, c_simulationAtomGroupTypeShortNames[group], j, getGroupType(g0, group, j), getGroupType(g1, group, j));
             }
         }
     }
@@ -701,9 +682,9 @@ void compareAtomGroups(FILE *fp, const gmx_groups_t &g0, const gmx_groups_t &g1,
      */
 }
 
-int getGroupType(const gmx_groups_t &group, int type, int atom)
+int getGroupType(const SimulationGroups &group, SimulationAtomGroupType type, int atom)
 {
-    return (group.grpnr[type] ? group.grpnr[type][atom] : 0);
+    return (group.groupNumbers[type].empty() ? 0 : group.groupNumbers[type][atom]);
 }
 
 void copy_moltype(const gmx_moltype_t *src, gmx_moltype_t *dst)

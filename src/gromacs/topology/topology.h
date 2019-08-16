@@ -47,17 +47,28 @@
 #include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/unique_cptr.h"
 
-enum
+enum class SimulationAtomGroupType : int
 {
-    egcTC,    egcENER,   egcACC, egcFREEZE,
-    egcUser1, egcUser2,  egcVCM, egcCompressedX,
-    egcORFIT, egcQMMM,
-    egcNR
+    TemperatureCoupling,
+    EnergyOutput,
+    Acceleration,
+    Freeze,
+    User1,
+    User2,
+    MassCenterVelocityRemoval,
+    CompressedPositionOutput,
+    OrientationRestraintsFit,
+    QuantumMechanics,
+    Count
 };
-/* Names corresponding to groups */
-extern const char *gtypes[egcNR+1];
+
+//! Short strings used for describing atom groups in log and energy files
+const char *shortName(SimulationAtomGroupType type);
+
+//const char *shortName(int type); // if necessary
 
 /*! \brief Molecules type data: atoms, interactions and exclusions */
 struct gmx_moltype_t
@@ -99,14 +110,27 @@ struct MoleculeBlockIndices
     int     moleculeIndexStart;  /**< Global molecule indexing starts from this value */
 };
 
-typedef struct gmx_groups_t
+/*! \brief Contains the simulation atom groups.
+ *
+ * Organized as containers for the different
+ * SimulationAtomGroupTypes
+ */
+struct SimulationGroups
 {
-    t_grps            grps[egcNR];  /* Groups of things                     */
-    int               ngrpname;     /* Number of groupnames                 */
-    char           ***grpname;      /* Names of the groups                  */
-    int               ngrpnr[egcNR];
-    unsigned char    *grpnr[egcNR]; /* Group numbers or NULL                */
-} gmx_groups_t;
+    //! Groups of particles
+    gmx::EnumerationArray<SimulationAtomGroupType, AtomGroupIndices>                     groups;
+    //! Names of groups, stored as pointer to the entries in the symbol table.
+    std::vector<char **>                                                                 groupNames;
+    //! Group numbers for the different SimulationAtomGroupType groups.
+    gmx::EnumerationArray < SimulationAtomGroupType, std::vector < unsigned char>> groupNumbers;
+
+    /*! \brief
+     * Number of group numbers for a single SimulationGroup.
+     *
+     * \param[in] group Integer value for the group type.
+     */
+    int numberOfGroupNumbers(SimulationAtomGroupType group) const { return groupNumbers[group].size(); }
+};
 
 /*! \brief
  * Returns group number of an input group for a given atom.
@@ -118,7 +142,7 @@ typedef struct gmx_groups_t
  * \param[in] type  Type of group to check.
  * \param[in] atom  Atom to check if it has an entry.
  */
-int getGroupType (const gmx_groups_t &group, int type, int atom);
+int getGroupType (const SimulationGroups &group, SimulationAtomGroupType type, int atom);
 
 /* The global, complete system topology struct, based on molecule types.
  * This structure should contain no data that is O(natoms) in memory.
@@ -146,21 +170,21 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
      * List of intermolecular interactions using system wide
      * atom indices, either NULL or size F_NRE
      */
-    std::unique_ptr<InteractionLists> intermolecular_ilist = nullptr;
+    std::unique_ptr<InteractionLists>        intermolecular_ilist = nullptr;
     //! Number of global atoms.
-    int                               natoms = 0;
+    int                                      natoms = 0;
     //! Parameter for residue numbering.
-    int                               maxres_renum = 0;
+    int                                      maxres_renum = 0;
     //! The maximum residue number in moltype
-    int                               maxresnr = -1;
+    int                                      maxresnr = -1;
     //! Atomtype properties
-    t_atomtypes                       atomtypes;
+    t_atomtypes                              atomtypes;
     //! Groups of atoms for different purposes
-    gmx_groups_t                      groups;
+    SimulationGroups                         groups;
     //! The symbol table
-    t_symtab                          symtab;
+    t_symtab                                 symtab;
     //! Tells whether we have valid molecule indices
-    bool                              haveMoleculeIndices = false;
+    bool                                     haveMoleculeIndices = false;
     /*! \brief List of global atom indices of atoms between which
      * non-bonded interactions must be excluded.
      */
@@ -171,7 +195,7 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
     std::vector<MoleculeBlockIndices> moleculeBlockIndices;
 };
 
-/* \brief
+/*! \brief
  * The fully written out topology for a domain over its lifetime
  *
  * Also used in some analysis code.
@@ -187,8 +211,6 @@ struct gmx_localtop_t
     t_idef        idef;
     //! Atomtype properties
     t_atomtypes   atomtypes;
-    //! The charge groups
-    t_block       cgs;
     //! The exclusions
     t_blocka      excls;
     //! Flag for domain decomposition so we don't free already freed memory.
@@ -210,7 +232,6 @@ typedef struct t_topology
 } t_topology;
 
 void init_top(t_topology *top);
-void done_gmx_groups_t(gmx_groups_t *g);
 void done_top(t_topology *top);
 // Frees both t_topology and gmx_mtop_t when the former has been created from
 // the latter.
@@ -254,7 +275,7 @@ void compareMtopAB(FILE *fp, const gmx_mtop_t &mtop1, real relativeTolerance, re
  * \param[in] natoms0 Number of atoms for first group.
  * \param[in] natoms1 Number of atoms for second group.
  */
-void compareAtomGroups(FILE *fp, const gmx_groups_t &g0, const gmx_groups_t &g1,
+void compareAtomGroups(FILE *fp, const SimulationGroups &g0, const SimulationGroups &g1,
                        int natoms0, int natoms1);
 
 //! Typedef for gmx_localtop in analysis tools.

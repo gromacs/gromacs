@@ -535,7 +535,12 @@ KeyValueTreeTransformRuleBuilder::KeyValueTreeTransformRuleBuilder(
 {
 }
 
-KeyValueTreeTransformRuleBuilder::~KeyValueTreeTransformRuleBuilder()
+// TODO If the function called here would ever throw
+// (e.g. std::bad_alloc) then std::terminate will be called.
+// Alternatively, createRule could catch all exceptions and terminate
+// but that's the same for an end user. So suppressing the clang-tidy
+// warning is about as bad as any alternative.
+KeyValueTreeTransformRuleBuilder::~KeyValueTreeTransformRuleBuilder() // NOLINT(bugprone-exception-escape)
 {
     if (!std::uncaught_exception())
     {

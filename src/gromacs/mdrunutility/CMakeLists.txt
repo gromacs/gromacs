@@ -34,7 +34,8 @@
 
 gmx_add_libgromacs_sources(
     handlerestart.cpp
-    mdmodules.cpp
+    logging.cpp
+    multisim.cpp
     printtime.cpp
     threadaffinity.cpp
     )

@@ -56,8 +56,8 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/stophandler.h"
-#include "gromacs/mdrun/logging.h"
-#include "gromacs/mdrun/multisim.h"
+#include "gromacs/mdrunutility/logging.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdrun/runner.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -150,6 +150,8 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
             strcpy(argv[argvIndex], mdArg.c_str());
         }
 
+        auto mdModules = std::make_unique<MDModules>();
+
         // pointer-to-t_commrec is the de facto handle type for communications record.
         // Complete shared / borrowed ownership requires a reference to this stack variable
         // (or pointer-to-pointer-to-t_commrec) since borrowing code may update the pointer.
@@ -166,18 +168,19 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
             return nullptr;
         }
 
-        if (MASTER(options_.cr))
-        {
-            options_.logFileGuard = openLogFile(ftp2fn(efLOG,
-                                                       options_.filenames.size(),
-                                                       options_.filenames.data()),
-                                                options_.mdrunOptions.continuationOptions.appendFiles);
-        }
-
+        StartingBehavior startingBehavior = StartingBehavior::NewSimulation;
+        LogFilePtr       logFileGuard     = nullptr;
+        std::tie(startingBehavior,
+                 logFileGuard) = handleRestart(options_.cr,
+                                               options_.ms,
+                                               options_.mdrunOptions.appendingBehavior,
+                                               ssize(options_.filenames),
+                                               options_.filenames.data());
         auto simulationContext = createSimulationContext(options_.cr);
 
-        auto builder = MdrunnerBuilder(compat::not_null<decltype( &simulationContext)>(&simulationContext));
-        builder.addSimulationMethod(options_.mdrunOptions, options_.pforce);
+        auto builder = MdrunnerBuilder(std::move(mdModules),
+                                       compat::not_null<decltype( &simulationContext)>(&simulationContext));
+        builder.addSimulationMethod(options_.mdrunOptions, options_.pforce, startingBehavior);
         builder.addDomainDecomposition(options_.domdecOptions);
         // \todo pass by value
         builder.addNonBonded(options_.nbpu_opt_choices[0]);
@@ -197,13 +200,13 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
         // \todo Implement lifetime management for gmx_output_env_t.
         // \todo Output environment should be configured outside of Mdrunner and provided as a resource.
         builder.addOutputEnvironment(options_.oenv);
-        builder.addLogFile(options_.logFileGuard.get());
+        builder.addLogFile(logFileGuard.get());
 
         // Note, creation is not mature enough to be exposed in the external API yet.
         launchedSession = createSession(shared_from_this(),
                                         std::move(builder),
                                         simulationContext,
-                                        std::move(options_.logFileGuard),
+                                        std::move(logFileGuard),
                                         options_.ms);
 
         // Clean up argv once builder is no longer in use

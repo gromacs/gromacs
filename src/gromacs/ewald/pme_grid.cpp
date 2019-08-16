@@ -65,9 +65,11 @@
  */
 #define GMX_CACHE_SEP 64
 
-#if GMX_MPI
-void gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction)
+void gmx_sum_qgrid_dd(gmx_pme_t *pme,
+                      real      *grid,
+                      const int  direction)
 {
+#if GMX_MPI
     pme_overlap_t *overlap;
     int            send_index0, send_nindex;
     int            recv_index0, recv_nindex;
@@ -231,8 +233,14 @@ void gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction)
             }
         }
     }
+#else  // GMX_MPI
+    GMX_UNUSED_VALUE(pme);
+    GMX_UNUSED_VALUE(grid);
+    GMX_UNUSED_VALUE(direction);
+
+    GMX_RELEASE_ASSERT(false, "gmx_sum_qgrid_dd() should not be called without MPI");
+#endif // GMX_MPI
 }
-#endif
 
 
 int copy_pmegrid_to_fftgrid(const gmx_pme_t *pme, const real *pmegrid, real *fftgrid, int grid_index)

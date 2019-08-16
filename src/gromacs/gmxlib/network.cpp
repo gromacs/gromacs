@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/mpiinplacebuffers.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 /* The source code in this file should be thread-safe.
@@ -98,10 +100,10 @@ t_commrec *init_commrec()
 #if GMX_MPI && !MPI_IN_PLACE_EXISTS
     /* initialize the MPI_IN_PLACE replacement buffers */
     snew(cr->mpb, 1);
-    cr->mpb->ibuf        = NULL;
-    cr->mpb->libuf       = NULL;
-    cr->mpb->fbuf        = NULL;
-    cr->mpb->dbuf        = NULL;
+    cr->mpb->ibuf        = nullptr;
+    cr->mpb->libuf       = nullptr;
+    cr->mpb->fbuf        = nullptr;
+    cr->mpb->dbuf        = nullptr;
     cr->mpb->ibuf_alloc  = 0;
     cr->mpb->libuf_alloc = 0;
     cr->mpb->fbuf_alloc  = 0;
@@ -109,18 +111,6 @@ t_commrec *init_commrec()
 #endif
 
     return cr;
-}
-
-void done_mpi_in_place_buf(mpi_in_place_buf_t *buf)
-{
-    if (nullptr != buf)
-    {
-        sfree(buf->ibuf);
-        sfree(buf->libuf);
-        sfree(buf->fbuf);
-        sfree(buf->dbuf);
-        sfree(buf);
-    }
 }
 
 void done_commrec(t_commrec *cr)
@@ -134,6 +124,25 @@ void done_commrec(t_commrec *cr)
         }
         done_mpi_in_place_buf(cr->mpb);
     }
+#if GMX_MPI
+    // TODO We need to be able to free communicators, but the
+    // structure of the commrec and domdec initialization code makes
+    // it hard to avoid both leaks and double frees.
+    bool mySimIsMyGroup = (cr->mpi_comm_mysim == cr->mpi_comm_mygroup);
+    if (cr->mpi_comm_mysim != MPI_COMM_NULL &&
+        cr->mpi_comm_mysim != MPI_COMM_WORLD)
+    {
+        // TODO see above
+        // MPI_Comm_free(&cr->mpi_comm_mysim);
+    }
+    if (!mySimIsMyGroup &&
+        cr->mpi_comm_mygroup != MPI_COMM_NULL &&
+        cr->mpi_comm_mygroup != MPI_COMM_WORLD)
+    {
+        // TODO see above
+        // MPI_Comm_free(&cr->mpi_comm_mygroup);
+    }
+#endif
     sfree(cr);
 }
 
@@ -522,233 +531,6 @@ void gmx_sumli(int gmx_unused nr, int64_t gmx_unused r[], const t_commrec gmx_un
     }
 #endif
 #endif
-}
-
-
-
-#if GMX_MPI
-static void gmx_sumd_comm(int nr, double r[], MPI_Comm mpi_comm)
-{
-#if MPI_IN_PLACE_EXISTS
-    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_DOUBLE, MPI_SUM, mpi_comm);
-#else
-    /* this function is only used in code that is not performance critical,
-       (during setup, when comm_rec is not the appropriate communication
-       structure), so this isn't as bad as it looks. */
-    double *buf;
-    int     i;
-
-    snew(buf, nr);
-    MPI_Allreduce(r, buf, nr, MPI_DOUBLE, MPI_SUM, mpi_comm);
-    for (i = 0; i < nr; i++)
-    {
-        r[i] = buf[i];
-    }
-    sfree(buf);
-#endif
-}
-#endif
-
-#if GMX_MPI
-static void gmx_sumf_comm(int nr, float r[], MPI_Comm mpi_comm)
-{
-#if MPI_IN_PLACE_EXISTS
-    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_FLOAT, MPI_SUM, mpi_comm);
-#else
-    /* this function is only used in code that is not performance critical,
-       (during setup, when comm_rec is not the appropriate communication
-       structure), so this isn't as bad as it looks. */
-    float *buf;
-    int    i;
-
-    snew(buf, nr);
-    MPI_Allreduce(r, buf, nr, MPI_FLOAT, MPI_SUM, mpi_comm);
-    for (i = 0; i < nr; i++)
-    {
-        r[i] = buf[i];
-    }
-    sfree(buf);
-#endif
-}
-#endif
-
-void gmx_sumd_sim(int gmx_unused nr, double gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
-{
-#if !GMX_MPI
-    gmx_call("gmx_sumd_sim");
-#else
-    gmx_sumd_comm(nr, r, ms->mpi_comm_masters);
-#endif
-}
-
-void gmx_sumf_sim(int gmx_unused nr, float gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
-{
-#if !GMX_MPI
-    gmx_call("gmx_sumf_sim");
-#else
-    gmx_sumf_comm(nr, r, ms->mpi_comm_masters);
-#endif
-}
-
-void gmx_sumi_sim(int gmx_unused nr, int gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
-{
-#if !GMX_MPI
-    gmx_call("gmx_sumi_sim");
-#else
-#if MPI_IN_PLACE_EXISTS
-    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM, ms->mpi_comm_masters);
-#else
-    /* this is thread-unsafe, but it will do for now: */
-    int i;
-
-    if (nr > ms->mpb->ibuf_alloc)
-    {
-        ms->mpb->ibuf_alloc = nr;
-        srenew(ms->mpb->ibuf, ms->mpb->ibuf_alloc);
-    }
-    MPI_Allreduce(r, ms->mpb->ibuf, nr, MPI_INT, MPI_SUM, ms->mpi_comm_masters);
-    for (i = 0; i < nr; i++)
-    {
-        r[i] = ms->mpb->ibuf[i];
-    }
-#endif
-#endif
-}
-
-void gmx_sumli_sim(int gmx_unused nr, int64_t gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
-{
-#if !GMX_MPI
-    gmx_call("gmx_sumli_sim");
-#else
-#if MPI_IN_PLACE_EXISTS
-    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT64_T, MPI_SUM,
-                  ms->mpi_comm_masters);
-#else
-    /* this is thread-unsafe, but it will do for now: */
-    int i;
-
-    if (nr > ms->mpb->libuf_alloc)
-    {
-        ms->mpb->libuf_alloc = nr;
-        srenew(ms->mpb->libuf, ms->mpb->libuf_alloc);
-    }
-    MPI_Allreduce(r, ms->mpb->libuf, nr, MPI_INT64_T, MPI_SUM,
-                  ms->mpi_comm_masters);
-    for (i = 0; i < nr; i++)
-    {
-        r[i] = ms->mpb->libuf[i];
-    }
-#endif
-#endif
-}
-
-void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
-                     const char *name,
-                     gmx_bool bQuiet)
-{
-    int     *ibuf, p;
-    gmx_bool bCompatible;
-
-    if (nullptr != log && !bQuiet)
-    {
-        fprintf(log, "Multi-checking %s ... ", name);
-    }
-
-    if (ms == nullptr)
-    {
-        gmx_fatal(FARGS,
-                  "check_multi_int called with a NULL communication pointer");
-    }
-
-    snew(ibuf, ms->nsim);
-    ibuf[ms->sim] = val;
-    gmx_sumi_sim(ms->nsim, ibuf, ms);
-
-    bCompatible = TRUE;
-    for (p = 1; p < ms->nsim; p++)
-    {
-        bCompatible = bCompatible && (ibuf[p-1] == ibuf[p]);
-    }
-
-    if (bCompatible)
-    {
-        if (nullptr != log && !bQuiet)
-        {
-            fprintf(log, "OK\n");
-        }
-    }
-    else
-    {
-        if (nullptr != log)
-        {
-            fprintf(log, "\n%s is not equal for all subsystems\n", name);
-            for (p = 0; p < ms->nsim; p++)
-            {
-                fprintf(log, "  subsystem %d: %d\n", p, ibuf[p]);
-            }
-        }
-        gmx_fatal(FARGS, "The %d subsystems are not compatible\n", ms->nsim);
-    }
-
-    sfree(ibuf);
-}
-
-void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
-                       int64_t val, const char *name,
-                       gmx_bool bQuiet)
-{
-    int64_t          *ibuf;
-    int               p;
-    gmx_bool          bCompatible;
-
-    if (nullptr != log && !bQuiet)
-    {
-        fprintf(log, "Multi-checking %s ... ", name);
-    }
-
-    if (ms == nullptr)
-    {
-        gmx_fatal(FARGS,
-                  "check_multi_int called with a NULL communication pointer");
-    }
-
-    snew(ibuf, ms->nsim);
-    ibuf[ms->sim] = val;
-    gmx_sumli_sim(ms->nsim, ibuf, ms);
-
-    bCompatible = TRUE;
-    for (p = 1; p < ms->nsim; p++)
-    {
-        bCompatible = bCompatible && (ibuf[p-1] == ibuf[p]);
-    }
-
-    if (bCompatible)
-    {
-        if (nullptr != log && !bQuiet)
-        {
-            fprintf(log, "OK\n");
-        }
-    }
-    else
-    {
-        // TODO Part of this error message would also be good to go to
-        // stderr (from one rank of one sim only)
-        if (nullptr != log)
-        {
-            fprintf(log, "\n%s is not equal for all subsystems\n", name);
-            for (p = 0; p < ms->nsim; p++)
-            {
-                char strbuf[255];
-                /* first make the format string */
-                snprintf(strbuf, 255, "  subsystem %%d: %s\n",
-                         "%" PRId64);
-                fprintf(log, strbuf, p, ibuf[p]);
-            }
-        }
-        gmx_fatal(FARGS, "The %d subsystems are not compatible\n", ms->nsim);
-    }
-
-    sfree(ibuf);
 }
 
 const char *opt2fn_master(const char *opt, int nfile, const t_filenm fnm[],

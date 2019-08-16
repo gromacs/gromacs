@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,5 +74,30 @@ TEST_F(GromppTest, EmptyMdpFileWorks)
     runner_.useStringAsMdpFile("");
     runTest();
 }
+
+/* Test for making sure grompp can handle simulated annealing data */
+TEST_F(GromppTest, SimulatedAnnealingWorks)
+{
+    runner_.useStringAsMdpFile("annealing = periodic\n"
+                               "annealing-npoints = 4\n"
+                               "annealing-time = 0 2 4 6\n"
+                               "annealing-temp = 298 320 320 298\n"
+                               );
+    runTest();
+}
+
+TEST_F(GromppTest, SimulatedAnnealingWorksWithMultipleGroups)
+{
+    runner_.useStringAsMdpFile("tc-grps = Methanol SOL\n"
+                               "tau-t = 0.1 0.1\n"
+                               "ref_t = 298 298\n"
+                               "annealing = single periodic\n"
+                               "annealing-npoints = 3 4\n"
+                               "annealing-time = 0 3 6 0 2 4 6\n"
+                               "annealing-temp = 298 280 270 298 320 320 298\n"
+                               );
+    runTest();
+}
+
 
 } // namespace

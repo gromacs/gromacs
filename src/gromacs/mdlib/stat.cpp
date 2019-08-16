@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "stat.h"
+
 #include <cstdio>
 #include <cstring>
 
@@ -49,7 +51,6 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/rbin.h"
-#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -245,15 +246,15 @@ void global_stat(const gmx_global_stat *gs,
 
         for (j = 0; (j < egNR); j++)
         {
-            inn[j] = add_binr(rb, enerd->grpp.nener, enerd->grpp.ener[j]);
+            inn[j] = add_binr(rb, enerd->grpp.nener, enerd->grpp.ener[j].data());
         }
         if (inputrec->efep != efepNO)
         {
             idvdll  = add_bind(rb, efptNR, enerd->dvdl_lin);
             idvdlnl = add_bind(rb, efptNR, enerd->dvdl_nonlin);
-            if (enerd->n_lambda > 0)
+            if (!enerd->enerpart_lambda.empty())
             {
-                iepl = add_bind(rb, enerd->n_lambda, enerd->enerpart_lambda);
+                iepl = add_bind(rb, enerd->enerpart_lambda.size(), enerd->enerpart_lambda.data());
             }
         }
     }
@@ -341,15 +342,15 @@ void global_stat(const gmx_global_stat *gs,
 
         for (j = 0; (j < egNR); j++)
         {
-            extract_binr(rb, inn[j], enerd->grpp.nener, enerd->grpp.ener[j]);
+            extract_binr(rb, inn[j], enerd->grpp.nener, enerd->grpp.ener[j].data());
         }
         if (inputrec->efep != efepNO)
         {
             extract_bind(rb, idvdll, efptNR, enerd->dvdl_lin);
             extract_bind(rb, idvdlnl, efptNR, enerd->dvdl_nonlin);
-            if (enerd->n_lambda > 0)
+            if (!enerd->enerpart_lambda.empty())
             {
-                extract_bind(rb, iepl, enerd->n_lambda, enerd->enerpart_lambda);
+                extract_bind(rb, iepl, enerd->enerpart_lambda.size(), enerd->enerpart_lambda.data());
             }
         }
 
@@ -377,17 +378,5 @@ void global_stat(const gmx_global_stat *gs,
     if (nsig > 0)
     {
         extract_binr(rb, isig, nsig, sig);
-    }
-}
-
-bool do_per_step(int64_t step, int64_t nstep)
-{
-    if (nstep != 0)
-    {
-        return (step % nstep) == 0;
-    }
-    else
-    {
-        return false;
     }
 }

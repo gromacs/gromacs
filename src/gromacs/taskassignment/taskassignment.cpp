@@ -57,6 +57,7 @@
 #include <vector>
 
 #include "gromacs/hardware/hw_info.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/taskassignment/usergpuids.h"
 #include "gromacs/utility/cstringutil.h"

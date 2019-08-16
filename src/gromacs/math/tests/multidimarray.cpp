@@ -314,8 +314,43 @@ TEST_F(MultiDimArrayTest, constViewConstEnd)
     EXPECT_EQ(*x, testNumber_);
 }
 
-} // namespace
+TEST(MultiDimArrayToMdSpanTest, convertsToMdSpan)
+{
+    MultiDimArray < std::array<int, 4>, extents < 2, 2>> arr = {{0, 1, 2, 3}};
+    basic_mdspan < int, extents < 2, 2>> span(arr);
 
+    // test copy correctness
+    EXPECT_EQ(span(1, 1), 3);
+
+    // test that span operates on same data as array
+    span(0, 1) = -5;
+    EXPECT_EQ(arr(0, 1), -5);
+}
+
+TEST(MultiDimArrayToMdSpanTest, constArrayToMdSpan)
+{
+    const MultiDimArray < std::array<int, 4>, extents < 2, 2>> constArr = {{0, 1, 2, 3}};
+    basic_mdspan < const int, extents < 2, 2>> span(constArr);
+    EXPECT_EQ(span(0, 1), 1);
+}
+
+TEST(MultiDimArrayToMdSpanTest, nonConstArrayToConstMdSpan)
+{
+    MultiDimArray < std::array<int, 4>, extents < 2, 2>> arr = {{0, 1, 2, 3}};
+    basic_mdspan < const int, extents < 2, 2>> span(arr);
+    EXPECT_EQ(span(0, 1), 1);
+}
+
+TEST(MultiDimArrayToMdSpanTest, implicitConversionToMdSpan)
+{
+    auto testFunc = [](basic_mdspan < const int, extents < 2, 2>> a){
+            return a(0, 0);
+        };
+    MultiDimArray < std::array<int, 4>, extents < 2, 2>> arr = {{0, 1, 2, 3}};
+    EXPECT_EQ(testFunc(arr), 0);
+}
+
+} // namespace
 } // namespace test
 
 } // namespace gmx

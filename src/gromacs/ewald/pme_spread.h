@@ -43,7 +43,7 @@
 
 void
 spread_on_grid(const gmx_pme_t *pme,
-               const pme_atomcomm_t *atc, const pmegrids_t *grids,
+               PmeAtomComm *atc, const pmegrids_t *grids,
                gmx_bool bCalcSplines, gmx_bool bSpread,
                real *fftgrid, gmx_bool bDoSplines, int grid_index);
 

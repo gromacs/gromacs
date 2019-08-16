@@ -306,11 +306,23 @@ int *compact_unitcell_edges();
  * These routines puts ONE or ALL atoms in the box, not caring
  * about charge groups!
  * Also works for triclinic cells.
- * \param[in]    ePBC   The pbc type
- * \param[in]    box    The simulation box
+ * \param[in]     ePBC   The pbc type
+ * \param[in]     box    The simulation box
  * \param[in,out] x      The coordinates of the atoms
  */
 void put_atoms_in_box(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x);
+
+/*! \brief Parallellizes put_atoms_in_box()
+ *
+ * This wrapper function around put_atoms_in_box() with the ugly manual
+ * workload splitting is needed to avoid silently introducing multithreading
+ * in tools.
+ * \param[in]     ePBC       The pbc type
+ * \param[in]     box        The simulation box
+ * \param[in,out] x          The coordinates of the atoms
+ * \param[in]     nth        number of threads to be used in the given module
+ */
+void put_atoms_in_box_omp(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x, gmx_unused int nth);
 
 /*! \brief Put atoms inside triclinic box
  *

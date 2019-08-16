@@ -34,6 +34,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief Implements gmx dump utility.
+ *
+ * \ingroup module_tools
+ */
 #include "gmxpre.h"
 
 #include "dump.h"
@@ -45,9 +50,10 @@
 #include <cstdio>
 #include <cstring>
 
-#include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/enxio.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/mtxio.h"
 #include "gromacs/fileio/tngio.h"
@@ -55,13 +61,15 @@
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxpreprocess/gmxcpp.h"
-#include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/math/vecdump.h"
-#include "gromacs/mdrunutility/mdmodules.h"
+#include "gromacs/mdrun/mdmodules.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/filenameoption.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/energyframe.h"
@@ -80,7 +88,7 @@ namespace
 {
 
 //! Dump a TPR file
-void list_tpx(const char *fn,
+void list_tpr(const char *fn,
               gmx_bool    bShowNumbers,
               gmx_bool    bShowParameters,
               const char *mdpfn,
@@ -88,14 +96,14 @@ void list_tpx(const char *fn,
               gmx_bool    bOriginalInputrec)
 {
     FILE         *gp;
-    int           indent, i, j, **gcount, atot;
+    int           indent, atot;
     t_state       state;
-    t_tpxheader   tpx;
     gmx_mtop_t    mtop;
     t_topology    top;
 
-    read_tpxheader(fn, &tpx, TRUE);
-    t_inputrec     ir;
+    TpxFileHeader tpx = readTpxHeader(fn, true);
+    t_inputrec    ir;
+
     read_tpx_state(fn,
                    tpx.bIr ? &ir : nullptr,
                    &state,
@@ -150,35 +158,33 @@ void list_tpx(const char *fn,
             pr_rvecs(stdout, indent, "v", tpx.bV ? state.v.rvec_array() : nullptr, state.natoms);
         }
 
-        const gmx_groups_t &groups = mtop.groups;
+        const SimulationGroups &groups = mtop.groups;
 
-        snew(gcount, egcNR);
-        for (i = 0; (i < egcNR); i++)
+        gmx::EnumerationArray < SimulationAtomGroupType, std::vector < int>> gcount;
+        for (auto group : keysOf(gcount))
         {
-            snew(gcount[i], groups.grps[i].nr);
+            gcount[group].resize(groups.groups[group].size());
         }
 
-        for (i = 0; (i < mtop.natoms); i++)
+        for (int i = 0; (i < mtop.natoms); i++)
         {
-            for (j = 0; (j < egcNR); j++)
+            for (auto group : keysOf(gcount))
             {
-                gcount[j][getGroupType(groups, j, i)]++;
+                gcount[group][getGroupType(groups, group, i)]++;
             }
         }
         printf("Group statistics\n");
-        for (i = 0; (i < egcNR); i++)
+        for (auto group : keysOf(gcount))
         {
             atot = 0;
-            printf("%-12s: ", gtypes[i]);
-            for (j = 0; (j < groups.grps[i].nr); j++)
+            printf("%-12s: ", shortName(group));
+            for (const auto &entry : gcount[group])
             {
-                printf("  %5d", gcount[i][j]);
-                atot += gcount[i][j];
+                printf("  %5d", entry);
+                atot += entry;
             }
             printf("  (total %d atoms)\n", atot);
-            sfree(gcount[i]);
         }
-        sfree(gcount);
     }
 }
 
@@ -186,8 +192,8 @@ void list_tpx(const char *fn,
 void list_top(const char *fn)
 {
     int       status, done;
-#define BUFLEN 256
-    char      buf[BUFLEN];
+    // Legacy string length macro
+    char      buf[STRLEN];
     gmx_cpp_t handle;
     char     *cppopts[] = { nullptr };
 
@@ -198,7 +204,7 @@ void list_top(const char *fn)
     }
     do
     {
-        status = cpp_read_line(&handle, BUFLEN, buf);
+        status = cpp_read_line(&handle, STRLEN, buf);
         done   = static_cast<int>(status == eCPP_EOF);
         if (!done)
         {
@@ -618,82 +624,156 @@ void list_mtx(const char *fn)
     sfree(full);
 }
 
-}   // namespace
+class Dump : public ICommandLineOptionsModule
+{
+    public:
+        Dump()
+        {}
 
-int gmx_dump(int argc, char *argv[])
+        // From ICommandLineOptionsModule
+        void init(CommandLineModuleSettings * /*settings*/) override
+        {
+        }
+
+        void initOptions(IOptionsContainer                 *options,
+                         ICommandLineOptionsModuleSettings *settings) override;
+
+        void optionsFinished() override;
+
+        int run() override;
+
+    private:
+        //! Commandline options
+        //! \{
+        bool bShowNumbers_      = true;
+        bool bShowParams_       = false;
+        bool bSysTop_           = false;
+        bool bOriginalInputrec_ = false;
+        //! \}
+        //! Commandline file options
+        //! \{
+        std::string inputTprFilename_;
+        std::string inputTrajectoryFilename_;
+        std::string inputEnergyFilename_;
+        std::string inputCheckpointFilename_;
+        std::string inputTopologyFilename_;
+        std::string inputMatrixFilename_;
+        std::string outputMdpFilename_;
+        //! \}
+};
+
+void Dump::initOptions(IOptionsContainer                 *options,
+                       ICommandLineOptionsModuleSettings *settings)
 {
     const char *desc[] = {
         "[THISMODULE] reads a run input file ([REF].tpr[ref]),",
-        "a trajectory ([REF].trr[ref]/[REF].xtc[ref]/[TT]/tng[tt]), an energy",
-        "file ([REF].edr[ref]) or a checkpoint file ([REF].cpt[ref])",
+        "a trajectory ([REF].trr[ref]/[REF].xtc[ref]/[TT]tng[tt]), an energy",
+        "file ([REF].edr[ref]), a checkpoint file ([REF].cpt[ref])",
+        "or topology file ([REF].top[ref])",
         "and prints that to standard output in a readable format.",
         "This program is essential for checking your run input file in case of",
-        "problems.[PAR]",
-        "The program can also preprocess a topology to help finding problems.",
-        "Note that currently setting [TT]GMXLIB[tt] is the only way to customize",
-        "directories used for searching include files.",
+        "problems."
     };
+    settings->setHelpText(desc);
+
     const char *bugs[] = {
-        "Position restraint output from -sys -s is broken"
+        "The [REF].mdp[ref] file produced by [TT]-om[tt] can not be read by grompp."
     };
-    t_filenm    fnm[] = {
-        { efTPR, "-s", nullptr, ffOPTRD },
-        { efTRX, "-f", nullptr, ffOPTRD },
-        { efEDR, "-e", nullptr, ffOPTRD },
-        { efCPT, nullptr, nullptr, ffOPTRD },
-        { efTOP, "-p", nullptr, ffOPTRD },
-        { efMTX, "-mtx", "hessian", ffOPTRD },
-        { efMDP, "-om", nullptr, ffOPTWR }
-    };
-#define NFILE asize(fnm)
+    settings->setBugText(bugs);
+    // TODO If this ancient note acknowledging a bug is still true,
+    // fix it or block that run path:
+    //   Position restraint output from -sys -s is broken
 
-    gmx_output_env_t *oenv;
-    /* Command line options */
-    gmx_bool          bShowNumbers      = TRUE;
-    gmx_bool          bShowParams       = FALSE;
-    gmx_bool          bSysTop           = FALSE;
-    gmx_bool          bOriginalInputrec = FALSE;
-    t_pargs           pa[]              = {
-        { "-nr", FALSE, etBOOL, {&bShowNumbers}, "Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)" },
-        { "-param", FALSE, etBOOL, {&bShowParams}, "Show parameters for each bonded interaction (for comparing dumps, it is useful to combine this with -nonr)" },
-        { "-sys", FALSE, etBOOL, {&bSysTop}, "List the atoms and bonded interactions for the whole system instead of for each molecule type" },
-        { "-orgir", FALSE, etBOOL, {&bOriginalInputrec}, "Show input parameters from tpr as they were written by the version that produced the file, instead of how the current version reads them" }
-    };
+    options->addOption(FileNameOption("s")
+                           .filetype(eftRunInput).inputFile()
+                           .store(&inputTprFilename_)
+                           .description("Run input file to dump"));
+    options->addOption(FileNameOption("f")
+                           .filetype(eftTrajectory).inputFile()
+                           .store(&inputTrajectoryFilename_)
+                           .description("Trajectory file to dump"));
+    options->addOption(FileNameOption("e")
+                           .filetype(eftEnergy).inputFile()
+                           .store(&inputEnergyFilename_)
+                           .description("Energy file to dump"));
+    options->addOption(FileNameOption("cp")
+                           .legacyType(efCPT).inputFile()
+                           .store(&inputCheckpointFilename_)
+                           .description("Checkpoint file to dump"));
+    options->addOption(FileNameOption("p")
+                           .legacyType(efTOP).inputFile()
+                           .store(&inputTopologyFilename_)
+                           .description("Topology file to dump"));
+    options->addOption(FileNameOption("mtx")
+                           .legacyType(efMTX).inputFile()
+                           .store(&inputMatrixFilename_)
+                           .description("Hessian matrix to dump"));
+    options->addOption(FileNameOption("om")
+                           .legacyType(efMDP).outputFile()
+                           .store(&outputMdpFilename_)
+                           .description("grompp input file from run input file"));
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, asize(bugs), bugs, &oenv))
-    {
-        return 0;
-    }
+    options->addOption(BooleanOption("nr")
+                           .store(&bShowNumbers_).defaultValue(true)
+                           .description("Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)"));
+    options->addOption(BooleanOption("param")
+                           .store(&bShowParams_).defaultValue(false)
+                           .description("Show parameters for each bonded interaction (for comparing dumps, it is useful to combine this with -nonr)"));
+    options->addOption(BooleanOption("sys")
+                           .store(&bShowParams_).defaultValue(false)
+                           .description("List the atoms and bonded interactions for the whole system instead of for each molecule type"));
+    options->addOption(BooleanOption("orgir")
+                           .store(&bShowParams_).defaultValue(false)
+                           .description("Show input parameters from tpr as they were written by the version that produced the file, instead of how the current version reads them"));
+}
 
+void Dump::optionsFinished()
+{
+    // TODO Currently gmx dump ignores user input that seeks to dump
+    // multiple files. Here, we could enforce that the user only asks
+    // to dump one file.
+}
 
-    if (ftp2bSet(efTPR, NFILE, fnm))
+int Dump::run()
+{
+    if (!inputTprFilename_.empty())
     {
-        list_tpx(ftp2fn(efTPR, NFILE, fnm), bShowNumbers, bShowParams,
-                 ftp2fn_null(efMDP, NFILE, fnm), bSysTop, bOriginalInputrec);
+        list_tpr(inputTprFilename_.c_str(), bShowNumbers_, bShowParams_,
+                 outputMdpFilename_.empty() ? nullptr : outputMdpFilename_.c_str(),
+                 bSysTop_, bOriginalInputrec_);
     }
-    else if (ftp2bSet(efTRX, NFILE, fnm))
+    else if (!inputTrajectoryFilename_.empty())
     {
-        list_trx(ftp2fn(efTRX, NFILE, fnm));
+        list_trx(inputTrajectoryFilename_.c_str());
     }
-    else if (ftp2bSet(efEDR, NFILE, fnm))
+    else if (!inputEnergyFilename_.empty())
     {
-        list_ene(ftp2fn(efEDR, NFILE, fnm));
+        list_ene(inputEnergyFilename_.c_str());
     }
-    else if (ftp2bSet(efCPT, NFILE, fnm))
+    else if (!inputCheckpointFilename_.empty())
     {
-        list_checkpoint(ftp2fn(efCPT, NFILE, fnm), stdout);
+        list_checkpoint(inputCheckpointFilename_.c_str(), stdout);
     }
-    else if (ftp2bSet(efTOP, NFILE, fnm))
+    else if (!inputTopologyFilename_.empty())
     {
-        list_top(ftp2fn(efTOP, NFILE, fnm));
+        list_top(inputTopologyFilename_.c_str());
     }
-    else if (ftp2bSet(efMTX, NFILE, fnm))
+    else if (!inputMatrixFilename_.empty())
     {
-        list_mtx(ftp2fn(efMTX, NFILE, fnm));
+        list_mtx(inputMatrixFilename_.c_str());
     }
 
     return 0;
+}
+
+}   // namespace
+
+const char DumpInfo::name[]             = "dump";
+const char DumpInfo::shortDescription[] =
+    "Make binary files human readable";
+ICommandLineOptionsModulePointer DumpInfo::create()
+{
+    return std::make_unique<Dump>();
 }
 
 }   // namespace gmx

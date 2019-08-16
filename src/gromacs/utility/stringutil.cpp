@@ -322,6 +322,32 @@ bool equalCaseInsensitive(const std::string &source, const std::string &target)
                       { return std::tolower(s) == std::tolower(t); });
 }
 
+bool equalCaseInsensitive(const std::string &source,
+                          const std::string &target,
+                          size_t             maxLengthOfComparison)
+{
+    std::string::const_iterator comparisonEnd;
+    if (source.length() < maxLengthOfComparison)
+    {
+        if (source.length() != target.length())
+        {
+            return false;
+        }
+        comparisonEnd = source.end();
+    }
+    else
+    {
+        if (maxLengthOfComparison > target.length())
+        {
+            return false;
+        }
+        comparisonEnd = source.begin() + maxLengthOfComparison;
+    }
+    return std::equal(source.begin(), comparisonEnd, target.begin(),
+                      [](const char &s, const char &t)
+                      { return std::tolower(s) == std::tolower(t); });
+}
+
 /********************************************************************
  * TextLineWrapperSettings
  */

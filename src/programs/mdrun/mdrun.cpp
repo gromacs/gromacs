@@ -56,13 +56,14 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/compat/pointers.h"
-#include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/options.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdrun/legacymdrunoptions.h"
-#include "gromacs/mdrun/logging.h"
 #include "gromacs/mdrun/runner.h"
 #include "gromacs/mdrun/simulationcontext.h"
+#include "gromacs/mdrunutility/handlerestart.h"
+#include "gromacs/mdrunutility/logging.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
@@ -75,6 +76,8 @@ namespace gmx
 //! Implements C-style main function for mdrun
 int gmx_mdrun(int argc, char *argv[])
 {
+    auto                     mdModules = std::make_unique<MDModules>();
+
     std::vector<const char *>desc = {
         "[THISMODULE] is the main computational chemistry engine",
         "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
@@ -99,7 +102,7 @@ int gmx_mdrun(int argc, char *argv[])
         "([TT]-x[tt]).[PAR]",
         "The option [TT]-dhdl[tt] is only used when free energy calculation is",
         "turned on.[PAR]",
-        "Running mdrun efficiently in parallel is a complex topic topic,",
+        "Running mdrun efficiently in parallel is a complex topic,",
         "many aspects of which are covered in the online User Guide. You",
         "should look there for practical advice on using many of the options",
         "available in mdrun.[PAR]",
@@ -129,10 +132,7 @@ int gmx_mdrun(int argc, char *argv[])
         "these options are deprecated, and in future will be available via grompp.[PAR]",
         "The options [TT]-px[tt] and [TT]-pf[tt] are used for writing pull COM",
         "coordinates and forces when pulling is selected",
-        "in the [REF].mdp[ref] file.[PAR]",
-        "Finally some experimental algorithms can be tested when the",
-        "appropriate options have been given. Currently under",
-        "investigation are: polarizability.",
+        "in the [REF].mdp[ref] file.",
         "[PAR]",
         "The option [TT]-membed[tt] does what used to be g_membed, i.e. embed",
         "a protein into a membrane. This module requires a number of settings",
@@ -195,20 +195,6 @@ int gmx_mdrun(int argc, char *argv[])
         "terminated only when the time limit set by [TT]-maxh[tt] is reached (if any)",
         "or upon receiving a signal.",
         "[PAR]",
-        "When [TT]mdrun[tt] receives a TERM or INT signal (e.g. when ctrl+C is",
-        "pressed), it will stop at the next neighbor search step or at the",
-        "second global communication step, whichever happens later.",
-        "When [TT]mdrun[tt] receives a second TERM or INT signal and",
-        "reproducibility is not requested, it will stop at the first global",
-        "communication step.",
-        "In both cases all the usual output will be written to file and",
-        "a checkpoint file is written at the last step.",
-        "When [TT]mdrun[tt] receives an ABRT signal or the third TERM or INT signal,",
-        "it will abort directly without writing a new checkpoint file.",
-        "When running with MPI, a signal to one of the [TT]mdrun[tt] ranks",
-        "is sufficient, this signal should not be sent to mpirun or",
-        "the [TT]mdrun[tt] process that is the parent of the others.",
-        "[PAR]",
         "Interactive molecular dynamics (IMD) can be activated by using at least one",
         "of the three IMD switches: The [TT]-imdterm[tt] switch allows one to terminate",
         "the simulation from the molecular viewer (e.g. VMD). With [TT]-imdwait[tt],",
@@ -216,9 +202,7 @@ int gmx_mdrun(int argc, char *argv[])
         "IMD remote can be turned on by [TT]-imdpull[tt].",
         "The port [TT]mdrun[tt] listens to can be altered by [TT]-imdport[tt].The",
         "file pointed to by [TT]-if[tt] contains atom indices and forces if IMD",
-        "pulling is used.",
-        "[PAR]",
-        "When [TT]mdrun[tt] is started with MPI, it does not run niced by default."
+        "pulling is used."
     };
 
     LegacyMdrunOptions       options;
@@ -232,13 +216,14 @@ int gmx_mdrun(int argc, char *argv[])
         return 0;
     }
 
-    if (MASTER(options.cr))
-    {
-        options.logFileGuard = openLogFile(ftp2fn(efLOG,
-                                                  options.filenames.size(),
-                                                  options.filenames.data()),
-                                           options.mdrunOptions.continuationOptions.appendFiles);
-    }
+    StartingBehavior startingBehavior = StartingBehavior::NewSimulation;
+    LogFilePtr       logFileGuard     = nullptr;
+    std::tie(startingBehavior,
+             logFileGuard) = handleRestart(options.cr,
+                                           options.ms,
+                                           options.mdrunOptions.appendingBehavior,
+                                           ssize(options.filenames),
+                                           options.filenames.data());
 
     /* The SimulationContext is a resource owned by the client code.
      * A more complete design should address handles to resources with appropriate
@@ -262,8 +247,9 @@ int gmx_mdrun(int argc, char *argv[])
      * We would prefer to rebuild resources only as necessary, but we defer such
      * details to future optimizations.
      */
-    auto builder = MdrunnerBuilder(compat::not_null<decltype( &simulationContext)>(&simulationContext));
-    builder.addSimulationMethod(options.mdrunOptions, options.pforce);
+    auto builder = MdrunnerBuilder(std::move(mdModules),
+                                   compat::not_null<decltype( &simulationContext)>(&simulationContext));
+    builder.addSimulationMethod(options.mdrunOptions, options.pforce, startingBehavior);
     builder.addDomainDecomposition(options.domdecOptions);
     // \todo pass by value
     builder.addNonBonded(options.nbpu_opt_choices[0]);
@@ -283,7 +269,7 @@ int gmx_mdrun(int argc, char *argv[])
     // \todo Implement lifetime management for gmx_output_env_t.
     // \todo Output environment should be configured outside of Mdrunner and provided as a resource.
     builder.addOutputEnvironment(options.oenv);
-    builder.addLogFile(options.logFileGuard.get());
+    builder.addLogFile(logFileGuard.get());
 
     auto runner = builder.build();
 

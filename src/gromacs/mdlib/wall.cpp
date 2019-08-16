@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,15 +60,14 @@
 
 void make_wall_tables(FILE *fplog,
                       const t_inputrec *ir, const char *tabfn,
-                      const gmx_groups_t *groups,
+                      const SimulationGroups *groups,
                       t_forcerec *fr)
 {
     int           negp_pp;
-    int          *nm_ind;
     char          buf[STRLEN];
 
     negp_pp = ir->opts.ngener - ir->nwall;
-    nm_ind  = groups->grps[egcENER].nm_ind;
+    gmx::ArrayRef<const int> nm_ind  = groups->groups[SimulationAtomGroupType::EnergyOutput];
 
     if (fplog)
     {
@@ -87,8 +86,8 @@ void make_wall_tables(FILE *fplog,
             {
                 sprintf(buf, "%s", tabfn);
                 sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1, "_%s_%s.%s",
-                        *groups->grpname[nm_ind[egp]],
-                        *groups->grpname[nm_ind[negp_pp+w]],
+                        *groups->groupNames[nm_ind[egp]],
+                        *groups->groupNames[nm_ind[negp_pp+w]],
                         ftp2ext(efXVG));
                 fr->wall_tab[w][egp] = make_tables(fplog, fr->ic, buf, 0,
                                                    GMX_MAKETABLES_FORCEUSER);

@@ -45,8 +45,9 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/nbnxm/kernel_common.h"
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -107,7 +108,10 @@ nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu     *nbl,
 
     if (clearF == enbvClearFYes)
     {
-        clear_f(nbat, 0, f.data());
+        for (real &elem : f)
+        {
+            elem = 0;
+        }
     }
 
     bEner = ((force_flags & GMX_FORCE_ENERGY) != 0);

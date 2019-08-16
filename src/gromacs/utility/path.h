@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,8 @@
 #include <utility>
 #include <vector>
 
+#include "gromacs/compat/string_view.h"
+
 namespace gmx
 {
 
@@ -66,25 +68,29 @@ class Path
                                 const std::string &path3);
         //! Return a path using directory separators that suit the execution OS.
         static std::string normalize(const std::string &path);
-        /*! \brief Returns the part of the path before the last
-         * directory separator, if any.
+        /*! \brief Returns a copy of the parent path (ie. directory
+         * components) of \c input ie. up to but excluding the last
+         * directory separator (if one exists).
          *
-         * Path must not contain '.' or '..' elements. */
-        static std::string getParentPath(const std::string &path);
-        /*! \brief Returns the parts of the path before and after the
-         * last directory separator, if any.
-         *
-         * Path must not contain '.' or '..' elements. */
-        static std::pair<std::string, std::string> getParentPathAndBasename(const std::string &path);
-        static std::string getFilename(const std::string &path);
-        static bool hasExtension(const std::string &path);
-        static std::string stripExtension(const std::string &path);
-        /*! \brief Concatenate \c stringToAdd to \c input, before any
-         * file extension (if one exists), and return the result.
-         *
-         * To be recognized as an extension, an extension-separator
-         * character must follow the last path-separator character (if
-         * any). */
+         * \returns A copy of the parent path-components, or empty if
+         * no directory separator exists. */
+        static std::string getParentPath(const std::string &input);
+        /*! \brief Returns a copy of the filename in \c input
+         * ie. after the last directory separator (if one exists). */
+        static std::string getFilename(const std::string &input);
+        //! Returns whether an extension is present in \c input.
+        static bool hasExtension(const std::string &input);
+        /*! \brief Returns whether the extension present in \c input
+         * matches \c extension (which does not include the separator
+         * character). */
+        static bool extensionMatches(compat::string_view input,
+                                     compat::string_view extension);
+        /*! \brief Returns a copy of the input without any trailing
+         * extension found in the filename component. */
+        static std::string stripExtension(const std::string &input);
+        /*! \brief Concatenate \c stringToAdd to a copy of \c input,
+         * before any file extension (if one exists), and return the
+         * result. */
         static std::string concatenateBeforeExtension(const std::string &input,
                                                       const std::string &stringToAdd);
 

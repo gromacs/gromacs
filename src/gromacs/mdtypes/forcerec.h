@@ -54,9 +54,8 @@ struct gmx_ns_t;
 struct gmx_pme_t;
 struct nonbonded_verlet_t;
 struct bonded_threading_t;
+class DispersionCorrection;
 struct t_forcetable;
-struct t_nblist;
-struct t_nblists;
 struct t_QMMMrec;
 
 namespace gmx
@@ -72,8 +71,6 @@ class GpuBonded;
  * The maximum cg size in cginfo is 63
  * because we only have space for 6 bits in cginfo,
  * this cg size entry is actually only read with domain decomposition.
- * But there is a smaller limit due to the t_excl data structure
- * which is defined in nblist.h.
  */
 #define SET_CGINFO_GID(cgi, gid)     (cgi) = (((cgi)  &  ~255) | (gid))
 #define GET_CGINFO_GID(cgi)        ( (cgi)            &   255)
@@ -130,7 +127,9 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
 
     /* PBC stuff */
     int                         ePBC = 0;
-    //! Whether PBC must be considered for bonded interactions.
+    //! Tells whether atoms inside a molecule can be in different periodic images,
+    //  i.e. whether we need to take into account PBC when computing distances inside molecules.
+    //  This determines whether PBC must be considered for e.g. bonded interactions.
     gmx_bool                    bMolPBC     = FALSE;
     int                         rc_scaling  = 0;
     rvec                        posres_com  = { 0 };
@@ -168,25 +167,7 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     rvec   mu_tot[2] = { { 0 } };
 
     /* Dispersion correction stuff */
-    int                  eDispCorr = 0;
-    int                  numAtomsForDispersionCorrection = 0;
-    struct t_forcetable *dispersionCorrectionTable       = nullptr;
-
-    /* The shift of the shift or user potentials */
-    real enershiftsix    = 0;
-    real enershifttwelve = 0;
-    /* Integrated differces for energy and virial with cut-off functions */
-    real enerdiffsix    = 0;
-    real enerdifftwelve = 0;
-    real virdiffsix     = 0;
-    real virdifftwelve  = 0;
-    /* Constant for long range dispersion correction (average dispersion)
-     * for topology A/B ([0]/[1]) */
-    real avcsix[2] = { 0 };
-    /* Constant for long range repulsion term. Relative difference of about
-     * 0.1 percent with 0.8 nm cutoffs. But hey, it's cheap anyway...
-     */
-    real avctwelve[2] = { 0 };
+    std::unique_ptr<DispersionCorrection> dispersionCorrection;
 
     /* Fudge factors */
     real fudgeQQ = 0;
@@ -194,9 +175,8 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     /* Table stuff */
     gmx_bool             bcoultab = FALSE;
     gmx_bool             bvdwtab  = FALSE;
-    /* The normal tables are in the nblists struct(s) below */
 
-    struct t_forcetable *pairsTable; /* for 1-4 interactions, [pairs] and [pairs_nb] */
+    t_forcetable        *pairsTable = nullptr; /* for 1-4 interactions, [pairs] and [pairs_nb] */
 
     /* Free energy */
     int      efep          = 0;
@@ -218,25 +198,18 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     gmx_bool            bGrid                        = FALSE;
     gmx_bool            bExcl_IntraCGAll_InterCGNone = FALSE;
     struct cginfo_mb_t *cginfo_mb                    = nullptr;
-    int                *cginfo                       = nullptr;
-    rvec               *cg_cm                        = nullptr;
-    int                 cg_nalloc                    = 0;
+    std::vector<int>    cginfo;
     rvec               *shift_vec                    = nullptr;
 
-    /* The neighborlists including tables */
-    int                        nnblists    = 0;
-    int                       *gid2nblists = nullptr;
-    struct t_nblists          *nblists     = nullptr;
-
-    int                        cutoff_scheme = 0;     /* group- or Verlet-style cutoff */
-    gmx_bool                   bNonbonded    = FALSE; /* true if nonbonded calculations are *not* turned off */
+    int                 cutoff_scheme = 0;     /* group- or Verlet-style cutoff */
+    gmx_bool            bNonbonded    = FALSE; /* true if nonbonded calculations are *not* turned off */
 
     /* The Nbnxm Verlet non-bonded machinery */
     std::unique_ptr<nonbonded_verlet_t> nbv;
 
     /* The wall tables (if used) */
     int                    nwall    = 0;
-    struct t_forcetable ***wall_tab = nullptr;
+    t_forcetable        ***wall_tab = nullptr;
 
     /* The number of charge groups participating in do_force_lowlevel */
     int ncg_force = 0;
@@ -284,9 +257,6 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
      */
     int n_tpi = 0;
 
-    /* Neighbor searching stuff */
-    struct gmx_ns_t *ns = nullptr;
-
     /* QMMM stuff */
     gmx_bool          bQMMM = FALSE;
     struct t_QMMMrec *qr    = nullptr;
@@ -296,11 +266,6 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
 
     /* Limit for printing large forces, negative is don't print */
     real print_force = 0;
-
-    /* coarse load balancing time measurement */
-    double t_fnbf    = 0;
-    double t_wait    = 0;
-    int    timesteps = 0;
 
     /* User determined parameters, copied from the inputrec */
     int  userint1  = 0;

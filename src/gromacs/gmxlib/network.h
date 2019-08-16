@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,6 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
 
-struct gmx_multisim_t;
 struct t_commrec;
 struct t_filenm;
 
@@ -92,36 +91,10 @@ void gmx_sumf(int nr, float r[], const struct t_commrec *cr);
 void gmx_sumd(int nr, double r[], const struct t_commrec *cr);
 /* Calculate the global sum of an array of doubles */
 
-void gmx_sumi_sim(int nr, int r[], const struct gmx_multisim_t *ms);
-/* Calculate the sum over the simulations of an array of ints */
-
-void gmx_sumli_sim(int nr, int64_t r[], const struct gmx_multisim_t *ms);
-/* Calculate the sum over the simulations of an array of large ints */
-
-void gmx_sumf_sim(int nr, float r[], const struct gmx_multisim_t *ms);
-/* Calculate the sum over the simulations of an array of floats */
-
-void gmx_sumd_sim(int nr, double r[], const struct gmx_multisim_t *ms);
-/* Calculate the sum over the simulations of an array of doubles */
-
-void check_multi_int(FILE *log, const gmx_multisim_t *ms,
-                     int val, const char *name,
-                     gmx_bool bQuiet);
-void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
-                       int64_t val, const char *name,
-                       gmx_bool bQuiet);
-/* Check if val is the same on all processors for a mdrun -multidir run
- * The string name is used to print to the log file and in a fatal error
- * if the val's don't match. If bQuiet is true and the check passes,
- * no output is written.
- */
-
 #if GMX_DOUBLE
 #define gmx_sum       gmx_sumd
-#define gmx_sum_sim   gmx_sumd_sim
 #else
 #define gmx_sum       gmx_sumf
-#define gmx_sum_sim   gmx_sumf_sim
 #endif
 
 const char *opt2fn_master(const char *opt, int nfile,

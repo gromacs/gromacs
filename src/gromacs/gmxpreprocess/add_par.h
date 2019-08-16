@@ -41,35 +41,35 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
-struct InteractionTypeParameters;
+struct InteractionsOfType;
 struct PreprocessResidue;
 
-void add_param(InteractionTypeParameters *ps,
+void add_param(InteractionsOfType        *ps,
                int                        ai,
                int                        aj,
                gmx::ArrayRef<const real>  c,
                const char                *s);
 
-void add_imp_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al,
+void add_imp_param(InteractionsOfType *ps, int ai, int aj, int ak, int al,
                    real c0, real c1, const char *s);
 
-void add_dih_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al,
+void add_dih_param(InteractionsOfType *ps, int ai, int aj, int ak, int al,
                    real c0, real c1, real c2, const char *s);
 
-void add_cmap_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al, int am,
+void add_cmap_param(InteractionsOfType *ps, int ai, int aj, int ak, int al, int am,
                     const char *s);
 
-void add_vsite2_atoms(InteractionTypeParameters *ps, int ai, int aj, int ak);
+void add_vsite2_atoms(InteractionsOfType *ps, int ai, int aj, int ak);
 
-void add_vsite3_atoms(InteractionTypeParameters *ps, int ai, int aj, int ak, int al,
+void add_vsite3_atoms(InteractionsOfType *ps, int ai, int aj, int ak, int al,
                       bool bSwapParity);
 
-void add_vsite2_param(InteractionTypeParameters *ps, int ai, int aj, int ak, real c0);
+void add_vsite2_param(InteractionsOfType *ps, int ai, int aj, int ak, real c0);
 
-void add_vsite3_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al,
+void add_vsite3_param(InteractionsOfType *ps, int ai, int aj, int ak, int al,
                       real c0, real c1);
 
-void add_vsite4_atoms(InteractionTypeParameters *ps, int ai, int aj, int ak, int al,
+void add_vsite4_atoms(InteractionsOfType *ps, int ai, int aj, int ak, int al,
                       int am);
 
 int search_jtype(const PreprocessResidue &localPpResidue, const char *name, bool bFirstRes);

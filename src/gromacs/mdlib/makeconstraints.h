@@ -96,15 +96,16 @@ struct Constraints::CreationHelper : public Constraints
 template<typename ... Args>
 std::unique_ptr<Constraints> makeConstraints(const gmx_mtop_t &mtop,
                                              const t_inputrec &ir,
+                                             pull_t           *pull_work,
                                              bool              doEssentialDynamics,
                                              Args && ...       args)
 {
     int numConstraints = (gmx_mtop_ftype_count(mtop, F_CONSTR) +
                           gmx_mtop_ftype_count(mtop, F_CONSTRNC));
     int numSettles = gmx_mtop_ftype_count(mtop, F_SETTLE);
-    GMX_RELEASE_ASSERT(!ir.bPull || ir.pull_work != nullptr,
+    GMX_RELEASE_ASSERT(!ir.bPull || pull_work != nullptr,
                        "When COM pulling is active, it must be initialized before constraints are initialized");
-    bool doPullingWithConstraints = ir.bPull && pull_have_constraint(ir.pull_work);
+    bool doPullingWithConstraints = ir.bPull && pull_have_constraint(pull_work);
     if (numConstraints + numSettles == 0 &&
         !doPullingWithConstraints && !doEssentialDynamics)
     {
@@ -112,7 +113,7 @@ std::unique_ptr<Constraints> makeConstraints(const gmx_mtop_t &mtop,
         return nullptr;
     }
     return std::make_unique<Constraints::CreationHelper>
-               (mtop, ir, std::forward<Args>(args) ..., numConstraints, numSettles);
+               (mtop, ir, pull_work, std::forward<Args>(args) ..., numConstraints, numSettles);
 }
 
 }  // namespace gmx

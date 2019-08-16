@@ -54,7 +54,7 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
-t_vcm::t_vcm(const gmx_groups_t &groups, const t_inputrec &ir)
+t_vcm::t_vcm(const SimulationGroups &groups, const t_inputrec &ir)
 {
     mode     = (ir.nstcomm > 0) ? ir.comm_mode : ecmNO;
     ndim     = ndof_com(&ir);
@@ -68,7 +68,7 @@ t_vcm::t_vcm(const gmx_groups_t &groups, const t_inputrec &ir)
 
     if (mode != ecmNO)
     {
-        nr = groups.grps[egcVCM].nr;
+        nr = groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].size();
         /* Allocate one extra for a possible rest group */
         size = nr + 1;
         /* We need vcm->nr+1 elements per thread, but to avoid cache
@@ -93,7 +93,7 @@ t_vcm::t_vcm(const gmx_groups_t &groups, const t_inputrec &ir)
         for (int g = 0; (g < nr); g++)
         {
             group_ndf[g]  = ir.opts.nrdf[g];
-            group_name[g] = *groups.grpname[groups.grps[egcVCM].nm_ind[g]];
+            group_name[g] = *groups.groupNames[groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval][g]];
 
         }
 

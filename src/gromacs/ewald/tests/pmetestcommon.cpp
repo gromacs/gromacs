@@ -52,6 +52,7 @@
 #include "gromacs/ewald/pme_gpu_internal.h"
 #include "gromacs/ewald/pme_grid.h"
 #include "gromacs/ewald/pme_internal.h"
+#include "gromacs/ewald/pme_redistribute.h"
 #include "gromacs/ewald/pme_solve.h"
 #include "gromacs/ewald/pme_spread.h"
 #include "gromacs/fft/parallel_3dfft.h"
@@ -110,7 +111,6 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
                                       CodePath                  mode,
                                       const gmx_device_info_t  *gpuInfo,
                                       PmeGpuProgramHandle       pmeGpuProgram,
-                                      size_t                    atomCount,
                                       const Matrix3x3          &box,
                                       real                      ewaldCoeff_q = 1.0f,
                                       real                      ewaldCoeff_lj = 1.0f
@@ -120,7 +120,7 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
     const auto     runMode       = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::Mixed;
     t_commrec      dummyCommrec  = {0};
     NumPmeDomains  numPmeDomains = { 1, 1 };
-    gmx_pme_t     *pmeDataRaw    = gmx_pme_init(&dummyCommrec, numPmeDomains, inputRec, atomCount, false, false, true,
+    gmx_pme_t     *pmeDataRaw    = gmx_pme_init(&dummyCommrec, numPmeDomains, inputRec, false, false, true,
                                                 ewaldCoeff_q, ewaldCoeff_lj, 1, runMode, nullptr, gpuInfo, pmeGpuProgram, dummyLogger);
     PmeSafePointer pme(pmeDataRaw); // taking ownership
 
@@ -164,7 +164,7 @@ PmeSafePointer pmeInitEmpty(const t_inputrec         *inputRec,
                             real                      ewaldCoeff_lj
                             )
 {
-    return pmeInitInternal(inputRec, mode, gpuInfo, pmeGpuProgram, 0, box, ewaldCoeff_q, ewaldCoeff_lj);
+    return pmeInitInternal(inputRec, mode, gpuInfo, pmeGpuProgram, box, ewaldCoeff_q, ewaldCoeff_lj);
     // hiding the fact that PME actually needs to know the number of atoms in advance
 }
 
@@ -180,19 +180,24 @@ PmeSafePointer pmeInitAtoms(const t_inputrec         *inputRec,
 {
     const index     atomCount = coordinates.size();
     GMX_RELEASE_ASSERT(atomCount == charges.ssize(), "Mismatch in atom data");
-    PmeSafePointer  pmeSafe = pmeInitInternal(inputRec, mode, gpuInfo, pmeGpuProgram, atomCount, box);
-    pme_atomcomm_t *atc     = nullptr;
+    PmeSafePointer  pmeSafe = pmeInitInternal(inputRec, mode, gpuInfo, pmeGpuProgram, box);
+    PmeAtomComm    *atc     = nullptr;
 
     switch (mode)
     {
         case CodePath::CPU:
             atc              = &(pmeSafe->atc[0]);
-            atc->x           = const_cast<rvec *>(as_rvec_array(coordinates.data()));
-            atc->coefficient = const_cast<real *>(charges.data());
+            atc->x           = coordinates;
+            atc->coefficient = charges;
+            gmx_pme_reinit_atoms(pmeSafe.get(), atomCount, charges.data());
             /* With decomposition there would be more boilerplate atc code here, e.g. do_redist_pos_coeffs */
             break;
 
         case CodePath::GPU:
+            // TODO: Avoid use of atc in the GPU code path
+            atc              = &(pmeSafe->atc[0]);
+            // We need to set atc->n for passing the size in the tests
+            atc->setNumAtoms(atomCount);
             gmx_pme_reinit_atoms(pmeSafe.get(), atomCount, charges.data());
             pme_gpu_copy_input_coordinates(pmeSafe->gpu, as_rvec_array(coordinates.data()));
             break;
@@ -277,7 +282,7 @@ void pmePerformSplineAndSpread(gmx_pme_t *pme, CodePath mode, // TODO const qual
                                bool computeSplines, bool spreadCharges)
 {
     GMX_RELEASE_ASSERT(pme != nullptr, "PME data is not initialized");
-    pme_atomcomm_t *atc                          = &(pme->atc[0]);
+    PmeAtomComm    *atc                          = &(pme->atc[0]);
     const size_t    gridIndex                    = 0;
     const bool      computeSplinesForZeroCharges = true;
     real           *fftgrid                      = spreadCharges ? pme->fftgrid[gridIndex] : nullptr;
@@ -308,17 +313,17 @@ void pmePerformSplineAndSpread(gmx_pme_t *pme, CodePath mode, // TODO const qual
 static real *pmeGetSplineDataInternal(const gmx_pme_t *pme, PmeSplineDataType type, int dimIndex)
 {
     GMX_ASSERT((0 <= dimIndex) && (dimIndex < DIM), "Invalid dimension index");
-    const pme_atomcomm_t *atc          = &(pme->atc[0]);
+    const PmeAtomComm    *atc          = &(pme->atc[0]);
     const size_t          threadIndex  = 0;
     real                 *splineBuffer = nullptr;
     switch (type)
     {
         case PmeSplineDataType::Values:
-            splineBuffer = atc->spline[threadIndex].theta[dimIndex];
+            splineBuffer = atc->spline[threadIndex].theta.coefficients[dimIndex];
             break;
 
         case PmeSplineDataType::Derivatives:
-            splineBuffer = atc->spline[threadIndex].dtheta[dimIndex];
+            splineBuffer = atc->spline[threadIndex].dtheta.coefficients[dimIndex];
             break;
 
         default:
@@ -380,8 +385,8 @@ void pmePerformSolve(const gmx_pme_t *pme, CodePath mode,
 void pmePerformGather(gmx_pme_t *pme, CodePath mode,
                       PmeForceOutputHandling inputTreatment, ForcesVector &forces)
 {
-    pme_atomcomm_t *atc                     = &(pme->atc[0]);
-    const index     atomCount               = atc->n;
+    PmeAtomComm    *atc                     = &(pme->atc[0]);
+    const index     atomCount               = atc->numAtoms();
     GMX_RELEASE_ASSERT(forces.ssize() == atomCount, "Invalid force buffer size");
     const bool      forceReductionWithInput = (inputTreatment == PmeForceOutputHandling::ReduceWithInput);
     const real      scale                   = 1.0;
@@ -393,7 +398,7 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
     switch (mode)
     {
         case CodePath::CPU:
-            atc->f = as_rvec_array(forces.begin());
+            atc->f = forces;
             if (atc->nthread == 1)
             {
                 // something which is normally done in serial spline computation (make_thread_local_ind())
@@ -444,8 +449,8 @@ void pmeFinalizeTest(const gmx_pme_t *pme, CodePath mode)
 void pmeSetSplineData(const gmx_pme_t *pme, CodePath mode,
                       const SplineParamsDimVector &splineValues, PmeSplineDataType type, int dimIndex)
 {
-    const pme_atomcomm_t *atc         = &(pme->atc[0]);
-    const index           atomCount   = atc->n;
+    const PmeAtomComm    *atc         = &(pme->atc[0]);
+    const index           atomCount   = atc->numAtoms();
     const index           pmeOrder    = pme->pme_order;
     const index           dimSize     = pmeOrder * atomCount;
     GMX_RELEASE_ASSERT(dimSize == splineValues.ssize(), "Mismatch in spline data");
@@ -468,11 +473,11 @@ void pmeSetSplineData(const gmx_pme_t *pme, CodePath mode,
 }
 
 //! Setting gridline indices to be used in spread/gather
-void pmeSetGridLineIndices(const gmx_pme_t *pme, CodePath mode,
+void pmeSetGridLineIndices(gmx_pme_t *pme, CodePath mode,
                            const GridLineIndicesVector &gridLineIndices)
 {
-    const pme_atomcomm_t       *atc         = &(pme->atc[0]);
-    const index                 atomCount   = atc->n;
+    PmeAtomComm                *atc         = &(pme->atc[0]);
+    const index                 atomCount   = atc->numAtoms();
     GMX_RELEASE_ASSERT(atomCount == gridLineIndices.ssize(), "Mismatch in gridline indices size");
 
     IVec paddedGridSizeUnused, gridSize(0, 0, 0);
@@ -493,11 +498,9 @@ void pmeSetGridLineIndices(const gmx_pme_t *pme, CodePath mode,
             break;
 
         case CodePath::CPU:
-            // incompatible IVec and ivec assignment?
-            //std::copy(gridLineIndices.begin(), gridLineIndices.end(), atc->idx);
-            memcpy(atc->idx, gridLineIndices.data(), atomCount * sizeof(gridLineIndices[0]));
+            atc->idx.resize(gridLineIndices.size());
+            std::copy(gridLineIndices.begin(), gridLineIndices.end(), atc->idx.begin());
             break;
-
         default:
             GMX_THROW(InternalError("Test not implemented for this mode"));
     }
@@ -574,8 +577,8 @@ SplineParamsDimVector pmeGetSplineData(const gmx_pme_t *pme, CodePath mode,
                                        PmeSplineDataType type, int dimIndex)
 {
     GMX_RELEASE_ASSERT(pme != nullptr, "PME data is not initialized");
-    const pme_atomcomm_t    *atc         = &(pme->atc[0]);
-    const size_t             atomCount   = atc->n;
+    const PmeAtomComm       *atc         = &(pme->atc[0]);
+    const size_t             atomCount   = atc->numAtoms();
     const size_t             pmeOrder    = pme->pme_order;
     const size_t             dimSize     = pmeOrder * atomCount;
 
@@ -602,8 +605,8 @@ SplineParamsDimVector pmeGetSplineData(const gmx_pme_t *pme, CodePath mode,
 GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t *pme, CodePath mode)
 {
     GMX_RELEASE_ASSERT(pme != nullptr, "PME data is not initialized");
-    const pme_atomcomm_t *atc         = &(pme->atc[0]);
-    const size_t          atomCount   = atc->n;
+    const PmeAtomComm    *atc         = &(pme->atc[0]);
+    const size_t          atomCount   = atc->numAtoms();
 
     GridLineIndicesVector gridLineIndices;
     switch (mode)
@@ -613,7 +616,7 @@ GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t *pme, CodePath mode)
             break;
 
         case CodePath::CPU:
-            gridLineIndices = arrayRefFromArray(reinterpret_cast<IVec *>(atc->idx), atomCount);
+            gridLineIndices = atc->idx;
             break;
 
         default:

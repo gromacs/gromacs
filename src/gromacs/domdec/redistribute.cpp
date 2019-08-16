@@ -84,49 +84,21 @@ static inline int DD_FLAG_BW(int d)
 
 static void
 copyMovedAtomsToBufferPerAtom(gmx::ArrayRef<const int> move,
-                              const gmx::RangePartitioning &atomGroups,
                               int nvec, int vec,
                               rvec *src, gmx_domdec_comm_t *comm)
 {
     int pos_vec[DIM*2] = { 0 };
 
-    for (int g = 0; g < move.ssize(); g++)
+    for (int i = 0; i < move.ssize(); i++)
     {
-        const auto atomGroup = atomGroups.block(g);
         /* Skip moved atoms */
-        int        m         = move[g];
+        const int m = move[i];
         if (m >= 0)
         {
             /* Copy to the communication buffer */
-            int numAtoms  = atomGroup.size();
-            pos_vec[m]   += 1 + vec*numAtoms;
-            for (int i : atomGroup)
-            {
-                copy_rvec(src[i], comm->cgcm_state[m][pos_vec[m]++]);
-            }
-            pos_vec[m] += (nvec - vec - 1)*numAtoms;
-        }
-    }
-}
-
-static void
-copyMovedChargeGroupCogs(gmx::ArrayRef<const int> move,
-                         const gmx::RangePartitioning &atomGroups,
-                         int nvec, const rvec *src,
-                         gmx_domdec_comm_t *comm)
-{
-    int pos_vec[DIM*2] = { 0 };
-
-    for (int g = 0; g < move.ssize(); g++)
-    {
-        const auto atomGroup = atomGroups.block(g);
-        /* Skip moved atoms */
-        int        m         = move[g];
-        if (m >= 0)
-        {
-            /* Copy to the communication buffer */
-            copy_rvec(src[g], comm->cgcm_state[m][pos_vec[m]]);
-            pos_vec[m] += 1 + atomGroup.size()*nvec;
+            pos_vec[m] += 1 + vec;
+            copy_rvec(src[i], comm->cgcm_state[m][pos_vec[m]++]);
+            pos_vec[m] += nvec - vec - 1;
         }
     }
 }
@@ -156,30 +128,26 @@ copyMovedUpdateGroupCogs(gmx::ArrayRef<const int> move,
 
 static void clear_and_mark_ind(gmx::ArrayRef<const int>      move,
                                gmx::ArrayRef<const int>      globalAtomGroupIndices,
-                               const gmx::RangePartitioning &atomGroups,
                                gmx::ArrayRef<const int>      globalAtomIndices,
                                gmx_ga2la_t                  *ga2la,
                                char                         *bLocalCG,
                                int                          *cell_index)
 {
-    for (int g = 0; g < move.ssize(); g++)
+    for (int a = 0; a < move.ssize(); a++)
     {
-        if (move[g] >= 0)
+        if (move[a] >= 0)
         {
             /* Clear the global indices */
-            for (int a : atomGroups.block(g))
-            {
-                ga2la->erase(globalAtomIndices[a]);
-            }
+            ga2la->erase(globalAtomIndices[a]);
             if (bLocalCG)
             {
-                bLocalCG[globalAtomGroupIndices[g]] = FALSE;
+                bLocalCG[globalAtomGroupIndices[a]] = FALSE;
             }
-            /* Signal that this group has moved using the ns cell index.
+            /* Signal that this atom has moved using the ns cell index.
              * Here we set it to -1. fill_grid will change it
              * from -1 to NSGRID_SIGNAL_MOVED_FAC*grid->ncells.
              */
-            cell_index[g] = -1;
+            cell_index[a] = -1;
         }
     }
 }
@@ -195,11 +163,7 @@ static void print_cg_move(FILE *fplog,
 
     fprintf(fplog, "\nStep %" PRId64 ":\n", step);
 
-    if (comm->bCGs)
-    {
-        mesg += "The charge group starting at atom";
-    }
-    else if (comm->useUpdateGroups)
+    if (comm->useUpdateGroups)
     {
         mesg += "The update group starting at atom";
     }
@@ -208,7 +172,7 @@ static void print_cg_move(FILE *fplog,
         mesg += "Atom";
     }
     mesg += gmx::formatString(" %d moved more than the distance allowed by the domain decomposition",
-                              ddglatnr(dd, dd->atomGrouping().block(cg).begin()));
+                              ddglatnr(dd, cg));
     if (limitd > 0)
     {
         mesg += gmx::formatString(" (%f)", limitd);
@@ -351,12 +315,9 @@ static int computeMoveFlag(const gmx_domdec_t &dd,
     return firstMoveDimValue + flag;
 }
 
-/* Determine to which domains atomGroups in the range \p cg_start, \p cg_end should go.
+/* Determine to which atoms in the range \p cg_start, \p cg_end should go.
  *
- * Returns in the move array where the groups should go.
- * Also updates \p cg_cm for jumps over periodic boundaries.
- *
- * \TODO Rename cg to atomGroup.
+ * Returns in the move array where the atoms should go.
  */
 static void calc_cg_move(FILE *fplog, int64_t step,
                          gmx_domdec_t *dd,
@@ -364,37 +325,17 @@ static void calc_cg_move(FILE *fplog, int64_t step,
                          const ivec tric_dir, matrix tcm,
                          const rvec cell_x0, const rvec cell_x1,
                          const MoveLimits &moveLimits,
-                         const gmx::RangePartitioning &atomGroups,
                          int cg_start, int cg_end,
-                         rvec *cg_cm,
                          gmx::ArrayRef<int> move)
 {
     const int npbcdim = dd->npbcdim;
     auto      x       = makeArrayRef(state->x);
 
-    for (int g = cg_start; g < cg_end; g++)
+    for (int a = cg_start; a < cg_end; a++)
     {
-        const auto atomGroup = atomGroups.block(g);
-        const int  numAtoms  = atomGroup.size();
         // TODO: Rename this center of geometry variable to cogNew
         rvec       cm_new;
-        if (numAtoms == 1)
-        {
-            copy_rvec(x[atomGroup.begin()], cm_new);
-        }
-        else
-        {
-            real invNumAtoms = 1/static_cast<real>(numAtoms);
-            clear_rvec(cm_new);
-            for (int k : atomGroup)
-            {
-                rvec_inc(cm_new, x[k]);
-            }
-            for (int d = 0; d < DIM; d++)
-            {
-                cm_new[d] = invNumAtoms*cm_new[d];
-            }
-        }
+        copy_rvec(x[a], cm_new);
 
         ivec dev = { 0 };
         /* Do pbc and check DD cell boundary crossings */
@@ -417,9 +358,9 @@ static void calc_cg_move(FILE *fplog, int64_t step,
                 {
                     if (pos_d >= moveLimits.upper[d])
                     {
-                        cg_move_error(fplog, dd, step, g, d, 1,
-                                      cg_cm != state->x.rvec_array(), moveLimits.distance[d],
-                                      cg_cm[g], cm_new, pos_d);
+                        cg_move_error(fplog, dd, step, a, d, 1,
+                                      false, moveLimits.distance[d],
+                                      cm_new, cm_new, pos_d);
                     }
                     dev[d] = 1;
                     if (dd->ci[d] == dd->nc[d] - 1)
@@ -430,13 +371,10 @@ static void calc_cg_move(FILE *fplog, int64_t step,
                             cm_new[YY] = state->box[YY][YY] - cm_new[YY];
                             cm_new[ZZ] = state->box[ZZ][ZZ] - cm_new[ZZ];
                         }
-                        for (int k : atomGroup)
+                        rvec_dec(x[a], state->box[d]);
+                        if (bScrew)
                         {
-                            rvec_dec(x[k], state->box[d]);
-                            if (bScrew)
-                            {
-                                rotate_state_atom(state, k);
-                            }
+                            rotate_state_atom(state, a);
                         }
                     }
                 }
@@ -444,9 +382,9 @@ static void calc_cg_move(FILE *fplog, int64_t step,
                 {
                     if (pos_d < moveLimits.lower[d])
                     {
-                        cg_move_error(fplog, dd, step, g, d, -1,
-                                      cg_cm != state->x.rvec_array(), moveLimits.distance[d],
-                                      cg_cm[g], cm_new, pos_d);
+                        cg_move_error(fplog, dd, step, a, d, -1,
+                                      false, moveLimits.distance[d],
+                                      cm_new, cm_new, pos_d);
                     }
                     dev[d] = -1;
                     if (dd->ci[d] == 0)
@@ -457,13 +395,10 @@ static void calc_cg_move(FILE *fplog, int64_t step,
                             cm_new[YY] = state->box[YY][YY] - cm_new[YY];
                             cm_new[ZZ] = state->box[ZZ][ZZ] - cm_new[ZZ];
                         }
-                        for (int k : atomGroup)
+                        rvec_inc(x[a], state->box[d]);
+                        if (bScrew)
                         {
-                            rvec_inc(x[k], state->box[d]);
-                            if (bScrew)
-                            {
-                                rotate_state_atom(state, k);
-                            }
+                            rotate_state_atom(state, a);
                         }
                     }
                 }
@@ -474,26 +409,18 @@ static void calc_cg_move(FILE *fplog, int64_t step,
                 while (cm_new[d] >= state->box[d][d])
                 {
                     rvec_dec(cm_new, state->box[d]);
-                    for (int k : atomGroup)
-                    {
-                        rvec_dec(x[k], state->box[d]);
-                    }
+                    rvec_dec(x[a], state->box[d]);
                 }
                 while (cm_new[d] < 0)
                 {
                     rvec_inc(cm_new, state->box[d]);
-                    for (int k : atomGroup)
-                    {
-                        rvec_inc(x[k], state->box[d]);
-                    }
+                    rvec_inc(x[a], state->box[d]);
                 }
             }
         }
 
-        copy_rvec(cm_new, cg_cm[g]);
-
         /* Temporarily store the flag in move */
-        move[g] = computeMoveFlag(*dd, dev);
+        move[a] = computeMoveFlag(*dd, dev);
     }
 }
 
@@ -633,12 +560,6 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
         check_screw_box(state->box);
     }
 
-    rvec *cg_cm = nullptr;
-    if (fr->cutoff_scheme == ecutsGROUP)
-    {
-        cg_cm = fr->cg_cm;
-    }
-
     // Positions are always present, so there's nothing to flag
     bool                bV   = (state->flags & (1<<estV)) != 0;
     bool                bCGP = (state->flags & (1<<estCGP)) != 0;
@@ -687,8 +608,6 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
     matrix tcm;
     make_tric_corr_matrix(npbcdim, state->box, tcm);
 
-    const gmx::RangePartitioning &atomGrouping = dd->atomGrouping();
-
     const int                     nthread = gmx_omp_nthreads_get(emntDomdec);
 
     /* Compute the center of geometry for all home charge groups
@@ -725,10 +644,8 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
                 /* Here we handle single atoms or charge groups */
                 calc_cg_move(fplog, step, dd, state, tric_dir, tcm,
                              cell_x0, cell_x1, moveLimits,
-                             atomGrouping,
                              ( thread   *dd->ncg_home)/nthread,
                              ((thread+1)*dd->ncg_home)/nthread,
-                             fr->cutoff_scheme == ecutsGROUP ? cg_cm : as_rvec_array(state->x.data()),
                              move);
             }
         }
@@ -756,11 +673,13 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
             /* We store the cg size in the lower 16 bits
              * and the place where the charge group should go
              * in the next 6 bits. This saves some communication volume.
+             *
+             * TODO: Remove the size, as it is now always 1.
              */
-            const int nrcg = atomGrouping.block(cg).size();
-            cggl_flag[ncg[mc]*DD_CGIBS+1] = nrcg | flag;
+            const int numAtomsInGroup = 1;
+            cggl_flag[ncg[mc]*DD_CGIBS+1] = numAtomsInGroup | flag;
             ncg[mc] += 1;
-            nat[mc] += nrcg;
+            nat[mc] += numAtomsInGroup;
         }
     }
 
@@ -793,65 +712,42 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
         }
     }
 
-    switch (fr->cutoff_scheme)
-    {
-        case ecutsGROUP:
-            /* Recalculating cg_cm might be cheaper than communicating,
-             * but that could give rise to rounding issues.
-             */
-            copyMovedChargeGroupCogs(move, dd->atomGrouping(),
-                                     nvec, cg_cm, comm);
-            break;
-        case ecutsVERLET:
-            /* With update groups we send over their COGs.
-             * Without update groups we send the moved atom coordinates
-             * over twice. This is so the code further down can be used
-             * without many conditionals both with and without update groups.
-             */
-            copyMovedUpdateGroupCogs(move, nvec, state->x, comm);
-            break;
-        default:
-            gmx_incons("unimplemented");
-    }
+    /* With update groups we send over their COGs.
+     * Without update groups we send the moved atom coordinates
+     * over twice. This is so the code further down can be used
+     * without many conditionals both with and without update groups.
+     */
+    copyMovedUpdateGroupCogs(move, nvec, state->x, comm);
 
     int vectorIndex = 0;
-    copyMovedAtomsToBufferPerAtom(move, dd->atomGrouping(),
+    copyMovedAtomsToBufferPerAtom(move,
                                   nvec, vectorIndex++,
                                   state->x.rvec_array(),
                                   comm);
     if (bV)
     {
-        copyMovedAtomsToBufferPerAtom(move, dd->atomGrouping(),
+        copyMovedAtomsToBufferPerAtom(move,
                                       nvec, vectorIndex++,
                                       state->v.rvec_array(),
                                       comm);
     }
     if (bCGP)
     {
-        copyMovedAtomsToBufferPerAtom(move, dd->atomGrouping(),
+        copyMovedAtomsToBufferPerAtom(move,
                                       nvec, vectorIndex++,
                                       state->cg_p.rvec_array(),
                                       comm);
     }
 
-    int *moved;
-    if (fr->cutoff_scheme == ecutsVERLET)
-    {
-        moved = getMovedBuffer(comm, 0, dd->ncg_home);
-    }
-    else
-    {
-        moved = fr->ns->grid->cell_index;
-    }
+    int *moved = getMovedBuffer(comm, 0, dd->ncg_home);
 
     clear_and_mark_ind(move,
-                       dd->globalAtomGroupIndices, dd->atomGrouping(), dd->globalAtomIndices,
+                       dd->globalAtomGroupIndices, dd->globalAtomIndices,
                        dd->ga2la, comm->bLocalCG,
                        moved);
 
     /* Now we can remove the excess global atom-group indices from the list */
     dd->globalAtomGroupIndices.resize(dd->ncg_home);
-    dd->atomGrouping_.reduceNumBlocks(dd->ncg_home);
 
     /* We reuse the intBuffer without reacquiring since we are in the same scope */
     DDBufferAccess<int> &flagBuffer = moveBuffer;
@@ -860,7 +756,7 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
 
     /* Temporarily store atoms passed to our rank at the end of the range */
     int home_pos_cg = dd->ncg_home;
-    int home_pos_at = dd->atomGrouping().subRange(0, dd->ncg_home).end();
+    int home_pos_at = dd->ncg_home;
     for (int d = 0; d < dd->ndim; d++)
     {
         DDBufferAccess<gmx::RVec> rvecBuffer(comm->rvecBuffer, 0);
@@ -901,11 +797,6 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
         }
 
         dd_check_alloc_ncg(fr, state, f, home_pos_cg + ncg_recv);
-        if (fr->cutoff_scheme == ecutsGROUP)
-        {
-            /* Here we resize to more than necessary and shrink later */
-            dd_resize_state(state, f, home_pos_at + ncg_recv*MAX_CGCGSIZE);
-        }
 
         /* Process the received charge or update groups */
         int buf_pos = 0;
@@ -928,7 +819,7 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
                     rvec pos = { cog[0], cog[1], cog[2] };
                     cg_move_error(fplog, dd, step, cg, dim,
                                   (flag & DD_FLAG_FW(d)) ? 1 : 0,
-                                  fr->cutoff_scheme == ecutsGROUP, 0,
+                                  false, 0,
                                   pos, pos, pos[dim]);
                 }
             }
@@ -1009,19 +900,14 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
                 }
             }
 
-            const int nrcg = flag & DD_FLAG_NRCG;
+            GMX_ASSERT((flag & DD_FLAG_NRCG) == 1, "Charge groups are gone, so all groups should have size 1");
+            constexpr int nrcg = 1;
             if (mc == -1)
             {
                 /* Set the global charge group index and size */
                 const int globalAtomGroupIndex = flagBuffer.buffer[cg*DD_CGIBS];
                 dd->globalAtomGroupIndices.push_back(globalAtomGroupIndex);
-                dd->atomGrouping_.appendBlock(nrcg);
-                /* Copy the state from the buffer */
-                if (fr->cutoff_scheme == ecutsGROUP)
-                {
-                    cg_cm = fr->cg_cm;
-                    copy_rvec(cog, cg_cm[home_pos_cg]);
-                }
+                /* Skip the COG entry in the buffer */
                 buf_pos++;
 
                 /* Set the cginfo */
@@ -1090,27 +976,19 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
      * and ncg_home and nat_home are not the real count, since there are
      * "holes" in the arrays for the charge groups that moved to neighbors.
      */
-    if (fr->cutoff_scheme == ecutsVERLET)
-    {
-        /* We need to clear the moved flags for the received atoms,
-         * because the moved buffer will be passed to the nbnxn gridding call.
-         */
-        int *moved = getMovedBuffer(comm, dd->ncg_home, home_pos_cg);
 
-        for (int i =  dd->ncg_home; i < home_pos_cg; i++)
-        {
-            moved[i] = 0;
-        }
+    /* We need to clear the moved flags for the received atoms,
+     * because the moved buffer will be passed to the nbnxm gridding call.
+     */
+    moved = getMovedBuffer(comm, dd->ncg_home, home_pos_cg);
+
+    for (int i =  dd->ncg_home; i < home_pos_cg; i++)
+    {
+        moved[i] = 0;
     }
 
     dd->ncg_home = home_pos_cg;
     comm->atomRanges.setEnd(DDAtomRanges::Type::Home, home_pos_at);
-
-    if (fr->cutoff_scheme == ecutsGROUP)
-    {
-        /* We overallocated before, we need to set the right size here */
-        dd_resize_state(state, f, comm->atomRanges.numHomeAtoms());
-    }
 
     if (debug)
     {

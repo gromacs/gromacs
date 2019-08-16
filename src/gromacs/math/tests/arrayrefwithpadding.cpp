@@ -123,6 +123,45 @@ class ArrayRefWithPaddingTest : public ::testing::Test
                 EXPECT_EQ(paddedArrayRef[i], unpaddedArrayRef[i]);
                 EXPECT_EQ(a[i], unpaddedArrayRef[i]);
             }
+
+            using ConstArrayRefWithPaddingType = ArrayRefWithPadding<const typename ArrayRefType::value_type>;
+            {
+                // Check that we can make a padded view that refers to const elements
+                ConstArrayRefWithPaddingType constArrayRefWithPadding = arrayRefWithPadding.constArrayRefWithPadding();
+                for (index i = 0; i != aSize; ++i)
+                {
+                    EXPECT_EQ(a[i], constArrayRefWithPadding.paddedArrayRef()[i]);
+                }
+            }
+
+            {
+                // Check that we can implicitly make a padded view that refers to const elements
+                ConstArrayRefWithPaddingType constArrayRefWithPadding = arrayRefWithPadding;
+                for (index i = 0; i != aSize; ++i)
+                {
+                    EXPECT_EQ(a[i], constArrayRefWithPadding.paddedArrayRef()[i]);
+                }
+            }
+
+            {
+                // Check that a swap works, by making an empty padded
+                // vector, and a view of it, and observing what
+                // happens when we swap with the one constructed for
+                // the test.
+                PaddedVectorType w;
+                ArrayRefType     view = w.arrayRefWithPadding();
+                EXPECT_TRUE(view.empty());
+
+                view.swap(arrayRefWithPadding);
+                EXPECT_TRUE(arrayRefWithPadding.empty());
+                EXPECT_LE(aSize, view.size());
+                for (index i = 0; i != v.size(); ++i)
+                {
+                    EXPECT_EQ(v[i], view.paddedArrayRef()[i]);
+                }
+                // Restore arrayRefWithPadding for future test code
+                view.swap(arrayRefWithPadding);
+            }
         }
 };
 

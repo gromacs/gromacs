@@ -140,7 +140,7 @@ real do_ewald(const t_inputrec *ir,
               rvec              f[],
               const real        chargeA[],
               const real        chargeB[],
-              matrix            box,
+              const matrix      box,
               const t_commrec  *cr,
               int               natoms,
               matrix            lrvir,
@@ -320,9 +320,12 @@ real do_ewald(const t_inputrec *ir,
     return energy;
 }
 
-real ewald_charge_correction(const t_commrec *cr, t_forcerec *fr, real lambda,
-                             matrix box,
-                             real *dvdlambda, tensor vir)
+real ewald_charge_correction(const t_commrec  *cr,
+                             const t_forcerec *fr,
+                             const real        lambda,
+                             const matrix      box,
+                             real             *dvdlambda,
+                             tensor            vir)
 
 {
     real vol, fac, qs2A, qs2B, vc, enercorr;

@@ -39,45 +39,15 @@
 
 #include <stddef.h>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
-#include "gromacs/utility/real.h"
 
+struct mpi_in_place_buf_t;
 struct gmx_domdec_t;
 
-typedef struct {
-    /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
-       supported.*/
-    int             *ibuf; /* for ints */
-    int              ibuf_alloc;
-
-    int64_t         *libuf;
-    int              libuf_alloc;
-
-    float           *fbuf; /* for floats */
-    int              fbuf_alloc;
-
-    double          *dbuf; /* for doubles */
-    int              dbuf_alloc;
-} mpi_in_place_buf_t;
-
-void done_mpi_in_place_buf(mpi_in_place_buf_t *buf);
-
-struct gmx_multisim_t
-{
-    int       nsim              = 1;
-    int       sim               = 0;
-    MPI_Group mpi_group_masters = MPI_GROUP_NULL;
-    MPI_Comm  mpi_comm_masters  = MPI_COMM_NULL;
-    /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
-       supported.*/
-    mpi_in_place_buf_t *mpb = nullptr;
-};
-
-#define DUTY_PP  (1<<0)
-#define DUTY_PME (1<<1)
+#define DUTY_PP  (1u<<0u)
+#define DUTY_PME (1u<<1u)
 
 typedef struct {
     int      bUse;
@@ -183,27 +153,6 @@ static bool inline havePPDomainDecomposition(const t_commrec *cr)
     return (cr != nullptr &&
             cr->dd != nullptr &&
             cr->nnodes - cr->npmenodes > 1);
-}
-
-//! Are we doing multiple independent simulations?
-static bool inline isMultiSim(const gmx_multisim_t *ms)
-{
-    return ms != nullptr;
-}
-
-//! Are we the master simulation of a possible multi-simulation?
-static bool inline isMasterSim(const gmx_multisim_t *ms)
-{
-    return !isMultiSim(ms) || ms->sim == 0;
-}
-
-/*! \brief Are we the master rank (of the master simulation, for a multi-sim).
- *
- * This rank prints the remaining run time etc. */
-static bool inline isMasterSimMasterRank(const gmx_multisim_t *ms,
-                                         const t_commrec      *cr)
-{
-    return (SIMMASTER(cr) && isMasterSim(ms));
 }
 
 #endif

@@ -57,7 +57,7 @@
 
 /* UTILITIES */
 
-void add_param_to_list(InteractionTypeParameters *list, const InteractionType &b)
+void add_param_to_list(InteractionsOfType *list, const InteractionOfType &b)
 {
     list->interactionTypes.emplace_back(b);
 }
@@ -65,7 +65,7 @@ void add_param_to_list(InteractionTypeParameters *list, const InteractionType &b
 /* PRINTING STRUCTURES */
 
 static void print_bt(FILE *out, Directive d, PreprocessingAtomTypes *at,
-                     int ftype, int fsubtype, gmx::ArrayRef<const InteractionTypeParameters> plist,
+                     int ftype, int fsubtype, gmx::ArrayRef<const InteractionsOfType> plist,
                      bool bFullDih)
 {
     /* This dihp is a DIRTY patch because the dih-types do not use
@@ -75,7 +75,7 @@ static void print_bt(FILE *out, Directive d, PreprocessingAtomTypes *at,
     int                              nral, nrfp;
     bool                             bDih = false, bSwapParity;
 
-    const InteractionTypeParameters *bt = &(plist[ftype]);
+    const InteractionsOfType        *bt = &(plist[ftype]);
 
     if (bt->size() == 0)
     {
@@ -386,7 +386,7 @@ void print_atoms(FILE *out, PreprocessingAtomTypes *atype, t_atoms *at, int *cgn
 }
 
 void print_bondeds(FILE *out, int natoms, Directive d,
-                   int ftype, int fsubtype, gmx::ArrayRef<const InteractionTypeParameters> plist)
+                   int ftype, int fsubtype, gmx::ArrayRef<const InteractionsOfType> plist)
 {
     t_symtab               stab;
     t_atom                *a;
@@ -398,7 +398,7 @@ void print_bondeds(FILE *out, int natoms, Directive d,
     {
         char buf[12];
         sprintf(buf, "%4d", (i+1));
-        atype.addType(&stab, *a, buf, InteractionType({}, {}), 0, 0);
+        atype.addType(&stab, *a, buf, InteractionOfType({}, {}), 0, 0);
     }
     print_bt(out, d, &atype, ftype, fsubtype, plist, TRUE);
 

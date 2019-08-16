@@ -61,7 +61,8 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/groupcoord.h"
-#include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdlib/stat.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -268,7 +269,7 @@ struct gmx_enfrot
     //! Allocation size of in & outbuf
     int                        mpi_bufsize = 0;
     //! If true, append output files
-    gmx_bool                   appendFiles = false;
+    gmx_bool                   restartWithAppending = false;
     //! Used to skip first output when appending to avoid duplicate entries in rotation outfiles
     gmx_bool                   bOut = false;
     //! Stores working data per group
@@ -868,7 +869,7 @@ static FILE *open_slab_out(const char *fn,
 {
     FILE *fp;
 
-    if (er->appendFiles)
+    if (er->restartWithAppending)
     {
         fp = gmx_fio_fopen(fn, "a");
     }
@@ -943,7 +944,7 @@ static FILE *open_rot_out(const char             *fn,
     char           *LegendStr = nullptr;
     const t_rot    *rot       = er->rot;
 
-    if (er->appendFiles)
+    if (er->restartWithAppending)
     {
         fp = gmx_fio_fopen(fn, "a");
     }
@@ -1082,7 +1083,7 @@ static FILE *open_angles_out(const char *fn,
     char         buf[100];
     const t_rot *rot = er->rot;
 
-    if (er->appendFiles)
+    if (er->restartWithAppending)
     {
         fp = gmx_fio_fopen(fn, "a");
     }
@@ -1165,7 +1166,7 @@ static FILE *open_torque_out(const char *fn,
     FILE        *fp;
     const t_rot *rot = er->rot;
 
-    if (er->appendFiles)
+    if (er->restartWithAppending)
     {
         fp = gmx_fio_fopen(fn, "a");
     }
@@ -3594,7 +3595,8 @@ static int calc_mpi_bufsize(const gmx_enfrot *er)
 std::unique_ptr<gmx::EnforcedRotation>
 init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
          const t_commrec *cr, gmx::LocalAtomSetManager * atomSets, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
-         const gmx::MdrunOptions &mdrunOptions)
+         const gmx::MdrunOptions &mdrunOptions,
+         const gmx::StartingBehavior startingBehavior)
 {
     int             nat_max = 0;       /* Size of biggest rotation group */
     rvec           *x_pbc   = nullptr; /* Space for the pbc-correct atom positions */
@@ -3607,11 +3609,11 @@ init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
     auto        enforcedRotation = std::make_unique<gmx::EnforcedRotation>();
     gmx_enfrot *er               = enforcedRotation->getLegacyEnfrot();
     // TODO When this module implements IMdpOptions, the ownership will become more clear.
-    er->rot         = ir->rot;
-    er->appendFiles = mdrunOptions.continuationOptions.appendFiles;
+    er->rot                  = ir->rot;
+    er->restartWithAppending = (startingBehavior == gmx::StartingBehavior::RestartWithAppending);
 
     /* When appending, skip first output to avoid duplicate entries in the data files */
-    if (er->appendFiles)
+    if (er->restartWithAppending)
     {
         er->bOut = FALSE;
     }
@@ -3680,8 +3682,8 @@ init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
             nat_max = std::max(nat_max, erg->rotg->nat);
 
             init_rot_group(fplog, cr, erg, x_pbc, mtop, mdrunOptions.verbose, er->out_slabs, MASTER(cr) ? globalState->box : nullptr, ir,
-                           !er->appendFiles); /* Do not output the reference centers
-                                               * again if we are appending */
+                           !er->restartWithAppending); /* Do not output the reference centers
+                                                        * again if we are appending */
         }
         ++groupIndex;
     }

@@ -341,9 +341,9 @@ endif()
 add_definitions(-DGMX_DOUBLE=${GMX_DOUBLE_VALUE})
 list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_DOUBLE=${GMX_DOUBLE_VALUE}")
 
-if(WIN32)
+option(GMX_IMD "Enable Interactive Molecular Dynamics (IMD) sessions, e.g. with VMD" ON)
+if(GMX_IMD AND WIN32)
     list(APPEND GMX_EXTRA_LIBRARIES "wsock32")
-    add_definitions(-DGMX_HAVE_WINSOCK)
 endif()
 
 
@@ -469,8 +469,8 @@ gmx_option_trivalue(
 
 if (GMX_HWLOC)
     # Find quietly the second time.
-    if(DEFINED HWLOC_LIBRARIES)
-        set(Hwloc_FIND_QUIETLY TRUE)
+    if(HWLOC_VERSION)
+        set(HWLOC_FIND_QUIETLY TRUE)
     endif()
     find_package(Hwloc 1.5)
 
@@ -480,7 +480,7 @@ if (GMX_HWLOC)
         endif()
 
         gmx_check_if_changed(HWLOC_FOUND_CHANGED HWLOC_FOUND)
-        if (_STATIC_HWLOC AND HWLOC_FOUND_CHANGED)
+        if (_STATIC_HWLOC AND HWLOC_FOUND_CHANGED AND NOT GMX_HWLOC_FORCE)
             message(STATUS "Static hwloc library found, will not attempt using it as it could lead to link-time errors. To use the detected library, manually set GMX_HWLOC=ON and you will likely have to pass appropriate linker flags too to satisfy the link-time dependencies of your hwloc library. Try \"pkg-config --libs --static hwloc\" for suggestions on what you will need.")
             set(GMX_USE_HWLOC OFF)
         else()
@@ -851,7 +851,31 @@ if (BUILD_TESTING)
     include(tests/CheckTarget.cmake)
 endif()
 
+# TODO: Determine control flow and defaults for package installation and testing use cases.
+# Ref: http://redmine.gromacs.org/issues/2896
+option(GMX_PYTHON_PACKAGE "Configure gmxapi Python package" OFF)
+mark_as_advanced(GMX_PYTHON_PACKAGE)
+
 if (NOT GMX_BUILD_MDRUN_ONLY)
+    # Note: Though only documented as an output variable, PYTHON_EXECUTABLE is
+    # also effective as a CMake input variable to effectively hint the location
+    # of the Python interpreter. This may be helpful in environments with both
+    # Python 2 and Python 3 on the default PATH.
+    # Ref: https://cmake.org/cmake/help/latest/module/FindPythonInterp.html
+    if(FIND_PACKAGE_MESSAGE_DETAILS_PythonInterp)
+        # Keep quiet on subsequent runs of cmake
+        set(PythonInterp_FIND_QUIETLY ON)
+    endif()
+    # Older CMake versions might not search for Python newer than 3.7.
+    set(Python_ADDITIONAL_VERSIONS 3.8)
+    if(GMX_PYTHON_PACKAGE)
+        find_package(PythonInterp 3.5 REQUIRED)
+        # Note: PythonLibs will be found later by pybind11.
+        # TODO: (issue #2998) When CMake >= 3.12 is required, update detection.
+        # I.e.  find_package(Python3 3.5 COMPONENTS Interpreter Development REQUIRED)
+    else()
+        find_package(PythonInterp 3.5)
+    endif()
     find_package(ImageMagick QUIET COMPONENTS convert)
     include(gmxTestImageMagick)
     GMX_TEST_IMAGEMAGICK(IMAGE_CONVERT_POSSIBLE)
@@ -863,6 +887,10 @@ add_subdirectory(src)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)
+endif()
+
+if(GMX_PYTHON_PACKAGE AND NOT GMX_BUILD_MDRUN_ONLY)
+    add_subdirectory(python_packaging)
 endif()
 
 gmx_cpack_write_config()

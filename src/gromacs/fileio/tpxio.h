@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,26 +50,42 @@ struct t_inputrec;
 class t_state;
 struct t_topology;
 
-struct t_tpxheader
+/*! \libinternal
+ * \brief
+ * First part of the TPR file structure containing information about
+ * the general aspect of the system.
+ */
+struct TpxFileHeader
 {
-    bool  bIr;       /* Non zero if input_rec is present		*/
-    bool  bBox;      /* Non zero if a box is present			*/
-    bool  bTop;      /* Non zero if a topology is present		*/
-    bool  bX;        /* Non zero if coordinates are present		*/
-    bool  bV;        /* Non zero if velocities are present		*/
-    bool  bF;        /* Non zero if forces are present (no longer
-                        supported, but retained so old .tpr can be read) */
-
-    int   natoms;    /* The total number of atoms			*/
-    int   ngtc;      /* The number of temperature coupling groups    */
-    real  lambda;    /* Current value of lambda			*/
-    int   fep_state; /* Current value of the alchemical state --
-                      * not yet printed out.  */
+    //! Non zero if input_rec is present.
+    bool  bIr = false;
+    //! Non zero if a box is present.
+    bool  bBox = false;
+    //! Non zero if a topology is present.
+    bool  bTop = false;
+    //! Non zero if coordinates are present.
+    bool  bX = false;
+    //! Non zero if velocities are present.
+    bool  bV = false;
+    //! Non zero if forces are present (no longer supported, but retained so old .tpr can be read)
+    bool  bF = false;
+    //! The total number of atoms.
+    int   natoms = 0;
+    //! The number of temperature coupling groups.
+    int   ngtc = 0;
+    //! Current value of lambda.
+    real  lambda = 0;
+    //! Current value of the alchemical state - not yet printed out.
+    int   fep_state = 0;
     /*a better decision will eventually (5.0 or later) need to be made
        on how to treat the alchemical state of the system, which can now
        vary through a simulation, and cannot be completely described
        though a single lambda variable, or even a single state
        index. Eventually, should probably be a vector. MRS*/
+    //! File version.
+    int     fileVersion = 0;
+    //! File generation.
+    int     fileGeneration = 0;
 };
 
 /*
@@ -81,13 +97,19 @@ struct t_tpxheader
  * but double and single precision can be read by either.
  */
 
-void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK);
-/* Read the header from a tpx file and then close it again.
- * By setting TopOnlyOK to true, it is possible to read future
+/*! \brief
+ * Read the header from a tpx file and then close it again.
+ *
+ * By setting \p canReadTopologyOnly to true, it is possible to read future
  * versions too (we skip the changed inputrec), provided we havent
  * changed the topology description. If it is possible to read
- * the inputrec it will still be done even if TopOnlyOK is TRUE.
+ * the inputrec it will still be done even if canReadTopologyOnly is true.
+ *
+ * \param[in] fileName The name of the input file.
+ * \param[in] canReadTopologyOnly If reading the inputrec can be skipped or not.
+ * \returns An initialized and populated TPX File header object.
  */
+TpxFileHeader readTpxHeader(const char *fileName, bool canReadTopologyOnly);
 
 void write_tpx_state(const char *fn,
                      const t_inputrec *ir, const t_state *state, const gmx_mtop_t *mtop);
@@ -132,6 +154,6 @@ int read_tpx_top(const char *fn,
 gmx_bool fn2bTPX(const char *file);
 /* return if *file is one of the TPX file types */
 
-void pr_tpxheader(FILE *fp, int indent, const char *title, const t_tpxheader *sh);
+void pr_tpxheader(FILE *fp, int indent, const char *title, const TpxFileHeader *sh);
 
 #endif

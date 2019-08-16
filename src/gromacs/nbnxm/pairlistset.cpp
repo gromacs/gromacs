@@ -35,7 +35,7 @@
 
 /*! \internal \file
  * \brief
- * Implements functionality for nbnxn_pairlist_set_t.
+ * Implements functionality for PairlistSet.
  *
  * \author Berk Hess <hess@kth.se>
  * \ingroup module_nbnxm
@@ -45,52 +45,6 @@
 
 #include "pairlistset.h"
 
-#include "gromacs/nbnxm/nbnxm.h"
-#include "gromacs/nbnxm/nbnxm_geometry.h"
-#include "gromacs/nbnxm/pairlist.h"
-#include "gromacs/utility/gmxassert.h"
+#include "pairlistwork.h"
 
-/*! \cond INTERNAL */
-
-NbnxnListParameters::NbnxnListParameters(const Nbnxm::KernelType kernelType,
-                                         const real              rlist,
-                                         const bool              haveMultipleDomains) :
-    rlistOuter(rlist),
-    rlistInner(rlist),
-    haveMultipleDomains(haveMultipleDomains),
-    useDynamicPruning(false),
-    nstlistPrune(-1),
-    numRollingPruningParts(1),
-    lifetime(-1)
-{
-    if (!Nbnxm::kernelTypeUsesSimplePairlist(kernelType))
-    {
-        pairlistType = PairlistType::Hierarchical8x8;
-    }
-    else
-    {
-        switch (Nbnxm::JClusterSizePerKernelType[kernelType])
-        {
-            case 2:
-                pairlistType = PairlistType::Simple4x2;
-                break;
-            case 4:
-                pairlistType = PairlistType::Simple4x4;
-                break;
-            case 8:
-                pairlistType = PairlistType::Simple4x8;
-                break;
-            default:
-                GMX_RELEASE_ASSERT(false, "Kernel type does not have a pairlist type");
-        }
-    }
-}
-
-nbnxn_pairlist_set_t::nbnxn_pairlist_set_t(const NbnxnListParameters &listParams) :
-    params(listParams)
-{
-    // TODO move this into this constructor
-    nbnxn_init_pairlist_set(this);
-}
-
-/*! \endcond */
+PairlistSet::~PairlistSet() = default;

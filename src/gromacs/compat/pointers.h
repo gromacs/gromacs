@@ -151,12 +151,23 @@ class not_null
         T ptr_;
 };
 
-//! Convenience function for making not_null pointers.
+//! Convenience function for making not_null pointers from plain pointers.
 template <class T>
-not_null<T> make_not_null(T &&t)
+not_null<T>
+make_not_null(T &&t)
 {
     return not_null < typename std::remove_cv < typename std::remove_reference<T>::type>::type >{
                std::forward<T>(t)
+    };
+}
+
+//! Convenience function for making not_null pointers from smart pointers.
+template <class T>
+not_null<typename T::pointer>
+make_not_null(T &t)
+{
+    return not_null < typename std::remove_reference<T>::type::pointer >{
+               t.get()
     };
 }
 

@@ -49,9 +49,11 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/compat/pointers.h"
-#include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/options.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdrun/mdmodules.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -188,13 +190,8 @@ class Mdrunner
         Mdrunner cloneOnSpawnedThread() const;
 
     private:
-        /*! \brief Constructor.
-         *
-         * Note that when member variables are not present in the constructor
-         * member initialization list (which is true for the default constructor),
-         * then they are initialized with any default member initializer specified
-         * when they were declared, or default initialized. */
-        Mdrunner() = default;
+        /*! \brief Constructor. */
+        explicit Mdrunner(std::unique_ptr<MDModules> mdModules);
 
         //! Parallelism-related user options.
         gmx_hw_opt_t             hw_opt;
@@ -248,6 +245,8 @@ class Mdrunner
         //! Print a warning if any force is larger than this (in kJ/mol nm).
         real                                    pforce = -1;
 
+        //! Handle to file used for logging.
+        LogFilePtr logFileGuard = nullptr;
         //! \brief Non-owning handle to file used for logging.
         t_fileio                               *logFileHandle = nullptr;
 
@@ -256,6 +255,9 @@ class Mdrunner
 
         //! \brief Non-owning handle to multi-simulation handler.
         gmx_multisim_t                         *ms = nullptr;
+
+        //! Whether the simulation will start afresh, or restart with/without appending.
+        StartingBehavior startingBehavior = StartingBehavior::NewSimulation;
 
         /*!
          * \brief Handle to restraints manager for the current process.
@@ -279,6 +281,8 @@ class Mdrunner
          * We do not need a full type specification here, so we use an opaque pointer.
          */
         std::unique_ptr<StopHandlerBuilder>    stopHandlerBuilder_;
+        //! The modules that comprise mdrun.
+        std::unique_ptr<MDModules>             mdModules_;
 };
 
 /*! \libinternal
@@ -328,7 +332,8 @@ class MdrunnerBuilder final
         /*!
          * \brief Constructor requires a handle to a SimulationContext to share.
          *
-         * \param context handle to run-time resources and execution environment details.
+         * \param mdModules  The handle to the set of modules active in mdrun
+         * \param context    The handle to run-time resources and execution environment details.
          *
          * The calling code must guarantee that the
          * pointer remains valid for the lifetime of the builder, and that the
@@ -341,7 +346,8 @@ class MdrunnerBuilder final
          * instead of a pointer.
          * Ref e.g. https://redmine.gromacs.org/issues/2587
          */
-        explicit MdrunnerBuilder(compat::not_null<SimulationContext*> context);
+        explicit MdrunnerBuilder(std::unique_ptr<MDModules>           mdModules,
+                                 compat::not_null<SimulationContext*> context);
 
         //! \cond
         MdrunnerBuilder() = delete;
@@ -458,13 +464,15 @@ class MdrunnerBuilder final
          *
          * \param options structure to copy
          * \param forceWarningThreshold Print a warning if any force is larger than this (in kJ/mol nm) (default -1)
+         * \param startingBehavior Whether the simulation will start afresh, or restart with/without appending.
          *
          * \internal
          * \todo Map these parameters to more appropriate encapsulating types.
          * Find a better way to indicate "unspecified" than a magic value of the parameter type.
          */
         MdrunnerBuilder &addSimulationMethod(const MdrunOptions &options,
-                                             real                forceWarningThreshold);
+                                             real                forceWarningThreshold,
+                                             StartingBehavior    startingBehavior);
 
         /*!
          * \brief Set the domain decomposition module.

@@ -57,7 +57,7 @@ struct t_filenm;
 
 namespace gmx
 {
-struct ContinuationOptions;
+enum class StartingBehavior;
 }
 
 /*! \brief Set up and open the pull output files, when requested.
@@ -69,13 +69,13 @@ struct ContinuationOptions;
  * \param nfile       Number of files.
  * \param fnm         Standard filename struct.
  * \param oenv        Output options.
- * \param continuationOptions  Options for continuing from checkpoint file
+ * \param startingBehavior  Describes whether this is a restart appending to output files
  */
-void init_pull_output_files(pull_t                         *pull,
-                            int                             nfile,
-                            const t_filenm                  fnm[],
-                            const gmx_output_env_t         *oenv,
-                            const gmx::ContinuationOptions &continuationOptions);
+void init_pull_output_files(pull_t                 *pull,
+                            int                     nfile,
+                            const t_filenm          fnm[],
+                            const gmx_output_env_t *oenv,
+                            gmx::StartingBehavior   startingBehavior);
 
 /*! \brief Print the pull output (x and/or f)
  *

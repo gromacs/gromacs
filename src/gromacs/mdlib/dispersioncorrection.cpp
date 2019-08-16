@@ -45,10 +45,15 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
+#include "gromacs/tables/forcetable.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/logger.h"
+
+/* Implementation here to avoid other files needing to include the file that defines t_nblists */
+DispersionCorrection::InteractionParams::~InteractionParams() = default;
 
 /* Returns a matrix, as flat list, of combination rule combined LJ parameters */
 static std::vector<real> mk_nbfp_combination_rule(const gmx_ffparams_t &ffparams,
@@ -102,22 +107,24 @@ static int atomtypeAOrB(const t_atom &atom,
     }
 }
 
-void set_avcsixtwelve(FILE             *fplog,
-                      t_forcerec       *fr,
-                      const gmx_mtop_t *mtop)
+DispersionCorrection::TopologyParams::TopologyParams(const gmx_mtop_t          &mtop,
+                                                     const t_inputrec          &inputrec,
+                                                     bool                       useBuckingham,
+                                                     int                        numAtomTypes,
+                                                     gmx::ArrayRef<const real>  nonbondedForceParameters)
 {
-    const int                 ntp   = fr->ntype;
-    const gmx_bool            bBHAM = fr->bBHAM;
+    const int                 ntp   = numAtomTypes;
+    const gmx_bool            bBHAM = useBuckingham;
 
-    gmx::ArrayRef<const real> nbfp  = gmx::arrayRefFromArray(fr->nbfp, ntp*ntp*2);
+    gmx::ArrayRef<const real> nbfp  = nonbondedForceParameters;
     std::vector<real>         nbfp_comb;
     /* For LJ-PME, we want to correct for the difference between the
      * actual C6 values and the C6 values used by the LJ-PME based on
      * combination rules. */
-    if (EVDW_PME(fr->ic->vdwtype))
+    if (EVDW_PME(inputrec.vdwtype))
     {
-        nbfp_comb = mk_nbfp_combination_rule(mtop->ffparams,
-                                             (fr->ljpme_combination_rule == eljpmeLB) ? eCOMB_ARITHMETIC : eCOMB_GEOMETRIC);
+        nbfp_comb = mk_nbfp_combination_rule(mtop.ffparams,
+                                             (inputrec.ljpme_combination_rule == eljpmeLB) ? eCOMB_ARITHMETIC : eCOMB_GEOMETRIC);
         for (int tpi = 0; tpi < ntp; ++tpi)
         {
             for (int tpj = 0; tpj < ntp; ++tpj)
@@ -130,17 +137,20 @@ void set_avcsixtwelve(FILE             *fplog,
         nbfp = nbfp_comb;
     }
 
-    for (int q = 0; q < (fr->efep == efepNO ? 1 : 2); q++)
+    for (int q = 0; q < (inputrec.efep == efepNO ? 1 : 2); q++)
     {
         double csix    = 0;
         double ctwelve = 0;
         int    npair   = 0;
         int    nexcl   = 0;
-        if (!fr->n_tpi)
+        if (!EI_TPI(inputrec.eI))
         {
+            numAtomsForDensity_ = mtop.natoms;
+            numCorrections_     = 0.5*mtop.natoms;
+
             /* Count the types so we avoid natoms^2 operations */
             std::vector<int> typecount(ntp);
-            gmx_mtop_count_atomtypes(mtop, q, typecount.data());
+            gmx_mtop_count_atomtypes(&mtop, q, typecount.data());
 
             for (int tpi = 0; tpi < ntp; tpi++)
             {
@@ -177,11 +187,11 @@ void set_avcsixtwelve(FILE             *fplog,
              * any value. These unused values should not influence the dispersion
              * correction.
              */
-            for (const gmx_molblock_t &molb : mtop->molblock)
+            for (const gmx_molblock_t &molb : mtop.molblock)
             {
                 const int       nmol  = molb.nmol;
-                const t_atoms  *atoms = &mtop->moltype[molb.type].atoms;
-                const t_blocka *excl  = &mtop->moltype[molb.type].excls;
+                const t_atoms  *atoms = &mtop.moltype[molb.type].atoms;
+                const t_blocka *excl  = &mtop.moltype[molb.type].excls;
                 for (int i = 0; (i < atoms->nr); i++)
                 {
                     const int tpi = atomtypeAOrB( atoms->atom[i], q);
@@ -212,24 +222,27 @@ void set_avcsixtwelve(FILE             *fplog,
         }
         else
         {
+            const t_atoms &atoms_tpi =
+                mtop.moltype[mtop.molblock.back().type].atoms;
+
             /* Only correct for the interaction of the test particle
              * with the rest of the system.
              */
-            const t_atoms *atoms_tpi =
-                &mtop->moltype[mtop->molblock.back().type].atoms;
+            numAtomsForDensity_      = mtop.natoms - atoms_tpi.nr;
+            numCorrections_          = atoms_tpi.nr;
 
             npair = 0;
-            for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
+            for (size_t mb = 0; mb < mtop.molblock.size(); mb++)
             {
-                const gmx_molblock_t &molb  = mtop->molblock[mb];
-                const t_atoms        *atoms = &mtop->moltype[molb.type].atoms;
-                for (int j = 0; j < atoms->nr; j++)
+                const gmx_molblock_t &molb  = mtop.molblock[mb];
+                const t_atoms        &atoms = mtop.moltype[molb.type].atoms;
+                for (int j = 0; j < atoms.nr; j++)
                 {
                     int nmolc = molb.nmol;
                     /* Remove the interaction of the test charge group
                      * with itself.
                      */
-                    if (mb == mtop->molblock.size() - 1)
+                    if (mb == mtop.molblock.size() - 1)
                     {
                         nmolc--;
 
@@ -238,10 +251,10 @@ void set_avcsixtwelve(FILE             *fplog,
                             gmx_fatal(FARGS, "Old format tpr with TPI, please generate a new tpr file");
                         }
                     }
-                    const int tpj = atomtypeAOrB(atoms->atom[j], q);
-                    for (int i = 0; i < fr->n_tpi; i++)
+                    const int tpj = atomtypeAOrB(atoms.atom[j], q);
+                    for (int i = 0; i < atoms_tpi.nr; i++)
                     {
-                        const int tpi = atomtypeAOrB(atoms_tpi->atom[i], q);
+                        const int tpi = atomtypeAOrB(atoms_tpi.atom[i], q);
                         if (bBHAM)
                         {
                             /* nbfp now includes the 6.0 derivative prefactor */
@@ -258,9 +271,8 @@ void set_avcsixtwelve(FILE             *fplog,
                 }
             }
         }
-        if (npair - nexcl <= 0 && fplog)
+        if (npair - nexcl <= 0)
         {
-            fprintf(fplog, "\nWARNING: There are no atom pairs for dispersion correction\n\n");
             csix     = 0;
             ctwelve  = 0;
         }
@@ -275,22 +287,8 @@ void set_avcsixtwelve(FILE             *fplog,
             fprintf(debug, "Average C6 parameter is: %10g\n", csix);
             fprintf(debug, "Average C12 parameter is: %10g\n", ctwelve);
         }
-        fr->avcsix[q]    = csix;
-        fr->avctwelve[q] = ctwelve;
-    }
-
-    if (fplog != nullptr)
-    {
-        if (fr->eDispCorr == edispcAllEner ||
-            fr->eDispCorr == edispcAllEnerPres)
-        {
-            fprintf(fplog, "Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
-                    fr->avcsix[0], fr->avctwelve[0]);
-        }
-        else
-        {
-            fprintf(fplog, "Long Range LJ corr.: <C6> %10.4e\n", fr->avcsix[0]);
-        }
+        avcsix_[q]    = csix;
+        avctwelve_[q] = ctwelve;
     }
 }
 
@@ -353,289 +351,298 @@ integrate_table(const real  vdwtab[],
     *virout  = 4.0*M_PI*virsum*tabfactor;
 }
 
-void calc_enervirdiff(FILE       *fplog,
-                      const int   eDispCorr,
-                      t_forcerec *fr)
+/* Struct for storing and passing energy or virial corrections */
+struct InteractionCorrection
 {
-    fr->enershiftsix    = 0;
-    fr->enershifttwelve = 0;
-    fr->enerdiffsix     = 0;
-    fr->enerdifftwelve  = 0;
-    fr->virdiffsix      = 0;
-    fr->virdifftwelve   = 0;
+    real dispersion = 0;
+    real repulsion  = 0;
+};
 
-    const interaction_const_t *ic = fr->ic;
+/* Adds the energy and virial corrections beyond the cut-off */
+static void addCorrectionBeyondCutoff(InteractionCorrection *energy,
+                                      InteractionCorrection *virial,
+                                      const double           cutoffDistance)
+{
+    const double rc3 = cutoffDistance*cutoffDistance*cutoffDistance;
+    const double rc9 = rc3*rc3*rc3;
 
-    if (eDispCorr != edispcNO)
+    energy->dispersion +=  -4.0*M_PI/(3.0*rc3);
+    energy->repulsion  +=   4.0*M_PI/(9.0*rc9);
+    virial->dispersion +=   8.0*M_PI/rc3;
+    virial->repulsion  += -16.0*M_PI/(3.0*rc9);
+}
+
+void
+DispersionCorrection::setInteractionParameters(InteractionParams         *iParams,
+                                               const interaction_const_t &ic,
+                                               const char                *tableFileName)
+{
+    /* We only need to set the tables at first call, i.e. tableFileName!=nullptr
+     * or when we changed the cut-off with LJ-PME tuning.
+     */
+    if (tableFileName || EVDW_PME(ic.vdwtype))
     {
-        double eners[2] = { 0 };
-        double virs[2]  = { 0 };
+        iParams->dispersionCorrectionTable_ =
+            makeDispersionCorrectionTable(nullptr, &ic, ic.rvdw, tableFileName);
+    }
 
-        if ((ic->vdw_modifier == eintmodPOTSHIFT) ||
-            (ic->vdw_modifier == eintmodPOTSWITCH) ||
-            (ic->vdw_modifier == eintmodFORCESWITCH) ||
-            (ic->vdwtype == evdwSHIFT) ||
-            (ic->vdwtype == evdwSWITCH))
-        {
-            if (((ic->vdw_modifier == eintmodPOTSWITCH) ||
-                 (ic->vdw_modifier == eintmodFORCESWITCH) ||
-                 (ic->vdwtype == evdwSWITCH)) && ic->rvdw_switch == 0)
-            {
-                gmx_fatal(FARGS,
-                          "With dispersion correction rvdw-switch can not be zero "
-                          "for vdw-type = %s", evdw_names[ic->vdwtype]);
-            }
+    InteractionCorrection energy;
+    InteractionCorrection virial;
 
-            /* TODO This code depends on the logic in tables.c that
-               constructs the table layout, which should be made
-               explicit in future cleanup. */
-            GMX_ASSERT(fr->dispersionCorrectionTable->interaction == GMX_TABLE_INTERACTION_VDWREP_VDWDISP,
-                       "Dispersion-correction code needs a table with both repulsion and dispersion terms");
-            const real  scale  = fr->dispersionCorrectionTable->scale;
-            const real *vdwtab = fr->dispersionCorrectionTable->data;
-
-            /* Round the cut-offs to exact table values for precision */
-            int ri0  = static_cast<int>(std::floor(ic->rvdw_switch*scale));
-            int ri1  = static_cast<int>(std::ceil(ic->rvdw*scale));
-
-            /* The code below has some support for handling force-switching, i.e.
-             * when the force (instead of potential) is switched over a limited
-             * region. This leads to a constant shift in the potential inside the
-             * switching region, which we can handle by adding a constant energy
-             * term in the force-switch case just like when we do potential-shift.
-             *
-             * For now this is not enabled, but to keep the functionality in the
-             * code we check separately for switch and shift. When we do force-switch
-             * the shifting point is rvdw_switch, while it is the cutoff when we
-             * have a classical potential-shift.
-             *
-             * For a pure potential-shift the potential has a constant shift
-             * all the way out to the cutoff, and that is it. For other forms
-             * we need to calculate the constant shift up to the point where we
-             * start modifying the potential.
-             */
-            ri0               = (ic->vdw_modifier == eintmodPOTSHIFT) ? ri1 : ri0;
-
-            const double r0   = ri0/scale;
-            const double rc3  = r0*r0*r0;
-            const double rc9  = rc3*rc3*rc3;
-
-            if ((ic->vdw_modifier == eintmodFORCESWITCH) ||
-                (ic->vdwtype == evdwSHIFT))
-            {
-                /* Determine the constant energy shift below rvdw_switch.
-                 * Table has a scale factor since we have scaled it down to compensate
-                 * for scaling-up c6/c12 with the derivative factors to save flops in analytical kernels.
-                 */
-                fr->enershiftsix    = static_cast<real>(-1.0/(rc3*rc3)) - 6.0*vdwtab[8*ri0];
-                fr->enershifttwelve = static_cast<real>( 1.0/(rc9*rc3)) - 12.0*vdwtab[8*ri0 + 4];
-            }
-            else if (ic->vdw_modifier == eintmodPOTSHIFT)
-            {
-                fr->enershiftsix    = static_cast<real>(-1.0/(rc3*rc3));
-                fr->enershifttwelve = static_cast<real>( 1.0/(rc9*rc3));
-            }
-
-            /* Add the constant part from 0 to rvdw_switch.
-             * This integration from 0 to rvdw_switch overcounts the number
-             * of interactions by 1, as it also counts the self interaction.
-             * We will correct for this later.
-             */
-            eners[0] += 4.0*M_PI*fr->enershiftsix*rc3/3.0;
-            eners[1] += 4.0*M_PI*fr->enershifttwelve*rc3/3.0;
-
-            /* Calculate the contribution in the range [r0,r1] where we
-             * modify the potential. For a pure potential-shift modifier we will
-             * have ri0==ri1, and there will not be any contribution here.
-             */
-            for (int i = 0; i < 2; i++)
-            {
-                double enersum = 0;
-                double virsum  = 0;
-                integrate_table(vdwtab, scale, (i == 0 ? 0 : 4), ri0, ri1, &enersum, &virsum);
-                eners[i] -= enersum;
-                virs[i]  -= virsum;
-            }
-
-            /* Alright: Above we compensated by REMOVING the parts outside r0
-             * corresponding to the ideal VdW 1/r6 and /r12 potentials.
-             *
-             * Regardless of whether r0 is the point where we start switching,
-             * or the cutoff where we calculated the constant shift, we include
-             * all the parts we are missing out to infinity from r0 by
-             * calculating the analytical dispersion correction.
-             */
-            eners[0] += -4.0*M_PI/(3.0*rc3);
-            eners[1] +=  4.0*M_PI/(9.0*rc9);
-            virs[0]  +=  8.0*M_PI/rc3;
-            virs[1]  += -16.0*M_PI/(3.0*rc9);
-        }
-        else if (ic->vdwtype == evdwCUT ||
-                 EVDW_PME(ic->vdwtype) ||
-                 ic->vdwtype == evdwUSER)
-        {
-            if (ic->vdwtype == evdwUSER && fplog)
-            {
-                fprintf(fplog,
-                        "WARNING: using dispersion correction with user tables\n");
-            }
-
-            /* Note that with LJ-PME, the dispersion correction is multiplied
-             * by the difference between the actual C6 and the value of C6
-             * that would produce the combination rule.
-             * This means the normal energy and virial difference formulas
-             * can be used here.
-             */
-
-            const double rc3 = ic->rvdw*ic->rvdw*ic->rvdw;
-            const double rc9 = rc3*rc3*rc3;
-            /* Contribution beyond the cut-off */
-            eners[0] += -4.0*M_PI/(3.0*rc3);
-            eners[1] +=  4.0*M_PI/(9.0*rc9);
-            if (ic->vdw_modifier == eintmodPOTSHIFT)
-            {
-                /* Contribution within the cut-off */
-                eners[0] += -4.0*M_PI/(3.0*rc3);
-                eners[1] +=  4.0*M_PI/(3.0*rc9);
-            }
-            /* Contribution beyond the cut-off */
-            virs[0]  +=  8.0*M_PI/rc3;
-            virs[1]  += -16.0*M_PI/(3.0*rc9);
-        }
-        else
+    if ((ic.vdw_modifier == eintmodPOTSHIFT) ||
+        (ic.vdw_modifier == eintmodPOTSWITCH) ||
+        (ic.vdw_modifier == eintmodFORCESWITCH) ||
+        (ic.vdwtype == evdwSHIFT) ||
+        (ic.vdwtype == evdwSWITCH))
+    {
+        if (((ic.vdw_modifier == eintmodPOTSWITCH) ||
+             (ic.vdw_modifier == eintmodFORCESWITCH) ||
+             (ic.vdwtype == evdwSWITCH)) && ic.rvdw_switch == 0)
         {
             gmx_fatal(FARGS,
-                      "Dispersion correction is not implemented for vdw-type = %s",
-                      evdw_names[ic->vdwtype]);
+                      "With dispersion correction rvdw-switch can not be zero "
+                      "for vdw-type = %s", evdw_names[ic.vdwtype]);
         }
 
-        /* When we deprecate the group kernels the code below can go too */
-        if (ic->vdwtype == evdwPME && fr->cutoff_scheme == ecutsGROUP)
+        GMX_ASSERT(iParams->dispersionCorrectionTable_, "We need an initialized table");
+
+        /* TODO This code depends on the logic in tables.c that
+           constructs the table layout, which should be made
+           explicit in future cleanup. */
+        GMX_ASSERT(iParams->dispersionCorrectionTable_->interaction == GMX_TABLE_INTERACTION_VDWREP_VDWDISP,
+                   "Dispersion-correction code needs a table with both repulsion and dispersion terms");
+        const real  scale  = iParams->dispersionCorrectionTable_->scale;
+        const real *vdwtab = iParams->dispersionCorrectionTable_->data;
+
+        /* Round the cut-offs to exact table values for precision */
+        int ri0  = static_cast<int>(std::floor(ic.rvdw_switch*scale));
+        int ri1  = static_cast<int>(std::ceil(ic.rvdw*scale));
+
+        /* The code below has some support for handling force-switching, i.e.
+         * when the force (instead of potential) is switched over a limited
+         * region. This leads to a constant shift in the potential inside the
+         * switching region, which we can handle by adding a constant energy
+         * term in the force-switch case just like when we do potential-shift.
+         *
+         * For now this is not enabled, but to keep the functionality in the
+         * code we check separately for switch and shift. When we do force-switch
+         * the shifting point is rvdw_switch, while it is the cutoff when we
+         * have a classical potential-shift.
+         *
+         * For a pure potential-shift the potential has a constant shift
+         * all the way out to the cutoff, and that is it. For other forms
+         * we need to calculate the constant shift up to the point where we
+         * start modifying the potential.
+         */
+        ri0               = (ic.vdw_modifier == eintmodPOTSHIFT) ? ri1 : ri0;
+
+        const double r0   = ri0/scale;
+        const double rc3  = r0*r0*r0;
+        const double rc9  = rc3*rc3*rc3;
+
+        if ((ic.vdw_modifier == eintmodFORCESWITCH) ||
+            (ic.vdwtype == evdwSHIFT))
         {
-            /* Calculate self-interaction coefficient (assuming that
-             * the reciprocal-space contribution is constant in the
-             * region that contributes to the self-interaction).
+            /* Determine the constant energy shift below rvdw_switch.
+             * Table has a scale factor since we have scaled it down to compensate
+             * for scaling-up c6/c12 with the derivative factors to save flops in analytical kernels.
              */
-            fr->enershiftsix = gmx::power6(ic->ewaldcoeff_lj) / 6.0;
-
-            eners[0] += -gmx::power3(std::sqrt(M_PI)*ic->ewaldcoeff_lj)/3.0;
-            virs[0]  +=  gmx::power3(std::sqrt(M_PI)*ic->ewaldcoeff_lj);
+            iParams->enershiftsix_    = static_cast<real>(-1.0/(rc3*rc3)) - 6.0*vdwtab[8*ri0];
+            iParams->enershifttwelve_ = static_cast<real>( 1.0/(rc9*rc3)) - 12.0*vdwtab[8*ri0 + 4];
+        }
+        else if (ic.vdw_modifier == eintmodPOTSHIFT)
+        {
+            iParams->enershiftsix_    = static_cast<real>(-1.0/(rc3*rc3));
+            iParams->enershifttwelve_ = static_cast<real>( 1.0/(rc9*rc3));
         }
 
-        fr->enerdiffsix    = eners[0];
-        fr->enerdifftwelve = eners[1];
-        /* The 0.5 is due to the Gromacs definition of the virial */
-        fr->virdiffsix     = 0.5*virs[0];
-        fr->virdifftwelve  = 0.5*virs[1];
+        /* Add the constant part from 0 to rvdw_switch.
+         * This integration from 0 to rvdw_switch overcounts the number
+         * of interactions by 1, as it also counts the self interaction.
+         * We will correct for this later.
+         */
+        energy.dispersion += 4.0*M_PI*iParams->enershiftsix_*rc3/3.0;
+        energy.repulsion  += 4.0*M_PI*iParams->enershifttwelve_*rc3/3.0;
+
+        /* Calculate the contribution in the range [r0,r1] where we
+         * modify the potential. For a pure potential-shift modifier we will
+         * have ri0==ri1, and there will not be any contribution here.
+         */
+        double enersum = 0;
+        double virsum  = 0;
+        integrate_table(vdwtab, scale, 0, ri0, ri1, &enersum, &virsum);
+        energy.dispersion -= enersum;
+        virial.dispersion -= virsum;
+        integrate_table(vdwtab, scale, 4, ri0, ri1, &enersum, &virsum);
+        energy.repulsion -= enersum;
+        virial.repulsion -= virsum;
+
+
+        /* Alright: Above we compensated by REMOVING the parts outside r0
+         * corresponding to the ideal VdW 1/r6 and /r12 potentials.
+         *
+         * Regardless of whether r0 is the point where we start switching,
+         * or the cutoff where we calculated the constant shift, we include
+         * all the parts we are missing out to infinity from r0 by
+         * calculating the analytical dispersion correction.
+         */
+        addCorrectionBeyondCutoff(&energy, &virial, r0);
+    }
+    else if (ic.vdwtype == evdwCUT ||
+             EVDW_PME(ic.vdwtype) ||
+             ic.vdwtype == evdwUSER)
+    {
+        /* Note that with LJ-PME, the dispersion correction is multiplied
+         * by the difference between the actual C6 and the value of C6
+         * that would produce the combination rule.
+         * This means the normal energy and virial difference formulas
+         * can be used here.
+         */
+
+        const double rc3 = ic.rvdw*ic.rvdw*ic.rvdw;
+        const double rc9 = rc3*rc3*rc3;
+        if (ic.vdw_modifier == eintmodPOTSHIFT)
+        {
+            /* Contribution within the cut-off */
+            energy.dispersion += -4.0*M_PI/(3.0*rc3);
+            energy.repulsion  +=  4.0*M_PI/(3.0*rc9);
+        }
+        /* Contribution beyond the cut-off */
+        addCorrectionBeyondCutoff(&energy, &virial, ic.rvdw);
+    }
+    else
+    {
+        gmx_fatal(FARGS,
+                  "Dispersion correction is not implemented for vdw-type = %s",
+                  evdw_names[ic.vdwtype]);
+    }
+
+    iParams->enerdiffsix_    = energy.dispersion;
+    iParams->enerdifftwelve_ = energy.repulsion;
+    /* The 0.5 is due to the Gromacs definition of the virial */
+    iParams->virdiffsix_     = 0.5*virial.dispersion;
+    iParams->virdifftwelve_  = 0.5*virial.repulsion;
+}
+
+DispersionCorrection::DispersionCorrection(const gmx_mtop_t          &mtop,
+                                           const t_inputrec          &inputrec,
+                                           bool                       useBuckingham,
+                                           int                        numAtomTypes,
+                                           gmx::ArrayRef<const real>  nonbondedForceParameters,
+                                           const interaction_const_t &ic,
+                                           const char                *tableFileName) :
+    eDispCorr_(inputrec.eDispCorr),
+    vdwType_(inputrec.vdwtype),
+    eFep_(inputrec.efep),
+    topParams_(mtop, inputrec, useBuckingham, numAtomTypes, nonbondedForceParameters)
+{
+    if (eDispCorr_ != edispcNO)
+    {
+        GMX_RELEASE_ASSERT(tableFileName, "Need a table file name");
+
+        setInteractionParameters(&iParams_, ic, tableFileName);
     }
 }
 
-void calc_dispcorr(const t_inputrec *ir, const t_forcerec *fr,
-                   const matrix box, real lambda, tensor pres, tensor virial,
-                   real *prescorr, real *enercorr, real *dvdlcorr)
+bool DispersionCorrection::correctFullInteraction() const
 {
-    *prescorr = 0;
-    *enercorr = 0;
-    *dvdlcorr = 0;
+    return (eDispCorr_ == edispcAllEner || eDispCorr_ == edispcAllEnerPres);
+}
 
-    clear_mat(virial);
-    clear_mat(pres);
-
-    if (ir->eDispCorr != edispcNO)
+void DispersionCorrection::print(const gmx::MDLogger &mdlog) const
+{
+    if (topParams_.avcsix_[0] == 0 && topParams_.avctwelve_[0] == 0)
     {
-        const bool bCorrAll  = (ir->eDispCorr == edispcAllEner ||
-                                ir->eDispCorr == edispcAllEnerPres);
-        const bool bCorrPres = (ir->eDispCorr == edispcEnerPres ||
-                                ir->eDispCorr == edispcAllEnerPres);
+        GMX_LOG(mdlog.warning).asParagraph().appendText("WARNING: There are no atom pairs for dispersion correction");
+    }
+    else if (vdwType_ == evdwUSER)
+    {
+        GMX_LOG(mdlog.warning).asParagraph().appendText("WARNING: using dispersion correction with user tables\n");
+    }
 
-        const real invvol = 1/det(box);
-        real       dens;
-        real       ninter;
-        if (fr->n_tpi)
-        {
-            /* Only correct for the interactions with the inserted molecule */
-            dens   = (fr->numAtomsForDispersionCorrection - fr->n_tpi)*invvol;
-            ninter = fr->n_tpi;
-        }
-        else
-        {
-            dens   = fr->numAtomsForDispersionCorrection*invvol;
-            ninter = 0.5*fr->numAtomsForDispersionCorrection;
-        }
+    std::string text = gmx::formatString("Long Range LJ corr.: <C6> %10.4e",
+                                         topParams_.avcsix_[0]);
+    if (correctFullInteraction())
+    {
+        text += gmx::formatString(" <C12> %10.4e",
+                                  topParams_.avctwelve_[0]);
+    }
+    GMX_LOG(mdlog.info).appendText(text);
+}
 
-        real avcsix;
-        real avctwelve;
-        if (ir->efep == efepNO)
-        {
-            avcsix    = fr->avcsix[0];
-            avctwelve = fr->avctwelve[0];
-        }
-        else
-        {
-            avcsix    = (1 - lambda)*fr->avcsix[0]    + lambda*fr->avcsix[1];
-            avctwelve = (1 - lambda)*fr->avctwelve[0] + lambda*fr->avctwelve[1];
-        }
+void DispersionCorrection::setParameters(const interaction_const_t &ic)
+{
+    if (eDispCorr_ != edispcNO)
+    {
+        setInteractionParameters(&iParams_, ic, nullptr);
+    }
+}
 
-        const real enerdiff   = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
-        *enercorr            += avcsix*enerdiff;
-        real       dvdlambda  = 0;
-        if (ir->efep != efepNO)
-        {
-            dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
-        }
-        if (bCorrAll)
-        {
-            const real enerdiff  = ninter*(dens*fr->enerdifftwelve - fr->enershifttwelve);
-            *enercorr           += avctwelve*enerdiff;
-            if (fr->efep != efepNO)
-            {
-                dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
-            }
-        }
+DispersionCorrection::Correction
+DispersionCorrection::calculate(const matrix box,
+                                const real   lambda) const
 
-        real svir  = 0;
-        real spres = 0;
-        if (bCorrPres)
-        {
-            svir = ninter*dens*avcsix*fr->virdiffsix/3.0;
-            if (ir->eDispCorr == edispcAllEnerPres)
-            {
-                svir += ninter*dens*avctwelve*fr->virdifftwelve/3.0;
-            }
-            /* The factor 2 is because of the Gromacs virial definition */
-            spres = -2.0*invvol*svir*PRESFAC;
+{
+    Correction corr;
 
-            for (int m = 0; m < DIM; m++)
-            {
-                virial[m][m] += svir;
-                pres[m][m]   += spres;
-            }
-            *prescorr += spres;
-        }
+    if (eDispCorr_ == edispcNO)
+    {
+        return corr;
+    }
 
-        /* Can't currently control when it prints, for now, just print when degugging */
-        if (debug)
-        {
-            if (bCorrAll)
-            {
-                fprintf(debug, "Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
-                        avcsix, avctwelve);
-            }
-            if (bCorrPres)
-            {
-                fprintf(debug,
-                        "Long Range LJ corr.: Epot %10g, Pres: %10g, Vir: %10g\n",
-                        *enercorr, spres, svir);
-            }
-            else
-            {
-                fprintf(debug, "Long Range LJ corr.: Epot %10g\n", *enercorr);
-            }
-        }
+    const bool bCorrAll  = correctFullInteraction();
+    const bool bCorrPres = (eDispCorr_ == edispcEnerPres ||
+                            eDispCorr_ == edispcAllEnerPres);
 
-        if (fr->efep != efepNO)
+    const real invvol    = 1/det(box);
+    const real density   = topParams_.numAtomsForDensity_*invvol;
+    const real numCorr   = topParams_.numCorrections_;
+
+    real       avcsix;
+    real       avctwelve;
+    if (eFep_ == efepNO)
+    {
+        avcsix    = topParams_.avcsix_[0];
+        avctwelve = topParams_.avctwelve_[0];
+    }
+    else
+    {
+        avcsix    = (1 - lambda)*topParams_.avcsix_[0]    + lambda*topParams_.avcsix_[1];
+        avctwelve = (1 - lambda)*topParams_.avctwelve_[0] + lambda*topParams_.avctwelve_[1];
+    }
+
+    const real enerdiff   = numCorr*(density*iParams_.enerdiffsix_ - iParams_.enershiftsix_);
+    corr.energy          += avcsix*enerdiff;
+    real       dvdlambda  = 0;
+    if (eFep_ != efepNO)
+    {
+        dvdlambda += (topParams_.avcsix_[1] - topParams_.avcsix_[0])*enerdiff;
+    }
+    if (bCorrAll)
+    {
+        const real enerdiff  = numCorr*(density*iParams_.enerdifftwelve_ - iParams_.enershifttwelve_);
+        corr.energy         += avctwelve*enerdiff;
+        if (eFep_ != efepNO)
         {
-            *dvdlcorr += dvdlambda;
+            dvdlambda += (topParams_.avctwelve_[1] - topParams_.avctwelve_[0])*enerdiff;
         }
     }
+
+    if (bCorrPres)
+    {
+        corr.virial = numCorr*density*avcsix*iParams_.virdiffsix_/3.0;
+        if (eDispCorr_ == edispcAllEnerPres)
+        {
+            corr.virial += numCorr*density*avctwelve*iParams_.virdifftwelve_/3.0;
+        }
+        /* The factor 2 is because of the Gromacs virial definition */
+        corr.pressure = -2.0*invvol*corr.virial*PRESFAC;
+    }
+
+    if (eFep_ != efepNO)
+    {
+        corr.dvdl += dvdlambda;
+    }
+
+    return corr;
 }

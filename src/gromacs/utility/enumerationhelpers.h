@@ -32,8 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal
- * \file
+/*! \file
  * \brief Defines helper types for class enumerations.
  *
  * These helper types facilitate iterating over class enums, and
@@ -46,7 +45,7 @@
  * NOTE This functionality only works for enumerations of monotonically
  * increasing values, starting with the value zero.
  *
- * Usage example:
+ * Usage examples:
  *
  *  enum class Foo
  *  {
@@ -58,14 +57,17 @@
  *
  *  for (Foo c : iter)
  *  {
- *      'c' is a constant from Foo
+ *      // 'c' is a constant from Foo
  *  }
  *
- *  const EnumerationArray<Foo, std::string> FooStrings = { { "Bar", "Baz", "Fooz" } };
+ *  const EnumerationArray<Foo, std::string> fooStrings = { { "Bar", "Baz", "Fooz" } };
  *
- *  print(FooStrings[Foo::Bar]);
- *  print(FooStrings[Foo::Baz]);
- *  ...
+ *  for (Foo c : keysOf(fooStrings))
+ *  {
+ *      print(fooStrings[c]);
+ *  }
+ *
+ *  ArrayRef<const std::string> namesRef(fooStrings);
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \inlibraryapi
@@ -108,11 +110,21 @@ template
     unsigned int Step = 1
 >
 class EnumerationIterator final
-    : public              std::iterator<std::forward_iterator_tag, EnumType>
 {
     public:
         //! Convenience alias
         using IntegerType = typename std::underlying_type<EnumType>::type;
+
+        /*! \name Iterator type traits
+         * Satisfies the requirements for STL forward iterator.
+         * \{
+         */
+        using iterator_category = std::forward_iterator_tag;
+        using value_type        = EnumType;
+        using difference_type   = std::ptrdiff_t;
+        using pointer           = EnumType*;
+        using reference         = EnumType&;
+        //! \}
 
         constexpr EnumerationIterator() noexcept :
         m_current { 0 } // Assumes 0 is the first constant
@@ -193,7 +205,8 @@ class EnumerationWrapper final
 /*! \libinternal
  * \brief Wrapper for a C-style array with size and indexing defined
  * by an enum. Useful for declaring arrays of enum names for debug
- * or other printing.
+ * or other printing. An ArrayRef<DataType> may be constructed from
+ * an object of this type.
  *
  * See file documentation for usage example.
  *
@@ -271,7 +284,35 @@ struct EnumerationArray final
     const_reverse_iterator rbegin() const { return const_reverse_iterator { end() }; }
     const_reverse_iterator rend()   const { return const_reverse_iterator { begin() }; }
     /*!@}*/
+
+    /*!@{*/
+    //! Pointers (unchecked)
+    using pointer       = DataType *;
+    using const_pointer = const DataType *;
+    /*!@}*/
+
+    //! Returns a const raw pointer to the contents of the array.
+    const_pointer data() const { return &m_elements[0]; }
+    //! Returns a raw pointer to the contents of the array.
+    pointer data() { return &m_elements[0]; }
 };
+
+/*! \brief Returns an object that provides iterators over the keys
+ * associated with \c EnumerationArrayType.
+ *
+ * This helper function is useful in contexts where there is an object
+ * of an EnumerationArray, and we want to use a range-based for loop
+ * over the keys associated with it, and it would be inconvenient to
+ * use the very word EnumerationArray<...> type, nor introduce a using
+ * statement for this purpose. It is legal in C++ to call a static
+ * member function (such as keys()) via an object rather than the
+ * type, but clang-tidy warns about that. So instead we make available
+ * a free function that calls that static method. */
+template <typename EnumerationArrayType>
+typename EnumerationArrayType::EnumerationWrapperType keysOf(const EnumerationArrayType & /* arrayObject */)
+{
+    return EnumerationArrayType::keys();
+}
 
 } // namespace gmx
 

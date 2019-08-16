@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/compat/string_view.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -174,9 +175,17 @@ gmx_bool is_output(const t_filenm *fnm);
 //! Returns whether or not this filenm is set.
 gmx_bool is_set(const t_filenm *fnm);
 
+/*! \brief Return whether \c filename might have been produced by mdrun -noappend.
+ *
+ * If so, it must match "prefix.partNNNN.extension", for four decimal
+ * digits N and non-empty prefix and extension. */
+bool hasSuffixFromNoAppend(gmx::compat::string_view filename);
+
 /*! \brief
  * When we do checkpointing, this routine is called to check for previous
  * output files and append a '.partNNNN' suffix before the (output) file extensions.
+ * If there was already a '.partNNNN' suffix before the file extension, that
+ * is removed before the new suffix is added.
  */
 int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix);
 

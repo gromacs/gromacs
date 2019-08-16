@@ -60,7 +60,6 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/state.h"
-#include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/nbnxm_geometry.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
@@ -70,6 +69,8 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "pairlistsets.h"
 
 /*! \brief Returns if we can (heuristically) change nstlist and rlist
  *
@@ -387,7 +388,7 @@ setDynamicPairlistPruningParameters(const t_inputrec             *ir,
                                     const VerletbufListSetup     &listSetup,
                                     const bool                    userSetNstlistPrune,
                                     const interaction_const_t    *ic,
-                                    NbnxnListParameters          *listParams)
+                                    PairlistParams               *listParams)
 {
     listParams->lifetime = ir->nstlist - 1;
 
@@ -487,7 +488,7 @@ void setupDynamicPairlistPruning(const gmx::MDLogger       &mdlog,
                                  const gmx_mtop_t          *mtop,
                                  matrix                     box,
                                  const interaction_const_t *ic,
-                                 NbnxnListParameters       *listParams)
+                                 PairlistParams            *listParams)
 {
     GMX_RELEASE_ASSERT(listParams->rlistOuter > 0, "With the nbnxn setup rlist should be > 0");
 
@@ -501,7 +502,7 @@ void setupDynamicPairlistPruning(const gmx::MDLogger       &mdlog,
     };
 
     /* Currently emulation mode does not support dual pair-lists */
-    const bool useGpuList         = (listParams->pairlistType == PairlistType::Hierarchical8x8);
+    const bool useGpuList         = (listParams->pairlistType == PairlistType::HierarchicalNxN);
 
     if (supportsDynamicPairlistGenerationInterval(*ir) &&
         getenv("GMX_DISABLE_DYNAMICPRUNING") == nullptr)

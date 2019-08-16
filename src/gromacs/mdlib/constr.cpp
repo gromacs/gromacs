@@ -101,6 +101,7 @@ class Constraints::Impl
     public:
         Impl(const gmx_mtop_t     &mtop_p,
              const t_inputrec     &ir_p,
+             pull_t               *pull_work,
              FILE                 *log_p,
              const t_mdatoms      &md_p,
              const t_commrec      *cr_p,
@@ -172,6 +173,8 @@ class Constraints::Impl
         const t_commrec      *cr = nullptr;
         //! Multi-sim support.
         const gmx_multisim_t *ms = nullptr;
+        //! Pulling code object, if any.
+        pull_t               *pull_work = nullptr;
         /*!\brief Input options.
          *
          * \todo Replace with IMdpOptions */
@@ -675,7 +678,7 @@ Constraints::Impl::apply(bool                  bLog,
 
     if (econq == ConstraintVariable::Positions)
     {
-        if (ir.bPull && pull_have_constraint(ir.pull_work))
+        if (ir.bPull && pull_have_constraint(pull_work))
         {
             if (EI_DYNAMICS(ir.eI))
             {
@@ -686,7 +689,7 @@ Constraints::Impl::apply(bool                  bLog,
                 t = ir.init_t;
             }
             set_pbc(&pbc, ir.ePBC, box);
-            pull_constraint(ir.pull_work, &md, &pbc, cr, ir.delta_t, t, x, xprime, v, *vir);
+            pull_constraint(pull_work, &md, &pbc, cr, ir.delta_t, t, x, xprime, v, *vir);
         }
         if (ed && delta_step > 0)
         {
@@ -922,7 +925,7 @@ Constraints::Impl::setConstraints(const gmx_localtop_t &top,
             {
                 // We are using the local topology, so there are only
                 // F_CONSTR constraints.
-                make_shake_sblock_dd(shaked, &idef->il[F_CONSTR], &top.cgs, cr->dd);
+                make_shake_sblock_dd(shaked, &idef->il[F_CONSTR], cr->dd);
             }
             else
             {
@@ -972,6 +975,7 @@ makeAtomToConstraintMappings(const gmx_mtop_t            &mtop,
 
 Constraints::Constraints(const gmx_mtop_t     &mtop,
                          const t_inputrec     &ir,
+                         pull_t               *pull_work,
                          FILE                 *log,
                          const t_mdatoms      &md,
                          const t_commrec      *cr,
@@ -983,6 +987,7 @@ Constraints::Constraints(const gmx_mtop_t     &mtop,
                          int                   numSettles)
     : impl_(new Impl(mtop,
                      ir,
+                     pull_work,
                      log,
                      md,
                      cr,
@@ -997,6 +1002,7 @@ Constraints::Constraints(const gmx_mtop_t     &mtop,
 
 Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
                         const t_inputrec     &ir_p,
+                        pull_t               *pull_work,
                         FILE                 *log_p,
                         const t_mdatoms      &md_p,
                         const t_commrec      *cr_p,
@@ -1013,6 +1019,7 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
       log(log_p),
       cr(cr_p),
       ms(ms_p),
+      pull_work(pull_work),
       ir(ir_p),
       nrnb(nrnb_p),
       wcycle(wcycle_p)
@@ -1262,6 +1269,101 @@ bool inter_charge_group_settles(const gmx_mtop_t &mtop)
     }
 
     return bInterCG;
+}
+
+void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
+                        const t_inputrec *ir, const t_mdatoms *md,
+                        t_state *state)
+{
+    int             i, m, start, end;
+    int64_t         step;
+    real            dt = ir->delta_t;
+    real            dvdl_dum;
+    rvec           *savex;
+
+    /* We need to allocate one element extra, since we might use
+     * (unaligned) 4-wide SIMD loads to access rvec entries.
+     */
+    snew(savex, state->natoms + 1);
+
+    start = 0;
+    end   = md->homenr;
+
+    if (debug)
+    {
+        fprintf(debug, "vcm: start=%d, homenr=%d, end=%d\n",
+                start, md->homenr, end);
+    }
+    /* Do a first constrain to reset particles... */
+    step = ir->init_step;
+    if (fplog)
+    {
+        char buf[STEPSTRSIZE];
+        fprintf(fplog, "\nConstraining the starting coordinates (step %s)\n",
+                gmx_step_str(step, buf));
+    }
+    dvdl_dum = 0;
+
+    /* constrain the current position */
+    constr->apply(TRUE, FALSE,
+                  step, 0, 1.0,
+                  state->x.rvec_array(), state->x.rvec_array(), nullptr,
+                  state->box,
+                  state->lambda[efptBONDED], &dvdl_dum,
+                  nullptr, nullptr, gmx::ConstraintVariable::Positions);
+    if (EI_VV(ir->eI))
+    {
+        /* constrain the inital velocity, and save it */
+        /* also may be useful if we need the ekin from the halfstep for velocity verlet */
+        constr->apply(TRUE, FALSE,
+                      step, 0, 1.0,
+                      state->x.rvec_array(), state->v.rvec_array(), state->v.rvec_array(),
+                      state->box,
+                      state->lambda[efptBONDED], &dvdl_dum,
+                      nullptr, nullptr, gmx::ConstraintVariable::Velocities);
+    }
+    /* constrain the inital velocities at t-dt/2 */
+    if (EI_STATE_VELOCITY(ir->eI) && ir->eI != eiVV)
+    {
+        auto x = makeArrayRef(state->x).subArray(start, end);
+        auto v = makeArrayRef(state->v).subArray(start, end);
+        for (i = start; (i < end); i++)
+        {
+            for (m = 0; (m < DIM); m++)
+            {
+                /* Reverse the velocity */
+                v[i][m] = -v[i][m];
+                /* Store the position at t-dt in buf */
+                savex[i][m] = x[i][m] + dt*v[i][m];
+            }
+        }
+        /* Shake the positions at t=-dt with the positions at t=0
+         * as reference coordinates.
+         */
+        if (fplog)
+        {
+            char buf[STEPSTRSIZE];
+            fprintf(fplog, "\nConstraining the coordinates at t0-dt (step %s)\n",
+                    gmx_step_str(step, buf));
+        }
+        dvdl_dum = 0;
+        constr->apply(TRUE, FALSE,
+                      step, -1, 1.0,
+                      state->x.rvec_array(), savex, nullptr,
+                      state->box,
+                      state->lambda[efptBONDED], &dvdl_dum,
+                      state->v.rvec_array(), nullptr, gmx::ConstraintVariable::Positions);
+
+        for (i = start; i < end; i++)
+        {
+            for (m = 0; m < DIM; m++)
+            {
+                /* Re-reverse the velocities */
+                v[i][m] = -v[i][m];
+            }
+        }
+    }
+    sfree(savex);
 }
 
 }  // namespace gmx
