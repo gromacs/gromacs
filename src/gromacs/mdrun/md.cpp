@@ -144,9 +144,6 @@
 
 using gmx::SimulationSignaller;
 
-
-void gpuUpdateConstraintsSetTimestepInfo(bool bNS, bool bNSNextStep, bool copybackVelocity);
-
 void gmx::Integrator::do_md()
 {
     // TODO Historically, the EM and MD "integrators" used different
@@ -694,7 +691,6 @@ void gmx::Integrator::do_md()
         /* Determine if this is a neighbor search step */
         bNStList = (ir->nstlist > 0  && step % ir->nstlist == 0);
 
-
         if (bPMETune && bNStList)
         {
             /* PME grid + cut-off optimization with GPUs or PME nodes */
@@ -839,16 +835,6 @@ void gmx::Integrator::do_md()
         bGStat = (bCalcVir || bCalcEner || bStopCM ||
                   do_per_step(step, nstglobalcomm) ||
                   (EI_VV(ir->eI) && inputrecNvtTrotter(ir) && do_per_step(step-1, nstglobalcomm)));
-
-
-        int  bNSNextStep      = (ir->nstlist > 0  && (step+1) % ir->nstlist == 0);
-        bool doInterSimSignal = (simulationsShareState && do_per_step(step, nstSignalComm));
-
-        bool copybackVelocity = (bGStat || (!EI_VV(ir->eI) && do_per_step(step+1, nstglobalcomm)) || doInterSimSignal);
-
-        gpuUpdateConstraintsSetTimestepInfo(bNStList, bNSNextStep, copybackVelocity);
-
-
 
         force_flags = (GMX_FORCE_STATECHANGED |
                        ((inputrecDynamicBox(ir)) ? GMX_FORCE_DYNAMICBOX : 0) |

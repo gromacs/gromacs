@@ -58,7 +58,6 @@ struct gmx_wallcycle;
 struct nbnxn_atomdata_t;
 struct nbnxn_search;
 struct nonbonded_verlet_t;
-struct t_commrec;
 struct t_mdatoms;
 struct tMPI_Atomic;
 
@@ -355,8 +354,7 @@ void nbnxn_atomdata_add_nbat_f_to_f_gpu(nbnxn_search           *nbs,
                                         gmx_nbnxn_gpu_t        *gpu_nbv,
                                         void                   *fPmeDevicePtr,
                                         rvec                   *f,
-                                        gmx_wallcycle          *wcycle,
-                                        const t_commrec        *cr);
+                                        gmx_wallcycle          *wcycle);
 
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
