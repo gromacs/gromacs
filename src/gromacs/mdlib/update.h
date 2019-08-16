@@ -317,4 +317,25 @@ void pleaseCiteCouplingAlgorithms(FILE             *fplog,
 void getThreadAtomRange(int numThreads, int threadIndex, int numAtoms,
                         int *startAtom, int *endAtom);
 
+/*! \brief Generate a new kinetic energy for the v-rescale thermostat
+ *
+ * Generates a new value for the kinetic energy, according to
+ * Bussi et al JCP (2007), Eq. (A7)
+ *
+ * This is used by update_tcoupl(), and by the VRescaleThermostat of the modular
+ * simulator.
+ * TODO: Move this to the VRescaleThermostat once the modular simulator becomes
+ *       the default code path.
+ *
+ * @param kk     present value of the kinetic energy of the atoms to be thermalized (in arbitrary units)
+ * @param sigma  target average value of the kinetic energy (ndeg k_b T/2)  (in the same units as kk)
+ * @param ndeg   number of degrees of freedom of the atoms to be thermalized
+ * @param taut   relaxation time of the thermostat, in units of 'how often this routine is called'
+ * @param step   the time step this routine is called on
+ * @param seed   the random number generator seed
+ * @return  the new kinetic energy
+ */
+real vrescale_resamplekin(real kk, real sigma, real ndeg, real taut,
+                          int64_t step, int64_t seed);
+
 #endif

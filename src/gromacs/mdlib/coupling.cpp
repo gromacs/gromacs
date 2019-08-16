@@ -1473,8 +1473,8 @@ static real vrescale_sumnoises(real                           nn,
     return r;
 }
 
-static real vrescale_resamplekin(real kk, real sigma, real ndeg, real taut,
-                                 int64_t step, int64_t seed)
+real vrescale_resamplekin(real kk, real sigma, real ndeg, real taut,
+                          int64_t step, int64_t seed)
 {
 /*
  * Generates a new value for the kinetic energy,

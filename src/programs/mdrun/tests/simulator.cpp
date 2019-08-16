@@ -69,7 +69,7 @@ namespace
  * are equivalent.
  */
 using SimulatorComparisonTestParams = std::tuple<
-            std::tuple < std::string, std::string>,
+            std::tuple < std::string, std::string, std::string>,
             std::string>;
 class SimulatorComparisonTest :
     public MdrunTestFixture,
@@ -83,16 +83,17 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
     auto mdpParams      = std::get<0>(params);
     auto simulationName = std::get<0>(mdpParams);
     auto integrator     = std::get<1>(mdpParams);
+    auto tcoupling      = std::get<2>(mdpParams);
     auto envVariable    = std::get<1>(params);
     SCOPED_TRACE(formatString("Comparing two simulations of '%s' "
-                              "with integrator '%s', "
+                              "with integrator '%s' and '%s' temperature coupling, "
                               "switching environment variable '%s'",
                               simulationName.c_str(), integrator.c_str(),
-                              envVariable.c_str()));
+                              tcoupling.c_str(), envVariable.c_str()));
 
     auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(),
                                                 integrator.c_str(),
-                                                "no", "no");
+                                                tcoupling.c_str(), "no");
 
     EnergyTermsToCompare energyTermsToCompare
     {{
@@ -166,18 +167,27 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
 INSTANTIATE_TEST_CASE_P(SimulatorsAreEquivalentDefaultModular, SimulatorComparisonTest,
                             ::testing::Combine(
                                     ::testing::Combine(::testing::Values("argon12", "tip3p5"),
-                                                           ::testing::Values("md-vv")),
+                                                           ::testing::Values("md-vv"),
+                                                           ::testing::Values("no", "v-rescale")),
                                     ::testing::Values("GMX_DISABLE_MODULAR_SIMULATOR")));
 INSTANTIATE_TEST_CASE_P(SimulatorsAreEquivalentDefaultLegacy, SimulatorComparisonTest,
                             ::testing::Combine(
                                     ::testing::Combine(::testing::Values("argon12", "tip3p5"),
-                                                           ::testing::Values("md")),
+                                                           ::testing::Values("md"),
+                                                           ::testing::Values("no", "v-rescale")),
                                     ::testing::Values("GMX_USE_MODULAR_SIMULATOR")));
 #else
-INSTANTIATE_TEST_CASE_P(DISABLED_SimulatorsAreEquivalent, SimulatorComparisonTest,
+INSTANTIATE_TEST_CASE_P(DISABLED_SimulatorsAreEquivalentDefaultModular, SimulatorComparisonTest,
                             ::testing::Combine(
                                     ::testing::Combine(::testing::Values("argon12", "tip3p5"),
-                                                           ::testing::Values("md", "md-vv")),
+                                                           ::testing::Values("md-vv"),
+                                                           ::testing::Values("no", "v-rescale")),
+                                    ::testing::Values("GMX_DISABLE_MODULAR_SIMULATOR")));
+INSTANTIATE_TEST_CASE_P(DISABLED_SimulatorsAreEquivalentDefaultLegacy, SimulatorComparisonTest,
+                            ::testing::Combine(
+                                    ::testing::Combine(::testing::Values("argon12", "tip3p5"),
+                                                           ::testing::Values("md"),
+                                                           ::testing::Values("no", "v-rescale")),
                                     ::testing::Values("GMX_USE_MODULAR_SIMULATOR")));
 #endif
 

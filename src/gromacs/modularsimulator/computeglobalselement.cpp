@@ -229,7 +229,7 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(
             return;
         }
 
-        const bool doTemperature = step != initStep_;
+        const bool doTemperature = step != initStep_ || inputrec_->bContinuation;
         const bool doEnergy      = step == energyReductionStep_;
 
         int        flags =

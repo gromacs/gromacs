@@ -82,6 +82,7 @@
 #include "signallers.h"
 #include "statepropagatordata.h"
 #include "trajectoryelement.h"
+#include "vrescalethermostat.h"
 
 namespace gmx
 {
@@ -609,6 +610,20 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
 
         addToCallListAndMove(std::move(forceElement), elementCallList, elementsOwnershipList);
         addToCallList(statePropagatorDataPtr, elementCallList);  // we have a full microstate at time t here!
+        if (inputrec->etc == etcVRESCALE)
+        {
+            // TODO: With increased complexity of the propagator, this will need further development,
+            //       e.g. using propagators templated for velocity propagation policies and a builder
+            propagator->setNumVelocityScalingVariables(inputrec->opts.ngtc);
+            auto thermostat = std::make_unique<VRescaleThermostat>(
+                        inputrec->nsttcouple, -1, false, inputrec->ld_seed,
+                        inputrec->opts.ngtc, inputrec->delta_t*inputrec->nsttcouple,
+                        inputrec->opts.ref_t, inputrec->opts.tau_t, inputrec->opts.nrdf,
+                        energyElementPtr,
+                        propagator->viewOnVelocityScaling(),
+                        propagator->velocityScalingCallback());
+            addToCallListAndMove(std::move(thermostat), elementCallList, elementsOwnershipList);
+        }
         addToCallListAndMove(std::move(propagator), elementCallList, elementsOwnershipList);
         if (constr)
         {
@@ -668,6 +683,20 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
         }
         addToCallListAndMove(std::move(computeGlobalsElementAtFullTimeStep), elementCallList, elementsOwnershipList);
         addToCallList(statePropagatorDataPtr, elementCallList);  // we have a full microstate at time t here!
+        if (inputrec->etc == etcVRESCALE)
+        {
+            // TODO: With increased complexity of the propagator, this will need further development,
+            //       e.g. using propagators templated for velocity propagation policies and a builder
+            propagatorVelocitiesAndPositions->setNumVelocityScalingVariables(inputrec->opts.ngtc);
+            auto thermostat = std::make_unique<VRescaleThermostat>(
+                        inputrec->nsttcouple, 0, true, inputrec->ld_seed,
+                        inputrec->opts.ngtc, inputrec->delta_t*inputrec->nsttcouple,
+                        inputrec->opts.ref_t, inputrec->opts.tau_t, inputrec->opts.nrdf,
+                        energyElementPtr,
+                        propagatorVelocitiesAndPositions->viewOnVelocityScaling(),
+                        propagatorVelocitiesAndPositions->velocityScalingCallback());
+            addToCallListAndMove(std::move(thermostat), elementCallList, elementsOwnershipList);
+        }
         addToCallListAndMove(std::move(propagatorVelocitiesAndPositions), elementCallList, elementsOwnershipList);
         if (constr)
         {
@@ -734,8 +763,8 @@ bool ModularSimulator::isInputCompatible(
                 !doRerun,
                 "Rerun is not supported by the modular simulator.");
     isInputCompatible = isInputCompatible && conditionalAssert(
-                inputrec->etc == etcNO,
-                "Temperature coupling is not supported by the modular simulator.");
+                inputrec->etc == etcNO || inputrec->etc == etcVRESCALE,
+                "Only v-rescale thermostat is supported by the modular simulator.");
     isInputCompatible = isInputCompatible && conditionalAssert(
                 inputrec->epc == epcNO,
                 "Pressure coupling is not supported by the modular simulator.");

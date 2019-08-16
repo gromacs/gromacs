@@ -42,6 +42,9 @@
 #ifndef GMX_MODULARSIMULATOR_PROPAGATOR_H
 #define GMX_MODULARSIMULATOR_PROPAGATOR_H
 
+#include <vector>
+
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 #include "modularsimulatorinterfaces.h"
@@ -77,6 +80,20 @@ enum class IntegrationStep
     VelocityVerletPositionsAndVelocities,
     Count
 };
+
+//! Sets the number of different velocity scaling values
+enum class NumVelocityScalingValues
+{
+    None,     //!< No velocity scaling (either this step or ever)
+    Single,   //!< Single T-scaling value (either one group or all values =1)
+    Multiple, //!< Multiple T-scaling values, need to use T-group indices
+    Count
+};
+
+//! Generic callback to the propagator
+typedef std::function<void(Step)> PropagatorCallback;
+//! Pointer to generic callback to the propagator
+typedef std::unique_ptr<PropagatorCallback> PropagatorCallbackPtr;
 
 /*! \libinternal
  * \brief Propagator element
@@ -119,8 +136,16 @@ class Propagator final :
         //! No element teardown needed
         void elementTeardown() override {}
 
+        //! Set the number of velocity scaling variables
+        void setNumVelocityScalingVariables(int numVelocityScalingVariables);
+        //! Get view on the velocity scaling vector
+        ArrayRef<real> viewOnVelocityScaling();
+        //! Get velocity scaling callback
+        PropagatorCallbackPtr velocityScalingCallback();
+
     private:
         //! The actual propagation
+        template <NumVelocityScalingValues numVelocityScalingValues>
         void run();
 
         //! The time step
@@ -129,12 +154,20 @@ class Propagator final :
         //! Pointer to the micro state
         StatePropagatorData *statePropagatorData_;
 
+        //! Whether we're doing single-value velocity scaling
+        bool              doSingleVelocityScaling;
+        //! Wether we're doing group-wise velocity scaling
+        bool              doGroupVelocityScaling;
+        //! The vector of velocity scaling values
+        std::vector<real> velocityScaling_;
+        //! The next velocity scaling step
+        Step              scalingStepVelocity_;
+
         // Access to ISimulator data
         //! Atom parameters for this domain.
         const MDAtoms *mdAtoms_;
         //! Manages wall cycle accounting.
         gmx_wallcycle *wcycle_;
-
 };
 
 //! \}
