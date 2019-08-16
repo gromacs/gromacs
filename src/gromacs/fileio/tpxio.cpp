@@ -1685,6 +1685,8 @@ static void do_inputrec(gmx::ISerializer         *serializer,
     if (serializer->reading())
     {
         ir->params = new gmx::KeyValueTreeObject(paramsBuilder.build());
+        // Initialize internal parameters to an empty kvt for all tpr versions
+        ir->internalParameters = std::make_unique<gmx::KeyValueTreeObject>();
     }
 
     if (file_version >= tpxv_GenericInternalParameters)
