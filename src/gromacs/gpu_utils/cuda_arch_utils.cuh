@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -178,5 +178,15 @@ static const bool c_disableCudaTextures = DISABLE_CUDA_TEXTURES;
         #define GMX_CUDA_MAX_BLOCKS_PER_MP   0
         #define GMX_CUDA_MAX_THREADS_PER_MP  0
 #endif
+
+// Macro defined for clang CUDA device compilation in the presence of debug symbols
+// used to work around codegen bug that breaks some kernels when assertions are on
+// at -O1 and higher (tested with clang 6-8).
+#if defined(__clang__) && defined(__CUDA__) && defined(__CUDA_ARCH__) && !defined(NDEBUG)
+#define CLANG_DISABLE_OPTIMIZATION_ATTRIBUTE __attribute__ ((optnone))
+#else
+#define CLANG_DISABLE_OPTIMIZATION_ATTRIBUTE
+#endif
+
 
 #endif /* CUDA_ARCH_UTILS_CUH_ */
