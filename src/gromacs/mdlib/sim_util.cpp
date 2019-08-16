@@ -1,4 +1,4 @@
-/* x
+/*
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
