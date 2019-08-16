@@ -54,6 +54,7 @@
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/nbnxm/cuda/gpuUpdateConstraintsCUDA.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -159,10 +160,11 @@ void pme_gpu_prepare_computation(gmx_pme_t            *pme,
     }
 }
 
-
 void pme_gpu_launch_spread(gmx_pme_t            *pme,
                            const rvec           *x,
-                           gmx_wallcycle        *wcycle)
+                           gmx_wallcycle        *wcycle,
+                           bool                  bNS,
+                           bool                  bDutyPPAndPME)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
@@ -172,7 +174,17 @@ void pme_gpu_launch_spread(gmx_pme_t            *pme,
     wallcycle_start(wcycle, ewcLAUNCH_GPU);
     // The only spot of PME GPU where ewcsLAUNCH_GPU_PME subcounter increases call-count
     wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_PME);
-    pme_gpu_copy_input_coordinates(pmeGpu, x);
+    if (bNS)
+    {
+        pme_gpu_copy_input_coordinates(pmeGpu, x);
+    }
+    else if (bDutyPPAndPME)
+    {
+        //TODO refactor this function to a better place
+        gpuUpdateConstraintsCopyXToPMEOnDevice(pmeGpu);
+    }
+    // or else PME GPU directly gathers coordinates from other PP GPUs
+
     wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 
@@ -249,7 +261,8 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t      *pme,
 
 void pme_gpu_launch_gather(const gmx_pme_t                 *pme,
                            gmx_wallcycle gmx_unused        *wcycle,
-                           PmeForceOutputHandling           forceTreatment)
+                           PmeForceOutputHandling           forceTreatment,
+                           PmeDeviceHostCopy                DeviceHostCopy)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
@@ -262,7 +275,7 @@ void pme_gpu_launch_gather(const gmx_pme_t                 *pme,
     wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
     const unsigned int gridIndex  = 0;
     real              *fftgrid    = pme->fftgrid[gridIndex];
-    pme_gpu_gather(pme->gpu, forceTreatment, reinterpret_cast<float *>(fftgrid));
+    pme_gpu_gather(pme->gpu, forceTreatment, reinterpret_cast<float *>(fftgrid), DeviceHostCopy);
     wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 }
@@ -286,7 +299,8 @@ static void pme_gpu_reduce_outputs(const int             flags,
                                    const PmeOutput      &output,
                                    gmx_wallcycle        *wcycle,
                                    gmx::ForceWithVirial *forceWithVirial,
-                                   gmx_enerdata_t       *enerd)
+                                   gmx_enerdata_t       *enerd,
+                                   bool                  bSumForces)
 {
     wallcycle_start(wcycle, ewcPME_GPU_F_REDUCTION);
     GMX_ASSERT(forceWithVirial, "Invalid force pointer");
@@ -297,7 +311,10 @@ static void pme_gpu_reduce_outputs(const int             flags,
         forceWithVirial->addVirialContribution(output.coulombVirial_);
         enerd->term[F_COUL_RECIP] += output.coulombEnergy_;
     }
-    sum_forces(forceWithVirial->force_, output.forces_);
+    if (bSumForces)
+    {
+        sum_forces(forceWithVirial->force_, output.forces_);
+    }
     wallcycle_stop(wcycle, ewcPME_GPU_F_REDUCTION);
 }
 
@@ -344,7 +361,7 @@ bool pme_gpu_try_finish_task(gmx_pme_t            *pme,
     PmeOutput output = pme_gpu_getOutput(*pme, flags);
     wallcycle_stop(wcycle, ewcWAIT_GPU_PME_GATHER);
 
-    pme_gpu_reduce_outputs(flags, output, wcycle, forceWithVirial, enerd);
+    pme_gpu_reduce_outputs(flags, output, wcycle, forceWithVirial, enerd, true);
 
     return true;
 }
@@ -371,10 +388,12 @@ void pme_gpu_wait_and_reduce(gmx_pme_t            *pme,
                              const int             flags,
                              gmx_wallcycle        *wcycle,
                              gmx::ForceWithVirial *forceWithVirial,
-                             gmx_enerdata_t       *enerd)
+                             gmx_enerdata_t       *enerd,
+                             bool                  bSumForces)
 {
     PmeOutput output = pme_gpu_wait_finish_task(pme, flags, wcycle);
-    pme_gpu_reduce_outputs(flags, output, wcycle, forceWithVirial, enerd);
+    pme_gpu_reduce_outputs(flags, output, wcycle, forceWithVirial, enerd,
+                           bSumForces);
 }
 
 void pme_gpu_reinit_computation(const gmx_pme_t *pme,
@@ -390,4 +409,22 @@ void pme_gpu_reinit_computation(const gmx_pme_t *pme,
 
     wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+}
+
+void *pme_gpu_get_device_x(const gmx_pme_t *pme)
+{
+    if (!pme || !pme_gpu_active(pme))
+    {
+        return nullptr;
+    }
+    return pme_gpu_get_kernelparam_coordinates(pme->gpu);
+}
+
+void *pme_gpu_get_device_f(const gmx_pme_t *pme)
+{
+    if (!pme || !pme_gpu_active(pme))
+    {
+        return nullptr;
+    }
+    return pme_gpu_get_kernelparam_forces(pme->gpu);
 }

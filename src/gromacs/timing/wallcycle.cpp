@@ -57,6 +57,36 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
+
+// TODO what should the name of this define be?
+#ifdef HAVE_NVTX3
+#include "nvtx3/nvToolsExt.h"
+#endif
+
+const uint32_t colors[] = { 0x0000ff00, 0x000000ff, 0x00ffff00, 0x00ff00ff, 0x0000ffff, 0x00ff0000, 0x00ffffff };
+const int      num_colors = sizeof(colors)/sizeof(uint32_t);
+
+#ifdef HAVE_NVTX3
+#define PUSH_RANGE(name, cid) { \
+        int                   color_id = cid; \
+        color_id = color_id%num_colors; \
+        nvtxEventAttributes_t eventAttrib = {0}; \
+        eventAttrib.version       = NVTX_VERSION; \
+        eventAttrib.size          = NVTX_EVENT_ATTRIB_STRUCT_SIZE; \
+        eventAttrib.colorType     = NVTX_COLOR_ARGB; \
+        eventAttrib.color         = colors[color_id]; \
+        eventAttrib.messageType   = NVTX_MESSAGE_TYPE_ASCII; \
+        eventAttrib.message.ascii = name; \
+        nvtxRangePushEx(&eventAttrib); \
+}
+#define POP_RANGE nvtxRangePop();
+#else
+#define PUSH_RANGE(name, cid)
+#define POP_RANGE
+#endif
+
+
+
 static const bool useCycleSubcounters = GMX_CYCLE_SUBCOUNTERS;
 
 /* DEBUG_WCYCLE adds consistency checking for the counters.
@@ -282,6 +312,7 @@ void wallcycle_start(gmx_wallcycle_t wc, int ewc)
     {
         return;
     }
+    PUSH_RANGE(wcn[ewc], ewc);
 
 #if GMX_MPI
     if (wc->wc_barrier)
@@ -329,6 +360,7 @@ double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
     {
         return 0;
     }
+    POP_RANGE;
 
 #if GMX_MPI
     if (wc->wc_barrier)

@@ -66,8 +66,10 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "gromacs/nbnxm/cuda/gpuUpdateConstraintsCUDA.h"
 namespace gmx
 {
 
@@ -854,50 +856,80 @@ void csettle(settledata *settled,
              bool bCalcVirial, tensor vir_r_m_dr,
              bool *bErrorHasOccurred)
 {
-#if GMX_SIMD_HAVE_REAL
-    if (settled->bUseSimd)
-    {
-        /* Convert the pbc struct for SIMD */
-        alignas(GMX_SIMD_ALIGNMENT) real    pbcSimd[9*GMX_SIMD_REAL_WIDTH];
-        set_pbc_simd(pbc, pbcSimd);
 
-        settleTemplateWrapper<SimdReal, SimdBool, GMX_SIMD_REAL_WIDTH,
-                              const real *>(settled,
-                                            nthread, thread,
-                                            pbcSimd,
-                                            x, xprime,
-                                            invdt,
-                                            v,
-                                            bCalcVirial, vir_r_m_dr,
-                                            bErrorHasOccurred);
+    /* This construct is needed because pbc_dx_aiuc doesn't accept pbc=NULL */
+    t_pbc        pbcNo;
+    const t_pbc *pbcNonNull;
+
+    if (pbc != nullptr)
+    {
+        pbcNonNull = pbc;
     }
     else
-#endif
     {
-        /* This construct is needed because pbc_dx_aiuc doesn't accept pbc=NULL */
-        t_pbc        pbcNo;
-        const t_pbc *pbcNonNull;
+        set_pbc(&pbcNo, epbcNONE, nullptr);
+        pbcNonNull = &pbcNo;
+    }
 
-        if (pbc != nullptr)
+    //TODO add approptiate CPU/GPU switch to this conditional
+    if (gpuUpdateConstraintsGetSize() > 0)
+    {
+
+        bool bCorrectVelocity = true;
+        if (v == nullptr)
         {
-            pbcNonNull = pbc;
+            bCorrectVelocity = false;
+        }
+#pragma omp barrier
+        if (gmx_omp_get_thread_num() == 0)
+        {
+            settle_gpu((void*) settled,
+                       pbcNonNull,
+                       x, xprime,
+                       invdt,
+                       v,
+                       vir_r_m_dr,
+                       bErrorHasOccurred,
+                       bCorrectVelocity,
+                       bCalcVirial);
+        }
+#pragma omp barrier
+    }
+    else
+    {
+#if GMX_SIMD_HAVE_REAL
+        if (settled->bUseSimd)
+        {
+            /* Convert the pbc struct for SIMD */
+            alignas(GMX_SIMD_ALIGNMENT) real    pbcSimd[9*GMX_SIMD_REAL_WIDTH];
+            set_pbc_simd(pbc, pbcSimd);
+
+            settleTemplateWrapper<SimdReal, SimdBool, GMX_SIMD_REAL_WIDTH,
+                                  const real *>(settled,
+                                                nthread, thread,
+                                                pbcSimd,
+                                                x, xprime,
+                                                invdt,
+                                                v,
+                                                bCalcVirial, vir_r_m_dr,
+                                                bErrorHasOccurred);
         }
         else
+#endif
         {
-            set_pbc(&pbcNo, epbcNONE, nullptr);
-            pbcNonNull = &pbcNo;
-        }
 
-        settleTemplateWrapper<real, bool, 1,
-                              const t_pbc *>(settled,
-                                             nthread, thread,
-                                             pbcNonNull,
-                                             x, xprime,
-                                             invdt,
-                                             v,
-                                             bCalcVirial, vir_r_m_dr,
-                                             bErrorHasOccurred);
+            settleTemplateWrapper<real, bool, 1,
+                                  const t_pbc *>(settled,
+                                                 nthread, thread,
+                                                 pbcNonNull,
+                                                 x, xprime,
+                                                 invdt,
+                                                 v,
+                                                 bCalcVirial, vir_r_m_dr,
+                                                 bErrorHasOccurred);
+        }
     }
+
 }
 
 }  // namespace gmx

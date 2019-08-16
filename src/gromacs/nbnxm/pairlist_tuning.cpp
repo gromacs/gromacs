@@ -148,6 +148,23 @@ void increaseNstlist(FILE *fp, t_commrec *cr,
     const char            *dd_err   = "Can not increase nstlist because of domain decomposition limitations";
     char                   buf[STRLEN];
 
+
+    //NVHACK
+    fflush(stdout);
+    int size = 0;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    if (size > 1)
+    {
+        nstlist_cmdline = 500;
+        printf("NVIDIA HACK: overwriting nstlist to 500\n"); fflush(stdout);
+    }
+    if (size == 2)
+    {
+        printf("NVIDIA ERROR: 2-GPU runs not yet supported in this version\n"); fflush(stdout);
+        MPI_Abort(MPI_COMM_WORLD, -1);
+    }
+    //END NVHACK
+
     if (nstlist_cmdline <= 0)
     {
         if (ir->nstlist == 1)
@@ -263,6 +280,7 @@ void increaseNstlist(FILE *fp, t_commrec *cr,
                 rlist_inc, rlist_ok, rlist_max);
     }
 
+
     nstlist_prev = nstlist_orig;
     rlist_prev   = ir->rlist;
     do
@@ -346,6 +364,10 @@ void increaseNstlist(FILE *fp, t_commrec *cr,
         }
         ir->rlist     = rlist_new;
     }
+
+
+
+
 }
 
 /*! \brief The interval in steps at which we perform dynamic, rolling pruning on a GPU.
