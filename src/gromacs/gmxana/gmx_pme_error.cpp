@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,7 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/ewald/ewald-utils.h"
+#include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fft/calcgrid.h"
 #include "gromacs/fileio/checkpoint.h"
@@ -801,9 +801,7 @@ static void create_info(t_inputinfo *info)
  */
 static int prepare_x_q(real *q[], rvec *x[], const gmx_mtop_t *mtop, const rvec x_orig[], t_commrec *cr)
 {
-    int                     i;
     int                     nq; /* number of charged particles */
-    gmx_mtop_atomloop_all_t aloop;
 
 
     if (MASTER(cr))
@@ -812,13 +810,13 @@ static int prepare_x_q(real *q[], rvec *x[], const gmx_mtop_t *mtop, const rvec 
         snew(*x, mtop->natoms);
         nq = 0;
 
-        aloop = gmx_mtop_atomloop_all_init(mtop);
-        const t_atom *atom;
-        while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
+        for (const AtomProxy atomP : AtomRange(*mtop))
         {
-            if (is_charge(atom->q))
+            const t_atom &local = atomP.atom();
+            int           i     = atomP.globalAtomNumber();
+            if (is_charge(local.q))
             {
-                (*q)[nq]     = atom->q;
+                (*q)[nq]     = local.q;
                 (*x)[nq][XX] = x_orig[i][XX];
                 (*x)[nq][YY] = x_orig[i][YY];
                 (*x)[nq][ZZ] = x_orig[i][ZZ];

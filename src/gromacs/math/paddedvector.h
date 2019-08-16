@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -231,26 +231,21 @@ class PaddedVector
             storage_(),
             unpaddedEnd_(begin())
         {}
-        /*! \brief Constructor that specifes the initial size.
-         *
-         * \todo This should also be specialized by allocator, but
-         * std::vector for storage_ doesn't have such a constructor
-         * before C++14. Resolve. */
-        explicit PaddedVector(size_type count) :
-            storage_(count),
+        /*! \brief Constructor that specifes the initial size. */
+        explicit PaddedVector(size_type             count,
+                              const allocator_type &allocator = Allocator()) :
+            storage_(count, allocator),
             unpaddedEnd_(begin() + count)
         {
             // The count elements have been default inserted, and now
             // the padding elements are added
             resizeWithPadding(count);
         }
-        /*! \brief Constructor that specifes the initial size and an element to copy.
-         *
-         * \todo This should also be specialized by allocator, but
-         * std::vector for storage_ doesn't have such a constructor
-         * before C++14. Resolve. */
-        explicit PaddedVector(size_type count, value_type const &v) :
-            storage_(count, v),
+        /*! \brief Constructor that specifes the initial size and an element to copy. */
+        explicit PaddedVector(size_type             count,
+                              value_type const     &v,
+                              const allocator_type &allocator = Allocator()) :
+            storage_(count, v, allocator),
             unpaddedEnd_(begin() + count)
         {
             // The count elements have been default inserted, and now

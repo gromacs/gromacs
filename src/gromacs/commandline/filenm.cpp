@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,7 +102,7 @@ opt2fns(const char *opt, int nfile, const t_filenm fnm[])
 
     GMX_RELEASE_ASSERT(false, "opt2fns should be called with a valid option");
 
-    return gmx::EmptyArrayRef();
+    return {};
 }
 
 gmx::ArrayRef<const std::string>
@@ -114,7 +114,7 @@ opt2fnsIfOptionSet(const char *opt, int nfile, const t_filenm fnm[])
     }
     else
     {
-        return gmx::EmptyArrayRef();
+        return {};
     }
 }
 
@@ -148,7 +148,7 @@ ftp2fns(int ftp, int nfile, const t_filenm fnm[])
 
     GMX_RELEASE_ASSERT(false, "ftp2fns should be called with a valid option");
 
-    return gmx::EmptyArrayRef();
+    return {};
 }
 
 gmx_bool ftp2bSet(int ftp, int nfile, const t_filenm fnm[])

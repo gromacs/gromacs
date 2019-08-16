@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,9 +39,11 @@
 
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
 class ekinstate_t;
@@ -57,33 +59,48 @@ struct t_nrnb;
 class t_state;
 
 /* Abstract type for update */
-struct gmx_update_t;
+struct gmx_stochd_t;
 
 namespace gmx
 {
 class BoxDeformation;
 class Constraints;
-}
 
-/* Initialize the stochastic dynamics struct */
-gmx_update_t *init_update(const t_inputrec    *ir,
-                          gmx::BoxDeformation *deform);
+
+/*! \libinternal
+ * \brief Contains data for update phase */
+class Update
+{
+    public:
+        //! Constructor
+        Update(const t_inputrec    *ir, BoxDeformation *boxDeformation);
+        ~Update();
+        // TODO Get rid of getters when more free functions are incorporated as member methods
+        //! Returns handle to stochd_t struct
+        gmx_stochd_t * sd() const;
+        //! Returns pointer to PaddedVector xp
+        PaddedVector<gmx::RVec> * xp();
+        //! Returns handle to box deformation class
+        BoxDeformation * deform() const;
+        //! Resizes xp
+        void setNumAtoms(int nAtoms);
+    private:
+        //! Implementation type.
+        class Impl;
+        //! Implementation object.
+        PrivateImplPointer<Impl> impl_;
+};
+
+}; // namespace gmx
 
 /* Update pre-computed constants that depend on the reference
  * temperature for coupling.
  *
  * This could change e.g. in simulated annealing. */
-void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir);
+void update_temperature_constants(gmx_stochd_t *sd, const t_inputrec *ir);
 
 /* Update the size of per-atom arrays (e.g. after DD re-partitioning,
    which might increase the number of home atoms). */
-void update_realloc(gmx_update_t *upd, int natoms);
-
-/* Store the box at step step
- * as a reference state for simulations with box deformation.
- */
-void set_deform_reference_box(gmx_update_t *upd,
-                              int64_t step, matrix box);
 
 void update_tcouple(int64_t           step,
                     const t_inputrec *inputrec,
@@ -117,27 +134,27 @@ void update_pcouple_after_coordinates(FILE             *fplog,
                                       const matrix      parrinellorahmanMu,
                                       t_state          *state,
                                       t_nrnb           *nrnb,
-                                      gmx_update_t     *upd);
+                                      gmx::Update      *upd);
 
-void update_coords(int64_t                              step,
-                   const t_inputrec                    *inputrec, /* input record and box stuff	*/
-                   const t_mdatoms                     *md,
-                   t_state                             *state,
-                   gmx::ArrayRefWithPadding<gmx::RVec>  f, /* forces on home particles */
-                   const t_fcdata                      *fcd,
-                   const gmx_ekindata_t                *ekind,
-                   const matrix                         M,
-                   gmx_update_t                        *upd,
-                   int                                  bUpdatePart,
-                   const t_commrec                     *cr, /* these shouldn't be here -- need to think about it */
-                   const gmx::Constraints              *constr);
+void update_coords(int64_t                             step,
+                   const t_inputrec                   *inputrec, /* input record and box stuff	*/
+                   const t_mdatoms                    *md,
+                   t_state                            *state,
+                   gmx::ArrayRefWithPadding<gmx::RVec> f, /* forces on home particles */
+                   const t_fcdata                     *fcd,
+                   const gmx_ekindata_t               *ekind,
+                   const matrix                        M,
+                   gmx::Update                        *upd,
+                   int                                 bUpdatePart,
+                   const t_commrec                    *cr, /* these shouldn't be here -- need to think about it */
+                   const gmx::Constraints             *constr);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 extern gmx_bool update_randomize_velocities(const t_inputrec *ir, int64_t step, const t_commrec *cr,
                                             const t_mdatoms *md,
                                             gmx::ArrayRef<gmx::RVec> v,
-                                            const gmx_update_t *upd,
+                                            const gmx::Update *upd,
                                             const gmx::Constraints *constr);
 
 void constrain_velocities(int64_t                        step,
@@ -149,37 +166,37 @@ void constrain_velocities(int64_t                        step,
                           bool                           do_log,
                           bool                           do_ene);
 
-void constrain_coordinates(int64_t                        step,
-                           real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
-                           t_state                       *state,
-                           tensor                         vir_part,
-                           gmx_update_t                  *upd,
-                           gmx::Constraints              *constr,
-                           gmx_bool                       bCalcVir,
-                           bool                           do_log,
-                           bool                           do_ene);
+void constrain_coordinates(int64_t           step,
+                           real             *dvdlambda, /* the contribution to be added to the bonded interactions */
+                           t_state          *state,
+                           tensor            vir_part,
+                           gmx::Update      *upd,
+                           gmx::Constraints *constr,
+                           gmx_bool          bCalcVir,
+                           bool              do_log,
+                           bool              do_ene);
 
-void update_sd_second_half(int64_t                        step,
-                           real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
-                           const t_inputrec              *inputrec,  /* input record and box stuff */
-                           const t_mdatoms               *md,
-                           t_state                       *state,
-                           const t_commrec               *cr,
-                           t_nrnb                        *nrnb,
-                           gmx_wallcycle_t                wcycle,
-                           gmx_update_t                  *upd,
-                           gmx::Constraints              *constr,
-                           bool                           do_log,
-                           bool                           do_ene);
+void update_sd_second_half(int64_t           step,
+                           real             *dvdlambda, /* the contribution to be added to the bonded interactions */
+                           const t_inputrec *inputrec,  /* input record and box stuff */
+                           const t_mdatoms  *md,
+                           t_state          *state,
+                           const t_commrec  *cr,
+                           t_nrnb           *nrnb,
+                           gmx_wallcycle_t   wcycle,
+                           gmx::Update      *upd,
+                           gmx::Constraints *constr,
+                           bool              do_log,
+                           bool              do_ene);
 
-void finish_update(const t_inputrec              *inputrec,
-                   const t_mdatoms               *md,
-                   t_state                       *state,
-                   const t_graph                 *graph,
-                   t_nrnb                        *nrnb,
-                   gmx_wallcycle_t                wcycle,
-                   gmx_update_t                  *upd,
-                   const gmx::Constraints        *constr);
+void finish_update(const t_inputrec       *inputrec,
+                   const t_mdatoms        *md,
+                   t_state                *state,
+                   const t_graph          *graph,
+                   t_nrnb                 *nrnb,
+                   gmx_wallcycle_t         wcycle,
+                   gmx::Update            *upd,
+                   const gmx::Constraints *constr);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
@@ -214,29 +231,28 @@ void
 restore_ekinstate_from_state(const t_commrec *cr,
                              gmx_ekindata_t *ekind, const ekinstate_t *ekinstate);
 
-void berendsen_tcoupl(const t_inputrec *ir, const gmx_ekindata_t *ekind, real dt,
+void berendsen_tcoupl(const t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
                       std::vector<double> &therm_integral); //NOLINT(google-runtime-references)
 
 void andersen_tcoupl(const t_inputrec *ir, int64_t step,
                      const t_commrec *cr, const t_mdatoms *md,
                      gmx::ArrayRef<gmx::RVec> v,
-                     real rate, const gmx_bool *randomize, const real *boltzfac);
+                     real rate, const std::vector<bool> &randomize,
+                     gmx::ArrayRef<const real> boltzfac);
 
 void nosehoover_tcoupl(const t_grpopts *opts, const gmx_ekindata_t *ekind, real dt,
                        double xi[], double vxi[], const t_extmass *MassQ);
 
 void trotter_update(const t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
-                    const gmx_enerdata_t *enerd, t_state *state, const tensor vir, const t_mdatoms *md,
-                    const t_extmass *MassQ, const int * const *trotter_seqlist, int trotter_seqno);
+                    const gmx_enerdata_t *enerd, t_state *state, const tensor vir,
+                    const t_mdatoms *md, const t_extmass *MassQ,
+                    gmx::ArrayRef < std::vector < int>> trotter_seqlist, int trotter_seqno);
 
-int **init_npt_vars(const t_inputrec *ir, t_state *state, t_extmass *Mass, gmx_bool bTrotter);
+std::array < std::vector < int>, ettTSEQMAX> init_npt_vars(const t_inputrec *ir, t_state *state,
+                                                           t_extmass *Mass, gmx_bool bTrotter);
 
 real NPT_energy(const t_inputrec *ir, const t_state *state, const t_extmass *MassQ);
 /* computes all the pressure/tempertature control energy terms to get a conserved energy */
-
-// TODO: This doesn't seem to be used or implemented anywhere
-void NBaroT_trotter(t_grpopts *opts, real dt,
-                    double xi[], double vxi[], real *veta, t_extmass *MassQ);
 
 void vrescale_tcoupl(const t_inputrec *ir, int64_t step,
                      gmx_ekindata_t *ekind, real dt,
@@ -247,8 +263,12 @@ void rescale_velocities(const gmx_ekindata_t *ekind, const t_mdatoms *mdatoms,
                         int start, int end, rvec v[]);
 /* Rescale the velocities with the scaling factor in ekind */
 
+//! Initialize simulated annealing.
+bool initSimulatedAnnealing(t_inputrec  *ir,
+                            gmx::Update *upd);
+
 // TODO: This is the only function in update.h altering the inputrec
-void update_annealing_target_temp(t_inputrec *ir, real t, gmx_update_t *upd);
+void update_annealing_target_temp(t_inputrec *ir, real t, gmx::Update *upd);
 /* Set reference temp for simulated annealing at time t*/
 
 real calc_temp(real ekin, real nrdf);
@@ -278,9 +298,7 @@ void berendsen_pscale(const t_inputrec *ir, const matrix mu,
                       rvec x[], const unsigned short cFREEZE[],
                       t_nrnb *nrnb);
 
-// TODO: This doesn't seem to be used or implemented anywhere
-void correct_ekin(FILE *log, int start, int end, rvec v[],
-                  rvec vcm, real mass[], real tmass, tensor ekin);
-/* Correct ekin for vcm */
+void pleaseCiteCouplingAlgorithms(FILE             *fplog,
+                                  const t_inputrec &ir);
 
 #endif

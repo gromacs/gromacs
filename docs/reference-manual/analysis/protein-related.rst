@@ -30,7 +30,7 @@ angles :math:`\phi` and :math:`\psi` of the protein backbone, see
 .. _fig-phipsi:
 
 .. figure:: plots/phipsi.*
-   :width: 5.00000cm
+   :width: 8.00000cm
 
    Definition of the dihedral angles :math:`\phi` and :math:`\psi` of
    the protein backbone.
@@ -42,7 +42,7 @@ is given in :numref:`Fig. %s <fig-rama>`.
 .. _fig-rama:
 
 .. figure:: plots/rama.* 
-    :width: 5.00000cm
+    :width: 15.00000cm
 
     Ramachandran plot of a small protein.
 
@@ -55,7 +55,7 @@ program. Two examples are plotted in
 .. _fig-hprwheel:
 
 .. figure:: plots/hpr-wheel.*
-   :width: 5.00000cm
+   :width: 10.00000cm
 
    Helical wheel projection of the N-terminal helix of HPr.
 

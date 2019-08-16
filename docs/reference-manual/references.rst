@@ -2540,5 +2540,19 @@ of simple systems*, (1994).
 
 .. raw:: html
 
+   <div id="ref-RoethlisbergerQMMM">
+
+.. _refRoethlisbergerQMMM:
+
+:sup:`180` A. Laio, J. VandeVondele, U. Rothlisberger, *A Hamiltonian
+electrostatic coupling scheme for hybrid Car-Parrinello
+molecular dynamics simulations*, (2002).
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
    </div>
 

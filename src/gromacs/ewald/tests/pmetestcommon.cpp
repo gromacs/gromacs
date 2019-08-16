@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,13 +45,15 @@
 
 #include <cstring>
 
+#include <algorithm>
+
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/ewald/pme-gather.h"
-#include "gromacs/ewald/pme-gpu-internal.h"
-#include "gromacs/ewald/pme-grid.h"
-#include "gromacs/ewald/pme-internal.h"
-#include "gromacs/ewald/pme-solve.h"
-#include "gromacs/ewald/pme-spread.h"
+#include "gromacs/ewald/pme_gather.h"
+#include "gromacs/ewald/pme_gpu_internal.h"
+#include "gromacs/ewald/pme_grid.h"
+#include "gromacs/ewald/pme_internal.h"
+#include "gromacs/ewald/pme_solve.h"
+#include "gromacs/ewald/pme_spread.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/invertmatrix.h"
@@ -83,7 +85,8 @@ bool pmeSupportsInputForMode(const gmx_hw_info_t &hwinfo,
             break;
 
         case CodePath::GPU:
-            implemented = (pme_gpu_supports_build(hwinfo, nullptr) &&
+            implemented = (pme_gpu_supports_build(nullptr) &&
+                           pme_gpu_supports_hardware(hwinfo, nullptr) &&
                            pme_gpu_supports_input(*inputRec, mtop, nullptr));
             break;
 
@@ -176,7 +179,7 @@ PmeSafePointer pmeInitAtoms(const t_inputrec         *inputRec,
                             )
 {
     const index     atomCount = coordinates.size();
-    GMX_RELEASE_ASSERT(atomCount == charges.size(), "Mismatch in atom data");
+    GMX_RELEASE_ASSERT(atomCount == charges.ssize(), "Mismatch in atom data");
     PmeSafePointer  pmeSafe = pmeInitInternal(inputRec, mode, gpuInfo, pmeGpuProgram, atomCount, box);
     pme_atomcomm_t *atc     = nullptr;
 
@@ -379,7 +382,7 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
 {
     pme_atomcomm_t *atc                     = &(pme->atc[0]);
     const index     atomCount               = atc->n;
-    GMX_RELEASE_ASSERT(forces.size() == atomCount, "Invalid force buffer size");
+    GMX_RELEASE_ASSERT(forces.ssize() == atomCount, "Invalid force buffer size");
     const bool      forceReductionWithInput = (inputTreatment == PmeForceOutputHandling::ReduceWithInput);
     const real      scale                   = 1.0;
     const size_t    threadIndex             = 0;
@@ -404,20 +407,14 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
         case CodePath::GPU:
         {
             // Variable initialization needs a non-switch scope
-            auto stagingForces = pme_gpu_get_forces(pme->gpu);
-            GMX_ASSERT(forces.size() == stagingForces.size(), "Size of force buffers did not match");
+            PmeOutput output = pme_gpu_getOutput(*pme, GMX_PME_CALC_F);
+            GMX_ASSERT(forces.size() == output.forces_.size(), "Size of force buffers did not match");
             if (forceReductionWithInput)
             {
-                for (index i = 0; i != forces.size(); ++i)
-                {
-                    stagingForces[i] = forces[i];
-                }
+                std::copy(std::begin(forces), std::end(forces), std::begin(output.forces_));
             }
             pme_gpu_gather(pme->gpu, inputTreatment, reinterpret_cast<float *>(fftgrid));
-            for (index i = 0; i != forces.size(); ++i)
-            {
-                forces[i] = stagingForces[i];
-            }
+            std::copy(std::begin(output.forces_), std::end(output.forces_), std::begin(forces));
         }
         break;
 
@@ -451,7 +448,7 @@ void pmeSetSplineData(const gmx_pme_t *pme, CodePath mode,
     const index           atomCount   = atc->n;
     const index           pmeOrder    = pme->pme_order;
     const index           dimSize     = pmeOrder * atomCount;
-    GMX_RELEASE_ASSERT(dimSize == splineValues.size(), "Mismatch in spline data");
+    GMX_RELEASE_ASSERT(dimSize == splineValues.ssize(), "Mismatch in spline data");
     real                 *splineBuffer = pmeGetSplineDataInternal(pme, type, dimIndex);
 
     switch (mode)
@@ -476,7 +473,7 @@ void pmeSetGridLineIndices(const gmx_pme_t *pme, CodePath mode,
 {
     const pme_atomcomm_t       *atc         = &(pme->atc[0]);
     const index                 atomCount   = atc->n;
-    GMX_RELEASE_ASSERT(atomCount == gridLineIndices.size(), "Mismatch in gridline indices size");
+    GMX_RELEASE_ASSERT(atomCount == gridLineIndices.ssize(), "Mismatch in gridline indices size");
 
     IVec paddedGridSizeUnused, gridSize(0, 0, 0);
     pmeGetRealGridSizesInternal(pme, mode, gridSize, paddedGridSizeUnused);
@@ -677,23 +674,21 @@ SparseComplexGridValuesOutput pmeGetComplexGrid(const gmx_pme_t *pme, CodePath m
 }
 
 //! Getting the reciprocal energy and virial
-PmeSolveOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mode,
-                                               PmeSolveAlgorithm method)
+PmeOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mode,
+                                          PmeSolveAlgorithm method)
 {
-    real      energy = 0.0f;
-    Matrix3x3 virial;
-    matrix    virialTemp = {{0}}; //TODO get rid of
+    PmeOutput output;
     switch (mode)
     {
         case CodePath::CPU:
             switch (method)
             {
                 case PmeSolveAlgorithm::Coulomb:
-                    get_pme_ener_vir_q(pme->solve_work, pme->nthread, &energy, virialTemp);
+                    get_pme_ener_vir_q(pme->solve_work, pme->nthread, &output);
                     break;
 
                 case PmeSolveAlgorithm::LennardJones:
-                    get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &energy, virialTemp);
+                    get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &output);
                     break;
 
                 default:
@@ -704,7 +699,7 @@ PmeSolveOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mo
             switch (method)
             {
                 case PmeSolveAlgorithm::Coulomb:
-                    pme_gpu_get_energy_virial(pme->gpu, &energy, virialTemp);
+                    output = pme_gpu_getEnergyAndVirial(*pme);
                     break;
 
                 default:
@@ -715,14 +710,7 @@ PmeSolveOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mo
         default:
             GMX_THROW(InternalError("Test not implemented for this mode"));
     }
-    for (int i = 0; i < DIM; i++)
-    {
-        for (int j = 0; j < DIM; j++)
-        {
-            virial[i * DIM + j] = virialTemp[i][j];
-        }
-    }
-    return std::make_tuple(energy, virial);
+    return output;
 }
 
 }  // namespace test

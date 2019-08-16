@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,17 +54,17 @@
 
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/utility/any.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/variant.h"
 
-#include "testutils/refdata-checkers.h"
-#include "testutils/refdata-impl.h"
-#include "testutils/refdata-xml.h"
+#include "testutils/refdata_checkers.h"
+#include "testutils/refdata_impl.h"
+#include "testutils/refdata_xml.h"
 #include "testutils/testasserts.h"
 #include "testutils/testexceptions.h"
 #include "testutils/testfilemanager.h"
@@ -976,35 +976,35 @@ void TestReferenceChecker::checkVector(const double value[3], const char *id)
 }
 
 
-void TestReferenceChecker::checkVariant(const Variant &variant, const char *id)
+void TestReferenceChecker::checkAny(const Any &any, const char *id)
 {
-    if (variant.isType<bool>())
+    if (any.isType<bool>())
     {
-        checkBoolean(variant.cast<bool>(), id);
+        checkBoolean(any.cast<bool>(), id);
     }
-    else if (variant.isType<int>())
+    else if (any.isType<int>())
     {
-        checkInteger(variant.cast<int>(), id);
+        checkInteger(any.cast<int>(), id);
     }
-    else if (variant.isType<int64_t>())
+    else if (any.isType<int64_t>())
     {
-        checkInt64(variant.cast<int64_t>(), id);
+        checkInt64(any.cast<int64_t>(), id);
     }
-    else if (variant.isType<float>())
+    else if (any.isType<float>())
     {
-        checkFloat(variant.cast<float>(), id);
+        checkFloat(any.cast<float>(), id);
     }
-    else if (variant.isType<double>())
+    else if (any.isType<double>())
     {
-        checkDouble(variant.cast<double>(), id);
+        checkDouble(any.cast<double>(), id);
     }
-    else if (variant.isType<std::string>())
+    else if (any.isType<std::string>())
     {
-        checkString(variant.cast<std::string>(), id);
+        checkString(any.cast<std::string>(), id);
     }
     else
     {
-        GMX_THROW(TestException("Unsupported variant type"));
+        GMX_THROW(TestException("Unsupported any type"));
     }
 }
 
@@ -1033,7 +1033,7 @@ void TestReferenceChecker::checkKeyValueTreeValue(const KeyValueTreeValue &value
     }
     else
     {
-        checkVariant(value.asVariant(), id);
+        checkAny(value.asAny(), id);
     }
 }
 

@@ -1,0 +1,129 @@
+GROMACS 2019.1 release notes
+----------------------------
+
+This version was released on February 15, 2019. These release notes
+document the changes that have taken place in GROMACS since the
+initial version 2019, to fix known issues. It also incorporates all
+fixes made in version 2018.5 and earlier, which you can find described
+in the :ref:`release-notes`.
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix error with 2D/3D dynamic load balancing
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With 2D or 3D domain decomposition with dynamic load balancing,
+mdrun would exit with the error "The domain decomposition grid
+has shifted too much .." when a cell size was limited.
+
+:issue:`2830`
+
+Fix incorrect LJ repulsion force switching on GPUs
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using a CUDA or OpenCL GPU, the coefficient for the second order
+term for the LJ repulsion in the force switching function, called 'A'
+in the manual, had the wrong sign. This lead to very small errors in
+the forces and the pressure. Note that the dispersion force switching
+was correct. Although the effect on individual atoms pairs was negligible,
+their combined effect on the pressure could lead to deformation of
+CHARMM membrane systems, where LJ force switching is regularly applied.
+
+:issue:`2845`
+
+
+Fix segmentation fault in mdrun with domain decomposition
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2813`
+
+Fix segmentation fault with energy minimization with the group scheme
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Using energy minimization in combination with the group cutoff scheme
+and domain decomposition could lead to a segmentation fault.
+
+:issue:`2813`
+
+Correct free-energy Delta H output with mass lambda's
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When separate lambda parameters were used for perturbed mass
+free-energy contributions, these contributions were double counted
+in the Delta H output used for BAR calculations. Note that dH/dlambda
+was always correct
+
+:issue:`2703`
+:issue:`2849`
+
+Prevent mdrun -rerun from writing incorrect free-energy output
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Now mdrun -rerun exits with a fatal error when masses or constraints
+are perturbed. Their contributions to Hamiltonian differences and
+derivatives were incorrectly set to zero in version 2019.
+
+:issue:`2849`
+
+Fix possible division by zero in enforced-rotation code
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`1431`
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix trjconv -ndec
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This only works for writing .xtc files. The code and documentation now
+works correctly with .gro files, which was changed in 2016 release series so that
+it would only write fixed-width columns.
+
+:issue:`2824`
+:issue:`2037`
+
+Fix using index file groups when .tpr file not supplied
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Selections that use groups from a supplied index file can
+again be used even when a .tpr file is not supplied.
+
+:issue:`2847`
+
+Fix tune_pme
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The tool did not work due to a file reading error that is fixed now.
+
+:issue:`2827`
+
+Fixes that affect portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+With MSVC, disabled internal clFFT fallback used for OpenCL support
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+GROMACS requires MSVC 2017, and the GROMACS OpenCL build requires
+clFFT. If clFFT is found on the user's system, then all may be well,
+but the version of clFFT bundled within GROMACS cannot be built
+because only MSVC 2010 is supported by clFFT at this time. A
+configure-time fatal error is now issued in this case.
+
+:issue:`2500`
+
+Explicitly require 64-bit platforms for OpenCL
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A 64-bit OpenCL runtime is required by GROMACS.
+All known OpenCL implementations on 64-bit platforms are 64-bit
+(and there are no known 32-bit platforms with 64-bit OpenCL),
+hence we require a 64-bit platform at configure-time in OpenCL builds.
+A known unsupported 32-bit platform is ARMv7.
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+Improved docs for applying electric fields
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@
 #include <atomic>
 #include <functional>
 
-#include "gromacs/compat/make_unique.h"
+#include <memory>
 #include "gromacs/mdlib/simulationsignal.h"
 #include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdrun/runner.h"
@@ -53,7 +53,7 @@
 #include "gmxapi/session.h"
 #include "gmxapi/md/mdsignals.h"
 
-#include "session-impl.h"
+#include "session_impl.h"
 
 namespace gmxapi
 {

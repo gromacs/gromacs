@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,11 +50,11 @@
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/valuestore.h"
+#include "gromacs/utility/any.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/variant.h"
 
 #include "valueconverter.h"
 
@@ -102,7 +102,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
         //! \copydoc gmx::AbstractOptionStorage::valueCount()
         int valueCount() const override { return store_->valueCount(); }
         //! \copydoc gmx::AbstractOptionStorage::defaultValues()
-        std::vector<Variant> defaultValues() const override;
+        std::vector<Any> defaultValues() const override;
         /*! \copydoc gmx::AbstractOptionStorage::defaultValuesAsStrings()
          *
          * OptionStorageTemplate implements handling of defaultValueIfSet()
@@ -151,7 +151,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * should be considered whether the implementation can be made strongly
          * exception safe.
          */
-        void convertValue(const Variant &value) override = 0;
+        void convertValue(const Any &value) override = 0;
         /*! \brief
          * Processes values for a set after all have been converted.
          *
@@ -257,7 +257,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
         /*! \brief
          * Provides derived classes access to the current list of values.
          *
-         * The non-const variant should only be used from processAll() in
+         * The non-const any should only be used from processAll() in
          * derived classes if necessary.
          */
         ArrayRef<T>       values() { return store_->values(); }
@@ -327,11 +327,11 @@ class OptionStorageTemplateSimple : public OptionStorageTemplate<T>
         {
         }
 
-        std::vector<Variant>
-        normalizeValues(const std::vector<Variant> &values) const override
+        std::vector<Any>
+        normalizeValues(const std::vector<Any> &values) const override
         {
             const_cast<MyBase *>(this)->ensureConverterInitialized();
-            std::vector<Variant> result;
+            std::vector<Any> result;
             result.reserve(values.size());
             for (const auto &value : values)
             {
@@ -367,16 +367,16 @@ class OptionStorageTemplateSimple : public OptionStorageTemplate<T>
          * This can be overridden to serialize a different type than `T`
          * when using the option with KeyValueTreeObject.
          */
-        virtual Variant normalizeValue(const T &value) const
+        virtual Any normalizeValue(const T &value) const
         {
-            return Variant::create<T>(processValue(value));
+            return Any::create<T>(processValue(value));
         }
 
     private:
-        void convertValue(const Variant &variant) override
+        void convertValue(const Any &any) override
         {
             ensureConverterInitialized();
-            this->addValue(processValue(converter_.convert(variant)));
+            this->addValue(processValue(converter_.convert(any)));
         }
         void ensureConverterInitialized()
         {
@@ -472,9 +472,9 @@ std::unique_ptr<IOptionValueStore<T> > OptionStorageTemplate<T>::createStore(
 
 
 template <typename T>
-std::vector<Variant> OptionStorageTemplate<T>::defaultValues() const
+std::vector<Any> OptionStorageTemplate<T>::defaultValues() const
 {
-    std::vector<Variant> result;
+    std::vector<Any> result;
     if (hasFlag(efOption_NoDefaultValue))
     {
         return result;
@@ -483,7 +483,7 @@ std::vector<Variant> OptionStorageTemplate<T>::defaultValues() const
                        "Current option implementation can only provide default values before assignment");
     for (const auto &value : values())
     {
-        result.push_back(Variant::create<T>(value));
+        result.push_back(Any::create<T>(value));
     }
     return normalizeValues(result);
 }
@@ -601,7 +601,7 @@ void OptionStorageTemplate<T>::setDefaultValueIfSet(const T &value)
         GMX_THROW(APIError("defaultValueIfSet() is not supported with allowMultiple()"));
     }
     setFlag(efOption_DefaultValueIfSetExists);
-    defaultValueIfSet_ = compat::make_unique<T>(value);
+    defaultValueIfSet_ = std::make_unique<T>(value);
 }
 
 } // namespace gmx

@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="Number of Energy Terms">2</Int>
+  <String Name="log">          first         second
+    N/A             N/A         
+</String>
+</ReferenceData>

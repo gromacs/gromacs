@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,15 +41,15 @@
 
 #include <algorithm>
 
-#include "gromacs/ewald/ewald-utils.h"
+#include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/nb_verlet.h"
-#include "gromacs/mdlib/nbnxn_simd.h"
-#include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_geometry.h"
+#include "gromacs/nbnxm/nbnxm_simd.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
@@ -107,18 +107,17 @@ struct pot_derivatives_t
     real  md3; // -V''' at the cutoff
 };
 
-VerletbufListSetup verletbufGetListSetup(int nbnxnKernelType)
+VerletbufListSetup verletbufGetListSetup(Nbnxm::KernelType nbnxnKernelType)
 {
     /* Note that the current buffer estimation code only handles clusters
      * of size 1, 2 or 4, so for 4x8 or 8x8 we use the estimate for 4x4.
      */
     VerletbufListSetup listSetup;
 
-    listSetup.cluster_size_i = nbnxn_kernel_to_cluster_i_size(nbnxnKernelType);
-    listSetup.cluster_size_j = nbnxn_kernel_to_cluster_j_size(nbnxnKernelType);
+    listSetup.cluster_size_i = Nbnxm::IClusterSizePerKernelType[nbnxnKernelType];
+    listSetup.cluster_size_j = Nbnxm::JClusterSizePerKernelType[nbnxnKernelType];
 
-    if (nbnxnKernelType == nbnxnk8x8x8_GPU ||
-        nbnxnKernelType == nbnxnk8x8x8_PlainC)
+    if (!Nbnxm::kernelTypeUsesSimplePairlist(nbnxnKernelType))
     {
         /* The GPU kernels (except for OpenCL) split the j-clusters in two halves */
         listSetup.cluster_size_j /= 2;
@@ -134,24 +133,24 @@ VerletbufListSetup verletbufGetSafeListSetup(ListSetupType listType)
      * i- and j-cluster sizes, so we potentially overestimate, but never
      * underestimate, the buffer drift.
      */
-    int nbnxnKernelType;
+    Nbnxm::KernelType nbnxnKernelType;
 
     if (listType == ListSetupType::Gpu)
     {
-        nbnxnKernelType = nbnxnk8x8x8_GPU;
+        nbnxnKernelType = Nbnxm::KernelType::Gpu8x8x8;
     }
     else if (GMX_SIMD && listType == ListSetupType::CpuSimdWhenSupported)
     {
 #ifdef GMX_NBNXN_SIMD_2XNN
         /* We use the smallest cluster size to be on the safe side */
-        nbnxnKernelType = nbnxnk4xN_SIMD_2xNN;
+        nbnxnKernelType = Nbnxm::KernelType::Cpu4xN_Simd_2xNN;
 #else
-        nbnxnKernelType = nbnxnk4xN_SIMD_4xN;
+        nbnxnKernelType = Nbnxm::KernelType::Cpu4xN_Simd_4xN;
 #endif
     }
     else
     {
-        nbnxnKernelType = nbnxnk4x4_PlainC;
+        nbnxnKernelType = Nbnxm::KernelType::Cpu4x4_PlainC;
     }
 
     return verletbufGetListSetup(nbnxnKernelType);
@@ -216,12 +215,9 @@ static real getMass(const t_atoms &atoms,
 static void get_vsite_masses(const gmx_moltype_t  &moltype,
                              const gmx_ffparams_t &ffparams,
                              bool                  setMassesToOne,
-                             gmx::ArrayRef<real>   vsite_m,
-                             int                  *n_nonlin_vsite)
+                             gmx::ArrayRef<real>   vsite_m)
 {
-    GMX_RELEASE_ASSERT(n_nonlin_vsite, "Expect a valid pointer");
-
-    *n_nonlin_vsite = 0;
+    int numNonlinearVsites = 0;
 
     /* Check for virtual sites, determine mass from constructing atoms */
     for (const auto &ilist : extractILists(moltype.ilist, IF_VSITE))
@@ -284,7 +280,7 @@ static void get_vsite_masses(const gmx_moltype_t  &moltype,
                         {
                             vsite_m[a1] = std::min(vsite_m[a1], cam[j]);
                         }
-                        (*n_nonlin_vsite)++;
+                        numNonlinearVsites++;
                         break;
                 }
             }
@@ -323,27 +319,26 @@ static void get_vsite_masses(const gmx_moltype_t  &moltype,
             }
         }
     }
+
+    if (debug && numNonlinearVsites > 0)
+    {
+        fprintf(debug, "The molecule type has %d non-linear virtual constructions\n",
+                numNonlinearVsites);
+    }
 }
 
 static std::vector<VerletbufAtomtype>
-get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
-                            bool                   setMassesToOne,
-                            int                   *n_nonlin_vsite)
+getVerletBufferAtomtypes(const gmx_mtop_t &mtop,
+                         const bool        setMassesToOne)
 {
     std::vector<VerletbufAtomtype> att;
     int                            ft, i, a1, a2, a3, a;
     const t_iparams               *ip;
-    int                            n_nonlin_vsite_mol;
 
-    if (n_nonlin_vsite != nullptr)
-    {
-        *n_nonlin_vsite = 0;
-    }
-
-    for (const gmx_molblock_t &molblock : mtop->molblock)
+    for (const gmx_molblock_t &molblock : mtop.molblock)
     {
         int                  nmol    = molblock.nmol;
-        const gmx_moltype_t &moltype = mtop->moltype[molblock.type];
+        const gmx_moltype_t &moltype = mtop.moltype[molblock.type];
         const t_atoms       *atoms   = &moltype.atoms;
 
         /* Check for constraints, as they affect the kinetic energy.
@@ -360,7 +355,7 @@ get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
 
             for (i = 0; i < il.size(); i += 1+NRAL(ft))
             {
-                ip         = &mtop->ffparams.iparams[il.iatoms[i]];
+                ip         = &mtop.ffparams.iparams[il.iatoms[i]];
                 a1         = il.iatoms[i+1];
                 a2         = il.iatoms[i+2];
                 real mass1 = getMass(*atoms, a1, setMassesToOne);
@@ -382,7 +377,7 @@ get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
 
         for (i = 0; i < il.size(); i += 1+NRAL(F_SETTLE))
         {
-            ip         = &mtop->ffparams.iparams[il.iatoms[i]];
+            ip         = &mtop.ffparams.iparams[il.iatoms[i]];
             a1         = il.iatoms[i+1];
             a2         = il.iatoms[i+2];
             a3         = il.iatoms[i+3];
@@ -402,14 +397,9 @@ get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
 
         std::vector<real> vsite_m(atoms->nr);
         get_vsite_masses(moltype,
-                         mtop->ffparams,
+                         mtop.ffparams,
                          setMassesToOne,
-                         vsite_m,
-                         &n_nonlin_vsite_mol);
-        if (n_nonlin_vsite != nullptr)
-        {
-            *n_nonlin_vsite += nmol*n_nonlin_vsite_mol;
-        }
+                         vsite_m);
 
         for (a = 0; a < atoms->nr; a++)
         {
@@ -655,14 +645,14 @@ static real energyDrift(gmx::ArrayRef<const VerletbufAtomtype> att,
 
     // Here add up the contribution of all atom pairs in the system to
     // (estimated) energy drift by looping over all atom type pairs.
-    for (int i = 0; i < att.size(); i++)
+    for (int i = 0; i < att.ssize(); i++)
     {
         // Get the thermal displacement variance for the i-atom type
         const atom_nonbonded_kinetic_prop_t *prop_i = &att[i].prop;
         real                                 s2i_2d, s2i_3d;
         get_atom_sigma2(kT_fac, prop_i, &s2i_2d, &s2i_3d);
 
-        for (int j = i; j < att.size(); j++)
+        for (int j = i; j < att.ssize(); j++)
         {
             // Get the thermal displacement variance for the j-atom type
             const atom_nonbonded_kinetic_prop_t *prop_j = &att[j].prop;
@@ -847,7 +837,7 @@ static real maxSigma(real                                   kT_fac,
 {
     GMX_ASSERT(!att.empty(), "We should have at least one type");
     real smallestMass = att[0].prop.mass;
-    for (int i = 1; i < att.size(); i++)
+    for (int i = 1; i < att.ssize(); i++)
     {
         smallestMass = std::min(smallestMass, att[i].prop.mass);
     }
@@ -855,14 +845,14 @@ static real maxSigma(real                                   kT_fac,
     return 2*std::sqrt(kT_fac/smallestMass);
 }
 
-void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
-                             const t_inputrec *ir,
-                             int               nstlist,
-                             int               list_lifetime,
-                             real reference_temperature,
-                             const VerletbufListSetup *list_setup,
-                             int *n_nonlin_vsite,
-                             real *rlist)
+real
+calcVerletBufferSize(const gmx_mtop_t         &mtop,
+                     const real                boxVolume,
+                     const t_inputrec         &ir,
+                     const int                 nstlist,
+                     const int                 listLifetime,
+                     real                      referenceTemperature,
+                     const VerletbufListSetup &listSetup)
 {
     double                resolution;
     char                 *env;
@@ -875,24 +865,24 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     real                  rb, rl;
     real                  drift;
 
-    if (!EI_DYNAMICS(ir->eI))
+    if (!EI_DYNAMICS(ir.eI))
     {
         gmx_incons("Can only determine the Verlet buffer size for integrators that perform dynamics");
     }
-    if (ir->verletbuf_tol <= 0)
+    if (ir.verletbuf_tol <= 0)
     {
         gmx_incons("The Verlet buffer tolerance needs to be larger than zero");
     }
 
-    if (reference_temperature < 0)
+    if (referenceTemperature < 0)
     {
         /* We use the maximum temperature with multiple T-coupl groups.
          * We could use a per particle temperature, but since particles
          * interact, this might underestimate the buffer size.
          */
-        reference_temperature = maxReferenceTemperature(*ir);
+        referenceTemperature = maxReferenceTemperature(ir);
 
-        GMX_RELEASE_ASSERT(reference_temperature >= 0, "Without T-coupling we should not end up here");
+        GMX_RELEASE_ASSERT(referenceTemperature >= 0, "Without T-coupling we should not end up here");
     }
 
     /* Resolution of the buffer size */
@@ -929,14 +919,14 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
      */
 
     /* Worst case assumption: HCP packing of particles gives largest distance */
-    particle_distance = std::cbrt(boxvol*std::sqrt(2)/mtop->natoms);
+    particle_distance = std::cbrt(boxVolume*std::sqrt(2)/mtop.natoms);
 
     /* TODO: Obtain masses through (future) integrator functionality
      *       to avoid scattering the code with (or forgetting) checks.
      */
-    const bool setMassesToOne = (ir->eI == eiBD && ir->bd_fric > 0);
+    const bool setMassesToOne = (ir.eI == eiBD && ir.bd_fric > 0);
     const auto att            =
-        get_verlet_buffer_atomtypes(mtop, setMassesToOne, n_nonlin_vsite);
+        getVerletBufferAtomtypes(mtop, setMassesToOne);
     GMX_ASSERT(!att.empty(), "We expect at least one type");
 
     if (debug)
@@ -948,45 +938,45 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
 
     pot_derivatives_t ljDisp = { 0, 0, 0 };
     pot_derivatives_t ljRep  = { 0, 0, 0 };
-    real              repPow = mtop->ffparams.reppow;
+    real              repPow = mtop.ffparams.reppow;
 
-    if (ir->vdwtype == evdwCUT)
+    if (ir.vdwtype == evdwCUT)
     {
         real sw_range, md3_pswf;
 
-        switch (ir->vdw_modifier)
+        switch (ir.vdw_modifier)
         {
             case eintmodNONE:
             case eintmodPOTSHIFT:
                 /* -dV/dr of -r^-6 and r^-reppow */
-                ljDisp.md1 =     -6*std::pow(ir->rvdw, -7.0);
-                ljRep.md1  = repPow*std::pow(ir->rvdw, -(repPow + 1));
+                ljDisp.md1 =     -6*std::pow(ir.rvdw, -7.0);
+                ljRep.md1  = repPow*std::pow(ir.rvdw, -(repPow + 1));
                 /* The contribution of the higher derivatives is negligible */
                 break;
             case eintmodFORCESWITCH:
                 /* At the cut-off: V=V'=V''=0, so we use only V''' */
-                ljDisp.md3 = -md3_force_switch(6.0,    ir->rvdw_switch, ir->rvdw);
-                ljRep.md3  =  md3_force_switch(repPow, ir->rvdw_switch, ir->rvdw);
+                ljDisp.md3 = -md3_force_switch(6.0,    ir.rvdw_switch, ir.rvdw);
+                ljRep.md3  =  md3_force_switch(repPow, ir.rvdw_switch, ir.rvdw);
                 break;
             case eintmodPOTSWITCH:
                 /* At the cut-off: V=V'=V''=0.
                  * V''' is given by the original potential times
                  * the third derivative of the switch function.
                  */
-                sw_range   = ir->rvdw - ir->rvdw_switch;
+                sw_range   = ir.rvdw - ir.rvdw_switch;
                 md3_pswf   = 60.0/gmx::power3(sw_range);
 
-                ljDisp.md3 = -std::pow(ir->rvdw, -6.0   )*md3_pswf;
-                ljRep.md3  =  std::pow(ir->rvdw, -repPow)*md3_pswf;
+                ljDisp.md3 = -std::pow(ir.rvdw, -6.0   )*md3_pswf;
+                ljRep.md3  =  std::pow(ir.rvdw, -repPow)*md3_pswf;
                 break;
             default:
                 gmx_incons("Unimplemented VdW modifier");
         }
     }
-    else if (EVDW_PME(ir->vdwtype))
+    else if (EVDW_PME(ir.vdwtype))
     {
-        real b     = calc_ewaldcoeff_lj(ir->rvdw, ir->ewald_rtol_lj);
-        real r     = ir->rvdw;
+        real b     = calc_ewaldcoeff_lj(ir.rvdw, ir.ewald_rtol_lj);
+        real r     = ir.rvdw;
         real br    = b*r;
         real br2   = br*br;
         real br4   = br2*br2;
@@ -1002,46 +992,46 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         gmx_fatal(FARGS, "Energy drift calculation is only implemented for plain cut-off Lennard-Jones interactions");
     }
 
-    elfac = ONE_4PI_EPS0/ir->epsilon_r;
+    elfac = ONE_4PI_EPS0/ir.epsilon_r;
 
     // Determine the 1st and 2nd derivative for the electostatics
     pot_derivatives_t elec = { 0, 0, 0 };
 
-    if (ir->coulombtype == eelCUT || EEL_RF(ir->coulombtype))
+    if (ir.coulombtype == eelCUT || EEL_RF(ir.coulombtype))
     {
         real eps_rf, k_rf;
 
-        if (ir->coulombtype == eelCUT)
+        if (ir.coulombtype == eelCUT)
         {
             eps_rf = 1;
             k_rf   = 0;
         }
         else
         {
-            eps_rf = ir->epsilon_rf/ir->epsilon_r;
+            eps_rf = ir.epsilon_rf/ir.epsilon_r;
             if (eps_rf != 0)
             {
-                k_rf = (eps_rf - ir->epsilon_r)/( gmx::power3(ir->rcoulomb) * (2*eps_rf + ir->epsilon_r) );
+                k_rf = (eps_rf - ir.epsilon_r)/( gmx::power3(ir.rcoulomb) * (2*eps_rf + ir.epsilon_r) );
             }
             else
             {
                 /* epsilon_rf = infinity */
-                k_rf = 0.5/gmx::power3(ir->rcoulomb);
+                k_rf = 0.5/gmx::power3(ir.rcoulomb);
             }
         }
 
         if (eps_rf > 0)
         {
-            elec.md1 = elfac*(1.0/gmx::square(ir->rcoulomb) - 2*k_rf*ir->rcoulomb);
+            elec.md1 = elfac*(1.0/gmx::square(ir.rcoulomb) - 2*k_rf*ir.rcoulomb);
         }
-        elec.d2      = elfac*(2.0/gmx::power3(ir->rcoulomb) + 2*k_rf);
+        elec.d2      = elfac*(2.0/gmx::power3(ir.rcoulomb) + 2*k_rf);
     }
-    else if (EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD)
+    else if (EEL_PME(ir.coulombtype) || ir.coulombtype == eelEWALD)
     {
         real b, rc, br;
 
-        b        = calc_ewaldcoeff_q(ir->rcoulomb, ir->ewald_rtol);
-        rc       = ir->rcoulomb;
+        b        = calc_ewaldcoeff_q(ir.rcoulomb, ir.ewald_rtol);
+        rc       = ir.rcoulomb;
         br       = b*rc;
         elec.md1 = elfac*(b*std::exp(-br*br)*M_2_SQRTPI/rc + std::erfc(br)/(rc*rc));
         elec.d2  = elfac/(rc*rc)*(2*b*(1 + br*br)*std::exp(-br*br)*M_2_SQRTPI + 2*std::erfc(br)/rc);
@@ -1056,8 +1046,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
      * For inertial dynamics (not Brownian dynamics) the mass factor
      * is not included in kT_fac, it is added later.
      */
-    const real kT_fac = displacementVariance(*ir, reference_temperature,
-                                             list_lifetime*ir->delta_t);
+    const real kT_fac = displacementVariance(ir, referenceTemperature,
+                                             listLifetime*ir.delta_t);
 
     if (debug)
     {
@@ -1076,41 +1066,41 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     {
         ib = (ib0 + ib1)/2;
         rb = ib*resolution;
-        rl = std::max(ir->rvdw, ir->rcoulomb) + rb;
+        rl = std::max(ir.rvdw, ir.rcoulomb) + rb;
 
         /* Calculate the average energy drift at the last step
          * of the nstlist steps at which the pair-list is used.
          */
-        drift = energyDrift(att, &mtop->ffparams,
+        drift = energyDrift(att, &mtop.ffparams,
                             kT_fac,
                             &ljDisp, &ljRep, &elec,
-                            ir->rvdw, ir->rcoulomb,
-                            rl, boxvol);
+                            ir.rvdw, ir.rcoulomb,
+                            rl, boxVolume);
 
         /* Correct for the fact that we are using a Ni x Nj particle pair list
          * and not a 1 x 1 particle pair list. This reduces the drift.
          */
         /* We don't have a formula for 8 (yet), use 4 which is conservative */
         nb_clust_frac_pairs_not_in_list_at_cutoff =
-            surface_frac(std::min(list_setup->cluster_size_i, 4),
+            surface_frac(std::min(listSetup.cluster_size_i, 4),
                          particle_distance, rl)*
-            surface_frac(std::min(list_setup->cluster_size_j, 4),
+            surface_frac(std::min(listSetup.cluster_size_j, 4),
                          particle_distance, rl);
         drift *= nb_clust_frac_pairs_not_in_list_at_cutoff;
 
         /* Convert the drift to drift per unit time per atom */
-        drift /= nstlist*ir->delta_t*mtop->natoms;
+        drift /= nstlist*ir.delta_t*mtop.natoms;
 
         if (debug)
         {
             fprintf(debug, "ib %3d %3d %3d rb %.3f %dx%d fac %.3f drift %.1e\n",
                     ib0, ib, ib1, rb,
-                    list_setup->cluster_size_i, list_setup->cluster_size_j,
+                    listSetup.cluster_size_i, listSetup.cluster_size_j,
                     nb_clust_frac_pairs_not_in_list_at_cutoff,
                     drift);
         }
 
-        if (std::abs(drift) > ir->verletbuf_tol)
+        if (std::abs(drift) > ir.verletbuf_tol)
         {
             ib0 = ib;
         }
@@ -1120,7 +1110,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         }
     }
 
-    *rlist = std::max(ir->rvdw, ir->rcoulomb) + ib1*resolution;
+    return std::max(ir.rvdw, ir.rcoulomb) + ib1*resolution;
 }
 
 /* Returns the pairlist buffer size for use as a minimum buffer size
@@ -1330,7 +1320,7 @@ chanceOfUpdateGroupCrossingCell(const gmx_mtop_t       &mtop,
                                 real                    kT_fac,
                                 real                    cellSize)
 {
-    GMX_RELEASE_ASSERT(static_cast<size_t>(updateGrouping.size()) == mtop.moltype.size(),
+    GMX_RELEASE_ASSERT(updateGrouping.size() == mtop.moltype.size(),
                        "The update groups should match the topology");
 
     real chance = 0;
@@ -1364,7 +1354,7 @@ minCellSizeForAtomDisplacement(const gmx_mtop_t       &mtop,
 
     const bool setMassesToOne = (ir.eI == eiBD && ir.bd_fric > 0);
 
-    const auto atomtypes = get_verlet_buffer_atomtypes(&mtop, setMassesToOne, nullptr);
+    const auto atomtypes = getVerletBufferAtomtypes(mtop, setMassesToOne);
 
     const real kT_fac = displacementVariance(ir, temperature,
                                              ir.nstlist*ir.delta_t);

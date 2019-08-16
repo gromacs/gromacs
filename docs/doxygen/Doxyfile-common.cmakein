@@ -16,8 +16,7 @@ EXCLUDE                = @CMAKE_SOURCE_DIR@/src/external \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.cpp \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.h \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/scanner.cpp \
-                         @CMAKE_SOURCE_DIR@/src/api \
-                         @NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN@
+                         @CMAKE_SOURCE_DIR@/src/api
 EXCLUDE_PATTERNS       = @CMAKE_SOURCE_DIR@/src/gromacs/simd/impl_x86* \
                          @CMAKE_SOURCE_DIR@/src/gromacs/simd/impl_intel* \
                          @CMAKE_SOURCE_DIR@/src/gromacs/simd/impl_ibm* \

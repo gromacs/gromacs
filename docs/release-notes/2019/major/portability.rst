@@ -17,3 +17,9 @@ Updated the OpenCL requirement to version 1.2
 We now require at least OpenCL version 1.2 both for API and kernels. All
 currently targeted vendors' libraries do support it, so this is not a
 restriction in any way.
+
+Preliminary support for ARM Performance Libraries
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The ARM Performance Libraries can now be used for FFT transforms through
+the FFTW compatiblity layer. This can provide performance benefits over using
+a vanilla FFTW3 on recent ARMv8 architectures.

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,27 +38,48 @@
 #ifndef GMX_GMXPREPROCESS_H_DB_H
 #define GMX_GMXPREPROCESS_H_DB_H
 
-#include <stdio.h>
+#include <cstdio>
 
-#include "gromacs/gmxpreprocess/hackblock.h"
+#include <vector>
+
+#include "gromacs/utility/arrayref.h"
+
+struct MoleculePatch;
+struct MoleculePatchDatabase;
 
 /* functions for the h-database */
 
-void read_ab(char *line, const char *fn, t_hack *ab);
+void read_ab(char *line, const char *fn, MoleculePatch *ab);
 /* Read one add block */
 
-int read_h_db(const char *ffdir, t_hackblock **ah);
-/* Read the database from hdb file(s) in ffdir or current dir */
+/*! \brief
+ * Read the databse from hdb file(s).
+ *
+ * \param[in] ffdir Directory for files.
+ * \param[inout] globalPatches The database for atom modifications to populate.
+ * \returns The number of modifications stored.
+ */
+int read_h_db(const char *ffdir, std::vector<MoleculePatchDatabase> *globalPatches);
 
-void print_ab(FILE *out, t_hack *ab, char *nname);
+void print_ab(FILE *out, const MoleculePatch &ab, const char *nname);
 /* print one add block */
 
-void print_h_db(FILE *out, int nh, t_hackblock ah[]);
-/* Print the database to file */
+/*! \brief
+ * Print database.
+ *
+ * \param[in] out File to print to.
+ * \param[in] globalPatches Database to print.
+ */
+void print_h_db(FILE *out, gmx::ArrayRef<const MoleculePatchDatabase> globalPatches);
 
-int compaddh(const void *a, const void *b);
-
-t_hackblock *search_h_db(int nh, t_hackblock ah[], char *key);
+/*! \brief
+ * Search for an entry.
+ *
+ * \param[in] globalPatches Database to search.
+ * \param[in] key Name to search for.
+ */
+gmx::ArrayRef<MoleculePatchDatabase>::iterator
+search_h_db(gmx::ArrayRef<MoleculePatchDatabase> globalPatches, char *key);
 /* Search for an entry in the database */
 
 #endif

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,8 +71,8 @@
 #include <utility>
 #include <vector>
 
+#include "gromacs/utility/any.h"
 #include "gromacs/utility/real.h"
-#include "gromacs/utility/variant.h"
 
 namespace gmx
 {
@@ -184,13 +184,13 @@ class KeyValueTreeValue
         template <typename T>
         const T                  &cast() const { return value_.cast<T>(); }
 
-        //! Returns the raw Variant value (always possible).
-        const Variant            &asVariant() const { return value_; }
+        //! Returns the raw Any value (always possible).
+        const Any            &asAny() const { return value_; }
 
     private:
-        explicit KeyValueTreeValue(Variant &&value) : value_(std::move(value)) {}
+        explicit KeyValueTreeValue(Any &&value) : value_(std::move(value)) {}
 
-        Variant             value_;
+        Any             value_;
 
         friend class KeyValueTreeBuilder;
         friend class KeyValueTreeObjectBuilder;
@@ -350,7 +350,7 @@ void compareKeyValueTrees(TextWriter               *writer,
 static inline std::string
 simpleValueToString(const KeyValueTreeValue &value)
 {
-    return simpleValueToString(value.asVariant());
+    return simpleValueToString(value.asAny());
 }
 
 //! \endcond

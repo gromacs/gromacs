@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -593,7 +593,17 @@ static void dist_plot(const char *fn, const char *afile, const char *dfile,
         xvgrclose(res);
     }
 
-    sfree(x0);
+    if (x0)
+    {
+        sfree(x0);
+    }
+
+    int freeLeg = bMat ? (ng == 1 ? 1 : (ng*(ng-1))/2)  : ng - 1;
+    for (int i = 0; i < freeLeg; i++)
+    {
+        sfree(leg[i]);
+    }
+    sfree(leg);
 }
 
 static int find_residues(const t_atoms *atoms, int n, const int index[], int **resindex)
@@ -667,11 +677,11 @@ int gmx_mindist(int argc, char *argv[])
         "Also [gmx-distance] and [gmx-pairdist] calculate distances."
     };
 
-    static gmx_bool   bMat             = FALSE, bPI = FALSE, bSplit = FALSE, bMax = FALSE, bPBC = TRUE;
-    static gmx_bool   bGroup           = FALSE;
-    static real       rcutoff          = 0.6;
-    static int        ng               = 1;
-    static gmx_bool   bEachResEachTime = FALSE, bPrintResName = FALSE;
+    gmx_bool          bMat             = FALSE, bPI = FALSE, bSplit = FALSE, bMax = FALSE, bPBC = TRUE;
+    gmx_bool          bGroup           = FALSE;
+    real              rcutoff          = 0.6;
+    int               ng               = 1;
+    gmx_bool          bEachResEachTime = FALSE, bPrintResName = FALSE;
     t_pargs           pa[]             = {
         { "-matrix", FALSE, etBOOL, {&bMat},
           "Calculate half a matrix of group-group distances" },
@@ -697,7 +707,7 @@ int gmx_mindist(int argc, char *argv[])
     gmx_output_env_t *oenv;
     t_topology       *top  = nullptr;
     int               ePBC = -1;
-    rvec             *x;
+    rvec             *x    = nullptr;
     matrix            box;
     gmx_bool          bTop = FALSE;
 
@@ -822,6 +832,18 @@ int gmx_mindist(int argc, char *argv[])
     {
         do_view(oenv, numfnm, "-nxy");
     }
+
+    output_env_done(oenv);
+    done_top(top);
+    for (int i = 0; i < ng; i++)
+    {
+        sfree(index[i]);
+    }
+    sfree(index);
+    sfree(gnx);
+    sfree(x);
+    sfree(grpname);
+    sfree(top);
 
     return 0;
 }

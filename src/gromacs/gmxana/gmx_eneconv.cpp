@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/listed-forces/disre.h"
+#include "gromacs/listed_forces/disre.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -123,10 +123,10 @@ static int *select_it(int nre, gmx_enxnm_t *nm, int *nset)
 
 static void sort_files(gmx::ArrayRef<std::string> files, real *settime)
 {
-    for (gmx::index i = 0; i < files.size(); i++)
+    for (gmx::index i = 0; i < files.ssize(); i++)
     {
         gmx::index minidx = i;
-        for (gmx::index j = i + 1; j < files.size(); j++)
+        for (gmx::index j = i + 1; j < files.ssize(); j++)
         {
             if (settime[j] < settime[minidx])
             {
@@ -244,7 +244,7 @@ static void edit_files(gmx::ArrayRef<std::string> files, real *readtime,
         fprintf(stderr, "          File             Current start       New start\n"
                 "---------------------------------------------------------\n");
 
-        for (gmx::index i = 0; i < files.size(); i++)
+        for (gmx::index i = 0; i < files.ssize(); i++)
         {
             fprintf(stderr, "%25s   %10.3f             ", files[i].c_str(), readtime[i]);
             ok = FALSE;
@@ -295,7 +295,7 @@ static void edit_files(gmx::ArrayRef<std::string> files, real *readtime,
     }
     else
     {
-        for (gmx::index i = 0; i < files.size(); i++)
+        for (gmx::index i = 0; i < files.ssize(); i++)
         {
             settime[i] = readtime[i];
         }
@@ -315,7 +315,7 @@ static void edit_files(gmx::ArrayRef<std::string> files, real *readtime,
     fprintf(stderr, "\nSummary of files and start times used:\n\n"
             "          File                Start time\n"
             "-----------------------------------------\n");
-    for (gmx::index i = 0; i < files.size(); i++)
+    for (gmx::index i = 0; i < files.ssize(); i++)
     {
         switch (cont_type[i])
         {

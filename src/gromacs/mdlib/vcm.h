@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,8 @@
 
 #include <stdio.h>
 
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -48,35 +50,41 @@ struct gmx_groups_t;
 struct t_inputrec;
 struct t_mdatoms;
 
-typedef struct {
-    rvec      p;        /* Linear momentum                     */
-    rvec      x;        /* Center of mass                      */
-    rvec      j;        /* Angular momentum                    */
-    tensor    i;        /* Moment of inertia                   */
-    real      mass;     /* Mass                                */
-} t_vcm_thread;
+struct t_vcm_thread{
+    rvec      p    = {0};   /* Linear momentum                     */
+    rvec      x    = {0};   /* Center of mass                      */
+    rvec      j    = {0};   /* Angular momentum                    */
+    tensor    i    = {{0}}; /* Moment of inertia                   */
+    real      mass = 0;     /* Mass                                */
+};
 
-typedef struct {
-    int           nr;          /* Number of groups                    */
-    int           size;        /* Size of group arrays                */
-    int           stride;      /* Stride for thread data              */
-    int           mode;        /* One of the enums above              */
-    int           ndim;        /* The number of dimensions for corr.  */
-    real          timeStep;    /* The time step for COMM removal      */
-    real         *group_ndf;   /* Number of degrees of freedom        */
-    rvec         *group_p;     /* Linear momentum per group           */
-    rvec         *group_v;     /* Linear velocity per group           */
-    rvec         *group_x;     /* Center of mass per group            */
-    rvec         *group_j;     /* Angular momentum per group          */
-    rvec         *group_w;     /* Angular velocity (omega)            */
-    tensor       *group_i;     /* Moment of inertia per group         */
-    real         *group_mass;  /* Mass per group                      */
-    char        **group_name;  /* These two are copies to pointers in */
-    ivec         *nFreeze;     /* Tells whether dimensions are frozen per freeze group */
-    t_vcm_thread *thread_vcm;  /* Temporary data per thread and group */
-} t_vcm;
+struct t_vcm
+{
+    int                       nr;         /* Number of groups                    */
+    int                       size;       /* Size of group arrays                */
+    int                       stride;     /* Stride for thread data              */
+    int                       mode;       /* One of the enums above              */
+    int                       ndim;       /* The number of dimensions for corr.  */
+    real                      timeStep;   /* The time step for COMM removal      */
+    std::vector<real>         group_ndf;  /* Number of degrees of freedom        */
+    std::vector<real>         group_mass; /* Mass per group                      */
+    std::vector<gmx::RVec>    group_p;    /* Linear momentum per group           */
+    std::vector<gmx::RVec>    group_v;    /* Linear velocity per group           */
+    std::vector<gmx::RVec>    group_x;    /* Center of mass per group            */
+    std::vector<gmx::RVec>    group_j;    /* Angular momentum per group          */
+    std::vector<gmx::RVec>    group_w;    /* Angular velocity (omega)            */
+    tensor                   *group_i;    /* Moment of inertia per group         */
+    std::vector<char *>       group_name; /* These two are copies to pointers in */
+    ivec                     *nFreeze;    /* Tells whether dimensions are frozen per freeze group */
+    std::vector<t_vcm_thread> thread_vcm; /* Temporary data per thread and group */
 
-t_vcm *init_vcm(FILE *fp, const gmx_groups_t *groups, const t_inputrec *ir);
+    t_vcm(const gmx_groups_t &groups, const t_inputrec &ir);
+    ~t_vcm();
+};
+
+/* print COM removal info to log */
+void reportComRemovalInfo(FILE * fp, const t_vcm &vcm);
+
 
 /* Do a per group center of mass things */
 void calc_vcm_grp(int start, int homenr, t_mdatoms *md,

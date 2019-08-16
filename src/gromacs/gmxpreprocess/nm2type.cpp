@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
+#include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/gmxpreprocess/toppush.h"
@@ -190,20 +191,17 @@ static int match_str(const char *atom, const char *template_string)
     }
 }
 
-int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
-            gpp_atomtype_t atype, int *nbonds, t_params *bonds)
+int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
+            PreprocessingAtomTypes *atype, int *nbonds, InteractionTypeParameters *bonds)
 {
-    int      cur = 0;
+    int          cur = 0;
 #define prev (1-cur)
-    int      i, j, k, m, n, nresolved, nb, maxbond, ai, aj, best, im, nqual[2][ematchNR];
-    int     *bbb, *n_mask, *m_mask, **match;
-    char    *aname_i, *aname_m, *aname_n, *type;
-    double   qq, mm;
-    t_param *param;
+    int          nresolved, nb, maxbond, nqual[2][ematchNR];
+    int         *bbb, *n_mask, *m_mask, **match;
+    char        *aname_i, *aname_n;
 
-    snew(param, 1);
     maxbond = 0;
-    for (i = 0; (i < atoms->nr); i++)
+    for (int i = 0; (i < atoms->nr); i++)
     {
         maxbond = std::max(maxbond, nbonds[i]);
     }
@@ -215,20 +213,20 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
     snew(n_mask, maxbond);
     snew(m_mask, maxbond);
     snew(match, maxbond);
-    for (i = 0; (i < maxbond); i++)
+    for (int i = 0; (i < maxbond); i++)
     {
         snew(match[i], maxbond);
     }
 
     nresolved = 0;
-    for (i = 0; (i < atoms->nr); i++)
+    for (int i = 0; (i < atoms->nr); i++)
     {
         aname_i = *atoms->atomname[i];
         nb      = 0;
-        for (j = 0; (j < bonds->nr); j++)
+        for (const auto &bond : bonds->interactionTypes)
         {
-            ai = bonds->param[j].ai();
-            aj = bonds->param[j].aj();
+            int ai = bond.ai();
+            int aj = bond.aj();
             if (ai == i)
             {
                 bbb[nb++] = aj;
@@ -246,52 +244,52 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
         if (debug)
         {
             fprintf(debug, "%4s has bonds to", aname_i);
-            for (j = 0; (j < nb); j++)
+            for (int j = 0; (j < nb); j++)
             {
                 fprintf(debug, " %4s", *atoms->atomname[bbb[j]]);
             }
             fprintf(debug, "\n");
         }
-        best = -1;
-        for (k = 0; (k < ematchNR); k++)
+        int best = -1;
+        for (int k = 0; (k < ematchNR); k++)
         {
             nqual[prev][k] = 0;
         }
 
         /* First check for names */
-        for (k = 0; (k < nnm); k++)
+        for (int k = 0; (k < nnm); k++)
         {
             if (nm2t[k].nbonds == nb)
             {
-                im = match_str(*atoms->atomname[i], nm2t[k].elem);
+                int im = match_str(*atoms->atomname[i], nm2t[k].elem);
                 if (im > ematchWild)
                 {
-                    for (j = 0; (j < ematchNR); j++)
+                    for (int j = 0; (j < ematchNR); j++)
                     {
                         nqual[cur][j] = 0;
                     }
 
                     /* Fill a matrix with matching quality */
-                    for (m = 0; (m < nb); m++)
+                    for (int m = 0; (m < nb); m++)
                     {
-                        aname_m = *atoms->atomname[bbb[m]];
-                        for (n = 0; (n < nb); n++)
+                        const char *aname_m = *atoms->atomname[bbb[m]];
+                        for (int n = 0; (n < nb); n++)
                         {
                             aname_n     = nm2t[k].bond[n];
                             match[m][n] = match_str(aname_m, aname_n);
                         }
                     }
                     /* Now pick the best matches */
-                    for (m = 0; (m < nb); m++)
+                    for (int m = 0; (m < nb); m++)
                     {
                         n_mask[m] = 0;
                         m_mask[m] = 0;
                     }
-                    for (j = ematchNR-1; (j > 0); j--)
+                    for (int j = ematchNR-1; (j > 0); j--)
                     {
-                        for (m = 0; (m < nb); m++)
+                        for (int m = 0; (m < nb); m++)
                         {
-                            for (n = 0; (n < nb); n++)
+                            for (int n = 0; (n < nb); n++)
                             {
                                 if ((n_mask[n] == 0) &&
                                     (m_mask[m] == 0) &&
@@ -326,19 +324,20 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
         }
         if (best != -1)
         {
-            int  atomnr = 0;
-            real alpha  = 0;
+            int         atomnr = 0;
+            real        alpha  = 0;
 
-            qq   = nm2t[best].q;
-            mm   = nm2t[best].m;
-            type = nm2t[best].type;
+            double      qq   = nm2t[best].q;
+            double      mm   = nm2t[best].m;
+            const char *type = nm2t[best].type;
 
-            if ((k = get_atomtype_type(type, atype)) == NOTSET)
+            int         k;
+            if ((k = atype->atomTypeFromName(type)) == NOTSET)
             {
                 atoms->atom[i].qB = alpha;
                 atoms->atom[i].m  = atoms->atom[i].mB = mm;
-                k                 = add_atomtype(atype, tab, &(atoms->atom[i]), type, param,
-                                                 atoms->atom[i].type, atomnr);
+                k                 = atype->addType(tab, atoms->atom[i], type, InteractionType({}, {}),
+                                                   atoms->atom[i].type, atomnr);
             }
             atoms->atom[i].type  = k;
             atoms->atom[i].typeB = k;
@@ -357,7 +356,6 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
     sfree(bbb);
     sfree(n_mask);
     sfree(m_mask);
-    sfree(param);
 
     return nresolved;
 }

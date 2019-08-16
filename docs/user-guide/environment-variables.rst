@@ -282,9 +282,6 @@ Performance and Run Control
 ``GMX_NOOPTIMIZEDKERNELS``
         deprecated, use ``GMX_DISABLE_SIMD_KERNELS`` instead.
 
-``GMX_NO_ALLVSALL``
-        disables optimized all-vs-all kernels.
-
 ``GMX_NO_CART_REORDER``
         used in initializing domain decomposition communicators. Rank reordering
         is default, but can be switched off with this environment variable.
@@ -487,6 +484,10 @@ compilation of OpenCL kernels, but they are also used in device selection.
         Disables the hardware compatibility check. Useful for developers
         and allows testing the OpenCL kernels on non-supported platforms
         (like Intel iGPUs) without source code modification.
+
+``GMX_OCL_SHOW_DIAGNOSTICS``
+        Use Intel OpenCL extension to show additional runtime performance
+        diagnostics.
 
 Analysis and Core Functions
 ---------------------------

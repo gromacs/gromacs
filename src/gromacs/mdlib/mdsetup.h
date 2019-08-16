@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,15 +69,15 @@ class MDAtoms;
  * \param[in,out] vsite      The virtual site data, can be NULL
  * \param[in,out] shellfc    The shell/flexible-constraint data, can be NULL
  */
-void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
-                               const t_inputrec  *ir,
-                               const gmx_mtop_t  *top_global,
-                               gmx_localtop_t    *top,
-                               t_forcerec        *fr,
-                               t_graph          **graph,
-                               gmx::MDAtoms      *mdAtoms,
-                               gmx::Constraints  *constr,
-                               gmx_vsite_t       *vsite,
-                               gmx_shellfc_t     *shellfc);
+void mdAlgorithmsSetupAtomData(const t_commrec                 *cr,
+                               const t_inputrec                *ir,
+                               const gmx_mtop_t                &top_global,
+                               gmx_localtop_t                  *top,
+                               t_forcerec                      *fr,
+                               t_graph                        **graph,
+                               gmx::MDAtoms                    *mdAtoms,
+                               gmx::Constraints                *constr,
+                               gmx_vsite_t                     *vsite,
+                               gmx_shellfc_t                   *shellfc);
 
 #endif

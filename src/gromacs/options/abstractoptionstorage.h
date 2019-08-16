@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2015,2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@ namespace gmx
 class AbstractOption;
 class OptionInfo;
 class Options;
-class Variant;
+class Any;
 
 /*! \libinternal \brief
  * Abstract base class for converting, validating, and storing option values.
@@ -140,11 +140,11 @@ class AbstractOptionStorage
          */
         virtual int valueCount() const = 0;
         //! \copydoc OptionInfo::defaultValues()
-        virtual std::vector<Variant> defaultValues() const = 0;
+        virtual std::vector<Any> defaultValues() const = 0;
         //! \copydoc OptionInfo::defaultValuesAsStrings()
         virtual std::vector<std::string> defaultValuesAsStrings() const = 0;
         //! \copydoc OptionInfo::normalizeValues()
-        virtual std::vector<Variant> normalizeValues(const std::vector<Variant> &values) const = 0;
+        virtual std::vector<Any> normalizeValues(const std::vector<Any> &values) const = 0;
 
         /*! \brief
          * Starts adding values from a new source for the option.
@@ -178,7 +178,7 @@ class AbstractOptionStorage
          * This method should only be called between startSet() and
          * finishSet().
          */
-        void appendValue(const Variant &value);
+        void appendValue(const Any &value);
         /*! \brief
          * Performs validation and/or actions once a set of values has been
          * added.
@@ -276,7 +276,7 @@ class AbstractOptionStorage
          *
          * \see OptionStorageTemplate::convertValue()
          */
-        virtual void convertValue(const Variant &value) = 0;
+        virtual void convertValue(const Any &value) = 0;
         /*! \brief
          * Performs validation and/or actions once a set of values has been
          * added.

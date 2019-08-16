@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,7 +97,6 @@ static void comp_tpx(const char *fn1, const char *fn2,
     t_inputrec    *ir[2];
     t_state        state[2];
     gmx_mtop_t     mtop[2];
-    t_topology     top[2];
     int            i;
 
     ff[0] = fn1;
@@ -111,15 +110,7 @@ static void comp_tpx(const char *fn1, const char *fn2,
     if (fn2)
     {
         cmp_inputrec(stdout, ir[0], ir[1], ftol, abstol);
-        /* Convert gmx_mtop_t to t_topology.
-         * We should implement direct mtop comparison,
-         * but it might be useful to keep t_topology comparison as an option.
-         */
-        top[0] = gmx_mtop_t_to_t_topology(&mtop[0], false);
-        top[1] = gmx_mtop_t_to_t_topology(&mtop[1], false);
-        cmp_top(stdout, &top[0], &top[1], ftol, abstol);
-        cmp_groups(stdout, &mtop[0].groups, &mtop[1].groups,
-                   mtop[0].natoms, mtop[1].natoms);
+        compareMtop(stdout, mtop[0], mtop[1], ftol, abstol);
         comp_state(&state[0], &state[1], bRMSD, ftol, abstol);
     }
     else
@@ -134,12 +125,7 @@ static void comp_tpx(const char *fn1, const char *fn2,
             {
                 comp_pull_AB(stdout, ir[0]->pull, ftol, abstol);
             }
-            /* Convert gmx_mtop_t to t_topology.
-             * We should implement direct mtop comparison,
-             * but it might be useful to keep t_topology comparison as an option.
-             */
-            top[0] = gmx_mtop_t_to_t_topology(&mtop[0], true);
-            cmp_top(stdout, &top[0], nullptr, ftol, abstol);
+            compareMtopAB(stdout, mtop[0], ftol, abstol);
         }
     }
 }
@@ -308,22 +294,22 @@ static void chk_bonds(t_idef *idef, int ePBC, rvec *x, matrix box, real tol)
 
 static void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real tol)
 {
-    t_trxframe       fr;
-    t_count          count;
-    t_fr_time        first, last;
-    int              j = -1, new_natoms, natoms;
-    real             old_t1, old_t2;
-    gmx_bool         bShowTimestep = TRUE, newline = FALSE;
-    t_trxstatus     *status;
-    gmx_mtop_t       mtop;
-    gmx_localtop_t  *top = nullptr;
-    t_state          state;
-    t_inputrec       ir;
+    t_trxframe     fr;
+    t_count        count;
+    t_fr_time      first, last;
+    int            j = -1, new_natoms, natoms;
+    real           old_t1, old_t2;
+    gmx_bool       bShowTimestep = TRUE, newline = FALSE;
+    t_trxstatus   *status;
+    gmx_mtop_t     mtop;
+    gmx_localtop_t top;
+    t_state        state;
+    t_inputrec     ir;
 
     if (tpr)
     {
         read_tpx_state(tpr, &ir, &state, &mtop);
-        top = gmx_mtop_generate_local_top(&mtop, ir.efep != efepNO);
+        gmx_mtop_generate_local_top(mtop, &top, ir.efep != efepNO);
     }
     new_natoms = -1;
     natoms     = -1;
@@ -390,7 +376,7 @@ static void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tp
         natoms = new_natoms;
         if (tpr)
         {
-            chk_bonds(&top->idef, ir.ePBC, fr.x, fr.box, tol);
+            chk_bonds(&top.idef, ir.ePBC, fr.x, fr.box, tol);
         }
         if (fr.bX)
         {
@@ -455,7 +441,6 @@ static void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
     gmx_bool       bV, bX, bB, bFirst, bOut;
     real           r2, ekin, temp1, temp2, dist2, vdwfac2, bonlo2, bonhi2;
     real          *atom_vdw;
-    gmx_atomprop_t aps;
 
     fprintf(stderr, "Checking coordinate file %s\n", fn);
     read_tps_conf(fn, &top, &ePBC, &x, &v, box, TRUE);
@@ -520,12 +505,12 @@ static void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
                 "relative to sum of Van der Waals distance:\n",
                 vdw_fac, bon_lo, bon_hi);
         snew(atom_vdw, natom);
-        aps = gmx_atomprop_init();
+        AtomProperties aps;
         for (i = 0; (i < natom); i++)
         {
-            gmx_atomprop_query(aps, epropVDW,
-                               *(atoms->resinfo[atoms->atom[i].resind].name),
-                               *(atoms->atomname[i]), &(atom_vdw[i]));
+            aps.setAtomProperty(epropVDW,
+                                *(atoms->resinfo[atoms->atom[i].resind].name),
+                                *(atoms->atomname[i]), &(atom_vdw[i]));
             if (debug)
             {
                 fprintf(debug, "%5d %4s %4s %7g\n", i+1,
@@ -534,7 +519,6 @@ static void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
                         atom_vdw[i]);
             }
         }
-        gmx_atomprop_destroy(aps);
         if (bB)
         {
             set_pbc(&pbc, ePBC, box);

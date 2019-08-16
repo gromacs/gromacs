@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,7 @@ namespace gmx
 {
 
 class Options;
-class Variant;
+class Any;
 
 /*! \libinternal \brief
  * Decorator class for assigning values to Options.
@@ -167,13 +167,13 @@ class OptionsAssigner
          * OptionStorageTemplate::convertValue() method of the storage class
          * implementing the option where the value is assigned to.
          */
-        void appendValue(const Variant &value);
+        void appendValue(const Any &value);
         /*! \brief
          * Appends a value to the value list of the current option.
          *
          * \param[in] value  Value to assign.
          *
-         * See appendValue(const Variant &) for more details.
+         * See appendValue(const Any &) for more details.
          */
         void appendValue(const std::string &value);
         /*! \brief

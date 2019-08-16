@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -424,7 +424,7 @@ class MDHolder
          *
          *     # With `system` as a gmxapi::System object
          *     auto spec = system->getSpec();
-         *     auto holder = gmx::compat::make_unique<gmxapi::MDHolder>(spec);
+         *     auto holder = std::make_unique<gmxapi::MDHolder>(spec);
          *
          * A PyCapsule object with the name given by gmxapi::MDHolder_Name is assumed to
          * contain a pointer to an MDHolder and to have an appropriate deleter attached.

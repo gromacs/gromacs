@@ -40,3 +40,9 @@ Bonded interactions are now supported for CUDA GPU offload
 Common types of bonded and LJ-14 interactions found can now run on
 NVIDIA GPUs with CUDA, with and without domain decomposition.
 Interactions with perturbed parameters are not supported.
+
+Added code generation support for NVIDIA Turing GPUs
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+With CUDA 10.0 NVIDIA Turing GPUs can be directly targeted by the nvcc
+compiler. We now generate the appropriate set of flags for the Turing architecture
+by default when using CUDA 10 (or later).

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,8 +105,8 @@ class ExpfitTest : public ::testing::Test
                 ed.endTime_   = tempValues[0][ed.nrLines_-1];
                 for (int j = 0; j  < ed.nrLines_; j++)
                 {
-                    ed.x_.push_back((real)tempValues[0][j]);
-                    ed.y_.push_back((real)tempValues[1][j]);
+                    ed.x_.push_back(static_cast<real>(tempValues[0][j]));
+                    ed.y_.push_back(static_cast<real>(tempValues[1][j]));
                 }
                 data_.push_back(ed);
 

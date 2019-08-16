@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,11 +37,12 @@
 
 #include "restraintmdmodule.h"
 
-#include "gromacs/compat/make_unique.h"
+#include <memory>
+
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 
-#include "restraintmdmodule-impl.h"
+#include "restraintmdmodule_impl.h"
 
 namespace gmx
 {
@@ -170,8 +171,8 @@ RestraintMDModuleImpl::~RestraintMDModuleImpl() = default;
 
 RestraintMDModuleImpl::RestraintMDModuleImpl(std::shared_ptr<IRestraintPotential> restraint,
                                              const std::vector<int>              &sites) :
-    forceProvider_(compat::make_unique<RestraintForceProvider>(restraint,
-                                                               sites))
+    forceProvider_(std::make_unique<RestraintForceProvider>(restraint,
+                                                            sites))
 {
     GMX_ASSERT(forceProvider_, "Class invariant implies non-null ForceProvider.");
 }
@@ -218,9 +219,9 @@ std::unique_ptr<RestraintMDModule>
 RestraintMDModule::create(std::shared_ptr<IRestraintPotential>  restraint,
                           const std::vector<int>               &sites)
 {
-    auto implementation = compat::make_unique<RestraintMDModuleImpl>(std::move(restraint),
-                                                                     sites);
-    auto newModule = compat::make_unique<RestraintMDModule>(std::move(implementation));
+    auto implementation = std::make_unique<RestraintMDModuleImpl>(std::move(restraint),
+                                                                  sites);
+    auto newModule = std::make_unique<RestraintMDModule>(std::move(implementation));
     return newModule;
 }
 

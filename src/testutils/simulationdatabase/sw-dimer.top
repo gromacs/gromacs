@@ -1,0 +1,156 @@
+; 
+; Topology file for SW
+;
+; Paul van Maaren and David van der Spoel
+; Molecular Dynamics Simulations of Water with Novel Shell Model Potentials
+; J. Phys. Chem. B. 105 (2618-2626), 2001
+;
+; Force constants for the shell are given by:
+;
+; k = qs^2/(4 pi eps0 alpha)
+; However, in the current version of the itp file and software (3.2+)
+; force constants are computed in mdrun, and the input is the
+; polarizability in nm^3.
+;
+; Some data: mu (water) = 1.8546 D ( 0.0386116 e nm)
+;            1/(4 pi eps0 alpha) = 94513.94
+;
+; Alpha-X = 1.415   kx = 608069
+; Alpha-Y = 1.528   ky = 563101
+; Alpha-Z = 1.468   kz = 586116
+;
+; Alpha   = 1.470   k  = 585318
+;
+; Bonding parameters from (but without cubic term):
+; D. M. Ferguson: 
+; Parametrization and Evaluation of a Flexible Water Model 
+; J. Comp. Chem. 16(4), 501-511 (1995)
+;
+; Possible defines that you can put in your topol.top:
+; -DANISOTROPIC Select anisotropic polarizibility (isotropic is default).
+; -DRIGID       Rigid model (flexible is default)
+; -DPOSRES      Position restrain oxygen atoms
+;
+
+[ defaults ]
+LJ	Geometric
+
+[ atomtypes ]
+;name        mass      charge   ptype   c6	c12
+   WO    15.99940       0.0     A   	0.0	0.0
+   WH     1.00800       0.0     A	0.0	0.0
+   WS     0.0           0.0     S   	0.0	0.0
+   WD	  0.0		0.0	V   	0.0	0.0
+
+[ nonbond_params ]
+#ifdef RIGID
+#ifdef ANISOTROPIC
+WH      WH      1       4.0e-5          4.0e-8
+WS      WO      1       1.0e-6          1.0e-12
+WS      WH      1       4.0e-5          2.766e-08
+WO      WO      1       2.0e-3          1.174e-06
+#else
+WH      WH      1       4.0e-5          4.0e-8
+WS      WO      1       1.0e-6          1.0e-12
+WS      WH      1       4.0e-5          2.769e-08
+WO      WO      1       2.0e-3          1.176e-06
+#endif
+#else
+#ifdef ANISOTROPIC
+WH      WH      1       4.0e-5          4.0e-8
+WS      WO      1       1.0e-6          1.0e-12
+WS      WH      1       4.0e-5          2.910e-08
+WO      WO      1       2.0e-3          1.189e-06
+#else
+WH      WH      1       4.0e-5          4.0e-8
+WS      WO      1       1.0e-6          1.0e-12
+WS      WH      1       4.0e-5          2.937e-08
+WO      WO      1       2.0e-3          1.187e-06
+#endif
+#endif
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; This is a the 'classical YAW' model, in which we do have the dummy.
+;; The shell is attached to the dummy, in this case the gas-phase
+;; quadrupole is correct. Water_pol routine can be used for this
+;; model. This has four interaction sites.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ moleculetype ]
+; molname	nrexcl
+SW		2
+
+[ atoms ]
+; id	at type	res nr 	residu name	at name		cg nr	charge
+1	WO	1	SM2		OW1		1	1.24588
+2	WH	1	SM2		HW2		1	0.62134
+3	WH	1	SM2		HW3		1	0.62134
+4	WD	1	SM2		DW		1 	0.0
+5	WS	1	SM2		SW		1	-2.48856
+
+#ifdef ANISOTROPIC
+[ water_polarization ]
+; See notes above. Alphas in nm^3 (See ref. above)
+; O H H D S funct  al_x	 al_y	  al_z	   	rOH	rHH	rOD
+  1 2 3 4 5 1	0.001415 0.001528 0.001468 	0.09572	0.15139 0.0137408
+
+#else
+
+[ polarization ]
+; See notes above.	alpha (nm^3)
+4	5	1 	0.00147
+#endif
+
+#ifdef RIGID
+[ settles ]
+; i	funct	dOH	dHH
+1	1	0.09572	0.15139
+
+#else
+
+[ bonds ]
+1	2	1   0.09572     458148.
+1	3	1   0.09572     458148.
+
+[ angles ]
+; i	j	k
+2	1	3    1   104.52     417.6
+#endif
+
+[ dummies3 ]
+; The position of the dummies is computed as follows:
+;
+;		O
+;  	      
+;	    	D
+;	  
+;	H		H
+;
+; 2 * b = distance (OD) / [ cos (angle(DOH)) 	* distance (OH) ]
+;	  0.0137408 nm	/ [ cos (104.52 / 2 deg) * 0.09572 nm	]
+;         0.01557 nm 
+; Dummy pos x4 = x1 + a*(x2-x1) + b*(x3-X1)
+;
+; Dummy from			funct	a		b
+4	1	2	3	1	0.117265878	0.117265878
+
+[ exclusions ]
+; iatom excluded from interaction with i
+1	2	3	4	5
+2	1	3	4	5
+3	1	2	4	5
+4	1	2	3	5
+5	1	2	3	4
+
+#ifdef POSRES
+; Restrain the oxygen...
+[ position_restraints ]
+; iatom type	fx	fy	fz
+1	1	100	100	100
+#endif
+
+[ system ]
+sw dimer
+
+[ molecules ]
+SW 2
+

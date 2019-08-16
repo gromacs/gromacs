@@ -55,12 +55,13 @@ External tools to perform trajectory analysis
 ---------------------------------------------
 
 In recent years several external tools have matured sufficiently to analyse diverse sets
-of trajectory data from several simulation packages. Below is a short list of tools
+of trajectory data from several simulation packages. Below is a short list of tools (in an alphabetical order)
 that are known to be able to analyse |Gromacs| trajectory data.
 
-* `MDTraj <http://mdtraj.org/latest/index.html>`__
-* `MDAnalysis <https://www.mdanalysis.org/>`__
 * `LOOS <http://loos.sourceforge.net/>`__
+* `MDAnalysis <https://www.mdanalysis.org/>`__
+* `MDTraj <http://mdtraj.org/latest/index.html>`__
+* `Pteros <https://github.com/yesint/pteros/>`__
 
 
 Plotting Data

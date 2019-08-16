@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,20 +44,20 @@
 #include <cmath>
 #include <cstring>
 
+#include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/ewald.h"
-#include "gromacs/ewald/long-range-correction.h"
+#include "gromacs/ewald/long_range_correction.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
-#include "gromacs/listed-forces/listed-forces.h"
+#include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/force_flags.h"
-#include "gromacs/mdlib/forcerec-threading.h"
-#include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/forcerec_threading.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/rf_util.h"
@@ -138,28 +138,29 @@ static void reduceEwaldThreadOuput(int nthreads, ewald_corr_thread_t *ewc_t)
     }
 }
 
-void do_force_lowlevel(t_forcerec           *fr,
-                       const t_inputrec     *ir,
-                       const t_idef         *idef,
-                       const t_commrec      *cr,
-                       const gmx_multisim_t *ms,
-                       t_nrnb               *nrnb,
-                       gmx_wallcycle_t       wcycle,
-                       const t_mdatoms      *md,
-                       rvec                  x[],
-                       history_t            *hist,
-                       rvec                 *forceForUseWithShiftForces,
-                       gmx::ForceWithVirial *forceWithVirial,
-                       gmx_enerdata_t       *enerd,
-                       t_fcdata             *fcd,
-                       matrix                box,
-                       t_lambda             *fepvals,
-                       real                 *lambda,
-                       const t_graph        *graph,
-                       const t_blocka       *excl,
-                       rvec                  mu_tot[],
-                       int                   flags,
-                       float                *cycles_pme)
+void do_force_lowlevel(t_forcerec                   *fr,
+                       const t_inputrec             *ir,
+                       const t_idef                 *idef,
+                       const t_commrec              *cr,
+                       const gmx_multisim_t         *ms,
+                       t_nrnb                       *nrnb,
+                       gmx_wallcycle_t               wcycle,
+                       const t_mdatoms              *md,
+                       rvec                          x[],
+                       history_t                    *hist,
+                       rvec                         *forceForUseWithShiftForces,
+                       gmx::ForceWithVirial         *forceWithVirial,
+                       gmx_enerdata_t               *enerd,
+                       t_fcdata                     *fcd,
+                       matrix                        box,
+                       t_lambda                     *fepvals,
+                       real                         *lambda,
+                       const t_graph                *graph,
+                       const t_blocka               *excl,
+                       rvec                          mu_tot[],
+                       int                           flags,
+                       float                        *cycles_pme,
+                       const DDBalanceRegionHandler &ddBalanceRegionHandler)
 {
     int         i, j;
     int         donb_flags;
@@ -460,10 +461,7 @@ void do_force_lowlevel(t_forcerec           *fr,
                      * balancing region here, because PME does global
                      * communication that acts as a global barrier.
                      */
-                    if (DOMAINDECOMP(cr))
-                    {
-                        ddCloseBalanceRegionCpu(cr->dd);
-                    }
+                    ddBalanceRegionHandler.closeAfterForceComputationCpu();
 
                     wallcycle_start(wcycle, ewcPMEMESH);
                     status = gmx_pme_do(fr->pmedata,
@@ -526,6 +524,8 @@ void do_force_lowlevel(t_forcerec           *fr,
         }
 
         /* Note that with separate PME nodes we get the real energies later */
+        // TODO it would be simpler if we just accumulated a single
+        // long-range virial contribution.
         forceWithVirial->addVirialContribution(ewaldOutput.vir_q);
         forceWithVirial->addVirialContribution(ewaldOutput.vir_lj);
         enerd->dvdl_lin[efptCOUL] += ewaldOutput.dvdl[efptCOUL];
@@ -765,7 +765,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda 
 
         double &enerpart_lambda = enerd->enerpart_lambda[i + 1];
 
-        for (gmx::index j = 0; j < lambda.size(); j++)
+        for (gmx::index j = 0; j < lambda.ssize(); j++)
         {
             /* Note that this loop is over all dhdl components, not just the separated ones */
             const double dlam  = fepvals->all_lambda[j][i] - lambda[j];
@@ -782,7 +782,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda 
                 enerpart_lambda += dlam*enerd->term[F_DVDL_CONSTR];
             }
 
-            if (j == efptMASS)
+            if (j == efptMASS && !fepvals->separate_dvdl[j])
             {
                 enerpart_lambda += dlam*enerd->term[F_DKDL];
             }

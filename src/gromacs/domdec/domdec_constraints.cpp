@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,8 +49,8 @@
 #include <cassert>
 
 #include <algorithm>
+#include <memory>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -117,7 +117,7 @@ gmx::ArrayRef<const int> dd_constraints_nlocalatoms(const gmx_domdec_t *dd)
     }
     else
     {
-        return gmx::EmptyArrayRef();
+        return {};
     }
 }
 
@@ -455,7 +455,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     else
     {
         // Currently unreachable
-        at2con_mt = gmx::EmptyArrayRef();
+        at2con_mt = {};
         ireq      = nullptr;
     }
 
@@ -651,7 +651,7 @@ void init_domdec_constraints(gmx_domdec_t     *dd,
      */
     int numKeysEstimate = std::min(mtop->natoms/20,
                                    mtop->natoms/(2*dd->nnodes));
-    dc->ga2la = gmx::compat::make_unique < gmx::HashedMap < int>>(numKeysEstimate);
+    dc->ga2la = std::make_unique < gmx::HashedMap < int>>(numKeysEstimate);
 
     dc->nthread = gmx_omp_nthreads_get(emntDomdec);
     dc->ils.resize(dc->nthread);

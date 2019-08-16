@@ -37,10 +37,9 @@
 
 #include <memory>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "workflow-impl.h"
+#include "workflow_impl.h"
 
 namespace gmxapi
 {
@@ -52,7 +51,7 @@ std::unique_ptr<NodeSpecification> MDNodeSpecification::clone()
 {
     GMX_ASSERT(!tprfilename_.empty(), "Need a non-empty filename string.");
     std::unique_ptr<NodeSpecification> node = nullptr;
-    node = gmx::compat::make_unique<MDNodeSpecification>(tprfilename_);
+    node = std::make_unique<MDNodeSpecification>(tprfilename_);
     return node;
 }
 
@@ -79,10 +78,10 @@ NodeKey Workflow::addNode(std::unique_ptr<NodeSpecification> spec)
 std::unique_ptr<Workflow> Workflow::create(const std::string &filename)
 {
     const std::string name = "MD";
-    auto              spec = gmx::compat::make_unique<MDNodeSpecification>(filename);
+    auto              spec = std::make_unique<MDNodeSpecification>(filename);
     Workflow::Impl    graph;
     graph.emplace(std::make_pair(name, std::move(spec)));
-    auto              workflow = gmx::compat::make_unique<Workflow>(std::move(graph));
+    auto              workflow = std::make_unique<Workflow>(std::move(graph));
     return workflow;
 }
 

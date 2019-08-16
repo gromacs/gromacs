@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,9 +46,8 @@
 
 #include "gromacs/awh/grid.h"
 #include "gromacs/awh/pointstate.h"
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/mdtypes/awh-params.h"
+#include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "testutils/testasserts.h"
@@ -140,7 +139,7 @@ class BiasStateTest : public ::testing::TestWithParam<const char *>
             dimParams.emplace_back(1.0, 15.0, params.beta);
             Grid                    grid(dimParams, awhBiasParams.dimParams);
             BiasParams              biasParams(awhParams, awhBiasParams, dimParams, 1.0, 1.0, BiasParams::DisableUpdateSkips::no, 1, grid.axis(), 0);
-            biasState_ = gmx::compat::make_unique<BiasState>(awhBiasParams, 1.0, dimParams, grid);
+            biasState_ = std::make_unique<BiasState>(awhBiasParams, 1.0, dimParams, grid);
 
             // Here we initialize the grid point state using the input file
             std::string             filename = gmx::test::TestFileManager::getInputFilePath(GetParam());
@@ -160,7 +159,7 @@ TEST_P(BiasStateTest, InitializesFromFile)
      * The target is (index + 1)/120.
      */
     double msdPmf    = 0;
-    for (index i = 0; i < points.size(); i++)
+    for (index i = 0; i < points.ssize(); i++)
     {
         msdPmf += gmx::square(points[i].logPmfSum() - points[0].logPmfSum() + 0.5*i) / points.size();
         EXPECT_DOUBLE_EQ(points[i].target(), (i + 1)/120.0);

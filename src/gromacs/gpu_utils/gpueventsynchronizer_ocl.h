@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,7 @@ class GpuEventSynchronizer
         ~GpuEventSynchronizer()
         {
             // This additional code only prevents cl_event leak in an unlikely situation of destructor
-            // being called after markEvent() but before waitForEvent().
+            // being called after markEvent() but before waitForEvent() / enqueueWaitEvent().
             if (event_)
             {
                 ensureReferenceCount(event_, 1);
@@ -103,9 +103,30 @@ class GpuEventSynchronizer
                 GMX_THROW(gmx::InternalError("Failed to synchronize on the GPU event: " + ocl_get_error_string(clError)));
             }
 
+            releaseEvent();
+        }
+        /*! \brief Enqueues a wait for the recorded event in stream \p stream
+         *
+         *  After enqueue, the associated event is released, so this method should
+         *  be only called once per markEvent() call.
+         */
+        inline void enqueueWaitEvent(CommandStream stream)
+        {
+            cl_int clError = clEnqueueBarrierWithWaitList(stream, 1, &event_, nullptr);
+            if (CL_SUCCESS != clError)
+            {
+                GMX_THROW(gmx::InternalError("Failed to enqueue device barrier for the GPU event: " + ocl_get_error_string(clError)));
+            }
+
+            releaseEvent();
+        }
+
+    private:
+        inline void releaseEvent()
+        {
             // Reference count can't be checked after the event's released, it seems (segfault on NVIDIA).
             ensureReferenceCount(event_, 1);
-            clError = clReleaseEvent(event_);
+            cl_int clError = clReleaseEvent(event_);
             if (CL_SUCCESS != clError)
             {
                 GMX_THROW(gmx::InternalError("Failed to release the GPU event: " + ocl_get_error_string(clError)));
@@ -113,7 +134,6 @@ class GpuEventSynchronizer
             event_ = nullptr;
         }
 
-    private:
         cl_event event_;
 };
 

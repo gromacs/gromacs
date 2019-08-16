@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,7 +52,6 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
@@ -61,13 +60,13 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/mpitest.h"
+#include "testutils/simulationdatabase.h"
 #include "testutils/testasserts.h"
 
 #include "energycomparison.h"
 #include "energyreader.h"
 #include "mdruncomparison.h"
 #include "moduletest.h"
-#include "simulationdatabase.h"
 #include "trajectorycomparison.h"
 #include "trajectoryreader.h"
 
@@ -188,8 +187,8 @@ void executeRerunTest(TestFileManager        *fileManager,
         };
     // Build the manager that will present matching pairs of frames to compare
     FramePairManager<TrajectoryFrameReader, TrajectoryFrame>
-    trajectoryManager(compat::make_unique<TrajectoryFrameReader>(normalRunTrajectoryFileName),
-                      compat::make_unique<TrajectoryFrameReader>(rerunTrajectoryFileName));
+    trajectoryManager(std::make_unique<TrajectoryFrameReader>(normalRunTrajectoryFileName),
+                      std::make_unique<TrajectoryFrameReader>(rerunTrajectoryFileName));
     // Compare the trajectory frames.
     trajectoryManager.compareAllFramePairs(trajectoryComparator);
 }
@@ -262,11 +261,11 @@ TEST_P(MdrunRerunTest, WithinTolerances)
 // tests can run in such configurations.
 #if GMX_GPU != GMX_GPU_OPENCL
 INSTANTIATE_TEST_CASE_P(NormalMdrunIsReproduced, MdrunRerunTest,
-                            ::testing::Combine(::testing::Values("argon12", "spc5", "alanine_vsite_vacuo"),
+                            ::testing::Combine(::testing::Values("argon12", "tip3p5", "alanine_vsite_vacuo"),
                                                    ::testing::Values("md", "md-vv", "bd", "sd")));
 #else
 INSTANTIATE_TEST_CASE_P(DISABLED_NormalMdrunIsReproduced, MdrunRerunTest,
-                            ::testing::Combine(::testing::Values("argon12", "spc5", "alanine_vsite_vacuo"),
+                            ::testing::Combine(::testing::Values("argon12", "tip3p5", "alanine_vsite_vacuo"),
                                                    ::testing::Values("md", "md-vv", "bd", "sd")));
 #endif
 

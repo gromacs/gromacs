@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -223,7 +223,7 @@ macro(gmx_gpu_setup)
             # check the generated CUDA API version against the one present in cuda_runtime_api.h
             try_compile(_get_cuda_version_compile_res
                 ${CMAKE_BINARY_DIR}
-                ${CMAKE_SOURCE_DIR}/cmake/TestCUDAVersion.c
+                ${CMAKE_SOURCE_DIR}/cmake/TestCUDAVersion.cpp
                 COMPILE_DEFINITIONS "-DGMX_CUDA_VERSION=${GMX_CUDA_VERSION}"
                 CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${CUDA_TOOLKIT_INCLUDE}"
                 OUTPUT_VARIABLE _get_cuda_version_compile_out)

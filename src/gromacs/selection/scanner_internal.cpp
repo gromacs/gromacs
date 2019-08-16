@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,7 +69,7 @@
 #include "parser.h"
 #include "parsetree.h"
 #include "scanner.h"
-#include "selectioncollection-impl.h"
+#include "selectioncollection_impl.h"
 #include "selelem.h"
 #include "selmethod.h"
 #include "symrec.h"
@@ -383,7 +383,7 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     state->sc        = sc;
     state->bGroups   = bGroups;
     state->grps      = grps;
-    state->nexpsel   = (maxnr > 0 ? static_cast<int>(sc->sel.size()) + maxnr : -1);
+    state->nexpsel   = (maxnr > 0 ? gmx::ssize(sc->sel) + maxnr : -1);
 
     state->statusWriter = statusWriter;
 

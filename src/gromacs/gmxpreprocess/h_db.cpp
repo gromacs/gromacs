@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,20 +39,25 @@
 
 #include "h_db.h"
 
+#include <cctype>
 #include <cstdlib>
 #include <cstring>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/notset.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "hackblock.h"
 
 /* Number of control atoms for each 'add' type.
  *
@@ -65,31 +70,20 @@
 const int ncontrol[] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3, 1, 1 };
 #define maxcontrol asize(ncontrol)
 
-int compaddh(const void *a, const void *b)
+void print_ab(FILE *out, const MoleculePatch &hack, const char *nname)
 {
-    const t_hackblock *ah, *bh;
-
-    ah = static_cast<const t_hackblock *>(a);
-    bh = static_cast<const t_hackblock *>(b);
-    return gmx_strcasecmp(ah->name, bh->name);
-}
-
-void print_ab(FILE *out, t_hack *hack, char *nname)
-{
-    int i;
-
-    fprintf(out, "%d\t%d\t%s", hack->nr, hack->tp, nname);
-    for (i = 0; (i < hack->nctl); i++)
+    fprintf(out, "%d\t%d\t%s", hack.nr, hack.tp, nname);
+    for (int i = 0; (i < hack.nctl); i++)
     {
-        fprintf(out, "\t%s", hack->a[i]);
+        fprintf(out, "\t%s", hack.a[i].c_str());
     }
     fprintf(out, "\n");
 }
 
 
-void read_ab(char *line, const char *fn, t_hack *hack)
+void read_ab(char *line, const char *fn, MoleculePatch *hack)
 {
-    int  i, nh, tp, ns;
+    int  nh, tp, ns;
     char a[4][12];
     char hn[32];
 
@@ -111,31 +105,24 @@ void read_ab(char *line, const char *fn, t_hack *hack)
     {
         gmx_fatal(FARGS, "Error in hdb file %s:\nWrong number of control atoms (%d instead of %d) on line:\n%s\n", fn, hack->nctl, ncontrol[hack->tp], line);
     }
-    for (i = 0; (i < hack->nctl); i++)
+    for (int i = 0; (i < hack->nctl); i++)
     {
-        hack->a[i] = gmx_strdup(a[i]);
+        hack->a[i] = a[i];
     }
-    for (; i < 4; i++)
-    {
-        hack->a[i] = nullptr;
-    }
-    hack->oname = nullptr;
-    hack->nname = gmx_strdup(hn);
-    hack->atom  = nullptr;
+    hack->oname.clear();
+    hack->nname = hn;
+    hack->atom.clear();
     hack->cgnr  = NOTSET;
-    hack->bXSet = FALSE;
-    for (i = 0; i < DIM; i++)
+    hack->bXSet = false;
+    for (int i = 0; i < DIM; i++)
     {
         hack->newx[i] = NOTSET;
     }
 }
 
-static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
+static void read_h_db_file(const char *hfn, std::vector<MoleculePatchDatabase> *globalPatches)
 {
-    FILE        *in;
     char         filebase[STRLEN], line[STRLEN], buf[STRLEN];
-    int          i, n, nab, nah;
-    t_hackblock *aah;
 
     fflib_filename_base(hfn, filebase, STRLEN);
     /* Currently filebase is read and set, but not used.
@@ -143,10 +130,8 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
      * in any rtp file.
      */
 
-    in = fflib_open(hfn);
+    FILE *in = fflib_open(hfn);
 
-    nah = *nahptr;
-    aah = *ah;
     while (fgets2(line, STRLEN-1, in))
     {
         // Skip lines that are only whitespace
@@ -154,78 +139,73 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
         {
             continue;
         }
+        int n;
         if (sscanf(line, "%s%n", buf, &n) != 1)
         {
+            int size = globalPatches->size();
             fprintf(stderr, "Error in hdb file: nah = %d\nline = '%s'\n",
-                    nah, line);
+                    size, line);
             break;
         }
-        srenew(aah, nah+1);
-        clear_t_hackblock(&aah[nah]);
-        aah[nah].name     = gmx_strdup(buf);
-        aah[nah].filebase = gmx_strdup(filebase);
+        globalPatches->emplace_back(MoleculePatchDatabase());
+        MoleculePatchDatabase *block = &globalPatches->back();
+        clearModificationBlock(block);
+        block->name     = buf;
+        block->filebase = filebase;
 
+        int nab;
         if (sscanf(line+n, "%d", &nab) == 1)
         {
-            snew(aah[nah].hack, nab);
-            aah[nah].nhack = nab;
-            for (i = 0; (i < nab); i++)
+            for (int i = 0; (i < nab); i++)
             {
                 if (feof(in))
                 {
                     gmx_fatal(FARGS, "Expected %d lines of hydrogens, found only %d "
                               "while reading Hydrogen Database %s residue %s",
-                              nab, i-1, aah[nah].name, hfn);
+                              nab, i-1, block->name.c_str(), hfn);
                 }
                 if (nullptr == fgets(buf, STRLEN, in))
                 {
                     gmx_fatal(FARGS, "Error reading from file %s", hfn);
                 }
-                read_ab(buf, hfn, &(aah[nah].hack[i]));
+                block->hack.emplace_back(MoleculePatch());
+                read_ab(buf, hfn, &block->hack.back());
             }
         }
-        nah++;
     }
     gmx_ffclose(in);
 
-    if (nah > 0)
+    if (!globalPatches->empty())
     {
-        /* Sort the list (necessary to be able to use bsearch */
-        qsort(aah, nah, static_cast<size_t>(sizeof(**ah)), compaddh);
+        /* Sort the list for searching later */
+        std::sort(globalPatches->begin(), globalPatches->end(),
+                  [](const MoleculePatchDatabase &a1, const MoleculePatchDatabase &a2)
+                  { return std::lexicographical_compare(a1.name.begin(), a1.name.end(),
+                                                        a2.name.begin(), a2.name.end(),
+                                                        [](const char &c1, const char &c2)
+                                                        { return std::toupper(c1) < std::toupper(c2); }); });
     }
-
-    *nahptr = nah;
-    *ah     = aah;
 }
 
-int read_h_db(const char *ffdir, t_hackblock **ah)
+int read_h_db(const char *ffdir, std::vector<MoleculePatchDatabase> *globalPatches)
 {
     /* Read the hydrogen database file(s).
      * Do not generate an error when no files are found.
      */
 
     std::vector<std::string> hdbf = fflib_search_file_end(ffdir, ".hdb", FALSE);
-    int nah                       = 0;
-    *ah   = nullptr;
+    globalPatches->clear();
     for (const auto &filename : hdbf)
     {
-        read_h_db_file(filename.c_str(), &nah, ah);
+        read_h_db_file(filename.c_str(), globalPatches);
     }
-    return nah;
+    return globalPatches->size();
 }
 
-t_hackblock *search_h_db(int nh, t_hackblock ah[], char *key)
+gmx::ArrayRef<MoleculePatchDatabase>::iterator
+search_h_db(gmx::ArrayRef<MoleculePatchDatabase> globalPatches, char *key)
 {
-    t_hackblock ahkey, *result;
-
-    if (nh <= 0)
-    {
-        return nullptr;
-    }
-
-    ahkey.name = key;
-
-    result = static_cast<t_hackblock *>(bsearch(&ahkey, ah, nh, static_cast<size_t>(sizeof(ah[0])), compaddh));
-
-    return result;
+    return std::find_if(globalPatches.begin(), globalPatches.end(),
+                        [&key](const MoleculePatchDatabase &a)
+                        { return gmx::equalCaseInsensitive(key, a.name); });
 }

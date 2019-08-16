@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,14 +33,14 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Tests for gmx::compat::make_unique
+ * \brief Tests for std::make_unique
  *
  * \author M. Eric Irrgang <ericirrgang@gmail.com>
  * \ingroup module_compat
  */
 #include "gmxpre.h"
 
-#include "gromacs/compat/make_unique.h"
+#include <memory>
 
 #include <gtest/gtest.h>
 
@@ -67,14 +67,14 @@ struct dummy
 TEST(CompatibilityHelper, MakeUniqueCompiles)
 {
     // Check template parameters
-    auto ptr = gmx::compat::make_unique<dummy>();
+    auto ptr = std::make_unique<dummy>();
     ASSERT_NE(ptr, nullptr);
     ASSERT_NE(ptr.get(), nullptr);
     constexpr bool is_dummy = std::is_same < decltype(ptr), std::unique_ptr < dummy>>::value;
     ASSERT_TRUE(is_dummy);
 
     // Check template and function parameters
-    ptr = gmx::compat::make_unique<dummy>('a', 'b');
+    ptr = std::make_unique<dummy>('a', 'b');
     ASSERT_EQ(ptr->foo, 'a');
 }
 

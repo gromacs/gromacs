@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="CUBICBONDS">
+    <FEP Name="No">
+      <Real Name="Epot ">0.26058044391045587</Real>
+      <Real Name="dVdlambda ">0</Real>
+      <Vector Name="Central shift forces">
+        <Real Name="X">0</Real>
+        <Real Name="Y">0</Real>
+        <Real Name="Z">0</Real>
+      </Vector>
+      <Sequence Name="Forces">
+        <Int Name="Length">4</Int>
+        <Vector>
+          <Real Name="X">0</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">4.4800000000000031</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">-0.24529359001442744</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">0.42587180028854554</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">0.31917659366507856</Real>
+          <Real Name="Y">-1.2313833941775185</Real>
+          <Real Name="Z">-3.6744884061110303</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">-0.073883003650651105</Real>
+          <Real Name="Y">1.2313833941775185</Real>
+          <Real Name="Z">-1.2313833941775185</Real>
+        </Vector>
+      </Sequence>
+    </FEP>
+  </FunctionType>
+</ReferenceData>

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,26 +38,38 @@
 #ifndef GMX_GMXPREPROCESS_GENHYDRO_H
 #define GMX_GMXPREPROCESS_GENHYDRO_H
 
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/gmxpreprocess/hackblock.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 
-int add_h(t_atoms **pdbaptr, rvec *xptr[],
-          int nah, t_hackblock ah[],
-          int nterpairs,
-          t_hackblock **ntdb, t_hackblock **ctdb,
-          int *rN, int *rC, bool bMissing,
-          int **nabptr, t_hack ***abptr,
-          bool bUpdate_pdba, bool bKeep_old_pdba);
-/* Generate hydrogen atoms and N and C terminal patches.
- * int nterpairs is the number of termini pairs in the molecule
- * ntdb[i] and ctdb[i] may be NULL, no replacement will be done then.
- * rN[i] is the residue number of the N-terminus of chain i,
- * rC[i] is the residue number of the C-terminus of chain i
- * if bMissing==TRUE, continue when atoms are not found
- * if nabptr && abptrb, the hack array will be returned in them to be used
- * a second time
- * if bUpdate_pdba, hydrogens are added to *pdbaptr, else it is unchanged
- * return the New total number of atoms
+struct t_atoms;
+struct t_symtab;
+struct MoleculePatchDatabase;
+
+/*! \brief
+ * Generate hydrogen atoms and N and C terminal patches.
+ *
+ * \param[inout] initialAtoms The input atoms data structure to be modified.
+ * \param[inout] localAtoms The extra atoms for reassigning the new entries.
+ * \param[inout] xptr Coordinates to be updated with those for new atoms.
+ * \param[inout] globalPatches The atom modifications to use.
+ * \param[inout] symtab Global symbol table for atom names.
+ * \param[in] nterpairs Number of termini pairs in the molecule.
+ * \param[in] ntdb Entries for N-terminus in each chain, each entry can be valid or nullptr.
+ * \param[in] ctdb Entries for C-terminus in each cahin, each entry can be valid or nullptr.
+ * \param[in] rN Residue number of the N-terminus of each chain.
+ * \param[in] rC Residue number of the C-terminus of each chain.
+ * \param[in] bMissing If routine should continue if atoms are not found.
+ * \returns New total number of atoms.
  */
-
+int add_h(t_atoms                                   **initialAtoms,
+          t_atoms                                   **localAtoms,
+          std::vector<gmx::RVec>                     *xptr,
+          gmx::ArrayRef<MoleculePatchDatabase>        globalPatches,
+          t_symtab                                   *symtab,
+          int                                         nterpairs,
+          const std::vector<MoleculePatchDatabase *> &ntdb,
+          const std::vector<MoleculePatchDatabase *> &ctdb,
+          gmx::ArrayRef<int>                          rN,
+          gmx::ArrayRef<int>                          rC,
+          bool                                        bMissing);
 #endif

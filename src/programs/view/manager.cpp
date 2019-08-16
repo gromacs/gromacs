@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,7 +79,7 @@ static void add_object(t_manager *man, eObject eO, int ai, int aj)
     man->obj[man->nobj-1].z     = 0.0;
 }
 
-static void add_bonds(t_manager *man, t_functype func[],
+static void add_bonds(t_manager *man, const t_functype func[],
                       t_ilist *b, bool bB[])
 {
     bool        *bH = man->bHydro;
@@ -155,7 +155,7 @@ static int which_atom(t_manager *man, int x, int y)
         {
             if (man->bVis[i])
             {
-                return (int) i;
+                return i;
             }
         }
     }
@@ -205,7 +205,6 @@ static void hide_label(t_x11 *x11, t_manager *man, int x, int y)
 void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
               const char *status)
 {
-    gmx_atomprop_t    aps;
     t_tpxheader       sh;
     t_atoms          *at;
     bool             *bB;
@@ -246,7 +245,7 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     man->title.text = gmx_strdup(gmx::formatString("%s: %s", *man->top.name, gmx::getCoolQuote().c_str()).c_str());
     man->view       = init_view(man->box);
     at              = &(man->top.atoms);
-    aps             = gmx_atomprop_init();
+    AtomProperties aps;
     for (i = 0; (i < man->natom); i++)
     {
         char      *aname = *(at->atomname[i]);
@@ -267,18 +266,17 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
         {
             man->vdw[i] = 0;
         }
-        else if (!gmx_atomprop_query(aps, epropVDW, *ri->name, aname, &(man->vdw[i])))
+        else if (!aps.setAtomProperty(epropVDW, *ri->name, aname, &(man->vdw[i])))
         {
             man->vdw[i] = 0;
         }
     }
-    gmx_atomprop_destroy(aps);
     add_bpl(man, &(man->top.idef), bB);
     for (i = 0; (i < man->natom); i++)
     {
         if (!bB[i])
         {
-            add_object(man, eOSingle, (int) i, 0);
+            add_object(man, eOSingle, i, 0);
         }
     }
     sfree(bB);
@@ -395,7 +393,7 @@ static bool step_man(t_manager *man, int *nat)
     return bEof;
 }
 
-static void HandleClient(t_x11 *x11, t_manager *man, long data[])
+static void HandleClient(t_x11 *x11, t_manager *man, const long data[])
 {
     int  ID, button, x, y;
     bool bPos;

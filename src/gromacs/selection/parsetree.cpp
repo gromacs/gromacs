@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -228,8 +228,8 @@
 #include <cstdio>
 
 #include <exception>
+#include <memory>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -240,7 +240,7 @@
 #include "keywords.h"
 #include "poscalc.h"
 #include "scanner.h"
-#include "selectioncollection-impl.h"
+#include "selectioncollection_impl.h"
 #include "selelem.h"
 #include "selmethod.h"
 #include "symrec.h"
@@ -360,7 +360,7 @@ SelectionParserParameter::SelectionParserParameter(
         const SelectionLocation         &location)
     : name_(name != nullptr ? name : ""),
       location_(location),
-      values_(values ? std::move(values) : compat::make_unique<SelectionParserValueList>())
+      values_(values ? std::move(values) : std::make_unique<SelectionParserValueList>())
 {
 }
 
@@ -1214,5 +1214,5 @@ bool
 _gmx_sel_parser_should_finish(yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
-    return static_cast<int>(sc->sel.size()) == _gmx_sel_lexer_exp_selcount(scanner);
+    return gmx::ssize(sc->sel) == _gmx_sel_lexer_exp_selcount(scanner);
 }

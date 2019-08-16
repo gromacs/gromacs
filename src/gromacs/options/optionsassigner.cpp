@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,11 +47,11 @@
 
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/options.h"
+#include "gromacs/utility/any.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/variant.h"
 
-#include "options-impl.h"
+#include "options_impl.h"
 
 namespace gmx
 {
@@ -203,10 +203,10 @@ bool OptionsAssigner::tryStartOption(const char *name)
 
 void OptionsAssigner::appendValue(const std::string &value)
 {
-    appendValue(Variant(value));
+    appendValue(Any(value));
 }
 
-void OptionsAssigner::appendValue(const Variant &value)
+void OptionsAssigner::appendValue(const Any &value)
 {
     AbstractOptionStorage *option = impl_->currentOption_;
     GMX_RELEASE_ASSERT(option != nullptr, "startOption() not called");
@@ -224,7 +224,7 @@ void OptionsAssigner::finishOption()
         if (impl_->currentValueCount_ == 0)
         {
             // Should not throw, otherwise something is wrong.
-            option->appendValue(Variant::create<bool>(!impl_->reverseBoolean_));
+            option->appendValue(Any::create<bool>(!impl_->reverseBoolean_));
         }
         else if (impl_->reverseBoolean_)
         {

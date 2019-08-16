@@ -64,6 +64,9 @@ struct shakedata;
 /*! \brief Initializes and return the SHAKE data structure */
 shakedata *shake_init();
 
+//! Destroy SHAKE. Needed to solve memory leaks.
+void done_shake(shakedata *d);
+
 //! Make SHAKE blocks when not using DD.
 void
 make_shake_sblock_serial(shakedata *shaked,

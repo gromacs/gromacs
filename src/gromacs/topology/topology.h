@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -118,7 +118,7 @@ typedef struct gmx_groups_t
  * \param[in] type  Type of group to check.
  * \param[in] atom  Atom to check if it has an entry.
  */
-int getGroupType (const gmx_groups_t *group, int type, int atom);
+int getGroupType (const gmx_groups_t &group, int type, int atom);
 
 /* The global, complete system topology struct, based on molecule types.
  * This structure should contain no data that is O(natoms) in memory.
@@ -171,14 +171,29 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
     std::vector<MoleculeBlockIndices> moleculeBlockIndices;
 };
 
-/* The mdrun node-local topology struct, completely written out */
-typedef struct gmx_localtop_t
+/* \brief
+ * The fully written out topology for a domain over its lifetime
+ *
+ * Also used in some analysis code.
+ */
+struct gmx_localtop_t
 {
-    t_idef        idef;         /* The interaction function definition  */
-    t_atomtypes   atomtypes;    /* Atomtype properties                  */
-    t_block       cgs;          /* The charge groups                    */
-    t_blocka      excls;        /* The exclusions                       */
-} gmx_localtop_t;
+    //! Constructor used for normal operation, manages own resources.
+    gmx_localtop_t();
+
+    ~gmx_localtop_t();
+
+    //! The interaction function definition
+    t_idef        idef;
+    //! Atomtype properties
+    t_atomtypes   atomtypes;
+    //! The charge groups
+    t_block       cgs;
+    //! The exclusions
+    t_blocka      excls;
+    //! Flag for domain decomposition so we don't free already freed memory.
+    bool          useInDomainDecomp_ = false;
+};
 
 /* The old topology struct, completely written out, used in analysis tools */
 typedef struct t_topology
@@ -200,19 +215,6 @@ void done_top(t_topology *top);
 // Frees both t_topology and gmx_mtop_t when the former has been created from
 // the latter.
 void done_top_mtop(t_topology *top, gmx_mtop_t *mtop);
-/*! \brief
- * Properly initialize local topology.
- *
- * \param[in] top Pointer to topology to initialize.
- */
-void init_localtop(gmx_localtop_t *top);
-/*! \brief
- * Properly clear up local topology,
- *
- * \param[in] top Pointer to topology to clear up.
- */
-void done_localtop(gmx_localtop_t *top);
-void done_and_sfree_localtop(gmx_localtop_t *top);
 
 bool gmx_mtop_has_masses(const gmx_mtop_t *mtop);
 bool gmx_mtop_has_charges(const gmx_mtop_t *mtop);
@@ -225,12 +227,38 @@ void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
 void pr_top(FILE *fp, int indent, const char *title, const t_topology *top,
             gmx_bool bShowNumbers, gmx_bool bShowParameters);
 
-void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, real abstol);
-void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
-                int natoms0, int natoms1);
+/*! \brief Compare two mtop topologies.
+ *
+ * \param[in] fp File pointer to write to.
+ * \param[in] mtop1 First topology to compare.
+ * \param[in] mtop2 Second topology to compare.
+ * \param[in] relativeTolerance Relative tolerance for comparison.
+ * \param[in] absoluteTolerance Absolute tolerance for comparison.
+ */
+void compareMtop(FILE *fp, const gmx_mtop_t &mtop1, const gmx_mtop_t &mtop2, real relativeTolerance, real absoluteTolerance);
 
-//! Deleter for gmx_localtop_t, needed until it has a proper destructor.
-using ExpandedTopologyPtr = gmx::unique_cptr<gmx_localtop_t, done_and_sfree_localtop>;
+/*! \brief Check perturbation parameters in topology.
+ *
+ * \param[in] fp File pointer to write to.
+ * \param[in] mtop1 Topology to check perturbation parameters in.
+ * \param[in] relativeTolerance Relative tolerance for comparison.
+ * \param[in] absoluteTolerance Absolute tolerance for comparison.
+ */
+void compareMtopAB(FILE *fp, const gmx_mtop_t &mtop1, real relativeTolerance, real absoluteTolerance);
+
+/*! \brief Compare groups.
+ *
+ * \param[in] fp File pointer to write to.
+ * \param[in] g0 First group for comparison.
+ * \param[in] g1 Second group for comparison.
+ * \param[in] natoms0 Number of atoms for first group.
+ * \param[in] natoms1 Number of atoms for second group.
+ */
+void compareAtomGroups(FILE *fp, const gmx_groups_t &g0, const gmx_groups_t &g1,
+                       int natoms0, int natoms1);
+
+//! Typedef for gmx_localtop in analysis tools.
+using ExpandedTopologyPtr = std::unique_ptr<gmx_localtop_t>;
 
 void copy_moltype(const gmx_moltype_t *src, gmx_moltype_t *dst);
 

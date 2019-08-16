@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,14 +42,18 @@
 #include <cmath>
 #include <cstring>
 
+#include <algorithm>
+
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/trajectory/energyframe.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 t_ebin *mk_ebin()
 {
@@ -70,6 +74,7 @@ void done_ebin(t_ebin *eb)
     sfree(eb->e);
     sfree(eb->e_sim);
     sfree(eb->enm);
+    sfree(eb);
 }
 
 int get_ebin_space(t_ebin *eb, int nener, const char *const enm[], const char *unit)
@@ -128,19 +133,19 @@ int get_ebin_space(t_ebin *eb, int nener, const char *const enm[], const char *u
     return index;
 }
 
-void add_ebin(t_ebin *eb, int index, int nener, const real ener[], gmx_bool bSum)
+void add_ebin(t_ebin *eb, int entryIndex, int nener, const real ener[], gmx_bool bSum)
 {
     int       i, m;
     double    e, invmm, diff;
     t_energy *eg, *egs;
 
-    if ((index+nener > eb->nener) || (index < 0))
+    if ((entryIndex+nener > eb->nener) || (entryIndex < 0))
     {
-        gmx_fatal(FARGS, "%s-%d: Energies out of range: index=%d nener=%d maxener=%d",
-                  __FILE__, __LINE__, index, nener, eb->nener);
+        gmx_fatal(FARGS, "%s-%d: Energies out of range: entryIndex=%d nener=%d maxener=%d",
+                  __FILE__, __LINE__, entryIndex, nener, eb->nener);
     }
 
-    eg = &(eb->e[index]);
+    eg = &(eb->e[entryIndex]);
 
     for (i = 0; (i < nener); i++)
     {
@@ -149,7 +154,7 @@ void add_ebin(t_ebin *eb, int index, int nener, const real ener[], gmx_bool bSum
 
     if (bSum)
     {
-        egs = &(eb->e_sim[index]);
+        egs = &(eb->e_sim[entryIndex]);
 
         m = eb->nsum;
 
@@ -181,6 +186,56 @@ void add_ebin(t_ebin *eb, int index, int nener, const real ener[], gmx_bool bSum
     }
 }
 
+// TODO It would be faster if this function was templated on both bSum
+// and whether eb->nsum was zero, to lift the branches out of the loop
+// over all possible energy terms, but that is true for a lot of the
+// ebin and mdebin functionality, so we should do it all or nothing.
+void add_ebin_indexed(t_ebin *eb, int entryIndex, gmx::ArrayRef<bool> shouldUse,
+                      gmx::ArrayRef<const real> ener, gmx_bool bSum)
+{
+
+    GMX_ASSERT(shouldUse.size() == ener.size(), "View sizes must match");
+    GMX_ASSERT(entryIndex+std::count(shouldUse.begin(), shouldUse.end(), true) <= eb->nener,
+               gmx::formatString("Energies out of range: entryIndex=%d nener=%td maxener=%d",
+                                 entryIndex,
+                                 std::count(shouldUse.begin(), shouldUse.end(), true),
+                                 eb->nener).c_str());
+    GMX_ASSERT(entryIndex >= 0, "Must have non-negative entry");
+
+    const int    m              = eb->nsum;
+    const double invmm          = (m == 0) ? 0 : (1.0/m)/(m+1.0);
+    t_energy    *energyEntry    = &(eb->e[entryIndex]);
+    t_energy    *simEnergyEntry = &(eb->e_sim[entryIndex]);
+    auto         shouldUseIter  = shouldUse.begin();
+    for (const auto &theEnergy : ener)
+    {
+        if (*shouldUseIter)
+        {
+            energyEntry->e = theEnergy;
+            if (bSum)
+            {
+                if (m == 0)
+                {
+                    energyEntry->eav      = 0;
+                    energyEntry->esum     = theEnergy;
+                    simEnergyEntry->esum += theEnergy;
+                }
+                else
+                {
+                    /* first update sigma, then sum */
+                    double diff  = energyEntry->esum - m*theEnergy;
+                    energyEntry->eav     += diff*diff*invmm;
+                    energyEntry->esum    += theEnergy;
+                    simEnergyEntry->esum += theEnergy;
+                }
+                ++simEnergyEntry;
+            }
+            ++energyEntry;
+        }
+        ++shouldUseIter;
+    }
+}
+
 void ebin_increase_count(t_ebin *eb, gmx_bool bSum)
 {
     eb->nsteps++;
@@ -200,7 +255,7 @@ void reset_ebin_sums(t_ebin *eb)
     /* The actual sums are cleared when the next frame is stored */
 }
 
-void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
+void pr_ebin(FILE *fp, t_ebin *eb, int entryIndex, int nener, int nperline,
              int prmode, gmx_bool bPrHead)
 {
     int  i, j, i0;
@@ -209,11 +264,11 @@ void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
 
     rc = 0;
 
-    if (index < 0 || index > eb->nener)
+    if (entryIndex < 0 || entryIndex > eb->nener)
     {
-        gmx_fatal(FARGS, "Invalid index in pr_ebin: %d", index);
+        gmx_fatal(FARGS, "Invalid entryIndex in pr_ebin: %d", entryIndex);
     }
-    int start = index;
+    int start = entryIndex;
     if (nener > eb->nener)
     {
         gmx_fatal(FARGS, "Invalid nener in pr_ebin: %d", nener);
@@ -221,7 +276,7 @@ void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
     int end = eb->nener;
     if (nener != -1)
     {
-        end = index + nener;
+        end = entryIndex + nener;
     }
     for (i = start; (i < end) && rc >= 0; )
     {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,8 +46,8 @@
 #include <cstring>
 
 #include <algorithm>
+#include <memory>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/vec.h"
@@ -129,7 +129,7 @@ void TopologyManager::loadTopology(const char *filename)
     matrix  box;
 
     GMX_RELEASE_ASSERT(mtop_ == nullptr, "Topology initialized more than once");
-    mtop_ = gmx::compat::make_unique<gmx_mtop_t>();
+    mtop_ = std::make_unique<gmx_mtop_t>();
     readConfAndTopology(
             gmx::test::TestFileManager::getInputFilePath(filename).c_str(),
             &fullTopology, mtop_.get(), &ePBC, frame_ != nullptr ? &xtop : nullptr,
@@ -152,7 +152,7 @@ void TopologyManager::loadTopology(const char *filename)
 void TopologyManager::initAtoms(int count)
 {
     GMX_RELEASE_ASSERT(mtop_ == nullptr, "Topology initialized more than once");
-    mtop_ = gmx::compat::make_unique<gmx_mtop_t>();
+    mtop_ = std::make_unique<gmx_mtop_t>();
     mtop_->moltype.resize(1);
     init_t_atoms(&mtop_->moltype[0].atoms, count, FALSE);
     mtop_->molblock.resize(1);
@@ -197,7 +197,7 @@ void TopologyManager::initAtomTypes(const ArrayRef<const char *const> &types)
     index    j = 0;
     for (int i = 0; i < atoms.nr; ++i, ++j)
     {
-        if (j == types.size())
+        if (j == types.ssize())
         {
             j = 0;
         }

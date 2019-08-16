@@ -40,7 +40,6 @@ scripts/GMXRC.*                         !filter
 scripts/make_gromos_rtp.py              !filter
 share/template/template.cpp             filter=copyright
 share/template/README.cmakein           !filter
-src/gromacs/gmxlib/nonbonded/preprocessor/gmxpreprocess.py !filter
 src/gromacs/linearalgebra/gmx_blas/*    !filter
 src/gromacs/linearalgebra/gmx_lapack/*  !filter
 src/gromacs/selection/parser.cpp        -filter -gmx-doxygen
@@ -49,8 +48,6 @@ src/gromacs/selection/scanner.cpp       -filter -gmx-doxygen
 src/gromacs/selection/scanner_flex.h    -filter
 src/api/cpp/*cpp                        filter=uncrustify_only
 src/api/cpp/tests/*cpp                  filter=uncrustify_only
-nb_kernel_Elec*                         filter=copyright -gmx-doxygen
-nb_kernel*pre                           filter=copyright
 *.eps                                   binary
 *.jpg                                   binary
 *.svg                                   binary

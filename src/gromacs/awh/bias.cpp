@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,14 +54,14 @@
 #include <cstring>
 
 #include <algorithm>
+#include <memory>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/mdtypes/awh-history.h"
-#include "gromacs/mdtypes/awh-params.h"
+#include "gromacs/mdtypes/awh_history.h"
+#include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -351,11 +351,11 @@ Bias::Bias(int                             biasIndexInCollection,
         double blockLength = 0;
         /* Construct the force correlation object. */
         forceCorrelationGrid_ =
-            compat::make_unique<CorrelationGrid>(state_.points().size(), ndim(),
-                                                 blockLength, CorrelationGrid::BlockLengthMeasure::Time,
-                                                 awhParams.nstSampleCoord*mdTimeStep);
+            std::make_unique<CorrelationGrid>(state_.points().size(), ndim(),
+                                              blockLength, CorrelationGrid::BlockLengthMeasure::Time,
+                                              awhParams.nstSampleCoord*mdTimeStep);
 
-        writer_ = compat::make_unique<BiasWriter>(*this);
+        writer_ = std::make_unique<BiasWriter>(*this);
     }
 }
 

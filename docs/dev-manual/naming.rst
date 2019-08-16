@@ -20,9 +20,9 @@ Files
   readability and/or usability of the API, but this should then be clearly
   documented.
 
-  There can also be a :file:`{file}-impl.h` file that declares classes or
+  There can also be a :file:`{file}_impl.h` file that declares classes or
   functions that are not accessible outside the module.  If the whole file only
-  declares symbols internal to the module, then the :file:`-impl.h` suffix is
+  declares symbols internal to the module, then the :file:`_impl.h` suffix is
   omitted.
 
   In most cases, declarations that are not used outside a single source file

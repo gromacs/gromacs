@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,9 +50,9 @@
 #include <typeindex>
 #include <vector>
 
+#include "gromacs/utility/any.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/keyvaluetree.h"
-#include "gromacs/utility/variant.h"
 
 namespace gmx
 {
@@ -201,10 +201,10 @@ class KeyValueTreeTransformRuleBuilder
                  */
                 void transformWith(std::function<ToType(const FromType &)> transform)
                 {
-                    builder_->addTransformToVariant(
-                            [transform] (const Variant &value)
+                    builder_->addTransformToAny(
+                            [transform] (const Any &value)
                             {
-                                return Variant::create<ToType>(transform(value.cast<FromType>()));
+                                return Any::create<ToType>(transform(value.cast<FromType>()));
                             });
                 }
         };
@@ -234,7 +234,7 @@ class KeyValueTreeTransformRuleBuilder
                 void transformWith(std::function<void(KeyValueTreeObjectBuilder *, const FromType &)> transform)
                 {
                     builder_->addTransformToObject(
-                            [transform] (KeyValueTreeObjectBuilder *builder, const Variant &value)
+                            [transform] (KeyValueTreeObjectBuilder *builder, const Any &value)
                             {
                                 transform(builder, value.cast<FromType>());
                             });
@@ -346,8 +346,8 @@ class KeyValueTreeTransformRuleBuilder
         void setExpectedType(const std::type_index &type);
         void setToPath(const KeyValueTreePath &path);
         void setKeyMatchType(StringCompareType keyMatchType);
-        void addTransformToVariant(const std::function<Variant(const Variant &)> &transform);
-        void addTransformToObject(const std::function<void(KeyValueTreeObjectBuilder *, const Variant &)> &transform);
+        void addTransformToAny(const std::function<Any(const Any &)> &transform);
+        void addTransformToObject(const std::function<void(KeyValueTreeObjectBuilder *, const Any &)> &transform);
 
         class Data;
 

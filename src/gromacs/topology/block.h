@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -215,8 +215,56 @@ struct t_blocka
     int nalloc_a;               /* The allocation size for a            */
 };
 
+/*! \brief
+ * Fully initialize t_block datastructure.
+ *
+ * Initializes a \p block and sets up the first index to zero.
+ *
+ * \param[in,out] block datastructure to initialize.
+ */
 void init_block(t_block *block);
+
+/*! \brief
+ * Fully initialize t_blocka datastructure.
+ *
+ * Initializes a \p block and sets up the first index to zero.
+ * The atom number array is initialized to nullptr.
+ *
+ * \param[in,out] block datastructure to initialize.
+ */
 void init_blocka(t_blocka *block);
+
+/* TODO
+ * In general all t_block datastructures should be avoided
+ * in favour of RangePartitioning. This here is a simple cludge
+ * to use more modern initialization while we move to the use
+ * of RangePartitioning.
+ */
+
+/*! \brief
+ * Minimal initialization of t_block datastructure.
+ *
+ * Performs the equivalent to a snew on a t_block, setting all
+ * values to zero or nullptr. Needed for some cases where the topology
+ * handling expects a block to be valid initialized (e.g. during domain
+ * decomposition) but without the first block set to zero.
+ *
+ * \param[in,out] block datastructure to initialize.
+ */
+void init_block_null(t_block *block);
+
+/*! \brief
+ * Minimal initialization of t_blocka datastructure.
+ *
+ * Performs the equivalent to a snew on a t_blocka, setting all
+ * values to zero or nullptr. Needed for some cases where the topology
+ * handling expects a block to be valid initialized (e.g. during domain
+ * decomposition) but without the first block set to zero.
+ *
+ * \param[in,out] block datastructure to initialize.
+ */
+void init_blocka_null(t_blocka *block);
+
 t_blocka *new_blocka();
 /* allocate new block */
 

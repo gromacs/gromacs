@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,35 +34,78 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
+/*! \file
+ * \internal \brief
+ * Methods to get residue information during preprocessing.
+ */
 #ifndef GMX_GMXPREPROCESS_RESALL_H
 #define GMX_GMXPREPROCESS_RESALL_H
 
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/gmxpreprocess/hackblock.h"
+#include <cstdio>
 
-char *search_rtp(const char *key, int nrtp, t_restp rtp[]);
-/* Search for an entry in the rtp database, returns the rtp residue name.
- * A mismatch of one character is allowed, if there is only one nearly
- * matching entry in the database, a warning will be generated.
+#include <vector>
+
+#include "gromacs/utility/arrayref.h"
+
+class PreprocessingAtomTypes;
+struct PreprocessResidue;
+struct t_symtab;
+
+/*! \brief
+ * Search for an entry in the rtp database.
+ *
+ * A mismatch of one character is allowed,
+ * if there is only one nearly matching entry in the database,
+ * a warning will be generated.
+ *
+ * \param[in] key The atomname to search for.
+ * \param[in] rtpDBEntry Database with residue information.
+ * \returns The rtp residue name.
  */
+std::string searchResidueDatabase(const std::string &key, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry);
 
-t_restp *get_restp(const char *rtpname, int nrtp, t_restp rtp[]);
-/* Return the entry in the rtp database with rtp name rtpname.
- * Generates a fatal error when rtpname is not found.
+/*! \brief
+ * Returns matching entry in database.
+ *
+ * \param[in] rtpname Name of the entry looked for.
+ * \param[in] rtpDBEntry Database to search.
+ * \throws If the name can not be found in the database.
  */
+gmx::ArrayRef<const PreprocessResidue>::const_iterator
+getDatabaseEntry(const std::string &rtpname, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry);
 
-gpp_atomtype_t read_atype(const char *ffdir, struct t_symtab *tab);
-/* read atom type database(s) */
+/*! \brief
+ * Read atom types into database.
+ *
+ * \param[in] ffdir Force field directory.
+ * \param[in] tab Symbol table for names.
+ * \returns Atom type database.
+ */
+PreprocessingAtomTypes read_atype(const char *ffdir, t_symtab *tab);
 
-void read_resall(const char *resdb, int *nrtp, t_restp **rtp,
-                 gpp_atomtype_t atype, struct t_symtab *tab,
-                 bool bAllowOverrideRTP);
-/* read rtp database, append to the existing database */
+/*! \brief
+ * Read in database, append to exisiting.
+ *
+ * \param[in] resdb Name of database file.
+ * \param[inout] rtpDBEntry Database to populate.
+ * \param[inout] atype Atomtype information.
+ * \param[inout] tab Symbol table for names.
+ * \param[in] bAllowOverrideRTP If entries can be overwritten in the database.
+ */
+void readResidueDatabase(const std::string               &resdb,
+                         std::vector<PreprocessResidue>  *rtpDBEntry,
+                         PreprocessingAtomTypes          *atype,
+                         t_symtab                        *tab,
+                         bool                             bAllowOverrideRTP);
 
-void print_resall(FILE *out, int nrtp, t_restp rtp[],
-                  gpp_atomtype_t atype);
-/* write rtp database */
+/*! \brief
+ * Print out database.
+ *
+ * \param[in] out File to write to.
+ * \param[in] rtpDBEntry Database to write out.
+ * \param[in] atype Atom type information.
+ */
+void print_resall(FILE *out, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry,
+                  const PreprocessingAtomTypes &atype);
 
 #endif

@@ -38,7 +38,7 @@
 #include <array>
 
 #include "gromacs/utility.h"
-#include "gromacs/compat/make_unique.h"
+#include <memory>
 #include "gromacs/mdrun/runner.h"
 
 #include "gmxapi/context.h"
@@ -47,7 +47,7 @@
 #include "gmxapi/status.h"
 #include "gmxapi/system.h"
 
-#include "system-impl.h"
+#include "system_impl.h"
 #include "workflow.h"
 
 namespace gmxapi
@@ -100,7 +100,7 @@ System fromTprFile(const std::string &filename)
     // This may produce errors or throw exceptions in the future, but as of
     // 0.0.3 only memory allocation errors are possible, and we do not have a
     // plan for how to recover from them.
-    auto systemImpl = gmx::compat::make_unique<System::Impl>(std::move(workflow));
+    auto systemImpl = std::make_unique<System::Impl>(std::move(workflow));
     GMX_ASSERT(systemImpl, "Could not create a valid implementation object.");
     auto system = System(std::move(systemImpl));
 

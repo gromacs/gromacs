@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,7 @@
 #include <cmath>
 
 #include "gromacs/awh/awh.h"
-#include "gromacs/mdtypes/awh-params.h"
+#include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/gmxassert.h"
@@ -221,14 +221,14 @@ static void normalizeBlock(AwhEnergyBlock *block, const Bias &bias)
             break;
         case Normalization::FreeEnergy:
             /* Normalize free energy values by subtracting the minimum value */
-            for (gmx::index index = 0; index < data.size(); index++)
+            for (gmx::index index = 0; index < data.ssize(); index++)
             {
                 if (bias.state().points()[index].inTargetRegion() && data[index] < minValue)
                 {
                     minValue = data[index];
                 }
             }
-            for (gmx::index index = 0; index < data.size(); index++)
+            for (gmx::index index = 0; index < data.ssize(); index++)
             {
                 if (bias.state().points()[index].inTargetRegion())
                 {
@@ -263,7 +263,7 @@ void BiasWriter::transferMetaDataToWriter(gmx::index         metaDataIndex,
                                           const Bias        &bias)
 {
     gmx::ArrayRef<float> data = block_[getVarStartBlock(AwhOutputEntryType::MetaData)].data();
-    GMX_ASSERT(metaDataIndex < data.size(), "Attempt to transfer AWH meta data to block for index out of range");
+    GMX_ASSERT(metaDataIndex < data.ssize(), "Attempt to transfer AWH meta data to block for index out of range");
 
     /* Transfer the point data of this variable to the right block(s) */
     switch (metaDataType)

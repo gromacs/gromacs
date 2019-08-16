@@ -289,6 +289,8 @@ latex_elements = {
 'pointsize': '11',
 
 # Additional stuff for the LaTeX preamble.
+# The tocdepth setting is needed to overwrite the default value set by Sphinx
+# to get a more detailed toctree in the pdf version of the manual.
     'preamble': r'''
     \usepackage{here}
     \usepackage{picins}
@@ -304,6 +306,7 @@ latex_elements = {
     \usepackage{pdflscape}
     \pagenumbering{roman}
     \usepackage{array}
+    \setcounter{tocdepth}{2}
     ''',
 # Format output to avoid empty pages
   'classoptions': ',openany,oneside'

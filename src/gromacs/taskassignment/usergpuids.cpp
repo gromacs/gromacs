@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,13 +57,23 @@
 namespace gmx
 {
 
-std::vector<int>
-parseUserGpuIds(const std::string &gpuIdString)
+/*! \brief Parse a GPU ID specifier string into a container.
+ *
+ * \param[in]   gpuIdString  String like "013" or "0,1,3" typically
+ *                           supplied by the user.
+ *                           Must contain only unique decimal digits, or only decimal
+ *                           digits separated by comma delimiters. A terminal
+ *                           comma is accceptable (and required to specify a
+ *                           single ID that is larger than 9).
+ *
+ * \returns  A vector of numeric IDs extracted from \c gpuIdString.
+ *
+ * \throws   std::bad_alloc     If out of memory.
+ *           InvalidInputError  If an invalid character is found (ie not a digit or ',').
+ */
+static std::vector<int>
+parseGpuDeviceIdentifierList(const std::string &gpuIdString)
 {
-    // An optional comma is used to separate GPU IDs assigned to the
-    // same type of task, which will be useful for any nodes that have
-    // more than ten GPUs.
-
     std::vector<int> digits;
     auto             foundCommaDelimiters = gpuIdString.find(',') != std::string::npos;
     if (!foundCommaDelimiters)
@@ -99,6 +109,37 @@ parseUserGpuIds(const std::string &gpuIdString)
         }
     }
     return digits;
+}
+
+std::vector<int>
+parseUserGpuIdString(const std::string &gpuIdString)
+{
+    // An optional comma is used to separate GPU IDs assigned to the
+    // same type of task, which will be useful for any nodes that have
+    // more than ten GPUs.
+
+    auto digits = parseGpuDeviceIdentifierList(gpuIdString);
+
+    // Check and enforce that no duplicate IDs are allowed
+    for (size_t i = 0; i != digits.size(); ++i)
+    {
+        for (size_t j = i+1; j != digits.size(); ++j)
+        {
+            if (digits[i] == digits[j])
+            {
+                GMX_THROW(InvalidInputError(formatString("The string of available GPU device IDs '%s' may not contain duplicate device IDs", gpuIdString.c_str())));
+            }
+        }
+    }
+    return digits;
+}
+
+std::vector<int>
+parseUserTaskAssignmentString(const std::string &gpuIdString)
+{
+    // Implement any additional constraints here that need to be imposed
+
+    return parseGpuDeviceIdentifierList(gpuIdString);
 }
 
 std::vector<int>

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -325,7 +325,7 @@ parseHwLocCache(hwloc_topology_t                   topo,
                                                static_cast<std::size_t>(cache->attr->cache.size),
                                                static_cast<int>(cache->attr->cache.linesize),
                                                static_cast<int>(cache->attr->cache.associativity),
-                                               std::max(static_cast<int>(hwThreads.size()), 1)
+                                               std::max<int>(hwThreads.size(), 1)
                                            } );
             }
         }

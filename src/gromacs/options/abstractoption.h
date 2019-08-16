@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,7 +66,7 @@ namespace gmx
 class AbstractOptionStorage;
 template <typename T> class OptionStorageTemplate;
 class OptionManagerContainer;
-class Variant;
+class Any;
 
 namespace internal
 {
@@ -491,12 +491,12 @@ class OptionInfo
          * Returns the default value(s) of the option.
          *
          * The returned values should all be of the same type, but returning
-         * each as a separate variant is currently simpler.
+         * each as a separate any is currently simpler.
          *
          * Currently, this can only be called before option values have been
          * assigned.
          */
-        std::vector<Variant> defaultValues() const;
+        std::vector<Any> defaultValues() const;
         /*! \brief
          * Returns the default value(s) of the option as strings.
          *
@@ -517,7 +517,7 @@ class OptionInfo
          * value of the option, and the current value in the option is not
          * changed.
          */
-        std::vector<Variant> normalizeValues(const std::vector<Variant> &values) const;
+        std::vector<Any> normalizeValues(const std::vector<Any> &values) const;
 
     protected:
         /*! \cond libapi */

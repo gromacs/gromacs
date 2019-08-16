@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -152,7 +152,7 @@ TEST_F(ParseCommonArgsTest, ParsesIntegerArgs)
     const char *const cmdline[] = {
         "test", "-i1", "2", "-i2", "-3"
     };
-    parseFromArray(cmdline, 0, gmx::EmptyArrayRef(), pa);
+    parseFromArray(cmdline, 0, {}, pa);
     EXPECT_EQ( 2, value1);
     EXPECT_EQ(-3, value2);
     EXPECT_EQ( 3, value3);
@@ -169,7 +169,7 @@ TEST_F(ParseCommonArgsTest, ParsesInt64Args)
     const char *const cmdline[] = {
         "test", "-i1", "2", "-i2", "-3"
     };
-    parseFromArray(cmdline, 0, gmx::EmptyArrayRef(), pa);
+    parseFromArray(cmdline, 0, {}, pa);
     EXPECT_EQ( 2, value1);
     EXPECT_EQ(-3, value2);
     EXPECT_EQ( 3, value3);
@@ -186,7 +186,7 @@ TEST_F(ParseCommonArgsTest, ParsesRealArgs)
     const char *const cmdline[] = {
         "test", "-r1", "2", "-r2", "-.5"
     };
-    parseFromArray(cmdline, 0, gmx::EmptyArrayRef(), pa);
+    parseFromArray(cmdline, 0, {}, pa);
     EXPECT_EQ( 2.0, value1);
     EXPECT_EQ(-0.5, value2);
     EXPECT_EQ( 2.5, value3);
@@ -203,7 +203,7 @@ TEST_F(ParseCommonArgsTest, ParsesStringArgs)
     const char *const cmdline[] = {
         "test", "-s1", "", "-s2", "test"
     };
-    parseFromArray(cmdline, 0, gmx::EmptyArrayRef(), pa);
+    parseFromArray(cmdline, 0, {}, pa);
     EXPECT_STREQ("", value1);
     EXPECT_STREQ("test", value2);
     EXPECT_STREQ("default", value3);
@@ -220,7 +220,7 @@ TEST_F(ParseCommonArgsTest, ParsesBooleanArgs)
     const char *const cmdline[] = {
         "test", "-nob1", "-b2"
     };
-    parseFromArray(cmdline, 0, gmx::EmptyArrayRef(), pa);
+    parseFromArray(cmdline, 0, {}, pa);
     EXPECT_FALSE(value1);
     EXPECT_TRUE(value2);
     EXPECT_TRUE(value3);
@@ -237,7 +237,7 @@ TEST_F(ParseCommonArgsTest, ParsesVectorArgs)
     const char *const cmdline[] = {
         "test", "-v1", "2", "1", "3", "-v2", "1"
     };
-    parseFromArray(cmdline, 0, gmx::EmptyArrayRef(), pa);
+    parseFromArray(cmdline, 0, {}, pa);
     EXPECT_EQ(2.0, value1[XX]);
     EXPECT_EQ(1.0, value1[YY]);
     EXPECT_EQ(3.0, value1[ZZ]);
@@ -260,7 +260,7 @@ TEST_F(ParseCommonArgsTest, ParsesTimeArgs)
     const char *const cmdline[] = {
         "test", "-t1", "2", "-t2", "-.5"
     };
-    parseFromArray(cmdline, 0, gmx::EmptyArrayRef(), pa);
+    parseFromArray(cmdline, 0, {}, pa);
     EXPECT_EQ( 2.0, value1);
     EXPECT_EQ(-0.5, value2);
     EXPECT_EQ( 2.5, value3);
@@ -277,7 +277,7 @@ TEST_F(ParseCommonArgsTest, ParsesTimeArgsWithTimeUnit)
     const char *const cmdline[] = {
         "test", "-t1", "2", "-t2", "-.5", "-tu", "ns"
     };
-    parseFromArray(cmdline, PCA_TIME_UNIT, gmx::EmptyArrayRef(), pa);
+    parseFromArray(cmdline, PCA_TIME_UNIT, {}, pa);
     EXPECT_EQ( 2000.0, value1);
     EXPECT_EQ(-500.0, value2);
     EXPECT_EQ( 2.5, value3);
@@ -296,7 +296,7 @@ TEST_F(ParseCommonArgsTest, ParsesEnumArgs)
     const char *const cmdline[] = {
         "test", "-s1", "off", "-s2", "val"
     };
-    parseFromArray(cmdline, 0, gmx::EmptyArrayRef(), pa);
+    parseFromArray(cmdline, 0, {}, pa);
     EXPECT_STREQ("off", value1[0]);
     EXPECT_STREQ("value", value2[0]);
     EXPECT_STREQ("default", value3[0]);
@@ -320,7 +320,7 @@ TEST_F(ParseCommonArgsTest, ParsesFileArgs)
     const char *const cmdline[] = {
         "test", "-o1", "-o2", "test", "-om", "test1", "test2.xvg", "-om2"
     };
-    parseFromArray(cmdline, 0, fnm, gmx::EmptyArrayRef());
+    parseFromArray(cmdline, 0, fnm, {});
     EXPECT_STREQ("out1.xvg", opt2fn_null("-o1", nfile(), fnm));
     EXPECT_STREQ("test.xvg", opt2fn_null("-o2", nfile(), fnm));
     gmx::ArrayRef<const std::string> files = opt2fns("-om", nfile(), fnm);
@@ -345,7 +345,7 @@ TEST_F(ParseCommonArgsTest, ParsesFileArgsWithDefaults)
     const char *const cmdline[] = {
         "test"
     };
-    parseFromArray(cmdline, 0, fnm, gmx::EmptyArrayRef());
+    parseFromArray(cmdline, 0, fnm, {});
     EXPECT_STREQ("topol.tpr", ftp2fn(efTPS, nfile(), fnm));
     EXPECT_STREQ("traj.xtc", opt2fn("-f2", nfile(), fnm));
     EXPECT_EQ(nullptr, opt2fn_null("-f2", nfile(), fnm));
@@ -366,7 +366,7 @@ TEST_F(ParseCommonArgsTest, ParsesFileArgsWithDefaultFileName)
     const char *const cmdline[] = {
         "test", "-deffnm", "def", "-f2", "other", "-o"
     };
-    parseFromArray(cmdline, PCA_CAN_SET_DEFFNM, fnm, gmx::EmptyArrayRef());
+    parseFromArray(cmdline, PCA_CAN_SET_DEFFNM, fnm, {});
     EXPECT_STREQ("def.tpr", ftp2fn(efTPS, nfile(), fnm));
     EXPECT_STREQ("other.xtc", opt2fn("-f2", nfile(), fnm));
     EXPECT_STREQ("def.xtc", opt2fn("-f3", nfile(), fnm));
@@ -384,7 +384,7 @@ TEST_F(ParseCommonArgsTest, ParseFileArgsWithCustomDefaultExtension)
     const char *const cmdline[] = {
         "test", "-o2", "-o3", "test"
     };
-    parseFromArray(cmdline, PCA_CAN_SET_DEFFNM, fnm, gmx::EmptyArrayRef());
+    parseFromArray(cmdline, PCA_CAN_SET_DEFFNM, fnm, {});
     EXPECT_STREQ("conf1.gro", opt2fn("-o1", nfile(), fnm));
     EXPECT_STREQ("conf2.pdb", opt2fn("-o2", nfile(), fnm));
     EXPECT_STREQ("test.gro", opt2fn("-o3", nfile(), fnm));
@@ -408,7 +408,7 @@ TEST_F(ParseCommonArgsTest, HandlesNonExistentInputFiles)
     const char *const cmdline[] = {
         "test", "-f2", "-f3", "other", "-f4", "trj.gro", "-g2", "foo"
     };
-    parseFromArray(cmdline, PCA_DISABLE_INPUT_FILE_CHECKING, fnm, gmx::EmptyArrayRef());
+    parseFromArray(cmdline, PCA_DISABLE_INPUT_FILE_CHECKING, fnm, {});
     EXPECT_STREQ("topol.tpr", ftp2fn(efTPS, nfile(), fnm));
     EXPECT_STREQ("trj.xtc", opt2fn("-f", nfile(), fnm));
     EXPECT_STREQ("trj2.xtc", opt2fn("-f2", nfile(), fnm));
@@ -427,7 +427,7 @@ TEST_F(ParseCommonArgsTest, HandlesNonExistentOptionalInputFiles)
     const char *const cmdline[] = {
         "test"
     };
-    parseFromArray(cmdline, 0, fnm, gmx::EmptyArrayRef());
+    parseFromArray(cmdline, 0, fnm, {});
     EXPECT_STREQ("topol.tpr", ftp2fn(efTPS, nfile(), fnm));
     EXPECT_STREQ("trj.xtc", opt2fn("-f", nfile(), fnm));
 }
@@ -444,7 +444,7 @@ TEST_F(ParseCommonArgsTest, AcceptsNonExistentInputFilesIfSpecified)
     const char *const cmdline[] = {
         "test", "-c2", "-c3", "nonexistent", "-c4", "nonexistent.cpt", "-f", "nonexistent"
     };
-    parseFromArray(cmdline, 0, fnm, gmx::EmptyArrayRef());
+    parseFromArray(cmdline, 0, fnm, {});
     EXPECT_STREQ("file1.cpt", opt2fn("-c", nfile(), fnm));
     EXPECT_STREQ("file2.cpt", opt2fn("-c2", nfile(), fnm));
     EXPECT_STREQ("nonexistent.cpt", opt2fn("-c3", nfile(), fnm));
@@ -463,7 +463,7 @@ TEST_F(ParseCommonArgsTest, HandlesCompressedFiles)
     std::string       expectedG = addFileArg("-g", ".gro.Z", efFull);
     expectedF = gmx::Path::stripExtension(expectedF);
     expectedG = gmx::Path::stripExtension(expectedG);
-    parseFromArgs(0, fnm, gmx::EmptyArrayRef());
+    parseFromArgs(0, fnm, {});
     EXPECT_EQ(expectedF, opt2fn("-f", nfile(), fnm));
     EXPECT_EQ(expectedG, opt2fn("-g", nfile(), fnm));
 }
@@ -475,7 +475,7 @@ TEST_F(ParseCommonArgsTest, AcceptsUnknownTrajectoryExtension)
     };
     args_.append("test");
     std::string       expected = addFileArg("-f", ".foo", efFull);
-    parseFromArgs(0, fnm, gmx::EmptyArrayRef());
+    parseFromArgs(0, fnm, {});
     EXPECT_EQ(expected, opt2fn("-f", nfile(), fnm));
 }
 
@@ -493,7 +493,7 @@ TEST_F(ParseCommonArgsTest, CompletesExtensionFromExistingFile)
         { efTRX, "-f3", nullptr, ffREAD },
         { efTRX, "-f4", def4.c_str(), ffREAD }
     };
-    parseFromArgs(0, fnm, gmx::EmptyArrayRef());
+    parseFromArgs(0, fnm, {});
     EXPECT_EQ(expected1, opt2fn("-f1", nfile(), fnm));
     EXPECT_EQ(expected2, opt2fn("-f2", nfile(), fnm));
     EXPECT_EQ(expected3, opt2fn("-f3", nfile(), fnm));
@@ -516,7 +516,7 @@ TEST_F(ParseCommonArgsTest, CompletesExtensionFromExistingFileWithDefaultFileNam
     std::string       deffnm    = gmx::Path::stripExtension(expected3);
     args_.append("-deffnm");
     args_.append(deffnm);
-    parseFromArgs(PCA_CAN_SET_DEFFNM, fnm, gmx::EmptyArrayRef());
+    parseFromArgs(PCA_CAN_SET_DEFFNM, fnm, {});
     EXPECT_EQ(expected1, opt2fn("-f1", nfile(), fnm));
     EXPECT_EQ(expected2, opt2fn("-f2", nfile(), fnm));
     EXPECT_EQ(expected3, opt2fn("-f3", nfile(), fnm));

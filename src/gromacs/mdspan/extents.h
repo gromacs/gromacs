@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,8 +105,8 @@ template< std::ptrdiff_t ... StaticExtents >
 class extents;
 
 template<std::ptrdiff_t... LHS, std::ptrdiff_t... RHS>
-bool operator==(const extents<LHS...> &lhs,
-                const extents<RHS...> &rhs) noexcept;
+constexpr bool operator==(const extents<LHS...> &lhs,
+                          const extents<RHS...> &rhs) noexcept;
 
 template<std::ptrdiff_t... LHS, std::ptrdiff_t... RHS>
 constexpr bool operator!=(const extents<LHS...> &lhs,
@@ -142,14 +142,14 @@ struct extents_analyse<R, E0, StaticExtents...> {
     next_extents_analyse next;
 
     //! Trivial constructor.
-    extents_analyse() : next() {}
+    constexpr extents_analyse() : next() {}
 
     /*! \brief Construction from dynamic extents hands the extents down
      * to the next extents analysis of lower rank.
      * \param[in] de dynamic extents
      */
     template<class ... DynamicExtents>
-    extents_analyse(DynamicExtents... de) : next(de ...) {}
+    constexpr extents_analyse(DynamicExtents... de) : next(de ...) {}
 
     /*! \brief Construct from an array of dynamic extentes and rank.
      * Hand down the dynamic rank parameters to the next extents analysis rank
@@ -157,7 +157,7 @@ struct extents_analyse<R, E0, StaticExtents...> {
      * \param[in] r rank to read from the dynamic extent
      */
     template<std::size_t Rank>
-    extents_analyse(const std::array<std::ptrdiff_t, Rank> &de, const std::size_t r) : next(de, r) {}
+    constexpr extents_analyse(const std::array<std::ptrdiff_t, Rank> &de, const std::size_t r) : next(de, r) {}
 
     //! Copy constructor.
     template<std::ptrdiff_t... OtherStaticExtents>
@@ -177,8 +177,6 @@ struct extents_analyse<R, E0, StaticExtents...> {
      */
     constexpr std::ptrdiff_t extent(const std::size_t r) const noexcept
     {
-        // TODO use early return and if instead of ternary operator
-        // after bumping requirements to C++14
         return (r == R) ? E0 : next.extent(r);
     }
     /*! \brief Report the static extent of dimension r.
@@ -187,14 +185,18 @@ struct extents_analyse<R, E0, StaticExtents...> {
      */
     static constexpr std::ptrdiff_t static_extent(const std::size_t r) noexcept
     {
-        // TODO use early return and if instead of ternary operator
-        // after bumping requirements to C++14
         return (r == R) ? E0 : next_extents_analyse::static_extent(r);
+    }
+
+    //! Returns the extent with the first dimension sliced off
+    constexpr auto sliced_extents() const noexcept
+    {
+        return next;
     }
 };
 
 /*! \libinternal \brief Enable querying extent of specific rank by splitting
- * a static extent off the variadic template arguments.
+ * a dynamic extent off the variadic template arguments.
  */
 template< int R, std::ptrdiff_t ... StaticExtents >
 struct extents_analyse<R, dynamic_extent, StaticExtents...> {
@@ -252,7 +254,7 @@ struct extents_analyse<R, dynamic_extent, StaticExtents...> {
      */
     constexpr std::ptrdiff_t extent(const std::size_t r) const noexcept
     {
-        return (r == R) ? this_extent : next.extent(r); // TODO use early return and if instead of ternary operator after bumping requirements to C++14
+        return (r == R) ? this_extent : next.extent(r);
     }
     /*! \brief Report the static extent of dimension r.
      * \param[in] r the dimension to query
@@ -260,7 +262,13 @@ struct extents_analyse<R, dynamic_extent, StaticExtents...> {
      */
     static constexpr std::ptrdiff_t static_extent(const std::size_t r) noexcept
     {
-        return (r == R) ? dynamic_extent : next_extents_analyse::static_extent(r); // TODO use early return and if instead of ternary operator after bumping requirements to C++14
+        return (r == R) ? dynamic_extent : next_extents_analyse::static_extent(r);
+    }
+
+    //! Returns the extent with the first dimension sliced off
+    constexpr auto sliced_extents() const noexcept
+    {
+        return next;
     }
 };
 
@@ -279,7 +287,7 @@ struct extents_analyse<0> {
     static constexpr std::size_t rank_dynamic() noexcept { return 0; }
 
     //! Trivial constructor.
-    extents_analyse() {}
+    constexpr extents_analyse() {}
 
     //! Construct from array and rank, doing nothing.
     template<std::size_t Rank>
@@ -302,8 +310,13 @@ struct extents_analyse<0> {
     }
 
 };
-}   // namespace detail
 
+template< std::ptrdiff_t E0, std::ptrdiff_t ... StaticExtents >
+struct sliced_extents
+{
+    using type = extents<StaticExtents...>;
+};
+}   // namespace detail
 
 /*! \libinternal \brief Multidimensional extents with static and dynamic dimensions.
  *
@@ -392,7 +405,12 @@ class extents
          */
         constexpr index_type extent(std::size_t k) const noexcept
         { return impl.extent(rank()-k); }
+        //! Returns the extent with the first dimension sliced off
+        constexpr auto sliced_extents() const noexcept
+        { return typename detail::sliced_extents<StaticExtents...>::type(impl.sliced_extents()); }
+
     private:
+        extents(extents_analyse_t o) : impl(o) {}
         //! For copy assignment, extents are friends of extents.
         template< std::ptrdiff_t... > friend class extents;
         //! The implementation class.
@@ -402,11 +420,10 @@ class extents
 
 /*! \brief Comparison operator.
  * \returns true if extents are equal
- * TODO add constexpr when C++14 is required
  */
 template<std::ptrdiff_t... LHS, std::ptrdiff_t... RHS>
-bool operator==(const extents<LHS...> &lhs,
-                const extents<RHS...> &rhs) noexcept
+constexpr bool operator==(const extents<LHS...> &lhs,
+                          const extents<RHS...> &rhs) noexcept
 {
     bool equal = lhs.rank() == rhs.rank();
     for (std::size_t r = 0; r < lhs.rank(); r++)

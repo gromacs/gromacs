@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,8 +73,8 @@ class MimicCommunicator
          * @param mtop global topology data
          * @param coords coordinates of all atoms
          */
-        void sendInitData(gmx_mtop_t                *mtop,
-                          HostVector<gmx::RVec>      coords);
+        void sendInitData(gmx_mtop_t                  *mtop,
+                          PaddedHostVector<gmx::RVec>  coords);
 
         /*! \brief
          * Gets the number of MD steps to perform from MiMiC
@@ -89,7 +89,7 @@ class MimicCommunicator
          * @param x array of coordinates to fill
          * @param natoms number of atoms in the system
          */
-        void getCoords(HostVector<RVec> *x, int natoms);
+        void getCoords(PaddedHostVector<RVec> *x, int natoms);
 
         /*! \brief
          * Send the potential energy value to MiMiC

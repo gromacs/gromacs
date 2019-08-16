@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,6 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/datafilefinder.h"
 #include "gromacs/utility/exceptions.h"
@@ -126,9 +125,9 @@ CommandLineProgramContext &initForCommandLine(int *argc, char ***argv)
     broadcastArguments(argc, argv);
     try
     {
-        g_commandLineContext = compat::make_unique<CommandLineProgramContext>(*argc, *argv);
+        g_commandLineContext = std::make_unique<CommandLineProgramContext>(*argc, *argv);
         setProgramContext(g_commandLineContext.get());
-        g_libFileFinder = compat::make_unique<DataFileFinder>();
+        g_libFileFinder = std::make_unique<DataFileFinder>();
         g_libFileFinder->setSearchPathFromEnv("GMXLIB");
         setLibraryFileFinder(g_libFileFinder.get());
     }

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@
 #include <vector>
 
 #include "gromacs/gmxpreprocess/fflibutil.h"
-#include "gromacs/gmxpreprocess/hackblock.h"
+#include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
@@ -53,6 +53,8 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
+
+#include "hackblock.h"
 
 typedef struct {
     char *filebase;
@@ -137,13 +139,13 @@ static void done_xlatom(int nxlate, t_xlate_atom *xlatom)
 }
 
 void rename_atoms(const char* xlfile, const char *ffdir,
-                  t_atoms *atoms, t_symtab *symtab, const t_restp *restp,
-                  bool bResname, gmx_residuetype_t *rt, bool bReorderNum,
+                  t_atoms *atoms, t_symtab *symtab, gmx::ArrayRef<const PreprocessResidue> localPpResidue,
+                  bool bResname, ResidueType *rt, bool bReorderNum,
                   bool bVerbose)
 {
     int           nxlate, a, i, resind;
     t_xlate_atom *xlatom;
-    char          c, *rnm, atombuf[32], *ptr0, *ptr1;
+    char          c, *rnm, atombuf[32];
     bool          bReorderedNum, bRenamed, bMatch;
     bool          bStartTerm, bEndTerm;
 
@@ -200,25 +202,25 @@ void rename_atoms(const char* xlfile, const char *ffdir,
         for (i = 0; (i < nxlate) && !bRenamed; i++)
         {
             /* Check if the base file name of the rtp and arn entry match */
-            if (restp == nullptr ||
-                gmx_strcasecmp(restp[resind].filebase, xlatom[i].filebase) == 0)
+            if (localPpResidue.empty() ||
+                gmx::equalCaseInsensitive(localPpResidue[resind].filebase, xlatom[i].filebase))
             {
                 /* Match the residue name */
                 bMatch = (xlatom[i].res == nullptr ||
                           (gmx_strcasecmp("protein-nterm", xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_protein(rt, rnm) && bStartTerm) ||
+                           rt->namedResidueHasType(rnm, "Protein") && bStartTerm) ||
                           (gmx_strcasecmp("protein-cterm", xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_protein(rt, rnm) && bEndTerm) ||
+                           rt->namedResidueHasType(rnm, "Protein") && bEndTerm) ||
                           (gmx_strcasecmp("protein", xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_protein(rt, rnm)) ||
+                           rt->namedResidueHasType(rnm, "Protein")) ||
                           (gmx_strcasecmp("DNA", xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_dna(rt, rnm)) ||
+                           rt->namedResidueHasType(rnm, "DNA")) ||
                           (gmx_strcasecmp("RNA", xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_rna(rt, rnm)));
+                           rt->namedResidueHasType(rnm, "RNA")));
                 if (!bMatch)
                 {
-                    ptr0 = rnm;
-                    ptr1 = xlatom[i].res;
+                    const char *ptr0 = rnm;
+                    const char *ptr1 = xlatom[i].res;
                     while (ptr0[0] != '\0' && ptr1[0] != '\0' &&
                            (ptr0[0] == ptr1[0] || ptr1[0] == '?'))
                     {
@@ -233,7 +235,7 @@ void rename_atoms(const char* xlfile, const char *ffdir,
                     /* Don't free the old atomname,
                      * since it might be in the symtab.
                      */
-                    ptr0 = gmx_strdup(xlatom[i].replace);
+                    const char *ptr0 = xlatom[i].replace;
                     if (bVerbose)
                     {
                         printf("Renaming atom '%s' in residue %d %s to '%s'\n",

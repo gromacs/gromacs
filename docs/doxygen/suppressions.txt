@@ -15,27 +15,24 @@ src/gromacs/utility/baseversion-gen.cpp: warning: does not include "gmxpre.h" fi
 # Exclude header files that are used for inlining code; the responsibility for
 # making the right #includes should be on the source file that uses these.
 # TODO: # Stop using the preprocessor for meta-programming!
-src/gromacs/ewald/pme-simd4.h: warning: should include "pme-simd.h"
-src/gromacs/ewald/pme-spline-work.cpp: warning: includes "simd.h" unnecessarily
-src/gromacs/ewald/pme-spline-work.h: warning: includes "simd.h" unnecessarily
-src/gromacs/ewald/pme-spread.cpp: warning: includes "simd.h" unnecessarily
-src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h: warning: should include "simd.h"
-src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_outer.h: warning: should include "simd.h"
-src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_inner.h: warning: should include "simd.h"
-src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_outer.h: warning: should include "simd.h"
-src/gromacs/mdlib/nbnxn_search_simd_2xnn.h: warning: should include "simd.h"
-src/gromacs/mdlib/nbnxn_search_simd_4xn.h: warning: should include "simd.h"
+src/gromacs/ewald/pme_simd4.h: warning: should include "pme_simd.h"
+src/gromacs/ewald/pme_spline_work.cpp: warning: includes "simd.h" unnecessarily
+src/gromacs/ewald/pme_spline_work.h: warning: includes "simd.h" unnecessarily
+src/gromacs/ewald/pme_spread.cpp: warning: includes "simd.h" unnecessarily
+src/gromacs/nbnxm/grid.h: warning: includes "simd.h" unnecessarily
+src/gromacs/nbnxm/kernels_simd_2xmm/kernel_inner.h: warning: should include "simd.h"
+src/gromacs/nbnxm/kernels_simd_2xmm/kernel_outer.h: warning: should include "simd.h"
+src/gromacs/nbnxm/kernels_simd_4xm/kernel_inner.h: warning: should include "simd.h"
+src/gromacs/nbnxm/kernels_simd_4xm/kernel_outer.h: warning: should include "simd.h"
+src/gromacs/nbnxm/pairlist_simd_2xmm.h: warning: should include "simd.h"
+src/gromacs/nbnxm/pairlist_simd_4xm.h: warning: should include "simd.h"
 
 # This module name doesn't really fall into any currently used pattern; needs some thought
 : error: no matching directory for module: module_mdrun_integration_tests
 
 # These would be nice to fix, but can wait for later / deletion / rewrites
-src/gromacs/gmxlib/nonbonded/nb_kernel_*/*: warning: includes "config.h" unnecessarily
-src/gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.cpp: warning: includes "config.h" unnecessarily
-src/gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref.cpp: warning: includes "config.h" unnecessarily
-src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_common.h: warning: should include "config.h"
-src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_common.h: warning: should include "nbnxn_simd.h"
-src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_common.h: warning: should include "nbnxn_simd.h"
+src/gromacs/nbnxm/kernels_simd_2xmm/kernel_common.h: warning: should include "nbnxm_simd.h"
+src/gromacs/nbnxm/kernels_simd_4xm/kernel_common.h: warning: should include "nbnxm_simd.h"
 
 # Temporary while we change the SIMD implementation
 src/gromacs/simd/impl_sparc64_hpc_ace/impl_sparc64_hpc_ace_common.h: warning: should include "simd.h"

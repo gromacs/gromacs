@@ -1,0 +1,104 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="RESTRANGLES">
+    <FEP Name="Yes">
+      <Lambda Name="0">
+        <Real Name="Epot ">13793.486079955308</Real>
+        <Real Name="dVdlambda ">0</Real>
+        <Vector Name="Central shift forces">
+          <Real Name="X">-7.1054273576010019e-15</Real>
+          <Real Name="Y">5.6843418860808015e-14</Real>
+          <Real Name="Z">-7.6833543971588369e-09</Real>
+        </Vector>
+        <Sequence Name="Forces">
+          <Int Name="Length">4</Int>
+          <Vector>
+            <Real Name="X">-2761787.8827562206</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector>
+            <Real Name="X">-2748083.9432400633</Real>
+            <Real Name="Y">643.09135302869788</Real>
+            <Real Name="Z">-275493.59129982314</Real>
+          </Vector>
+          <Vector>
+            <Real Name="X">5509923.1808657609</Real>
+            <Real Name="Y">-963.09638345872963</Real>
+            <Real Name="Z">275170.50497721677</Real>
+          </Vector>
+          <Vector>
+            <Real Name="X">-51.354869477236797</Real>
+            <Real Name="Y">320.00503043003181</Real>
+            <Real Name="Z">323.08632259866607</Real>
+          </Vector>
+        </Sequence>
+      </Lambda>
+      <Lambda Name="0.5">
+        <Real Name="Epot ">13793.486079955308</Real>
+        <Real Name="dVdlambda ">0</Real>
+        <Vector Name="Central shift forces">
+          <Real Name="X">-7.1054273576010019e-15</Real>
+          <Real Name="Y">5.6843418860808015e-14</Real>
+          <Real Name="Z">-7.6833543971588369e-09</Real>
+        </Vector>
+        <Sequence Name="Forces">
+          <Int Name="Length">4</Int>
+          <Vector>
+            <Real Name="X">-2761787.8827562206</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector>
+            <Real Name="X">-2748083.9432400633</Real>
+            <Real Name="Y">643.09135302869788</Real>
+            <Real Name="Z">-275493.59129982314</Real>
+          </Vector>
+          <Vector>
+            <Real Name="X">5509923.1808657609</Real>
+            <Real Name="Y">-963.09638345872963</Real>
+            <Real Name="Z">275170.50497721677</Real>
+          </Vector>
+          <Vector>
+            <Real Name="X">-51.354869477236797</Real>
+            <Real Name="Y">320.00503043003181</Real>
+            <Real Name="Z">323.08632259866607</Real>
+          </Vector>
+        </Sequence>
+      </Lambda>
+      <Lambda Name="1">
+        <Real Name="Epot ">13793.486079955308</Real>
+        <Real Name="dVdlambda ">0</Real>
+        <Vector Name="Central shift forces">
+          <Real Name="X">-7.1054273576010019e-15</Real>
+          <Real Name="Y">5.6843418860808015e-14</Real>
+          <Real Name="Z">-7.6833543971588369e-09</Real>
+        </Vector>
+        <Sequence Name="Forces">
+          <Int Name="Length">4</Int>
+          <Vector>
+            <Real Name="X">-2761787.8827562206</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector>
+            <Real Name="X">-2748083.9432400633</Real>
+            <Real Name="Y">643.09135302869788</Real>
+            <Real Name="Z">-275493.59129982314</Real>
+          </Vector>
+          <Vector>
+            <Real Name="X">5509923.1808657609</Real>
+            <Real Name="Y">-963.09638345872963</Real>
+            <Real Name="Z">275170.50497721677</Real>
+          </Vector>
+          <Vector>
+            <Real Name="X">-51.354869477236797</Real>
+            <Real Name="Y">320.00503043003181</Real>
+            <Real Name="Z">323.08632259866607</Real>
+          </Vector>
+        </Sequence>
+      </Lambda>
+    </FEP>
+  </FunctionType>
+</ReferenceData>

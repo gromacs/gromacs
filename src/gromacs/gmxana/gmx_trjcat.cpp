@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,7 +82,7 @@ static void scan_trj_files(gmx::ArrayRef<const std::string> files,
     t_trxframe   fr;
     bool         ok;
 
-    for (gmx::index i = 0; i < files.size(); i++)
+    for (gmx::index i = 0; i < files.ssize(); i++)
     {
         ok = read_first_frame(oenv, &status, files[i].c_str(), &fr, FLAGS);
 
@@ -153,10 +153,10 @@ static void scan_trj_files(gmx::ArrayRef<const std::string> files,
 
 static void sort_files(gmx::ArrayRef<std::string> files, real *settime)
 {
-    for (gmx::index i = 0; i < files.size(); i++)
+    for (gmx::index i = 0; i < files.ssize(); i++)
     {
         gmx::index minidx = i;
-        for (gmx::index j = i + 1; j < files.size(); j++)
+        for (gmx::index j = i + 1; j < files.ssize(); j++)
         {
             if (settime[j] < settime[minidx])
             {
@@ -201,7 +201,7 @@ static void edit_files(gmx::ArrayRef<std::string> files,
                 "---------------------------------------------------------\n",
                 timeUnit.c_str(), timeUnit.c_str());
 
-        for (gmx::index i = 0; i < files.size(); i++)
+        for (gmx::index i = 0; i < files.ssize(); i++)
         {
             fprintf(stderr, "%25s   %10.3f %s          ", files[i].c_str(),
                     output_env_conv_time(oenv, readtime[i]), timeUnit.c_str());
@@ -256,7 +256,7 @@ static void edit_files(gmx::ArrayRef<std::string> files,
     }
     else
     {
-        for (gmx::index i = 0; i < files.size(); i++)
+        for (gmx::index i = 0; i < files.ssize(); i++)
         {
             settime[i] = readtime[i];
         }
@@ -273,7 +273,7 @@ static void edit_files(gmx::ArrayRef<std::string> files,
     fprintf(stderr, "\nSummary of files and start times used:\n\n"
             "          File                Start time       Time step\n"
             "---------------------------------------------------------\n");
-    for (gmx::index i = 0; i < files.size(); i++)
+    for (gmx::index i = 0; i < files.ssize(); i++)
     {
         switch (cont_type[i])
         {
@@ -321,7 +321,7 @@ static void do_demux(gmx::ArrayRef<const std::string> inFiles,
     snew(bSet, inFiles.size());
     natoms = -1;
     t      = -1;
-    for (gmx::index i = 0; i < inFiles.size(); i++)
+    for (gmx::index i = 0; i < inFiles.ssize(); i++)
     {
         read_first_frame(oenv, &(fp_in[i]), inFiles[i].c_str(), &(trx[i]),
                          TRX_NEED_X);
@@ -345,7 +345,7 @@ static void do_demux(gmx::ArrayRef<const std::string> inFiles,
     }
 
     snew(fp_out, inFiles.size());
-    for (gmx::index i = 0; i < inFiles.size(); i++)
+    for (gmx::index i = 0; i < inFiles.ssize(); i++)
     {
         fp_out[i] = open_trx(outFiles[i].c_str(), "w");
     }
@@ -364,11 +364,11 @@ static void do_demux(gmx::ArrayRef<const std::string> inFiles,
         {
             fprintf(debug, "trx[0].time = %g, time[k] = %g\n", trx[0].time, time[k]);
         }
-        for (gmx::index i = 0; i < inFiles.size(); i++)
+        for (gmx::index i = 0; i < inFiles.ssize(); i++)
         {
             bSet[i] = FALSE;
         }
-        for (gmx::index i = 0; i < inFiles.size(); i++)
+        for (gmx::index i = 0; i < inFiles.ssize(); i++)
         {
             int j = gmx::roundToInt(value[i][k]);
             range_check(j, 0, inFiles.size());
@@ -393,14 +393,14 @@ static void do_demux(gmx::ArrayRef<const std::string> inFiles,
         }
 
         bCont = (k < nval);
-        for (gmx::index i = 0; i < inFiles.size(); i++)
+        for (gmx::index i = 0; i < inFiles.ssize(); i++)
         {
             bCont = bCont && read_next_frame(oenv, fp_in[i], &trx[i]);
         }
     }
     while (bCont);
 
-    for (gmx::index i = 0; i < inFiles.size(); i++)
+    for (gmx::index i = 0; i < inFiles.ssize(); i++)
     {
         close_trx(fp_in[i]);
         close_trx(fp_out[i]);
@@ -553,9 +553,9 @@ int gmx_trjcat(int argc, char *argv[])
         gmx_fatal(FARGS, "No input files!" );
     }
 
-    if (bDeMux && static_cast<int>(inFiles.size()) != nset)
+    if (bDeMux && ssize(inFiles) != nset)
     {
-        gmx_fatal(FARGS, "You have specified %td files and %d entries in the demux table", inFiles.size(), nset);
+        gmx_fatal(FARGS, "You have specified %td files and %d entries in the demux table", inFiles.ssize(), nset);
     }
 
     ftpin = fn2ftp(inFiles[0].c_str());
@@ -582,14 +582,14 @@ int gmx_trjcat(int argc, char *argv[])
     {
         gmx_fatal(FARGS, "Don't know what to do with more than 1 output file if  not demultiplexing");
     }
-    else if (bDeMux && static_cast<int>(outFiles.size()) != nset && outFiles.size() != 1)
+    else if (bDeMux && ssize(outFiles) != nset && outFiles.size() != 1)
     {
-        gmx_fatal(FARGS, "Number of output files should be 1 or %d (#input files), not %td", nset, outFiles.size());
+        gmx_fatal(FARGS, "Number of output files should be 1 or %d (#input files), not %td", nset, outFiles.ssize());
     }
     if (bDeMux)
     {
         auto outFilesDemux = gmx::copyOf(outFiles);
-        if (static_cast<int>(outFilesDemux.size()) != nset)
+        if (gmx::ssize(outFilesDemux) != nset)
         {
             std::string name = outFilesDemux[0];
             outFilesDemux.resize(nset);
@@ -662,7 +662,7 @@ int gmx_trjcat(int argc, char *argv[])
                 else
                 {
                     trxout = trjtools_gmx_prepare_tng_writing(out_file, 'w', nullptr,
-                                                              inFilesEdited[0].c_str(), -1, nullptr, gmx::EmptyArrayRef(), nullptr);
+                                                              inFilesEdited[0].c_str(), -1, nullptr, {}, nullptr);
                 }
             }
             else

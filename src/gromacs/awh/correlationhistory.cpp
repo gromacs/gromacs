@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,7 @@
 #include <cassert>
 
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/mdtypes/awh-correlation-history.h"
+#include "gromacs/mdtypes/awh_correlation_history.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
@@ -134,7 +134,7 @@ void updateCorrelationGridHistory(CorrelationGridHistory *correlationGridHistory
         }
     }
 
-    GMX_RELEASE_ASSERT(bufferIndex == blockDataBuffer.size(), "We should store exactly as many elements as the buffer size");
+    GMX_RELEASE_ASSERT(bufferIndex == blockDataBuffer.ssize(), "We should store exactly as many elements as the buffer size");
 }
 
 void CorrelationBlockData::restoreFromHistory(const CorrelationBlockDataHistory                  &blockHistory,

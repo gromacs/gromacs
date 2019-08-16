@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,12 +45,13 @@
 #include <cstring>
 
 #include <algorithm>
+#include <numeric>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
+#include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/pgutil.h"
-#include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/vec.h"
@@ -59,291 +60,189 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "hackblock.h"
+#include "resall.h"
+
 #define DIHEDRAL_WAS_SET_IN_RTP 0
-static bool was_dihedral_set_in_rtp(const t_param *dih)
+static bool was_dihedral_set_in_rtp(const InteractionType &dih)
 {
-    return dih->c[MAXFORCEPARAM-1] == DIHEDRAL_WAS_SET_IN_RTP;
+    // This is a bad way to check this, but I don't know how to make this better now.
+    gmx::ArrayRef<const real> forceParam = dih.forceParam();
+    return forceParam[MAXFORCEPARAM-1] == DIHEDRAL_WAS_SET_IN_RTP;
 }
 
-typedef bool (*peq)(t_param *p1, t_param *p2);
+typedef bool (*peq)(const InteractionType &p1, const InteractionType &p2);
 
-static int acomp(const void *a1, const void *a2)
+static bool acomp(const InteractionType &a1, const InteractionType &a2)
 {
-    const t_param *p1, *p2;
     int            ac;
 
-    p1 = static_cast<const t_param *>(a1);
-    p2 = static_cast<const t_param *>(a2);
-    if ((ac = (p1->aj()-p2->aj())) != 0)
+    if ((ac = (a1.aj()-a2.aj())) != 0)
     {
-        return ac;
+        return ac < 0;
     }
-    else if ((ac = (p1->ai()-p2->ai())) != 0)
+    else if ((ac = (a1.ai()-a2.ai())) != 0)
     {
-        return ac;
+        return ac < 0;
     }
     else
     {
-        return (p1->ak()-p2->ak());
+        return (a1.ak() < a2.ak());
     }
 }
 
-static int pcomp(const void *a1, const void *a2)
+static bool pcomp(const InteractionType &a1, const InteractionType &a2)
 {
-    const t_param *p1, *p2;
     int            pc;
 
-    p1 = static_cast<const t_param *>(a1);
-    p2 = static_cast<const t_param *>(a2);
-    if ((pc = (p1->ai()-p2->ai())) != 0)
+    if ((pc = (a1.ai()-a2.ai())) != 0)
     {
-        return pc;
+        return pc < 0;
     }
     else
     {
-        return (p1->aj()-p2->aj());
+        return (a1.aj() < a2.aj());
     }
 }
 
-static int dcomp(const void *d1, const void *d2)
+static bool dcomp(const InteractionType &d1, const InteractionType &d2)
 {
-    const t_param *p1, *p2;
     int            dc;
 
-    p1 = static_cast<const t_param *>(d1);
-    p2 = static_cast<const t_param *>(d2);
     /* First sort by J & K (the two central) atoms */
-    if ((dc = (p1->aj()-p2->aj())) != 0)
+    if ((dc = (d1.aj()-d2.aj())) != 0)
     {
-        return dc;
+        return dc < 0;
     }
-    else if ((dc = (p1->ak()-p2->ak())) != 0)
+    else if ((dc = (d1.ak()-d2.ak())) != 0)
     {
-        return dc;
+        return dc < 0;
     }
     /* Then make sure to put rtp dihedrals before generated ones */
-    else if (was_dihedral_set_in_rtp(p1) &&
-             !was_dihedral_set_in_rtp(p2))
+    else if (was_dihedral_set_in_rtp(d1) &&
+             !was_dihedral_set_in_rtp(d2))
     {
-        return -1;
+        return true;
     }
-    else if (!was_dihedral_set_in_rtp(p1) &&
-             was_dihedral_set_in_rtp(p2))
+    else if (!was_dihedral_set_in_rtp(d1) &&
+             was_dihedral_set_in_rtp(d2))
     {
-        return 1;
+        return false;
     }
     /* Then sort by I and J (two outer) atoms */
-    else if ((dc = (p1->ai()-p2->ai())) != 0)
+    else if ((dc = (d1.ai()-d2.ai())) != 0)
     {
-        return dc;
+        return dc < 0;
     }
-    else if ((dc = (p1->al()-p2->al())) != 0)
+    else if ((dc = (d1.al()-d2.al())) != 0)
     {
-        return dc;
+        return dc < 0;
     }
     else
     {
         // AMBER force fields with type 9 dihedrals can reach here, where we sort on
         // the contents of the string that names the macro for the parameters.
-        return strcmp(p1->s, p2->s);
+        return std::lexicographical_compare(d1.interactionTypeName().begin(),
+                                            d1.interactionTypeName().end(),
+                                            d2.interactionTypeName().begin(),
+                                            d2.interactionTypeName().end());
     }
 }
 
 
-static bool is_dihedral_on_same_bond(t_param *p1, t_param *p2)
+static bool is_dihedral_on_same_bond(const InteractionType &p1, const InteractionType &p2)
 {
-    return ((p1->aj() == p2->aj()) && (p1->ak() == p2->ak())) ||
-           ((p1->aj() == p2->ak()) && (p1->ak() == p2->aj()));
+    return ((p1.aj() == p2.aj()) && (p1.ak() == p2.ak())) ||
+           ((p1.aj() == p2.ak()) && (p1.ak() == p2.aj()));
 }
 
 
-static bool preq(t_param *p1, t_param *p2)
+static bool preq(const InteractionType &p1, const InteractionType &p2)
 {
-    return (p1->ai() == p2->ai()) && (p1->aj() == p2->aj());
+    return (p1.ai() == p2.ai()) && (p1.aj() == p2.aj());
 }
 
-static void rm2par(t_param p[], int *np, peq eq)
+static void rm2par(std::vector<InteractionType> *p, peq eq)
 {
-    int *index, nind;
-    int  i, j;
-
-    if ((*np) == 0)
+    if (p->empty())
     {
         return;
     }
 
-    snew(index, *np);
-    nind          = 0;
-    index[nind++] = 0;
-    for (i = 1; (i < (*np)); i++)
+    for (auto param = p->begin() + 1; param != p->end(); )
     {
-        if (!eq(&p[i], &p[i-1]))
+        auto prev = param - 1;
+        if (eq(*param, *prev))
         {
-            index[nind++] = i;
-        }
-    }
-    /* Index now holds pointers to all the non-equal params,
-     * this only works when p is sorted of course
-     */
-    for (i = 0; (i < nind); i++)
-    {
-        for (j = 0; (j < MAXATOMLIST); j++)
-        {
-            p[i].a[j] = p[index[i]].a[j];
-        }
-        for (j = 0; (j < MAXFORCEPARAM); j++)
-        {
-            p[i].c[j] = p[index[i]].c[j];
-        }
-        if (p[index[i]].a[0] == p[index[i]].a[1])
-        {
-            strcpy(p[i].s, "");
-        }
-        else if (index[i] > i)
-        {
-            /* Copy the string only if it comes from somewhere else
-             * otherwise we will end up copying a random (newly freed) pointer.
-             * Since the index is sorted we only have to test for index[i] > i.
-             */
-            strcpy(p[i].s, p[index[i]].s);
-        }
-    }
-    (*np) = nind;
-
-    sfree(index);
-}
-
-static void cppar(t_param p[], int np, t_params plist[], int ftype)
-{
-    int       i, j, nral, nrfp;
-    t_params *ps;
-
-    ps   = &plist[ftype];
-    nral = NRAL(ftype);
-    nrfp = NRFP(ftype);
-
-    /* Keep old stuff */
-    pr_alloc(np, ps);
-    for (i = 0; (i < np); i++)
-    {
-        for (j = 0; (j < nral); j++)
-        {
-            ps->param[ps->nr].a[j] = p[i].a[j];
-        }
-        for (j = 0; (j < nrfp); j++)
-        {
-            ps->param[ps->nr].c[j] = p[i].c[j];
-        }
-        for (j = 0; (j < MAXSLEN); j++)
-        {
-            ps->param[ps->nr].s[j] = p[i].s[j];
-        }
-        ps->nr++;
-    }
-}
-
-static void cpparam(t_param *dest, t_param *src)
-{
-    int j;
-
-    for (j = 0; (j < MAXATOMLIST); j++)
-    {
-        dest->a[j] = src->a[j];
-    }
-    for (j = 0; (j < MAXFORCEPARAM); j++)
-    {
-        dest->c[j] = src->c[j];
-    }
-    for (j = 0; (j < MAXSLEN); j++)
-    {
-        dest->s[j] = src->s[j];
-    }
-}
-
-static void set_p(t_param *p, const int ai[4], const real *c, char *s)
-{
-    int j;
-
-    for (j = 0; (j < 4); j++)
-    {
-        p->a[j] = ai[j];
-    }
-    for (j = 0; (j < MAXFORCEPARAM); j++)
-    {
-        if (c)
-        {
-            p->c[j] = c[j];
+            param = p->erase(param);
         }
         else
         {
-            p->c[j] = NOTSET;
+            ++param;
         }
     }
-
-    set_p_string(p, s);
 }
 
-static int idcomp(const void *a, const void *b)
+static void cppar(gmx::ArrayRef<const InteractionType>          types,
+                  gmx::ArrayRef<InteractionTypeParameters>      plist,
+                  int                                           ftype)
 {
-    const t_param *pa, *pb;
+    /* Keep old stuff */
+    for (const auto &type : types)
+    {
+        plist[ftype].interactionTypes.push_back(type);
+    }
+}
+
+static bool idcomp(const InteractionType &a, const InteractionType &b)
+{
     int            d;
 
-    pa = static_cast<const t_param *>(a);
-    pb = static_cast<const t_param *>(b);
-    if ((d = (pa->a[0]-pb->a[0])) != 0)
+    if ((d = (a.ai()-b.ai())) != 0)
     {
-        return d;
+        return d < 0;
     }
-    else if ((d = (pa->a[3]-pb->a[3])) != 0)
+    else if ((d = (a.al()-b.al())) != 0)
     {
-        return d;
+        return d < 0;
     }
-    else if ((d = (pa->a[1]-pb->a[1])) != 0)
+    else if ((d = (a.aj()-b.aj())) != 0)
     {
-        return d;
+        return d < 0;
     }
     else
     {
-        return (pa->a[2]-pb->a[2]);
+        return (a.ak() < b.ak());
     }
 }
 
-static void sort_id(int nr, t_param ps[])
+static void sort_id(gmx::ArrayRef<InteractionType> ps)
 {
-    int i, tmp;
-
-    /* First swap order of atoms around if necessary */
-    for (i = 0; (i < nr); i++)
+    if (ps.size() > 1)
     {
-        if (ps[i].a[3] < ps[i].a[0])
+        for (auto &parm : ps)
         {
-            tmp = ps[i].a[3]; ps[i].a[3] = ps[i].a[0]; ps[i].a[0] = tmp;
-            tmp = ps[i].a[2]; ps[i].a[2] = ps[i].a[1]; ps[i].a[1] = tmp;
+            parm.sortAtomIds();
         }
-    }
-    /* Now sort it */
-    if (nr > 1)
-    {
-        qsort(ps, nr, static_cast<size_t>(sizeof(ps[0])), idcomp);
+        std::sort(ps.begin(), ps.end(), idcomp);
     }
 }
 
-static int n_hydro(const int a[], char ***atomname)
+static int n_hydro(gmx::ArrayRef<const int> a, char ***atomname)
 {
-    int  i, nh = 0;
-    char c0, c1, *aname;
+    int  nh = 0;
 
-    for (i = 0; (i < 4); i += 3)
+    for (auto atom = a.begin(); atom < a.end(); atom += 3)
     {
-        aname = *atomname[a[i]];
-        c0    = toupper(aname[0]);
+        const char *aname = *atomname[*atom];
+        char        c0    = toupper(aname[0]);
         if (c0 == 'H')
         {
             nh++;
         }
         else if ((static_cast<int>(strlen(aname)) > 1) && (c0 >= '0') && (c0 <= '9'))
         {
-            c1 = toupper(aname[1]);
+            char c1 = toupper(aname[1]);
             if (c1 == 'H')
             {
                 nh++;
@@ -355,61 +254,56 @@ static int n_hydro(const int a[], char ***atomname)
 
 /* Clean up the dihedrals (both generated and read from the .rtp
  * file). */
-static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper,
-                      t_atoms *atoms, bool bKeepAllGeneratedDihedrals,
-                      bool bRemoveDihedralIfWithImproper)
+static std::vector<InteractionType> clean_dih(gmx::ArrayRef<const InteractionType> dih,
+                                              gmx::ArrayRef<const InteractionType> improper,
+                                              t_atoms *atoms, bool bKeepAllGeneratedDihedrals,
+                                              bool bRemoveDihedralIfWithImproper)
 {
-    int   i, j, k, l;
-    int  *index, nind;
-
     /* Construct the list of the indices of the dihedrals
      * (i.e. generated or read) that might be kept. */
-    snew(index, *ndih+1);
+    std::vector < std::pair < InteractionType, int>> newDihedrals;
     if (bKeepAllGeneratedDihedrals)
     {
         fprintf(stderr, "Keeping all generated dihedrals\n");
-        nind = *ndih;
-        for (i = 0; i < nind; i++)
+        int i = 0;
+        for (const auto &dihedral : dih)
         {
-            index[i] = i;
+            newDihedrals.emplace_back(std::pair<InteractionType, int>(dihedral, i++));
         }
-        index[nind] = *ndih;
     }
     else
     {
-        nind = 0;
         /* Check if generated dihedral i should be removed. The
          * dihedrals have been sorted by dcomp() above, so all those
          * on the same two central atoms are together, with those from
          * the .rtp file preceding those that were automatically
          * generated. We remove the latter if the former exist. */
-        for (i = 0; i < *ndih; i++)
+        int i = 0;
+        for (auto dihedral = dih.begin(); dihedral != dih.end(); dihedral++)
         {
             /* Keep the dihedrals that were defined in the .rtp file,
              * and the dihedrals that were generated and different
              * from the last one (whether it was generated or not). */
-            if (was_dihedral_set_in_rtp(&dih[i]) ||
-                0 == i ||
-                !is_dihedral_on_same_bond(&dih[i], &dih[i-1]))
+            if (was_dihedral_set_in_rtp(*dihedral) ||
+                dihedral == dih.begin() ||
+                !is_dihedral_on_same_bond(*dihedral, *(dihedral-1)))
             {
-                index[nind++] = i;
+                newDihedrals.emplace_back(std::pair<InteractionType, int>(*dihedral, i++));
             }
         }
-        index[nind] = *ndih;
     }
-
-    k = 0;
-    for (i = 0; i < nind; i++)
+    int k = 0;
+    for (auto dihedral = newDihedrals.begin(); dihedral != newDihedrals.end(); )
     {
-        bool bWasSetInRTP = was_dihedral_set_in_rtp(&dih[index[i]]);
-        bool bKeep        = TRUE;
+        bool bWasSetInRTP = was_dihedral_set_in_rtp(dihedral->first);
+        bool bKeep        = true;
         if (!bWasSetInRTP && bRemoveDihedralIfWithImproper)
         {
             /* Remove the dihedral if there is an improper on the same
              * bond. */
-            for (j = 0; j < nimproper && bKeep; j++)
+            for (auto imp = improper.begin(); imp != improper.end() && bKeep; ++imp)
             {
-                bKeep = !is_dihedral_on_same_bond(&dih[index[i]], &improper[j]);
+                bKeep = !is_dihedral_on_same_bond(dihedral->first, *imp);
             }
         }
 
@@ -422,17 +316,18 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
              * index[]. However, their parameters are still present,
              * and l is looping over this dihedral and all of its
              * pruned siblings. */
-            int bestl = index[i];
+            int bestl = dihedral->second;
             if (!bKeepAllGeneratedDihedrals && !bWasSetInRTP)
             {
                 /* Minimum number of hydrogens for i and l atoms */
                 int minh = 2;
-                for (l = index[i];
-                     (l < index[i+1] &&
-                      is_dihedral_on_same_bond(&dih[index[i]], &dih[l]));
+                int next = dihedral->second + 1;
+                for (int l = dihedral->second;
+                     (l < next &&
+                      is_dihedral_on_same_bond(dihedral->first, dih[l]));
                      l++)
                 {
-                    int nh = n_hydro(dih[l].a, atoms->atomname);
+                    int nh = n_hydro(dih[l].atoms(), atoms->atomname);
                     if (nh < minh)
                     {
                         minh  = nh;
@@ -443,67 +338,63 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
                         break;
                     }
                 }
+                dihedral->first = dih[bestl];
             }
-            if (k != bestl)
+            if (k == bestl)
             {
-                cpparam(&dih[k], &dih[bestl]);
+                ++dihedral;
             }
             k++;
         }
+        else
+        {
+            dihedral = newDihedrals.erase(dihedral);
+        }
     }
-
-    for (i = k; i < *ndih; i++)
+    std::vector<InteractionType> finalDihedrals;
+    finalDihedrals.reserve(newDihedrals.size());
+    for (const auto &param : newDihedrals)
     {
-        strcpy(dih[i].s, "");
+        finalDihedrals.emplace_back(param.first);
     }
-    *ndih = k;
-
-    sfree(index);
+    return finalDihedrals;
 }
 
-static int get_impropers(t_atoms *atoms, t_hackblock hb[], t_param **improper,
-                         bool bAllowMissing)
+static std::vector<InteractionType> get_impropers(t_atoms                             *atoms,
+                                                  gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
+                                                  bool                                 bAllowMissing)
 {
-    t_rbondeds   *impropers;
-    int           nimproper, i, j, k, start, ninc, nalloc;
-    int           ai[MAXATOMLIST];
-    bool          bStop;
-
-    ninc   = 500;
-    nalloc = ninc;
-    snew(*improper, nalloc);
+    std::vector<InteractionType> improper;
 
     /* Add all the impropers from the residue database to the list. */
-    nimproper = 0;
-    start     = 0;
-    if (hb != nullptr)
+    int start     = 0;
+    if (!globalPatches.empty())
     {
-        for (i = 0; (i < atoms->nres); i++)
+        for (int i = 0; (i < atoms->nres); i++)
         {
-            impropers = &hb[i].rb[ebtsIDIHS];
-            for (j = 0; (j < impropers->nb); j++)
+            BondedInteractionList *impropers = &globalPatches[i].rb[ebtsIDIHS];
+            for (const auto &bondeds : impropers->b)
             {
-                bStop = FALSE;
-                for (k = 0; (k < 4) && !bStop; k++)
+                bool                     bStop = false;
+                std::vector<int>         ai;
+                for (int k = 0; (k < 4) && !bStop; k++)
                 {
-                    ai[k] = search_atom(impropers->b[j].a[k], start,
-                                        atoms,
-                                        "improper", bAllowMissing);
-                    if (ai[k] == -1)
+                    int entry = search_atom(bondeds.a[k].c_str(), start,
+                                            atoms, "improper", bAllowMissing);
+
+                    if (entry != -1)
                     {
-                        bStop = TRUE;
+                        ai.emplace_back(entry);
+                    }
+                    else
+                    {
+                        bStop = true;
                     }
                 }
                 if (!bStop)
                 {
-                    if (nimproper == nalloc)
-                    {
-                        nalloc += ninc;
-                        srenew(*improper, nalloc);
-                    }
                     /* Not broken out */
-                    set_p(&((*improper)[nimproper]), ai, nullptr, impropers->b[j].s);
-                    nimproper++;
+                    improper.emplace_back(InteractionType(ai, {}, bondeds.s));
                 }
             }
             while ((start < atoms->nr) && (atoms->atom[start].resind == i))
@@ -513,7 +404,7 @@ static int get_impropers(t_atoms *atoms, t_hackblock hb[], t_param **improper,
         }
     }
 
-    return nimproper;
+    return improper;
 }
 
 static int nb_dist(t_nextnb *nnb, int ai, int aj)
@@ -548,60 +439,54 @@ static bool is_hydro(t_atoms *atoms, int ai)
     return ((*(atoms->atomname[ai]))[0] == 'H');
 }
 
-static void get_atomnames_min(int n, char **anm,
-                              int resind, t_atoms *atoms, const int *a)
+static void get_atomnames_min(int n, gmx::ArrayRef<std::string> anm,
+                              int resind, t_atoms *atoms, gmx::ArrayRef<const int> a)
 {
-    int m;
-
     /* Assume ascending residue numbering */
-    for (m = 0; m < n; m++)
+    for (int m = 0; m < n; m++)
     {
         if (atoms->atom[a[m]].resind < resind)
         {
-            strcpy(anm[m], "-");
+            anm[m] = "-";
         }
         else if (atoms->atom[a[m]].resind > resind)
         {
-            strcpy(anm[m], "+");
+            anm[m] = "+";
         }
         else
         {
-            strcpy(anm[m], "");
+            anm[m] = "";
         }
-        strcat(anm[m], *(atoms->atomname[a[m]]));
+        anm[m].append(*(atoms->atomname[a[m]]));
     }
 }
 
-static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
-                      bool bAllowMissing)
+static void gen_excls(t_atoms                             *atoms,
+                      t_excls                             *excls,
+                      gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
+                      bool                                 bAllowMissing)
 {
-    int         r;
-    int         a, astart, i1, i2, itmp;
-    t_rbondeds *hbexcl;
-    int         e;
-    char       *anm;
-
-    astart = 0;
-    for (a = 0; a < atoms->nr; a++)
+    int astart = 0;
+    for (int a = 0; a < atoms->nr; a++)
     {
-        r = atoms->atom[a].resind;
+        int r = atoms->atom[a].resind;
         if (a == atoms->nr-1 || atoms->atom[a+1].resind != r)
         {
-            hbexcl = &hb[r].rb[ebtsEXCLS];
+            BondedInteractionList *hbexcl = &globalPatches[r].rb[ebtsEXCLS];
 
-            for (e = 0; e < hbexcl->nb; e++)
+            for (const auto &bondeds : hbexcl->b)
             {
-                anm = hbexcl->b[e].a[0];
-                i1  = search_atom(anm, astart, atoms,
-                                  "exclusion", bAllowMissing);
-                anm = hbexcl->b[e].a[1];
-                i2  = search_atom(anm, astart, atoms,
-                                  "exclusion", bAllowMissing);
+                const char *anm = bondeds.a[0].c_str();
+                int         i1  = search_atom(anm, astart, atoms,
+                                              "exclusion", bAllowMissing);
+                anm = bondeds.a[1].c_str();
+                int i2  = search_atom(anm, astart, atoms,
+                                      "exclusion", bAllowMissing);
                 if (i1 != -1 && i2 != -1)
                 {
                     if (i1 > i2)
                     {
-                        itmp = i1;
+                        int itmp = i1;
                         i1   = i2;
                         i2   = itmp;
                     }
@@ -615,7 +500,7 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
         }
     }
 
-    for (a = 0; a < atoms->nr; a++)
+    for (int a = 0; a < atoms->nr; a++)
     {
         if (excls[a].nr > 1)
         {
@@ -728,51 +613,32 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 }
 
 /* Generate pairs, angles and dihedrals from .rtp settings */
-void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
-             t_params plist[], t_excls excls[], t_hackblock hb[],
+void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
+             gmx::ArrayRef<InteractionTypeParameters> plist, t_excls excls[], gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
              bool bAllowMissing)
 {
-    t_param    *ang, *dih, *pai, *improper;
-    t_rbondeds *hbang, *hbdih;
-    char      **anm;
-    const char *p;
-    int         res, minres, maxres;
-    int         i, j, j1, k, k1, l, l1, m, n, i1, i2;
-    int         ninc, maxang, maxdih, maxpai;
-    int         nang, ndih, npai, nimproper, nbd;
-    int         nFound;
-    bool        bFound, bExcl;
-
     /* These are the angles, dihedrals and pairs that we generate
      * from the bonds. The ones that are already there from the rtp file
      * will be retained.
      */
-    nang   = 0;
-    npai   = 0;
-    ndih   = 0;
-    ninc   = 500;
-    maxang = maxdih = maxpai = ninc;
-    snew(ang, maxang);
-    snew(dih, maxdih);
-    snew(pai, maxpai);
+    std::vector<InteractionType>   ang;
+    std::vector<InteractionType>   dih;
+    std::vector<InteractionType>   pai;
+    std::vector<InteractionType>   improper;
 
-    snew(anm, 4);
-    for (i = 0; i < 4; i++)
-    {
-        snew(anm[i], 12);
-    }
+    std::array<std::string, 4>     anm;
 
-    if (hb)
+    if (!globalPatches.empty())
     {
-        gen_excls(atoms, excls, hb, bAllowMissing);
+        gen_excls(atoms, excls, globalPatches, bAllowMissing);
         /* mark all entries as not matched yet */
-        for (i = 0; i < atoms->nres; i++)
+        for (int i = 0; i < atoms->nres; i++)
         {
-            for (j = 0; j < ebtsNR; j++)
+            for (int j = 0; j < ebtsNR; j++)
             {
-                for (k = 0; k < hb[i].rb[j].nb; k++)
+                for (auto &bondeds : globalPatches[i].rb[j].b)
                 {
-                    hb[i].rb[j].b[k].match = FALSE;
+                    bondeds.match = false;
                 }
             }
         }
@@ -780,151 +646,118 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
 
     /* Extract all i-j-k-l neighbours from nnb struct to generate all
      * angles and dihedrals. */
-    for (i = 0; (i < nnb->nr); i++)
+    for (int i = 0; (i < nnb->nr); i++)
     {
         /* For all particles */
-        for (j = 0; (j < nnb->nrexcl[i][1]); j++)
+        for (int j = 0; (j < nnb->nrexcl[i][1]); j++)
         {
             /* For all first neighbours */
-            j1 = nnb->a[i][1][j];
-            for (k = 0; (k < nnb->nrexcl[j1][1]); k++)
+            int j1 = nnb->a[i][1][j];
+            for (int k = 0; (k < nnb->nrexcl[j1][1]); k++)
             {
                 /* For all first neighbours of j1 */
-                k1 = nnb->a[j1][1][k];
+                int k1 = nnb->a[j1][1][k];
                 if (k1 != i)
                 {
                     /* Generate every angle only once */
                     if (i < k1)
                     {
-                        if (nang == maxang)
+                        std::vector<int> atomNumbers = {i, j1, k1};
+                        std::string      name;
+                        if (!globalPatches.empty())
                         {
-                            maxang += ninc;
-                            srenew(ang, maxang);
-                        }
-                        ang[nang].ai() = i;
-                        ang[nang].aj() = j1;
-                        ang[nang].ak() = k1;
-                        ang[nang].c0() = NOTSET;
-                        ang[nang].c1() = NOTSET;
-                        set_p_string(&(ang[nang]), "");
-                        if (hb)
-                        {
-                            minres = atoms->atom[ang[nang].a[0]].resind;
-                            maxres = minres;
-                            for (m = 1; m < 3; m++)
+                            int minres = atoms->atom[i].resind;
+                            int maxres = minres;
+                            for (int m = 1; m < 3; m++)
                             {
-                                minres = std::min(minres, atoms->atom[ang[nang].a[m]].resind);
-                                maxres = std::max(maxres, atoms->atom[ang[nang].a[m]].resind);
+                                minres = std::min(minres, atoms->atom[atomNumbers[m]].resind);
+                                maxres = std::max(maxres, atoms->atom[atomNumbers[m]].resind);
                             }
-                            res = 2*minres-maxres;
+                            int res = 2*minres-maxres;
                             do
                             {
                                 res += maxres-minres;
-                                get_atomnames_min(3, anm, res, atoms, ang[nang].a);
-                                hbang = &hb[res].rb[ebtsANGLES];
-                                for (l = 0; (l < hbang->nb); l++)
+                                get_atomnames_min(3, anm, res, atoms, atomNumbers);
+                                BondedInteractionList *hbang = &globalPatches[res].rb[ebtsANGLES];
+                                for (auto &bondeds : hbang->b)
                                 {
-                                    if (strcmp(anm[1], hbang->b[l].aj()) == 0)
+                                    if (anm[1] == bondeds.aj())
                                     {
-                                        bFound = FALSE;
-                                        for (m = 0; m < 3; m += 2)
+                                        bool bFound = false;
+                                        for (int m = 0; m < 3; m += 2)
                                         {
                                             bFound = (bFound ||
-                                                      ((strcmp(anm[m], hbang->b[l].ai()) == 0) &&
-                                                       (strcmp(anm[2-m], hbang->b[l].ak()) == 0)));
+                                                      ((anm[m] == bondeds.ai()) &&
+                                                       (anm[2-m] == bondeds.ak())));
                                         }
                                         if (bFound)
                                         {
-                                            set_p_string(&(ang[nang]), hbang->b[l].s);
+                                            name = bondeds.s;
                                             /* Mark that we found a match for this entry */
-                                            hbang->b[l].match = TRUE;
+                                            bondeds.match = true;
                                         }
                                     }
                                 }
                             }
                             while (res < maxres);
                         }
-                        nang++;
+                        ang.push_back(InteractionType(atomNumbers, {}, name));
                     }
                     /* Generate every dihedral, 1-4 exclusion and 1-4 interaction
                        only once */
                     if (j1 < k1)
                     {
-                        for (l = 0; (l < nnb->nrexcl[k1][1]); l++)
+                        for (int l = 0; (l < nnb->nrexcl[k1][1]); l++)
                         {
                             /* For all first neighbours of k1 */
-                            l1 = nnb->a[k1][1][l];
+                            int l1 = nnb->a[k1][1][l];
                             if ((l1 != i) && (l1 != j1))
                             {
-                                if (ndih == maxdih)
+                                std::vector<int> atomNumbers = {i, j1, k1, l1};
+                                std::string      name;
+                                int              nFound = 0;
+                                if (!globalPatches.empty())
                                 {
-                                    maxdih += ninc;
-                                    srenew(dih, maxdih);
-                                }
-                                dih[ndih].ai() = i;
-                                dih[ndih].aj() = j1;
-                                dih[ndih].ak() = k1;
-                                dih[ndih].al() = l1;
-                                for (m = 0; m < MAXFORCEPARAM; m++)
-                                {
-                                    dih[ndih].c[m] = NOTSET;
-                                }
-                                set_p_string(&(dih[ndih]), "");
-                                nFound = 0;
-                                if (hb)
-                                {
-                                    minres = atoms->atom[dih[ndih].a[0]].resind;
-                                    maxres = minres;
-                                    for (m = 1; m < 4; m++)
+                                    int minres = atoms->atom[i].resind;
+                                    int maxres = minres;
+                                    for (int m = 1; m < 4; m++)
                                     {
-                                        minres = std::min(minres, atoms->atom[dih[ndih].a[m]].resind);
-                                        maxres = std::max(maxres, atoms->atom[dih[ndih].a[m]].resind);
+                                        minres = std::min(
+                                                    minres,
+                                                    atoms->atom[atomNumbers[m]].resind);
+                                        maxres = std::max(
+                                                    maxres,
+                                                    atoms->atom[atomNumbers[m]].resind);
                                     }
-                                    res = 2*minres-maxres;
+                                    int res = 2*minres-maxres;
                                     do
                                     {
                                         res += maxres-minres;
-                                        get_atomnames_min(4, anm, res, atoms, dih[ndih].a);
-                                        hbdih = &hb[res].rb[ebtsPDIHS];
-                                        for (n = 0; (n < hbdih->nb); n++)
+                                        get_atomnames_min(4, anm, res, atoms, atomNumbers);
+                                        BondedInteractionList *hbdih = &globalPatches[res].rb[ebtsPDIHS];
+                                        for (auto &bondeds : hbdih->b)
                                         {
-                                            bFound = FALSE;
-                                            for (m = 0; m < 2; m++)
+                                            bool bFound = false;
+                                            for (int m = 0; m < 2; m++)
                                             {
                                                 bFound = (bFound ||
-                                                          ((strcmp(anm[3*m],  hbdih->b[n].ai()) == 0) &&
-                                                           (strcmp(anm[1+m],  hbdih->b[n].aj()) == 0) &&
-                                                           (strcmp(anm[2-m],  hbdih->b[n].ak()) == 0) &&
-                                                           (strcmp(anm[3-3*m], hbdih->b[n].al()) == 0)));
+                                                          ((anm[3*m] == bondeds.ai()) &&
+                                                           (anm[1+m] == bondeds.aj()) &&
+                                                           (anm[2-m] == bondeds.ak()) &&
+                                                           (anm[3-3*m] == bondeds.al())));
                                             }
                                             if (bFound)
                                             {
-                                                set_p_string(&dih[ndih], hbdih->b[n].s);
+                                                name = bondeds.s;
                                                 /* Mark that we found a match for this entry */
-                                                hbdih->b[n].match = TRUE;
+                                                bondeds.match = true;
 
                                                 /* Set the last parameter to be able to see
                                                    if the dihedral was in the rtp list.
                                                  */
-                                                dih[ndih].c[MAXFORCEPARAM-1] = DIHEDRAL_WAS_SET_IN_RTP;
                                                 nFound++;
-                                                ndih++;
-                                                /* Set the next direct in case the rtp contains
-                                                   multiple entries for this dihedral.
-                                                 */
-                                                if (ndih == maxdih)
-                                                {
-                                                    maxdih += ninc;
-                                                    srenew(dih, maxdih);
-                                                }
-                                                dih[ndih].ai() = i;
-                                                dih[ndih].aj() = j1;
-                                                dih[ndih].ak() = k1;
-                                                dih[ndih].al() = l1;
-                                                for (m = 0; m < MAXFORCEPARAM; m++)
-                                                {
-                                                    dih[ndih].c[m] = NOTSET;
-                                                }
+                                                dih.push_back(InteractionType(atomNumbers, {}, name));
+                                                dih.back().setForceParameter(MAXFORCEPARAM-1, DIHEDRAL_WAS_SET_IN_RTP);
                                             }
                                         }
                                     }
@@ -932,49 +765,27 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                 }
                                 if (nFound == 0)
                                 {
-                                    if (ndih == maxdih)
-                                    {
-                                        maxdih += ninc;
-                                        srenew(dih, maxdih);
-                                    }
-                                    dih[ndih].ai() = i;
-                                    dih[ndih].aj() = j1;
-                                    dih[ndih].ak() = k1;
-                                    dih[ndih].al() = l1;
-                                    for (m = 0; m < MAXFORCEPARAM; m++)
-                                    {
-                                        dih[ndih].c[m] = NOTSET;
-                                    }
-                                    set_p_string(&(dih[ndih]), "");
-                                    ndih++;
+                                    std::vector<int> atoms = {i, j1, k1, l1};
+                                    dih.push_back(InteractionType(atoms, {},   ""));
                                 }
 
-                                nbd = nb_dist(nnb, i, l1);
+                                int nbd = nb_dist(nnb, i, l1);
                                 if (nbd == 3)
                                 {
-                                    i1    = std::min(i, l1);
-                                    i2    = std::max(i, l1);
-                                    bExcl = FALSE;
-                                    for (m = 0; m < excls[i1].nr; m++)
+                                    int  i1    = std::min(i, l1);
+                                    int  i2    = std::max(i, l1);
+                                    bool bExcl = false;
+                                    for (int m = 0; m < excls[i1].nr; m++)
                                     {
                                         bExcl = bExcl || excls[i1].e[m] == i2;
                                     }
                                     if (!bExcl)
                                     {
-                                        if (rtp[0].bGenerateHH14Interactions ||
+                                        if (rtpFFDB[0].bGenerateHH14Interactions ||
                                             !(is_hydro(atoms, i1) && is_hydro(atoms, i2)))
                                         {
-                                            if (npai == maxpai)
-                                            {
-                                                maxpai += ninc;
-                                                srenew(pai, maxpai);
-                                            }
-                                            pai[npai].ai() = i1;
-                                            pai[npai].aj() = i2;
-                                            pai[npai].c0() = NOTSET;
-                                            pai[npai].c1() = NOTSET;
-                                            set_p_string(&(pai[npai]), "");
-                                            npai++;
+                                            std::vector<int> atoms = {i1, i2};
+                                            pai.push_back(InteractionType(atoms, {}, ""));
                                         }
                                     }
                                 }
@@ -986,35 +797,31 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
         }
     }
 
-    if (hb)
+    if (!globalPatches.empty())
     {
         /* The above approach is great in that we double-check that e.g. an angle
          * really corresponds to three atoms connected by bonds, but this is not
          * generally true. Go through the angle and dihedral hackblocks to add
          * entries that we have not yet marked as matched when going through bonds.
          */
-        for (i = 0; i < atoms->nres; i++)
+        for (int i = 0; i < atoms->nres; i++)
         {
             /* Add remaining angles from hackblock */
-            hbang = &hb[i].rb[ebtsANGLES];
-            for (j = 0; j < hbang->nb; j++)
+            BondedInteractionList *hbang = &globalPatches[i].rb[ebtsANGLES];
+            for (auto &bondeds : hbang->b)
             {
-                if (hbang->b[j].match)
+                if (bondeds.match)
                 {
                     /* We already used this entry, continue to the next */
                     continue;
                 }
                 /* Hm - entry not used, let's see if we can find all atoms */
-                if (nang == maxang)
+                std::vector<int> atomNumbers;
+                bool             bFound = true;
+                for (int k = 0; k < 3 && bFound; k++)
                 {
-                    maxang += ninc;
-                    srenew(ang, maxang);
-                }
-                bFound = TRUE;
-                for (k = 0; k < 3 && bFound; k++)
-                {
-                    p   = hbang->b[j].a[k];
-                    res = i;
+                    const char *p   = bondeds.a[k].c_str();
+                    int         res = i;
                     if (p[0] == '-')
                     {
                         p++;
@@ -1025,41 +832,34 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                         p++;
                         res++;
                     }
-                    ang[nang].a[k] = search_res_atom(p, res, atoms, "angle", TRUE);
-                    bFound         = (ang[nang].a[k] != -1);
+                    atomNumbers.emplace_back(search_res_atom(p, res, atoms, "angle", TRUE));
+                    bFound            = (atomNumbers.back() != -1);
                 }
-                ang[nang].c0() = NOTSET;
-                ang[nang].c1() = NOTSET;
 
                 if (bFound)
                 {
-                    set_p_string(&(ang[nang]), hbang->b[j].s);
-                    hbang->b[j].match = TRUE;
+                    bondeds.match = true;
                     /* Incrementing nang means we save this angle */
-                    nang++;
+                    ang.push_back(InteractionType(atomNumbers, {}, bondeds.s));
                 }
             }
 
             /* Add remaining dihedrals from hackblock */
-            hbdih = &hb[i].rb[ebtsPDIHS];
-            for (j = 0; j < hbdih->nb; j++)
+            BondedInteractionList *hbdih = &globalPatches[i].rb[ebtsPDIHS];
+            for (auto &bondeds : hbdih->b)
             {
-                if (hbdih->b[j].match)
+                if (bondeds.match)
                 {
                     /* We already used this entry, continue to the next */
                     continue;
                 }
                 /* Hm - entry not used, let's see if we can find all atoms */
-                if (ndih == maxdih)
+                std::vector<int> atomNumbers;
+                bool             bFound = true;
+                for (int k = 0; k < 4 && bFound; k++)
                 {
-                    maxdih += ninc;
-                    srenew(dih, maxdih);
-                }
-                bFound = TRUE;
-                for (k = 0; k < 4 && bFound; k++)
-                {
-                    p   = hbdih->b[j].a[k];
-                    res = i;
+                    const char *p   = bondeds.a[k].c_str();
+                    int         res = i;
                     if (p[0] == '-')
                     {
                         p++;
@@ -1070,78 +870,68 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                         p++;
                         res++;
                     }
-                    dih[ndih].a[k] = search_res_atom(p, res, atoms, "dihedral", TRUE);
-                    bFound         = (dih[ndih].a[k] != -1);
-                }
-                for (m = 0; m < MAXFORCEPARAM; m++)
-                {
-                    dih[ndih].c[m] = NOTSET;
+                    atomNumbers.emplace_back(search_res_atom(p, res, atoms, "dihedral", TRUE));
+                    bFound               = (atomNumbers.back() != -1);
                 }
 
                 if (bFound)
                 {
-                    set_p_string(&(dih[ndih]), hbdih->b[j].s);
-                    hbdih->b[j].match = TRUE;
+                    bondeds.match = true;
                     /* Incrementing ndih means we save this dihedral */
-                    ndih++;
+                    dih.push_back(InteractionType(atomNumbers, {}, bondeds.s));
                 }
             }
         }
     }
 
     /* Sort angles with respect to j-i-k (middle atom first) */
-    if (nang > 1)
+    if (ang.size() > 1)
     {
-        qsort(ang, nang, static_cast<size_t>(sizeof(ang[0])), acomp);
+        std::sort(ang.begin(), ang.end(), acomp);
     }
 
     /* Sort dihedrals with respect to j-k-i-l (middle atoms first) */
-    if (ndih > 1)
+    if (dih.size() > 1)
     {
-        qsort(dih, ndih, static_cast<size_t>(sizeof(dih[0])), dcomp);
+        std::sort(dih.begin(), dih.end(), dcomp);
     }
 
     /* Sort the pairs */
-    if (npai > 1)
+    if (pai.size() > 1)
     {
-        qsort(pai, npai, static_cast<size_t>(sizeof(pai[0])), pcomp);
+        std::sort(pai.begin(), pai.end(), pcomp);
     }
-    if (npai > 0)
+    if (!pai.empty())
     {
         /* Remove doubles, could occur in 6-rings, such as phenyls,
            maybe one does not want this when fudgeQQ < 1.
          */
-        fprintf(stderr, "Before cleaning: %d pairs\n", npai);
-        rm2par(pai, &npai, preq);
+        fprintf(stderr, "Before cleaning: %zu pairs\n", pai.size());
+        rm2par(&pai, preq);
     }
 
     /* Get the impropers from the database */
-    nimproper = get_impropers(atoms, hb, &improper, bAllowMissing);
+    improper = get_impropers(atoms, globalPatches, bAllowMissing);
 
     /* Sort the impropers */
-    sort_id(nimproper, improper);
+    sort_id(improper);
 
-    if (ndih > 0)
+    if (!dih.empty())
     {
-        fprintf(stderr, "Before cleaning: %d dihedrals\n", ndih);
-        clean_dih(dih, &ndih, improper, nimproper, atoms,
-                  rtp[0].bKeepAllGeneratedDihedrals,
-                  rtp[0].bRemoveDihedralIfWithImproper);
+        fprintf(stderr, "Before cleaning: %zu dihedrals\n", dih.size());
+        dih = clean_dih(dih, improper, atoms,
+                        rtpFFDB[0].bKeepAllGeneratedDihedrals,
+                        rtpFFDB[0].bRemoveDihedralIfWithImproper);
     }
 
     /* Now we have unique lists of angles and dihedrals
      * Copy them into the destination struct
      */
-    cppar(ang, nang, plist, F_ANGLES);
-    cppar(dih, ndih, plist, F_PDIHS);
-    cppar(improper, nimproper, plist, F_IDIHS);
-    cppar(pai, npai, plist, F_LJ14);
+    cppar(ang, plist, F_ANGLES);
+    cppar(dih, plist, F_PDIHS);
+    cppar(improper, plist, F_IDIHS);
+    cppar(pai, plist, F_LJ14);
 
     /* Remove all exclusions which are within nrexcl */
-    clean_excls(nnb, rtp[0].nrexcl, excls);
-
-    sfree(ang);
-    sfree(dih);
-    sfree(improper);
-    sfree(pai);
+    clean_excls(nnb, rtpFFDB[0].nrexcl, excls);
 }

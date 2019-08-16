@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,9 +49,9 @@
 #include <gtest/gtest.h>
 #include <gtest/gtest-spi.h>
 
+#include "gromacs/utility/any.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
-#include "gromacs/utility/variant.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testexceptions.h"
@@ -344,24 +344,24 @@ TEST(ReferenceDataTest, HandlesUncheckedDataInCompound)
 }
 
 
-TEST(ReferenceDataTest, HandlesVariants)
+TEST(ReferenceDataTest, HandlesAnys)
 {
-    using gmx::Variant;
+    using gmx::Any;
     {
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
-        checker.checkVariant(Variant::create<bool>(true), "bool");
-        checker.checkVariant(Variant::create<int>(1), "int");
-        checker.checkVariant(Variant::create<double>(3.5), "real");
-        checker.checkVariant(Variant::create<std::string>("foo"), "str");
+        checker.checkAny(Any::create<bool>(true), "bool");
+        checker.checkAny(Any::create<int>(1), "int");
+        checker.checkAny(Any::create<double>(3.5), "real");
+        checker.checkAny(Any::create<std::string>("foo"), "str");
     }
     {
         TestReferenceData    data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
-        checker.checkVariant(Variant::create<bool>(true), "bool");
-        checker.checkVariant(Variant::create<int>(1), "int");
-        checker.checkVariant(Variant::create<double>(3.5), "real");
-        checker.checkVariant(Variant::create<std::string>("foo"), "str");
+        checker.checkAny(Any::create<bool>(true), "bool");
+        checker.checkAny(Any::create<int>(1), "int");
+        checker.checkAny(Any::create<double>(3.5), "real");
+        checker.checkAny(Any::create<std::string>("foo"), "str");
     }
 }
 
@@ -430,44 +430,44 @@ TEST(ReferenceDataTest, HandlesKeyValueTreeMissingKey)
 }
 
 
-TEST(ReferenceDataTest, HandlesVariantsWithIncorrectValue)
+TEST(ReferenceDataTest, HandlesAnysWithIncorrectValue)
 {
-    using gmx::Variant;
+    using gmx::Any;
     {
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
-        checker.checkVariant(Variant::create<bool>(true), "bool");
-        checker.checkVariant(Variant::create<int>(1), "int");
-        checker.checkVariant(Variant::create<double>(3.5), "real");
-        checker.checkVariant(Variant::create<std::string>("foo"), "str");
+        checker.checkAny(Any::create<bool>(true), "bool");
+        checker.checkAny(Any::create<int>(1), "int");
+        checker.checkAny(Any::create<double>(3.5), "real");
+        checker.checkAny(Any::create<std::string>("foo"), "str");
     }
     {
         TestReferenceData    data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
-        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<bool>(false), "bool"), "");
-        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<int>(2), "int"), "");
-        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<double>(2.5), "real"), "");
-        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<std::string>("bar"), "str"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkAny(Any::create<bool>(false), "bool"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkAny(Any::create<int>(2), "int"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkAny(Any::create<double>(2.5), "real"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkAny(Any::create<std::string>("bar"), "str"), "");
     }
 }
 
 
-TEST(ReferenceDataTest, HandlesVariantsWithIncorrectType)
+TEST(ReferenceDataTest, HandlesAnysWithIncorrectType)
 {
-    using gmx::Variant;
+    using gmx::Any;
     {
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
-        checker.checkVariant(Variant::create<bool>(true), "bool");
-        checker.checkVariant(Variant::create<int>(1), "int");
-        checker.checkVariant(Variant::create<double>(3.5), "real");
+        checker.checkAny(Any::create<bool>(true), "bool");
+        checker.checkAny(Any::create<int>(1), "int");
+        checker.checkAny(Any::create<double>(3.5), "real");
     }
     {
         TestReferenceData    data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
-        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<int>(1), "bool"), "");
-        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<bool>(true), "int"), "");
-        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<int>(2), "real"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkAny(Any::create<int>(1), "bool"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkAny(Any::create<bool>(true), "int"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkAny(Any::create<int>(2), "real"), "");
     }
 }
 

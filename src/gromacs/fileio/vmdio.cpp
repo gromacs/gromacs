@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,9 @@
 #include "vmdio.h"
 
 #include "config.h"
+
+#include "gromacs/utility/path.h"
+#include "gromacs/utility/stringutil.h"
 
 /* Derived from PluginMgr.C and catdcd.c */
 
@@ -264,23 +267,19 @@ gmx_bool read_next_vmd_frame(gmx_vmdplugin_t *vmdplugin, t_trxframe *fr)
 
 static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
 {
-    char            pathname[GMX_PATH_MAX];
-    const char     *pathenv;
-    const char     *err;
-    int             ret = 0;
-    char            pathenv_buffer[GMX_PATH_MAX];
+    const char       *err;
+    int               ret = 0;
 #if !GMX_NATIVE_WINDOWS
-    glob_t          globbuf;
-    const char     *defpath_suffix = "/plugins/*/molfile";
-    const char     *defpathenv     = GMX_VMD_PLUGIN_PATH;
+    glob_t            globbuf;
+    const std::string defpath_suffix = "/plugins/*/molfile";
+    const std::string defpathenv     = GMX_VMD_PLUGIN_PATH;
 #else
-    WIN32_FIND_DATA ffd;
-    HANDLE          hFind = INVALID_HANDLE_VALUE;
-    char            progfolder[GMX_PATH_MAX];
-    char            defpathenv[GMX_PATH_MAX];
-    const char     *defpath_suffix = "\\plugins\\WIN32\\molfile";
+    WIN32_FIND_DATA   ffd;
+    HANDLE            hFind = INVALID_HANDLE_VALUE;
+    char              progfolder[GMX_PATH_MAX];
+    std::string       defpath_suffix = "\\plugins\\WIN32\\molfile";
     SHGetFolderPath(NULL, CSIDL_PROGRAM_FILES, NULL, SHGFP_TYPE_CURRENT, progfolder);
-    sprintf(defpathenv, "%s\\University of Illinois\\VMD\\plugins\\WIN32\\molfile", progfolder);
+    std::string       defpathenv = gmx::formatString("%s\\University of Illinois\\VMD\\plugins\\WIN32\\molfile", progfolder);
 #endif
 
     vmdplugin->api      = nullptr;
@@ -295,32 +294,26 @@ static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
      * plugins, then an implicit run-time path, and finally for one
      * given at configure time. This last might be hard-coded to the
      * default for VMD installs. */
-    pathenv = getenv("VMD_PLUGIN_PATH");
-    if (pathenv == nullptr)
+    std::string pathenv = getenv("VMD_PLUGIN_PATH");
+    if (pathenv.empty())
     {
         pathenv = getenv("VMDDIR");
-        if (nullptr == pathenv)
+        if (pathenv.empty())
         {
             printf("\nNeither VMD_PLUGIN_PATH or VMDDIR set. ");
-            printf("Using default location:\n%s\n", defpathenv);
+            printf("Using default location:\n%s\n", defpathenv.c_str());
             pathenv = defpathenv;
         }
         else
         {
             printf("\nVMD_PLUGIN_PATH no set, but VMDDIR is set. ");
-#ifdef _MSC_VER
-            _snprintf_s(pathenv_buffer, sizeof(pathenv_buffer), _TRUNCATE, "%s%s", pathenv, defpath_suffix);
-#else
-            snprintf(pathenv_buffer, sizeof(pathenv_buffer), "%s%s", pathenv, defpath_suffix);
-#endif
-            printf("Using semi-default location:\n%s\n", pathenv_buffer);
-            pathenv = pathenv_buffer;
+            pathenv = gmx::Path::join(pathenv, defpath_suffix);
+            printf("Using semi-default location:\n%s\n", pathenv.c_str());
         }
     }
-    strncpy(pathname, pathenv, sizeof(pathname));
 #if !GMX_NATIVE_WINDOWS
-    strcat(pathname, "/*.so");
-    glob(pathname, 0, nullptr, &globbuf);
+    std::string pathname = gmx::Path::join (pathenv, "/*.so");
+    glob(pathname.c_str(), 0, nullptr, &globbuf);
     if (globbuf.gl_pathc == 0)
     {
         printf("\nNo VMD Plugins found\n"
@@ -340,8 +333,8 @@ static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
     }
     globfree(&globbuf);
 #else
-    strcat(pathname, "\\*.so");
-    hFind = FindFirstFile(pathname, &ffd);
+    std::string pathname = gmx::Path::join(pathenv, "\\*.so");
+    hFind = FindFirstFile(pathname.c_str(), &ffd);
     if (INVALID_HANDLE_VALUE == hFind)
     {
         printf("\nNo VMD Plugins found\n");
@@ -349,9 +342,8 @@ static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
     }
     do
     {
-        char filename[GMX_PATH_MAX];
-        sprintf(filename, "%s\\%s", pathenv, ffd.cFileName);
-        ret |= load_sharedlibrary_plugins(filename, vmdplugin);
+        std::string filename = gmx::Path::join(pathenv, ffd.cFileName);
+        ret |= load_sharedlibrary_plugins(filename.c_str(), vmdplugin);
     }
     while (FindNextFile(hFind, &ffd )  != 0 && vmdplugin->api == NULL);
     FindClose(hFind);

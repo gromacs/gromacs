@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_t;
+struct gmx_mtop_t;
 
 enum {
     epbcXYZ, epbcNONE, epbcXY, epbcSCREW, epbcNR
@@ -335,5 +336,26 @@ void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
 void put_atoms_in_compact_unitcell(int ePBC, int ecenter,
                                    const matrix box,
                                    gmx::ArrayRef<gmx::RVec> x);
+
+/*! \brief Make all molecules whole by shifting positions
+ *
+ * \param[in]     fplog     Log file
+ * \param[in]     ePBC      The PBC type
+ * \param[in]     box       The simulation box
+ * \param[in]     mtop      System topology definition
+ * \param[in,out] x         The coordinates of the atoms
+ */
+void do_pbc_first_mtop(FILE *fplog, int ePBC, const matrix box,
+                       const gmx_mtop_t *mtop, rvec x[]);
+
+/*! \brief Make molecules consisting of multiple charge groups whole by shifting positions
+ *
+ * \param[in]     ePBC      The PBC type
+ * \param[in]     box       The simulation box
+ * \param[in]     mtop      System topology definition
+ * \param[in,out] x         The coordinates of the atoms
+ */
+void do_pbc_mtop(int ePBC, const matrix box,
+                 const gmx_mtop_t *mtop, rvec x[]);
 
 #endif

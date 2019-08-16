@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,9 +78,9 @@ mtopGetMolblockIndex(const gmx_mtop_t *mtop,
 {
     GMX_ASSERT(globalAtomIndex >= 0 && globalAtomIndex < mtop->natoms, "The atom index to look up should be within range");
     GMX_ASSERT(moleculeBlock != nullptr, "molBlock can not be NULL");
-    GMX_ASSERT(*moleculeBlock >= 0 && *moleculeBlock < static_cast<int>(mtop->moleculeBlockIndices.size()), "The starting molecule block index for the search should be within range and moleculeBlockIndices should not be empty");
+    GMX_ASSERT(*moleculeBlock >= 0 && *moleculeBlock < gmx::ssize(mtop->moleculeBlockIndices), "The starting molecule block index for the search should be within range and moleculeBlockIndices should not be empty");
 
-    /* Search the molecue block index using bisection */
+    /* Search the molecule block index using bisection */
     int molBlock0 = -1;
     int molBlock1 = mtop->molblock.size();
 

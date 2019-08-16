@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,20 +38,43 @@
 #ifndef GMX_GMXPREPROCESS_TER_DB_H
 #define GMX_GMXPREPROCESS_TER_DB_H
 
-#include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/gmxpreprocess/hackblock.h"
+#include <vector>
 
+#include "gromacs/utility/arrayref.h"
 
+class PreprocessingAtomTypes;
+struct MoleculePatchDatabase;
+
+/*! \brief
+ * Read database for N&C terminal modifications.
+ *
+ * \param[in] ffdir Directory for files.
+ * \param[in] ter Which terminal side to read.
+ * \param[inout] tbptr Database for terminii entry to populate.
+ * \param[in] atype Database for atomtype information.
+ * \returns Number of entries entered into database.
+ */
 int read_ter_db(const char *ffdir, char ter,
-                t_hackblock **tbptr, gpp_atomtype_t atype);
-/* Read database for N&C terminal hacking */
+                std::vector<MoleculePatchDatabase> *tbptr, PreprocessingAtomTypes *atype);
 
-t_hackblock **filter_ter(int nb, t_hackblock tb[],
-                         const char *resname,
-                         int *nret);
-/* Return a list of pointers to blocks that match residue name */
+/*! \brief
+ * Return entries for modification blocks that match a residue name.
+ *
+ * \param[in] tb Complete modification database.
+ * \param[in] resname Residue name for terminus.
+ * \returns A list of pointers to entries that match, or of nullptr for no matching entry.
+ */
+std::vector<MoleculePatchDatabase *>
+filter_ter(gmx::ArrayRef<MoleculePatchDatabase>                tb,
+           const char                                         *resname);
 
-t_hackblock *choose_ter(int nb, t_hackblock **tb, const char *title);
-/* Interactively select one.. */
+/*! \brief
+ * Interactively select one terminus.
+ *
+ * \param[in] tb List of possible entries, with pointer to actual entry or nullptr.
+ * \param[in] title Name of entry.
+ * \returns The modification block selected.
+ */
+MoleculePatchDatabase *choose_ter(gmx::ArrayRef<MoleculePatchDatabase *> tb, const char *title);
 
 #endif

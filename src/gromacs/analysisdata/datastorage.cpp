@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,6 @@
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodulemanager.h"
 #include "gromacs/analysisdata/paralleloptions.h"
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -451,7 +450,7 @@ AnalysisDataStorageImpl::extendBuffer(size_t newSize)
     frames_.reserve(newSize);
     while (frames_.size() < newSize)
     {
-        frames_.push_back(compat::make_unique<AnalysisDataStorageFrameData>(this, nextIndex_));
+        frames_.push_back(std::make_unique<AnalysisDataStorageFrameData>(this, nextIndex_));
         ++nextIndex_;
     }
     // The unused frame should not be included in the count.
@@ -634,7 +633,7 @@ AnalysisDataStorageFrameData::finishFrame(bool bMultipoint)
     status_ = eFinished;
     if (!bMultipoint)
     {
-        GMX_RELEASE_ASSERT(static_cast<int>(pointSets_.size()) == baseData().dataSetCount(),
+        GMX_RELEASE_ASSERT(ssize(pointSets_) == baseData().dataSetCount(),
                            "Point sets created for non-multipoint data");
         values_ = builder_->values_;
         builder_->clearValues();

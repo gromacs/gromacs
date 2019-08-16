@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #include "angle.h"
 
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -51,7 +52,6 @@
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/analysisdata/modules/plot.h"
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
@@ -200,7 +200,7 @@ class AnglePositionIterator
         //! Returns the currently active selection.
         const Selection &currentSelection() const
         {
-            GMX_ASSERT(currentSelection_ < static_cast<int>(selections_.size()),
+            GMX_ASSERT(currentSelection_ < ssize(selections_),
                        "Accessing an invalid selection");
             return selections_[currentSelection_];
         }
@@ -319,9 +319,9 @@ Angle::Angle()
       g1type_(Group1Type_Angle), g2type_(Group2Type_None),
       binWidth_(1.0), natoms1_(0), natoms2_(0)
 {
-    averageModule_ = compat::make_unique<AnalysisDataFrameAverageModule>();
+    averageModule_ = std::make_unique<AnalysisDataFrameAverageModule>();
     angles_.addModule(averageModule_);
-    histogramModule_ = compat::make_unique<AnalysisDataSimpleHistogramModule>();
+    histogramModule_ = std::make_unique<AnalysisDataSimpleHistogramModule>();
     angles_.addModule(histogramModule_);
 
     registerAnalysisDataset(&angles_, "angle");

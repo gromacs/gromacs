@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -140,12 +140,12 @@ nma_full_hessian(real                    *hess,
 
     if (bM)
     {
-        for (int i = 0; (i < atom_index.size()); i++)
+        for (int i = 0; (i < atom_index.ssize()); i++)
         {
             size_t ai = atom_index[i];
             for (size_t j = 0; (j < DIM); j++)
             {
-                for (int k = 0; (k < atom_index.size()); k++)
+                for (int k = 0; (k < atom_index.ssize()); k++)
                 {
                     size_t ak = atom_index[k];
                     mass_fac = gmx::invsqrt(top->atoms.atom[ai].m*top->atoms.atom[ak].m);
@@ -170,7 +170,7 @@ nma_full_hessian(real                    *hess,
     {
         for (int i = 0; i < (end-begin+1); i++)
         {
-            for (int j = 0; j < atom_index.size(); j++)
+            for (int j = 0; j < atom_index.ssize(); j++)
             {
                 size_t aj = atom_index[j];
                 mass_fac = gmx::invsqrt(top->atoms.atom[aj].m);
@@ -209,7 +209,7 @@ nma_sparse_hessian(gmx_sparsematrix_t      *sparse_hessian,
 
     if (bM)
     {
-        for (int iatom = 0; (iatom < atom_index.size()); iatom++)
+        for (int iatom = 0; (iatom < atom_index.ssize()); iatom++)
         {
             size_t ai = atom_index[iatom];
             for (size_t j = 0; (j < DIM); j++)
@@ -236,7 +236,7 @@ nma_sparse_hessian(gmx_sparsematrix_t      *sparse_hessian,
     {
         for (i = 0; i < neig; i++)
         {
-            for (int j = 0; j < atom_index.size(); j++)
+            for (int j = 0; j < atom_index.ssize(); j++)
             {
                 size_t aj = atom_index[j];
                 mass_fac = gmx::invsqrt(top->atoms.atom[aj].m);

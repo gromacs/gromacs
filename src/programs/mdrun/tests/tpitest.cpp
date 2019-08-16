@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -118,7 +118,7 @@ TEST_P(TpiTest, ReproducesOutput)
         rtpi                     = 0.05
         nstlog                   = 0
         nstenergy                = 0
-        cutoff-scheme            = group
+        cutoff-scheme            = Verlet
         nstlist                  = 10
         ns_type                  = grid
         rlist                    = 0.9
@@ -139,7 +139,8 @@ TEST_P(TpiTest, ReproducesOutput)
     runTest();
 }
 
-INSTANTIATE_TEST_CASE_P(Simple, TpiTest, ::testing::Values(1993, 2994));
+// Should be re-enabled when TPI supports the Verlet scheme
+INSTANTIATE_TEST_CASE_P(DISABLED_Simple, TpiTest, ::testing::Values(1993, 2994));
 
 }  // namespace
 }  // namespace test

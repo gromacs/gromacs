@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,34 +37,83 @@
 #ifndef GMX_TOPOLOGY_ATOMPROP_H
 #define GMX_TOPOLOGY_ATOMPROP_H
 
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/real.h"
+#include <string>
 
-/* Abstract type for the atom property database */
-typedef struct gmx_atomprop *gmx_atomprop_t;
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/real.h"
 
 enum {
     epropMass, epropVDW, epropDGsol, epropElectroneg, epropElement,
     epropNR
 };
 
-gmx_atomprop_t gmx_atomprop_init();
-/* Initializes and returns the atom properties struct */
-
-void gmx_atomprop_destroy(gmx_atomprop_t aps);
-/* Get rid of memory after use */
-
-char *gmx_atomprop_element(gmx_atomprop_t aps, int atomnumber);
-
-int gmx_atomprop_atomnumber(gmx_atomprop_t aps, const char *element);
-
-gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
-                            int eprop, const char *resnm, const char *atomnm,
-                            real *value);
-/* Extract a value from the database. Returns TRUE on succes,
- * FALSE otherwise. In the latter case, value is a deafult value.
- * The first time this function is called for this property
- * the database will be read.
+struct AtomProperty;
+class ResidueType;
+/*! \brief
+ * Holds all the atom property information loaded.
  */
+class AtomProperties
+{
+    public:
+        //! Default constructor.
+        AtomProperties();
+        //! Default destructor
+        ~AtomProperties();
+
+        /*! \brief
+         * Get element string from atom number.
+         *
+         * \param[in] atomNumber Atomnumber to check.
+         * \returns Name of the element.
+         *
+         * \todo This should be made const once the lazy
+         * implementation is done properly for the class.
+         */
+        const std::string elementFromAtomNumber(int atomNumber);
+        /*! \brief
+         * Get atom number from element string.
+         *
+         * \param[in] element Name of element.
+         * \returns AtomNumber that was being looked for.
+         *
+         * \todo This should be made const once the lazy
+         * implementation is done properly for the class.
+         */
+        int atomNumberFromElement(const char *element);
+        /*! \brief
+         * Set atom property based on atomname.
+         *
+         * Extract a \p value from the database. Returns true
+         * if this is successful, or false if not. Sets default value
+         * in the later case. The first time this function is called
+         * for this property the database will be initialized.
+         *
+         * \param[in] eprop Property to set.
+         * \param[in] residueName Residue name for entry.
+         * \param[in] atomName Atom name for entry.
+         * \param[out] value New value to set or default.
+         * \returns If the operation has been succesful.
+         */
+        bool setAtomProperty(int                eprop,
+                             const std::string &residueName,
+                             const std::string &atomName,
+                             real              *value);
+        /*! \brief
+         * Get handle to property.
+         *
+         * \param[in] eprop Which property we need a handle to.
+         * \returns Pointer to property entry.
+         */
+        AtomProperty *prop(int eprop);
+        //! Get handle to residuetype library.
+        ResidueType *restype();
+
+    private:
+        //! Implementation pointer.
+        class Impl;
+
+        gmx::PrivateImplPointer<Impl> impl_;
+};
 
 #endif

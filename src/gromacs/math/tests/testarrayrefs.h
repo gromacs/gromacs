@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -98,7 +98,7 @@ void compareViews(ArrayRef<T> input,
                   ArrayRef<T> output)
 {
     ASSERT_EQ(input.size(), output.size());
-    for (index i = 0; i != input.size(); ++i)
+    for (index i = 0; i != input.ssize(); ++i)
     {
         EXPECT_EQ(input[i], output[i]) << "for index " << i;
     }
@@ -110,7 +110,7 @@ void compareViews(ArrayRef < BasicVector < T>> input,
                   ArrayRef < BasicVector < T>> output)
 {
     ASSERT_EQ(input.size(), output.size());
-    for (index i = 0; i != input.size(); ++i)
+    for (index i = 0; i != input.ssize(); ++i)
     {
         EXPECT_EQ(input[i][XX], output[i][XX]) << "for index " << i;
         EXPECT_EQ(input[i][YY], output[i][YY]) << "for index " << i;

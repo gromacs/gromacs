@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,12 +51,12 @@
 #include <algorithm>
 #include <string>
 
+#include "gromacs/ewald/pme.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -105,6 +105,7 @@ decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget          nonbon
                                                 const std::vector<int>   &gpuIdsToUse,
                                                 const std::vector<int>   &userGpuTaskAssignment,
                                                 const EmulateGpuNonbonded emulateGpuNonbonded,
+                                                const bool                buildSupportsNonbondedOnGpu,
                                                 const bool                usingVerletScheme,
                                                 const bool                nonbondedOnGpuIsUseful,
                                                 const int                 numRanksPerSimulation)
@@ -113,7 +114,8 @@ decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget          nonbon
     if (nonbondedTarget == TaskTarget::Cpu ||
         emulateGpuNonbonded == EmulateGpuNonbonded::Yes ||
         !usingVerletScheme ||
-        !nonbondedOnGpuIsUseful)
+        !nonbondedOnGpuIsUseful ||
+        !buildSupportsNonbondedOnGpu)
     {
         // If the user required NB on GPUs, we issue an error later.
         return false;
@@ -151,14 +153,18 @@ decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbo
                                           const TaskTarget        pmeTarget,
                                           const std::vector<int> &gpuIdsToUse,
                                           const std::vector<int> &userGpuTaskAssignment,
-                                          const bool              canUseGpuForPme,
+                                          const gmx_hw_info_t    &hardwareInfo,
+                                          const t_inputrec       &inputrec,
+                                          const gmx_mtop_t       &mtop,
                                           const int               numRanksPerSimulation,
                                           const int               numPmeRanksPerSimulation)
 {
     // First, exclude all cases where we can't run PME on GPUs.
     if ((pmeTarget == TaskTarget::Cpu) ||
         !useGpuForNonbonded ||
-        !canUseGpuForPme)
+        !pme_gpu_supports_build(nullptr) ||
+        !pme_gpu_supports_hardware(hardwareInfo, nullptr) ||
+        !pme_gpu_supports_input(inputrec, mtop, nullptr))
     {
         // PME can't run on a GPU. If the user required that, we issue
         // an error later.
@@ -235,6 +241,7 @@ decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbo
 bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarget,
                                         const std::vector<int>    &userGpuTaskAssignment,
                                         const EmulateGpuNonbonded  emulateGpuNonbonded,
+                                        const bool                 buildSupportsNonbondedOnGpu,
                                         const bool                 usingVerletScheme,
                                         const bool                 nonbondedOnGpuIsUseful,
                                         const bool                 gpusWereDetected)
@@ -249,6 +256,15 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarg
         }
 
         return false;
+    }
+
+    if (!buildSupportsNonbondedOnGpu && nonbondedTarget == TaskTarget::Gpu)
+    {
+        GMX_THROW(InconsistentInputError
+                      ("Nonbonded interactions on the GPU were requested with -nb gpu, "
+                      "but the GROMACS binary has been built without GPU support. "
+                      "Either run without selecting GPU options, or recompile GROMACS "
+                      "with GPU support enabled"));
     }
 
     // TODO refactor all these TaskTarget::Gpu checks into one place?
@@ -323,7 +339,9 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarg
 bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
                                   const TaskTarget        pmeTarget,
                                   const std::vector<int> &userGpuTaskAssignment,
-                                  const bool              canUseGpuForPme,
+                                  const gmx_hw_info_t    &hardwareInfo,
+                                  const t_inputrec       &inputrec,
+                                  const gmx_mtop_t       &mtop,
                                   const int               numRanksPerSimulation,
                                   const int               numPmeRanksPerSimulation,
                                   const bool              gpusWereDetected)
@@ -338,18 +356,36 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
         if (pmeTarget == TaskTarget::Gpu)
         {
             GMX_THROW(NotImplementedError
-                          ("The PME on the GPU is only supported when nonbonded interactions run on GPUs also."));
+                          ("PME on GPUs is only supported when nonbonded interactions run on GPUs also."));
         }
         return false;
     }
 
-    if (!canUseGpuForPme)
+    std::string message;
+    if (!pme_gpu_supports_build(&message))
     {
         if (pmeTarget == TaskTarget::Gpu)
         {
-            // TODO Pass in the inputrec so we can give more help here?
             GMX_THROW(NotImplementedError
-                          ("The input simulation did not use PME in a way that is supported on the GPU."));
+                          ("Cannot compute PME interactions on a GPU, because " + message));
+        }
+        return false;
+    }
+    if (!pme_gpu_supports_hardware(hardwareInfo, &message))
+    {
+        if (pmeTarget == TaskTarget::Gpu)
+        {
+            GMX_THROW(NotImplementedError
+                          ("Cannot compute PME interactions on a GPU, because " + message));
+        }
+        return false;
+    }
+    if (!pme_gpu_supports_input(inputrec, mtop, &message))
+    {
+        if (pmeTarget == TaskTarget::Gpu)
+        {
+            GMX_THROW(NotImplementedError
+                          ("Cannot compute PME interactions on a GPU, because " + message));
         }
         return false;
     }
@@ -371,7 +407,7 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
         // Specifying -gputasks requires specifying everything.
         if (pmeTarget == TaskTarget::Auto)
         {
-            GMX_THROW(InconsistentInputError(formatString(g_specifyEverythingFormatString, "all of -nb, -pme, and -ntmpi")));
+            GMX_THROW(InconsistentInputError(formatString(g_specifyEverythingFormatString, "all of -nb, -pme, and -ntmpi"))); // TODO ntmpi?
         }
 
         return true;

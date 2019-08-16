@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,18 +59,6 @@
 namespace gmx
 {
 
-/*! \brief
- * Tag type to initialize empty array references.
- *
- * This type (together with appropriate constructors in ArrayRef)
- * allows initializing any array reference to an empty value
- * without explicitly specifying its type.  This is convenient when calling
- * a function that takes an array reference, where constructing an empty
- * reference explicitly would otherwise require specifying the full array
- * reference type, including the template parameter.
- */
-struct EmptyArrayRef {};
-
 /*! \brief STL-like interface to a C array of T (or part
  * of a std container of T).
  *
@@ -118,7 +106,7 @@ class ArrayRef
         //! Type of values stored in the reference.
         typedef T         value_type;
         //! Type for representing size of the reference.
-        typedef index     size_type;
+        typedef size_t    size_type;
         //! Type for representing difference between two indices.
         typedef ptrdiff_t difference_type;
         //! Const reference to an element.
@@ -142,14 +130,6 @@ class ArrayRef
          * Constructs an empty reference.
          */
         ArrayRef() : begin_(nullptr), end_(nullptr) {}
-        /*! \brief
-         * Constructs an empty reference.
-         *
-         * This is provided for convenience, such that EmptyArrayRef can be
-         * used to initialize any ArrayRef, without specifying the template
-         * type.  It is not explicit to enable that usage.
-         */
-        ArrayRef(const EmptyArrayRef & /*unused*/) : begin_(nullptr), end_(nullptr) {}
         /*! \brief
          * Constructs a reference to a container or reference
          *
@@ -222,8 +202,14 @@ class ArrayRef
         //! Returns an iterator to the reverse end of the reference.
         reverse_iterator rend() const { return reverse_iterator(begin()); }
 
-        //! Returns the size of the reference.
+        /*! \brief Returns the size of the reference.
+         *
+         * \note Use ssize for any expression involving arithmetic operations
+             (including loop indices).
+         */
         size_type size() const { return end_ - begin_; }
+        //! Returns the signed size of the reference.
+        index ssize() const { return size(); }
         //! Identical to size().
         size_type capacity() const { return end_ - begin_; }
         //! Whether the reference refers to no memory.

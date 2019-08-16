@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_atomprop;
+class AtomProperties;
 struct t_atoms;
 struct t_symtab;
 struct t_topology;
@@ -91,13 +91,13 @@ void gmx_write_pdb_box(FILE *out, int ePBC, const matrix box);
 void write_pdbfile_indexed(FILE *out, const char *title, const t_atoms *atoms,
                            const rvec x[], int ePBC, const matrix box, char chain,
                            int model_nr, int nindex, const int index[],
-                           gmx_conect conect, gmx_bool bTerSepChains,
+                           gmx_conect conect,
                            bool usePqrFormat);
 /* REALLY low level */
 
 void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms,
                    const rvec x[], int ePBC, const matrix box, char chain,
-                   int model_nr, gmx_conect conect, gmx_bool bTerSepChains);
+                   int model_nr, gmx_conect conect);
 /* Low level pdb file writing routine.
  *
  *          ONLY FOR SPECIAL PURPOSES,
@@ -111,7 +111,7 @@ void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms,
  * which may be useful for visualization purposes.
  */
 
-void get_pdb_atomnumber(const t_atoms *atoms, struct gmx_atomprop *aps);
+void get_pdb_atomnumber(const t_atoms *atoms, AtomProperties *aps);
 /* Routine to extract atomic numbers from the atom names */
 
 int read_pdbfile(FILE *in, char *title, int *model_nr,

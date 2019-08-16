@@ -1,0 +1,12 @@
+[ atom1 ]
+1
+[ atom2 ]
+2
+[ atom3 ]
+3
+[ atoms12 ]
+1 2
+[ atoms23 ]
+2 3
+[ atoms123 ]
+1 2 3

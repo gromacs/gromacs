@@ -38,3 +38,12 @@ would not check if nstexpanded was a multiple of nstcalcenergy.
 If the latter was not the case, results might have been incorrect.
 
 :issue:`2714`
+
+Issue with do_dssp and unknown residues
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The :ref:`do_dssp <gmx do_dssp>` tool would fail with unknown residues,
+as well as have issues on Windows.
+
+:issue:`2599`
+

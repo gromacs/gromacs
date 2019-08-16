@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,7 +42,6 @@
 #include <typeindex>
 #include <vector>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/ikeyvaluetreeerror.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
@@ -325,7 +324,7 @@ class KeyValueTreeTransformerImpl
         {
             GMX_RELEASE_ASSERT(rootRule_ == nullptr,
                                "Cannot specify key match type after child rules");
-            rootRule_ = compat::make_unique<Rule>(keyMatchType);
+            rootRule_ = std::make_unique<Rule>(keyMatchType);
         }
 
         std::unique_ptr<Rule>             rootRule_;
@@ -565,24 +564,24 @@ void KeyValueTreeTransformRuleBuilder::setKeyMatchType(StringCompareType keyMatc
     data_->keyMatchRule_ = true;
 }
 
-void KeyValueTreeTransformRuleBuilder::addTransformToVariant(
-        const std::function<Variant(const Variant &)> &transform)
+void KeyValueTreeTransformRuleBuilder::addTransformToAny(
+        const std::function<Any(const Any &)> &transform)
 {
     data_->transform_ =
         [transform] (KeyValueTreeValueBuilder *builder, const KeyValueTreeValue &value)
         {
-            builder->setVariantValue(transform(value.asVariant()));
+            builder->setAnyValue(transform(value.asAny()));
         };
 }
 
 void KeyValueTreeTransformRuleBuilder::addTransformToObject(
-        const std::function<void(KeyValueTreeObjectBuilder *, const Variant &)> &transform)
+        const std::function<void(KeyValueTreeObjectBuilder *, const Any &)> &transform)
 {
     data_->transform_ =
         [transform] (KeyValueTreeValueBuilder *builder, const KeyValueTreeValue &value)
         {
             KeyValueTreeObjectBuilder obj = builder->createObject();
-            transform(&obj, value.asVariant());
+            transform(&obj, value.asAny());
         };
 }
 

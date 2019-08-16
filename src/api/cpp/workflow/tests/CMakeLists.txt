@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2018, by the GROMACS development team, led by
+# Copyright (c) 2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@ gmx_add_gtest_executable(
 
 target_link_libraries(workflow-details-test Gromacs::gmxapi gmxapi-detail)
 
-gmx_register_gtest_test(GmxapiInternalInterfaceTests workflow-details-test INTEGRATION_TEST)
+gmx_register_gtest_test(GmxapiInternalInterfaceTests workflow-details-test OPENMP_THREADS 2 INTEGRATION_TEST)
 
 set_tests_properties(GmxapiInternalInterfaceTests PROPERTIES
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
@@ -67,7 +67,4 @@ gmx_add_gtest_executable(
 
 target_link_libraries(workflow-details-mpi-test Gromacs::gmxapi gmxapi-detail)
 
-# Tests that specify MPI_RANKS will be passed a ``-ntmpi`` command-line option
-# when GMX_THREAD_MPI is true, but the test executables in this directory do not
-# yet understand that command-line option.
-gmx_register_gtest_test(GmxapiInternalsMpiTests workflow-details-mpi-test MPI_RANKS 2 INTEGRATION_TEST)
+gmx_register_gtest_test(GmxapiInternalsMpiTests workflow-details-mpi-test MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST)

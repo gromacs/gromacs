@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,9 +45,9 @@
 
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/optionflags.h"
+#include "gromacs/utility/any.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/variant.h"
 
 #include "basicoptionstorage.h"
 
@@ -117,7 +117,7 @@ void AbstractOptionStorage::startSet()
     bSetValuesHadErrors_ = false;
 }
 
-void AbstractOptionStorage::appendValue(const Variant &value)
+void AbstractOptionStorage::appendValue(const Any &value)
 {
     GMX_RELEASE_ASSERT(bInSet_, "startSet() not called");
     try
@@ -261,7 +261,7 @@ std::string OptionInfo::formatDescription() const
     return description;
 }
 
-std::vector<Variant> OptionInfo::defaultValues() const
+std::vector<Any> OptionInfo::defaultValues() const
 {
     return option().defaultValues();
 }
@@ -271,7 +271,7 @@ std::vector<std::string> OptionInfo::defaultValuesAsStrings() const
     return option().defaultValuesAsStrings();
 }
 
-std::vector<Variant> OptionInfo::normalizeValues(const std::vector<Variant> &values) const
+std::vector<Any> OptionInfo::normalizeValues(const std::vector<Any> &values) const
 {
     return option().normalizeValues(values);
 }

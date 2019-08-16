@@ -36,12 +36,6 @@
 #ifndef _fftpack_h
 #define _fftpack_h
 
-
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #if GMX_DOUBLE
 #define Treal double
 #else
@@ -53,9 +47,5 @@ extern "C" {
     void fftpack_rffti1(int n, Treal wa[], int ifac[]);
     void fftpack_rfftf1(int n, Treal c[], Treal ch[], const Treal wa[], const int ifac[]);
     void fftpack_rfftb1(int n, Treal c[], Treal ch[], const Treal wa[], const int ifac[]);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

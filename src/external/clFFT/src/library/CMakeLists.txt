@@ -26,7 +26,7 @@ set( clFFT.Source	transform.cpp
 								generator.copy.cpp
 								lifetime.cpp
 								fft_binary_lookup.cpp
-								md5sum.c
+								md5sum.cpp
 								enqueue.cpp
 								stdafx.cpp )
 

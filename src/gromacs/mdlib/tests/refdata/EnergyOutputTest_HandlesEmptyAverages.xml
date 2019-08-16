@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="Number of Energy Terms">26</Int>
+  <String Name="log">   Energies (kJ/mol)
+        LJ (SR)   Coulomb (SR)      Potential    Kinetic En.   Total Energy
+    0.00000e+00    0.00000e+00    0.00000e+00    0.00000e+00    0.00000e+00
+    Temperature Pressure (bar)
+    0.00000e+00    0.00000e+00
+
+Not enough data recorded to report energy averages
+</String>
+</ReferenceData>

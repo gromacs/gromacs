@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,9 +69,8 @@ TEST(TopologyInformation, CantWorkWithoutReadingAFile)
     TopologyInformation topInfo;
     EXPECT_FALSE(topInfo.hasTopology());
     EXPECT_FALSE(topInfo.hasFullTopology());
-    ASSERT_TRUE(topInfo.mtop());
-    EXPECT_EQ(0, topInfo.mtop()->natoms);
-    EXPECT_FALSE(topInfo.expandedTopology());
+    EXPECT_EQ(nullptr, topInfo.mtop());
+    EXPECT_EQ(nullptr, topInfo.expandedTopology());
     auto atoms1 = topInfo.copyAtoms();
     EXPECT_TRUE(atoms1);
     auto atoms2 = topInfo.copyAtoms();

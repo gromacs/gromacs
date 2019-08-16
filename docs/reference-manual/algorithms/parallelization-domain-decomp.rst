@@ -160,8 +160,11 @@ Constraints in parallel
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 Since with domain decomposition parts of molecules can reside on
-different ranks, bond constraints can cross cell boundaries. Therefore a
-parallel constraint algorithm is required. |Gromacs| uses the P-LINCS
+different ranks, bond constraints can cross cell boundaries.
+This will not happen in |Gromacs| when update groups are used, which happens
+when only bonds involving hydrogens are constrained. Then atoms connected
+by constraints are assigned to the same domain. But without update groups
+a parallel constraint algorithm is required. |Gromacs| uses the P-LINCS
 algorithm \ :ref:`50 <refHess2008a>`, which is the parallel version of the LINCS
 algorithm \ :ref:`49 <refHess97>` (see :ref:`lincs`). The P-LINCS procedure
 is illustrated in :numref:`Fig. %s <fig-plincs>`. When molecules cross the cell

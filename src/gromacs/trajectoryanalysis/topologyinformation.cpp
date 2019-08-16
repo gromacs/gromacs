@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,8 @@
 
 #include "topologyinformation.h"
 
-#include "gromacs/compat/make_unique.h"
+#include <memory>
+
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -59,8 +60,7 @@ namespace gmx
 {
 
 TopologyInformation::TopologyInformation()
-    : mtop_(compat::make_unique<gmx_mtop_t>()),
-      hasLoadedMtop_(false),
+    : hasLoadedMtop_(false),
       expandedTopology_(nullptr),
       atoms_ (nullptr),
       bTop_(false), ePBC_(-1)
@@ -74,7 +74,7 @@ TopologyInformation::~TopologyInformation()
 
 void TopologyInformation::fillFromInputFile(const std::string &filename)
 {
-    mtop_ = gmx::compat::make_unique<gmx_mtop_t>();
+    mtop_ = std::make_unique<gmx_mtop_t>();
     // TODO When filename is not a .tpr, then using readConfAndAtoms
     // would be efficient for not doing multiple conversions for
     // makeAtomsData. However we'd also need to be able to copy the
@@ -107,7 +107,8 @@ const gmx_localtop_t *TopologyInformation::expandedTopology() const
     // Do lazy initialization
     if (expandedTopology_ == nullptr && hasTopology())
     {
-        expandedTopology_.reset(gmx_mtop_generate_local_top(mtop_.get(), false));
+        expandedTopology_ = std::make_unique<gmx_localtop_t>();
+        gmx_mtop_generate_local_top(*mtop_, expandedTopology_.get(), false);
     }
 
     return expandedTopology_.get();

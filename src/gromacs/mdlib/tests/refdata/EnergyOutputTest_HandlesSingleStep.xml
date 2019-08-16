@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="Number of Energy Terms">26</Int>
+  <String Name="log">   Energies (kJ/mol)
+        LJ (SR)   Coulomb (SR)      Potential    Kinetic En.   Total Energy
+    1.10000e+00    1.20000e+00    1.30000e+00    1.40000e+00    1.50000e+00
+    Temperature Pressure (bar)
+    1.60000e+00    1.70000e+00
+
+	&lt;======  ###############  ==&gt;
+	&lt;====  A V E R A G E S  ====&gt;
+	&lt;==  ###############  ======&gt;
+
+	Statistics over 1 steps using 1 frames
+
+   Energies (kJ/mol)
+        LJ (SR)   Coulomb (SR)      Potential    Kinetic En.   Total Energy
+    1.10000e+00    1.20000e+00    1.30000e+00    1.40000e+00    1.50000e+00
+    Temperature Pressure (bar)
+    1.60000e+00    1.70000e+00
+
+   Total Virial (kJ/mol)
+    1.80000e+00    0.00000e+00    0.00000e+00
+    0.00000e+00    1.90000e+00    0.00000e+00
+    0.00000e+00    0.00000e+00    2.00000e+00
+
+   Pressure (bar)
+    2.10000e+00    0.00000e+00    0.00000e+00
+    0.00000e+00    2.20000e+00    0.00000e+00
+    0.00000e+00    0.00000e+00    2.30000e+00
+
+</String>
+</ReferenceData>

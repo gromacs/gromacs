@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,6 @@
 
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/gmxassert.h"
 
 struct gmx_localtop_t;
 struct t_atom;
@@ -86,49 +85,102 @@ int gmx_mtop_nres(const gmx_mtop_t *mtop);
 /* Removes the charge groups, i.e. makes single atom charge groups, in mtop */
 void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop);
 
-/* Abstract type for atom loop over all atoms */
-typedef struct gmx_mtop_atomloop_all *gmx_mtop_atomloop_all_t;
+class AtomIterator;
 
-/* Initialize an atom loop over all atoms in the system.
- * The order of the atoms will be as in the state struct.
- * Only use this when you really need to loop over all atoms,
- * i.e. when you use groups which might differ per molecule,
- * otherwise use gmx_mtop_atomloop_block.
+//! Proxy object returned from AtomIterator
+class AtomProxy
+{
+    public:
+        //! Default constructor.
+        AtomProxy(const AtomIterator* it) : it_(it) {}
+        //! Access current global atom number.
+        int globalAtomNumber() const;
+        //! Access current t_atom struct.
+        const t_atom &atom() const;
+        //! Access current name of the atom.
+        const char *atomName() const;
+        //! Access current name of the residue the atom is in.
+        const char *residueName() const;
+        //! Access current residue number.
+        int residueNumber() const;
+        //! Access current molecule type.
+        const gmx_moltype_t &moleculeType() const;
+        //! Access the position of the current atom in the molecule.
+        int atomNumberInMol() const;
+    private:
+        const AtomIterator* it_;
+};
+
+//! Wrapper around proxy object to implement operator->
+template <typename T>
+class ProxyPtr
+{
+    public:
+        //! Construct with proxy object.
+        ProxyPtr(T t) : t_(t) {}
+        //! Member of pointer operator.
+        T* operator->() { return &t_; }
+    private:
+        T t_;
+};
+
+/*! \brief
+ * Object that allows looping over all atoms in an mtop.
  */
-gmx_mtop_atomloop_all_t
-gmx_mtop_atomloop_all_init(const gmx_mtop_t *mtop);
+class AtomIterator
+{
+    public:
+        //! Construct from topology and optionalally a global atom number.
+        explicit AtomIterator(const gmx_mtop_t &mtop, int globalAtomNumber = 0);
 
-/* Loop to the next atom.
- * When not at the end:
- *   returns TRUE and at_global,
- *   writes the global atom number in *at_global
- *   and sets the pointer atom to the t_atom struct of that atom.
- * When at the end, destroys aloop and returns FALSE.
- * Use as:
- * gmx_mtop_atomloop_all_t aloop;
- * aloop = gmx_mtop_atomloop_all_init(mtop)
- * while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
- *     ...
- * }
- */
-gmx_bool
-gmx_mtop_atomloop_all_next(gmx_mtop_atomloop_all_t aloop,
-                           int *at_global, const t_atom **atom);
+        //! Prefix increment.
+        AtomIterator &operator++();
+        //! Postfix increment.
+        AtomIterator operator++(int);
 
-/* Return the atomname, the residue number and residue name
- * of the current atom in the loop.
- */
-void
-gmx_mtop_atomloop_all_names(gmx_mtop_atomloop_all_t aloop,
-                            char **atomname, int *resnr, char **resname);
+        //! Equality comparison.
+        bool operator==(const AtomIterator &o) const;
+        //! Non-equal comparison.
+        bool operator!=(const AtomIterator &o) const;
 
-/* Return the a pointer to the moltype struct of the current atom
- * in the loop and the atom number in the molecule.
- */
-void
-gmx_mtop_atomloop_all_moltype(gmx_mtop_atomloop_all_t aloop,
-                              const gmx_moltype_t **moltype, int *at_mol);
+        //! Dereference operator. Returns proxy.
+        AtomProxy operator*() const { return {this}; }
+        //! Member of pointer operator.
+        ProxyPtr<AtomProxy> operator->() const { return {this}; }
 
+    private:
+        //! Global topology.
+        const gmx_mtop_t *mtop_;
+        //! Current molecule block.
+        size_t            mblock_;
+        //! The atoms of the current molecule.
+        const t_atoms    *atoms_;
+        //! The current molecule.
+        int               currentMolecule_;
+        //! Current highest number for residues.
+        int               highestResidueNumber_;
+        //! Current local atom number.
+        int               localAtomNumber_;
+        //! Global current atom number.
+        int               globalAtomNumber_;
+
+        friend class AtomProxy;
+};
+
+//! Range over all atoms of topology.
+class AtomRange
+{
+    public:
+        //! Default constructor.
+        explicit AtomRange(const gmx_mtop_t &mtop) :
+            begin_(mtop), end_(mtop, mtop.natoms) {}
+        //! Iterator to begin of range.
+        AtomIterator &begin() { return begin_; }
+        //! Iterator to end of range.
+        AtomIterator &end() { return end_; }
+    private:
+        AtomIterator begin_, end_;
+};
 
 /* Abstract type for atom loop over atoms in all molecule blocks */
 typedef struct gmx_mtop_atomloop_block *gmx_mtop_atomloop_block_t;
@@ -217,12 +269,20 @@ t_atoms
 gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
 
 
-/* Generate a 'local' topology for the whole system.
+/*! \brief
+ * Populate a 'local' topology for the whole system.
+ *
  * When freeEnergyInteractionsAtEnd == true, the free energy interactions will
  * be sorted to the end.
+ *
+ * \param[in]     mtop                        The global topology used to populate the local one.
+ * \param[in,out] top                         New local topology populated from global \p mtop.
+ * \param[in]     freeEnergyInteractionsAtEnd If free energy interactions will be sorted.
  */
-gmx_localtop_t *
-gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsAtEnd);
+void
+gmx_mtop_generate_local_top(const gmx_mtop_t &mtop,
+                            gmx_localtop_t   *top,
+                            bool              freeEnergyInteractionsAtEnd);
 
 
 /*!\brief Creates and returns a struct with begin/end atom indices of all molecules

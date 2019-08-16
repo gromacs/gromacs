@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -456,7 +455,7 @@ class HelpWriterContext::Impl
                                        "Accessing console formatter for non-console output");
                     if (!consoleOptionsFormatter_)
                     {
-                        consoleOptionsFormatter_ = compat::make_unique<TextTableFormatter>();
+                        consoleOptionsFormatter_ = std::make_unique<TextTableFormatter>();
                         consoleOptionsFormatter_->setFirstColumnIndent(1);
                         consoleOptionsFormatter_->addColumn(nullptr, 7, false);
                         consoleOptionsFormatter_->addColumn(nullptr, 18, false);

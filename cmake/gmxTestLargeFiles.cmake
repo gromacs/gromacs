@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2012,2014, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2012,2014,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -58,7 +58,7 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
 
         # First check without any special flags
         TRY_COMPILE(FILE64_OK "${CMAKE_BINARY_DIR}"
-                    "${CMAKE_SOURCE_DIR}/cmake/TestFileOffsetBits.c")
+                    "${CMAKE_SOURCE_DIR}/cmake/TestFileOffsetBits.cpp")
         if(FILE64_OK)
             MESSAGE(STATUS "Checking for 64-bit off_t - present")
         endif()
@@ -66,7 +66,7 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
         if(NOT FILE64_OK)
             # Test with _FILE_OFFSET_BITS=64
             TRY_COMPILE(FILE64_OK "${CMAKE_BINARY_DIR}"
-                        "${CMAKE_SOURCE_DIR}/cmake/TestFileOffsetBits.c"
+                        "${CMAKE_SOURCE_DIR}/cmake/TestFileOffsetBits.cpp"
                         COMPILE_DEFINITIONS "-D_FILE_OFFSET_BITS=64" )
             if(FILE64_OK)
                 MESSAGE(STATUS "Checking for 64-bit off_t - present with _FILE_OFFSET_BITS=64")
@@ -77,7 +77,7 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
         if(NOT FILE64_OK)
             # Test with _LARGE_FILES
             TRY_COMPILE(FILE64_OK "${CMAKE_BINARY_DIR}"
-                        "${CMAKE_SOURCE_DIR}/cmake/TestFileOffsetBits.c"
+                        "${CMAKE_SOURCE_DIR}/cmake/TestFileOffsetBits.cpp"
                         COMPILE_DEFINITIONS "-D_LARGE_FILES" )
             if(FILE64_OK)
                 MESSAGE(STATUS "Checking for 64-bit off_t - present with _LARGE_FILES")
@@ -88,7 +88,7 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
         if(NOT FILE64_OK)
             # Test with _LARGEFILE_SOURCE
             TRY_COMPILE(FILE64_OK "${CMAKE_BINARY_DIR}"
-                        "${CMAKE_SOURCE_DIR}/cmake/TestFileOffsetBits.c"
+                        "${CMAKE_SOURCE_DIR}/cmake/TestFileOffsetBits.cpp"
                         COMPILE_DEFINITIONS "-D_LARGEFILE_SOURCE" )
             if(FILE64_OK)
                 MESSAGE(STATUS "Checking for 64-bit off_t - present with _LARGEFILE_SOURCE")
@@ -103,12 +103,12 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
 
             # Set the flags we might have determined to be required above
             configure_file("${CMAKE_SOURCE_DIR}/cmake/TestLargeFiles.c.cmakein"
-                           "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TestLargeFiles.c")
+                           "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TestLargeFiles.cpp")
 
             MESSAGE(STATUS "Checking for fseeko/ftello")
             # Test if ftello/fseeko are available
             TRY_COMPILE(FSEEKO_COMPILE_OK "${CMAKE_BINARY_DIR}"
-                        "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TestLargeFiles.c")
+                        "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TestLargeFiles.cpp")
             if(FSEEKO_COMPILE_OK)
                 MESSAGE(STATUS "Checking for fseeko/ftello - present")
             endif()
@@ -116,7 +116,7 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
             if(NOT FSEEKO_COMPILE_OK)
                 # glibc 2.2 neds _LARGEFILE_SOURCE for fseeko (but not 64-bit off_t...)
                 TRY_COMPILE(FSEEKO_COMPILE_OK "${CMAKE_BINARY_DIR}"
-                            "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TestLargeFiles.c"
+                            "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TestLargeFiles.cpp"
                             COMPILE_DEFINITIONS "-D_LARGEFILE_SOURCE" )
                 if(FSEEKO_COMPILE_OK)
                     MESSAGE(STATUS "Checking for fseeko/ftello - present with _LARGEFILE_SOURCE")
@@ -131,7 +131,7 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
         if(NOT FILE64_OK)
             # now check for Windows stuff
             TRY_COMPILE(FILE64_OK "${CMAKE_BINARY_DIR}"
-                        "${CMAKE_SOURCE_DIR}/cmake/TestWindowsFSeek.c")
+                        "${CMAKE_SOURCE_DIR}/cmake/TestWindowsFSeek.cpp")
             if(FILE64_OK)
                 MESSAGE(STATUS "Checking for 64-bit off_t - present with _fseeki64")
                 set(HAVE__FSEEKI64 1 CACHE INTERNAL "64-bit off_t requires _fseeki64")

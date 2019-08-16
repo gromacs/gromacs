@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,13 +55,15 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/mdebin.h"
+#include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/energyframe.h"
+#include "gromacs/trajectoryanalysis/topologyinformation.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -198,25 +200,17 @@ static void get_orires_parms(const char *topnm, t_inputrec *ir,
     done_top_mtop(&top, &mtop);
 }
 
-static int get_bounds(const char *topnm,
-                      real **bounds, int **index, int **dr_pair, int *npairs,
-                      gmx_mtop_t *mtop, gmx_localtop_t **ltop, t_inputrec *ir)
+static int get_bounds(real **bounds, int **index, int **dr_pair, int *npairs,
+                      gmx_localtop_t *top)
 {
-    gmx_localtop_t *top;
     t_functype     *functype;
     t_iparams      *ip;
-    int             natoms, i, j, k, type, ftype, natom;
+    int             i, j, k, type, ftype, natom;
     t_ilist        *disres;
     t_iatom        *iatom;
     real           *b;
     int            *ind, *pair;
     int             nb, label1;
-    matrix          box;
-
-    read_tpx(topnm, ir, box, &natoms, nullptr, nullptr, mtop);
-    snew(*ltop, 1);
-    top   = gmx_mtop_generate_local_top(mtop, ir->efep != efepNO);
-    *ltop = top;
 
     functype = top->idef.functype;
     ip       = top->idef.iparams;
@@ -423,32 +417,31 @@ int gmx_nmr(int argc, char *argv[])
     };
 
     FILE              /* *out     = NULL,*/ *out_disre = nullptr, *fp_pairs = nullptr, *fort = nullptr, *fodt = nullptr, *foten = nullptr;
-    ener_file_t        fp;
-    int                timecheck = 0;
-    gmx_mtop_t         mtop;
-    gmx_localtop_t    *top = nullptr;
-    gmx_enxnm_t       *enm = nullptr;
-    t_enxframe         fr;
-    int                nre, teller, teller_disre;
-    int                nor     = 0, nex = 0, norfr = 0, enx_i = 0;
-    real              *bounds  = nullptr, *violaver = nullptr, *oobs = nullptr, *orient = nullptr, *odrms = nullptr;
-    int               *index   = nullptr, *pair = nullptr, norsel = 0, *orsel = nullptr, *or_label = nullptr;
-    int                nbounds = 0, npairs;
-    gmx_bool           bDisRe, bDRAll, bORA, bORT, bODA, bODR, bODT, bORIRE, bOTEN;
-    gmx_bool           bCont;
-    double             sumaver, sumt;
-    int               *set     = nullptr, i, j, k, nset, sss;
-    char             **pairleg, **odtleg, **otenleg;
-    char             **leg = nullptr;
-    const char        *anm_j, *anm_k, *resnm_j, *resnm_k;
-    int                resnr_j, resnr_k;
-    const char        *orinst_sub = "@ subtitle \"instantaneous\"\n";
-    char               buf[256];
-    gmx_output_env_t  *oenv;
-    t_enxblock        *blk_disre = nullptr;
-    int                ndisre    = 0;
+    ener_file_t       fp;
+    int               timecheck = 0;
+    gmx_localtop_t    top;
+    gmx_enxnm_t      *enm = nullptr;
+    t_enxframe        fr;
+    int               nre, teller, teller_disre;
+    int               nor     = 0, nex = 0, norfr = 0, enx_i = 0;
+    real             *bounds  = nullptr, *violaver = nullptr, *oobs = nullptr, *orient = nullptr, *odrms = nullptr;
+    int              *index   = nullptr, *pair = nullptr, norsel = 0, *orsel = nullptr, *or_label = nullptr;
+    int               nbounds = 0, npairs;
+    gmx_bool          bDisRe, bDRAll, bORA, bORT, bODA, bODR, bODT, bORIRE, bOTEN;
+    gmx_bool          bCont;
+    double            sumaver, sumt;
+    int              *set     = nullptr, i, j, k, nset, sss;
+    char            **pairleg, **odtleg, **otenleg;
+    char            **leg = nullptr;
+    const char       *anm_j, *anm_k, *resnm_j, *resnm_k;
+    int               resnr_j, resnr_k;
+    const char       *orinst_sub = "@ subtitle \"instantaneous\"\n";
+    char              buf[256];
+    gmx_output_env_t *oenv;
+    t_enxblock       *blk_disre = nullptr;
+    int               ndisre    = 0;
 
-    t_filenm           fnm[] = {
+    t_filenm                                 fnm[] = {
         { efEDR, "-f",    nullptr,      ffREAD  },
         { efEDR, "-f2",   nullptr,      ffOPTRD },
         { efTPR, "-s",    nullptr,      ffOPTRD },
@@ -463,7 +456,7 @@ int gmx_nmr(int argc, char *argv[])
         { efXVG, "-oten", "oriten",  ffOPTWR }
     };
 #define NFILE asize(fnm)
-    int                npargs;
+    int                                      npargs;
 
     npargs = asize(pa);
     if (!parse_common_args(&argc, argv,
@@ -493,10 +486,10 @@ int gmx_nmr(int argc, char *argv[])
     do_enxnms(fp, &nre, &enm);
     free_enxnms(nre, enm);
 
-    t_inputrec  irInstance;
-    t_inputrec *ir = &irInstance;
+    t_inputrec               irInstance;
+    t_inputrec              *ir = &irInstance;
     init_enxframe(&fr);
-
+    gmx::TopologyInformation topInfo;
     if (!bDisRe)
     {
         if (bORIRE || bOTEN)
@@ -637,8 +630,12 @@ int gmx_nmr(int argc, char *argv[])
     }
     else
     {
-        nbounds = get_bounds(ftp2fn(efTPR, NFILE, fnm), &bounds, &index, &pair, &npairs,
-                             &mtop, &top, ir);
+        {
+            topInfo.fillFromInputFile(ftp2fn(efTPR, NFILE, fnm));
+            gmx_mtop_generate_local_top(*topInfo.mtop(), &top, ir->efep != efepNO);
+        }
+        nbounds = get_bounds(&bounds, &index, &pair, &npairs,
+                             &top);
         snew(violaver, npairs);
         out_disre = xvgropen(opt2fn("-o", NFILE, fnm), "Sum of Violations",
                              "Time (ps)", "nm", oenv);
@@ -685,8 +682,8 @@ int gmx_nmr(int argc, char *argv[])
                 t_iatom   *fa;
                 t_iparams *ip;
 
-                fa = top->idef.il[F_DISRES].iatoms;
-                ip = top->idef.iparams;
+                fa = top.idef.il[F_DISRES].iatoms;
+                ip = top.idef.iparams;
                 if (blk_disre->nsub != 2 ||
                     (blk_disre->sub[0].nr != blk_disre->sub[1].nr) )
                 {
@@ -694,10 +691,10 @@ int gmx_nmr(int argc, char *argv[])
                 }
 
                 ndisre = blk_disre->sub[0].nr;
-                if (ndisre != top->idef.il[F_DISRES].nr/3)
+                if (ndisre != top.idef.il[F_DISRES].nr/3)
                 {
                     gmx_fatal(FARGS, "Number of disre pairs in the energy file (%d) does not match the number in the run input file (%d)\n",
-                              ndisre, top->idef.il[F_DISRES].nr/3);
+                              ndisre, top.idef.il[F_DISRES].nr/3);
                 }
                 snew(pairleg, ndisre);
                 int molb = 0;
@@ -706,8 +703,8 @@ int gmx_nmr(int argc, char *argv[])
                     snew(pairleg[i], 30);
                     j = fa[3*i+1];
                     k = fa[3*i+2];
-                    mtopGetAtomAndResidueName(&mtop, j, &molb, &anm_j, &resnr_j, &resnm_j, nullptr);
-                    mtopGetAtomAndResidueName(&mtop, k, &molb, &anm_k, &resnr_k, &resnm_k, nullptr);
+                    mtopGetAtomAndResidueName(topInfo.mtop(), j, &molb, &anm_j, &resnr_j, &resnm_j, nullptr);
+                    mtopGetAtomAndResidueName(topInfo.mtop(), k, &molb, &anm_k, &resnr_k, &resnm_k, nullptr);
                     sprintf(pairleg[i], "%d %s %d %s (%d)",
                             resnr_j, anm_j, resnr_k, anm_k,
                             ip[fa[3*i]].disres.label);

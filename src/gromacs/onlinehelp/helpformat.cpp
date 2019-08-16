@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -110,7 +110,7 @@ class TextTableFormatter::Impl
             //! Whether there are lines remaining for textForNextLine().
             bool hasLinesRemaining() const
             {
-                return nextLineIndex_ < static_cast<int>(lines_.size());
+                return nextLineIndex_ < ssize(lines_);
             }
             /*! \brief
              * Returns the text for the next line.
@@ -182,7 +182,7 @@ class TextTableFormatter::Impl
          */
         ColumnData &columnData(int index)
         {
-            GMX_ASSERT(index >= 0 && index < static_cast<int>(columns_.size()),
+            GMX_ASSERT(index >= 0 && index < ssize(columns_),
                        "Invalid column index");
             return columns_[index];
         }

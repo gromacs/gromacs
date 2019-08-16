@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="RESTRANGLES">
+    <FEP Name="No">
+      <Real Name="Epot ">181.72792025950673</Real>
+      <Real Name="dVdlambda ">0</Real>
+      <Vector Name="Central shift forces">
+        <Real Name="X">4.5474735088646412e-13</Real>
+        <Real Name="Y">-4.5474735088646412e-13</Real>
+        <Real Name="Z">0</Real>
+      </Vector>
+      <Sequence Name="Forces">
+        <Int Name="Length">4</Int>
+        <Vector>
+          <Real Name="X">105.65070375739712</Real>
+          <Real Name="Y">-168.65747820489509</Real>
+          <Real Name="Z">0</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">-3076.5687111064121</Real>
+          <Real Name="Y">-5986.1289531038201</Real>
+          <Real Name="Z">0</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">-336.58711384843497</Real>
+          <Real Name="Y">3364.8371236971734</Real>
+          <Real Name="Z">0</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">3307.5051211974505</Real>
+          <Real Name="Y">2789.9493076115414</Real>
+          <Real Name="Z">0</Real>
+        </Vector>
+      </Sequence>
+    </FEP>
+  </FunctionType>
+</ReferenceData>

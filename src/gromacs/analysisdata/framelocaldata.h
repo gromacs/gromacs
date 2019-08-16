@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,7 +83,7 @@ class AnalysisDataFrameLocalDataSetHandle
         //! Accesses a single value in the data set.
         ValueType &value(int column)
         {
-            GMX_ASSERT(column >= 0 && column < static_cast<int>(values_.size()),
+            GMX_ASSERT(column >= 0 && column < ssize(values_),
                        "Invalid column index");
             return values_[column];
         }
@@ -239,7 +239,7 @@ class AnalysisDataFrameLocalData
         {
             GMX_RELEASE_ASSERT(!isInitialized(),
                                "Cannot change value count after init()");
-            GMX_RELEASE_ASSERT(dataSet >= 0 && dataSet < static_cast<int>(dataSetColumns_.size()) - 1,
+            GMX_RELEASE_ASSERT(dataSet >= 0 && dataSet < ssize(dataSetColumns_) - 1,
                                "Invalid data set index");
             GMX_RELEASE_ASSERT(columnCount >= 0,
                                "Invalid column count");

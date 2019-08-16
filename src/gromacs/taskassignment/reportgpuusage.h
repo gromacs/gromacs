@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,7 +64,6 @@ class MDLogger;
  * and in what way.
  *
  * \param[in]  mdlog                               Logging object.
- * \param[in]  userSetGpuIds                       Whether the user selected the GPU ids
  * \param[in]  gpuTaskAssignmentOnRanksOfThisNode  The selected GPU IDs.
  * \param[in]  numGpuTasksOnThisNode               The number of GPU tasks on this node.
  * \param[in]  numPpRanks                          Number of PP ranks on this node
@@ -75,7 +74,6 @@ class MDLogger;
  * \throws     std::bad_alloc if out of memory */
 void
 reportGpuUsage(const MDLogger                &mdlog,
-               bool                           userSetGpuIds,
                const GpuTaskAssignments      &gpuTaskAssignmentOnRanksOfThisNode,
                size_t                         numGpuTasksOnThisNode,
                size_t                         numPpRanks,

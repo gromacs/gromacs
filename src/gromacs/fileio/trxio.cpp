@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,7 +49,7 @@
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/g96io.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/gmxfio-xdr.h"
+#include "gromacs/fileio/gmxfio_xdr.h"
 #include "gromacs/fileio/groio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/pdbio.h"
@@ -428,7 +428,7 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
             else
             {
                 write_pdbfile_indexed(gmx_fio_getfp(status->fio), title, fr->atoms,
-                                      fr->x, -1, fr->box, ' ', fr->step, nind, ind, gc, TRUE, FALSE);
+                                      fr->x, -1, fr->box, ' ', fr->step, nind, ind, gc, FALSE);
             }
             break;
         case efG96:
@@ -592,7 +592,7 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
             {
                 write_pdbfile(gmx_fio_getfp(status->fio), title,
                               fr->atoms, fr->x, fr->bPBC ? fr->ePBC : -1, fr->box,
-                              ' ', fr->step, gc, TRUE);
+                              ' ', fr->step, gc);
             }
             break;
         case efG96:

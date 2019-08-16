@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,7 +92,7 @@ CommandLine::Impl::Impl(const ArrayRef<const char *const> &cmdline)
 {
     args_.reserve(cmdline.size());
     argv_.reserve(cmdline.size() + 1);
-    argc_ = static_cast<int>(cmdline.size());
+    argc_ = ssize(cmdline);
     for (const auto &arg : cmdline)
     {
         char *argCopy = strdup(arg);
@@ -168,7 +168,7 @@ void CommandLine::initFromArray(const ArrayRef<const char *const> &cmdline)
 
 void CommandLine::append(const char *arg)
 {
-    GMX_RELEASE_ASSERT(impl_->argc_ == static_cast<int>(impl_->args_.size()),
+    GMX_RELEASE_ASSERT(impl_->argc_ == ssize(impl_->args_),
                        "Command-line has been modified externally");
     size_t newSize = impl_->args_.size() + 1;
     impl_->args_.reserve(newSize);

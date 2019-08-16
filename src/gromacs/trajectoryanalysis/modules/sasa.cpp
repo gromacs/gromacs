@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2006, The GROMACS development team.
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -564,7 +564,7 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
     // TODO: Not exception-safe, but nice solution would be to have a C++
     // atom properties class...
-    gmx_atomprop_t      aps = gmx_atomprop_init();
+    AtomProperties      aps;
 
     ArrayRef<const int> atomIndices = surfaceSel_.atomIndices();
     int                 ndefault    = 0;
@@ -573,9 +573,9 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
         const int ii     = atomIndices[i];
         const int resind = atoms_->atom[ii].resind;
         real      radius;
-        if (!gmx_atomprop_query(aps, epropVDW,
-                                *(atoms_->resinfo[resind].name),
-                                *(atoms_->atomname[ii]), &radius))
+        if (!aps.setAtomProperty(epropVDW,
+                                 *(atoms_->resinfo[resind].name),
+                                 *(atoms_->atomname[ii]), &radius))
         {
             ndefault++;
         }
@@ -583,9 +583,9 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
         if (bDGsol)
         {
             real dgsFactor;
-            if (!gmx_atomprop_query(aps, epropDGsol,
-                                    *(atoms_->resinfo[resind].name),
-                                    *(atoms_->atomtype[ii]), &dgsFactor))
+            if (!aps.setAtomProperty(epropDGsol,
+                                     *(atoms_->resinfo[resind].name),
+                                     *(atoms_->atomtype[ii]), &dgsFactor))
             {
                 dgsFactor = dgsDefault_;
             }
@@ -596,7 +596,6 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
     {
         fprintf(stderr, "WARNING: could not find a Van der Waals radius for %d atoms\n", ndefault);
     }
-    gmx_atomprop_destroy(aps);
 
     // Pre-compute mapping from the output groups to the calculation group,
     // and store it in the selection ID map for easy lookup.

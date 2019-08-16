@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,11 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
 
+struct gmx_mtop_t;
+struct t_commrec;
+struct t_inputrec;
+class t_state;
+
 //! Convenience wrapper for gmx_bcast of a single value.
 template <typename T>
 void block_bc(const t_commrec *cr, T &data)
@@ -96,5 +101,15 @@ void nblock_abc(const t_commrec *cr, int numElements, std::vector<T> *v)
     }
     gmx_bcast(numElements*sizeof(T), v->data(), cr);
 }
+
+//! \brief Broadcasts the, non-dynamic, state from the master to all ranks in cr->mpi_comm_mygroup
+//
+// This is intended to be used with MPI parallelization without
+// domain decompostion (currently with NM and TPI).
+void broadcastStateWithoutDynamics(const t_commrec *cr, t_state *state);
+
+//! \brief Broadcast inputrec and mtop and allocate node-specific settings
+void init_parallel(t_commrec *cr, t_inputrec *inputrec,
+                   gmx_mtop_t *mtop);
 
 #endif

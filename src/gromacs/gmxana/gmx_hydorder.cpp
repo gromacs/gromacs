@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -665,7 +665,7 @@ int gmx_hydorder(int argc, char *argv[])
     gmx::ArrayRef<const std::string> intfn = opt2fns("-o", NFILE, fnm);
     if (intfn.size() != 2)
     {
-        gmx_fatal(FARGS, "No or not correct number (2) of output-files: %td", intfn.size());
+        gmx_fatal(FARGS, "No or not correct number (2) of output-files: %td", intfn.ssize());
     }
     calc_tetra_order_interface(ndxfnm, tpsfnm, trxfnm, binwidth, nsttblock, &frames, &xslices, &yslices, sg1, sg2, &intfpos, oenv);
     writesurftoxpms(intfpos, frames, xslices, yslices, binwidth, intfn, nlevels);
@@ -675,7 +675,7 @@ int gmx_hydorder(int argc, char *argv[])
         gmx::ArrayRef<const std::string> spectra = opt2fns("-Spect", NFILE, fnm);
         if (spectra.size() != 2)
         {
-            gmx_fatal(FARGS, "No or not correct number (2) of output-files: %td", spectra.size());
+            gmx_fatal(FARGS, "No or not correct number (2) of output-files: %td", spectra.ssize());
         }
         powerspectavg(intfpos, frames, xslices, yslices, spectra);
     }
@@ -685,7 +685,7 @@ int gmx_hydorder(int argc, char *argv[])
         gmx::ArrayRef<const std::string> raw = opt2fns("-or", NFILE, fnm);
         if (raw.size() != 2)
         {
-            gmx_fatal(FARGS, "No or not correct number (2) of output-files: %td", raw.size());
+            gmx_fatal(FARGS, "No or not correct number (2) of output-files: %td", raw.ssize());
         }
         writeraw(intfpos, frames, xslices, yslices, raw);
     }

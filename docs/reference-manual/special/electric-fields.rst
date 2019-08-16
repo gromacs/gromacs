@@ -1,3 +1,5 @@
+.. _electric fields:
+
 Electric fields
 ---------------
 
@@ -8,9 +10,10 @@ A pulsed and oscillating electric field can be applied according to:
 
 where :math:`E_0` is the field strength, the angular frequency
 :math:`\omega = 2\pi c/\lambda`, :math:`t_0` is the time
-at of the peak in the field strength and :math:`\sigma` is the with of
+at of the peak in the field strength and :math:`\sigma` is the width of
 the pulse. Special cases occur when :math:`\sigma` = 0 (non-pulsed
-field) and for :math:`\omega` is 0 (static field).
+field) and for :math:`\omega` is 0 (static field). See
+:mdp:`electric-field-x` for more details.
 
 This simulated laser-pulse was applied to simulations of melting
 ice \ :ref:`146 <refCaleman2008a>`. A pulsed electric field may look ike

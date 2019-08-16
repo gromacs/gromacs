@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,7 @@ if(GMX_MPI)
 
   # Test the CMAKE_C_COMPILER for being an MPI (wrapper) compiler
   TRY_COMPILE(MPI_FOUND ${CMAKE_BINARY_DIR}
-    "${CMAKE_SOURCE_DIR}/cmake/TestMPI.c"
+    "${CMAKE_SOURCE_DIR}/cmake/TestMPI.cpp"
     COMPILE_DEFINITIONS )
 
   # If CMAKE_C_COMPILER is not a MPI wrapper. Try to find MPI using cmake module as fall-back.

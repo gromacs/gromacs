@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,8 +84,8 @@ std::string SelectionOptionStorage::formatSingleValue(const Selection &value) co
 }
 
 
-std::vector<Variant>
-SelectionOptionStorage::normalizeValues(const std::vector<Variant> & /*values*/) const
+std::vector<Any>
+SelectionOptionStorage::normalizeValues(const std::vector<Any> & /*values*/) const
 {
     GMX_THROW(NotImplementedError("Selection options not supported in this context"));
 }
@@ -125,7 +125,7 @@ void SelectionOptionStorage::addSelections(
 }
 
 
-void SelectionOptionStorage::convertValue(const Variant &value)
+void SelectionOptionStorage::convertValue(const Any &value)
 {
     manager_.convertOptionValue(this, value.cast<std::string>(), false);
 }
@@ -287,7 +287,7 @@ void SelectionFileOptionStorage::clearSet()
     bValueParsed_ = false;
 }
 
-void SelectionFileOptionStorage::convertValue(const Variant &value)
+void SelectionFileOptionStorage::convertValue(const Any &value)
 {
     if (bValueParsed_)
     {

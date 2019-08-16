@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,10 +46,10 @@
 #ifndef GMX_OPTIONS_BASICOPTIONS_H
 #define GMX_OPTIONS_BASICOPTIONS_H
 
+#include <memory>
 #include <string>
 #include <vector>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/ivaluestore.h"
 #include "gromacs/utility/arrayref.h"
@@ -410,7 +410,7 @@ class EnumIndexStore : public IOptionValueStore<int>
             }
         }
 
-        int valueCount() override { return static_cast<int>(intStore_.size()); }
+        int valueCount() override { return ssize(intStore_); }
         ArrayRef<int> values() override { return intStore_; }
         void clear() override
         {
@@ -577,7 +577,7 @@ class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType> >
                     *this, enumValues_, enumValuesCount_,
                     convertToInt(MyBase::defaultValue()),
                     convertToInt(MyBase::defaultValueIfSet()),
-                    compat::make_unique<internal::EnumIndexStore<EnumType> >(
+                    std::make_unique<internal::EnumIndexStore<EnumType> >(
                             MyBase::store(), MyBase::storeVector()));
         }
 

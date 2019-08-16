@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -754,7 +754,7 @@ computeMaxUpdateGroupRadius(const gmx_mtop_t                       &mtop,
         return 0;
     }
 
-    GMX_RELEASE_ASSERT(static_cast<size_t>(updateGroups.size()) == mtop.moltype.size(),
+    GMX_RELEASE_ASSERT(updateGroups.size() == mtop.moltype.size(),
                        "We need one update group entry per moleculetype");
 
     real maxRadius = 0;

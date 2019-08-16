@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,7 +76,6 @@ static const char *pdbtp[epdbNR] = {
     "COMPND", "MODEL", "ENDMDL", "TER", "HEADER", "TITLE", "REMARK",
     "CONECT"
 };
-
 
 #define REMARK_SIM_BOX "REMARK    THIS IS A SIMULATION BOX"
 
@@ -306,23 +305,15 @@ void write_pdbfile_indexed(FILE *out, const char *title,
                            const t_atoms *atoms, const rvec x[],
                            int ePBC, const matrix box, char chainid,
                            int model_nr, int nindex, const int index[],
-                           gmx_conect conect, gmx_bool bTerSepChains,
+                           gmx_conect conect,
                            bool usePqrFormat)
 {
-    gmx_conect_t     *gc = static_cast<gmx_conect_t *>(conect);
-    int               i, ii;
-    int               resind, resnr;
-    enum PDB_record   type;
-    unsigned char     resic, ch;
-    char              altloc;
-    real              occup, bfac;
-    gmx_bool          bOccup;
-    int               chainnum, lastchainnum;
-    gmx_residuetype_t*rt;
-    const char       *p_restype;
-    const char       *p_lastrestype;
+    gmx_conect_t   *gc = static_cast<gmx_conect_t *>(conect);
+    enum PDB_record type;
+    char            altloc;
+    real            occup, bfac;
+    gmx_bool        bOccup;
 
-    gmx_residuetype_init(&rt);
 
     fprintf(out, "TITLE     %s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
     if (box && ( (norm2(box[XX]) != 0.0f) || (norm2(box[YY]) != 0.0f) || (norm2(box[ZZ]) != 0.0f) ) )
@@ -335,9 +326,9 @@ void write_pdbfile_indexed(FILE *out, const char *title,
          * otherwise set them all to one
          */
         bOccup = TRUE;
-        for (ii = 0; (ii < nindex) && bOccup; ii++)
+        for (int ii = 0; (ii < nindex) && bOccup; ii++)
         {
-            i      = index[ii];
+            int i      = index[ii];
             bOccup = bOccup && (atoms->pdbinfo[i].occup == 0.0);
         }
     }
@@ -348,35 +339,19 @@ void write_pdbfile_indexed(FILE *out, const char *title,
 
     fprintf(out, "MODEL %8d\n", model_nr > 0 ? model_nr : 1);
 
-    lastchainnum      = -1;
-    p_restype         = nullptr;
-
-    for (ii = 0; ii < nindex; ii++)
+    ResidueType rt;
+    for (int ii = 0; ii < nindex; ii++)
     {
-        i             = index[ii];
-        resind        = atoms->atom[i].resind;
-        chainnum      = atoms->resinfo[resind].chainnum;
-        p_lastrestype = p_restype;
-        gmx_residuetype_get_type(rt, *atoms->resinfo[resind].name, &p_restype);
-
-        /* Add a TER record if we changed chain, and if either the previous or this chain is protein/DNA/RNA. */
-        if (bTerSepChains && ii > 0 && chainnum != lastchainnum)
-        {
-            /* Only add TER if the previous chain contained protein/DNA/RNA. */
-            if (gmx_residuetype_is_protein(rt, p_lastrestype) || gmx_residuetype_is_dna(rt, p_lastrestype) || gmx_residuetype_is_rna(rt, p_lastrestype))
-            {
-                fprintf(out, "TER\n");
-            }
-            lastchainnum    = chainnum;
-        }
-
-        std::string resnm = *atoms->resinfo[resind].name;
-        std::string nm    = *atoms->atomname[i];
+        int         i             = index[ii];
+        int         resind        = atoms->atom[i].resind;
+        std::string resnm         = *atoms->resinfo[resind].name;
+        std::string nm            = *atoms->atomname[i];
 
         /* rename HG12 to 2HG1, etc. */
         nm    = xlate_atomname_gmx2pdb(nm);
-        resnr = atoms->resinfo[resind].nr;
-        resic = atoms->resinfo[resind].ic;
+        int           resnr = atoms->resinfo[resind].nr;
+        unsigned char resic = atoms->resinfo[resind].ic;
+        unsigned char ch;
         if (chainid != ' ')
         {
             ch = chainid;
@@ -458,17 +433,15 @@ void write_pdbfile_indexed(FILE *out, const char *title,
     if (nullptr != gc)
     {
         /* Write conect records */
-        for (i = 0; (i < gc->nconect); i++)
+        for (int i = 0; (i < gc->nconect); i++)
         {
             fprintf(out, "CONECT%5d%5d\n", gc->conect[i].ai+1, gc->conect[i].aj+1);
         }
     }
-
-    gmx_residuetype_destroy(rt);
 }
 
 void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms, const rvec x[],
-                   int ePBC, const matrix box, char chainid, int model_nr, gmx_conect conect, gmx_bool bTerSepChains)
+                   int ePBC, const matrix box, char chainid, int model_nr, gmx_conect conect)
 {
     int i, *index;
 
@@ -478,7 +451,7 @@ void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms, const rve
         index[i] = i;
     }
     write_pdbfile_indexed(out, title, atoms, x, ePBC, box, chainid, model_nr,
-                          atoms->nr, index, conect, bTerSepChains, false);
+                          atoms->nr, index, conect, false);
     sfree(index);
 }
 
@@ -561,11 +534,11 @@ static void read_anisou(char line[], int natom, t_atoms *atoms)
     }
 }
 
-void get_pdb_atomnumber(const t_atoms *atoms, gmx_atomprop_t aps)
+void get_pdb_atomnumber(const t_atoms *atoms, AtomProperties *aps)
 {
     int    i, atomnumber, len;
     size_t k;
-    char   anm[6], anm_copy[6], *ptr;
+    char   anm[6], anm_copy[6];
     char   nc = '\0';
     real   eval;
 
@@ -582,7 +555,7 @@ void get_pdb_atomnumber(const t_atoms *atoms, gmx_atomprop_t aps)
         if ((anm[0] != ' ') && ((len <= 2) || !std::isdigit(anm[2])))
         {
             anm_copy[2] = nc;
-            if (gmx_atomprop_query(aps, epropElement, "???", anm_copy, &eval))
+            if (aps->setAtomProperty(epropElement, "???", anm_copy, &eval))
             {
                 atomnumber    = gmx::roundToInt(eval);
                 atomNumberSet = true;
@@ -590,7 +563,7 @@ void get_pdb_atomnumber(const t_atoms *atoms, gmx_atomprop_t aps)
             else
             {
                 anm_copy[1] = nc;
-                if (gmx_atomprop_query(aps, epropElement, "???", anm_copy, &eval))
+                if (aps->setAtomProperty(epropElement, "???", anm_copy, &eval))
                 {
                     atomnumber    = gmx::roundToInt(eval);
                     atomNumberSet = true;
@@ -606,27 +579,25 @@ void get_pdb_atomnumber(const t_atoms *atoms, gmx_atomprop_t aps)
             }
             anm_copy[0] = anm[k];
             anm_copy[1] = nc;
-            if (gmx_atomprop_query(aps, epropElement, "???", anm_copy, &eval))
+            if (aps->setAtomProperty(epropElement, "???", anm_copy, &eval))
             {
                 atomnumber    = gmx::roundToInt(eval);
                 atomNumberSet = true;
             }
         }
+        std::string buf;
         if (atomNumberSet)
         {
             atoms->atom[i].atomnumber = atomnumber;
-            ptr = gmx_atomprop_element(aps, atomnumber);
+            buf = aps->elementFromAtomNumber(atomnumber);
             if (debug)
             {
                 fprintf(debug, "Atomnumber for atom '%s' is %d\n",
                         anm, atomnumber);
             }
         }
-        else
-        {
-            ptr = nullptr;
-        }
-        std::strncpy(atoms->atom[i].elem, ptr == nullptr ? "" : ptr, 4);
+        buf.resize(3);
+        std::strncpy(atoms->atom[i].elem, buf.c_str(), 4);
     }
 }
 

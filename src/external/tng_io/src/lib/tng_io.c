@@ -12590,14 +12590,15 @@ static tng_function_status tng_gen_data_block_add
         }
         data->block_id = id;
 
-        data->block_name = (char *)malloc(strlen(block_name) + 1);
+        len = tng_min_size(strlen(block_name) + 1, TNG_MAX_STR_LEN);
+        data->block_name = (char *)malloc(len);
         if(!data->block_name)
         {
             fprintf(stderr, "TNG library: Cannot allocate memory. %s: %d\n",
                     __FILE__, __LINE__);
             return(TNG_CRITICAL);
         }
-        strncpy(data->block_name, block_name, strlen(block_name) + 1);
+        strncpy(data->block_name, block_name, len);
 
         data->values = 0;
         /* FIXME: Memory leak from strings. */

@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="THOLE">
+    <FEP Name="No">
+      <Real Name="Epot ">-0.189967472820328</Real>
+      <Real Name="dVdlambda ">0</Real>
+      <Vector Name="Central shift forces">
+        <Real Name="X">0</Real>
+        <Real Name="Y">0</Real>
+        <Real Name="Z">0</Real>
+      </Vector>
+      <Sequence Name="Forces">
+        <Int Name="Length">4</Int>
+        <Vector>
+          <Real Name="X">-0.058802567113213383</Real>
+          <Real Name="Y">0.98008709084019618</Real>
+          <Real Name="Z">-0.98003392409622847</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">0.058270584850865621</Real>
+          <Real Name="Y">-0.92688886460541997</Real>
+          <Real Name="Z">0.87374380511461147</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">0</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">1.9600678481924569</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">0.00053198226234776186</Real>
+          <Real Name="Y">-0.053198226234776214</Real>
+          <Real Name="Z">-1.8537777292108399</Real>
+        </Vector>
+      </Sequence>
+    </FEP>
+  </FunctionType>
+</ReferenceData>

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,7 +58,7 @@ namespace gmx
 class IOptionsContainer;
 class KeyValueTreeObject;
 class KeyValueTreeValue;
-class Variant;
+class Any;
 
 namespace test
 {
@@ -374,8 +374,8 @@ class TestReferenceChecker
         void checkVector(const double value[3], const char *id);
         //! Check a single floating-point value from a string.
         void checkRealFromString(const std::string &value, const char *id);
-        //! Checks a variant value that contains a supported simple type.
-        void checkVariant(const Variant &value, const char *id);
+        //! Checks a any value that contains a supported simple type.
+        void checkAny(const Any &value, const char *id);
         //! Checks a key-value tree rooted at a object.
         void checkKeyValueTreeObject(const KeyValueTreeObject &tree, const char *id);
         //! Checks a generic key-value tree value.

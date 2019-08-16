@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -345,6 +345,9 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
 
     region_size = rowMaster->cellFrac[range[1]] - rowMaster->cellFrac[range[0]];
 
+    GMX_ASSERT(region_size >= (range[1] - range[0])*cellsize_limit_f,
+               "The region should fit all cells at minimum size");
+
     comm = dd->comm;
 
     const int           ncd       = dd->nc[dim];
@@ -382,7 +385,9 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
                 fac += cell_size[i];
             }
         }
-        fac = ( region_size - nmin*cellsize_limit_f)/fac; /* substracting cells already set to cellsize_limit_f */
+        /* This condition is ensured by the assertion at the end of the loop */
+        GMX_ASSERT(fac > 0, "We cannot have 0 size to work with");
+        fac = (region_size - nmin*cellsize_limit_f)/fac; /* substracting cells already set to cellsize_limit_f */
         /* Determine the cell boundaries */
         for (int i = range[0]; i < range[1]; i++)
         {
@@ -406,6 +411,9 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
             }
             rowMaster->cellFrac[i + 1] = rowMaster->cellFrac[i] + cell_size[i];
         }
+
+        /* This is ensured by the assertion at the beginning of this function */
+        GMX_ASSERT(nmin < range[1] - range[0], "We can not have all cells limited");
     }
     while (nmin > nmin_old);
 
@@ -517,7 +525,7 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
                     bLastHi = TRUE;
                     if (nrange[1] < range[1])   /* found a LimLo before */
                     {
-                        rowMaster->cellFrac[nrange[1]] = rowMaster->bounds[1].boundMin;
+                        rowMaster->cellFrac[nrange[1]] = rowMaster->bounds[nrange[1]].boundMin;
                         dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, rowMaster, ddbox, bUniform, step, cellsize_limit_f, nrange);
                         nrange[0] = nrange[1];
                     }

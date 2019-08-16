@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,8 +47,7 @@
 
 #include "gromacs/awh/correlationgrid.h"
 #include "gromacs/awh/pointstate.h"
-#include "gromacs/compat/make_unique.h"
-#include "gromacs/mdtypes/awh-params.h"
+#include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"
@@ -211,7 +210,7 @@ class BiasTest : public ::testing::TestWithParam<BiasTestParameters>
             int    numSamples = coordinates_.size() - 1; // No sample taken at step 0
             GMX_RELEASE_ASSERT(numSamples % params.awhParams.numSamplesUpdateFreeEnergy == 0, "This test is intended to reproduce the situation when the might need to write output during a normal AWH run, therefore the number of samples should be a multiple of the free-energy update interval (but the test should also runs fine without this condition).");
 
-            bias_ = gmx::compat::make_unique<Bias>(-1, params.awhParams, params.awhBiasParams, params.dimParams, params.beta, mdTimeStep, 1, "", Bias::ThisRankWillDoIO::No, disableUpdateSkips);
+            bias_ = std::make_unique<Bias>(-1, params.awhParams, params.awhBiasParams, params.dimParams, params.beta, mdTimeStep, 1, "", Bias::ThisRankWillDoIO::No, disableUpdateSkips);
         }
 };
 

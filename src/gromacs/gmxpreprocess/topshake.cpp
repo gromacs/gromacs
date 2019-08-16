@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,7 @@
 #include <cctype>
 #include <cmath>
 
+#include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
@@ -52,37 +53,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-static void copy_bond (t_params *pr, int to, int from)
-/* copies an entry in a bond list to another position.
- * does no allocing or freeing of memory
- */
+static int count_hydrogens (char ***atomname, int nra, gmx::ArrayRef<const int> a)
 {
-    /*memcpy((char*) &(pr->param[to]),(char*) &(pr->param[from]),
-       (size_t)sizeof(pr->param[from]));*/
-    int i;
-
-    if (to != from)
-    {
-        range_check(to, 0, pr->nr);
-        range_check(from, 0, pr->nr);
-        for (i = 0; (i < MAXATOMLIST); i++)
-        {
-            pr->param[to].a[i] = pr->param[from].a[i];
-        }
-        for (i = 0; (i < MAXFORCEPARAM); i++)
-        {
-            pr->param[to].c[i] = pr->param[from].c[i];
-        }
-        for (i = 0; (i < MAXSLEN); i++)
-        {
-            pr->param[to].s[i] = pr->param[from].s[i];
-        }
-    }
-}
-
-static int count_hydrogens (char ***atomname, int nra, const int a[])
-{
-    int  i, nh;
+    int  nh;
 
     if (!atomname)
     {
@@ -91,7 +64,7 @@ static int count_hydrogens (char ***atomname, int nra, const int a[])
     }
 
     nh = 0;
-    for (i = 0; (i < nra); i++)
+    for (int i = 0; (i < nra); i++)
     {
         if (toupper(**(atomname[a[i]])) == 'H')
         {
@@ -102,16 +75,10 @@ static int count_hydrogens (char ***atomname, int nra, const int a[])
     return nh;
 }
 
-void make_shake (t_params plist[], t_atoms *atoms, int nshake)
+void make_shake(gmx::ArrayRef<InteractionTypeParameters> plist, t_atoms *atoms, int nshake)
 {
-    char          ***info = atoms->atomname;
-    t_params        *pr;
-    t_params        *bonds;
-    t_param          p, *bond, *ang;
-    real             b_ij, b_jk;
-    int              i, j, ftype, ftype_a;
-    bool             bFound;
-
+    char                  ***info = atoms->atomname;
+    real                     b_ij, b_jk;
     if (nshake != eshNONE)
     {
         switch (nshake)
@@ -137,79 +104,75 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
             /* Add all the angles with hydrogens to the shake list
              * and remove them from the bond list
              */
-            for (ftype = 0; (ftype < F_NRE); ftype++)
+            for (int ftype = 0; (ftype < F_NRE); ftype++)
             {
                 if (interaction_function[ftype].flags & IF_BTYPE)
                 {
-                    bonds = &(plist[ftype]);
+                    InteractionTypeParameters *bonds = &(plist[ftype]);
 
-                    for (ftype_a = 0; (bonds->nr > 0 && ftype_a < F_NRE); ftype_a++)
+                    for (int ftype_a = 0; (gmx::ssize(*bonds) > 0 && ftype_a < F_NRE); ftype_a++)
                     {
                         if (interaction_function[ftype_a].flags & IF_ATYPE)
                         {
-                            pr = &(plist[ftype_a]);
+                            InteractionTypeParameters *pr = &(plist[ftype_a]);
 
-                            for (i = 0; (i < pr->nr); )
+                            for (auto parm = pr->interactionTypes.begin(); parm != pr->interactionTypes.end(); )
                             {
-                                int numhydrogens;
-
-                                ang = &(pr->param[i]);
+                                const InteractionType *ang = &(*parm);
 #ifdef DEBUG
                                 printf("Angle: %d-%d-%d\n", ang->ai(), ang->aj(), ang->ak());
 #endif
-                                numhydrogens = count_hydrogens(info, 3, ang->a);
+                                int numhydrogens = count_hydrogens(info, 3, ang->atoms());
                                 if ((nshake == eshALLANGLES) ||
                                     (numhydrogens > 1) ||
-                                    (numhydrogens == 1 && toupper(**(info[ang->a[1]])) == 'O'))
+                                    (numhydrogens == 1 && toupper(**(info[ang->aj()])) == 'O'))
                                 {
                                     /* Can only add hydrogen angle shake, if the two bonds
                                      * are constrained.
                                      * append this angle to the shake list
                                      */
-                                    p.ai() = ang->ai();
-                                    p.aj() = ang->ak();
+                                    std::vector<int> atomNumbers = {ang->ai(), ang->ak()};
 
                                     /* Calculate length of constraint */
-                                    bFound = FALSE;
+                                    bool bFound = false;
                                     b_ij   = b_jk = 0.0;
-                                    for (j = 0; !bFound && (j < bonds->nr); j++)
+                                    for (const auto &bond : bonds->interactionTypes)
                                     {
-                                        bond = &(bonds->param[j]);
-                                        if (((bond->ai() == ang->ai()) &&
-                                             (bond->aj() == ang->aj())) ||
-                                            ((bond->ai() == ang->aj()) &&
-                                             (bond->aj() == ang->ai())))
+                                        if (((bond.ai() == ang->ai()) &&
+                                             (bond.aj() == ang->aj())) ||
+                                            ((bond.ai() == ang->aj()) &&
+                                             (bond.aj() == ang->ai())))
                                         {
-                                            b_ij = bond->c0();
+                                            b_ij = bond.c0();
                                         }
-                                        if (((bond->ai() == ang->ak()) &&
-                                             (bond->aj() == ang->aj())) ||
-                                            ((bond->ai() == ang->aj()) &&
-                                             (bond->aj() == ang->ak())))
+                                        if (((bond.ai() == ang->ak()) &&
+                                             (bond.aj() == ang->aj())) ||
+                                            ((bond.ai() == ang->aj()) &&
+                                             (bond.aj() == ang->ak())))
                                         {
-                                            b_jk = bond->c0();
+                                            b_jk = bond.c0();
                                         }
                                         bFound = (b_ij != 0.0) && (b_jk != 0.0);
                                     }
                                     if (bFound)
                                     {
+                                        real              param = std::sqrt( b_ij*b_ij + b_jk*b_jk -
+                                                                             2.0*b_ij*b_jk*cos(DEG2RAD*ang->c0()));
+                                        std::vector<real> forceParm = {param, param};
                                         /* apply law of cosines */
-                                        p.c0() = std::sqrt( b_ij*b_ij + b_jk*b_jk -
-                                                            2.0*b_ij*b_jk*cos(DEG2RAD*ang->c0()) );
-                                        p.c1() = p.c0();
 #ifdef DEBUG
-                                        printf("p: %d, q: %d, dist: %12.5e\n", p.ai(), p.aj(), p.c0());
+                                        printf("p: %d, q: %d, dist: %12.5e\n", atomNumbers[0],
+                                               atomNumbers[1], forceParm[0]);
 #endif
-                                        add_param_to_list (&(plist[F_CONSTR]), &p);
+                                        add_param_to_list (&(plist[F_CONSTR]), InteractionType(atomNumbers, forceParm));
                                         /* move the last bond to this position */
-                                        copy_bond (pr, i, pr->nr-1);
-                                        /* should free memory here!! */
-                                        pr->nr--;
+                                        *parm = *(pr->interactionTypes.end() - 1);
+                                        pr->interactionTypes.erase(pr->interactionTypes.end() - 1);
                                     }
                                 }
                                 else
                                 {
-                                    i++;
+                                    ++parm;
                                 }
                             }
                         } /* if IF_ATYPE */
@@ -221,30 +184,27 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
         /* Add all the bonds with hydrogens to the shake list
          * and remove them from the bond list
          */
-        for (ftype = 0; (ftype < F_NRE); ftype++)
+        for (int ftype = 0; (ftype < F_NRE); ftype++)
         {
             if (interaction_function[ftype].flags & IF_BTYPE)
             {
-                pr = &(plist[ftype]);
-                j  = 0;
-                for (i = 0; i < pr->nr; i++)
+                InteractionTypeParameters *pr = &(plist[ftype]);
+                for (auto parm = pr->interactionTypes.begin(); parm != pr->interactionTypes.end(); )
                 {
                     if ( (nshake != eshHBONDS) ||
-                         (count_hydrogens (info, 2, pr->param[i].a) > 0) )
+                         (count_hydrogens (info, 2, parm->atoms()) > 0) )
                     {
                         /* append this bond to the shake list */
-                        p.ai() = pr->param[i].ai();
-                        p.aj() = pr->param[i].aj();
-                        p.c0() = pr->param[i].c0();
-                        p.c1() = pr->param[i].c2();
-                        add_param_to_list (&(plist[F_CONSTR]), &p);
+                        std::vector<int>  atomNumbers = {parm->ai(), parm->aj()};
+                        std::vector<real> forceParm   = { parm->c0(), parm->c2()};
+                        add_param_to_list (&(plist[F_CONSTR]), InteractionType(atomNumbers, forceParm));
+                        parm = pr->interactionTypes.erase(parm);
                     }
                     else
                     {
-                        copy_bond(pr, j++, i);
+                        ++parm;
                     }
                 }
-                pr->nr = j;
             }
         }
     }

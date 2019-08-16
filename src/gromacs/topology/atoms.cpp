@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -340,7 +340,7 @@ void pr_atomtypes(FILE *fp, int indent, const char *title, const t_atomtypes *at
     }
 }
 
-static void cmp_atom(FILE *fp, int index, const t_atom *a1, const t_atom *a2, real ftol, real abstol)
+static void compareAtom(FILE *fp, int index, const t_atom *a1, const t_atom *a2, real relativeTolerance, real absoluteTolerance)
 {
     if (a2)
     {
@@ -348,39 +348,105 @@ static void cmp_atom(FILE *fp, int index, const t_atom *a1, const t_atom *a2, re
         cmp_us(fp, "atom.ptype", index, a1->ptype, a2->ptype);
         cmp_int(fp, "atom.resind", index, a1->resind, a2->resind);
         cmp_int(fp, "atom.atomnumber", index, a1->atomnumber, a2->atomnumber);
-        cmp_real(fp, "atom.m", index, a1->m, a2->m, ftol, abstol);
-        cmp_real(fp, "atom.q", index, a1->q, a2->q, ftol, abstol);
+        cmp_real(fp, "atom.m", index, a1->m, a2->m, relativeTolerance, absoluteTolerance);
+        cmp_real(fp, "atom.q", index, a1->q, a2->q, relativeTolerance, absoluteTolerance);
         cmp_us(fp, "atom.typeB", index, a1->typeB, a2->typeB);
-        cmp_real(fp, "atom.mB", index, a1->mB, a2->mB, ftol, abstol);
-        cmp_real(fp, "atom.qB", index, a1->qB, a2->qB, ftol, abstol);
+        cmp_real(fp, "atom.mB", index, a1->mB, a2->mB, relativeTolerance, absoluteTolerance);
+        cmp_real(fp, "atom.qB", index, a1->qB, a2->qB, relativeTolerance, absoluteTolerance);
+        cmp_str(fp, "elem", index, a1->elem, a2->elem);
+
     }
     else
     {
         cmp_us(fp, "atom.type", index, a1->type, a1->typeB);
-        cmp_real(fp, "atom.m", index, a1->m, a1->mB, ftol, abstol);
-        cmp_real(fp, "atom.q", index, a1->q, a1->qB, ftol, abstol);
+        cmp_real(fp, "atom.m", index, a1->m, a1->mB, relativeTolerance, absoluteTolerance);
+        cmp_real(fp, "atom.q", index, a1->q, a1->qB, relativeTolerance, absoluteTolerance);
     }
 }
 
-void cmp_atoms(FILE *fp, const t_atoms *a1, const t_atoms *a2, real ftol, real abstol)
+static void compareResinfo(FILE *fp, int residue, const t_resinfo &r1, const t_resinfo &r2)
 {
-    int i;
+    fprintf(fp, "comparing t_resinfo\n");
+    cmp_str(fp, "name", residue, *r1.name, *r2.name);
+    cmp_int(fp, "nr", residue, r1.nr, r2.nr);
+    cmp_uc(fp, "ic", residue, r1.ic, r2.ic);
+    cmp_int(fp, "chainnum", residue, r1.chainnum, r2.chainnum);
+    cmp_uc(fp, "chainid", residue, r1.chainid, r2.chainid);
+    if ((r1.rtp || r2.rtp ) && (!r1.rtp || !r2.rtp))
+    {
+        fprintf(fp, "rtp info is present in topology %d but not in the other\n", r1.rtp ? 1 : 2);
+    }
+    if (r1.rtp && r2.rtp)
+    {
+        cmp_str(fp, "rtp", residue, *r1.rtp, *r2.rtp);
+    }
+}
 
+static void comparePdbinfo(FILE *fp, int pdb, const t_pdbinfo &pdb1, const t_pdbinfo &pdb2, real relativeTolerance,   real absoluteTolerance)
+{
+    fprintf(fp, "comparing t_pdbinfo\n");
+    cmp_int(fp, "type", pdb, pdb1.type, pdb2.type);
+    cmp_int(fp, "atomnr", pdb, pdb1.atomnr, pdb2.atomnr);
+    cmp_uc(fp, "altloc", pdb, pdb1.altloc, pdb2.altloc);
+    cmp_str(fp, "atomnm", pdb, pdb1.atomnm, pdb2.atomnm);
+    cmp_real(fp, "occup", pdb, pdb1.occup, pdb2.occup, relativeTolerance, absoluteTolerance);
+    cmp_real(fp, "bfac", pdb, pdb1.bfac, pdb2.bfac, relativeTolerance, absoluteTolerance);
+    cmp_bool(fp, "bAnistropic", pdb, pdb1.bAnisotropic, pdb2.bAnisotropic);
+    for (int i = 0; i < 6; i++)
+    {
+        std::string buf = gmx::formatString("uij[%d]", i);
+        cmp_int(fp, buf.c_str(), pdb, pdb1.uij[i], pdb2.uij[i]);
+    }
+}
+
+
+void compareAtoms(FILE          *fp,
+                  const t_atoms *a1,
+                  const t_atoms *a2,
+                  real           relativeTolerance,
+                  real           absoluteTolerance)
+{
     fprintf(fp, "comparing atoms\n");
 
     if (a2)
     {
         cmp_int(fp, "atoms->nr", -1, a1->nr, a2->nr);
-        for (i = 0; i < std::min(a1->nr, a2->nr); i++)
+        cmp_int(fp, "atoms->nres", -1, a1->nres, a2->nres);
+        cmp_bool(fp, "atoms->haveMass", -1, a1->haveMass, a2->haveMass);
+        cmp_bool(fp, "atoms->haveCharge", -1, a1->haveCharge, a2->haveCharge);
+        cmp_bool(fp, "atoms->haveType", -1, a1->haveType, a2->haveType);
+        cmp_bool(fp, "atoms->haveBState", -1, a1->haveBState, a2->haveBState);
+        cmp_bool(fp, "atoms->havePdbInfo", -1, a1->havePdbInfo, a2->havePdbInfo);
+        for (int i = 0; i < std::min(a1->nr, a2->nr); i++)
         {
-            cmp_atom(fp, i, &(a1->atom[i]), &(a2->atom[i]), ftol, abstol);
+            compareAtom(fp, i, &(a1->atom[i]), &(a2->atom[i]), relativeTolerance, absoluteTolerance);
+            if (a1->atomname && a2->atomname)
+            {
+                cmp_str(fp, "atomname", i, *a1->atomname[i], *a2->atomname[i]);
+            }
+            if (a1->havePdbInfo && a2->havePdbInfo)
+            {
+                comparePdbinfo(fp, i, a1->pdbinfo[i], a2->pdbinfo[i], relativeTolerance, absoluteTolerance);
+            }
+            if (a1->haveType && a2->haveType)
+            {
+                cmp_str(fp, "atomtype", i, *a1->atomtype[i], *a2->atomtype[i]);
+            }
+            if (a1->haveBState && a2->haveBState)
+            {
+                cmp_str(fp, "atomtypeB", i, *a1->atomtypeB[i], *a2->atomtypeB[i]);
+            }
+        }
+        for (int i = 0; i < std::min(a1->nres, a2->nres); i++)
+        {
+            compareResinfo(fp, i, a1->resinfo[i], a2->resinfo[i]);
         }
     }
     else
     {
-        for (i = 0; (i < a1->nr); i++)
+        for (int i = 0; (i < a1->nr); i++)
         {
-            cmp_atom(fp, i, &(a1->atom[i]), nullptr, ftol, abstol);
+            compareAtom(fp, i, &(a1->atom[i]), nullptr, relativeTolerance, absoluteTolerance);
         }
     }
 }
@@ -398,17 +464,17 @@ void atomsSetMassesBasedOnNames(t_atoms *atoms, gmx_bool printMissingMasses)
     int            maxWarn  = (printMissingMasses ? 10 : 0);
     int            numWarn  = 0;
 
-    gmx_atomprop_t aps      = gmx_atomprop_init();
+    AtomProperties aps;
 
-    gmx_bool       haveMass = TRUE;
+    bool           haveMass = true;
     for (int i = 0; i < atoms->nr; i++)
     {
-        if (!gmx_atomprop_query(aps, epropMass,
-                                *atoms->resinfo[atoms->atom[i].resind].name,
-                                *atoms->atomname[i],
-                                &atoms->atom[i].m))
+        if (!aps.setAtomProperty(epropMass,
+                                 *atoms->resinfo[atoms->atom[i].resind].name,
+                                 *atoms->atomname[i],
+                                 &atoms->atom[i].m))
         {
-            haveMass = FALSE;
+            haveMass = false;
 
             if (numWarn < maxWarn)
             {
@@ -425,6 +491,4 @@ void atomsSetMassesBasedOnNames(t_atoms *atoms, gmx_bool printMissingMasses)
         }
     }
     atoms->haveMass = haveMass;
-
-    gmx_atomprop_destroy(aps);
 }

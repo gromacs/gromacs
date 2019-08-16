@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,6 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/correlationfunctions/expfit.h"
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/gmxassert.h"
@@ -98,7 +97,7 @@ class AutocorrTest : public ::testing::Test
         {
             int         n        = 0;
             std::string fileName = "testCOS3.xvg";
-            data_                = gmx::compat::make_unique<CorrelationDataSet>(fileName);
+            data_                = std::make_unique<CorrelationDataSet>(fileName);
             nrFrames_            = data_->getNrLines();
             tempArgs_            = add_acf_pargs(&n, nullptr);
         }
