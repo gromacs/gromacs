@@ -187,16 +187,11 @@ class Optimization : public MolGen
         std::vector<ForceConstants> ForceConstants_;
         std::vector<NonBondParams>  NonBondParams_;
         param_type                  param_;
-        param_type                  De_;
         std::vector<int>            iOpt_;
+        bool                        optimizeGeometry_;
         std::vector<PoldataUpdate>  poldataUpdates_;
         real                        factor_     = 1;
-        bool                        OptimizeDe_ = true;
         bool                        bDissoc_    = true;
-        real                        beta0_      = 20;
-        real                        D0_         = 350;
-        real                        beta_min_   = 10;
-        real                        D0_min_     = 50;
         real                        w_dhf_      = 1;
         const char                 *lot_        = nullptr;
         Bayes <double>              TuneFc_;
@@ -418,18 +413,10 @@ void Optimization::add_pargs(std::vector<t_pargs> *pargs)
 {
     t_pargs pa[] =
     {
-        { "-beta0", FALSE, etREAL, {&beta0_},
-          "Reset the initial beta for Morse potentials to this value, independent of gentop.dat. If value is <= 0 gentop.dat value is used." },
-        { "-beta_min", FALSE, etREAL, {&beta_min_},
-          "Minimum value for beta in Morse potential" },
-        { "-D0", FALSE, etREAL, {&D0_},
-          "Reset the initial D for Morse potentials to this value, independent of gentop.dat. If value is <= 0 gentop.dat value is used." },
-        { "-DO_min", FALSE, etREAL, {&D0_min_},
-          "Minimum value for D0 in Morse potential" },
         { "-dissoc",  FALSE, etBOOL, {&bDissoc_},
           "Derive dissociation energy from the enthalpy of formation. If not chosen, the dissociation energy will be read from the gentop.dat file." },
-        { "-optimizeDe", FALSE, etBOOL, {&OptimizeDe_},
-          "Optimize the dissociation energy or keep it constant." },
+        { "-opt_geom", FALSE, etBOOL, {&optimizeGeometry_},
+          "Optimize bond lengths, angles and dihedral angles" },
         { "-weight_dhf", FALSE, etREAL, {&w_dhf_},
           "Fitting weight of the minimum energy structure, representing the enthalpy of formation relative to high energy structures." },
         { "-bonds",   FALSE, etINT, {&(iOpt_[eitBONDS])},
@@ -691,37 +678,18 @@ void Optimization::checkSupport(FILE *fp)
 
 void Optimization::polData2TuneFc()
 {
-    De_.clear();
     param_.clear();
     for (auto &fc : ForceConstants_)
     {
-        if (eitBONDS == fc.interactionType())
+        for (auto b = fc.beginBN(); b  < fc.endBN(); ++b)
         {
-            for (auto b = fc.beginBN(); b  < fc.endBN(); ++b)
+            if (optimizeGeometry_)
             {
-                int n = 0;
-                for (const auto &p : b->paramValues())
-                {
-                    if (n == 0 && !OptimizeDe_)
-                    {
-                        De_.push_back(p);
-                    }
-                    else
-                    {
-                        param_.push_back(p);
-                    }
-                    n++;
-                }
+                param_.push_back(b->geometry());
             }
-        }
-        else
-        {
-            for (auto b = fc.beginBN(); b  < fc.endBN(); ++b)
+            for (const auto &p : b->paramValues())
             {
-                for (const auto &p : b->paramValues())
-                {
-                    param_.push_back(p);
-                }
+                param_.push_back(p);
             }
         }
     }
@@ -745,35 +713,33 @@ void Optimization::polData2TuneFc()
 void Optimization::tuneFc2PolData(const std::vector<bool> &changed)
 {
     size_t n   = 0;
-    size_t nDe = 0;
-
     poldataUpdates_.clear();
     for (auto &fc : ForceConstants_)
     {
         const auto iType = fc.interactionType();
         for (auto b = fc.beginBN(); b  < fc.endBN(); ++b)
         {
-            std::vector<double> thisParam;
-            std::string         paramString;
-            bool                bondChanged = false;
+            std::string paramString;
+            // Check for geometry changes
+            bool        bondChanged = false;
+            double      geometry    = 0;
+            if (optimizeGeometry_)
+            {
+                bondChanged = changed[n];
+                geometry    = param_[n++]; 
+            }
             for (size_t p = 0; p < b->nParams(); p++)
             {
-                if (iType == eitBONDS && p == 0 && !OptimizeDe_)
-                {
-                    paramString.append(gmx::formatString(" %g", De_[nDe++]));
-                }
-                else
-                {
-                    bondChanged = bondChanged || changed[n];
-                    thisParam.push_back(param_[n]);
-                    paramString.append(gmx::formatString(" %g", param_[n++]));
-                }
+                bondChanged = bondChanged || changed[n];
+                paramString.append(gmx::formatString(" %g", param_[n++]));
             }
             if (bondChanged)
             {
                 b->setParamString(paramString);
-                poldataUpdates_.push_back(PoldataUpdate(iType, b->poldataIndex(),
-                                                        thisParam, paramString));
+                poldataUpdates_.push_back(PoldataUpdate(iType, 
+                                                        b->poldataIndex(),
+                                                        geometry,
+                                                        paramString));
             }
         }
     }
@@ -781,13 +747,12 @@ void Optimization::tuneFc2PolData(const std::vector<bool> &changed)
     {
         for (auto at = nbp.beginAT(); at < nbp.endAT(); ++at)
         {
-            std::vector<double> thisParam;
-            bool                bondChanged = false;
-            std::string         paramString;
+            bool        bondChanged = false;
+            double      geometry    = 0;
+            std::string paramString;
             for (size_t p = 0; p < at->nParams(); p++)
             {
                 bondChanged = bondChanged || changed[n];
-                thisParam.push_back(param_[n]);
                 paramString.append(gmx::formatString(" %g", param_[n++]));
             }
             if (bondChanged)
@@ -795,7 +760,8 @@ void Optimization::tuneFc2PolData(const std::vector<bool> &changed)
                 at->setParamString(paramString);
                 poldataUpdates_.push_back(PoldataUpdate(eitVDW,
                                                         at->poldataIndex(),
-                                                        thisParam, paramString));
+                                                        geometry,
+                                                        paramString));
             }
         }
     }
@@ -947,7 +913,7 @@ void Optimization::InitOpt(FILE *fplog)
         {
             printf("\n"
                    "WARNING: %zu molecule(s) is (are) not enough to calculate dissociation\n"
-                   "         energy for %zu bond type(s) using linear regression. Defualt\n"
+                   "         energy for %zu bond type(s) using linear regression. Default\n"
                    "         values from gentop.dat will be used as the initial guess.\n"
                    "         Recomendation is to add more molecules having the same bond types.\n\n",
                    mymols().size(), ForceConstants_[eitBONDS].nbad());
@@ -1525,7 +1491,7 @@ int alex_tune_fc(int argc, char *argv[])
           "Compress output XML file" }
     };
 
-    FILE                 *fp;
+    FILE                 *fplog;
     gmx_output_env_t     *oenv;
     time_t                my_t;
     MolSelect             gms;
@@ -1548,16 +1514,16 @@ int alex_tune_fc(int argc, char *argv[])
 
     if (MASTER(opt.commrec()))
     {
-        fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
+        fplog = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
 
         time(&my_t);
-        fprintf(fp, "# This file was created %s", ctime(&my_t));
-        fprintf(fp, "# alexandria is part of G R O M A C S:\n#\n");
-        fprintf(fp, "# %s\n#\n", gmx::bromacs().c_str());
+        fprintf(fplog, "# This file was created %s", ctime(&my_t));
+        fprintf(fplog, "# alexandria is part of G R O M A C S:\n#\n");
+        fprintf(fplog, "# %s\n#\n", gmx::bromacs().c_str());
     }
     else
     {
-        fp = nullptr;
+        fplog = nullptr;
     }
 
     if (MASTER(opt.commrec()))
@@ -1567,7 +1533,7 @@ int alex_tune_fc(int argc, char *argv[])
 
     const char *tabfn = opt2fn_null("-table", NFILE, fnm);
 
-    opt.Read(fp ? fp : (debug ? debug : nullptr),
+    opt.Read(fplog ? fplog : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
              bZero,
@@ -1581,17 +1547,17 @@ int alex_tune_fc(int argc, char *argv[])
              tabfn);
 
 
-    opt.checkSupport(fp);
+    opt.checkSupport(fplog);
 
-    if (nullptr != fp)
+    if (nullptr != fplog)
     {
-        fprintf(fp, "In the total data set of %zu molecules we have:\n", opt.mymols().size());
+        fprintf(fplog, "In the total data set of %zu molecules we have:\n", opt.mymols().size());
     }
 
     if (MASTER(opt.commrec()))
     {
-        opt.InitOpt(fp);
-        opt.printMolecules(fp, false, false);
+        opt.InitOpt(fplog);
+        opt.printMolecules(fplog, false, false);
     }
 
     opt.broadcast();
@@ -1601,24 +1567,25 @@ int alex_tune_fc(int argc, char *argv[])
         opt.calcDeviation(false);
         if (MASTER(opt.commrec()))
         {
-            fprintf(fp, "chi2 = %g\n", opt.energy(ermsTOT));
-            opt.printResults(fp, (char *)"Before optimization - parallel test",
+            fprintf(fplog, "chi2 = %g\n", opt.energy(ermsTOT));
+            opt.printResults(fplog, (char *)"Before optimization - parallel test",
                              nullptr, nullptr, oenv);
         }
     }
     if (MASTER(opt.commrec()))
     {
         opt.calcDeviation(true);
-        fprintf(fp, "chi2 = %g\n", opt.energy(ermsTOT));
-        opt.printResults(fp, (char *)"Before optimization",
+        fprintf(fplog, "chi2 = %g\n", opt.energy(ermsTOT));
+        opt.printResults(fplog, (char *)"Before optimization",
                          nullptr, nullptr, oenv);
     }
     if (bTestPar)
     {
+        gmx_ffclose(fplog);
         return 0;
     }
     // Optimize the parameters to minimize the penalty function.
-    bool bMinimum = opt.optRun(fp,
+    bool bMinimum = opt.optRun(fplog,
                                oenv,
                                opt2fn("-conv", NFILE, fnm),
                                opt2fn("-epot", NFILE, fnm));
@@ -1628,8 +1595,8 @@ int alex_tune_fc(int argc, char *argv[])
         if (bMinimum)
         {
             // Now print the output.
-            opt.printMolecules(fp, true, false);
-            opt.printResults(fp, (char *)"After optimization",
+            opt.printMolecules(fplog, true, false);
+            opt.printResults(fplog, (char *)"After optimization",
                              opt2fn("-x", NFILE, fnm),
                              opt2fn("-hf", NFILE, fnm),
                              oenv);
@@ -1639,7 +1606,7 @@ int alex_tune_fc(int argc, char *argv[])
         {
             printf("No improved parameters found. Please try again with more iterations.\n");
         }
-        gmx_ffclose(fp);
+        gmx_ffclose(fplog);
     }
 
     return 0;

@@ -164,6 +164,7 @@ class BondNames
         BondNames(int                ncopies,
                   int                ftype,
                   const std::string &name,
+                  double             geometry,
                   const std::string &params,
                   int                index,
                   double             bondorder = 0)
@@ -172,6 +173,7 @@ class BondNames
               ncopies_(ncopies),
               ftype_(ftype),
               name_(name),
+              geometry_(geometry),
               params_(params),
               bondorder_(bondorder),
               poldataIndex_(index)
@@ -187,6 +189,10 @@ class BondNames
 
         const std::string &name() const { return name_; }
 
+        double geometry() const { return geometry_; }
+        
+        void setGeometry(double geometry) { geometry_ = geometry; }
+        
         double bondorder() const { return bondorder_; }
 
         int poldataIndex() const { return poldataIndex_; }
@@ -205,10 +211,12 @@ class BondNames
 
         //! Number of copies in the molecule data set
         int                 ncopies_;
-        //! Fucntion type for this particular bond
+        //! Function type for this particular bond
         int                 ftype_;
         //! Name of this bond/angle/dihedral
         std::string         name_;
+        //! Reference bond length or (dihedral) angle
+        double              geometry_;
         //! String holding all the parameters
         std::string         params_;
         //! Vector containing all the parameters
@@ -234,13 +242,17 @@ class ForceConstants
 
         ForceConstants () {}
 
-        ForceConstants(int bt, int ftype, InteractionType itype, bool bOpt)
+    ForceConstants(int bt, 
+                   int ftype, 
+                   InteractionType itype, 
+                   bool bOpt)
             :
               bt_(bt),
               ftype_(ftype),
               itype_(itype),
               bOpt_(bOpt)
-        {}
+        {
+        }
 
         void addForceConstant(BondNames bn) { bn_.push_back(std::move(bn)); }
 
@@ -299,8 +311,8 @@ public:
     PoldataUpdate() {}
     PoldataUpdate(InteractionType     iType,
                   int                 index,
-                  std::vector<double> params,
-                  std::string         paramString) : iType_(iType), index_(index), params_(params), paramString_(paramString)
+                  double              geometry,
+                  std::string         paramString) : iType_(iType), index_(index), geometry_(geometry), paramString_(paramString)
     {}
     
     /*! \brief
@@ -322,7 +334,7 @@ public:
 private:
     InteractionType     iType_;
     int                 index_;
-    std::vector<double> params_;
+    double              geometry_;
     std::string         paramString_;
 };
 

@@ -223,6 +223,7 @@ CommunicationStatus BondNames::Send(t_commrec *cr, int dest)
     {
         gmx_send_int(cr, dest, ncopies_);
         gmx_send_str(cr, dest, &name_);
+        gmx_send_double(cr, dest, geometry_);
         gmx_send_str(cr, dest, &params_);
         gmx_send_double(cr, dest, bondorder_);
         gmx_send_int(cr, dest, poldataIndex_);
@@ -243,6 +244,7 @@ CommunicationStatus BondNames::Receive(t_commrec *cr, int src)
     {
         ncopies_      = gmx_recv_int(cr, src);
         gmx_recv_str(cr, src, &name_);
+        geometry_ = gmx_recv_double(cr, src);
         gmx_recv_str(cr, src, &params_);
         bondorder_    = gmx_recv_double(cr, src);
         poldataIndex_ = gmx_recv_int(cr, src);
@@ -367,6 +369,7 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
              i += interaction_function[ftype_].nratoms+1)
         {
             std::vector<std::string> atoms;
+            double                   geometry  = 0;
             std::string              params;
             bool                     found     = false;
             int                      ai        = mymol.ltop_->idef.il[ftype_].iatoms[i+1];
@@ -390,6 +393,7 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
                         {
                             buf         = gmx::formatString("%s %s", aai.c_str(), aaj.c_str());
                             buf_reverse = gmx::formatString("%s %s", aaj.c_str(), aai.c_str());
+                            geometry    = f->refValue();
                             params      = f->params();
                             index       = f - fs->forceBegin();
                             found       = true;
@@ -412,6 +416,7 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
                                                                 aaj.c_str(), aak.c_str());
                                 buf_reverse = gmx::formatString("%s %s %s", aak.c_str(),
                                                                 aaj.c_str(), aai.c_str());
+                                geometry    = f->refValue();
                                 params      = f->params();
                                 index       = f - fs->forceBegin();
                                 found       = true;
@@ -437,6 +442,7 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
                                                                  aaj.c_str(), aak.c_str(), aal.c_str());
                                 buf_reverse  = gmx::formatString("%s %s %s %s", aal.c_str(),
                                                                  aaj.c_str(), aak.c_str(), aai.c_str());
+                                geometry     = f->refValue();
                                 params       = f->params();
                                 index        = f - fs->forceBegin();
                                 found        = true;
@@ -468,7 +474,7 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
                     }
                     else
                     {
-                        BondNames bn(1, ftype_, buf, params, index, 0);
+                        BondNames bn(1, ftype_, buf, geometry, params, index, 0);
                         addForceConstant(bn);
                     }
                 }
@@ -524,6 +530,7 @@ void PoldataUpdate::execute(Poldata &pd)
         auto fs = pd.findForces(iType_);
         auto f  = fs->forceBegin() + index_;
         GMX_RELEASE_ASSERT(!f->fixed(), "Fixed listed force parameters should not be here");
+        f->setRefValue(geometry_);
         f->setParams(paramString_);
         f->setModified(true);
     }
@@ -533,13 +540,8 @@ void PoldataUpdate::dump(FILE *fp) const
 {
     if (nullptr != fp)
     {
-        fprintf(fp, "iType: %s index: %d paramString: %s params:",
-                iType2string(iType_), index_, paramString_.c_str());
-        for (auto &p : params_)
-        {
-            fprintf(fp, " %g", p);
-        }
-        fprintf(fp, "\n");
+        fprintf(fp, "iType: %s index: %d geometry: %g paramString: %s\n",
+                iType2string(iType_), index_, geometry_, paramString_.c_str());
     }
 }
 
@@ -552,12 +554,8 @@ CommunicationStatus PoldataUpdate::Send(t_commrec *cr, int dest)
         dump(debug);
         gmx_send_int(cr, dest, static_cast<int>(iType_));
         gmx_send_int(cr, dest, index_);
+        gmx_send_double(cr, dest, geometry_);
         gmx_send_str(cr, dest, &paramString_);
-        gmx_send_int(cr, dest, static_cast<int>(params_.size()));
-        for (const auto &p : params_)
-        {
-            gmx_send_double(cr, dest, p);
-        }
     }
     return cs;
 }
@@ -570,13 +568,8 @@ CommunicationStatus PoldataUpdate::Receive(t_commrec *cr, int src)
     {
         iType_ = static_cast<InteractionType>(gmx_recv_int(cr, src));
         index_ = gmx_recv_int(cr, src);
+        geometry_ = gmx_recv_double(cr, src);
         gmx_recv_str(cr, src, &paramString_);
-        int n  = gmx_recv_int(cr, src);
-        params_.clear();
-        for (int i = 0; i < n; i++)
-        {
-            params_.push_back(gmx_recv_double(cr, src));
-        }
         dump(debug);
     }
     return cs;
