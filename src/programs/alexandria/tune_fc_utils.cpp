@@ -530,7 +530,11 @@ void PoldataUpdate::execute(Poldata &pd)
         auto fs = pd.findForces(iType_);
         auto f  = fs->forceBegin() + index_;
         GMX_RELEASE_ASSERT(!f->fixed(), "Fixed listed force parameters should not be here");
-        f->setRefValue(geometry_);
+        // If geometry_ == 0 it should be left untouched here.
+        if (geometry_ > 0)
+        {
+            f->setRefValue(geometry_);
+        }
         f->setParams(paramString_);
         f->setModified(true);
     }
