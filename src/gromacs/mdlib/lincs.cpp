@@ -2223,19 +2223,30 @@ static void lincs_warning(gmx_domdec_t *dd, const rvec *x, rvec *xprime, t_pbc *
     }
 }
 
-//! Determine how well the constraints have been satisfied.
-static void cconerr(const Lincs &lincsd,
-                    const rvec *x, const t_pbc *pbc,
-                    real *ncons_loc, real *ssd, real *max, int *imax)
+//! Status information about how well LINCS satisified the constraints in this domain
+struct LincsDeviations
 {
-    gmx::ArrayRef<const AtomPair>  atoms  = lincsd.atoms;
-    gmx::ArrayRef<const real>      bllen  = lincsd.bllen;
-    gmx::ArrayRef<const int>       nlocat = lincsd.nlocat;
+    //! The maximum over all bonds in this domain of the relative deviation in bond lengths
+    real maxDeviation = 0;
+    //! Sum over all bonds in this domain of the squared relative deviation
+    real sumSquaredDeviation = 0;
+    //! Index of bond with max deviation
+    int  indexOfMaxDeviation = -1;
+    //! Number of bonds constrained in this domain
+    int  numConstraints = 0;
+};
 
-    real ma    = 0;
-    real ssd2  = 0;
-    int  im    = 0;
-    int  count = 0;
+//! Determine how well the constraints have been satisfied.
+static LincsDeviations
+makeLincsDeviations(const Lincs &lincsd,
+                    const rvec  *x,
+                    const t_pbc *pbc)
+{
+    LincsDeviations                    result;
+    const ArrayRef<const AtomPair>     atoms  = lincsd.atoms;
+    const ArrayRef<const real>         bllen  = lincsd.bllen;
+    const ArrayRef<const int>          nlocat = lincsd.nlocat;
+
     for (int task = 0; task < lincsd.ntask; task++)
     {
         for (int b = lincsd.task[task].b0; b < lincsd.task[task].b1; b++)
@@ -2251,29 +2262,31 @@ static void cconerr(const Lincs &lincsd,
             }
             real r2  = ::norm2(dx);
             real len = r2*gmx::invsqrt(r2);
-            real d   = std::abs(len/bllen[b]-1);
-            if (d > ma && (nlocat.empty() || nlocat[b]))
+            real d   = std::abs(len/bllen[b] - 1.0_real);
+            if (d > result.maxDeviation && (nlocat.empty() || nlocat[b]))
             {
-                ma = d;
-                im = b;
+                result.maxDeviation        = d;
+                result.indexOfMaxDeviation = b;
             }
             if (nlocat.empty())
             {
-                ssd2 += d*d;
-                count++;
+                result.sumSquaredDeviation += d*d;
+                result.numConstraints++;
             }
             else
             {
-                ssd2  += nlocat[b]*d*d;
-                count += nlocat[b];
+                result.sumSquaredDeviation += nlocat[b]*d*d;
+                result.numConstraints      += nlocat[b];
             }
         }
     }
 
-    *ncons_loc = (nlocat.empty() ? 1 : 0.5)*count;
-    *ssd       = (nlocat.empty() ? 1 : 0.5)*ssd2;
-    *max       = ma;
-    *imax      = im;
+    if (!nlocat.empty())
+    {
+        result.numConstraints      /= 2;
+        result.sumSquaredDeviation *= 0.5;
+    }
+    return result;
 }
 
 bool constrain_lincs(bool computeRmsd,
@@ -2356,14 +2369,16 @@ bool constrain_lincs(bool computeRmsd,
             }
         }
 
-        int  p_imax    = 0;
-        real ncons_loc = 0;
-        real p_ssd     = 0;
-        real p_max     = 0;
-        if (debug)
+        const bool printDebugOutput = ((debug != nullptr) && lincsd->nc > 0);
+        if (printDebugOutput)
         {
-            cconerr(*lincsd, xprime, pbc,
-                    &ncons_loc, &p_ssd, &p_max, &p_imax);
+            LincsDeviations deviations = makeLincsDeviations(*lincsd, xprime, pbc);
+            fprintf(debug, "   Rel. Constraint Deviation:  RMS         MAX     between atoms\n");
+            fprintf(debug, "       Before LINCS          %.6f    %.6f %6d %6d\n",
+                    std::sqrt(deviations.sumSquaredDeviation/deviations.numConstraints),
+                    deviations.maxDeviation,
+                    ddglatnr(cr->dd, lincsd->atoms[deviations.indexOfMaxDeviation].index1),
+                    ddglatnr(cr->dd, lincsd->atoms[deviations.indexOfMaxDeviation].index2));
         }
 
         /* This bWarn var can be updated by multiple threads
@@ -2391,60 +2406,58 @@ bool constrain_lincs(bool computeRmsd,
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
 
-        if (debug && lincsd->nc > 0)
+        if (computeRmsd || printDebugOutput || bWarn)
         {
-            fprintf(debug, "   Rel. Constraint Deviation:  RMS         MAX     between atoms\n");
-            fprintf(debug, "       Before LINCS          %.6f    %.6f %6d %6d\n",
-                    std::sqrt(p_ssd/ncons_loc), p_max,
-                    ddglatnr(cr->dd, lincsd->atoms[p_imax].index1),
-                    ddglatnr(cr->dd, lincsd->atoms[p_imax].index2));
-        }
-        if (computeRmsd || debug)
-        {
-            cconerr(*lincsd, xprime, pbc,
-                    &ncons_loc, &p_ssd, &p_max, &p_imax);
-            lincsd->rmsdData[0] = ncons_loc;
-            lincsd->rmsdData[1] = p_ssd;
-        }
-        else
-        {
-            lincsd->rmsdData = {{0}};
-        }
-        if (debug && lincsd->nc > 0)
-        {
-            fprintf(debug,
-                    "        After LINCS          %.6f    %.6f %6d %6d\n\n",
-                    std::sqrt(p_ssd/ncons_loc), p_max,
-                    ddglatnr(cr->dd, lincsd->atoms[p_imax].index1),
-                    ddglatnr(cr->dd, lincsd->atoms[p_imax].index2));
-        }
+            LincsDeviations deviations = makeLincsDeviations(*lincsd, xprime, pbc);
 
-        if (bWarn)
-        {
-            if (maxwarn < INT_MAX)
+            if (computeRmsd)
             {
-                cconerr(*lincsd, xprime, pbc,
-                        &ncons_loc, &p_ssd, &p_max, &p_imax);
-                std::string simMesg;
-                if (isMultiSim(ms))
-                {
-                    simMesg += gmx::formatString(" in simulation %d", ms->sim);
-                }
-                fprintf(stderr,
-                        "\nStep %" PRId64 ", time %g (ps)  LINCS WARNING%s\n"
-                        "relative constraint deviation after LINCS:\n"
-                        "rms %.6f, max %.6f (between atoms %d and %d)\n",
-                        step, ir.init_t+step*ir.delta_t,
-                        simMesg.c_str(),
-                        std::sqrt(p_ssd/ncons_loc), p_max,
-                        ddglatnr(cr->dd, lincsd->atoms[p_imax].index1),
-                        ddglatnr(cr->dd, lincsd->atoms[p_imax].index2));
-
-                lincs_warning(cr->dd, x, xprime, pbc,
-                              lincsd->nc, lincsd->atoms, lincsd->bllen,
-                              ir.LincsWarnAngle, maxwarn, warncount);
+                // This is reduced across domains in compute_globals and
+                // reported to the log file.
+                lincsd->rmsdData[0] = deviations.numConstraints;
+                lincsd->rmsdData[1] = deviations.sumSquaredDeviation;
             }
-            bOK = (p_max < 0.5);
+            else
+            {
+                // This is never read
+                lincsd->rmsdData = {{0}};
+            }
+            if (printDebugOutput)
+            {
+                fprintf(debug,
+                        "        After LINCS          %.6f    %.6f %6d %6d\n\n",
+                        std::sqrt(deviations.sumSquaredDeviation/deviations.numConstraints),
+                        deviations.maxDeviation,
+                        ddglatnr(cr->dd, lincsd->atoms[deviations.indexOfMaxDeviation].index1),
+                        ddglatnr(cr->dd, lincsd->atoms[deviations.indexOfMaxDeviation].index2));
+            }
+
+            if (bWarn)
+            {
+                if (maxwarn < INT_MAX)
+                {
+                    std::string simMesg;
+                    if (isMultiSim(ms))
+                    {
+                        simMesg += gmx::formatString(" in simulation %d", ms->sim);
+                    }
+                    fprintf(stderr,
+                            "\nStep %" PRId64 ", time %g (ps)  LINCS WARNING%s\n"
+                            "relative constraint deviation after LINCS:\n"
+                            "rms %.6f, max %.6f (between atoms %d and %d)\n",
+                            step, ir.init_t+step*ir.delta_t,
+                            simMesg.c_str(),
+                            std::sqrt(deviations.sumSquaredDeviation/deviations.numConstraints),
+                            deviations.maxDeviation,
+                            ddglatnr(cr->dd, lincsd->atoms[deviations.indexOfMaxDeviation].index1),
+                            ddglatnr(cr->dd, lincsd->atoms[deviations.indexOfMaxDeviation].index2));
+
+                    lincs_warning(cr->dd, x, xprime, pbc,
+                                  lincsd->nc, lincsd->atoms, lincsd->bllen,
+                                  ir.LincsWarnAngle, maxwarn, warncount);
+                }
+                bOK = (deviations.maxDeviation < 0.5);
+            }
         }
 
         if (lincsd->ncg_flex)
