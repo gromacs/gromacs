@@ -98,7 +98,7 @@ void let_shells_see_shells(t_excls excls[], t_atoms *atoms, gpp_atomtype_t atype
 
 void copy_atoms(t_atoms *src, t_atoms *dest);
 
-void cp_plist(t_params                  *plist,
+void cp_plist(t_params                   plist[],
               int                        ftype,
               InteractionType            itype,
               std::vector<PlistWrapper> &plist_);

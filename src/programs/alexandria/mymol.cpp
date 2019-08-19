@@ -563,16 +563,16 @@ void MyMol::MakeAngles(bool bPairs,
     }
     done_nnb(&nnb);
 
-    cp_plist(&plist[F_ANGLES], F_ANGLES, eitANGLES, plist_);
+    cp_plist(plist, F_ANGLES, eitANGLES, plist_);
 
     if (bDihs)
     {
-        cp_plist(&plist[F_PDIHS], F_PDIHS, eitPROPER_DIHEDRALS, plist_);
+        cp_plist(plist, F_PDIHS, eitPROPER_DIHEDRALS, plist_);
     }
     if (bPairs)
     {
         /* Make 1-4 table */
-        cp_plist(&plist[F_LJ14], F_LJ14, eitLJ14, plist_);
+        cp_plist(plist, F_LJ14, eitLJ14, plist_);
     }
     for (auto i = 0; i < F_NRE; i++)
     {
@@ -2385,6 +2385,29 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     auto parameters = gmx::splitString(params);
                     switch (ftype)
                     {
+                        case F_FOURDIHS:
+                        {
+                            std::vector<double> old;
+                            for (auto parm : parameters)
+                            {
+                                old.push_back(gmx::doubleFromString(parm.c_str())); 
+                            }
+                            auto newparam = &mtop_->ffparams.iparams[tp];
+                            newparam->rbdihs.rbcA[0] = old[1]+0.5*(old[0]+old[2]);
+                            newparam->rbdihs.rbcA[1] = 0.5*(3.0*old[2]-old[0]);
+                            newparam->rbdihs.rbcA[2] = 4.0*old[3]-old[1];
+                            newparam->rbdihs.rbcA[3] = -2.0*old[2];
+                            newparam->rbdihs.rbcA[4] = -4.0*old[3];
+                            newparam->rbdihs.rbcA[5] = 0.0;
+                            for(int k = 0; k < NR_RBDIHS; k++)
+                            {
+                                ltop_->idef.iparams[tp].rbdihs.rbcA[k] = 
+                                    ltop_->idef.iparams[tp].rbdihs.rbcB[k] = 
+                                    newparam->rbdihs.rbcB[k] = 
+                                    newparam->rbdihs.rbcA[k];
+                            }
+                            break;
+                        }
                         case F_PDIHS:
                         {
                             mtop_->ffparams.iparams[tp].pdihs.phiA         =

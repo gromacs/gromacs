@@ -218,25 +218,25 @@ void copy_atoms(t_atoms *src, t_atoms *dest)
     }
 }
 
-void cp_plist(t_params                  *plist,
+void cp_plist(t_params                   plist[],
               int                        ftype,
               InteractionType            itype,
               std::vector<PlistWrapper> &plist_)
 {
-    if (plist->nr > 0)
+    if (plist[ftype].nr > 0)
     {
         PlistWrapper pw(itype, ftype);
-        for (int i = 0; (i < plist->nr); i++)
+        for (int i = 0; (i < plist[ftype].nr); i++)
         {
             for (int j = interaction_function[ftype].nratoms; j < MAXATOMLIST; j++)
             {
-                plist->param[i].a[j] = 0;
+                plist[ftype].param[i].a[j] = 0;
             }
             for (int j = interaction_function[ftype].nrfpA; j < MAXFORCEPARAM; j++)
             {
-                plist->param[i].c[j] = 0;
+                plist[ftype].param[i].c[j] = 0;
             }
-            pw.addParam(plist->param[i]);
+            pw.addParam(plist[ftype].param[i]);
         }
         plist_.push_back(pw);
     }

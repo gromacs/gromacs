@@ -268,8 +268,10 @@ void BondNames::extractParams()
 {
     const auto p  = gmx::splitString(params_);
     int        np = 1+static_cast<int>(p.size());
-    if ((ftype_ == F_UREY_BRADLEY && np != 3) ||
-        (ftype_ != F_UREY_BRADLEY && np != NRFPA(ftype_)))
+    if ((ftype_ == F_FOURDIHS && np != 5) ||
+        ((ftype_ == F_UREY_BRADLEY && np != 3) ||
+        
+         (ftype_ != F_UREY_BRADLEY && ftype_ != F_FOURDIHS && np != NRFPA(ftype_))))
     {
         gmx_fatal(FARGS, "Number of parameters (%d) in gentop.dat does not match function type %s (%d)", np,
                   interaction_function[ftype_].name, NRFPA(ftype_));
