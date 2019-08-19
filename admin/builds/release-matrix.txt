@@ -22,7 +22,7 @@
 
 # Test mpi support
 # Test mdrun-only build
-gcc-9 mpi mdrun-only release cmake-3.9.6
+gcc-9 mpi mdrun-only release
 
 # Test static linking with gcc
 # Test newest gcc at time of release
