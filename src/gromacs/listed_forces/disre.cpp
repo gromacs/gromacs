@@ -607,8 +607,11 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
 
                 f[ai][m]           += fij;
                 f[aj][m]           -= fij;
-                fshift[ki][m]      += fij;
-                fshift[CENTRAL][m] -= fij;
+                if (fshift)
+                {
+                    fshift[ki][m]      += fij;
+                    fshift[CENTRAL][m] -= fij;
+                }
             }
         }
     }

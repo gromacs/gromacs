@@ -97,8 +97,29 @@ enum class BondedKernelFlavor
     ForcesSimdWhenAvailable,  //!< Compute only forces, use SIMD when available; should not be used with perturbed parameters
     ForcesNoSimd,             //!< Compute only forces, do not use SIMD
     ForcesAndVirialAndEnergy, //!< Compute forces, virial and energy (no SIMD)
+    ForcesAndEnergy,          //!< Compute forces and energy (no SIMD)
     Count                     //!< The number of flavors
 };
+
+/*! \brief Returns whether the energy should be computed */
+static constexpr inline bool computeEnergy(const BondedKernelFlavor flavor)
+{
+    return (flavor == BondedKernelFlavor::ForcesAndVirialAndEnergy ||
+            flavor == BondedKernelFlavor::ForcesAndEnergy);
+}
+
+/*! \brief Returns whether the virial should be computed */
+static constexpr inline bool computeVirial(const BondedKernelFlavor flavor)
+{
+    return (flavor == BondedKernelFlavor::ForcesAndVirialAndEnergy);
+}
+
+/*! \brief Returns whether the energy and/or virial should be computed */
+static constexpr inline bool computeEnergyOrVirial(const BondedKernelFlavor flavor)
+{
+    return (flavor == BondedKernelFlavor::ForcesAndVirialAndEnergy ||
+            flavor == BondedKernelFlavor::ForcesAndEnergy);
+}
 
 /*! \brief Calculates bonded interactions for simple bonded types
  *

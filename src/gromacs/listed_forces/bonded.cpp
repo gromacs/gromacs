@@ -186,12 +186,6 @@ void make_dp_periodic(real *dp)  /* 1 flop? */
 namespace
 {
 
-/*! \brief Returns whether the virial should be computed */
-constexpr bool computeVirial(const BondedKernelFlavor flavor)
-{
-    return (flavor == BondedKernelFlavor::ForcesAndVirialAndEnergy);
-}
-
 /*! \brief Spreads and accumulates the bonded forces to the two atoms and adds the virial contribution when needed
  *
  * When \p g==nullptr, \p shiftIndex is used as the periodic shift.
@@ -899,18 +893,21 @@ angles(int nbonds,
                 f[aj][m] += f_j[m];
                 f[ak][m] += f_k[m];
             }
-            if (g != nullptr)
+            if (computeVirial(flavor))
             {
-                copy_ivec(SHIFT_IVEC(g, aj), jt);
+                if (g != nullptr)
+                {
+                    copy_ivec(SHIFT_IVEC(g, aj), jt);
 
-                ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
-                ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
-                t1 = IVEC2IS(dt_ij);
-                t2 = IVEC2IS(dt_kj);
+                    ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
+                    ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
+                    t1 = IVEC2IS(dt_ij);
+                    t2 = IVEC2IS(dt_kj);
+                }
+                rvec_inc(fshift[t1], f_i);
+                rvec_inc(fshift[CENTRAL], f_j);
+                rvec_inc(fshift[t2], f_k);
             }
-            rvec_inc(fshift[t1], f_i);
-            rvec_inc(fshift[CENTRAL], f_j);
-            rvec_inc(fshift[t2], f_k);
         }                                           /* 161 TOTAL	*/
     }
 
@@ -1210,18 +1207,21 @@ urey_bradley(int nbonds,
                 f[aj][m] += f_j[m];
                 f[ak][m] += f_k[m];
             }
-            if (g)
+            if (computeVirial(flavor))
             {
-                copy_ivec(SHIFT_IVEC(g, aj), jt);
+                if (g)
+                {
+                    copy_ivec(SHIFT_IVEC(g, aj), jt);
 
-                ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
-                ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
-                t1 = IVEC2IS(dt_ij);
-                t2 = IVEC2IS(dt_kj);
+                    ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
+                    ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
+                    t1 = IVEC2IS(dt_ij);
+                    t2 = IVEC2IS(dt_kj);
+                }
+                rvec_inc(fshift[t1], f_i);
+                rvec_inc(fshift[CENTRAL], f_j);
+                rvec_inc(fshift[t2], f_k);
             }
-            rvec_inc(fshift[t1], f_i);
-            rvec_inc(fshift[CENTRAL], f_j);
-            rvec_inc(fshift[t2], f_k);
         }                                       /* 161 TOTAL	*/
         /* Time for the bond calculations */
         if (dr2 == 0.0)
@@ -1232,7 +1232,7 @@ urey_bradley(int nbonds,
         vtot  += vbond;             /* 1*/
         fbond *= gmx::invsqrt(dr2); /*   6		*/
 
-        if (g)
+        if (computeVirial(flavor) && g)
         {
             ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, ak), dt_ik);
             ki = IVEC2IS(dt_ik);
@@ -1242,8 +1242,11 @@ urey_bradley(int nbonds,
             fik                 = fbond*r_ik[m];
             f[ai][m]           += fik;
             f[ak][m]           -= fik;
-            fshift[ki][m]      += fik;
-            fshift[CENTRAL][m] -= fik;
+            if (computeVirial(flavor))
+            {
+                fshift[ki][m]      += fik;
+                fshift[CENTRAL][m] -= fik;
+            }
         }
     }
     return vtot;
@@ -1720,7 +1723,7 @@ real dopdihs(real cpA, real cpB, real phiA, real phiB, int mult,
     const real mdphi =  mult*phi - ph0;
     const real sdphi = std::sin(mdphi);
     const real ddphi = -cp*mult*sdphi;
-    if (flavor == BondedKernelFlavor::ForcesAndVirialAndEnergy)
+    if (computeEnergy(flavor))
     {
         const real v1  = 1 + std::cos(mdphi);
         *V            += cp*v1;
@@ -3273,10 +3276,9 @@ real g96bonds(int nbonds,
               const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
               int gmx_unused *global_atom_index)
 {
-    int  i, m, ki, ai, aj, type;
-    real dr2, fbond, vbond, fij, vtot;
+    int  i, ki, ai, aj, type;
+    real dr2, fbond, vbond, vtot;
     rvec dx;
-    ivec dt;
 
     vtot = 0.0;
     for (i = 0; (i < nbonds); )
@@ -3294,22 +3296,10 @@ real g96bonds(int nbonds,
                                   forceparams[type].harmonic.rB,
                                   dr2, lambda, &vbond, &fbond);
 
-        vtot  += 0.5*vbond;                         /* 1*/
+        vtot  += 0.5*vbond;                                            /* 1*/
 
-        if (g)
-        {
-            ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
-            ki = IVEC2IS(dt);
-        }
-        for (m = 0; (m < DIM); m++)     /*  15		*/
-        {
-            fij                 = fbond*dx[m];
-            f[ai][m]           += fij;
-            f[aj][m]           -= fij;
-            fshift[ki][m]      += fij;
-            fshift[CENTRAL][m] -= fij;
-        }
-    }               /* 44 TOTAL	*/
+        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, g, fshift); /* 15 */
+    }                                                                  /* 44 TOTAL	*/
     return vtot;
 }
 
@@ -3884,7 +3874,8 @@ const gmx::EnumerationArray < BondedKernelFlavor, std::array < BondedInteraction
 {
     c_bondedInteractionFunctions<BondedKernelFlavor::ForcesSimdWhenAvailable>,
     c_bondedInteractionFunctions<BondedKernelFlavor::ForcesNoSimd>,
-    c_bondedInteractionFunctions<BondedKernelFlavor::ForcesAndVirialAndEnergy>
+    c_bondedInteractionFunctions<BondedKernelFlavor::ForcesAndVirialAndEnergy>,
+    c_bondedInteractionFunctions<BondedKernelFlavor::ForcesAndEnergy>
 };
 
 //! \endcond

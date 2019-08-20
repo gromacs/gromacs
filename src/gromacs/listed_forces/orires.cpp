@@ -726,8 +726,11 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             {
                 f[ai][i]           += fij[i];
                 f[aj][i]           -= fij[i];
-                fshift[ki][i]      += fij[i];
-                fshift[CENTRAL][i] -= fij[i];
+                if (fshift)
+                {
+                    fshift[ki][i]      += fij[i];
+                    fshift[CENTRAL][i] -= fij[i];
+                }
             }
         }
     }

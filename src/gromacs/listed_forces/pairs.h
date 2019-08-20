@@ -65,7 +65,9 @@ do_pairs(int ftype, int nbonds, const t_iatom iatoms[], const t_iparams iparams[
          const rvec x[], rvec4 f[], rvec fshift[],
          const struct t_pbc *pbc, const struct t_graph *g,
          const real *lambda, real *dvdl, const t_mdatoms *md, const t_forcerec *fr,
-         gmx_bool computeForcesOnly, gmx_grppairener_t *grppener,
+         bool havePerturbedPairs,
+         int  forceFlags,
+         gmx_grppairener_t *grppener,
          int *global_atom_index);
 
 #endif

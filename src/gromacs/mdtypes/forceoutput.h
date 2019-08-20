@@ -74,14 +74,14 @@ class ForceWithShiftForces
          *
          * \param[in] force          A force buffer that will be used for storing forces
          * \param[in] computeVirial  True when algorithms are required to provide their virial contribution (for the current force evaluation)
-         * \param[in] shiftForces    A shift forces buffer of size SHIFTS, also needed with \p computeVirial = false
+         * \param[in] shiftForces    A shift forces buffer of size SHIFTS, only used with \p computeVirial = true
          */
         ForceWithShiftForces(const gmx::ArrayRefWithPadding<gmx::RVec> &force,
                              const bool                                 computeVirial,
                              const gmx::ArrayRef<gmx::RVec>            &shiftForces) :
             force_(force),
             computeVirial_(computeVirial),
-            shiftForces_(shiftForces) {}
+            shiftForces_(computeVirial ? shiftForces : gmx::ArrayRef<gmx::RVec>()) {}
 
         //! Returns an arrayref to the force buffer without padding
         gmx::ArrayRef<gmx::RVec> force()

@@ -47,8 +47,10 @@
 
 #include <cmath>
 
+#include "gromacs/listed_forces/bonded.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
@@ -337,6 +339,7 @@ free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
 }
 
 /*! \brief Calculate pair interactions, supports all types and conditions. */
+template <BondedKernelFlavor flavor>
 static real
 do_pairs_general(int ftype, int nbonds,
                  const t_iatom iatoms[], const t_iparams iparams[],
@@ -514,16 +517,19 @@ do_pairs_general(int ftype, int nbonds,
         rvec_inc(f[ai], dx);
         rvec_dec(f[aj], dx);
 
-        if (g)
+        if (computeVirial(flavor))
         {
-            /* Correct the shift forces using the graph */
-            ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
-            fshift_index = IVEC2IS(dt);
-        }
-        if (fshift_index != CENTRAL)
-        {
-            rvec_inc(fshift[fshift_index], dx);
-            rvec_dec(fshift[CENTRAL], dx);
+            if (g)
+            {
+                /* Correct the shift forces using the graph */
+                ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
+                fshift_index = IVEC2IS(dt);
+            }
+            if (fshift_index != CENTRAL)
+            {
+                rvec_inc(fshift[fshift_index], dx);
+                rvec_dec(fshift[CENTRAL], dx);
+            }
         }
     }
     return 0.0;
@@ -645,13 +651,15 @@ do_pairs(int ftype, int nbonds,
          const real *lambda, real *dvdl,
          const t_mdatoms *md,
          const t_forcerec *fr,
-         const gmx_bool computeForcesOnly,
+         const bool havePerturbedInteractions,
+         const int forceFlags,
          gmx_grppairener_t *grppener,
          int *global_atom_index)
 {
     if (ftype == F_LJ14 &&
         fr->ic->vdwtype != evdwUSER && !EEL_USER(fr->ic->eeltype) &&
-        computeForcesOnly)
+        !havePerturbedInteractions &&
+        (forceFlags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) == 0)
     {
         /* We use a fast code-path for plain LJ 1-4 without FEP.
          *
@@ -661,40 +669,54 @@ do_pairs(int ftype, int nbonds,
          * and sum the virial for the shifts. But we should do this
          * at once for the angles and dihedrals as well.
          */
-#if GMX_SIMD
-        alignas(GMX_SIMD_ALIGNMENT) real pbc_simd[9*GMX_SIMD_REAL_WIDTH];
-        set_pbc_simd(pbc, pbc_simd);
-
-        do_pairs_simple<SimdReal, GMX_SIMD_REAL_WIDTH,
-                        const real *>(nbonds, iatoms, iparams,
-                                      x, f, pbc_simd,
-                                      md, fr->ic->epsfac*fr->fudgeQQ);
-#else
-        /* This construct is needed because pbc_dx_aiuc doesn't accept pbc=NULL */
-        t_pbc        pbc_no;
-        const t_pbc *pbc_nonnull;
-
-        if (pbc != nullptr)
+#if GMX_SIMD_HAVE_REAL
+        if (fr->use_simd_kernels)
         {
-            pbc_nonnull   = pbc;
+            alignas(GMX_SIMD_ALIGNMENT) real pbc_simd[9*GMX_SIMD_REAL_WIDTH];
+            set_pbc_simd(pbc, pbc_simd);
+
+            do_pairs_simple<SimdReal, GMX_SIMD_REAL_WIDTH,
+                            const real *>(nbonds, iatoms, iparams,
+                                          x, f, pbc_simd,
+                                          md, fr->ic->epsfac*fr->fudgeQQ);
         }
         else
-        {
-            set_pbc(&pbc_no, epbcNONE, nullptr);
-            pbc_nonnull   = &pbc_no;
-        }
-
-        do_pairs_simple<real, 1,
-                        const t_pbc *>(nbonds, iatoms, iparams,
-                                       x, f, pbc_nonnull,
-                                       md, fr->ic->epsfac*fr->fudgeQQ);
 #endif
+        {
+            /* This construct is needed because pbc_dx_aiuc doesn't accept pbc=NULL */
+            t_pbc        pbc_no;
+            const t_pbc *pbc_nonnull;
+
+            if (pbc != nullptr)
+            {
+                pbc_nonnull   = pbc;
+            }
+            else
+            {
+                set_pbc(&pbc_no, epbcNONE, nullptr);
+                pbc_nonnull   = &pbc_no;
+            }
+
+            do_pairs_simple<real, 1,
+                            const t_pbc *>(nbonds, iatoms, iparams,
+                                           x, f, pbc_nonnull,
+                                           md, fr->ic->epsfac*fr->fudgeQQ);
+        }
+    }
+    else if (forceFlags & GMX_FORCE_VIRIAL)
+    {
+        do_pairs_general<BondedKernelFlavor::ForcesAndVirialAndEnergy>(
+                ftype, nbonds, iatoms, iparams,
+                x, f, fshift, pbc, g,
+                lambda, dvdl,
+                md, fr, grppener, global_atom_index);
     }
     else
     {
-        do_pairs_general(ftype, nbonds, iatoms, iparams,
-                         x, f, fshift, pbc, g,
-                         lambda, dvdl,
-                         md, fr, grppener, global_atom_index);
+        do_pairs_general<BondedKernelFlavor::ForcesAndEnergy>(
+                ftype, nbonds, iatoms, iparams,
+                x, f, fshift, pbc, g,
+                lambda, dvdl,
+                md, fr, grppener, global_atom_index);
     }
 }
