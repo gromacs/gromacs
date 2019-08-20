@@ -41,7 +41,7 @@ icc-19 simd=sse2 mkl release
 
 # Test SSE4.1 SIMD
 # Test single-rank GPU
-# Test clang + OpenMP + CUDA
+# Test clang host and device compilation, with OpenMP and CUDA
 # NOTE: using release-with-assert as debug build trigers some ptx warnings
 clang-8 simd=sse4.1 openmp nranks=1 gpuhw=nvidia cuda-10.0 clang_cuda release-with-assert
 
@@ -60,7 +60,8 @@ gcc-6 npme=1 nranks=2 opencl-1.2 gpuhw=nvidia simd=sse2 release
 # Test non-default use of mdrun -gpu_id
 # Test GPU-sharing among 4 PP ranks
 # Test no hwloc build, tests internal CPU topology detection (mainly for x86)
-gcc-5 gpuhw=nvidia nranks=4 gpu_id=1 cuda-10.0 no-hwloc release-with-assert
+# Test clang host compilation with CUDA on Linux
+clang-8 gpuhw=nvidia openmp nranks=4 gpu_id=1 cuda-10.1 no-hwloc release-with-assert
 
 # Test ARM HPC compier toolchain with gcc-7
 #gcc-7 armhpc-18.2 openmp simd=ARM_NEON_ASIMD release
