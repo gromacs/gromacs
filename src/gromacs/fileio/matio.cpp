@@ -1060,8 +1060,8 @@ void write_xpm3(FILE *out, unsigned int flags,
 
     write_xpm_header(out, title, legend, label_x, label_y, FALSE);
     write_xpm_map3(out, n_x, n_y, nlevels, lo, mid, hi, rlo, rmid, rhi);
-    writeXpmAxis(out, "x", ArrayRef<real>(axis_x, axis_x + n_x + ((flags & MAT_SPATIAL_X) != 0u ? 1 : 0)));
-    writeXpmAxis(out, "y", ArrayRef<real>(axis_y, axis_y + n_y + ((flags & MAT_SPATIAL_Y) != 0u ? 1 : 0)));
+    writeXpmAxis(out, "x", ArrayRef<real>(axis_x, axis_x + n_x + ((flags & MAT_SPATIAL_X) != 0U ? 1 : 0)));
+    writeXpmAxis(out, "y", ArrayRef<real>(axis_y, axis_y + n_y + ((flags & MAT_SPATIAL_Y) != 0U ? 1 : 0)));
     write_xpm_data3(out, n_x, n_y, mat, lo, mid, hi, *nlevels);
 }
 
@@ -1096,8 +1096,8 @@ void write_xpm_split(FILE *out, unsigned int flags,
     write_xpm_header(out, title, legend, label_x, label_y, FALSE);
     write_xpm_map_split(out, n_x, n_y, nlevel_top, lo_top, hi_top, rlo_top, rhi_top,
                         bDiscreteColor, nlevel_bot, lo_bot, hi_bot, rlo_bot, rhi_bot);
-    writeXpmAxis(out, "x", ArrayRef<real>(axis_x, axis_x + n_x + ((flags & MAT_SPATIAL_X) != 0u ? 1 : 0)));
-    writeXpmAxis(out, "y", ArrayRef<real>(axis_y, axis_y + n_y + ((flags & MAT_SPATIAL_Y) != 0u ? 1 : 0)));
+    writeXpmAxis(out, "x", ArrayRef<real>(axis_x, axis_x + n_x + ((flags & MAT_SPATIAL_X) != 0U ? 1 : 0)));
+    writeXpmAxis(out, "y", ArrayRef<real>(axis_y, axis_y + n_y + ((flags & MAT_SPATIAL_Y) != 0U ? 1 : 0)));
     write_xpm_data_split(out, n_x, n_y, mat, lo_top, hi_top, *nlevel_top,
                          lo_bot, hi_bot, *nlevel_bot);
 }
@@ -1132,7 +1132,7 @@ void write_xpm(FILE *out, unsigned int flags,
 
     write_xpm_header(out, title, legend, label_x, label_y, FALSE);
     write_xpm_map(out, n_x, n_y, nlevels, lo, hi, rlo, rhi);
-    writeXpmAxis(out, "x", ArrayRef<real>(axis_x, axis_x + n_x + ((flags & MAT_SPATIAL_X) != 0u ? 1 : 0)));
-    writeXpmAxis(out, "y", ArrayRef<real>(axis_y, axis_y + n_y + ((flags & MAT_SPATIAL_Y) != 0u ? 1 : 0)));
+    writeXpmAxis(out, "x", ArrayRef<real>(axis_x, axis_x + n_x + ((flags & MAT_SPATIAL_X) != 0U ? 1 : 0)));
+    writeXpmAxis(out, "y", ArrayRef<real>(axis_y, axis_y + n_y + ((flags & MAT_SPATIAL_Y) != 0U ? 1 : 0)));
     write_xpm_data(out, n_x, n_y, mat, lo, hi, *nlevels);
 }

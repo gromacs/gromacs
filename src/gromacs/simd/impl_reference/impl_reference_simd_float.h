@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -249,12 +249,12 @@ storeU(float *m, SimdFloat a)
  * You should typically just call \ref gmx::setZero(), which uses proxy objects
  * internally to handle all types rather than adding the suffix used here.
  *
- * \return SIMD 0.0f
+ * \return SIMD 0.0F
  */
 static inline SimdFloat gmx_simdcall
 setZeroF()
 {
-    return SimdFloat(0.0f);
+    return SimdFloat(0.0F);
 }
 
 /*! \} */
@@ -626,7 +626,7 @@ rsqrt(SimdFloat x)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        res.simdInternal_[i] = 1.0f / std::sqrt(x.simdInternal_[i]);
+        res.simdInternal_[i] = 1.0F / std::sqrt(x.simdInternal_[i]);
     }
     return res;
 };
@@ -646,7 +646,7 @@ rcp(SimdFloat x)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        res.simdInternal_[i] = 1.0f / x.simdInternal_[i];
+        res.simdInternal_[i] = 1.0F / x.simdInternal_[i];
     }
     return res;
 };
@@ -665,7 +665,7 @@ maskAdd(SimdFloat a, SimdFloat b, SimdFBool m)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        res.simdInternal_[i] = a.simdInternal_[i] + (m.simdInternal_[i] ? b.simdInternal_[i] : 0.0f);
+        res.simdInternal_[i] = a.simdInternal_[i] + (m.simdInternal_[i] ? b.simdInternal_[i] : 0.0F);
     }
     return res;
 }
@@ -684,7 +684,7 @@ maskzMul(SimdFloat a, SimdFloat b, SimdFBool m)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        res.simdInternal_[i] = m.simdInternal_[i] ? (a.simdInternal_[i] * b.simdInternal_[i]) : 0.0f;
+        res.simdInternal_[i] = m.simdInternal_[i] ? (a.simdInternal_[i] * b.simdInternal_[i]) : 0.0F;
     }
     return res;
 }
@@ -704,7 +704,7 @@ maskzFma(SimdFloat a, SimdFloat b, SimdFloat c, SimdFBool m)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        res.simdInternal_[i] = m.simdInternal_[i] ? (a.simdInternal_[i] * b.simdInternal_[i] + c.simdInternal_[i]) : 0.0f;
+        res.simdInternal_[i] = m.simdInternal_[i] ? (a.simdInternal_[i] * b.simdInternal_[i] + c.simdInternal_[i]) : 0.0F;
     }
     return res;
 }
@@ -726,7 +726,7 @@ maskzRsqrt(SimdFloat x, SimdFBool m)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        res.simdInternal_[i] = (m.simdInternal_[i] != 0) ? 1.0f / std::sqrt(x.simdInternal_[i]) : 0.0f;
+        res.simdInternal_[i] = (m.simdInternal_[i] != 0) ? 1.0F / std::sqrt(x.simdInternal_[i]) : 0.0F;
     }
     return res;
 }
@@ -748,7 +748,7 @@ maskzRcp(SimdFloat x, SimdFBool m)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        res.simdInternal_[i] = (m.simdInternal_[i] != 0) ? 1.0f / x.simdInternal_[i] : 0.0f;
+        res.simdInternal_[i] = (m.simdInternal_[i] != 0) ? 1.0F / x.simdInternal_[i] : 0.0F;
     }
     return res;
 }
@@ -903,7 +903,7 @@ ldexp(SimdFloat value, SimdFInt32 exponent)
 static inline float gmx_simdcall
 reduce(SimdFloat a)
 {
-    float sum = 0.0f;
+    float sum = 0.0F;
 
     for (std::size_t i = 0; i < a.simdInternal_.size(); i++)
     {
@@ -997,7 +997,7 @@ operator<=(SimdFloat a, SimdFloat b)
 /*! \brief Return true if any bits are set in the single precision SIMD.
  *
  * This function is used to handle bitmasks, mainly for exclusions in the
- * inner kernels. Note that it will return true even for -0.0f (sign bit set),
+ * inner kernels. Note that it will return true even for -0.0F (sign bit set),
  * so it is not identical to not-equal.
  *
  * \param a value
@@ -1098,7 +1098,7 @@ selectByMask(SimdFloat a, SimdFBool mask)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        res.simdInternal_[i] = mask.simdInternal_[i] ? a.simdInternal_[i] : 0.0f;
+        res.simdInternal_[i] = mask.simdInternal_[i] ? a.simdInternal_[i] : 0.0F;
     }
     return res;
 }
@@ -1116,7 +1116,7 @@ selectByNotMask(SimdFloat a, SimdFBool mask)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        res.simdInternal_[i] = mask.simdInternal_[i] ? 0.0f : a.simdInternal_[i];
+        res.simdInternal_[i] = mask.simdInternal_[i] ? 0.0F : a.simdInternal_[i];
     }
     return res;
 }
@@ -1447,7 +1447,7 @@ selectByMask(SimdFInt32 a, SimdFIBool mask)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        res.simdInternal_[i] = mask.simdInternal_[i] ? a.simdInternal_[i] : 0.0f;
+        res.simdInternal_[i] = mask.simdInternal_[i] ? a.simdInternal_[i] : 0.0F;
     }
     return res;
 }
@@ -1467,7 +1467,7 @@ selectByNotMask(SimdFInt32 a, SimdFIBool mask)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        res.simdInternal_[i] = mask.simdInternal_[i] ? 0.0f : a.simdInternal_[i];
+        res.simdInternal_[i] = mask.simdInternal_[i] ? 0.0F : a.simdInternal_[i];
     }
     return res;
 }

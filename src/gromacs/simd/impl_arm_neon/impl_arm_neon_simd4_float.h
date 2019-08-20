@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -106,7 +106,7 @@ static inline Simd4Float gmx_simdcall
 simd4SetZeroF()
 {
     return {
-               vdupq_n_f32(0.0f)
+               vdupq_n_f32(0.0F)
     };
 }
 
@@ -268,7 +268,7 @@ round(Simd4Float x)
 {
     // Convert x to nearest integer
     float32x4_t signBitOfX = vreinterpretq_f32_u32(vandq_u32(vdupq_n_u32(0x80000000), vreinterpretq_u32_f32(x.simdInternal_)));
-    float32x4_t half       = vdupq_n_f32(0.5f);
+    float32x4_t half       = vdupq_n_f32(0.5F);
     float32x4_t corr       = vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(half), vreinterpretq_u32_f32(signBitOfX)));
 
     int32x4_t   integerX   = vcvtq_s32_f32(vaddq_f32(x.simdInternal_, corr));
@@ -413,7 +413,7 @@ dotProduct(Simd4Float a, Simd4Float b)
 
     c = a * b;
     /* set 4th element to 0, then add all of them */
-    c.simdInternal_ = vsetq_lane_f32(0.0f, c.simdInternal_, 3);
+    c.simdInternal_ = vsetq_lane_f32(0.0F, c.simdInternal_, 3);
     return reduce(c);
 }
 #endif

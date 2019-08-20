@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -115,7 +115,7 @@ dotProduct(Simd4Float a, Simd4Float b)
 
     c = a * b;
     /* set 4th element to 0, then add all of them */
-    c.simdInternal_ = vsetq_lane_f32(0.0f, c.simdInternal_, 3);
+    c.simdInternal_ = vsetq_lane_f32(0.0F, c.simdInternal_, 3);
     return reduce(c);
 }
 

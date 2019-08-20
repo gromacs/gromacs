@@ -554,7 +554,7 @@ static int get_atype(int atom, t_atoms *at, gmx::ArrayRef<const PreprocessResidu
     int      type;
     bool     bNterm;
 
-    if (at->atom[atom].m != 0.0f)
+    if (at->atom[atom].m != 0.0F)
     {
         type = at->atom[atom].type;
     }
@@ -590,7 +590,7 @@ static real get_amass(int atom, t_atoms *at, gmx::ArrayRef<const PreprocessResid
     real     mass;
     bool     bNterm;
 
-    if (at->atom[atom].m != 0.0f)
+    if (at->atom[atom].m != 0.0F)
     {
         mass = at->atom[atom].m;
     }

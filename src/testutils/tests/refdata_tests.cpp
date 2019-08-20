@@ -92,7 +92,7 @@ TEST(ReferenceDataTest, HandlesSimpleData)
 
 TEST(ReferenceDataTest, HandlesFloatingPointData)
 {
-    const float  floatValue  = 4.0f/3.0f;
+    const float  floatValue  = 4.0F/3.0F;
     const double doubleValue = 4.0/3.0;
 
     {
@@ -158,7 +158,7 @@ TEST(ReferenceDataTest, HandlesStringBlockData)
 TEST(ReferenceDataTest, HandlesVectorData)
 {
     int    veci[3] = { -1, 3, 5 };
-    float  vecf[3] = { -2.3f, 1.43f, 2.5f };
+    float  vecf[3] = { -2.3F, 1.43F, 2.5F };
     double vecd[3] = { -2.3, 1.43, 2.5 };
 
     {

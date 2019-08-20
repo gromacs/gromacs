@@ -173,9 +173,9 @@ static int nral_rt(int ftype)
 static gmx_bool dd_check_ftype(int ftype, gmx_bool bBCheck,
                                gmx_bool bConstr, gmx_bool bSettle)
 {
-    return ((((interaction_function[ftype].flags & IF_BOND) != 0u) &&
-             ((interaction_function[ftype].flags & IF_VSITE) == 0u) &&
-             (bBCheck || ((interaction_function[ftype].flags & IF_LIMZERO) == 0u))) ||
+    return ((((interaction_function[ftype].flags & IF_BOND) != 0U) &&
+             ((interaction_function[ftype].flags & IF_VSITE) == 0U) &&
+             (bBCheck || ((interaction_function[ftype].flags & IF_LIMZERO) == 0U))) ||
             (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC)) ||
             (bSettle && ftype == F_SETTLE));
 }
@@ -516,7 +516,7 @@ static int low_make_reverse_ilist(const InteractionLists &il_mt,
             (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC)) ||
             (bSettle && ftype == F_SETTLE))
         {
-            const bool  bVSite = ((interaction_function[ftype].flags & IF_VSITE) != 0u);
+            const bool  bVSite = ((interaction_function[ftype].flags & IF_VSITE) != 0U);
             const int   nral   = NRAL(ftype);
             const auto &il     = il_mt[ftype];
             for (int i = 0; i < il.size(); i += 1+nral)

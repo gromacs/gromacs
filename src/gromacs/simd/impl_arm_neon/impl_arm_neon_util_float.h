@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -184,7 +184,7 @@ transposeScatterIncrU(float *              base,
     {
         // Extra elements means we can use full width-4 load/store operations
         float32x4x2_t  t0 = vuzpq_f32(v0.simdInternal_, v2.simdInternal_);
-        float32x4x2_t  t1 = vuzpq_f32(v1.simdInternal_, vdupq_n_f32(0.0f));
+        float32x4x2_t  t1 = vuzpq_f32(v1.simdInternal_, vdupq_n_f32(0.0F));
         float32x4x2_t  t2 = vtrnq_f32(t0.val[0], t1.val[0]);
         float32x4x2_t  t3 = vtrnq_f32(t0.val[1], t1.val[1]);
         float32x4_t    t4 = t2.val[0];
@@ -239,7 +239,7 @@ transposeScatterDecrU(float *              base,
     {
         // Extra elements means we can use full width-4 load/store operations
         float32x4x2_t  t0 = vuzpq_f32(v0.simdInternal_, v2.simdInternal_);
-        float32x4x2_t  t1 = vuzpq_f32(v1.simdInternal_, vdupq_n_f32(0.0f));
+        float32x4x2_t  t1 = vuzpq_f32(v1.simdInternal_, vdupq_n_f32(0.0F));
         float32x4x2_t  t2 = vtrnq_f32(t0.val[0], t1.val[0]);
         float32x4x2_t  t3 = vtrnq_f32(t0.val[1], t1.val[1]);
         float32x4_t    t4 = t2.val[0];

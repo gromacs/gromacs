@@ -425,7 +425,7 @@ TEST(StringViewTest, CanCopySubstringWithCopy)
 
         EXPECT_TRUE( std::equal( vec.begin(), vec.end(), hello )  );
     }{
-        std::size_t offset = 3u; std::size_t length = 4u;
+        std::size_t offset = 3U; std::size_t length = 4U;
         std::vector<string_view::value_type> vec( length );
 
         sv.copy( data(vec), length, offset );

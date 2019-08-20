@@ -341,7 +341,7 @@ void put_residue_com_in_box(int unitcell_enum, int ecenter,
                     break;
             }
             rvec_sub(newCom, com, shift);
-            if (norm2(shift) != 0.0f)
+            if (norm2(shift) != 0.0F)
             {
                 if (debug)
                 {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,7 +56,7 @@ static inline SimdFloat
 maskzRsqrt(SimdFloat x, SimdFBool m)
 {
 #ifndef NDEBUG
-    x.simdInternal_ = _mm_blendv_ps(_mm_set1_ps(1.0f), x.simdInternal_, m.simdInternal_);
+    x.simdInternal_ = _mm_blendv_ps(_mm_set1_ps(1.0F), x.simdInternal_, m.simdInternal_);
 #endif
     return {
                _mm_and_ps(_mm_rsqrt_ps(x.simdInternal_), m.simdInternal_)
@@ -67,7 +67,7 @@ static inline SimdFloat
 maskzRcp(SimdFloat x, SimdFBool m)
 {
 #ifndef NDEBUG
-    x.simdInternal_ = _mm_blendv_ps(_mm_set1_ps(1.0f), x.simdInternal_, m.simdInternal_);
+    x.simdInternal_ = _mm_blendv_ps(_mm_set1_ps(1.0F), x.simdInternal_, m.simdInternal_);
 #endif
     return {
                _mm_and_ps(_mm_rcp_ps(x.simdInternal_), m.simdInternal_)

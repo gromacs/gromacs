@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -134,7 +134,7 @@ static inline SimdFloat gmx_simdcall
 setZeroF()
 {
     return {
-               vdupq_n_f32(0.0f)
+               vdupq_n_f32(0.0F)
     };
 }
 
@@ -382,7 +382,7 @@ maskzRsqrt(SimdFloat x, SimdFBool m)
     // The result will always be correct since we mask the result with m, but
     // for debug builds we also want to make sure not to generate FP exceptions
 #ifndef NDEBUG
-    x.simdInternal_ = vbslq_f32(m.simdInternal_, x.simdInternal_, vdupq_n_f32(1.0f));
+    x.simdInternal_ = vbslq_f32(m.simdInternal_, x.simdInternal_, vdupq_n_f32(1.0F));
 #endif
     return {
                vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(vrsqrteq_f32(x.simdInternal_)),
@@ -396,7 +396,7 @@ maskzRcp(SimdFloat x, SimdFBool m)
     // The result will always be correct since we mask the result with m, but
     // for debug builds we also want to make sure not to generate FP exceptions
 #ifndef NDEBUG
-    x.simdInternal_ = vbslq_f32(m.simdInternal_, x.simdInternal_, vdupq_n_f32(1.0f));
+    x.simdInternal_ = vbslq_f32(m.simdInternal_, x.simdInternal_, vdupq_n_f32(1.0F));
 #endif
     return {
                vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(vrecpeq_f32(x.simdInternal_)),
@@ -437,7 +437,7 @@ frexp(SimdFloat value, SimdFInt32 * exponent)
     const int32x4_t    exponentMask   = vdupq_n_s32(0x7F800000);
     const int32x4_t    mantissaMask   = vdupq_n_s32(0x807FFFFF);
     const int32x4_t    exponentBias   = vdupq_n_s32(126); // add 1 to make our definition identical to frexp()
-    const float32x4_t  half           = vdupq_n_f32(0.5f);
+    const float32x4_t  half           = vdupq_n_f32(0.5F);
     int32x4_t          iExponent;
 
     iExponent               = vandq_s32(vreinterpretq_s32_f32(value.simdInternal_), exponentMask);
@@ -727,7 +727,7 @@ static inline SimdFInt32 gmx_simdcall
 cvtR2I(SimdFloat a)
 {
     float32x4_t signBitOfA = vreinterpretq_f32_u32(vandq_u32(vdupq_n_u32(0x80000000), vreinterpretq_u32_f32(a.simdInternal_)));
-    float32x4_t half       = vdupq_n_f32(0.5f);
+    float32x4_t half       = vdupq_n_f32(0.5F);
     float32x4_t corr       = vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(half), vreinterpretq_u32_f32(signBitOfA)));
 
     return {

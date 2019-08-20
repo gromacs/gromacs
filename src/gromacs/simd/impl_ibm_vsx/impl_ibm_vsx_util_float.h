@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -212,8 +212,8 @@ transposeScatterIncrU(float *              base,
         SimdFloat      v3;
         __vector float t0 = vec_mergeh(v0.simdInternal_, v2.simdInternal_);
         __vector float t1 = vec_mergel(v0.simdInternal_, v2.simdInternal_);
-        __vector float t2 = vec_mergeh(v1.simdInternal_, vec_splats(0.0f));
-        __vector float t3 = vec_mergel(v1.simdInternal_, vec_splats(0.0f));
+        __vector float t2 = vec_mergeh(v1.simdInternal_, vec_splats(0.0F));
+        __vector float t3 = vec_mergel(v1.simdInternal_, vec_splats(0.0F));
         v0.simdInternal_ = vec_mergeh(t0, t2);
         v1.simdInternal_ = vec_mergel(t0, t2);
         v2.simdInternal_ = vec_mergeh(t1, t3);
@@ -282,8 +282,8 @@ transposeScatterDecrU(float *              base,
         SimdFloat      v3;
         __vector float t0 = vec_mergeh(v0.simdInternal_, v2.simdInternal_);
         __vector float t1 = vec_mergel(v0.simdInternal_, v2.simdInternal_);
-        __vector float t2 = vec_mergeh(v1.simdInternal_, vec_splats(0.0f));
-        __vector float t3 = vec_mergel(v1.simdInternal_, vec_splats(0.0f));
+        __vector float t2 = vec_mergeh(v1.simdInternal_, vec_splats(0.0F));
+        __vector float t3 = vec_mergel(v1.simdInternal_, vec_splats(0.0F));
         v0.simdInternal_ = vec_mergeh(t0, t2);
         v1.simdInternal_ = vec_mergel(t0, t2);
         v2.simdInternal_ = vec_mergeh(t1, t3);

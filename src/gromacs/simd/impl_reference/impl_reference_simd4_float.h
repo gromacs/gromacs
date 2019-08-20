@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -189,7 +189,7 @@ store4U(float *m, Simd4Float a)
 static inline Simd4Float gmx_simdcall
 simd4SetZeroF()
 {
-    return Simd4Float(0.0f);
+    return Simd4Float(0.0F);
 }
 
 
@@ -453,7 +453,7 @@ rsqrt(Simd4Float x)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        res.simdInternal_[i] = 1.0f / std::sqrt(x.simdInternal_[i]);
+        res.simdInternal_[i] = 1.0F / std::sqrt(x.simdInternal_[i]);
     }
     return res;
 };
@@ -752,7 +752,7 @@ selectByMask(Simd4Float a, Simd4FBool mask)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        res.simdInternal_[i] = mask.simdInternal_[i] ? a.simdInternal_[i] : 0.0f;
+        res.simdInternal_[i] = mask.simdInternal_[i] ? a.simdInternal_[i] : 0.0F;
     }
     return res;
 }
@@ -770,7 +770,7 @@ selectByNotMask(Simd4Float a, Simd4FBool mask)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        res.simdInternal_[i] = mask.simdInternal_[i] ? 0.0f : a.simdInternal_[i];
+        res.simdInternal_[i] = mask.simdInternal_[i] ? 0.0F : a.simdInternal_[i];
     }
     return res;
 }
@@ -805,7 +805,7 @@ blend(Simd4Float a, Simd4Float b, Simd4FBool sel)
 static inline float gmx_simdcall
 reduce(Simd4Float a)
 {
-    float sum = 0.0f;
+    float sum = 0.0F;
 
     for (std::size_t i = 0; i < a.simdInternal_.size(); i++)
     {

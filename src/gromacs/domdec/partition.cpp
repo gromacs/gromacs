@@ -1211,12 +1211,12 @@ static float dd_f_imbal(gmx_domdec_t *dd)
 {
     if (dd->comm->load[0].sum > 0)
     {
-        return dd->comm->load[0].max*dd->nnodes/dd->comm->load[0].sum - 1.0f;
+        return dd->comm->load[0].max*dd->nnodes/dd->comm->load[0].sum - 1.0F;
     }
     else
     {
         /* Something is wrong in the cycle counting, report no load imbalance */
-        return 0.0f;
+        return 0.0F;
     }
 }
 
@@ -2846,7 +2846,7 @@ void dd_partition_system(FILE                    *fplog,
                 if (DDMASTER(dd))
                 {
                     /* Add the measured cycles to the running average */
-                    const float averageFactor        = 0.1f;
+                    const float averageFactor        = 0.1F;
                     comm->cyclesPerStepDlbExpAverage =
                         (1 - averageFactor)*comm->cyclesPerStepDlbExpAverage +
                         averageFactor*comm->cycl[ddCyclStep]/comm->cycl_n[ddCyclStep];

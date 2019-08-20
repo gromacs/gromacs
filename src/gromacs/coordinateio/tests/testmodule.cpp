@@ -59,7 +59,7 @@ namespace test
 
 void DummyOutputModule::checkAbilityDependencies(const unsigned long abilities) const
 {
-    if ((abilities & convertFlag(moduleRequirements_)) == 0u)
+    if ((abilities & convertFlag(moduleRequirements_)) == 0U)
     {
         std::string errorMessage = "Unhandled module requirements.";
         GMX_THROW(InconsistentInputError(errorMessage.c_str()));

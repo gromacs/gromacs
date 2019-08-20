@@ -543,7 +543,7 @@ class SimdSetZeroProxy
 {
     public:
         //!\brief Conversion method that returns 0.0 as float
-        operator float() const { return 0.0f; }
+        operator float() const { return 0.0F; }
         //!\brief Conversion method that returns 0.0 as double
         operator double() const { return 0.0; }
         //!\brief Conversion method that returns 0.0 as int32

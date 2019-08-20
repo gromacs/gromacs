@@ -101,7 +101,7 @@ TrajectoryAnalysisSettings::flags() const
 bool
 TrajectoryAnalysisSettings::hasFlag(unsigned long flag) const
 {
-    return (impl_->flags & flag) != 0u;
+    return (impl_->flags & flag) != 0U;
 }
 
 

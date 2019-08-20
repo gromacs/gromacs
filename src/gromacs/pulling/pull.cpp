@@ -1780,7 +1780,7 @@ static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
         else if (ir->eI == eiBD)
         {
             real mbd;
-            if (ir->bd_fric != 0.0f)
+            if (ir->bd_fric != 0.0F)
             {
                 mbd = ir->bd_fric*ir->delta_t;
             }

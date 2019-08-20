@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -125,8 +125,8 @@ static inline SimdFloat gmx_simdcall
 rsqrtIter(SimdFloat lu, SimdFloat x)
 {
     SimdFloat tmp1 = x*lu;
-    SimdFloat tmp2 = SimdFloat(-0.5f)*lu;
-    tmp1 = fma(tmp1, lu, SimdFloat(-3.0f));
+    SimdFloat tmp2 = SimdFloat(-0.5F)*lu;
+    tmp1 = fma(tmp1, lu, SimdFloat(-3.0F));
     return tmp1*tmp2;
 }
 #endif
@@ -200,7 +200,7 @@ invsqrtPair(SimdFloat x0,    SimdFloat x1,
 static inline SimdFloat gmx_simdcall
 rcpIter(SimdFloat lu, SimdFloat x)
 {
-    return lu*fnma(lu, x, SimdFloat(2.0f));
+    return lu*fnma(lu, x, SimdFloat(2.0F));
 }
 #endif
 
@@ -349,15 +349,15 @@ sqrt(SimdFloat x)
 static inline SimdFloat gmx_simdcall
 log(SimdFloat x)
 {
-    const SimdFloat  one(1.0f);
-    const SimdFloat  two(2.0f);
-    const SimdFloat  invsqrt2(1.0f/std::sqrt(2.0f));
-    const SimdFloat  corr(0.693147180559945286226764f);
-    const SimdFloat  CL9(0.2371599674224853515625f);
-    const SimdFloat  CL7(0.285279005765914916992188f);
-    const SimdFloat  CL5(0.400005519390106201171875f);
-    const SimdFloat  CL3(0.666666567325592041015625f);
-    const SimdFloat  CL1(2.0f);
+    const SimdFloat  one(1.0F);
+    const SimdFloat  two(2.0F);
+    const SimdFloat  invsqrt2(1.0F/std::sqrt(2.0F));
+    const SimdFloat  corr(0.693147180559945286226764F);
+    const SimdFloat  CL9(0.2371599674224853515625F);
+    const SimdFloat  CL7(0.285279005765914916992188F);
+    const SimdFloat  CL5(0.400005519390106201171875F);
+    const SimdFloat  CL3(0.666666567325592041015625F);
+    const SimdFloat  CL1(2.0F);
     SimdFloat        fExp, x2, p;
     SimdFBool        m;
     SimdFInt32       iExp;
@@ -417,13 +417,13 @@ template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 exp2(SimdFloat x)
 {
-    const SimdFloat  CC6(0.0001534581200287996416911311f);
-    const SimdFloat  CC5(0.001339993121934088894618990f);
-    const SimdFloat  CC4(0.009618488957115180159497841f);
-    const SimdFloat  CC3(0.05550328776964726865751735f);
-    const SimdFloat  CC2(0.2402264689063408646490722f);
-    const SimdFloat  CC1(0.6931472057372680777553816f);
-    const SimdFloat  one(1.0f);
+    const SimdFloat  CC6(0.0001534581200287996416911311F);
+    const SimdFloat  CC5(0.001339993121934088894618990F);
+    const SimdFloat  CC4(0.009618488957115180159497841F);
+    const SimdFloat  CC3(0.05550328776964726865751735F);
+    const SimdFloat  CC2(0.2402264689063408646490722F);
+    const SimdFloat  CC1(0.6931472057372680777553816F);
+    const SimdFloat  one(1.0F);
 
     SimdFloat        intpart;
     SimdFloat        fexppart;
@@ -504,15 +504,15 @@ template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 exp(SimdFloat x)
 {
-    const SimdFloat  argscale(1.44269504088896341f);
-    const SimdFloat  invargscale0(-0.693145751953125f);
-    const SimdFloat  invargscale1(-1.428606765330187045e-06f);
-    const SimdFloat  CC4(0.00136324646882712841033936f);
-    const SimdFloat  CC3(0.00836596917361021041870117f);
-    const SimdFloat  CC2(0.0416710823774337768554688f);
-    const SimdFloat  CC1(0.166665524244308471679688f);
-    const SimdFloat  CC0(0.499999850988388061523438f);
-    const SimdFloat  one(1.0f);
+    const SimdFloat  argscale(1.44269504088896341F);
+    const SimdFloat  invargscale0(-0.693145751953125F);
+    const SimdFloat  invargscale1(-1.428606765330187045e-06F);
+    const SimdFloat  CC4(0.00136324646882712841033936F);
+    const SimdFloat  CC3(0.00836596917361021041870117F);
+    const SimdFloat  CC2(0.0416710823774337768554688F);
+    const SimdFloat  CC1(0.166665524244308471679688F);
+    const SimdFloat  CC0(0.499999850988388061523438F);
+    const SimdFloat  one(1.0F);
     SimdFloat        fexppart;
     SimdFloat        intpart;
     SimdFloat        y, p;
@@ -573,38 +573,38 @@ static inline SimdFloat gmx_simdcall
 erf(SimdFloat x)
 {
     // Coefficients for minimax approximation of erf(x)=x*P(x^2) in range [-1,1]
-    const SimdFloat  CA6(7.853861353153693e-5f);
-    const SimdFloat  CA5(-8.010193625184903e-4f);
-    const SimdFloat  CA4(5.188327685732524e-3f);
-    const SimdFloat  CA3(-2.685381193529856e-2f);
-    const SimdFloat  CA2(1.128358514861418e-1f);
-    const SimdFloat  CA1(-3.761262582423300e-1f);
-    const SimdFloat  CA0(1.128379165726710f);
+    const SimdFloat  CA6(7.853861353153693e-5F);
+    const SimdFloat  CA5(-8.010193625184903e-4F);
+    const SimdFloat  CA4(5.188327685732524e-3F);
+    const SimdFloat  CA3(-2.685381193529856e-2F);
+    const SimdFloat  CA2(1.128358514861418e-1F);
+    const SimdFloat  CA1(-3.761262582423300e-1F);
+    const SimdFloat  CA0(1.128379165726710F);
     // Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*P((1/(x-1))^2) in range [0.67,2]
-    const SimdFloat  CB9(-0.0018629930017603923f);
-    const SimdFloat  CB8(0.003909821287598495f);
-    const SimdFloat  CB7(-0.0052094582210355615f);
-    const SimdFloat  CB6(0.005685614362160572f);
-    const SimdFloat  CB5(-0.0025367682853477272f);
-    const SimdFloat  CB4(-0.010199799682318782f);
-    const SimdFloat  CB3(0.04369575504816542f);
-    const SimdFloat  CB2(-0.11884063474674492f);
-    const SimdFloat  CB1(0.2732120154030589f);
-    const SimdFloat  CB0(0.42758357702025784f);
+    const SimdFloat  CB9(-0.0018629930017603923F);
+    const SimdFloat  CB8(0.003909821287598495F);
+    const SimdFloat  CB7(-0.0052094582210355615F);
+    const SimdFloat  CB6(0.005685614362160572F);
+    const SimdFloat  CB5(-0.0025367682853477272F);
+    const SimdFloat  CB4(-0.010199799682318782F);
+    const SimdFloat  CB3(0.04369575504816542F);
+    const SimdFloat  CB2(-0.11884063474674492F);
+    const SimdFloat  CB1(0.2732120154030589F);
+    const SimdFloat  CB0(0.42758357702025784F);
     // Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*(1/x)*P((1/x)^2) in range [2,9.19]
-    const SimdFloat  CC10(-0.0445555913112064f);
-    const SimdFloat  CC9(0.21376355144663348f);
-    const SimdFloat  CC8(-0.3473187200259257f);
-    const SimdFloat  CC7(0.016690861551248114f);
-    const SimdFloat  CC6(0.7560973182491192f);
-    const SimdFloat  CC5(-1.2137903600145787f);
-    const SimdFloat  CC4(0.8411872321232948f);
-    const SimdFloat  CC3(-0.08670413896296343f);
-    const SimdFloat  CC2(-0.27124782687240334f);
-    const SimdFloat  CC1(-0.0007502488047806069f);
-    const SimdFloat  CC0(0.5642114853803148f);
-    const SimdFloat  one(1.0f);
-    const SimdFloat  two(2.0f);
+    const SimdFloat  CC10(-0.0445555913112064F);
+    const SimdFloat  CC9(0.21376355144663348F);
+    const SimdFloat  CC8(-0.3473187200259257F);
+    const SimdFloat  CC7(0.016690861551248114F);
+    const SimdFloat  CC6(0.7560973182491192F);
+    const SimdFloat  CC5(-1.2137903600145787F);
+    const SimdFloat  CC4(0.8411872321232948F);
+    const SimdFloat  CC3(-0.08670413896296343F);
+    const SimdFloat  CC2(-0.27124782687240334F);
+    const SimdFloat  CC1(-0.0007502488047806069F);
+    const SimdFloat  CC0(0.5642114853803148F);
+    const SimdFloat  one(1.0F);
+    const SimdFloat  two(2.0F);
 
     SimdFloat        x2, x4, y;
     SimdFloat        t, t2, w, w2;
@@ -630,7 +630,7 @@ erf(SimdFloat x)
 
     // Calculate erfc
     y       = abs(x);
-    maskErf = SimdFloat(0.75f) <= y;
+    maskErf = SimdFloat(0.75F) <= y;
     t       = maskzInv(y, maskErf);
     w       = t-one;
     t2      = t*t;
@@ -693,43 +693,43 @@ static inline SimdFloat gmx_simdcall
 erfc(SimdFloat x)
 {
     // Coefficients for minimax approximation of erf(x)=x*P(x^2) in range [-1,1]
-    const SimdFloat  CA6(7.853861353153693e-5f);
-    const SimdFloat  CA5(-8.010193625184903e-4f);
-    const SimdFloat  CA4(5.188327685732524e-3f);
-    const SimdFloat  CA3(-2.685381193529856e-2f);
-    const SimdFloat  CA2(1.128358514861418e-1f);
-    const SimdFloat  CA1(-3.761262582423300e-1f);
-    const SimdFloat  CA0(1.128379165726710f);
+    const SimdFloat  CA6(7.853861353153693e-5F);
+    const SimdFloat  CA5(-8.010193625184903e-4F);
+    const SimdFloat  CA4(5.188327685732524e-3F);
+    const SimdFloat  CA3(-2.685381193529856e-2F);
+    const SimdFloat  CA2(1.128358514861418e-1F);
+    const SimdFloat  CA1(-3.761262582423300e-1F);
+    const SimdFloat  CA0(1.128379165726710F);
     // Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*P((1/(x-1))^2) in range [0.67,2]
-    const SimdFloat  CB9(-0.0018629930017603923f);
-    const SimdFloat  CB8(0.003909821287598495f);
-    const SimdFloat  CB7(-0.0052094582210355615f);
-    const SimdFloat  CB6(0.005685614362160572f);
-    const SimdFloat  CB5(-0.0025367682853477272f);
-    const SimdFloat  CB4(-0.010199799682318782f);
-    const SimdFloat  CB3(0.04369575504816542f);
-    const SimdFloat  CB2(-0.11884063474674492f);
-    const SimdFloat  CB1(0.2732120154030589f);
-    const SimdFloat  CB0(0.42758357702025784f);
+    const SimdFloat  CB9(-0.0018629930017603923F);
+    const SimdFloat  CB8(0.003909821287598495F);
+    const SimdFloat  CB7(-0.0052094582210355615F);
+    const SimdFloat  CB6(0.005685614362160572F);
+    const SimdFloat  CB5(-0.0025367682853477272F);
+    const SimdFloat  CB4(-0.010199799682318782F);
+    const SimdFloat  CB3(0.04369575504816542F);
+    const SimdFloat  CB2(-0.11884063474674492F);
+    const SimdFloat  CB1(0.2732120154030589F);
+    const SimdFloat  CB0(0.42758357702025784F);
     // Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*(1/x)*P((1/x)^2) in range [2,9.19]
-    const SimdFloat  CC10(-0.0445555913112064f);
-    const SimdFloat  CC9(0.21376355144663348f);
-    const SimdFloat  CC8(-0.3473187200259257f);
-    const SimdFloat  CC7(0.016690861551248114f);
-    const SimdFloat  CC6(0.7560973182491192f);
-    const SimdFloat  CC5(-1.2137903600145787f);
-    const SimdFloat  CC4(0.8411872321232948f);
-    const SimdFloat  CC3(-0.08670413896296343f);
-    const SimdFloat  CC2(-0.27124782687240334f);
-    const SimdFloat  CC1(-0.0007502488047806069f);
-    const SimdFloat  CC0(0.5642114853803148f);
+    const SimdFloat  CC10(-0.0445555913112064F);
+    const SimdFloat  CC9(0.21376355144663348F);
+    const SimdFloat  CC8(-0.3473187200259257F);
+    const SimdFloat  CC7(0.016690861551248114F);
+    const SimdFloat  CC6(0.7560973182491192F);
+    const SimdFloat  CC5(-1.2137903600145787F);
+    const SimdFloat  CC4(0.8411872321232948F);
+    const SimdFloat  CC3(-0.08670413896296343F);
+    const SimdFloat  CC2(-0.27124782687240334F);
+    const SimdFloat  CC1(-0.0007502488047806069F);
+    const SimdFloat  CC0(0.5642114853803148F);
     // Coefficients for expansion of exp(x) in [0,0.1]
     // CD0 and CD1 are both 1.0, so no need to declare them separately
-    const SimdFloat  CD2(0.5000066608081202f);
-    const SimdFloat  CD3(0.1664795422874624f);
-    const SimdFloat  CD4(0.04379839977652482f);
-    const SimdFloat  one(1.0f);
-    const SimdFloat  two(2.0f);
+    const SimdFloat  CD2(0.5000066608081202F);
+    const SimdFloat  CD3(0.1664795422874624F);
+    const SimdFloat  CD4(0.04379839977652482F);
+    const SimdFloat  one(1.0F);
+    const SimdFloat  two(2.0F);
 
     /* We need to use a small trick here, since we cannot assume all SIMD
      * architectures support integers, and the flag we want (0xfffff000) would
@@ -739,7 +739,7 @@ erfc(SimdFloat x)
      * we can at least hope it is evaluated at compile-time.
      */
 #if GMX_SIMD_HAVE_LOGICAL
-    const SimdFloat         sieve(SimdFloat(-5.965323564e+29f) | SimdFloat(7.05044434e-30f));
+    const SimdFloat         sieve(SimdFloat(-5.965323564e+29F) | SimdFloat(7.05044434e-30F));
 #else
     const int               isieve   = 0xFFFFF000;
     alignas(GMX_SIMD_ALIGNMENT) float  mem[GMX_SIMD_FLOAT_WIDTH];
@@ -774,7 +774,7 @@ erfc(SimdFloat x)
 
     // Calculate erfc
     y       = abs(x);
-    msk_erf = SimdFloat(0.75f) <= y;
+    msk_erf = SimdFloat(0.75F) <= y;
     t       = maskzInv(y, msk_erf);
     w       = t - one;
     t2      = t * t;
@@ -870,18 +870,18 @@ sincos(SimdFloat x, SimdFloat *sinval, SimdFloat *cosval)
 {
     // Constants to subtract Pi/4*x from y while minimizing precision loss
     const SimdFloat  argred0(-1.5703125);
-    const SimdFloat  argred1(-4.83751296997070312500e-04f);
-    const SimdFloat  argred2(-7.54953362047672271729e-08f);
-    const SimdFloat  argred3(-2.56334406825708960298e-12f);
-    const SimdFloat  two_over_pi(static_cast<float>(2.0f/M_PI));
-    const SimdFloat  const_sin2(-1.9515295891e-4f);
-    const SimdFloat  const_sin1( 8.3321608736e-3f);
-    const SimdFloat  const_sin0(-1.6666654611e-1f);
-    const SimdFloat  const_cos2( 2.443315711809948e-5f);
-    const SimdFloat  const_cos1(-1.388731625493765e-3f);
-    const SimdFloat  const_cos0( 4.166664568298827e-2f);
-    const SimdFloat  half(0.5f);
-    const SimdFloat  one(1.0f);
+    const SimdFloat  argred1(-4.83751296997070312500e-04F);
+    const SimdFloat  argred2(-7.54953362047672271729e-08F);
+    const SimdFloat  argred3(-2.56334406825708960298e-12F);
+    const SimdFloat  two_over_pi(static_cast<float>(2.0F/M_PI));
+    const SimdFloat  const_sin2(-1.9515295891e-4F);
+    const SimdFloat  const_sin1( 8.3321608736e-3F);
+    const SimdFloat  const_sin0(-1.6666654611e-1F);
+    const SimdFloat  const_cos2( 2.443315711809948e-5F);
+    const SimdFloat  const_cos1(-1.388731625493765e-3F);
+    const SimdFloat  const_cos0( 4.166664568298827e-2F);
+    const SimdFloat  half(0.5F);
+    const SimdFloat  one(1.0F);
     SimdFloat        ssign, csign;
     SimdFloat        x2, y, z, psin, pcos, sss, ccc;
     SimdFBool        m;
@@ -1018,10 +1018,10 @@ static inline SimdFloat gmx_simdcall
 tan(SimdFloat x)
 {
     const SimdFloat  argred0(-1.5703125);
-    const SimdFloat  argred1(-4.83751296997070312500e-04f);
-    const SimdFloat  argred2(-7.54953362047672271729e-08f);
-    const SimdFloat  argred3(-2.56334406825708960298e-12f);
-    const SimdFloat  two_over_pi(static_cast<float>(2.0f/M_PI));
+    const SimdFloat  argred1(-4.83751296997070312500e-04F);
+    const SimdFloat  argred2(-7.54953362047672271729e-08F);
+    const SimdFloat  argred3(-2.56334406825708960298e-12F);
+    const SimdFloat  two_over_pi(static_cast<float>(2.0F/M_PI));
     const SimdFloat  CT6(0.009498288995810566122993911);
     const SimdFloat  CT5(0.002895755790837379295226923);
     const SimdFloat  CT4(0.02460087336161924491836265);
@@ -1090,15 +1090,15 @@ tan(SimdFloat x)
 static inline SimdFloat gmx_simdcall
 asin(SimdFloat x)
 {
-    const SimdFloat limitlow(1e-4f);
-    const SimdFloat half(0.5f);
-    const SimdFloat one(1.0f);
-    const SimdFloat halfpi(static_cast<float>(M_PI/2.0f));
-    const SimdFloat CC5(4.2163199048E-2f);
-    const SimdFloat CC4(2.4181311049E-2f);
-    const SimdFloat CC3(4.5470025998E-2f);
-    const SimdFloat CC2(7.4953002686E-2f);
-    const SimdFloat CC1(1.6666752422E-1f);
+    const SimdFloat limitlow(1e-4F);
+    const SimdFloat half(0.5F);
+    const SimdFloat one(1.0F);
+    const SimdFloat halfpi(static_cast<float>(M_PI/2.0F));
+    const SimdFloat CC5(4.2163199048E-2F);
+    const SimdFloat CC4(2.4181311049E-2F);
+    const SimdFloat CC3(4.5470025998E-2F);
+    const SimdFloat CC2(7.4953002686E-2F);
+    const SimdFloat CC1(1.6666752422E-1F);
     SimdFloat       xabs;
     SimdFloat       z, z1, z2, q, q1, q2;
     SimdFloat       pA, pB;
@@ -1140,10 +1140,10 @@ asin(SimdFloat x)
 static inline SimdFloat gmx_simdcall
 acos(SimdFloat x)
 {
-    const SimdFloat one(1.0f);
-    const SimdFloat half(0.5f);
+    const SimdFloat one(1.0F);
+    const SimdFloat half(0.5F);
     const SimdFloat pi(static_cast<float>(M_PI));
-    const SimdFloat halfpi(static_cast<float>(M_PI/2.0f));
+    const SimdFloat halfpi(static_cast<float>(M_PI/2.0F));
     SimdFloat       xabs;
     SimdFloat       z, z1, z2, z3;
     SimdFBool       m1, m2, m3;
@@ -1175,16 +1175,16 @@ acos(SimdFloat x)
 static inline SimdFloat gmx_simdcall
 atan(SimdFloat x)
 {
-    const SimdFloat halfpi(static_cast<float>(M_PI/2.0f));
-    const SimdFloat CA17(0.002823638962581753730774f);
-    const SimdFloat CA15(-0.01595690287649631500244f);
-    const SimdFloat CA13(0.04250498861074447631836f);
-    const SimdFloat CA11(-0.07489009201526641845703f);
-    const SimdFloat CA9 (0.1063479334115982055664f);
-    const SimdFloat CA7 (-0.1420273631811141967773f);
-    const SimdFloat CA5 (0.1999269574880599975585f);
-    const SimdFloat CA3 (-0.3333310186862945556640f);
-    const SimdFloat one (1.0f);
+    const SimdFloat halfpi(static_cast<float>(M_PI/2.0F));
+    const SimdFloat CA17(0.002823638962581753730774F);
+    const SimdFloat CA15(-0.01595690287649631500244F);
+    const SimdFloat CA13(0.04250498861074447631836F);
+    const SimdFloat CA11(-0.07489009201526641845703F);
+    const SimdFloat CA9 (0.1063479334115982055664F);
+    const SimdFloat CA7 (-0.1420273631811141967773F);
+    const SimdFloat CA5 (0.1999269574880599975585F);
+    const SimdFloat CA3 (-0.3333310186862945556640F);
+    const SimdFloat one (1.0F);
     SimdFloat       x2, x3, x4, pA, pB;
     SimdFBool       m, m2;
 
@@ -1333,19 +1333,19 @@ atan2(SimdFloat y, SimdFloat x)
 static inline SimdFloat gmx_simdcall
 pmeForceCorrection(SimdFloat z2)
 {
-    const SimdFloat  FN6(-1.7357322914161492954e-8f);
-    const SimdFloat  FN5(1.4703624142580877519e-6f);
-    const SimdFloat  FN4(-0.000053401640219807709149f);
-    const SimdFloat  FN3(0.0010054721316683106153f);
-    const SimdFloat  FN2(-0.019278317264888380590f);
-    const SimdFloat  FN1(0.069670166153766424023f);
-    const SimdFloat  FN0(-0.75225204789749321333f);
+    const SimdFloat  FN6(-1.7357322914161492954e-8F);
+    const SimdFloat  FN5(1.4703624142580877519e-6F);
+    const SimdFloat  FN4(-0.000053401640219807709149F);
+    const SimdFloat  FN3(0.0010054721316683106153F);
+    const SimdFloat  FN2(-0.019278317264888380590F);
+    const SimdFloat  FN1(0.069670166153766424023F);
+    const SimdFloat  FN0(-0.75225204789749321333F);
 
-    const SimdFloat  FD4(0.0011193462567257629232f);
-    const SimdFloat  FD3(0.014866955030185295499f);
-    const SimdFloat  FD2(0.11583842382862377919f);
-    const SimdFloat  FD1(0.50736591960530292870f);
-    const SimdFloat  FD0(1.0f);
+    const SimdFloat  FD4(0.0011193462567257629232F);
+    const SimdFloat  FD3(0.014866955030185295499F);
+    const SimdFloat  FD2(0.11583842382862377919F);
+    const SimdFloat  FD1(0.50736591960530292870F);
+    const SimdFloat  FD0(1.0F);
 
     SimdFloat        z4;
     SimdFloat        polyFN0, polyFN1, polyFD0, polyFD1;
@@ -1411,18 +1411,18 @@ pmeForceCorrection(SimdFloat z2)
 static inline SimdFloat gmx_simdcall
 pmePotentialCorrection(SimdFloat z2)
 {
-    const SimdFloat  VN6(1.9296833005951166339e-8f);
-    const SimdFloat  VN5(-1.4213390571557850962e-6f);
-    const SimdFloat  VN4(0.000041603292906656984871f);
-    const SimdFloat  VN3(-0.00013134036773265025626f);
-    const SimdFloat  VN2(0.038657983986041781264f);
-    const SimdFloat  VN1(0.11285044772717598220f);
-    const SimdFloat  VN0(1.1283802385263030286f);
+    const SimdFloat  VN6(1.9296833005951166339e-8F);
+    const SimdFloat  VN5(-1.4213390571557850962e-6F);
+    const SimdFloat  VN4(0.000041603292906656984871F);
+    const SimdFloat  VN3(-0.00013134036773265025626F);
+    const SimdFloat  VN2(0.038657983986041781264F);
+    const SimdFloat  VN1(0.11285044772717598220F);
+    const SimdFloat  VN0(1.1283802385263030286F);
 
-    const SimdFloat  VD3(0.0066752224023576045451f);
-    const SimdFloat  VD2(0.078647795836373922256f);
-    const SimdFloat  VD1(0.43336185284710920150f);
-    const SimdFloat  VD0(1.0f);
+    const SimdFloat  VD3(0.0066752224023576045451F);
+    const SimdFloat  VD2(0.078647795836373922256F);
+    const SimdFloat  VD1(0.43336185284710920150F);
+    const SimdFloat  VD0(1.0F);
 
     SimdFloat        z4;
     SimdFloat        polyVN0, polyVN1, polyVD0, polyVD1;
@@ -4108,8 +4108,8 @@ static inline Simd4Float gmx_simdcall
 rsqrtIter(Simd4Float lu, Simd4Float x)
 {
     Simd4Float tmp1 = x*lu;
-    Simd4Float tmp2 = Simd4Float(-0.5f)*lu;
-    tmp1 = fma(tmp1, lu, Simd4Float(-3.0f));
+    Simd4Float tmp2 = Simd4Float(-0.5F)*lu;
+    tmp1 = fma(tmp1, lu, Simd4Float(-3.0F));
     return tmp1*tmp2;
 }
 
@@ -4164,8 +4164,8 @@ static inline Simd4Double gmx_simdcall
 rsqrtIter(Simd4Double lu, Simd4Double x)
 {
     Simd4Double tmp1 = x*lu;
-    Simd4Double tmp2 = Simd4Double(-0.5f)*lu;
-    tmp1             = fma(tmp1, lu, Simd4Double(-3.0f));
+    Simd4Double tmp2 = Simd4Double(-0.5F)*lu;
+    tmp1             = fma(tmp1, lu, Simd4Double(-3.0F));
     return tmp1*tmp2;
 }
 

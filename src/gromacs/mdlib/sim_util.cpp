@@ -1477,7 +1477,7 @@ void do_force(FILE                                     *fplog,
          * but even with a step of 0.1 ms the difference is less than 1%
          * of the step time.
          */
-        const float gpuWaitApiOverheadMargin = 2e6f; /* cycles */
+        const float gpuWaitApiOverheadMargin = 2e6F; /* cycles */
 
         wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
         Nbnxm::gpu_wait_finish_task(nbv->gpu_nbv,

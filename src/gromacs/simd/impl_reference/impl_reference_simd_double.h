@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -628,7 +628,7 @@ rsqrt(SimdDouble x)
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
         // sic - we only use single precision for the lookup
-        res.simdInternal_[i] = 1.0f / std::sqrt(static_cast<float>(x.simdInternal_[i]));
+        res.simdInternal_[i] = 1.0F / std::sqrt(static_cast<float>(x.simdInternal_[i]));
     }
     return res;
 };
@@ -649,7 +649,7 @@ rcp(SimdDouble x)
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
         // sic - we only use single precision for the lookup
-        res.simdInternal_[i] = 1.0f / static_cast<float>(x.simdInternal_[i]);
+        res.simdInternal_[i] = 1.0F / static_cast<float>(x.simdInternal_[i]);
     }
     return res;
 };
@@ -730,7 +730,7 @@ maskzRsqrt(SimdDouble x, SimdDBool m)
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
         // sic - we only use single precision for the lookup
-        res.simdInternal_[i] = (m.simdInternal_[i] != 0) ? 1.0f / std::sqrt(static_cast<float>(x.simdInternal_[i])) : 0.0;
+        res.simdInternal_[i] = (m.simdInternal_[i] != 0) ? 1.0F / std::sqrt(static_cast<float>(x.simdInternal_[i])) : 0.0;
     }
     return res;
 }
@@ -752,7 +752,7 @@ maskzRcp(SimdDouble x, SimdDBool m)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        res.simdInternal_[i] = (m.simdInternal_[i] != 0) ? 1.0f / static_cast<float>(x.simdInternal_[i]) : 0.0;
+        res.simdInternal_[i] = (m.simdInternal_[i] != 0) ? 1.0F / static_cast<float>(x.simdInternal_[i]) : 0.0;
     }
     return res;
 }

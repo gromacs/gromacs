@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -253,15 +253,15 @@ std::vector<Matrix3x3> const c_sampleBoxes
 {
     // normal box
     Matrix3x3 {{
-                   8.0f, 0.0f, 0.0f,
-                   0.0f, 3.4f, 0.0f,
-                   0.0f, 0.0f, 2.0f
+                   8.0F, 0.0F, 0.0F,
+                   0.0F, 3.4F, 0.0F,
+                   0.0F, 0.0F, 2.0F
                }},
     // triclinic box
     Matrix3x3 {{
-                   7.0f, 0.0f, 0.0f,
-                   0.0f, 4.1f, 0.0f,
-                   3.5f, 2.0f, 12.2f
+                   7.0F, 0.0F, 0.0F,
+                   0.0F, 4.1F, 0.0F,
+                   3.5F, 2.0F, 12.2F
                }},
 };
 
@@ -288,56 +288,56 @@ std::vector<SparseComplexGridValuesInput> const c_sampleGrids
                                       IVec {
                                           0, 0, 0
                                       }, t_complex {
-                                          3.5f, 6.7f
+                                          3.5F, 6.7F
                                       }
                                   }, {
                                       IVec {
                                           7, 0, 0
                                       }, t_complex {
-                                          -2.5f, -0.7f
+                                          -2.5F, -0.7F
                                       }
                                   }, {
                                       IVec {
                                           3, 5, 7
                                       }, t_complex {
-                                          -0.006f, 1e-8f
+                                          -0.006F, 1e-8F
                                       }
                                   }, {
                                       IVec {
                                           3, 1, 2
                                       }, t_complex {
-                                          0.6f, 7.9f
+                                          0.6F, 7.9F
                                       }
                                   },  {
                                       IVec {
                                           6, 2, 4
                                       }, t_complex {
-                                          30.1f, 2.45f
+                                          30.1F, 2.45F
                                       }
                                   }, },
     SparseComplexGridValuesInput {{
                                       IVec {
                                           0, 4, 0
                                       }, t_complex {
-                                          0.0f, 0.3f
+                                          0.0F, 0.3F
                                       }
                                   }, {
                                       IVec {
                                           4, 2, 7
                                       }, t_complex {
-                                          13.76f, -40.0f
+                                          13.76F, -40.0F
                                       }
                                   }, {
                                       IVec {
                                           0, 6, 7
                                       }, t_complex {
-                                          3.6f, 0.0f
+                                          3.6F, 0.0F
                                       }
                                   }, {
                                       IVec {
                                           2, 5, 10
                                       }, t_complex {
-                                          3.6f, 10.65f
+                                          3.6F, 10.65F
                                       }
                                   }, }
 };

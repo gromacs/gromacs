@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,8 +91,8 @@ template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 exp(SimdFloat x)
 {
-    const __m512     argscale    = _mm512_set1_ps(1.44269504088896341f);
-    const __m512     invargscale = _mm512_set1_ps(-0.69314718055994528623f);
+    const __m512     argscale    = _mm512_set1_ps(1.44269504088896341F);
+    const __m512     invargscale = _mm512_set1_ps(-0.69314718055994528623F);
 
     if (opt == MathOptimization::Safe)
     {

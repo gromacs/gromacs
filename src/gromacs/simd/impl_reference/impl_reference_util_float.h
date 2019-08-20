@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -931,7 +931,7 @@ reduceIncr4ReturnSumHsimd(float *            m,
                           SimdFloat          v1)
 {
     // The 4 here corresponds to the 4 elements in memory, not any SIMD width
-    float sum[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    float sum[4] = { 0.0F, 0.0F, 0.0F, 0.0F };
 
     for (std::size_t i = 0; i < v0.simdInternal_.size()/2; i++)
     {

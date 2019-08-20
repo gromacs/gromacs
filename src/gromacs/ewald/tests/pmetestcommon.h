@@ -122,8 +122,8 @@ PmeSafePointer pmeInitEmpty(const t_inputrec *inputRec,
                             CodePath mode = CodePath::CPU,
                             const gmx_device_info_t *gpuInfo = nullptr,
                             PmeGpuProgramHandle pmeGpuProgram = nullptr,
-                            const Matrix3x3 &box = {{1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}},
-                            real ewaldCoeff_q = 0.0f, real ewaldCoeff_lj = 0.0f);
+                            const Matrix3x3 &box = {{1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F}},
+                            real ewaldCoeff_q = 0.0F, real ewaldCoeff_lj = 0.0F);
 //! PME initialization with atom data and system box
 PmeSafePointer pmeInitAtoms(const t_inputrec         *inputRec,
                             CodePath                  mode,

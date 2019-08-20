@@ -316,7 +316,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
 
 
     fprintf(out, "TITLE     %s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
-    if (box && ( (norm2(box[XX]) != 0.0f) || (norm2(box[YY]) != 0.0f) || (norm2(box[ZZ]) != 0.0f) ) )
+    if (box && ( (norm2(box[XX]) != 0.0F) || (norm2(box[YY]) != 0.0F) || (norm2(box[ZZ]) != 0.0F) ) )
     {
         gmx_write_pdb_box(out, ePBC, box);
     }

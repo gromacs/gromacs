@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2004 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -644,7 +644,7 @@ L40:
         *rnorm = F77_FUNC(dnrm2, DNRM2) (n, &resid[1], &c__1);
     }
 
-    if (*rnorm > workd[*n * 3 + 4] * .717f)
+    if (*rnorm > workd[*n * 3 + 4] * .717F)
     {
         goto L50;
     }
@@ -1696,7 +1696,7 @@ L70:
         *rnorm = F77_FUNC(dnrm2, DNRM2) (n, &resid[1], &c__1);
     }
 
-    if (*rnorm > workd[*n * 3 + 3] * .717f)
+    if (*rnorm > workd[*n * 3 + 3] * .717F)
     {
         goto L100;
     }
@@ -1744,7 +1744,7 @@ L90:
     }
 
 
-    if (workd[*n * 3 + 2] > *rnorm * .717f)
+    if (workd[*n * 3 + 2] > *rnorm * .717F)
     {
 
         *rnorm = workd[*n * 3 + 2];
@@ -3507,7 +3507,7 @@ L40:
         *rnorm = F77_FUNC(snrm2, SNRM2) (n, &resid[1], &c__1);
     }
 
-    if (*rnorm > workd[*n * 3 + 4] * .717f)
+    if (*rnorm > workd[*n * 3 + 4] * .717F)
     {
         goto L50;
     }
@@ -4559,7 +4559,7 @@ L70:
         *rnorm = F77_FUNC(snrm2, SNRM2) (n, &resid[1], &c__1);
     }
 
-    if (*rnorm > workd[*n * 3 + 3] * .717f)
+    if (*rnorm > workd[*n * 3 + 3] * .717F)
     {
         goto L100;
     }
@@ -4607,7 +4607,7 @@ L90:
     }
 
 
-    if (workd[*n * 3 + 2] > *rnorm * .717f)
+    if (workd[*n * 3 + 2] > *rnorm * .717F)
     {
 
         *rnorm = workd[*n * 3 + 2];

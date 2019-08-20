@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -103,7 +103,7 @@ inline static bool bitmask_is_set(gmx_bitmask_t m, int b)
 /*! \brief Test if both bitmasks have no common bits enabled */
 inline static bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
 {
-    return (a & b) == 0u;
+    return (a & b) == 0U;
 }
 
 /*! \brief Test if both bitmasks are equal */
@@ -115,7 +115,7 @@ inline static bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
 /*! \brief Test if bitmask has no enabled bits */
 inline static bool bitmask_is_zero(gmx_bitmask_t m)
 {
-    return m == 0u;
+    return m == 0U;
 }
 
 /*! \brief Set all bits enabled in either mask and write into a */
@@ -161,7 +161,7 @@ inline static bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
     bool     r = true;
     for (i = 0; i < BITMASK_ALEN; i++)
     {
-        r = r && ((a[i] & b[i]) == 0u);
+        r = r && ((a[i] & b[i]) == 0U);
     }
     return r;
 }
@@ -183,7 +183,7 @@ inline static bool bitmask_is_zero(gmx_bitmask_t m)
     bool     r = true;
     for (i = 0; i < BITMASK_ALEN; i++)
     {
-        r = r && (m[i] == 0u);
+        r = r && (m[i] == 0U);
     }
     return r;
 }

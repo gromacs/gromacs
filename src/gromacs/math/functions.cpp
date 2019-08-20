@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -231,42 +231,42 @@ erfinv(float x)
 {
     float xabs = std::abs(x);
 
-    if (xabs > 1.0f)
+    if (xabs > 1.0F)
     {
         return std::nan("");
     }
 
-    if (x == 1.0f)
+    if (x == 1.0F)
     {
         return std::numeric_limits<float>::infinity();
     }
 
-    if (x == -1.0f)
+    if (x == -1.0F)
     {
         return -std::numeric_limits<float>::infinity();
     }
 
     float res;
 
-    if (xabs <= 0.7f)
+    if (xabs <= 0.7F)
     {
         // Rational approximation in range [0,0.7]
         float z = x*x;
-        float P = (((-0.140543331f * z + 0.914624893f) * z - 1.645349621f) * z + 0.886226899f);
-        float Q = ((((0.012229801f * z - 0.329097515f) * z + 1.442710462f) * z - 2.118377725f) * z + 1.0f);
+        float P = (((-0.140543331F * z + 0.914624893F) * z - 1.645349621F) * z + 0.886226899F);
+        float Q = ((((0.012229801F * z - 0.329097515F) * z + 1.442710462F) * z - 2.118377725F) * z + 1.0F);
         res = x * P/Q;
     }
     else
     {
         // Rational approximation in range [0.7,1)
-        float z = std::sqrt(-std::log((1.0 - std::abs(x))/2.0f));
-        float P = ((1.641345311f * z + 3.429567803f) * z - 1.624906493f) * z - 1.970840454f;
-        float Q = (1.637067800f * z + 3.543889200f) * z + 1.0f;
-        res = std::copysign(1.0f, x) * P/Q;
+        float z = std::sqrt(-std::log((1.0 - std::abs(x))/2.0F));
+        float P = ((1.641345311F * z + 3.429567803F) * z - 1.624906493F) * z - 1.970840454F;
+        float Q = (1.637067800F * z + 3.543889200F) * z + 1.0F;
+        res = std::copysign(1.0F, x) * P/Q;
     }
 
     // Single N-R iteration sufficient for single precision
-    res = res - (std::erf(res) - x)/( (2.0f/std::sqrt(M_PI))*std::exp(-res*res));
+    res = res - (std::erf(res) - x)/( (2.0F/std::sqrt(M_PI))*std::exp(-res*res));
 
     return res;
 }

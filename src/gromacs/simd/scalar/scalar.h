@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -183,7 +183,7 @@ fnms(float a, float b, float c)
 static inline float
 maskAdd(float a, float b, float m)
 {
-    return a + (m != 0.0f ? b : 0.0f);
+    return a + (m != 0.0F ? b : 0.0F);
 }
 
 /*! \brief Multiply two float variables, masked version.
@@ -200,7 +200,7 @@ maskAdd(float a, float b, float m)
 static inline float
 maskzMul(float a, float b, float m)
 {
-    return m != 0.0f ? (a * b) : 0.0f;
+    return m != 0.0F ? (a * b) : 0.0F;
 }
 
 /*! \brief Float fused multiply-add, masked version.
@@ -218,7 +218,7 @@ maskzMul(float a, float b, float m)
 static inline float
 maskzFma(float a, float b, float c, float m)
 {
-    return m != 0.0f ? (a * b + c) : 0.0f;
+    return m != 0.0F ? (a * b + c) : 0.0F;
 }
 
 /*! \brief Float Floating-point abs().
@@ -394,7 +394,7 @@ anyTrue(bool a)
 static inline float
 selectByMask(float a, bool mask)
 {
-    return mask ? a : 0.0f;
+    return mask ? a : 0.0F;
 }
 
 /*! \brief Select from single precision variable where boolean is false.
@@ -410,7 +410,7 @@ selectByMask(float a, bool mask)
 static inline float
 selectByNotMask(float a, bool mask)
 {
-    return mask ? 0.0f : a;
+    return mask ? 0.0F : a;
 }
 
 /*! \brief Blend float selection.

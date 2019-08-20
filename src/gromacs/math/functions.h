@@ -167,7 +167,7 @@ greatestCommonDivisor(std::int64_t p, std::int64_t q);
 static inline float
 invsqrt(float x)
 {
-    return 1.0f/std::sqrt(x);
+    return 1.0F/std::sqrt(x);
 }
 
 /*! \brief Calculate 1.0/sqrt(x) in double precision, but single range
@@ -210,7 +210,7 @@ invsqrt(int x)
 static inline float
 invcbrt(float x)
 {
-    return 1.0f/std::cbrt(x);
+    return 1.0F/std::cbrt(x);
 }
 
 /*! \brief Calculate inverse sixth root of x in double precision

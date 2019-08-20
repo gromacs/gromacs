@@ -598,12 +598,12 @@ TEST_P (ListedForcesTest, Ifunc)
 std::vector<iListInput> c_InputBonds =
 {
     { iListInput().setHarmonic(F_BONDS, 0.15, 500.0) },
-    { iListInput(2e-6f, 1e-8).setHarmonic(F_BONDS, 0.15, 500.0, 0.17, 400.0) },
-    { iListInput(1e-4f, 1e-8).setHarmonic(F_G96BONDS, 0.15, 50.0) },
+    { iListInput(2e-6F, 1e-8).setHarmonic(F_BONDS, 0.15, 500.0, 0.17, 400.0) },
+    { iListInput(1e-4F, 1e-8).setHarmonic(F_G96BONDS, 0.15, 50.0) },
     { iListInput().setHarmonic(F_G96BONDS, 0.15, 50.0, 0.17, 40.0) },
     { iListInput().setCubic(0.16, 50.0, 2.0) },
-    { iListInput(2e-6f, 1e-8).setMorse(0.15, 50.0, 2.0, 0.17, 40.0, 1.6) },
-    { iListInput(2e-6f, 1e-8).setMorse(0.15, 30.0, 2.7) },
+    { iListInput(2e-6F, 1e-8).setMorse(0.15, 50.0, 2.0, 0.17, 40.0, 1.6) },
+    { iListInput(2e-6F, 1e-8).setMorse(0.15, 30.0, 2.7) },
     { iListInput().setFene(0.4, 5.0) }
 };
 

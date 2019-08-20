@@ -154,7 +154,7 @@ void DDBalanceRegionHandler::closeRegionGpuImpl(float                       wait
             /* The actual time could be anywhere between 0 and
              * waitCyclesEstimate. Using half is the best we can do.
              */
-            const float unknownWaitEstimateFactor = 0.5f;
+            const float unknownWaitEstimateFactor = 0.5F;
             waitGpuCyclesEstimate *= unknownWaitEstimateFactor;
         }
 

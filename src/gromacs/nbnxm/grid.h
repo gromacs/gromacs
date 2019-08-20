@@ -329,14 +329,14 @@ class Grid
         //! Returns whether any atom in the cluster is perturbed
         bool clusterIsPerturbed(int clusterIndex) const
         {
-            return fep_[clusterIndex] != 0u;
+            return fep_[clusterIndex] != 0U;
         }
 
         //! Returns whether the given atom in the cluster is perturbed
         bool atomIsPerturbed(int clusterIndex,
                              int atomIndexInCluster) const
         {
-            return (fep_[clusterIndex] & (1 << atomIndexInCluster)) != 0u;
+            return (fep_[clusterIndex] & (1 << atomIndexInCluster)) != 0U;
         }
 
         //! Returns the free-energy perturbation bits for the cluster

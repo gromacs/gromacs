@@ -56,7 +56,7 @@ static bool
 ftype_is_bonded_potential(int ftype)
 {
     return
-        ((interaction_function[ftype].flags & IF_BOND) != 0u) &&
+        ((interaction_function[ftype].flags & IF_BOND) != 0U) &&
         !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES);
 }
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -255,7 +255,7 @@ TEST(SimdScalarMathTest, invSingleAccuracy)
 {
     double x0 = c1;
 
-    EXPECT_EQ(1.0f/static_cast<float>(x0),
+    EXPECT_EQ(1.0F/static_cast<float>(x0),
               static_cast<float>(invSingleAccuracy(x0)));
 }
 
@@ -265,7 +265,7 @@ TEST(SimdScalarMathTest, maskzInvsqrtSingleAccuracy)
 
     EXPECT_EQ(invsqrt(static_cast<float>(x0)),
               static_cast<float>(maskzInvsqrtSingleAccuracy(x0, true)));
-    EXPECT_EQ(0.0f,
+    EXPECT_EQ(0.0F,
               static_cast<float>(maskzInvsqrtSingleAccuracy(x0, false)));
 }
 

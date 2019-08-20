@@ -1253,7 +1253,7 @@ int gmx_analyze(int argc, char *argv[])
     }
     printf("\n");
 
-    if (filtlen != 0.0f)
+    if (filtlen != 0.0F)
     {
         filter(filtlen, n, nset, val, dt);
     }

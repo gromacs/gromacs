@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -305,7 +305,7 @@ static inline SimdFloat gmx_simdcall
 maskzRsqrt(SimdFloat x, SimdFBool m)
 {
 #ifndef NDEBUG
-    SimdFloat one(1.0f);
+    SimdFloat one(1.0F);
     x.simdInternal_ = vec_sel(one.simdInternal_, x.simdInternal_, m.simdInternal_);
 #endif
     return {
@@ -317,7 +317,7 @@ static inline SimdFloat gmx_simdcall
 maskzRcp(SimdFloat x, SimdFBool m)
 {
 #ifndef NDEBUG
-    SimdFloat one(1.0f);
+    SimdFloat one(1.0F);
     x.simdInternal_ = vec_sel(one.simdInternal_, x.simdInternal_, m.simdInternal_);
 #endif
     return {
@@ -372,7 +372,7 @@ frexp(SimdFloat value, SimdFInt32 * exponent)
     const __vector signed int exponentMask = vec_sl(vec_add(vec_splat_s32(15), vec_sl(vec_splat_s32(15), vec_splat_u32(4))),
                                                     vec_add(vec_splat_u32(15), vec_splat_u32(8)));                  // 0x7F800000
     const __vector signed int exponentBias = vec_sub(vec_sl(vec_splat_s32(1), vec_splat_u32(7)), vec_splat_s32(2)); // 126
-    const SimdFloat           half(0.5f);
+    const SimdFloat           half(0.5F);
     __vector signed int       iExponent;
 
     iExponent               = vec_and(reinterpret_cast<__vector signed int>(value.simdInternal_), exponentMask);

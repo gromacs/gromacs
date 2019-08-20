@@ -56,7 +56,7 @@ namespace gmx
 void
 SetAtoms::checkAbilityDependencies(unsigned long abilities) const
 {
-    if ((abilities & convertFlag(moduleRequirements_)) == 0u)
+    if ((abilities & convertFlag(moduleRequirements_)) == 0U)
     {
         std::string errorMessage = "Output file type does not support writing atom information. "
             "You need to use PDB, GRO or TNG as the file type for this.";

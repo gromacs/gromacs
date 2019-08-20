@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -248,15 +248,15 @@ std::vector<Matrix3x3> const c_sampleBoxes
 {
     // normal box
     Matrix3x3 {{
-                   8.0f, 0.0f, 0.0f,
-                   0.0f, 3.4f, 0.0f,
-                   0.0f, 0.0f, 2.0f
+                   8.0F, 0.0F, 0.0F,
+                   0.0F, 3.4F, 0.0F,
+                   0.0F, 0.0F, 2.0F
                }},
     // triclinic box
     Matrix3x3 {{
-                   7.0f, 0.0f, 0.0f,
-                   0.0f, 4.1f, 0.0f,
-                   3.5f, 2.0f, 12.2f
+                   7.0F, 0.0F, 0.0F,
+                   0.0F, 4.1F, 0.0F,
+                   3.5F, 2.0F, 12.2F
                }},
 };
 
@@ -274,7 +274,7 @@ std::vector<IVec> const c_sampleGridSizes
 //! Random charges
 std::vector<real> const c_sampleChargesFull
 {
-    4.95f, 3.11f, 3.97f, 1.08f, 2.09f, 1.1f, 4.13f, 3.31f, 2.8f, 5.83f, 5.09f, 6.1f, 2.86f, 0.24f, 5.76f, 5.19f, 0.72f
+    4.95F, 3.11F, 3.97F, 1.08F, 2.09F, 1.1F, 4.13F, 3.31F, 2.8F, 5.83F, 5.09F, 6.1F, 2.86F, 0.24F, 5.76F, 5.19F, 0.72F
 };
 //! 1 charge
 auto const c_sampleCharges1 = ChargesVector(c_sampleChargesFull).subArray(0, 1);
@@ -287,39 +287,39 @@ auto const c_sampleCharges13 = ChargesVector(c_sampleChargesFull).subArray(3, 13
 CoordinatesVector const c_sampleCoordinatesFull
 {
     {
-        5.59f, 1.37f, 0.95f
+        5.59F, 1.37F, 0.95F
     }, {
-        16.0f, 1.02f, 0.22f      // 2 box lengths in x
+        16.0F, 1.02F, 0.22F      // 2 box lengths in x
     }, {
-        0.034f, 1.65f, 0.22f
+        0.034F, 1.65F, 0.22F
     }, {
-        0.33f, 0.92f, 1.56f
+        0.33F, 0.92F, 1.56F
     }, {
-        1.16f, 0.75f, 0.39f
+        1.16F, 0.75F, 0.39F
     }, {
-        0.5f, 1.63f, 1.14f
+        0.5F, 1.63F, 1.14F
     }, {
-        16.0001f, 1.52f, 1.19f  // > 2 box lengths in x
+        16.0001F, 1.52F, 1.19F  // > 2 box lengths in x
     }, {
-        1.43f, 1.1f, 4.1f       // > 2 box lengths in z
+        1.43F, 1.1F, 4.1F       // > 2 box lengths in z
     }, {
-        -1.08f, 1.19f, 0.08f    // negative x
+        -1.08F, 1.19F, 0.08F    // negative x
     }, {
-        1.6f, 0.93f, 0.53f
+        1.6F, 0.93F, 0.53F
     }, {
-        1.32f, -1.48f, 0.16f    // negative y
+        1.32F, -1.48F, 0.16F    // negative y
     }, {
-        0.87f, 0.0f, 0.33f
+        0.87F, 0.0F, 0.33F
     }, {
-        0.95f, 7.7f, -0.48f     // > 2 box lengths in y, negative z
+        0.95F, 7.7F, -0.48F     // > 2 box lengths in y, negative z
     }, {
-        1.23f, 0.91f, 0.68f
+        1.23F, 0.91F, 0.68F
     }, {
-        0.19f, 1.45f, 0.94f
+        0.19F, 1.45F, 0.94F
     }, {
-        1.28f, 0.46f, 0.38f
+        1.28F, 0.46F, 0.38F
     }, {
-        1.21f, 0.23f, 1.0f
+        1.21F, 0.23F, 1.0F
     }
 };
 //! 1 coordinate vector

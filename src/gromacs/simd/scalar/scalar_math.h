@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -115,7 +115,7 @@ invsqrtPair(float x0,    float x1,
 static inline float
 inv(float x)
 {
-    return 1.0f/x;
+    return 1.0F/x;
 }
 
 /*! \brief Calculate 1/sqrt(x) for masked entry of float.
@@ -136,7 +136,7 @@ inv(float x)
 static inline float
 maskzInvsqrt(float x, bool m)
 {
-    return m ? invsqrt(x) : 0.0f;
+    return m ? invsqrt(x) : 0.0F;
 }
 
 /*! \brief Calculate 1/x for masked entry of float.
@@ -157,7 +157,7 @@ maskzInvsqrt(float x, bool m)
 static inline float
 maskzInv(float x, bool m)
 {
-    return m ? inv(x) : 0.0f;
+    return m ? inv(x) : 0.0F;
 }
 
 /*! \brief Float sqrt(x). This is the square root.
@@ -391,19 +391,19 @@ atan2(float y, float x)
 static inline float
 pmeForceCorrection(float z2)
 {
-    const float  FN6(-1.7357322914161492954e-8f);
-    const float  FN5(1.4703624142580877519e-6f);
-    const float  FN4(-0.000053401640219807709149f);
-    const float  FN3(0.0010054721316683106153f);
-    const float  FN2(-0.019278317264888380590f);
-    const float  FN1(0.069670166153766424023f);
-    const float  FN0(-0.75225204789749321333f);
+    const float  FN6(-1.7357322914161492954e-8F);
+    const float  FN5(1.4703624142580877519e-6F);
+    const float  FN4(-0.000053401640219807709149F);
+    const float  FN3(0.0010054721316683106153F);
+    const float  FN2(-0.019278317264888380590F);
+    const float  FN1(0.069670166153766424023F);
+    const float  FN0(-0.75225204789749321333F);
 
-    const float  FD4(0.0011193462567257629232f);
-    const float  FD3(0.014866955030185295499f);
-    const float  FD2(0.11583842382862377919f);
-    const float  FD1(0.50736591960530292870f);
-    const float  FD0(1.0f);
+    const float  FD4(0.0011193462567257629232F);
+    const float  FD3(0.014866955030185295499F);
+    const float  FD2(0.11583842382862377919F);
+    const float  FD1(0.50736591960530292870F);
+    const float  FD0(1.0F);
 
     float        z4;
     float        polyFN0, polyFN1, polyFD0, polyFD1;
@@ -439,18 +439,18 @@ pmeForceCorrection(float z2)
 static inline float
 pmePotentialCorrection(float z2)
 {
-    const float  VN6(1.9296833005951166339e-8f);
-    const float  VN5(-1.4213390571557850962e-6f);
-    const float  VN4(0.000041603292906656984871f);
-    const float  VN3(-0.00013134036773265025626f);
-    const float  VN2(0.038657983986041781264f);
-    const float  VN1(0.11285044772717598220f);
-    const float  VN0(1.1283802385263030286f);
+    const float  VN6(1.9296833005951166339e-8F);
+    const float  VN5(-1.4213390571557850962e-6F);
+    const float  VN4(0.000041603292906656984871F);
+    const float  VN3(-0.00013134036773265025626F);
+    const float  VN2(0.038657983986041781264F);
+    const float  VN1(0.11285044772717598220F);
+    const float  VN0(1.1283802385263030286F);
 
-    const float  VD3(0.0066752224023576045451f);
-    const float  VD2(0.078647795836373922256f);
-    const float  VD1(0.43336185284710920150f);
-    const float  VD0(1.0f);
+    const float  VD3(0.0066752224023576045451F);
+    const float  VD2(0.078647795836373922256F);
+    const float  VD1(0.43336185284710920150F);
+    const float  VD0(1.0F);
 
     float        z4;
     float        polyVN0, polyVN1, polyVD0, polyVD1;
@@ -959,7 +959,7 @@ invsqrtPairSingleAccuracy(double x0,    double x1,
 static inline double
 invSingleAccuracy(double x)
 {
-    return 1.0f/x;
+    return 1.0F/x;
 }
 
 /*! \brief Calculate 1/sqrt(x) for masked entry of double, but with single accuracy.
@@ -1234,19 +1234,19 @@ atan2SingleAccuracy(double y, double x)
 static inline double
 pmeForceCorrectionSingleAccuracy(double z2)
 {
-    const float  FN6(-1.7357322914161492954e-8f);
-    const float  FN5(1.4703624142580877519e-6f);
-    const float  FN4(-0.000053401640219807709149f);
-    const float  FN3(0.0010054721316683106153f);
-    const float  FN2(-0.019278317264888380590f);
-    const float  FN1(0.069670166153766424023f);
-    const float  FN0(-0.75225204789749321333f);
+    const float  FN6(-1.7357322914161492954e-8F);
+    const float  FN5(1.4703624142580877519e-6F);
+    const float  FN4(-0.000053401640219807709149F);
+    const float  FN3(0.0010054721316683106153F);
+    const float  FN2(-0.019278317264888380590F);
+    const float  FN1(0.069670166153766424023F);
+    const float  FN0(-0.75225204789749321333F);
 
-    const float  FD4(0.0011193462567257629232f);
-    const float  FD3(0.014866955030185295499f);
-    const float  FD2(0.11583842382862377919f);
-    const float  FD1(0.50736591960530292870f);
-    const float  FD0(1.0f);
+    const float  FD4(0.0011193462567257629232F);
+    const float  FD3(0.014866955030185295499F);
+    const float  FD2(0.11583842382862377919F);
+    const float  FD1(0.50736591960530292870F);
+    const float  FD0(1.0F);
 
     float        z4;
     float        polyFN0, polyFN1, polyFD0, polyFD1;
@@ -1284,18 +1284,18 @@ pmeForceCorrectionSingleAccuracy(double z2)
 static inline double
 pmePotentialCorrectionSingleAccuracy(double z2)
 {
-    const float  VN6(1.9296833005951166339e-8f);
-    const float  VN5(-1.4213390571557850962e-6f);
-    const float  VN4(0.000041603292906656984871f);
-    const float  VN3(-0.00013134036773265025626f);
-    const float  VN2(0.038657983986041781264f);
-    const float  VN1(0.11285044772717598220f);
-    const float  VN0(1.1283802385263030286f);
+    const float  VN6(1.9296833005951166339e-8F);
+    const float  VN5(-1.4213390571557850962e-6F);
+    const float  VN4(0.000041603292906656984871F);
+    const float  VN3(-0.00013134036773265025626F);
+    const float  VN2(0.038657983986041781264F);
+    const float  VN1(0.11285044772717598220F);
+    const float  VN0(1.1283802385263030286F);
 
-    const float  VD3(0.0066752224023576045451f);
-    const float  VD2(0.078647795836373922256f);
-    const float  VD1(0.43336185284710920150f);
-    const float  VD0(1.0f);
+    const float  VD3(0.0066752224023576045451F);
+    const float  VD2(0.078647795836373922256F);
+    const float  VD1(0.43336185284710920150F);
+    const float  VD0(1.0F);
 
     float        z4;
     float        polyVN0, polyVN1, polyVD0, polyVD1;

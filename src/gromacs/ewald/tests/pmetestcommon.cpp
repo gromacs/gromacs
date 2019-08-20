@@ -112,8 +112,8 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
                                       const gmx_device_info_t  *gpuInfo,
                                       PmeGpuProgramHandle       pmeGpuProgram,
                                       const Matrix3x3          &box,
-                                      real                      ewaldCoeff_q = 1.0f,
-                                      real                      ewaldCoeff_lj = 1.0f
+                                      real                      ewaldCoeff_q = 1.0F,
+                                      real                      ewaldCoeff_lj = 1.0F
                                       )
 {
     const MDLogger dummyLogger;

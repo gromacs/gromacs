@@ -465,7 +465,7 @@ static gmx_bool analyze_data(
                 {
                     /* Somehow the performance number was not aquired for this run,
                      * therefor set the average to some negative value: */
-                    pd->ns_per_day_Av = -1.0f*nrepeats;
+                    pd->ns_per_day_Av = -1.0F*nrepeats;
                     break;
                 }
             }
