@@ -16,6 +16,18 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix (unlikely) missing bonded forces with CUDA GPUs and domain decomposition
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Forces could be missing for bonded interactions computed on CUDA GPUs with
+domain decomposition when there are non-local bonded interactions, but no
+non-local non-bonded interactions between two domains. Note that this is
+extremely unlikely to happen, since the distance between the bonded atoms
+needs to be larger than the pair-list cut-off distance and there should be no
+other non-local atoms within the pair-list cut-off distance.
+
+:issue:`3063`
+
 Fix segmentation fault in grompp and mdrun with cosine COM pulling
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

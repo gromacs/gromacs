@@ -1602,7 +1602,8 @@ static void do_force_cutsVERLET(FILE *fplog,
             }
 
             /* skip the reduction if there was no non-local work to do */
-            if (nbv->grp[eintNonlocal].nbl_lists.nbl[0]->nsci > 0)
+            if (nbv->grp[eintNonlocal].nbl_lists.nbl[0]->nsci > 0 ||
+                ppForceWorkload->haveGpuBondedWork)
             {
                 nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatNonlocal,
                                                nbv->nbat, f, wcycle);
