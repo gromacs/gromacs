@@ -255,6 +255,39 @@ reduce_thread_output(int n, gmx::ForceWithShiftForces *forceWithShiftForces,
     }
 }
 
+/*! \brief Returns the bonded kernel flavor
+ *
+ * Note that energies are always requested when the virial
+ * is requested (performance gain would be small).
+ * Note that currently we do not have bonded kernels that
+ * do not compute forces.
+ */
+BondedKernelFlavor bondedKernelFlavor(const int     forceFlags,
+                                      const bool    useSimdKernels,
+                                      const t_idef &idef,
+                                      const int     ftype)
+{
+    GMX_ASSERT(idef.ilsort == ilsortNO_FE || idef.ilsort == ilsortFE_SORTED,
+               "The topology should be marked either as no FE or sorted on FE");
+
+    BondedKernelFlavor flavor;
+    if (forceFlags & (GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL))
+    {
+        flavor = BondedKernelFlavor::ForcesAndVirialAndEnergy;
+    }
+    else if (useSimdKernels && (idef.ilsort == ilsortNO_FE ||
+                                idef.il[ftype].nr_nonperturbed == idef.il[ftype].nr))
+    {
+        flavor = BondedKernelFlavor::ForcesSimdWhenAvailable;
+    }
+    else
+    {
+        flavor = BondedKernelFlavor::ForcesNoSimd;
+    }
+
+    return flavor;
+}
+
 /*! \brief Calculate one element of the list of bonded interactions
     for this thread */
 real
@@ -268,28 +301,12 @@ calc_one_bond(int thread,
               t_nrnb *nrnb,
               const real *lambda, real *dvdl,
               const t_mdatoms *md, t_fcdata *fcd,
-              gmx_bool bCalcEnerVir,
+              const int forceFlags,
               int *global_atom_index)
 {
-    BondedKernelFlavor bondedKernelFlavor;
-    if (bCalcEnerVir)
-    {
-        bondedKernelFlavor = BondedKernelFlavor::ForcesAndVirialAndEnergy;
-    }
-    else if (fr->use_simd_kernels)
-    {
-        bondedKernelFlavor = BondedKernelFlavor::ForcesSimdWhenAvailable;
-    }
-    else
-    {
-        bondedKernelFlavor = BondedKernelFlavor::ForcesNoSimd;
-    }
-
-    int      nat1, nbonds, efptFTYPE;
-    real     v = 0;
-    t_iatom *iatoms;
-    int      nb0, nbn;
-
+    BondedKernelFlavor flavor =
+        bondedKernelFlavor(forceFlags, fr->use_simd_kernels, *idef, ftype);
+    int                efptFTYPE;
     if (IS_RESTRAINT_TYPE(ftype))
     {
         efptFTYPE = efptRESTRAINT;
@@ -300,19 +317,18 @@ calc_one_bond(int thread,
     }
 
     GMX_ASSERT(fr->efep == efepNO || idef->ilsort == ilsortNO_FE || idef->ilsort == ilsortFE_SORTED, "With free-energy calculations, we should either have no perturbed bondeds or sorted perturbed bondeds");
-    const bool useFreeEnergy     = (idef->ilsort == ilsortFE_SORTED && idef->il[ftype].nr_nonperturbed < idef->il[ftype].nr);
-    const bool computeForcesOnly = (!bCalcEnerVir && !useFreeEnergy);
 
-    nat1      = interaction_function[ftype].nratoms + 1;
-    nbonds    = idef->il[ftype].nr/nat1;
-    iatoms    = idef->il[ftype].iatoms;
+    const int      nat1   = interaction_function[ftype].nratoms + 1;
+    const int      nbonds = idef->il[ftype].nr/nat1;
+    const t_iatom *iatoms = idef->il[ftype].iatoms;
 
     GMX_ASSERT(fr->gpuBonded != nullptr || workDivision.end(ftype) == idef->il[ftype].nr,
                "The thread division should match the topology");
 
-    nb0 = workDivision.bound(ftype, thread);
-    nbn = workDivision.bound(ftype, thread + 1) - nb0;
+    const int nb0 = workDivision.bound(ftype, thread);
+    const int nbn = workDivision.bound(ftype, thread + 1) - nb0;
 
+    real      v = 0;
     if (!isPairInteraction(ftype))
     {
         if (ftype == F_CMAP)
@@ -334,7 +350,7 @@ calc_one_bond(int thread,
                                     x, f, fshift,
                                     pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
                                     md, fcd, global_atom_index,
-                                    bondedKernelFlavor);
+                                    flavor);
         }
     }
     else
@@ -344,8 +360,8 @@ calc_one_bond(int thread,
            extended to support calling from multiple threads. */
         do_pairs(ftype, nbn, iatoms+nb0, idef->iparams, x, f, fshift,
                  pbc, g, lambda, dvdl, md, fr,
-                 computeForcesOnly, grpp, global_atom_index);
-        v = 0;
+                 flavor == BondedKernelFlavor::ForcesSimdWhenAvailable,
+                 grpp, global_atom_index);
     }
 
     if (thread == 0)
@@ -373,7 +389,7 @@ calcBondedForces(const t_idef     *idef,
                  real             *dvdl,
                  const t_mdatoms  *md,
                  t_fcdata         *fcd,
-                 gmx_bool          bCalcEnerVir,
+                 const int         forceFlags,
                  int              *global_atom_index)
 {
     bonded_threading_t *bt = fr->bondedThreading;
@@ -421,7 +437,7 @@ calcBondedForces(const t_idef     *idef,
                                       fr->bondedThreading->workDivision, x,
                                       ft, fshift, fr, pbc_null, g, grpp,
                                       nrnb, lambda, dvdlt,
-                                      md, fcd, bCalcEnerVir,
+                                      md, fcd, forceFlags,
                                       global_atom_index);
                     epot[ftype] += v;
                 }
@@ -544,7 +560,7 @@ void calc_listed(const t_commrec             *cr,
         calcBondedForces(idef, x, fr, pbc_null, g,
                          as_rvec_array(forceWithShiftForces.shiftForces().data()),
                          enerd, nrnb, lambda, dvdl, md,
-                         fcd, bCalcEnerVir, global_atom_index);
+                         fcd, force_flags, global_atom_index);
         wallcycle_sub_stop(wcycle, ewcsLISTED);
 
         wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);

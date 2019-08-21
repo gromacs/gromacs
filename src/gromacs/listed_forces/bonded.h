@@ -94,7 +94,7 @@ real
 /*! \brief For selecting which flavor of bonded kernel is used for simple bonded types */
 enum class BondedKernelFlavor
 {
-    ForcesSimdWhenAvailable,  //!< Compute only forces, use SIMD when available
+    ForcesSimdWhenAvailable,  //!< Compute only forces, use SIMD when available; should not be used with perturbed parameters
     ForcesNoSimd,             //!< Compute only forces, do not use SIMD
     ForcesAndVirialAndEnergy, //!< Compute forces, virial and energy (no SIMD)
     Count                     //!< The number of flavors
