@@ -82,6 +82,11 @@ function (gmx_write_installed_header_list)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt "${_list}")
 endfunction()
 
+# Add these contents first because linking their tests can take a lot
+# of time, so we want lots of parallel work still available after
+# linking starts.
+add_subdirectory(utility)
+# Add normal contents
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
 add_subdirectory(applied_forces)
@@ -109,7 +114,6 @@ add_subdirectory(taskassignment)
 add_subdirectory(timing)
 add_subdirectory(topology)
 add_subdirectory(trajectory)
-add_subdirectory(utility)
 add_subdirectory(swap)
 add_subdirectory(essentialdynamics)
 add_subdirectory(pulling)
@@ -205,10 +209,14 @@ else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
 
-add_subdirectory(fileio)
+# Add these contents first because linking their tests can take a lot
+# of time, so we want lots of parallel work still available after
+# linking starts.
 if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(selection)
 endif()
+# Add normal contents
+add_subdirectory(fileio)
 
 # Suppress a warning about our abuse of t_inputrec
 gmx_source_file_warning_suppression(mdtypes/inputrec.cpp -Wno-class-memaccess HAS_NO_CLASS_MEMACCESS)
