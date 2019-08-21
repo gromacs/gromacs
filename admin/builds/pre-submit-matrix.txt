@@ -85,4 +85,3 @@ gcc-9 openmp simd=avx2_256 gpuhw=amd opencl-1.2 clFFT-2.14 hwloc libhwloc-1.11.2
 # Add OpenMP support to ASAN build (but libomp.so in clang-4 reports leaks, so might need a suitable build or suppression)
 # Test newest supported LTS Ubuntu
 # Test AVX-512 when hardware is available
-# Add tests that trigger make ocl-kernel
