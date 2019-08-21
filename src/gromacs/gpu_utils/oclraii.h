@@ -114,9 +114,9 @@ class ClHandle
         //! Deleted copy constructor.
         ClHandle(const ClHandle &)            = delete;
         //! Default move assignment operator.
-        ClHandle &operator=(ClHandle &&)      = default;
+        ClHandle &operator=(ClHandle &&) noexcept = default;
         //! Default copy constructor.
-        ClHandle(ClHandle &&)                 = default;
+        ClHandle(ClHandle &&)  noexcept               = default;
         /*! \brief Convenience conversion operator so the wrapper type
          * can simply convert to the wrapped type. */
         operator cl_type() const { return handle_; }
@@ -133,6 +133,6 @@ using ClProgram      = ClHandle<cl_program>;
 using ClKernel       = ClHandle<cl_kernel>;
 /*! @} */
 
-} // namespace
+} // namespace gmx
 
 #endif

@@ -124,10 +124,10 @@ gpuAtomToInteractionLocality(const AtomLocality atomLocality)
 }
 
 
-void
-setupGpuShortRangeWork(gmx_nbnxn_gpu_t                  *nb,
-                       const gmx::GpuBonded             *gpuBonded,
-                       const Nbnxm::InteractionLocality  iLocality)
+//NOLINTNEXTLINE(misc-definitions-in-headers)
+void setupGpuShortRangeWork(gmx_nbnxn_gpu_t                  *nb,
+                            const gmx::GpuBonded             *gpuBonded,
+                            const Nbnxm::InteractionLocality  iLocality)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -155,9 +155,9 @@ haveGpuShortRangeWork(const gmx_nbnxn_gpu_t            &nb,
     return nb.haveWork[iLocality];
 }
 
-bool
-haveGpuShortRangeWork(const gmx_nbnxn_gpu_t     *nb,
-                      const Nbnxm::AtomLocality  aLocality)
+//NOLINTNEXTLINE(misc-definitions-in-headers)
+bool haveGpuShortRangeWork(const gmx_nbnxn_gpu_t     *nb,
+                           const Nbnxm::AtomLocality  aLocality)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 

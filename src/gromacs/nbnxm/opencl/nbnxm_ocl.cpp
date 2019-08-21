@@ -133,7 +133,7 @@ static inline void validate_global_work_size(const KernelLaunchConfig &config, i
     {
         size_t device_limit;
 
-        device_limit = (1ull << device_size_t_size_bits) - 1;
+        device_limit = (1ULL << device_size_t_size_bits) - 1;
 
         for (int i = 0; i < work_dim; i++)
         {

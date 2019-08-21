@@ -488,7 +488,7 @@ static void init_timings(gmx_wallclock_gpu_nbnxn_t *t)
 
 //! OpenCL notification callback function
 static void CL_CALLBACK
-ocl_notify_fn( const char *pErrInfo, const void *, size_t, void *)
+ocl_notify_fn(const char *pErrInfo, const void gmx_unused *private_info, size_t gmx_unused cb, void gmx_unused *user_data)
 {
     if (pErrInfo != nullptr)
     {
@@ -762,7 +762,7 @@ static void nbnxn_ocl_clear_f(gmx_nbnxn_ocl_t *nb, int natoms_clear)
 
     cl_atomdata_t           *atomData = nb->atdat;
     cl_command_queue         ls       = nb->stream[InteractionLocality::Local];
-    cl_float                 value    = 0.0f;
+    cl_float                 value    = 0.0F;
 
     cl_error = clEnqueueFillBuffer(ls, atomData->f, &value, sizeof(cl_float),
                                    0, natoms_clear*sizeof(rvec), 0, nullptr, nullptr);

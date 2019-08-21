@@ -110,7 +110,7 @@ PmeGpuProgramImpl::~PmeGpuProgramImpl()
  * smaller than the minimum order^2 required in spread/gather ATM which
  * we need to check for.
  */
-static void checkRequiredWarpSize(const cl_kernel          kernel,
+static void checkRequiredWarpSize(cl_kernel                kernel,
                                   const char*              kernelName,
                                   const gmx_device_info_t *deviceInfo)
 {
@@ -164,8 +164,8 @@ void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t *deviceInfo)
                     warpSize / c_pmeSpreadGatherThreadsPerAtom,
                     c_pmeSpreadGatherThreadsPerAtom,
                     static_cast<float>(c_pmeMaxUnitcellShift),
-                    c_usePadding,
-                    c_skipNeutralAtoms,
+                    static_cast<int>(c_usePadding),
+                    static_cast<int>(c_skipNeutralAtoms),
                     c_virialAndEnergyCount,
                     spreadWorkGroupSize,
                     solveMaxWorkGroupSize,

@@ -144,7 +144,7 @@ void gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused *nb,
                         nbnxn_atomdata_t gmx_unused *nbatom,
                         int              gmx_unused  flags,
                         AtomLocality     gmx_unused  aloc,
-                        const bool       gmx_unused  copyBackNbForce) GPU_FUNC_TERM;
+                        bool             gmx_unused  copyBackNbForce) GPU_FUNC_TERM;
 
 /*! \brief Attempts to complete nonbonded GPU task.
  *
@@ -254,7 +254,7 @@ void nbnxnInsertNonlocalGpuDependency(const gmx_nbnxn_gpu_t gmx_unused    *nb,
 GPU_FUNC_QUALIFIER
 void setupGpuShortRangeWork(gmx_nbnxn_gpu_t                  gmx_unused *nb,
                             const gmx::GpuBonded             gmx_unused *gpuBonded,
-                            const Nbnxm::InteractionLocality gmx_unused  iLocality) GPU_FUNC_TERM;
+                            Nbnxm::InteractionLocality       gmx_unused  iLocality) GPU_FUNC_TERM;
 
 /*! \brief Returns true if there is GPU short-range work for the given atom locality.
  *
@@ -267,7 +267,7 @@ void setupGpuShortRangeWork(gmx_nbnxn_gpu_t                  gmx_unused *nb,
  */
 GPU_FUNC_QUALIFIER
 bool haveGpuShortRangeWork(const gmx_nbnxn_gpu_t     gmx_unused *nb,
-                           const Nbnxm::AtomLocality gmx_unused  aLocality) GPU_FUNC_TERM_WITH_RETURN(false);
+                           Nbnxm::AtomLocality       gmx_unused  aLocality) GPU_FUNC_TERM_WITH_RETURN(false);
 
 /*! \brief Initialization for F buffer operations on GPU */
 CUDA_FUNC_QUALIFIER

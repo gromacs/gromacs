@@ -642,13 +642,13 @@ PmeOutput pme_gpu_getEnergyAndVirial(const gmx_pme_t &pme)
     }
 
     unsigned int j = 0;
-    output.coulombVirial_[XX][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
-    output.coulombVirial_[YY][YY] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
-    output.coulombVirial_[ZZ][ZZ] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
-    output.coulombVirial_[XX][YY] = output.coulombVirial_[YY][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
-    output.coulombVirial_[XX][ZZ] = output.coulombVirial_[ZZ][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
-    output.coulombVirial_[YY][ZZ] = output.coulombVirial_[ZZ][YY] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
-    output.coulombEnergy_         = 0.5f * pmeGpu->staging.h_virialAndEnergy[j++];
+    output.coulombVirial_[XX][XX] = 0.25F * pmeGpu->staging.h_virialAndEnergy[j++];
+    output.coulombVirial_[YY][YY] = 0.25F * pmeGpu->staging.h_virialAndEnergy[j++];
+    output.coulombVirial_[ZZ][ZZ] = 0.25F * pmeGpu->staging.h_virialAndEnergy[j++];
+    output.coulombVirial_[XX][YY] = output.coulombVirial_[YY][XX] = 0.25F * pmeGpu->staging.h_virialAndEnergy[j++];
+    output.coulombVirial_[XX][ZZ] = output.coulombVirial_[ZZ][XX] = 0.25F * pmeGpu->staging.h_virialAndEnergy[j++];
+    output.coulombVirial_[YY][ZZ] = output.coulombVirial_[ZZ][YY] = 0.25F * pmeGpu->staging.h_virialAndEnergy[j++];
+    output.coulombEnergy_         = 0.5F * pmeGpu->staging.h_virialAndEnergy[j++];
 
     return output;
 }

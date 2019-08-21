@@ -2693,7 +2693,7 @@ static void combine_nblists(gmx::ArrayRef<const NbnxnPairlistGpu>  nbls,
     /* Each thread should copy its own data to the combined arrays,
      * as otherwise data will go back and forth between different caches.
      */
-    int gmx_unused nthreads = gmx_omp_nthreads_get(emntPairsearch);
+    const int gmx_unused nthreads = gmx_omp_nthreads_get(emntPairsearch);
 
 #pragma omp parallel for num_threads(nthreads) schedule(static)
     for (gmx::index n = 0; n < nbls.ssize(); n++)
