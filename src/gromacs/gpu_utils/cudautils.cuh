@@ -304,13 +304,14 @@ void prepareGpuKernelArgument(KernelPtr kernel,
  * A wrapper function for setting up all the CUDA kernel arguments.
  * Calls the recursive functions above.
  *
+ * \tparam    KernelPtr       Kernel function handle type
  * \tparam    Args            Types of all the kernel arguments
  * \param[in] kernel          Kernel function handle
  * \param[in] argsPtrs        Pointers to all the kernel arguments
  * \returns A prepared parameter pack to be used with launchGpuKernel() as the last argument.
  */
-template <typename ... Args>
-std::array<void *, sizeof ... (Args)> prepareGpuKernelArguments(void                     (*kernel)(Args...),
+template <typename KernelPtr, typename ... Args>
+std::array<void *, sizeof ... (Args)> prepareGpuKernelArguments(KernelPtr                kernel,
                                                                 const KernelLaunchConfig & /*config */,
                                                                 const Args *...          argsPtrs)
 {
