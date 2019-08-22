@@ -237,7 +237,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid  gmx_unused &grid,
  */
 CUDA_FUNC_QUALIFIER
 void nbnxnInsertNonlocalGpuDependency(const gmx_nbnxn_gpu_t gmx_unused    *nb,
-                                      const InteractionLocality gmx_unused interactionLocality) CUDA_FUNC_TERM;
+                                      InteractionLocality   gmx_unused interactionLocality) CUDA_FUNC_TERM;
 
 /*! \brief Set up internal flags that indicate what type of short-range work there is.
  *
@@ -277,7 +277,7 @@ void nbnxn_gpu_init_add_nbat_f_to_f(const int               gmx_unused *cell,
 
 /*! \brief F buffer operations on GPU: adds nb format force to rvec format. */
 CUDA_FUNC_QUALIFIER
-void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality           gmx_unused  atomLocality,
+void nbnxn_gpu_add_nbat_f_to_f(AtomLocality                 gmx_unused  atomLocality,
                                gmx_nbnxn_gpu_t              gmx_unused *gpu_nbv,
                                void                         gmx_unused *fPmeDevicePtr,
                                GpuEventSynchronizer         gmx_unused *pmeForcesReady,
@@ -288,21 +288,21 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality           gmx_unused  atomLoca
 
 /*! \brief Copy force buffer from CPU to GPU */
 CUDA_FUNC_QUALIFIER
-void nbnxn_launch_copy_f_to_gpu(const AtomLocality      gmx_unused  atomLocality,
+void nbnxn_launch_copy_f_to_gpu(AtomLocality            gmx_unused  atomLocality,
                                 const Nbnxm::GridSet    gmx_unused &gridSet,
                                 gmx_nbnxn_gpu_t         gmx_unused *nb,
                                 rvec                    gmx_unused *f) CUDA_FUNC_TERM;
 
 /*! \brief Copy force buffer from GPU to CPU */
 CUDA_FUNC_QUALIFIER
-void nbnxn_launch_copy_f_from_gpu(const AtomLocality      gmx_unused  atomLocality,
+void nbnxn_launch_copy_f_from_gpu(AtomLocality            gmx_unused  atomLocality,
                                   const Nbnxm::GridSet    gmx_unused &gridSet,
                                   gmx_nbnxn_gpu_t         gmx_unused *nb,
                                   rvec                    gmx_unused *f) CUDA_FUNC_TERM;
 
 /*! \brief Wait for GPU stream to complete */
 CUDA_FUNC_QUALIFIER
-void nbnxn_wait_for_gpu_force_reduction(const AtomLocality      gmx_unused  atomLocality,
+void nbnxn_wait_for_gpu_force_reduction(AtomLocality            gmx_unused  atomLocality,
                                         gmx_nbnxn_gpu_t         gmx_unused *nb) CUDA_FUNC_TERM;
 
 

@@ -194,7 +194,7 @@ gmx_device_info_t *getDeviceInfo(const gmx_gpu_info_t &GPU_FUNC_ARGUMENT(gpu_inf
  * \returns                 device ID of the GPU in use at the time of the call
  */
 CUDA_FUNC_QUALIFIER
-int get_current_cuda_gpu_device_id(void) CUDA_FUNC_TERM_WITH_RETURN(-1);
+int get_current_cuda_gpu_device_id() CUDA_FUNC_TERM_WITH_RETURN(-1);
 
 /*! \brief Formats and returns a device information string for a given GPU.
  *
@@ -240,7 +240,7 @@ bool buildSupportsNonbondedOnGpu(std::string *error);
  *  Note that this is implemented only for the CUDA API.
  */
 CUDA_FUNC_QUALIFIER
-void startGpuProfiler(void) CUDA_FUNC_TERM;
+void startGpuProfiler() CUDA_FUNC_TERM;
 
 
 /*! \brief Resets the GPU profiler if mdrun is being profiled.
@@ -254,7 +254,7 @@ void startGpuProfiler(void) CUDA_FUNC_TERM;
  * Note that this is implemented only for the CUDA API.
  */
 CUDA_FUNC_QUALIFIER
-void resetGpuProfiler(void) CUDA_FUNC_TERM;
+void resetGpuProfiler() CUDA_FUNC_TERM;
 
 
 /*! \brief Stops the CUDA profiler if mdrun is being profiled.
@@ -266,7 +266,7 @@ void resetGpuProfiler(void) CUDA_FUNC_TERM;
  *  Note that this is implemented only for the CUDA API.
  */
 CUDA_FUNC_QUALIFIER
-void stopGpuProfiler(void) CUDA_FUNC_TERM;
+void stopGpuProfiler() CUDA_FUNC_TERM;
 
 //! Tells whether the host buffer was pinned for non-blocking transfers. Only implemented for CUDA.
 CUDA_FUNC_QUALIFIER
