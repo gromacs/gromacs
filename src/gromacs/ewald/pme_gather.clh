@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,9 +67,10 @@ inline float read_grid_size(const float* realGridSizeFP, const int dimIndex)
         case XX: return realGridSizeFP[XX];
         case YY: return realGridSizeFP[YY];
         case ZZ: return realGridSizeFP[ZZ];
+        default: assert(false); break;
     }
     assert(false);
-    return 0.0f;
+    return 0.0F;
 }
 
 /*! \brief Reduce the partial force contributions.
@@ -211,7 +212,7 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
 {
     /* These are the atom indices - for the shared and global memory */
     const int atomIndexLocal  = get_local_id(ZZ);
-    const int atomIndexOffset = get_group_id(XX) * atomsPerBlock;
+    const int atomIndexOffset = (int)get_group_id(XX) * atomsPerBlock;
     const int atomIndexGlobal = atomIndexOffset + atomIndexLocal;
 
 /* Some sizes which are defines and not consts because they go into the array size */
@@ -230,18 +231,23 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
     const int ithy = get_local_id(YY);
     const int ithz = get_local_id(XX);
 
-    const int threadLocalId = (get_local_id(2) * get_local_size(1) + get_local_id(1)) * get_local_size(0)
-                              + get_local_id(0);
+    assert((get_local_id(2) * get_local_size(1) + get_local_id(1)) * get_local_size(0) + get_local_id(0)
+           <= MAX_INT);
+    const int threadLocalId =
+            (int)((get_local_id(2) * get_local_size(1) + get_local_id(1)) * get_local_size(0)
+                  + get_local_id(0));
 
     /* These are the spline contribution indices in shared memory */
-    const int splineIndex = (get_local_id(1) * get_local_size(0)
-                             + get_local_id(0)); /* Relative to the current particle , 0..15 for order 4 */
-    const int lineIndex   = threadLocalId; /* And to all the block's particles */
+    assert((get_local_id(1) * get_local_size(0) + get_local_id(0)) <= MAX_INT);
+    const int splineIndex =
+            (int)(get_local_id(1) * get_local_size(0)
+                  + get_local_id(0));    /* Relative to the current particle , 0..15 for order 4 */
+    const int lineIndex = threadLocalId; /* And to all the block's particles */
 
     /* Staging the atom gridline indices, DIM * atomsPerBlock threads */
     const int localGridlineIndicesIndex = threadLocalId;
     const int globalGridlineIndicesIndex =
-            get_group_id(XX) * gridlineIndicesSize + localGridlineIndicesIndex;
+            (int)get_group_id(XX) * gridlineIndicesSize + localGridlineIndicesIndex;
     const int globalCheckIndices =
             pme_gpu_check_atom_data_index(globalGridlineIndicesIndex, kernelParams.atoms.nAtoms * DIM);
     if ((localGridlineIndicesIndex < gridlineIndicesSize) & globalCheckIndices)
@@ -250,8 +256,8 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
         assert(sm_gridlineIndices[localGridlineIndicesIndex] >= 0);
     }
     /* Staging the spline parameters, DIM * order * atomsPerBlock threads */
-    const int localSplineParamsIndex  = threadLocalId;
-    const int globalSplineParamsIndex = get_group_id(XX) * splineParamsSize + localSplineParamsIndex;
+    const int localSplineParamsIndex = threadLocalId;
+    const int globalSplineParamsIndex = (int)get_group_id(XX) * splineParamsSize + localSplineParamsIndex;
     const int globalCheckSplineParams = pme_gpu_check_atom_data_index(
             globalSplineParamsIndex, kernelParams.atoms.nAtoms * DIM * order);
     if ((localSplineParamsIndex < splineParamsSize) && globalCheckSplineParams)
@@ -263,9 +269,9 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
     }
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    float fx = 0.0f;
-    float fy = 0.0f;
-    float fz = 0.0f;
+    float fx = 0.0F;
+    float fy = 0.0F;
+    float fz = 0.0F;
 
     const int globalCheck = pme_gpu_check_atom_data_index(atomIndexGlobal, kernelParams.atoms.nAtoms);
     const int chargeCheck = pme_gpu_check_atom_charge(gm_coefficients[atomIndexGlobal]);
@@ -371,7 +377,7 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
         for (int i = 0; i < numIter; i++)
         {
             const int outputIndexLocal  = i * iterThreads + threadLocalId;
-            const int outputIndexGlobal = get_group_id(XX) * blockForcesSize + outputIndexLocal;
+            const int outputIndexGlobal = (int)get_group_id(XX) * blockForcesSize + outputIndexLocal;
             const int globalOutputCheck =
                     pme_gpu_check_atom_data_index(outputIndexGlobal, kernelParams.atoms.nAtoms * DIM);
             if (globalOutputCheck)

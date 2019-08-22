@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016,2017,2018,2019 by the GROMACS development team.
+# Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team.
 # Copyright (c) 2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
@@ -247,16 +247,17 @@ def do_build(context):
         # TODO: Generalize the machinery here such that it can easily be used
         # also for non-release builds.
     else:
+        # run OpenCL offline compile tests on clang tidy builds
+        if (context.opts.tidy and context.opts.opencl):
+            context.build_target(target='ocl_nbnxm_kernels')
+            context.build_target(target='ocl_pme_kernels')
+
         context.build_target(target='tests', keep_going=True)
 
         context.run_ctest(args=['--output-on-failure', '--label-exclude', 'SlowTest'], memcheck=context.opts.asan)
 
         context.build_target(target='install')
         # TODO: Consider what could be tested about the installed binaries.
-
-        # run OpenCL offline compile tests on clang tidy builds
-        if (context.opts.tidy and context.opts.opencl):
-            context.build_target(target='ocl_nbnxm_kernels')
 
         if not context.opts.mdrun_only:
             context.env.prepend_path_env(os.path.join(context.workspace.build_dir, 'bin'))

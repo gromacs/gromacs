@@ -95,3 +95,55 @@ endif()
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()
+
+
+set(PME_OCL_KERNEL_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/pme_gpu_utils.clh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/pme_solve.clh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/pme_gather.clh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/pme_spread.clh")
+
+if(CLANG_TIDY_EXE)
+   set(OCL_COMPILER "${CLANG_TIDY_EXE}")
+   set(CLANG_TIDY_ARGS "-quiet;-checks=*,-readability-implicit-bool-conversion,-llvm-header-guard,-hicpp-signed-bitwise,-clang-analyzer-deadcode.DeadStores,-google-readability-todo,-clang-diagnostic-padded,-fcomment-block-commands=internal;--;${CMAKE_C_COMPILER}")
+else()
+   set(OCL_COMPILER "${CMAKE_C_COMPILER}")
+endif()
+
+# TODO: test all warp sizes on all vendor targets?
+foreach(VENDOR AMD NVIDIA INTEL)
+    foreach(WARPSIZE 16 32 64)
+        math(EXPR SPREAD_WG_SIZE "8*${WARPSIZE}")
+        math(EXPR SOLVE_WG_SIZE "8*${WARPSIZE}")
+        math(EXPR GATHER_WG_SIZE "4*${WARPSIZE}")
+        set(OBJ_FILE pme_ocl_kernel_warpSize${WARPSIZE}_${VENDOR}.o)
+        add_custom_command(OUTPUT ${OBJ_FILE} COMMAND ${OCL_COMPILER}
+        ${CMAKE_CURRENT_SOURCE_DIR}/pme_program.cl ${CLANG_TIDY_ARGS}
+        -Xclang -finclude-default-header  -D_${VENDOR}_SOURCE_
+        -Dwarp_size=${WARPSIZE}
+        -Dorder=4
+        -DthreadsPerAtom=16
+        -Dc_pmeMaxUnitcellShift=2
+        -Dc_usePadding=true
+        -Dc_skipNeutralAtoms=false
+        -Dc_virialAndEnergyCount=7
+        -Dc_spreadWorkGroupSize=${SPREAD_WG_SIZE}
+        -Dc_solveMaxWorkGroupSize=${SOLVE_WG_SIZE}
+        -Dc_gatherWorkGroupSize=${GATHER_WG_SIZE}
+        -DDIM=3 -DXX=0 -DYY=1 -DZZ=2
+        -DwrapX=true -DwrapY=true
+        -c -I ${CMAKE_SOURCE_DIR}/src -std=cl1.2
+        -Weverything  -Wno-conversion -Wno-missing-variable-declarations -Wno-used-but-marked-unused
+        -Wno-cast-align -Wno-incompatible-pointer-types
+        # to avoid  "warning: unknown command tag name" for \internal
+        -Wno-documentation-unknown-command
+        # to avoid pme_gpu_types.h:100:52: warning: padding struct 'struct PmeGpuConstParams' with 4 bytes to align 'd_virialAndEnergy'
+        -Wno-padded
+        -o${OBJ_FILE}
+        )
+        list(APPEND PME_OCL_KERNELS ${OBJ_FILE})
+    endforeach()
+endforeach()
+
+add_custom_target(ocl_pme_kernels DEPENDS ${PME_OCL_KERNELS} )
+gmx_set_custom_target_output(ocl_pme_kernels ${PME_OCL_KERNELS})

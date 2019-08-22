@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -142,7 +142,6 @@ void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t* deviceInfo)
         const std::string commonDefines = gmx::formatString(
                 "-Dwarp_size=%zd "
                 "-Dorder=%d "
-                "-DatomsPerWarp=%zd "
                 "-DthreadsPerAtom=%d "
                 // forwarding from pme_grid.h, used for spline computation table sizes only
                 "-Dc_pmeMaxUnitcellShift=%f "
@@ -158,10 +157,10 @@ void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t* deviceInfo)
                 "-DDIM=%d -DXX=%d -DYY=%d -DZZ=%d "
                 // decomposition parameter placeholders
                 "-DwrapX=true -DwrapY=true ",
-                warpSize, c_pmeGpuOrder, warpSize / c_pmeSpreadGatherThreadsPerAtom,
-                c_pmeSpreadGatherThreadsPerAtom, static_cast<float>(c_pmeMaxUnitcellShift),
-                static_cast<int>(c_usePadding), static_cast<int>(c_skipNeutralAtoms), c_virialAndEnergyCount,
-                spreadWorkGroupSize, solveMaxWorkGroupSize, gatherWorkGroupSize, DIM, XX, YY, ZZ);
+                warpSize, c_pmeGpuOrder, c_pmeSpreadGatherThreadsPerAtom,
+                static_cast<float>(c_pmeMaxUnitcellShift), static_cast<int>(c_usePadding),
+                static_cast<int>(c_skipNeutralAtoms), c_virialAndEnergyCount, spreadWorkGroupSize,
+                solveMaxWorkGroupSize, gatherWorkGroupSize, DIM, XX, YY, ZZ);
         try
         {
             /* TODO when we have a proper MPI-aware logging module,
