@@ -692,7 +692,7 @@ void pme_gpu_update_input_box(PmeGpu gmx_unused       *pmeGpu,
     pmeGpu->common->boxScaler->scaleBox(box, scaledBox);
     auto   *kernelParamsPtr      = pme_gpu_get_kernel_params_base_ptr(pmeGpu);
     kernelParamsPtr->current.boxVolume = scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ];
-    GMX_ASSERT(kernelParamsPtr->current.boxVolume != 0.0f, "Zero volume of the unit cell");
+    GMX_ASSERT(kernelParamsPtr->current.boxVolume != 0.0F, "Zero volume of the unit cell");
     matrix recipBox;
     gmx::invertBoxMatrix(scaledBox, recipBox);
 
@@ -828,7 +828,7 @@ static void pme_gpu_init(gmx_pme_t               *pme,
 
     pme_gpu_copy_common_data_from(pme);
 
-    GMX_ASSERT(pmeGpu->common->epsilon_r != 0.0f, "PME GPU: bad electrostatic coefficient");
+    GMX_ASSERT(pmeGpu->common->epsilon_r != 0.0F, "PME GPU: bad electrostatic coefficient");
 
     auto *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGpu);
     kernelParamsPtr->constants.elFactor = ONE_4PI_EPS0 / pmeGpu->common->epsilon_r;
