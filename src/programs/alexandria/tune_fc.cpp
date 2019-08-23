@@ -503,7 +503,7 @@ void Optimization::broadcast()
         }
         Receive(cr, src);
     }
-    poldata().broadcast(cr);
+    poldata()->broadcast(cr);
 }
 
 void Optimization::checkSupport(FILE *fp)
@@ -526,8 +526,8 @@ void Optimization::checkSupport(FILE *fp)
             if (iOpt_[bt])
             {
                 auto iType = static_cast<InteractionType>(bt);
-                auto fs    = poldata().findForces(iType);
-                if (fs == poldata().forcesEnd())
+                auto fs    = poldata()->findForces(iType);
+                if (fs == poldata()->forcesEnd())
                 {
                     continue;
                 }
@@ -542,8 +542,8 @@ void Optimization::checkSupport(FILE *fp)
 
                     ai  = mymol->ltop_->idef.il[ft].iatoms[i+1];
                     aj  = mymol->ltop_->idef.il[ft].iatoms[i+2];
-                    if (!(poldata().atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
-                          poldata().atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj)))
+                    if (!(poldata()->atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
+                          poldata()->atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj)))
                     {
                         bSupport = false;
                         if (debug)
@@ -558,7 +558,7 @@ void Optimization::checkSupport(FILE *fp)
                         case eitBONDS:
                         {
                             atoms = {aai, aaj};
-                            auto fs = poldata().findForces(iType);
+                            auto fs = poldata()->findForces(iType);
                             auto f  = fs->findForce(atoms);
                             if (fs->forceEnd() == f)
                             {
@@ -576,7 +576,7 @@ void Optimization::checkSupport(FILE *fp)
                         case eitLINEAR_ANGLES:
                         {
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
-                            if (!poldata().atypeToBtype( *mymol->topology_->atoms.atomtype[ak], aak))
+                            if (!poldata()->atypeToBtype( *mymol->topology_->atoms.atomtype[ak], aak))
                             {
                                 bSupport = false;
                                 if (debug)
@@ -589,7 +589,7 @@ void Optimization::checkSupport(FILE *fp)
                             else
                             {
                                 atoms   = {aai, aaj, aak};
-                                auto fs = poldata().findForces(iType);
+                                auto fs = poldata()->findForces(iType);
                                 auto f  = fs->findForce(atoms);
                                 if (fs->forceEnd() == f)
                                 {
@@ -610,8 +610,8 @@ void Optimization::checkSupport(FILE *fp)
                         {
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
                             al  = mymol->ltop_->idef.il[ft].iatoms[i+4];
-                            if (!(poldata().atypeToBtype( *mymol->topology_->atoms.atomtype[ak], aak) &&
-                                  poldata().atypeToBtype( *mymol->topology_->atoms.atomtype[al], aal)))
+                            if (!(poldata()->atypeToBtype( *mymol->topology_->atoms.atomtype[ak], aak) &&
+                                  poldata()->atypeToBtype( *mymol->topology_->atoms.atomtype[al], aal)))
                             {
                                 bSupport = false;
                                 if (debug)
@@ -624,7 +624,7 @@ void Optimization::checkSupport(FILE *fp)
                             else
                             {
                                 atoms   = {aai, aaj, aak, aal};
-                                auto fs = poldata().findForces(iType);
+                                auto fs = poldata()->findForces(iType);
                                 auto f  = fs->findForce(atoms);
                                 if (fs->forceEnd() == f)
                                 {
@@ -791,7 +791,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
     fprintf(fplog, "There are %d different bondtypes to optimize the heat of formation\n", nD);
     fprintf(fplog, "There are %d (experimental) reference heat of formation.\n", nMol);
 
-    auto fs  = poldata().findForces(eitBONDS);
+    auto fs  = poldata()->findForces(eitBONDS);
     auto ftb = fs->fType();
     auto j   = 0;
 
@@ -804,8 +804,8 @@ void Optimization::getDissociationEnergy(FILE *fplog)
             auto                     aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
             std::string              aai, aaj;
             std::vector<std::string> atoms;
-            if (poldata().atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
-                poldata().atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj))
+            if (poldata()->atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
+                poldata()->atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj))
             {
                 atoms  = {aai, aaj};
                 auto f = fs->findForce(atoms);
@@ -867,7 +867,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
          b < ForceConstants_[eitBONDS].endBN(); ++b)
     {
         const auto       atoms = gmx::splitString(b->name());
-        auto             fs    = poldata().findForces(eitBONDS);
+        auto             fs    = poldata()->findForces(eitBONDS);
         auto             f     = fs->findForce(atoms);
         GMX_RELEASE_ASSERT(fs->forceEnd() != f, "Cannot find my bonds");
         const auto       pp    = gmx::splitString(b->paramString());
@@ -888,8 +888,8 @@ void Optimization::InitOpt(FILE *fplog)
 {
     std::vector<unsigned int> fts;
 
-    for (auto fs = poldata().forcesBegin();
-         fs != poldata().forcesEnd(); ++fs)
+    for (auto fs = poldata()->forcesBegin();
+         fs != poldata()->forcesEnd(); ++fs)
     {
         fts.push_back(fs->fType());
     }
@@ -1049,10 +1049,10 @@ void Optimization::calcDeviation(bool calcAll)
                         }
                         if (nullptr != debug)
                         {
-                            int angleType = poldata().findForces(eitANGLES)->fType();
-                            int pdihType  = poldata().findForces(eitPROPER_DIHEDRALS)->fType();
-                            int idihType  = poldata().findForces(eitIMPROPER_DIHEDRALS)->fType();
-                            int vdwType   = poldata().getVdwFtype();
+                            int angleType = poldata()->findForces(eitANGLES)->fType();
+                            int pdihType  = poldata()->findForces(eitPROPER_DIHEDRALS)->fType();
+                            int idihType  = poldata()->findForces(eitIMPROPER_DIHEDRALS)->fType();
+                            int vdwType   = poldata()->getVdwFtype();
                             fprintf(debug, "spHF: %g  optHF: %g  deltaRef: %g  deltaEalex: %g\n",
                                     spHF, optHF, deltaEref, deltaEalex);
                             fprintf(debug, "%s Chi2 %g Morse %g  "

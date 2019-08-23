@@ -829,12 +829,13 @@ int alex_tune_pol(int argc, char *argv[])
 
     pdout = opt2fn("-do", NFILE, fnm);
     fprintf(fplog, "Now writing force field file %s\n", pdout);
-    alexandria::writePoldata(pdout, pd,  bCompress);
+    alexandria::writePoldata(pdout, &pd,  bCompress);
 
     atype = opt2fn("-atype", NFILE, fnm);
     fprintf(fplog, "Now writing LaTeX description of force field to %s\n", atype);
     tp = fopen(atype, "w");
-    alexandria_molprop_atomtype_table(tp, true, pd, mp, lot, exp_type);
+    std::vector<alexandria::Poldata> pds = { pd };
+    alexandria_molprop_atomtype_table(tp, true, pds, mp, lot, exp_type);
     fclose(tp);
     gmx_ffclose(fplog);
 

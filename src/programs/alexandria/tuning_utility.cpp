@@ -234,10 +234,9 @@ static void print_dipole(FILE              *fp,
 
 void print_electric_props(FILE                           *fp,
                           std::vector<alexandria::MyMol>  mymol,
-                          const Poldata                  &pd,
+                          const Poldata                  *pd,
                           const gmx::MDLogger            &fplog,
                           gmx_atomprop_t                  ap,
-                          ChargeDistributionModel         qdist,
                           ChargeGenerationAlgorithm       qgen,
                           real                            watoms,
                           real                            hfac,
@@ -323,7 +322,7 @@ void print_electric_props(FILE                           *fp,
                     mol.molProp()->getMultiplicity());
             
             // Recalculate the atomic charges using the optmized parameters.
-            mol.GenerateCharges(pd, fplog, ap, qdist, qgen,
+            mol.GenerateCharges(pd, fplog, ap, qgen,
                                 watoms, hfac, lot, false, nullptr,
                                 cr, tabfn, hwinfo, qcycle,
                                 maxESP, qtol, nullptr, nullptr);
@@ -408,7 +407,7 @@ void print_electric_props(FILE                           *fp,
                 if (mol.topology_->atoms.atom[j].ptype == eptAtom ||
                     mol.topology_->atoms.atom[j].ptype == eptNucleus)
                 {
-                    auto atp = pd.findAtype(*(mol.topology_->atoms.atomtype[j]));
+                    auto atp = pd->findAtype(*(mol.topology_->atoms.atomtype[j]));
                     auto ztp = atp->getZtype();
                     auto  k  = std::find_if(lsqt.begin(), lsqt.end(),
                                            [ztp](const ZetaTypeLsq &atlsq)

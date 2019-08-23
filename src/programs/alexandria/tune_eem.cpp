@@ -119,7 +119,7 @@ class OptACM : public MolGen
         gmx_bool useCM5() const {return bUseCM5_; }
 
         gmx_bool penalize() const {return true ? (penalty_ > 0) : false; }
-
+        
         void add_pargs(std::vector<t_pargs> *pargs)
         {
             t_pargs pa[] =
@@ -190,7 +190,6 @@ void OptACM::initQgresp()
         if (mymol.eSupp_ != eSupportNo)
         {
             mymol.initQgresp(poldata(), 
-                             iChargeDistributionModel(), 
                              lot(),
                              watoms(), 
                              maxPot());
@@ -212,7 +211,6 @@ void OptACM::initQgacm()
             }
             mymol.Qgacm_.setInfo(poldata(), 
                                  &(mymol.topology_->atoms),
-                                 iChargeDistributionModel(),
                                  hfac(),
                                  mymol.molProp()->getCharge(),
                                  bHaveShells);
@@ -241,7 +239,7 @@ void OptACM::calcDeviation()
     }
     if (PAR(commrec()) && !final())
     {
-        poldata().broadcast(commrec());
+        poldata()->broadcast(commrec());
     }
     resetEnergies();
     for (auto &mymol : mymols())
@@ -400,8 +398,8 @@ void OptACM::polData2TuneACM()
     {
         if (!ai->isConst())
         {
-            auto ei   = poldata().findEem(iChargeDistributionModel(), ai->name());
-            GMX_RELEASE_ASSERT(ei != poldata().EndEemprops(), "Cannot find eemprops");
+            auto ei   = poldata()->findEem(ai->name());
+            GMX_RELEASE_ASSERT(ei != poldata()->EndEemprops(), "Cannot find eemprops");
             
             if (bFitChi_)
             {
@@ -425,14 +423,14 @@ void OptACM::polData2TuneACM()
                 else
                 {
                     gmx_fatal(FARGS, "Zeta is zero for atom %s in model %s\n",
-                              ai->name().c_str(), getEemtypeName(iChargeDistributionModel()));
+                              ai->name().c_str(), getEemtypeName(poldata()->getEqdModel()));
                 }
             }
             if (bFitAlpha_)
             {
                 auto alpha = 0.0;
                 auto sigma = 0.0;
-                if (poldata().getAtypePol(ai->name(), &alpha, &sigma))
+                if (poldata()->getAtypePol(ai->name(), &alpha, &sigma))
                 {
                     if (0 != alpha)
                     {
@@ -463,15 +461,15 @@ void OptACM::TuneACM2PolData()
     double   zeta  = 0;
     double   sigma = 0;
 
-    auto    &pd    = poldata();
+    auto     pd    = poldata();
     auto    *ic    = indexCount();
 
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
         if (!ai->isConst())
         {
-            auto ei = pd.findEem(iChargeDistributionModel(), ai->name());
-            GMX_RELEASE_ASSERT(ei != pd.EndEemprops(), "Cannot find eemprops");
+            auto ei = pd->findEem(ai->name());
+            GMX_RELEASE_ASSERT(ei != pd->EndEemprops(), "Cannot find eemprops");
 
             if (bFitChi_)
             {
@@ -490,7 +488,8 @@ void OptACM::TuneACM2PolData()
                 z_sig[0]           = '\0';
                 std::string qstr   = ei->getQstr();
                 std::string rowstr = ei->getRowstr();
-                if (iChargeDistributionModel() == eqdAXps || iChargeDistributionModel() == eqdAXpg)
+                auto iModel = poldata()->getEqdModel();
+                if (iModel == eqdAXps || iModel == eqdAXpg)
                 {
                     if (bSameZeta_)
                     {
@@ -540,9 +539,9 @@ void OptACM::TuneACM2PolData()
             if (bFitAlpha_)
             {
                 std::string ptype;
-                if (pd.atypeToPtype(ai->name(), ptype))
+                if (pd->atypeToPtype(ai->name(), ptype))
                 {
-                    pd.setPtypePolarizability(ptype, param_[n], psigma_[n]);
+                    pd->setPtypePolarizability(ptype, param_[n], psigma_[n]);
                     n++;
                 }
                 else
@@ -584,17 +583,17 @@ void OptACM::InitOpt(real  factor)
 double OptACM::calcPenalty(AtomIndexIterator ai)
 {
     double         penalty = 0;
-    const auto    &pd      = poldata();
+    const auto     pd      = poldata();
 
-    auto           ei      = pd.findEem(iChargeDistributionModel(), ai->name());
-    auto           ai_elem = pd.ztype2elem(ei->getName());
+    auto           ei      = pd->findEem(ai->name());
+    auto           ai_elem = pd->ztype2elem(ei->getName());
     auto           ai_chi  = ei->getChi0();
     auto           ai_J0   = ei->getJ0();
     auto           ai_atn  = gmx_atomprop_atomnumber(atomprop(), ai_elem.c_str());
 
     if (strlen(fixchi()) != 0)
     {
-        const auto ref_eem  = pd.findEem(iChargeDistributionModel(), fixchi());
+        const auto ref_eem  = pd->findEem(fixchi());
         if (ai_chi < ref_eem->getChi0())
         {
             penalty += penalty_;
@@ -616,8 +615,8 @@ double OptACM::calcPenalty(AtomIndexIterator ai)
     {
         if (!aj->isConst())
         {
-            const auto ej      = pd.findEem(iChargeDistributionModel(), aj->name());
-            const auto aj_elem = pd.ztype2elem(ej->getName());
+            const auto ej      = pd->findEem(aj->name());
+            const auto aj_elem = pd->ztype2elem(ej->getName());
             auto       aj_atn  = gmx_atomprop_atomnumber(atomprop(), aj_elem.c_str());
 
             if (ai_atn != aj_atn)
@@ -672,7 +671,7 @@ double OptACM::objFunction(const double v[])
             }
             if (bFitZeta_)
             {
-                auto nzeta = poldata().getNzeta(iChargeDistributionModel(), ai->name());
+                auto nzeta = poldata()->getNzeta(ai->name());
                 for (auto zz = 0; zz < (nzeta-1); zz++)
                 {
                     auto zeta = param_[n++];
@@ -986,9 +985,10 @@ int alex_tune_eem(int argc, char *argv[])
 
     if (MASTER(opt.commrec()))
     {
-        gmx_bool bPolar = (opt.iChargeDistributionModel() == eqdAXpp  ||
-                           opt.iChargeDistributionModel() == eqdAXpg  ||
-                           opt.iChargeDistributionModel() == eqdAXps);
+        auto iModel = opt.poldata()->getEqdModel();
+        gmx_bool bPolar = (iModel == eqdAXpp  ||
+                           iModel == eqdAXpg  ||
+                           iModel == eqdAXps);
 
         auto *ic = opt.indexCount();
         print_electric_props(fp,
@@ -996,7 +996,6 @@ int alex_tune_eem(int argc, char *argv[])
                              opt.poldata(),
                              opt.mdlog(),
                              opt.atomprop(),
-                             opt.iChargeDistributionModel(),
                              eqgACM,
                              opt.watoms(),
                              opt.hfac(),
@@ -1034,7 +1033,7 @@ int alex_tune_eem(int argc, char *argv[])
         {
             FILE        *tp;
             tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
-            alexandria_poldata_eemprops_table(tp, opt.poldata(), opt.iChargeDistributionModel());
+            alexandria_poldata_eemprops_table(tp, opt.poldata());
             gmx_ffclose(tp);
         }
     }

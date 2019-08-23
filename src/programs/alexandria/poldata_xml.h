@@ -49,7 +49,7 @@ namespace alexandria
      * \param[in] compress Whether or not to write a compressed file
      */
     void writePoldata(const std::string &fileName,
-                      const Poldata &pd,
+                      const Poldata     *pd,
                       bool compress = true);
 
     /*! \brief Read a Poldata class from an XML file

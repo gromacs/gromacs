@@ -649,19 +649,6 @@ void Poldata::addSymcharges(const std::string &central,
     }
 }
 
-int Poldata::getNumprops(ChargeDistributionModel eqdModel) const
-{
-    size_t i, n = 0;
-    for (i = 0; i < eep_.size(); i++)
-    {
-        if (eep_[i].getEqdModel() == eqdModel)
-        {
-            n++;
-        }
-    }
-    return n;
-}
-
 int Poldata::havePolSupport(const std::string &atype) const
 {
     size_t i;
@@ -675,54 +662,49 @@ int Poldata::havePolSupport(const std::string &atype) const
     return 0;
 }
 
-bool Poldata::haveEemSupport(ChargeDistributionModel  eqdModel,
-                             const std::string       &atype,
-                             gmx_bool                 bAllowZeroParameters) const
+bool Poldata::haveEemSupport(const std::string &atype,
+                             gmx_bool           bAllowZeroParameters) const
 {
-    auto eep = findEem(eqdModel, atype);
+    auto eep = findEem(atype);
     return (eep != EndEemprops() &&
             (bAllowZeroParameters || ((eep->getJ0() > 0) && (eep->getChi0() > 0))));
 }
 
-double Poldata::getJ00(ChargeDistributionModel  eqdModel,
-                       const std::string       &atype) const
+double Poldata::getJ00(const std::string &atype) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(eqdModel, atype)) != EndEemprops())
+    if ((eer = findEem(atype)) != EndEemprops())
     {
         return eer->getJ0();
     }
     return -1;
 }
 
-const char *Poldata::getQstr(ChargeDistributionModel  eqdModel,
-                             const std::string       &atype) const
+const char *Poldata::getQstr(const std::string       &atype) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(eqdModel, atype)) != EndEemprops())
+    if ((eer = findEem(atype)) != EndEemprops())
     {
         return eer->getQstr();
     }
     return nullptr;
 }
 
-const char *Poldata::getRowstr(ChargeDistributionModel  eqdModel,
-                               const std::string       &name) const
+const char *Poldata::getRowstr(const std::string &name) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(eqdModel, name)) != EndEemprops())
+    if ((eer = findEem(name)) != EndEemprops())
     {
         return eer->getRowstr();
     }
     return nullptr;
 }
 
-int Poldata::getRow(ChargeDistributionModel  eqdModel,
-                    const std::string       &name,
+int Poldata::getRow(const std::string       &name,
                     int                      zz) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(eqdModel, name)) != EndEemprops())
+    if ((eer = findEem(name)) != EndEemprops())
     {
         range_check(zz, 0, eer->getNzeta());
         return eer->getRow(zz);
@@ -730,12 +712,11 @@ int Poldata::getRow(ChargeDistributionModel  eqdModel,
     return -1;
 }
 
-double Poldata::getZeta(ChargeDistributionModel  eqdModel,
-                        const std::string       &name,
+double Poldata::getZeta(const std::string       &name,
                         int                      zz) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(eqdModel, name)) != EndEemprops())
+    if ((eer = findEem(name)) != EndEemprops())
     {
         if ((zz < 0) || (zz >= eer->getNzeta()))
         {
@@ -747,23 +728,21 @@ double Poldata::getZeta(ChargeDistributionModel  eqdModel,
     return -1;
 }
 
-int Poldata::getNzeta(ChargeDistributionModel  eqdModel,
-                      const std::string       &atype) const
+int Poldata::getNzeta(const std::string &atype) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(eqdModel, atype)) != EndEemprops())
+    if ((eer = findEem(atype)) != EndEemprops())
     {
         return eer->getNzeta();
     }
     return 0;
 }
 
-double Poldata::getQ(ChargeDistributionModel  eqdModel,
-                     const std::string       &atype,
+double Poldata::getQ(const std::string       &atype,
                      int                      zz) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(eqdModel, atype)) != EndEemprops())
+    if ((eer = findEem(atype)) != EndEemprops())
     {
         range_check(zz, 0, eer->getNzeta());
         return eer->getQ(zz);
@@ -771,47 +750,18 @@ double Poldata::getQ(ChargeDistributionModel  eqdModel,
     return -1;
 }
 
-double Poldata::getChi0(ChargeDistributionModel   eqdModel,
-                        const  std::string       &atype) const
+double Poldata::getChi0(const  std::string &atype) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(eqdModel, atype)) != EndEemprops())
+    if ((eer = findEem(atype)) != EndEemprops())
     {
         return eer->getChi0();
     }
     else
     {
-        gmx_fatal(FARGS, "No chi0 data for eqdModel %s and atype %s",
-                  getEemtypeName(eqdModel), atype.c_str());
+        fprintf(stderr, "No chi0 data for atype '%s'", atype.c_str());
+        return -1;
     }
-    return -1;
-}
-
-void Poldata::setEpref(ChargeDistributionModel  eqdModel,
-                       const std::string       &epref)
-{
-    for (auto &i : epr_)
-    {
-        if (i.getEqdModel() == eqdModel)
-        {
-            i.setEpref(epref);
-            return;
-        }
-    }
-    Epref epr(eqdModel, epref);
-    epr_.push_back(epr);
-}
-
-const char *Poldata::getEpref(ChargeDistributionModel eqdModel) const
-{
-    for (auto &i : epr_)
-    {
-        if (i.getEqdModel() == eqdModel)
-        {
-            return i.getEpref();
-        }
-    }
-    return nullptr;
 }
 
 CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
@@ -846,8 +796,9 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
         gmx_send_int(cr, dest, miller_.size());
         gmx_send_int(cr, dest, bosque_.size());
         gmx_send_int(cr, dest, symcharges_.size());
+        gmx_send_int(cr, dest, static_cast<int>(eqdModel_));
+        gmx_send_str(cr, dest, &eepReference_);
         gmx_send_int(cr, dest, eep_.size());
-        gmx_send_int(cr, dest, epr_.size());
 
         /*Send ptype*/
         for (auto &ptype : ptype_)
@@ -902,12 +853,6 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
         {
             cs = eep.Send(cr, dest);
         }
-
-        /*Send Epref*/
-        for (auto &epr : epr_)
-        {
-            cs = epr.Send(cr, dest);
-        }
     }
     return cs;
 }
@@ -915,7 +860,7 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
 CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
 {
     size_t              nptype, nalexandria, nbtype, nforces, nvsite;
-    size_t              nmiller, nbosque, nsymcharges, neep, nepr;
+    size_t              nmiller, nbosque, nsymcharges, neep;
     CommunicationStatus cs;
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
@@ -946,8 +891,9 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         nmiller               = gmx_recv_int(cr, src);
         nbosque               = gmx_recv_int(cr, src);
         nsymcharges           = gmx_recv_int(cr, src);
+        eqdModel_             = static_cast<ChargeDistributionModel>(gmx_recv_int(cr, src));
+        gmx_recv_str(cr, src, &eepReference_);
         neep                  = gmx_recv_int(cr, src);
-        nepr                  = gmx_recv_int(cr, src);
 
 
         /*Receive ptype*/
@@ -1057,18 +1003,6 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
                 eep_.push_back(eep);
             }
         }
-
-        /*Receive Epref*/
-        epr_.clear();
-        for (size_t n = 0; (CS_OK == cs) && (n < nepr); n++)
-        {
-            Epref epr;
-            cs = epr.Receive(cr, src);
-            if (CS_OK == cs)
-            {
-                epr_.push_back(epr);
-            }
-        }
     }
     return cs;
 }
@@ -1117,35 +1051,31 @@ void Poldata::broadcast(const t_commrec *cr)
     }
 }
 
-EempropsConstIterator Poldata::ztype2Eem(ChargeDistributionModel  eqdModel,
-                                         const std::string        &ztype) const
+EempropsConstIterator Poldata::ztype2Eem(const std::string &ztype) const
 {
     return std::find_if(eep_.begin(), eep_.end(),
-                        [eqdModel, ztype](Eemprops const &eep)
+                        [ztype](Eemprops const &eep)
                         {
-                            return (strcasecmp(eep.getName(), ztype.c_str()) == 0 &&
-                                    (eep.getEqdModel() == eqdModel));
+                            return (strcasecmp(eep.getName(), ztype.c_str()));
                         });
 }
 
-EempropsIterator Poldata::ztype2Eem(ChargeDistributionModel  eqdModel,
-                                    const std::string        &ztype)
+EempropsIterator Poldata::ztype2Eem(const std::string &ztype)
 {
     return std::find_if(eep_.begin(), eep_.end(),
-                        [eqdModel, ztype](Eemprops const &eep)
+                        [ztype](Eemprops const &eep)
                         {
-                            return (strcasecmp(eep.getName(), ztype.c_str()) == 0 &&
-                                    (eep.getEqdModel() == eqdModel));
+                            return (strcasecmp(eep.getName(), ztype.c_str()) == 0);
                         });
 }
                                    
-EempropsConstIterator Poldata::findEem(ChargeDistributionModel  eqdModel,
-                                       const std::string       &atype) const
+EempropsConstIterator Poldata::findEem(const std::string &atype) const
 {
     std::string nn;
     auto        fa = findAtype(atype);
     if (fa != getAtypeEnd())
     {
+        auto eqdModel = getEqdModel();
         if (eqdModel == eqdRappe || eqdModel == eqdBultinck ||
             eqdModel == eqdYang)
         {
@@ -1161,20 +1091,19 @@ EempropsConstIterator Poldata::findEem(ChargeDistributionModel  eqdModel,
         nn = atype;
     }
     return std::find_if(eep_.begin(), eep_.end(),
-                        [eqdModel, nn](Eemprops const &eep)
+                        [nn](Eemprops const &eep)
                         {
-                            return (strcasecmp(eep.getName(), nn.c_str()) == 0 &&
-                                    (eep.getEqdModel() == eqdModel));
+                            return (strcasecmp(eep.getName(), nn.c_str()) == 0);
                         });
 }
 
-EempropsIterator Poldata::findEem(ChargeDistributionModel  eqdModel,
-                                  const std::string       &atype)
+EempropsIterator Poldata::findEem(const std::string &atype)
 {
     std::string nn;
     auto        fa = findAtype(atype);
     if (fa != getAtypeEnd())
     {
+        auto eqdModel = getEqdModel();
         if (eqdModel == eqdRappe || eqdModel == eqdBultinck ||
             eqdModel == eqdYang)
         {
@@ -1190,10 +1119,9 @@ EempropsIterator Poldata::findEem(ChargeDistributionModel  eqdModel,
         nn = atype;
     }
     return std::find_if(eep_.begin(), eep_.end(),
-                        [eqdModel, nn](Eemprops const &eep)
+                        [nn](Eemprops const &eep)
                         {
-                            return (strcasecmp(eep.getName(), nn.c_str()) == 0 &&
-                                    (eep.getEqdModel() == eqdModel));
+                            return (strcasecmp(eep.getName(), nn.c_str()) == 0);
                         });
 }
 

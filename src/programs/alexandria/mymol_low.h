@@ -103,18 +103,18 @@ void cp_plist(t_params                   plist[],
               InteractionType            itype,
               std::vector<PlistWrapper> &plist_);
 
-real calc_r13(const Poldata     &pd,
+real calc_r13(const Poldata     *pd,
               const std::string  aai,
               const std::string  aaj,
               const std::string  aak,
               const real         angle);
 
-real calc_relposition(const Poldata     &pd,
+real calc_relposition(const Poldata     *pd,
                       const std::string  aai,
                       const std::string  aaj,
                       const std::string  aak);
 
-immStatus updatePlist(const Poldata             &pd,
+immStatus updatePlist(const Poldata             *pd,
                       std::vector<PlistWrapper> &plist,
                       t_topology                *top,
                       bool                       bBASTAT,
@@ -122,29 +122,16 @@ immStatus updatePlist(const Poldata             &pd,
 
 std::vector<double> getDoubles(const std::string &s);
 
-void getLjParams(const Poldata     &pd,
-                 const std::string &ai,
-                 const std::string &aj,
-                 double            *c6,
-                 double            *cn);
-
-void getBhamParams(const Poldata     &pd,
-                   const std::string &ai,
-                   const std::string &aj,
-                   double            *a,
-                   double            *b,
-                   double            *c);
-
 void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                            t_atoms       *atoms,
-                           const Poldata &pd,
+                           const Poldata *pd,
                            t_forcerec    *fr);
 
-void plist_to_mtop(const Poldata                   &pd,
+void plist_to_mtop(const Poldata                   *pd,
                    const std::vector<PlistWrapper> &plist,
                    gmx_mtop_t                      *mtop_);
 
-gmx_mtop_t *do_init_mtop(const Poldata                   &pd,
+gmx_mtop_t *do_init_mtop(const Poldata                   *pd,
                          char                           **molname,
                          t_atoms                         *atoms,
                          const std::vector<PlistWrapper> &plist,
@@ -185,13 +172,12 @@ void write_top(FILE                            *out,
                gpp_atomtype_t                   atype,
                int                             *cgnr,
                int                              nrexcl,
-               const Poldata                   &pd);
+               const Poldata                   *pd);
 
 void print_top_header(FILE                    *fp,
-                      const Poldata           &pd,
+                      const Poldata           *pd,
                       gmx_atomprop_t           aps,
                       bool                     bPol,
-                      ChargeDistributionModel  iChargeDistributionModel,
                       std::vector<std::string> commercials,
                       bool                     bItp);
 

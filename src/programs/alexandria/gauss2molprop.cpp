@@ -81,7 +81,6 @@ int alex_gauss2molprop(int argc, char *argv[])
     static char                     *conf       = (char *)"minimum";
     static gmx_bool                  bVerbose   = false;
     static gmx_bool                  compress   = false;
-    static const char               *forcefield = "gaff";
     
     t_pargs                          pa[]       = {
         { "-v",      FALSE, etBOOL, {&bVerbose},
@@ -100,8 +99,6 @@ int alex_gauss2molprop(int argc, char *argv[])
           "Basis-set used in this calculation for those case where it is difficult to extract from a Gaussian file" },
         { "-jobtype",  FALSE, etSTR, {&jobtype},
           "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." },
-        { "-ff", FALSE, etSTR, {&forcefield},
-          "Force field for basic atom typing available in OpenBabel" },
         { "-maxpot", FALSE, etINT, {&maxpot},
           "Maximum percent of the electrostatic potential points that will be added to the molprop file." }
     };
@@ -139,7 +136,6 @@ int alex_gauss2molprop(int argc, char *argv[])
                   basis,
                   maxpot, 
                   nsymm, 
-                  pd.getForceField().c_str(), 
                   jobtype,
                   0.0);
         mp.push_back(std::move(mmm));

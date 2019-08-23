@@ -95,7 +95,6 @@ class BabelFiles
  * \param[in] maxpot     Maximum number of electrostatic potential data points to store
  * \param[in] nsymm      Symmetry number for this molecule. If zero it will be detected from
  *                       the input.
- * \param[in] forcefield One of the force fields supported by OpenBabel used for atomtypes
  * \ingroup module_alexandria
  */
 void readBabel(const char          *g98,
@@ -106,7 +105,6 @@ void readBabel(const char          *g98,
                const char          *basis,
                int                  maxpot,
                int                  nsymm,
-               std::string          forcefield,
                const char          *jobtype,
                double               qtot);
 

@@ -115,7 +115,7 @@ class NonBondParams
         void addNonBonded(AtomTypes at) { at_.push_back(std::move(at)); }
 
         void analyzeIdef(const std::vector<MyMol> &mm,
-                         const Poldata            &pd);
+                         const Poldata            *pd);
 
         void makeReverseIndex();
 
@@ -257,7 +257,7 @@ class ForceConstants
         void addForceConstant(BondNames bn) { bn_.push_back(std::move(bn)); }
 
         void analyzeIdef(const std::vector<MyMol> &mm,
-                         const Poldata            &pd);
+                         const Poldata            *pd);
 
         /*! \brief Make reverse index from Poldata to BondNames
          *
@@ -320,7 +320,7 @@ public:
      *
      * \param[inout] pd The Poldata structure
      */
-    void execute(Poldata &pd);
+    void execute(Poldata *pd);
     /*! \brief
      * Dump the contents of the structure to a file.
      * \param[in] fp File pointer to dumpt to if not nullptr

@@ -163,14 +163,14 @@ class OptZeta : public MolGen
 void OptZeta::polData2TuneZeta()
 {
     param_.clear();
-    auto          *ic = indexCount();
-    const Poldata &pd = poldata();
+    auto *ic = indexCount();
+    auto  pd = poldata();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
         if (!ai->isConst())
         {
-            auto ei    = pd.findEem(iChargeDistributionModel(), ai->name());
-            GMX_RELEASE_ASSERT(ei != pd.EndEemprops(), "Cannot find eemprops");
+            auto ei    = pd->findEem(ai->name());
+            GMX_RELEASE_ASSERT(ei != pd->EndEemprops(), "Cannot find eemprops");
             auto nzeta = ei->getNzeta();
             auto zeta  = ei->getZeta(nzeta-1); // only optimize zeta for the shell of the polarizable model
             if (0 != zeta)
@@ -180,14 +180,14 @@ void OptZeta::polData2TuneZeta()
             else
             {
                 gmx_fatal(FARGS, "Zeta is zero for atom %s in model %s\n",
-                          ai->name().c_str(), getEemtypeName(iChargeDistributionModel()));
+                          ai->name().c_str(), getEemtypeName(poldata()->getEqdModel()));
             }
 
             if (bFitAlpha_)
             {
                 auto alpha = 0.0;
                 auto sigma = 0.0;
-                if (pd.getAtypePol(ai->name(), &alpha, &sigma))
+                if (pd->getAtypePol(ai->name(), &alpha, &sigma))
                 {
                     if (0 != alpha)
                     {
@@ -215,21 +215,22 @@ void OptZeta::tuneZeta2PolData()
     double   zeta  = 0;
     double   sigma = 0;
 
-    Poldata &pd    = poldata();
-    auto    *ic    = indexCount();
+    auto  pd = poldata();
+    auto *ic = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
         if (!ai->isConst())
         {
-            auto        ei = pd.findEem(iChargeDistributionModel(), ai->name());
-            GMX_RELEASE_ASSERT(ei != pd.EndEemprops(), "Cannot find eemprops");
+            auto        ei = pd->findEem(ai->name());
+            GMX_RELEASE_ASSERT(ei != pd->EndEemprops(), "Cannot find eemprops");
             std::string qstr   = ei->getQstr();
             std::string rowstr = ei->getRowstr();
             zstr[0]  = '\0';
             z_sig[0] = '\0';
 
             // Begin to add  optimized zeta to poldata
-            if (iChargeDistributionModel() == eqdAXps || iChargeDistributionModel() == eqdAXpg)
+            auto iModel = poldata()->getEqdModel();
+            if (iModel == eqdAXps || iModel == eqdAXpg)
             {
                 if (bSameZeta_)
                 {
@@ -284,9 +285,9 @@ void OptZeta::tuneZeta2PolData()
 
 
                 std::string ptype;
-                if (pd.atypeToPtype(ai->name(), ptype))
+                if (pd->atypeToPtype(ai->name(), ptype))
                 {
-                    pd.setPtypePolarizability(ptype, param_[n], psigma_[n]);
+                    pd->setPtypePolarizability(ptype, param_[n], psigma_[n]);
                     n++;
                 }
                 else
@@ -339,7 +340,7 @@ void OptZeta::calcDeviation()
     }
     if (PAR(commrec()) && !final())
     {
-        poldata().broadcast(commrec());
+        poldata()->broadcast(commrec());
     }
     resetEnergies();
     for (auto &mymol : mymols())
@@ -728,9 +729,8 @@ int alex_tune_zeta(int argc, char *argv[])
 
     if (MASTER(opt.commrec()))
     {
-        gmx_bool bPolar = (opt.iChargeDistributionModel() == eqdAXpp  ||
-                           opt.iChargeDistributionModel() == eqdAXpg  ||
-                           opt.iChargeDistributionModel() == eqdAXps);
+        auto iModel = opt.poldata()->getEqdModel();
+        bool bPolar = (iModel == eqdAXpp  || iModel == eqdAXpg  || iModel == eqdAXps);
 
         auto *ic = opt.indexCount();
         print_electric_props(fp,
@@ -738,7 +738,6 @@ int alex_tune_zeta(int argc, char *argv[])
                              opt.poldata(),
                              opt.mdlog(),
                              opt.atomprop(),
-                             opt.iChargeDistributionModel(),
                              eqgESP,
                              opt.watoms(),
                              opt.hfac(),
@@ -776,7 +775,7 @@ int alex_tune_zeta(int argc, char *argv[])
         {
             FILE        *tp;
             tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
-            alexandria_poldata_eemprops_table(tp, opt.poldata(), opt.iChargeDistributionModel());
+            alexandria_poldata_eemprops_table(tp, opt.poldata());
             gmx_ffclose(tp);
         }
     }

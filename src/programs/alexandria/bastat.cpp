@@ -430,21 +430,29 @@ static void round_numbers(real *av, real *sig)
     *sig = ((int)(*sig*100+50))/100.0;
 }
 
-static void update_pd(FILE *fp,      t_bonds *b,        Poldata &pd,
-                      real Dm,       real     beta,     real     kt, 
-                      real klin,     real     kp,       real     kimp, 
-                      real kub,      real     bond_tol, real     angle_tol)
+static void update_pd(FILE          *fp,      
+                      const t_bonds *b,        
+                      Poldata       *pd,
+                      real           Dm,       
+                      real           beta,
+                      real           kt, 
+                      real           klin,
+                      real           kp,
+                      real           kimp, 
+                      real           kub,
+                      real           bond_tol,
+                      real           angle_tol)
 {
     int                      N;
     real                     av, sig;
     char                     pbuf[256];
     std::vector<std::string> atoms;
 
-    auto                     morse             = pd.findForces(eitBONDS);
-    auto                     angle             = pd.findForces(eitANGLES);
-    auto                     linear_angle      = pd.findForces(eitLINEAR_ANGLES);
-    auto                     proper_dihedral   = pd.findForces(eitPROPER_DIHEDRALS);
-    auto                     improper_dihedral = pd.findForces(eitIMPROPER_DIHEDRALS);
+    auto                     morse             = pd->findForces(eitBONDS);
+    auto                     angle             = pd->findForces(eitANGLES);
+    auto                     linear_angle      = pd->findForces(eitLINEAR_ANGLES);
+    auto                     proper_dihedral   = pd->findForces(eitPROPER_DIHEDRALS);
+    auto                     improper_dihedral = pd->findForces(eitIMPROPER_DIHEDRALS);
 
     morse->eraseListedForce();
     angle->eraseListedForce();
@@ -506,13 +514,33 @@ static void update_pd(FILE *fp,      t_bonds *b,        Poldata &pd,
         gmx_stats_get_average(i.lsq, &av);
         gmx_stats_get_sigma(i.lsq, &sig);
         gmx_stats_get_npoints(i.lsq, &N);
-        sprintf(pbuf, "%g  6", kp);
-        round_numbers(&av, &sig);
-        atoms = {i.a1, i.a2, i.a3, i.a4};
-        proper_dihedral->addForce(atoms, pbuf, false, av, sig, N);
-
-        fprintf(fp, "dihedral-%s-%s-%s-%s angle %g sigma %g (deg)\n",
-                i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), i.a4.c_str(), av, sig);
+        bool support = true;
+        switch (proper_dihedral->fType())
+        {
+        case F_FOURDIHS:
+            {
+                sprintf(pbuf, "%g -1 1 0", kp);
+            }
+            break;
+        case F_PDIHS:
+            {
+                sprintf(pbuf, "%g 3", kp);
+            }
+            break;
+        default:
+            fprintf(fp, "Unsupported dihedral type %s\n",
+                    interaction_function[proper_dihedral->fType()].name);
+            support = false;
+        }
+        if (support)
+        {
+            round_numbers(&av, &sig);
+            atoms = {i.a1, i.a2, i.a3, i.a4};
+            proper_dihedral->addForce(atoms, pbuf, false, av, sig, N);
+            
+            fprintf(fp, "dihedral-%s-%s-%s-%s angle %g sigma %g (deg)\n",
+                    i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), i.a4.c_str(), av, sig);
+        }
     }
     for (auto &i : b->imp)
     {
@@ -562,7 +590,6 @@ int alex_bastat(int argc, char *argv[])
     static gmx_bool                  bHisto      = false;
     static gmx_bool                  bDih        = false;
     static gmx_bool                  bBondOrder  = true;
-    static const char               *cqdist[]    = {nullptr, "AXp", "AXpp", "AXg", "AXpg", "AXs", "AXps", "Yang", "Bultinck", "Rappe", nullptr};
     t_pargs                          pa[]        = {
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges" },
@@ -590,8 +617,6 @@ int alex_bastat(int argc, char *argv[])
           "Generate proper dihedral terms" },
         { "-histo", FALSE, etBOOL, {&bHisto},
           "Print (hundreds of) xvg files containing histograms for bonds, angles and dihedrals" },
-        { "-qdist",   FALSE, etENUM, {cqdist},
-          "Charge distribution used" },
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML file" },
         { "-bondorder", FALSE, etBOOL, {&bBondOrder},
@@ -599,7 +624,7 @@ int alex_bastat(int argc, char *argv[])
     };
 
     FILE                            *fp;
-    ChargeDistributionModel          iDistributionModel;
+    ChargeDistributionModel          iModel;
     time_t                           my_t;
     t_bonds                         *bonds = new(t_bonds);
     rvec                             dx, dx2, r_ij, r_kj, r_kl, mm, nn;
@@ -623,7 +648,6 @@ int alex_bastat(int argc, char *argv[])
         return 0;
     }
     
-    iDistributionModel = name2eemtype(cqdist[0]);
     fp                 = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
     
     time(&my_t);
@@ -643,6 +667,10 @@ int alex_bastat(int argc, char *argv[])
         readPoldata(opt2fn_null("-d", NFILE, fnm), pd, aps);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+    // This a hack to prevent that no bonds will be found to shells.
+    iModel = pd.getEqdModel();
+    pd.setEqdModel(eqdAXp);
 
     /* Read Molprops */
     auto nwarn = merge_xml(opt2fns("-f", NFILE, fnm), mp, nullptr, nullptr, nullptr, aps, pd, true);
@@ -668,9 +696,8 @@ int alex_bastat(int argc, char *argv[])
             }      
                   
             auto imm = mmi.GenerateTopology(aps, 
-                                            pd, 
+                                            &pd, 
                                             lot, 
-                                            iDistributionModel,
                                             false, 
                                             false, 
                                             bDih, 
@@ -704,8 +731,11 @@ int alex_bastat(int argc, char *argv[])
             }
             if ((mmi.topology_->atoms.nr <= 0) || (i < mmi.topology_->atoms.nr))
             {
-                fprintf(debug, "You may need to check the number of atoms for %s\n",
-                        mmi.molProp()->getMolname().c_str());
+                if (nullptr != debug)
+                {
+                    fprintf(debug, "You may need to check the number of atoms for %s\n",
+                            mmi.molProp()->getMolname().c_str());
+                }
                 continue;
             }
             auto x        = mmi.x();
@@ -834,10 +864,14 @@ int alex_bastat(int argc, char *argv[])
     {
         dump_histo(bonds, bspacing, aspacing, oenv);
     }
-    update_pd(fp, bonds, pd, Dm, beta, kt, klin, kp, kimp, kub, bond_tol, angle_tol);
-    writePoldata(opt2fn("-o", NFILE, fnm), pd, compress);
-    printf("Extracted %zu bondtypes, %zu angletypes, %zu dihedraltypes and %zu impropertypes.\n",
-           bonds->bond.size(), bonds->angle.size(), bonds->dih.size(), bonds->imp.size());
+    update_pd(fp, bonds, &pd,
+              Dm, beta, kt, klin, kp, kimp, kub, 
+              bond_tol, angle_tol);
+    pd.setEqdModel(iModel);
+    writePoldata(opt2fn("-o", NFILE, fnm), &pd, compress);
+    printf("Extracted %zu bondtypes, %zu angletypes, %zu linear-angletypes, %zu dihedraltypes and %zu impropertypes.\n",
+           bonds->bond.size(), bonds->angle.size(), bonds->linangle.size(),
+           bonds->dih.size(), bonds->imp.size());
     gmx_ffclose(fp);
     return 0;
 }

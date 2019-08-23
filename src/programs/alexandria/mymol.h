@@ -169,11 +169,10 @@ class MyMol
          *
          * \param[in] ap      Gromacs atom properties
          * \param[in] lot     Level of theory used for QM calculations
-         * \param[in] iModel  The distrbution model of charge (e.x. point charge, gaussian, and slater models)
+         * \param[in] iChargeDistributionModel The model for charge distributions
          */
         immStatus GenerateAtoms(gmx_atomprop_t            ap,
-                                const char               *lot,
-                                ChargeDistributionModel   iModel);
+                                const char               *lot);
 
         /*! \brief
          * Generate angles, dihedrals, exclusions etc.
@@ -189,33 +188,30 @@ class MyMol
          *
          * \param[in] bUseVsites
          */
-        void MakeSpecialInteractions(const Poldata &pd,
+        void MakeSpecialInteractions(const Poldata *pd,
                                      bool           bUseVsites);
 
         /*! \brief
          * Add shell particles
          *
          * \param[in] pd       Data structure containing atomic properties
-         * \param[in] iModel   The distrbution model of charge (e.x. point charge, gaussian, and slater models)
          */
-        void addShells(const Poldata &pd, ChargeDistributionModel iModel);
+        void addShells(const Poldata *pd);
 
         /*! \brief
          * Check whether atom types exist in the force field
          *
          * \param[in] pd
          */
-        immStatus checkAtoms(const Poldata &pd);
+        immStatus checkAtoms(const Poldata *pd);
 
 
         /*! \brief
          * Add the screening factors of the distributed charge to atom structure
          *
-         * \param[in] iModel  The distrbution model of charge (e.x. point charge, gaussian, and slater models)
          * \param[in] pd      Data structure containing atomic properties
          */
-        immStatus zeta2atoms(ChargeDistributionModel iModel,
-                             const Poldata          &pd);
+        immStatus zeta2atoms(const Poldata *pd);
 
         /*! \brief
          * Return true if atom type neesd to have virtual site.
@@ -224,7 +220,7 @@ class MyMol
          * \param[in] pd     Data structure containing atomic properties
          */
         bool IsVsiteNeeded(std::string        atype,
-                           const Poldata     &pd);
+                           const Poldata     *pd);
 
         /*! \brief
          * Find the atoms inside the molcule needed to construct the inplane virtual sites.
@@ -373,16 +369,14 @@ class MyMol
          * \param[in] ap          Gromacs atom properties
          * \param[in] pd          Data structure containing atomic properties
          * \param[in] lot         The level of theory used for QM calculation
-         * \param[in] iModel      The distrbution model of charge (e.x. point charge, gaussian, and slater models)
          * \param[in] nexcl       Number of Exclusions
          * \param[in] bUseVsites  Add virtual sites to the topology structure
          * \param[in] bPairs      Add pairs to the topology structure
          * \param[in] bDih        Add dihedrals to the topology structure
          */
         immStatus GenerateTopology(gmx_atomprop_t            ap,
-                                   const Poldata            &pd,
+                                   const Poldata            *pd,
                                    const char               *lot,
-                                   ChargeDistributionModel   iModel,
                                    bool                      bUseVsites,
                                    bool                      bPairs,
                                    bool                      bDih,
@@ -415,10 +409,9 @@ class MyMol
          * \param[in] cr
          * \param[in] tabfn
          */
-        immStatus GenerateCharges(const Poldata             &pd,
+        immStatus GenerateCharges(const Poldata             *pd,
                                   const gmx::MDLogger       &fplog,
                                   gmx_atomprop_t             ap,
-                                  ChargeDistributionModel    iModel,
                                   ChargeGenerationAlgorithm  iChargeGenerationAlgorithm,
                                   real                       watoms,
                                   real                       hfac,
@@ -437,8 +430,7 @@ class MyMol
          * Init the Qgresp class
          *
          */                          
-        void initQgresp(const Poldata             &pd,
-                        ChargeDistributionModel    iChargeDistributionModel,
+        void initQgresp(const Poldata             *pd,
                         const char                *lot,
                         real                       watoms,
                         int                        maxESP);
@@ -460,7 +452,7 @@ class MyMol
          */
         immStatus getExpProps(gmx_bool bQM, gmx_bool bZero,
                               gmx_bool bZPE, const char *lot,
-                              const Poldata &pd);
+                              const Poldata *pd);
 
         /*! \brief
          * Print the topology that was generated previously in GROMACS format.
@@ -471,14 +463,13 @@ class MyMol
          * \param[in] pd        Data structure containing atomic properties
          * \param[in] aps       Gromacs atom properties
          */
-        void PrintTopology(const char             *fn,
-                           ChargeDistributionModel iModel,
-                           bool                    bVerbose,
-                           const Poldata          &pd,
-                           gmx_atomprop_t          aps,
-                           t_commrec              *cr,
-                           double                  efield,
-                           const char             *lot);
+        void PrintTopology(const char     *fn,
+                           bool            bVerbose,
+                           const Poldata  *pd,
+                           gmx_atomprop_t  aps,
+                           t_commrec      *cr,
+                           double          efield,
+                           const char     *lot);
 
         /*! \brief
          * Print the topology that was generated previously in GROMACS format.
@@ -490,9 +481,8 @@ class MyMol
          * \param[in] aps       Gromacs atom properties
          */
         void PrintTopology(FILE                    *fp,
-                           ChargeDistributionModel  iModel,
                            bool                     bVerbose,
-                           const Poldata           &pd,
+                           const Poldata           *pd,
                            gmx_atomprop_t           aps,
                            bool                     bITP,
                            t_commrec               *cr,
@@ -503,8 +493,9 @@ class MyMol
          *  Compute or derive global info about the molecule
          *
          * \param[in] pd   Data structure containing atomic properties
+         * \param[out] mu  The dipole
          */
-        void CalcQPol(const Poldata &pd, rvec mu);
+        void CalcQPol(const Poldata *pd, rvec mu);
 
         /*! \brief
          * Compute the molecular dipole vector
@@ -566,7 +557,7 @@ class MyMol
          * \param[in] modifiedOnly Only update parameters that were modified.
          *                         Experimental speed-up for tune_fc.
          */
-        void UpdateIdef(const Poldata   &pd,
+        void UpdateIdef(const Poldata   *pd,
                         InteractionType  iType);
 
         /*! \brief
@@ -625,8 +616,7 @@ class MyMol
          * \param[in] diffhistfn
          * \param[in] oenv
          */
-        void GenerateCube(ChargeDistributionModel iModel,
-                          const Poldata          &pd,
+        void GenerateCube(const Poldata          *pd,
                           real                    spacing,
                           const char             *reffn,
                           const char             *pcfn,

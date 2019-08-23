@@ -857,58 +857,6 @@ CommunicationStatus Symcharges::Receive(const t_commrec *cr, int src)
     return cs;
 }
 
-
-Epref::Epref(ChargeDistributionModel  eqdModel,
-             const std::string       &epref)
-    :
-      eqdModel_(eqdModel),
-      epref_(epref)
-{}
-
-CommunicationStatus Epref::Send(const t_commrec *cr, int dest)
-{
-    CommunicationStatus cs;
-    std::string         eqdModel;
-
-    cs = gmx_send_data(cr, dest);
-    if (CS_OK == cs)
-    {
-        eqdModel.assign(getEemtypeName(eqdModel_));
-        gmx_send_str(cr, dest, &eqdModel);
-        gmx_send_str(cr, dest, &epref_);
-
-        if (nullptr != debug)
-        {
-            fprintf(debug, "Sent Epref %s %s, status %s\n",
-                    getEemtypeName(eqdModel_), epref_.c_str(), cs_name(cs));
-            fflush(debug);
-        }
-    }
-    return cs;
-}
-
-CommunicationStatus Epref::Receive(const t_commrec *cr, int src)
-{
-    CommunicationStatus cs;
-    std::string         eqdModel;
-
-    cs = gmx_recv_data(cr, src);
-    if (CS_OK == cs)
-    {
-        gmx_recv_str(cr, src, &eqdModel);
-        eqdModel_ = name2eemtype(eqdModel);
-        gmx_recv_str(cr, src, &epref_);
-
-        if (nullptr != debug)
-        {
-            fprintf(debug, "Received Epref %s %s, status %s\n",
-                    getEemtypeName(eqdModel_), epref_.c_str(), cs_name(cs));
-            fflush(debug);
-        }
-    }
-    return cs;
-}
-
 RowZetaQ::RowZetaQ(int row, double zeta, double q)
 
     :
@@ -987,8 +935,7 @@ CommunicationStatus RowZetaQ::Receive(const t_commrec *cr, int src)
     return cs;
 }
 
-Eemprops::Eemprops(ChargeDistributionModel   eqdModel,
-                   const std::string        &name,
+Eemprops::Eemprops(const std::string        &name,
                    const std::string        &rowstr,
                    const std::string        &zetastr,
                    const std::string        &zeta_sigma,
@@ -998,7 +945,6 @@ Eemprops::Eemprops(ChargeDistributionModel   eqdModel,
                    double                    chi0,
                    double                    chi0_sigma)
     :
-      eqdModel_(eqdModel),
       name_(name),
       rowstr_(rowstr),
       zetastr_(zetastr),
@@ -1015,12 +961,9 @@ Eemprops::Eemprops(ChargeDistributionModel   eqdModel,
 CommunicationStatus Eemprops::Send(const t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
-    std::string         eqdModel;
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        eqdModel.assign(getEemtypeName(eqdModel_));
-        gmx_send_str(cr, dest, &eqdModel);
         gmx_send_str(cr, dest, &name_);
         gmx_send_str(cr, dest, &rowstr_);
         gmx_send_str(cr, dest, &zetastr_);
@@ -1038,8 +981,8 @@ CommunicationStatus Eemprops::Send(const t_commrec *cr, int dest)
         }
         if (nullptr != debug)
         {
-            fprintf(debug, "Sent Eemprops %s %s %s %s %s %g %g, status %s\n",
-                    getEemtypeName(eqdModel_), name_.c_str(), rowstr_.c_str(),
+            fprintf(debug, "Sent Eemprops %s %s %s %s %g %g, status %s\n",
+                    name_.c_str(), rowstr_.c_str(),
                     zetastr_.c_str(), qstr_.c_str(), J0_, chi0_, cs_name(cs));
             fflush(debug);
         }
@@ -1051,13 +994,10 @@ CommunicationStatus Eemprops::Receive(const t_commrec *cr, int src)
 {
     size_t              nrzq;
     CommunicationStatus cs;
-    std::string         eqdModel;
 
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        gmx_recv_str(cr, src, &eqdModel);
-        eqdModel_   = name2eemtype(eqdModel);
         gmx_recv_str(cr, src, &name_);
         gmx_recv_str(cr, src, &rowstr_);
         gmx_recv_str(cr, src, &zetastr_);
@@ -1140,6 +1080,8 @@ ChargeDistributionModel name2eemtype(const std::string name)
             return eemtype_props[i].eqd;
         }
     }
+    gmx_fatal(FARGS, "Incorrect eemprops model %s", name.c_str());
+
     return eqdNR;
 }
 

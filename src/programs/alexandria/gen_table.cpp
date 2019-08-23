@@ -186,10 +186,10 @@ static void gen_alexandria_rho(Poldata                 &pd,
     nmax = 1+(int)(rcut/spacing);
     for (auto eep = pd.getEemprops().begin(); eep != pd.getEemprops().end(); eep++)
     {
-        if (eep->getEqdModel() == iDistributionModel)
+        if (pd.getEqdModel() == iDistributionModel)
         {
             name  = eep->getName();        
-            nzeta = pd.getNzeta(iDistributionModel, name);
+            nzeta = pd.getNzeta(name);
             snew(zeta, nzeta);
             snew(q, nzeta);
             snew(row, nzeta);
@@ -197,10 +197,10 @@ static void gen_alexandria_rho(Poldata                 &pd,
             qtot = 0;
             for (j = 0; j < nzeta; j++)
             {
-                zeta[j] = pd.getZeta(iDistributionModel, name, j);
-                q[j]    = pd.getQ(iDistributionModel, name, j);
+                zeta[j] = pd.getZeta(name, j);
+                q[j]    = pd.getQ(name, j);
                 qtot   += q[j];
-                row[j]  = pd.getRow(iDistributionModel, name, j);
+                row[j]  = pd.getRow(name, j);
                 switch (iDistributionModel)
                 {
                     case eqdAXg:
@@ -213,7 +213,7 @@ static void gen_alexandria_rho(Poldata                 &pd,
                         break;
                     default:
                         gmx_fatal(FARGS, "Don't know how to handle model %s",
-                                  getEemtypeName(iDistributionModel));
+                                  getEemtypeName(pd.getEqdModel()));
                 }
             }
             if (q[nzeta-1] == 0)
@@ -259,12 +259,13 @@ static void gen_alexandria_rho(Poldata                 &pd,
 
 static void gen_alexandria_tables(Poldata                 &pd,
                                   const char              *fn,
-                                  ChargeDistributionModel  iDistributionModel,
                                   real                     rcut,
                                   real                     spacing,
                                   const gmx_output_env_t  *oenv,
                                   char                    *atypes)
 {
+    ChargeDistributionModel  iDistributionModel = pd.getEqdModel();
+                                  
     double       cv = 0;
     double       cf = 0;
     double       rr = 0;
@@ -287,20 +288,20 @@ static void gen_alexandria_tables(Poldata                 &pd,
     filter_atypes(&FFatypes, atypes);        
     for (auto atpi = FFatypes.begin(); atpi != FFatypes.end(); atpi++)
     {
-        auto eei    = pd.findEem(iDistributionModel, atpi->getZtype());
-        auto nzetaI = pd.getNzeta(iDistributionModel, eei->getName());
+        auto eei    = pd.findEem(atpi->getZtype());
+        auto nzetaI = pd.getNzeta(eei->getName());
         for (auto atpj = atpi; atpj != FFatypes.end(); atpj++)
         {
-            auto eej    = pd.findEem(iDistributionModel, atpj->getZtype());
-            auto nzetaJ =  pd.getNzeta( iDistributionModel, eej->getName());
+            auto eej    = pd.findEem(atpj->getZtype());
+            auto nzetaJ =  pd.getNzeta(eej->getName());
             for (auto i = 0; i < nzetaI; i++)
             {
-                auto zetaI = pd.getZeta(iDistributionModel, eei->getName(), i);
-                auto rowI  = pd.getRow(iDistributionModel,  eei->getName(), i);
+                auto zetaI = pd.getZeta(eei->getName(), i);
+                auto rowI  = pd.getRow(eei->getName(), i);
                 for (auto j = 0; j < nzetaJ; j++)
                 {
-                    auto zetaJ = pd.getZeta(iDistributionModel, eej->getName(), j);
-                    auto rowJ  = pd.getRow(iDistributionModel,  eej->getName(), j);
+                    auto zetaJ = pd.getZeta(eej->getName(), j);
+                    auto rowJ  = pd.getRow(eej->getName(), j);
 
                     strncpy(fnbuf, fn, strlen(fn)-4);
                     fnbuf[strlen(fn)-4] = '\0';
@@ -485,7 +486,7 @@ int alex_gen_table(int argc, char *argv[])
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     
-    gen_alexandria_tables(pd, opt2fn("-o", NFILE, fnm), iDistributionModel, rc, 1.0/pts_nm, oenv, atypes);
+    gen_alexandria_tables(pd, opt2fn("-o", NFILE, fnm), rc, 1.0/pts_nm, oenv, atypes);
     
     /*if (iDistributionModel != eqdAXp && iDistributionModel != eqdAXpp)
     {

@@ -47,8 +47,7 @@ namespace alexandria
  */
 
 void alexandria_poldata_eemprops_table(FILE                       *fp, 
-                                       const Poldata              &pd,
-                                       ChargeDistributionModel    qdist);                                            
+                                       const Poldata              *pd);                                            
 } //namespace
 
 #endif

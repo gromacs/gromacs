@@ -579,42 +579,34 @@ class Poldata
 
         SymchargesConstIterator getSymchargesEnd() const { return symcharges_.end(); }
 
-        int getNumprops(ChargeDistributionModel eqdModel) const;
+        //! Return number of eemprops
+        size_t getNumprops() const { return eep_.size();}
 
+        //! Return whether there is polarizability support for atype
         int havePolSupport(const std::string &atype) const;
 
-        bool haveEemSupport(ChargeDistributionModel  eqdModel,
-                            const std::string       &name,
-                            gmx_bool                 bAllowZeroParameters) const;
+        bool haveEemSupport(const std::string &name,
+                            gmx_bool           bAllowZeroParameters) const;
 
-        double getJ00(ChargeDistributionModel  eqdModel,
-                      const std::string       &name) const;
+        double getJ00(const std::string &name) const;
 
-        int getNzeta(ChargeDistributionModel eqdModel,
-                     const std::string      &atype) const;
+        int getNzeta(const std::string &atype) const;
 
-        double getZeta(ChargeDistributionModel eqdModel,
-                       const std::string &name, int zz) const;
+        double getZeta(const std::string &name, int zz) const;
 
-        const char *getQstr(ChargeDistributionModel  eqdModel,
-                            const std::string       &name) const;
+        const char *getQstr(const std::string &name) const;
 
-        const char *getRowstr(ChargeDistributionModel  eqdModel,
-                              const std::string       &name) const;
+        const char *getRowstr(const std::string &name) const;
 
-        double getQ(ChargeDistributionModel eqdModel,
-                    const std::string      &name,
-                    int                     zz) const;
+        double getQ(const std::string &name,
+                    int                zz) const;
 
-        int getRow(ChargeDistributionModel eqdModel,
-                   const std::string      &name,
-                   int                     zz) const;
+        int getRow(const std::string &name,
+                   int                zz) const;
 
-        double getChi0(ChargeDistributionModel eqdModel,
-                       const std::string      &name) const;
+        double getChi0(const std::string &name) const;
 
-        const char *getOpts(ChargeDistributionModel eqdModel,
-                            const std::string      &name) const;
+        const char *getOpts(const std::string &name) const;
 
         void  addEemprops(Eemprops eep) { eep_.push_back(eep); }
 
@@ -629,37 +621,36 @@ class Poldata
         /*! \brief Find the EEM properties
          *
          * Find the EEM properties corresponding to an atom type.
-         * \param[in] eqdModel  The charge distriobution model
          * \param[in] atype     The Alexandria atom type
          * \returns   An iterator pointing to the right EEMprops
          *            structure or EndEemprops in case the atom type
          *            is not found.
          */
-        EempropsConstIterator findEem(ChargeDistributionModel  eqdModel,
-                                      const std::string       &atype) const;
+        EempropsConstIterator findEem(const std::string &atype) const;
 
-        EempropsIterator findEem(ChargeDistributionModel  eqdModel,
-                                 const std::string       &atype);
+        EempropsIterator findEem(const std::string &atype);
                                  
-        EempropsConstIterator ztype2Eem(ChargeDistributionModel  eqdModel,
-                                        const std::string        &ztype) const;
+        EempropsConstIterator ztype2Eem(const std::string &ztype) const;
 
-        EempropsIterator ztype2Eem(ChargeDistributionModel  eqdModel,
-                                   const std::string        &ztype);
-
+        EempropsIterator ztype2Eem(const std::string &ztype);
+                                   
+        //! Return the charge distribution model used
+        ChargeDistributionModel getEqdModel() const { return eqdModel_; }
+        
+        //! Set the charge distribution model used
+        void setEqdModel(ChargeDistributionModel eqdModel) { eqdModel_ = eqdModel; }
+        
+        //! Return the array of eemprops
         std::vector<Eemprops> &getEemprops() {return eep_; }
 
-        void  setEpref(ChargeDistributionModel eqdModel,
-                       const std::string      &epref);
+        //! Set the reference for EEM property calculations
+        void  setEpref(const std::string &epref) { eepReference_ = epref; }
 
-        const char *getEpref(ChargeDistributionModel eqdModel) const;
+        //! Get the reference for EEM property calculations
+        const std::string &getEpref() const { return eepReference_; }
 
         //! Spread from master to slave nodes
         void  broadcast(const t_commrec *cr);
-
-        EprefConstIterator epRefBegin() const { return epr_.begin(); }
-
-        EprefConstIterator epRefEnd() const { return epr_.end(); }
 
         CommunicationStatus Send(const t_commrec *cr, int dest);
 
@@ -689,7 +680,8 @@ class Poldata
         std::string                           bosqueRef_;
         std::vector<Symcharges>               symcharges_;
         std::vector<Eemprops>                 eep_;
-        std::vector<Epref>                    epr_;
+        std::string                           eepReference_;
+        ChargeDistributionModel               eqdModel_ = eqdAXg;
 
         void addBtype(const std::string &btype);
 

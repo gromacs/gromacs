@@ -29,7 +29,7 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
+#include <map>
  
 #include <math.h>
 
@@ -45,6 +45,8 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
+#include "poldata_utils.h"
+
 namespace alexandria
 {
 
@@ -54,12 +56,11 @@ namespace
 class PoldataTest : public gmx::test::CommandLineTestBase
 {
     protected:
-        static  alexandria::Poldata                      pd_;
-        gmx::test::TestReferenceChecker                  checker_;
-        static   std::vector<std::string>                atomNames;
-        static std::string atomName;
+        gmx::test::TestReferenceChecker                   checker_;
+        static std::vector<std::string>                   atomNames;
+        static std::string                                atomName;
         
-        PoldataTest ( ) : checker_(this->rootChecker())
+        PoldataTest () : checker_(this->rootChecker())
         {
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
             checker_.setDefaultTolerance(tolerance);
@@ -68,17 +69,9 @@ class PoldataTest : public gmx::test::CommandLineTestBase
         // Static initiation, only run once every test.
         static void SetUpTestCase()
         {
-            gmx_atomprop_t aps = gmx_atomprop_init();
-
-            std::string dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
-            try
-            {
-                alexandria::readPoldata(dataName, pd_, aps);
-            }
-            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-
-            atomName = pd_.findAtype("ha")->getType();
-            for (auto iter = pd_.getAtypeBegin(); iter != pd_.getAtypeEnd(); iter++)
+            Poldata *mypd = getPoldata("AXg");
+            auto atomName = mypd->findAtype("ha")->getType();
+            for (auto iter = mypd->getAtypeBegin(); iter != mypd->getAtypeEnd(); iter++)
             {
                 atomNames.push_back(iter->getType());
             }
@@ -91,12 +84,11 @@ class PoldataTest : public gmx::test::CommandLineTestBase
 
 };
 
-alexandria::Poldata      PoldataTest::pd_;
 std::vector<std::string> PoldataTest::atomNames;
 std::string              PoldataTest::atomName;
 
 TEST_F (PoldataTest, getAtype){
-    alexandria::FfatypeIterator aType =  pd_.findAtype("h1");
+    alexandria::FfatypeIterator aType =  getPoldata("AXg")->findAtype("h1");
 
     checker_.checkString(aType->getElem(), "elem");
     checker_.checkString(aType->getDesc(), "desc");
@@ -118,7 +110,8 @@ TEST_F(PoldataTest, addAtype){
           std::string        vdwparams    = "10.0 11.1 12.2";
     const std::string        ref_enthalpy = "1000";
     bool                     fixVdw       = true;
-    pd_.addAtype(elem,
+    alexandria::Poldata     *pd           = getPoldata("AXg");
+    pd->addAtype(elem,
                  desc,
                  atype,
                  ptype,
@@ -128,8 +121,8 @@ TEST_F(PoldataTest, addAtype){
                  vdwparams,
                  ref_enthalpy);
 
-    auto fa = pd_.findAtype(atype);
-    if (fa != pd_.getAtypeEnd())
+    auto fa = pd->findAtype(atype);
+    if (fa != pd->getAtypeEnd())
     {
         /* Test if the extractions where correct */
         checker_.checkString(fa->getElem(), elem.c_str());
@@ -145,12 +138,11 @@ TEST_F(PoldataTest, addAtype){
     fa->setVdwparams(vdwparams);
 }
 
-
-
 TEST_F (PoldataTest, Ptype)
 {
-    auto ptype = pd_.findPtype("p_ha");
-    if (ptype != pd_.getPtypeEnd())
+    auto pd    = getPoldata("AXg");
+    auto ptype = pd->findPtype("p_ha");
+    if (ptype != pd->getPtypeEnd())
     {
         checker_.checkString(ptype->getType(), "type");
         checker_.checkString(ptype->getMiller(), "miller");
@@ -162,7 +154,8 @@ TEST_F (PoldataTest, Ptype)
 
 TEST_F (PoldataTest, Miller)
 {
-    alexandria::MillerIterator miller = pd_.getMillerBegin();
+    auto pd    = getPoldata("AXg");
+    alexandria::MillerIterator miller = pd->getMillerBegin();
     checker_.checkInteger(miller->getAtomnumber(), "atomnumber");
     checker_.checkDouble(miller->getTauAhc(), "tauAhc");
     checker_.checkDouble(miller->getAlphaAhp(), "alphaAhp");
@@ -171,22 +164,22 @@ TEST_F (PoldataTest, Miller)
 
 TEST_F (PoldataTest, Bosque)
 {
-    alexandria::BosqueIterator bosque = pd_.getBosqueBegin();
+    auto pd    = getPoldata("AXg");
+    alexandria::BosqueIterator bosque = pd->getBosqueBegin();
     checker_.checkString(bosque->getBosque(), "bosque");
     checker_.checkDouble(bosque->getPolarizability(), "polarizability");
 }
 
 TEST_F (PoldataTest, chi)
 {
-    std::vector<double>      chi0s;
-    std::vector<ChargeDistributionModel> eqd;
-    eqd.push_back(eqdAXpp);
-    eqd.push_back(eqdAXpg);
-    eqd.push_back(eqdAXps);
+    std::vector<double>                  chi0s;
+    std::vector<ChargeDistributionModel> eqd = { eqdAXpp, eqdAXpg, eqdAXps };
 
     for (auto model : eqd)
     {
-        chi0s.push_back(pd_.getChi0(model, atomName));
+        auto pd       = getPoldata(model);
+        auto atomName = pd->findAtype("ha")->getType();
+        chi0s.push_back(pd->getChi0(atomName));
     }
     checker_.checkSequence(chi0s.begin(), chi0s.end(), "chi");
 }
@@ -200,7 +193,9 @@ TEST_F (PoldataTest, row){
     {
         for (int model = 0; model <  numModels; model++)
         {
-            rows.push_back(pd_.getRow((ChargeDistributionModel)model, atomName, 0));
+            auto pd       = getPoldata(static_cast<ChargeDistributionModel>(model));
+            auto atomName = pd->findAtype("ha")->getType();
+            rows.push_back(pd->getRow(atomName, 0));
         }
     }
     checker_.checkSequence(rows.begin(), rows.end(), "row");
@@ -208,14 +203,16 @@ TEST_F (PoldataTest, row){
 
 TEST_F (PoldataTest, zeta)
 {
-    std::vector<double>      zetas;
+    std::vector<double>                  zetas;
     std::vector<ChargeDistributionModel> eqd = { eqdAXpp, eqdAXpg, eqdAXps };
 
     for (auto model : eqd)
     {        
-        for(int i=0; i<pd_.getNzeta(model, atomName); i++)
+        auto pd       = getPoldata(model);
+        auto atomName = pd->findAtype("ha")->getType();
+        for(int i=0; i < pd->getNzeta(atomName); i++)
         {
-            zetas.push_back(pd_.getZeta(model, atomName, i));
+            zetas.push_back(pd->getZeta(atomName, i));
         }
     }
     checker_.checkSequence(zetas.begin(), zetas.end(), "zeta");
@@ -223,28 +220,35 @@ TEST_F (PoldataTest, zeta)
 
 TEST_F (PoldataTest, forceField)
 {
-    std::string force =  pd_.getForceField( );
-    checker_.checkString(force, "forceField");
+    std::vector<ChargeDistributionModel> eqd = { eqdAXpp, eqdAXpg, eqdAXps };
+
+    std::vector<std::string> forces;
+    for (auto model : eqd)
+    {        
+        auto mypd = getPoldata(model);
+        forces.push_back(mypd->getForceField());
+    }
+    checker_.checkSequence(forces.begin(), forces.end(), "forceField");
 }
 
 
 TEST_F (PoldataTest, lenghtUnit)
 {
-    auto fs = pd_.findForces(alexandria::eitBONDS);
+    auto fs = getPoldata("AXg")->findForces(alexandria::eitBONDS);
     std::string length =  fs->unit();
     checker_.checkString(length, "lenghtUnit");
 }
 
 TEST_F (PoldataTest, polarUnit)
 {
-    std::string polarUnit = pd_.getPolarUnit( );
+    std::string polarUnit = getPoldata("AXg")->getPolarUnit( );
     checker_.checkString(polarUnit, "polarUnit");
 }
 
 
 TEST_F (PoldataTest, polarRef)
 {
-    std::string polarRef =  pd_.getPolarRef( );
+    std::string polarRef =  getPoldata("AXg")->getPolarRef( );
     checker_.checkString(polarRef, "polarRef");
 }
 

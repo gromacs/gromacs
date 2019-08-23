@@ -86,8 +86,6 @@ enum {
     exmlPOLAR_UNIT         = 5,
     exmlCOMB_RULE          = 6,
     exmlNEXCL              = 7,
-    exmlFUDGEQQ            = 8,
-    exmlFUDGELJ            = 9,
     exmlPOLTYPES           = 10,
     exmlPOLTYPE            = 11,
     exmlPTYPE              = 12,
@@ -156,8 +154,6 @@ enum {
     exmlZETA               = 75,
     exmlZETA_SIGMA         = 76,
     exmlROW                = 77,
-    exmlEEMPROP_REF        = 78,
-    exmlEPREF              = 79,
     exmlCHARGES            = 80,
     exmlANGLE_UNIT         = 81,
     exmlLENGTH_UNIT        = 82,
@@ -180,8 +176,6 @@ std::map<const std::string, int> xmlxxx =
     { "polarizability_unit",    exmlPOLAR_UNIT       },
     { "combination_rule",       exmlCOMB_RULE        },
     { "nexclusions",            exmlNEXCL            },
-    { "fudgeQQ",                exmlFUDGEQQ          },
-    { "fudgeLJ",                exmlFUDGELJ          },
     { "poltypes",               exmlPOLTYPES         },
     { "poltype",                exmlPOLTYPE          },
     { "ptype",                  exmlPTYPE            },
@@ -251,8 +245,6 @@ std::map<const std::string, int> xmlxxx =
     { "zeta",                   exmlZETA             },
     { "zeta_sigma",             exmlZETA_SIGMA       },
     { "row",                    exmlROW              },
-    { "eemprop_ref",            exmlEEMPROP_REF      },
-    { "epref",                  exmlEPREF            },
     { "charge",                 exmlCHARGES          },
     { "angle_unit",             exmlANGLE_UNIT       },
     { "length_unit",            exmlLENGTH_UNIT      },
@@ -380,14 +372,6 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             if (NN(xbuf[exmlNEXCL]))
             {
                 pd.setNexcl(atoi(xbuf[exmlNEXCL].c_str()));
-            }
-            if (NN(xbuf[exmlFUDGEQQ]))
-            {
-                pd.setFudgeQQ(atoi(xbuf[exmlFUDGEQQ].c_str()));
-            }
-            if (NN(xbuf[exmlFUDGELJ]))
-            {
-                pd.setFudgeLJ(atoi(xbuf[exmlFUDGELJ].c_str()));
             }
             break;
         case exmlBSATOMS:
@@ -579,15 +563,21 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                                  atoi(xbuf[exmlNUMATTACH].c_str()));
             }
             break;
+        case exmlEEMPROPS:
+            if (NN(xbuf[exmlMODEL]) && NN(xbuf[exmlREFERENCE]))
+            {
+                pd.setEqdModel(name2eemtype(xbuf[exmlMODEL]));
+                pd.setEpref(xbuf[exmlREFERENCE]);
+            }
+            break;
         case exmlEEMPROP:
-            if (NN(xbuf[exmlMODEL])   && NN(xbuf[exmlNAME])       &&
+            if (NN(xbuf[exmlNAME])       &&
                 NN(xbuf[exmlJ0])      && NN(xbuf[exmlJ0_SIGMA])   &&
                 NN(xbuf[exmlCHI0])    && NN(xbuf[exmlCHI0_SIGMA]) &&
                 NN(xbuf[exmlZETA])    && NN(xbuf[exmlZETA_SIGMA]) &&
                 NN(xbuf[exmlCHARGES]) && NN(xbuf[exmlROW]))
             {
-                Eemprops eep(name2eemtype(xbuf[exmlMODEL]),
-                             xbuf[exmlNAME],
+                Eemprops eep(xbuf[exmlNAME],
                              xbuf[exmlROW],
                              xbuf[exmlZETA],
                              xbuf[exmlZETA_SIGMA],
@@ -597,12 +587,6 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                              my_atof(xbuf[exmlCHI0].c_str()),
                              my_atof(xbuf[exmlCHI0_SIGMA].c_str()));
                 pd.addEemprops(eep);
-            }
-            break;
-        case exmlEEMPROP_REF:
-            if (NN(xbuf[exmlMODEL]) && NN(xbuf[exmlEPREF]))
-            {
-                pd.setEpref(name2eemtype(xbuf[exmlMODEL]), xbuf[exmlEPREF]);
             }
             break;
         default:
@@ -671,14 +655,33 @@ void readPoldata(const std::string &fileName,
                  gmx_atomprop_t     aps)
 {
     xmlDocPtr   doc;
-    std::string fn2;
+    std::string fn, fn2;
 
-    fn2 = gmx::findLibraryFile(fileName.size() > 0 ? fileName : "alexandria.ff/gentop.dat",
-                               true, false);
+    fn = fileName;
+    if (fn.empty())
+    {
+        fn.assign("alexandria-AXg_2019.dat");
+    }
+    fn2 = gmx::findLibraryFile(fn, true, false);
+    if (fn2.empty())
+    {
+        fn = "alexandria.ff/" + fn;
+        fn2 = gmx::findLibraryFile(fn, true, false);
+        if (fn2.empty())
+        {
+            fn = "top/" + fn;
+            fn2 = gmx::findLibraryFile(fn, true, false);
+        }
+    }
+    if (fn2.empty())
+    {
+        gmx_fatal(FARGS, "Could not find %s\n", fn.c_str());
+    }
     if (nullptr != debug)
     {
         fprintf(debug, "Opening library file %s\n", fn2.c_str());
     }
+    printf("Opening library file %s\n", fn2.c_str());
     xmlDoValidityCheckingDefaultValue = 0;
     doc = xmlParseFile(fn2.c_str());
     if (doc == nullptr)
@@ -697,11 +700,11 @@ void readPoldata(const std::string &fileName,
 
     if (nullptr != debug)
     {
-        writePoldata("pdout.dat", pd, false);
+        writePoldata("pdout.dat", &pd, false);
     }
 }
 
-static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
+static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
 {
     xmlNodePtr   child, grandchild;
     int          nexcl;
@@ -709,61 +712,57 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
                  acentral, attached, tau_unit, ahp_unit,
                  epref, desc, params;
     std::string  neighbors, zeta, qstr, rowstr;
-    double       fudgeQQ, fudgeLJ;
     std::string  tmp, func, blu;
 
     child = add_xml_child(parent, exml_names(exmlATOMTYPES));
-    tmp   = pd.getForceField();
+    tmp   = pd->getForceField();
     if (0 != tmp.size())
     {
         add_xml_char(child, exml_names(exmlGT_FORCEFIELD), tmp.c_str());
     }
-    tmp = pd.getVdwFunction();
+    tmp = pd->getVdwFunction();
     if (0 != tmp.size())
     {
         add_xml_char(child, exml_names(exmlFUNCTION), tmp.c_str());
     }
-    tmp = pd.getCombinationRule();
+    tmp = pd->getCombinationRule();
     if (0 != tmp.size())
     {
         add_xml_char(child, exml_names(exmlCOMB_RULE), tmp.c_str());
     }
-    nexcl = pd.getNexcl();
+    nexcl = pd->getNexcl();
     add_xml_int(child, exml_names(exmlNEXCL), nexcl);
-    fudgeQQ = pd.getFudgeQQ();
-    add_xml_double(child, exml_names(exmlFUDGEQQ), fudgeQQ);
-    fudgeLJ = pd.getFudgeLJ();
-    add_xml_double(child, exml_names(exmlFUDGELJ), fudgeLJ);
+
+    for (auto aType = pd->getAtypeBegin();
+         aType != pd->getAtypeEnd(); aType++)
     {
-        for (auto aType = pd.getAtypeBegin();
-             aType != pd.getAtypeEnd(); aType++)
+        grandchild = add_xml_child(child, exml_names(exmlATOMTYPE));
+        add_xml_char(grandchild, exml_names(exmlELEM), aType->getElem().c_str());
+        add_xml_char(grandchild, exml_names(exmlDESC), aType->getDesc().c_str());
+        add_xml_char(grandchild, exml_names(exmlATYPE), aType->getType().c_str());
+        add_xml_char(grandchild, exml_names(exmlPTYPE), aType->getPtype().c_str());
+        add_xml_char(grandchild, exml_names(exmlBTYPE), aType->getBtype().c_str());
+        add_xml_char(grandchild, exml_names(exmlZTYPE), aType->getZtype().c_str());
+        add_xml_char(grandchild, exml_names(exmlVDWPARAMS), aType->getVdwparams().c_str());
+        if (aType->fixed())
         {
-            grandchild = add_xml_child(child, exml_names(exmlATOMTYPE));
-            add_xml_char(grandchild, exml_names(exmlELEM), aType->getElem().c_str());
-            add_xml_char(grandchild, exml_names(exmlDESC), aType->getDesc().c_str());
-            add_xml_char(grandchild, exml_names(exmlATYPE), aType->getType().c_str());
-            add_xml_char(grandchild, exml_names(exmlPTYPE), aType->getPtype().c_str());
-            add_xml_char(grandchild, exml_names(exmlBTYPE), aType->getBtype().c_str());
-            add_xml_char(grandchild, exml_names(exmlZTYPE), aType->getZtype().c_str());
-            add_xml_char(grandchild, exml_names(exmlVDWPARAMS), aType->getVdwparams().c_str());
-            add_xml_char(grandchild, exml_names(exmlFIXED),
-                         aType->fixed() ? "true" : "false");
-            add_xml_char(grandchild, exml_names(exmlEREF), aType->getRefEnthalpy().c_str());
+            add_xml_char(grandchild, exml_names(exmlFIXED), "true");
         }
+        add_xml_char(grandchild, exml_names(exmlEREF), aType->getRefEnthalpy().c_str());
     }
     child = add_xml_child(parent, exml_names(exmlPOLTYPES));
-    tmp   = pd.getPolarUnit();
+    tmp   = pd->getPolarUnit();
     if (0 != tmp.size())
     {
         add_xml_char(child, exml_names(exmlPOLAR_UNIT), tmp.c_str());
     }
-    tmp = pd.getPolarRef();
+    tmp = pd->getPolarRef();
     if (0 != tmp.size())
     {
         add_xml_char(child, exml_names(exmlREFERENCE), tmp.c_str());
     }
-    for (auto pType = pd.getPtypeBegin();
-         pType != pd.getPtypeEnd(); pType++)
+    for (auto pType = pd->getPtypeBegin();
+         pType != pd->getPtypeEnd(); pType++)
     {
         grandchild = add_xml_child(child, exml_names(exmlPOLTYPE));
         add_xml_char(grandchild, exml_names(exmlPTYPE), pType->getType().c_str());
@@ -772,18 +771,18 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
         add_xml_double(grandchild, exml_names(exmlPOLARIZABILITY), pType->getPolarizability());
         add_xml_double(grandchild, exml_names(exmlSIGPOL), pType->getSigPol());
     }
-    tmp   = pd.getVsite_angle_unit();
+    tmp   = pd->getVsite_angle_unit();
     if (0 != tmp.size())
     {
         child = add_xml_child(parent, exml_names(exmlGT_VSITES));
         add_xml_char(child, exml_names(exmlANGLE_UNIT), tmp.c_str());
     }
-    tmp   = pd.getVsite_length_unit();
+    tmp   = pd->getVsite_length_unit();
     if (0 != tmp.size())
     {
         add_xml_char(child, exml_names(exmlLENGTH_UNIT), tmp.c_str());
     }
-    for (auto vsite = pd.getVsiteBegin(); vsite != pd.getVsiteEnd(); vsite++)
+    for (auto vsite = pd->getVsiteBegin(); vsite != pd->getVsiteEnd(); vsite++)
     {
         grandchild = add_xml_child(child, exml_names(exmlGT_VSITE));
         add_xml_char(grandchild, exml_names(exmlATYPE), vsite->atype().c_str());
@@ -793,7 +792,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
         add_xml_double(grandchild, exml_names(exmlANGLE), vsite->angle());
         add_xml_int(grandchild, exml_names(exmlNCONTROLATOMS), vsite->ncontrolatoms());
     }
-    for (auto fs = pd.forcesBegin(); fs != pd.forcesEnd(); fs++)
+    for (auto fs = pd->forcesBegin(); fs != pd->forcesEnd(); fs++)
     {
         if (eitBONDS == fs->iType())
         {
@@ -822,8 +821,10 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
                 add_xml_double(grandchild, exml_names(exmlREFVALUE), f->refValue());
                 add_xml_double(grandchild, exml_names(exmlSIGMA), f->sigma());
                 add_xml_int(grandchild, exml_names(exmlNTRAIN), f->ntrain());
-                add_xml_char(grandchild, exml_names(exmlFIXED),
-                             f->fixed() ? "true" : "false");
+                if (f->fixed())
+                {
+                    add_xml_char(grandchild, exml_names(exmlFIXED), "true");
+                }
                 add_xml_char(grandchild, exml_names(exmlPARAMS), f->params().c_str());
             }
         }
@@ -855,8 +856,10 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
                 add_xml_double(grandchild, exml_names(exmlREFVALUE), f->refValue());
                 add_xml_double(grandchild, exml_names(exmlSIGMA), f->sigma());
                 add_xml_int(grandchild, exml_names(exmlNTRAIN), f->ntrain());
-                add_xml_char(grandchild, exml_names(exmlFIXED),
-                             f->fixed() ? "true" : "false");
+                if (f->fixed())
+                {
+                    add_xml_char(grandchild, exml_names(exmlFIXED), "true");
+                }
                 add_xml_char(grandchild, exml_names(exmlPARAMS), f->params().c_str());
             }
         }
@@ -890,8 +893,10 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
                 add_xml_double(grandchild, exml_names(exmlREFVALUE), f->refValue());
                 add_xml_double(grandchild, exml_names(exmlSIGMA), f->sigma());
                 add_xml_int(grandchild, exml_names(exmlNTRAIN), f->ntrain());
-                add_xml_char(grandchild, exml_names(exmlFIXED),
-                             f->fixed() ? "true" : "false");
+                if (f->fixed())
+                {
+                    add_xml_char(grandchild, exml_names(exmlFIXED), "true");
+                }
                 add_xml_char(grandchild, exml_names(exmlPARAMS), f->params().c_str());
             }
         }
@@ -899,12 +904,12 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
 
     child = add_xml_child(parent, exml_names(exmlBSATOMS));
     std::string ref;
-    pd.getBosqueFlags(tmp, ref);
+    pd->getBosqueFlags(tmp, ref);
     add_xml_char(child, exml_names(exmlPOLAR_UNIT), tmp.c_str());
     add_xml_char(child, exml_names(exmlREFERENCE), ref.c_str());
 
-    for (auto bosque = pd.getBosqueBegin();
-         bosque != pd.getBosqueEnd(); bosque++)
+    for (auto bosque = pd->getBosqueBegin();
+         bosque != pd->getBosqueEnd(); bosque++)
     {
         grandchild = add_xml_child(child, exml_names(exmlBSATOM));
         add_xml_char(grandchild, exml_names(exmlELEM), bosque->getBosque().c_str());
@@ -912,12 +917,12 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
     }
     child = add_xml_child(parent, exml_names(exmlMILATOMS));
     std::string milref;
-    pd.getMillerFlags(tau_unit, ahp_unit, milref);
+    pd->getMillerFlags(tau_unit, ahp_unit, milref);
     add_xml_char(child, exml_names(exmlTAU_UNIT), tau_unit.c_str());
     add_xml_char(child, exml_names(exmlAHP_UNIT), ahp_unit.c_str());
     add_xml_char(child, exml_names(exmlREFERENCE), milref.c_str());
-    for (auto miller = pd.getMillerBegin();
-         miller != pd.getMillerEnd(); miller++)
+    for (auto miller = pd->getMillerBegin();
+         miller != pd->getMillerEnd(); miller++)
     {
         grandchild = add_xml_child(child, exml_names(exmlMILATOM));
         add_xml_char(grandchild, exml_names(exmlMILNAME), miller->getMiller().c_str());
@@ -932,8 +937,8 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
     }
 
     child = add_xml_child(parent, exml_names(exmlSYMMETRIC_CHARGES));
-    for (auto symcharges = pd.getSymchargesBegin();
-         symcharges != pd.getSymchargesEnd(); symcharges++)
+    for (auto symcharges = pd->getSymchargesBegin();
+         symcharges != pd->getSymchargesEnd(); symcharges++)
     {
         grandchild = add_xml_child(child, exml_names(exmlSYM_CHARGE));
         add_xml_char(grandchild, exml_names(exmlCENTRAL), symcharges->getCentral().c_str());
@@ -942,13 +947,14 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
     }
 
     child = add_xml_child(parent, exml_names(exmlEEMPROPS));
-    for (auto eep = pd.BeginEemprops();
-         eep != pd.EndEemprops(); eep++)
+    ChargeDistributionModel model = pd->getEqdModel();
+    add_xml_char(child, exml_names(exmlMODEL), getEemtypeName(model));
+    add_xml_char(child, exml_names(exmlREFERENCE), pd->getEpref().c_str());
+    for (auto eep = pd->BeginEemprops();
+         eep != pd->EndEemprops(); eep++)
     {
-        ChargeDistributionModel model = eep->getEqdModel();
 
         grandchild = add_xml_child(child, exml_names(exmlEEMPROP));
-        add_xml_char(grandchild, exml_names(exmlMODEL), getEemtypeName(model));
         add_xml_char(grandchild, exml_names(exmlNAME), eep->getName());
         add_xml_double(grandchild, exml_names(exmlJ0), eep->getJ0());
         add_xml_double(grandchild, exml_names(exmlJ0_SIGMA), eep->getJ0_sigma());
@@ -959,17 +965,10 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
         add_xml_char(grandchild, exml_names(exmlCHARGES), eep->getQstr());
         add_xml_char(grandchild, exml_names(exmlROW), eep->getRowstr());
     }
-
-    for (auto eep = pd.epRefBegin(); eep < pd.epRefEnd(); ++eep)
-    {
-        grandchild = add_xml_child(child, exml_names(exmlEEMPROP_REF));
-        add_xml_char(grandchild, exml_names(exmlMODEL), getEemtypeName(eep->getEqdModel()));
-        add_xml_char(grandchild, exml_names(exmlEPREF), eep->getEpref());
-    }
 }
 
 void writePoldata(const std::string &fileName,
-                  const Poldata     &pd,
+                  const Poldata     *pd,
                   bool               compress)
 {
     xmlDocPtr   doc;

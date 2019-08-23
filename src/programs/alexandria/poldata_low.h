@@ -909,34 +909,6 @@ class Symcharges
 using SymchargesIterator      = typename std::vector<Symcharges>::iterator;
 using SymchargesConstIterator = typename std::vector<Symcharges>::const_iterator;
 
-class Epref
-{
-    public:
-
-        Epref () {}
-
-        Epref(ChargeDistributionModel   eqdModel,
-              const std::string        &epref);
-
-        ChargeDistributionModel getEqdModel() const { return eqdModel_; }
-
-        const char *getEpref() const { return epref_.c_str(); }
-
-        void setEpref(std::string epref) { epref_ = epref; }
-
-        CommunicationStatus Send(const t_commrec *cr, int dest);
-
-        CommunicationStatus Receive(const t_commrec *cr, int src);
-
-    private:
-        ChargeDistributionModel eqdModel_;
-        std::string             epref_;
-};
-
-using EprefIterator      = typename std::vector<Epref>::iterator;
-using EprefConstIterator = typename std::vector<Epref>::const_iterator;
-
-
 /*! \brief
  * Contains information needed for electrostatic interactions.
  *
@@ -1052,8 +1024,7 @@ class Eemprops
 
         Eemprops () {}
 
-        Eemprops(ChargeDistributionModel eqdModel,
-                 const std::string      &name,
+        Eemprops(const std::string      &name,
                  const std::string      &rowstr,
                  const std::string      &zetastr,
                  const std::string      &zeta_sigma,
@@ -1062,8 +1033,6 @@ class Eemprops
                  double                  J0_sigma,
                  double                  chi0,
                  double                  chi0_sigma);
-
-        ChargeDistributionModel getEqdModel() const { return eqdModel_; }
 
         int getNzeta() const { return rzq_.size(); }
 
@@ -1084,8 +1053,6 @@ class Eemprops
         double getChi0() const { return chi0_; }
 
         double getChi0_sigma() const { return chi0_sigma_; }
-
-        void setEqdModel(ChargeDistributionModel eqdModel) { eqdModel_ = eqdModel; }
 
         void setName(const std::string &name) { name_ = name; }
 
@@ -1122,7 +1089,6 @@ class Eemprops
         CommunicationStatus Receive(const t_commrec *cr, int src);
 
     private:
-        ChargeDistributionModel eqdModel_;
         std::string             name_;
         std::string             rowstr_;
         std::string             zetastr_;

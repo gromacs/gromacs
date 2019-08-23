@@ -51,9 +51,8 @@
 namespace alexandria
 {
 
-void QgenAcm::setInfo(const Poldata            &pd,
+void QgenAcm::setInfo(const Poldata            *pd,
                       t_atoms                  *atoms,
-                      ChargeDistributionModel   iChargeDistributionModel,
                       double                    hfac,
                       int                       qtotal,
                       bool                      haveShell)
@@ -62,6 +61,7 @@ void QgenAcm::setInfo(const Poldata            &pd,
     bool         bSupport = true;
     std::string  atp;
 
+    iChargeDistributionModel_  = pd->getEqdModel();
     bWarned_                   = false;
     bAllocSave_                = false;
     bHaveShell_                = haveShell;
@@ -72,10 +72,8 @@ void QgenAcm::setInfo(const Poldata            &pd,
     Jss_                       = 0;
     rms_                       = 0;
     natom_                     = 0;
-    iChargeDistributionModel_  = iChargeDistributionModel;
     hfac_                      = hfac;
     qtotal_                    = qtotal;
-
     for (i = 0; i < atoms->nr; i++)
     {
         if (atoms->atom[i].ptype == eptAtom)
@@ -118,16 +116,15 @@ void QgenAcm::setInfo(const Poldata            &pd,
                           *(atoms->atomname[j]));
             }
             atp.assign(*atoms->atomtype[i]);
-            if (!pd.haveEemSupport(iChargeDistributionModel_, atp, true))
+            if (!pd->haveEemSupport(atp, true))
             {
-                fprintf(stderr, "No charge distribution support for atom %s, model %s\n",
-                        *atoms->atomtype[i],
-                        getEemtypeName(iChargeDistributionModel_));
+                fprintf(stderr, "No charge distribution support for atom %s\n",
+                        *atoms->atomtype[i]);
                 bSupport = false;
             }
             if (bSupport)
             {
-                auto eem   = pd.findEem(iChargeDistributionModel_, atp);
+                auto eem   = pd->findEem(atp);
                 elem_[j]   = atp;
                 atomnr_[j] = atm;
                 chi0_[j]   = eem->getChi0();
@@ -178,11 +175,11 @@ void QgenAcm::setInfo(const Poldata            &pd,
     }
 }
 
-void QgenAcm::updateInfo(const Poldata &pd)
+void QgenAcm::updateInfo(const Poldata *pd)
 {
     for (auto i = 0; i < natom_; i++)
     {
-        auto ei  = pd.findEem(iChargeDistributionModel_, elem_[i]);
+        auto ei  = pd->findEem(elem_[i]);
         chi0_[i] = ei->getChi0();
         j00_[i]  = ei->getJ0();
         for (auto k = 0; k < nZeta_[i]; k++)
@@ -405,8 +402,7 @@ double QgenAcm::calcSij(int i, int j)
     return Sij;
 }
 
-double QgenAcm::calcJ(ChargeDistributionModel iChargeDistributionModel,
-                      rvec                    xI,
+double QgenAcm::calcJ(rvec                    xI,
                       rvec                    xJ,
                       double                  zetaI,
                       double                  zetaJ,
@@ -416,18 +412,19 @@ double QgenAcm::calcJ(ChargeDistributionModel iChargeDistributionModel,
     rvec   dx;
     double r    = 0;
     double eTot = 0;
-
+    ChargeDistributionModel iModel = iChargeDistributionModel_;
     rvec_sub(xI, xJ, dx);
     r = norm(dx);
+    
     if ((zetaI < 0) || (zetaJ < 0))
     {
-        iChargeDistributionModel = eqdAXp;
+        iModel = eqdAXp;
     }
-    if (r == 0 && (iChargeDistributionModel == eqdAXp || iChargeDistributionModel == eqdAXpp))
+    if (r == 0 && (iModel == eqdAXp || iModel == eqdAXpp))
     {
         gmx_fatal(FARGS, "Zero distance between atoms!\n");
     }
-    switch (iChargeDistributionModel)
+    switch (iModel)
     {
         case eqdAXp:
         case eqdAXpp:
@@ -445,7 +442,7 @@ double QgenAcm::calcJ(ChargeDistributionModel iChargeDistributionModel,
             eTot = Coulomb_GG(r, zetaI, zetaJ);
             break;
         default:
-            gmx_fatal(FARGS, "Unsupported model %d in calc_jcc", iChargeDistributionModel);
+            gmx_fatal(FARGS, "Unsupported model %d in calc_jcc", iModel);
     }
     return (ONE_4PI_EPS0*eTot)/ELECTRONVOLT;
 }
@@ -466,8 +463,7 @@ void QgenAcm::calcJcc(t_atoms *atoms)
                     if (n != m)
                     {
                         j++;
-                        Jcc = calcJ(iChargeDistributionModel_,
-                                    x_[n],
+                        Jcc = calcJ(x_[n],
                                     x_[m],
                                     zeta_[i][0],
                                     zeta_[j][0],
@@ -521,8 +517,7 @@ void QgenAcm::calcJcs(t_atoms *atoms,
             {
                 if (shell_ndx_gromacs != itsShell)
                 {
-                    Jcs_ += (q_[i][1]*calcJ(iChargeDistributionModel_,
-                                            x_[core_ndx_gromacs],
+                    Jcs_ += (q_[i][1]*calcJ(x_[core_ndx_gromacs],
                                             x_[shell_ndx_gromacs],
                                             zeta_[core_ndx_eem][0],
                                             zeta_[i][1],
@@ -609,15 +604,15 @@ void QgenAcm::updatePositions(gmx::HostVector<gmx::RVec> x,
     }
 }
 
-void QgenAcm::checkSupport(const Poldata &pd)
+void QgenAcm::checkSupport(const Poldata *pd)
 {
     bool bSupport = true;
     for (auto i = 0; i < natom_; i++)
     {
-        if (!pd.haveEemSupport(iChargeDistributionModel_, elem_[i].c_str(), true))
+        if (!pd->haveEemSupport(elem_[i].c_str(), true))
         {
             fprintf(stderr, "No charge generation support for atom %s, model %s\n",
-                    elem_[i].c_str(), getEemtypeName(iChargeDistributionModel_));
+                    elem_[i].c_str(), getEemtypeName(pd->getEqdModel()));
             bSupport = false;
         }
     }
@@ -687,14 +682,14 @@ void QgenAcm::solveQEem(FILE *fp)
 
 int QgenAcm::generateCharges(FILE                      *fp,
                              const std::string          molname,
-                             const Poldata             &pd,
+                             const Poldata             *pd,
                              t_atoms                   *atoms,
                              gmx::HostVector<gmx::RVec> x)
 {
     if (fp)
     {
         fprintf(fp, "Generating charges for %s using %s algorithm\n",
-                molname.c_str(), getEemtypeName(iChargeDistributionModel_));
+                molname.c_str(), getEemtypeName(pd->getEqdModel()));
     }
     checkSupport(pd);
     if (eQGEN_OK == eQGEN_)

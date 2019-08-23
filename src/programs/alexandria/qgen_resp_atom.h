@@ -49,8 +49,7 @@ class RespAtomType
                      int                             particleType,
                      bool                            hasShell,
                      const char                     *atomtype,
-                     const Poldata                  &pd,
-                     ChargeDistributionModel         iDistributionModel,
+                     const Poldata                  *pd,
                      const std::vector<std::string> &dzatoms,
                      double                          zeta,
                      double                          q);

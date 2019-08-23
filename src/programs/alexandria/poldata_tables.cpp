@@ -67,19 +67,18 @@ static void eemprops_zeta_header(LongTable &lt)
 }
 
 void alexandria_poldata_eemprops_table(FILE                   *fp,
-                                       const Poldata          &pd,
-                                       ChargeDistributionModel qdist)
+                                       const Poldata          *pd)
 {
     char       longbuf[STRLEN];
     LongTable  lt(fp, false, nullptr);
 
     eemprops_zeta_header(lt);
-    auto ztypes = pd.ztype_names();
+    auto ztypes = pd->ztype_names();
     for (auto ztp = ztypes.begin(); ztp < ztypes.end(); ztp++)
     {
-        auto qDist  = pd.ztype2Eem(qdist,  ztp->c_str());
+        auto qDist  = pd->ztype2Eem(ztp->c_str());
         auto nzeta  = qDist->getNzeta();
-        if (qDist != pd.EndEemprops())
+        if (qDist != pd->EndEemprops())
         {
             size_t      pos   = ztp->find("z_");
             std::string ztype = ztp->c_str();

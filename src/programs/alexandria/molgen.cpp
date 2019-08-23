@@ -84,7 +84,6 @@ static const char *cqgen[]  = {nullptr, "None", "ACM", "ESP", "RESP", nullptr};
 
 static void dump_index_count(const IndexCount       *ic,
                              FILE                   *fp,
-                             ChargeDistributionModel iDistributionModel,
                              const Poldata          &pd,
                              gmx_bool                bFitZeta)
 {
@@ -96,12 +95,11 @@ static void dump_index_count(const IndexCount       *ic,
     fprintf(fp, "Name  Number  Action   #Zeta\n");
     for (auto i = ic->beginIndex(); i < ic->endIndex(); ++i)
     {
-        int nZeta  = pd.getNzeta(iDistributionModel, i->name());
+        int nZeta  = pd.getNzeta(i->name());
         int nZopt  = 0;
         for (int j = 0; (j < nZeta); j++)
         {
-            if (pd.getZeta(iDistributionModel,
-                           i->name(), j) > 0)
+            if (pd.getZeta(i->name(), j) > 0)
             {
                 nZopt++;
             }
@@ -126,32 +124,28 @@ static void dump_index_count(const IndexCount       *ic,
 static void make_index_count(IndexCount                *ic,
                              const Poldata             &pd,
                              char                      *opt_elem,
-                             ChargeDistributionModel    iDistributionModel,
                              gmx_bool                   bFitZeta)
 {
     if (nullptr != opt_elem)
     {
-        /*Only members of opt_elem will be optimized */
+        /* Only members of opt_elem will be optimized */
         std::vector<std::string> opt_elems = gmx::splitString(opt_elem);
         for (auto eep = pd.BeginEemprops(); eep != pd.EndEemprops(); ++eep)
         {
             auto bConst = true;
-            if (eep->getEqdModel() == iDistributionModel)
+            auto name     = eep->getName();
+            auto opt_elem = std::find_if(opt_elems.begin(), opt_elems.end(),
+                                         [name](const std::string a)
+                                         {
+                                             return a == name;
+                                         });
+            
+            if (opt_elems.end() != opt_elem)
             {
-                auto name     = eep->getName();
-                auto opt_elem = std::find_if(opt_elems.begin(), opt_elems.end(),
-                                             [name](const std::string a)
-                                             {
-                                                 return a == name;
-                                             });
-                
-                if (opt_elems.end() != opt_elem)
-                {
-                    bConst = false;
-                }
-                
-                ic->addName(eep->getName(), bConst);
+                bConst = false;
             }
+            
+            ic->addName(eep->getName(), bConst);
         }
     }
     else
@@ -160,13 +154,10 @@ static void make_index_count(IndexCount                *ic,
         bool bConst = false;
         for (auto eep = pd.BeginEemprops(); eep != pd.EndEemprops(); ++eep)
         {
-            if (eep->getEqdModel() == iDistributionModel)
-            {
-                ic->addName(eep->getName(), bConst);
-            }
+            ic->addName(eep->getName(), bConst);
         }
     }
-    dump_index_count(ic, debug, iDistributionModel, pd, bFitZeta);
+    dump_index_count(ic, debug, pd, bFitZeta);
 }
 
 void IndexCount::addName(const std::string &name,
@@ -416,7 +407,6 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
 
 void MolGen::optionsFinished()
 {
-    iChargeDistributionModel_   = name2eemtype(cqdist[0]);
     iChargeGenerationAlgorithm_ = (ChargeGenerationAlgorithm) get_option(cqgen);
     hfac0_                      = hfac_;
     cr_                         = init_commrec();
@@ -534,7 +524,7 @@ void MolGen::Read(FILE            *fp,
         for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
             mpi->CheckConsistency();
-            if (false == mpi->GenerateComposition(pd_) || imsTrain != gms.status(mpi->getIupac()))
+            if (false == mpi->GenerateComposition(&pd_) || imsTrain != gms.status(mpi->getIupac()))
             {
                 mpi = mp.erase(mpi);
             }
@@ -564,7 +554,6 @@ void MolGen::Read(FILE            *fp,
         make_index_count(&indexCount_,
                          pd_,
                          opt_elem,
-                         iChargeDistributionModel_,
                          bFitZeta);
     }
     /* Generate topology for Molecules and distribute them among the nodes */
@@ -583,9 +572,8 @@ void MolGen::Read(FILE            *fp,
                 mymol.molProp()->Merge(mpi);
                 mymol.setInputrec(inputrec_);
                 imm = mymol.GenerateTopology(atomprop_,
-                                             pd_,
+                                             &pd_,
                                              lot_,
-                                             iChargeDistributionModel_,
                                              bGenVsite_,
                                              bPairs,
                                              bDihedral,
@@ -597,10 +585,9 @@ void MolGen::Read(FILE            *fp,
                 }
                 if (immOK == imm)
                 {
-                    imm = mymol.GenerateCharges(pd_,
+                    imm = mymol.GenerateCharges(&pd_,
                                                 mdlog_,
                                                 atomprop_,
-                                                iChargeDistributionModel_,
                                                 iChargeGenerationAlgorithm_,
                                                 watoms_,
                                                 hfac_,
@@ -623,7 +610,7 @@ void MolGen::Read(FILE            *fp,
                 }
                 if (immOK == imm)
                 {
-                    imm = mymol.getExpProps(bQM_, bZero, bZPE, lot_, pd_);
+                    imm = mymol.getExpProps(bQM_, bZero, bZPE, lot_, &pd_);
                 }
                 if (immOK == imm)
                 {
@@ -722,9 +709,8 @@ void MolGen::Read(FILE            *fp,
             }
             mymol.setInputrec(inputrec_);
             imm = mymol.GenerateTopology(atomprop_,
-                                         pd_,
+                                         &pd_,
                                          lot_,
-                                         iChargeDistributionModel_,
                                          bGenVsite_,
                                          bPairs,
                                          bDihedral,
@@ -733,10 +719,9 @@ void MolGen::Read(FILE            *fp,
 
             if (immOK == imm)
             {
-                imm = mymol.GenerateCharges(pd_,
+                imm = mymol.GenerateCharges(&pd_,
                                             mdlog_,
                                             atomprop_,
-                                            iChargeDistributionModel_,
                                             iChargeGenerationAlgorithm_,
                                             watoms_,
                                             hfac_,
@@ -759,7 +744,7 @@ void MolGen::Read(FILE            *fp,
             }
             if (immOK == imm)
             {
-                imm = mymol.getExpProps(bQM_, bZero, bZPE, lot_, pd_);
+                imm = mymol.getExpProps(bQM_, bZero, bZPE, lot_, &pd_);
             }
             mymol.eSupp_ = eSupportLocal;
             imm_count[imm]++;

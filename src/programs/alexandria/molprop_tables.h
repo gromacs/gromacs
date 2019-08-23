@@ -147,12 +147,12 @@ void alexandria_molprop_prop_table(FILE                             *fp,
  * \todo More explanation text
  * \ingroup module_alexandria
  */
-void alexandria_molprop_atomtype_table(FILE                                   *fp,
-                                       bool                                    bPolar,
-                                       const Poldata                          &pd,
-                                       const std::vector<alexandria::MolProp> &mp,
-                                       const char                             *lot,
-                                       const char                             *exp_type);
+void alexandria_molprop_atomtype_table(FILE                       *fp,
+                                       bool                        bPolar,
+                                       const std::vector<Poldata> &pd,
+                                       const std::vector<MolProp> &mp,
+                                       const char                 *lot,
+                                       const char                 *exp_type);
 
 } // namespace alexandria
 

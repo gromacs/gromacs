@@ -102,7 +102,7 @@ void QgenResp::updateAtomCharges(t_atoms  *atoms)
 }
 
 void QgenResp::setAtomInfo(t_atoms                         *atoms,
-                           const alexandria::Poldata       &pd,
+                           const alexandria::Poldata       *pd,
                            const gmx::HostVector<gmx::RVec> x,
                            const int                        qtotal)
 {
@@ -136,8 +136,8 @@ void QgenResp::setAtomInfo(t_atoms                         *atoms,
             break;
             case eptNucleus:
             {
-                auto vsite = pd.findVsite(*atoms->atomtype[i]);
-                if (vsite != pd.getVsiteEnd())
+                auto vsite = pd->findVsite(*atoms->atomtype[i]);
+                if (vsite != pd->getVsiteEnd())
                 {
                     nskip    = vsite->nvsite();
                     hasShell = ((i < atoms->nr-1) &&
@@ -176,7 +176,6 @@ void QgenResp::setAtomInfo(t_atoms                         *atoms,
                                            hasShell,
                                            *(atoms->atomtype[i]),
                                            pd,
-                                           iDistributionModel_,
                                            dzatoms_,
                                            atoms->atom[i].zetaA,
                                            atoms->atom[i].q));
@@ -1211,7 +1210,7 @@ void QgenResp::setZeta(int atom, int zz, double zeta)
     (rat->beginRZ()+zz)->setZeta(zeta);
 }
 
-void QgenResp::updateZeta(t_atoms *atoms, const Poldata &pd)
+void QgenResp::updateZeta(t_atoms *atoms, const Poldata *pd)
 {
     int     zz   = 0;
     double  zeta = 0;
@@ -1229,11 +1228,11 @@ void QgenResp::updateZeta(t_atoms *atoms, const Poldata &pd)
                 zz           = 1;
                 atomtype_new = atomtype.substr(0, shell_name);
             }
-            zeta = pd.getZeta(iDistributionModel_, atomtype_new, zz);
+            zeta = pd->getZeta(atomtype_new, zz);
         }
         else if (atoms->atom[i].ptype == eptAtom)
         {
-            zeta = pd.getZeta(iDistributionModel_, *(atoms->atomtype[i]), zz);
+            zeta = pd->getZeta(*(atoms->atomtype[i]), zz);
         }
         setZeta(static_cast<int>(i), 0, zeta);
     }

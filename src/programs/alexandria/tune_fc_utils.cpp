@@ -163,7 +163,7 @@ CommunicationStatus NonBondParams::Receive(t_commrec *cr, int src)
 }
 
 void NonBondParams::analyzeIdef(const std::vector<MyMol> &mm,
-                                const Poldata            &pd)
+                                const Poldata            *pd)
 {
     if (!bOpt_)
     {
@@ -177,8 +177,8 @@ void NonBondParams::analyzeIdef(const std::vector<MyMol> &mm,
                 mymol.topology_->atoms.atom[i].ptype == eptNucleus)
             {
                 std::string typeName        = *mymol.topology_->atoms.atomtype[i];
-                auto        fat             = pd.findAtype(typeName);
-                if (fat != pd.getAtypeEnd() && !fat->fixed())
+                auto        fat             = pd->findAtype(typeName);
+                if (fat != pd->getAtypeEnd() && !fat->fixed())
                 {
                     auto myat = std::find_if(at_.begin(), at_.end(),
                                              [typeName](const AtomTypes &myat)
@@ -191,7 +191,7 @@ void NonBondParams::analyzeIdef(const std::vector<MyMol> &mm,
                     }
                     else
                     {
-                        AtomTypes at(1, typeName, fat->getVdwparams(), fat - pd.getAtypeBegin());
+                        AtomTypes at(1, typeName, fat->getVdwparams(), fat - pd->getAtypeBegin());
                         addNonBonded(at);
                     }
                 }
@@ -357,7 +357,7 @@ CommunicationStatus ForceConstants::Receive(t_commrec *cr, int src)
 }
 
 void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
-                                 const Poldata            &pd)
+                                 const Poldata            *pd)
 {
     std::string  aai, aaj, aak, aal;
 
@@ -376,8 +376,8 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
             bool                     found     = false;
             int                      ai        = mymol.ltop_->idef.il[ftype_].iatoms[i+1];
             int                      aj        = mymol.ltop_->idef.il[ftype_].iatoms[i+2];
-            if (pd.atypeToBtype( *mymol.topology_->atoms.atomtype[ai], aai) &&
-                pd.atypeToBtype( *mymol.topology_->atoms.atomtype[aj], aaj))
+            if (pd->atypeToBtype( *mymol.topology_->atoms.atomtype[ai], aai) &&
+                pd->atypeToBtype( *mymol.topology_->atoms.atomtype[aj], aaj))
             {
                 int         index = 0;
                 std::string buf;
@@ -388,7 +388,7 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
                     case eitBONDS:
                     {
                         atoms   = {aai, aaj};
-                        auto fs = pd.findForces(iType);
+                        auto fs = pd->findForces(iType);
                         auto f  = fs->findForce(atoms);
 
                         if (fs->forceEnd() != f && !f->fixed())
@@ -406,10 +406,10 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
                     case eitLINEAR_ANGLES:
                     {
                         int ak  = mymol.ltop_->idef.il[ftype_].iatoms[i+3];
-                        if (pd.atypeToBtype( *mymol.topology_->atoms.atomtype[ak], aak))
+                        if (pd->atypeToBtype( *mymol.topology_->atoms.atomtype[ak], aak))
                         {
                             atoms   = {aai, aaj, aak};
-                            auto fs = pd.findForces(iType);
+                            auto fs = pd->findForces(iType);
                             auto f  = fs->findForce(atoms);
 
                             if (fs->forceEnd() != f && !f->fixed())
@@ -431,11 +431,11 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
                     {
                         int ak  = mymol.ltop_->idef.il[ftype_].iatoms[i+3];
                         int al  = mymol.ltop_->idef.il[ftype_].iatoms[i+4];
-                        if (pd.atypeToBtype( *mymol.topology_->atoms.atomtype[ak], aak) &&
-                            pd.atypeToBtype( *mymol.topology_->atoms.atomtype[al], aal))
+                        if (pd->atypeToBtype( *mymol.topology_->atoms.atomtype[ak], aak) &&
+                            pd->atypeToBtype( *mymol.topology_->atoms.atomtype[al], aal))
                         {
                             atoms   = {aai, aaj, aak, aal};
-                            auto fs = pd.findForces(iType);
+                            auto fs = pd->findForces(iType);
                             auto f  = fs->findForce(atoms);
 
                             if (fs->forceEnd() != f && !f->fixed())
@@ -518,18 +518,18 @@ void ForceConstants::dump(FILE *fp) const
     }
 }
 
-void PoldataUpdate::execute(Poldata &pd)
+void PoldataUpdate::execute(Poldata *pd)
 {
     if (iType_ == eitVDW)
     {
-        auto fat = pd.getAtypeBegin() + index_;
+        auto fat = pd->getAtypeBegin() + index_;
         GMX_RELEASE_ASSERT(!fat->fixed(), "Fixed vdw parameters should not be here");
         fat->setVdwparams(paramString_);
         fat->setModified(true);
     }
     else
     {
-        auto fs = pd.findForces(iType_);
+        auto fs = pd->findForces(iType_);
         auto f  = fs->forceBegin() + index_;
         GMX_RELEASE_ASSERT(!f->fixed(), "Fixed listed force parameters should not be here");
         // If geometry_ == 0 it should be left untouched here.

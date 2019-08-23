@@ -76,7 +76,7 @@ namespace alexandria
 
 static void sample_molecules(FILE                                 *fp,
                              const std::vector<alexandria::MyMol> &mols,
-                             alexandria::Poldata                   pd,
+                             alexandria::Poldata                  *pd,
                              int                                   minmol,
                              int                                   maxatempt)
 {
@@ -91,7 +91,7 @@ static void sample_molecules(FILE                                 *fp,
     std::vector<alexandria::MyMol>        sample;
 
     const char  *alexandria = cs.searchCS(alexandria::iCalexandria)->name();
-    for (auto atp = pd.getAtypeBegin(); atp < pd.getAtypeEnd(); atp++)
+    for (auto atp = pd->getAtypeBegin(); atp < pd->getAtypeEnd(); atp++)
     {
         if (atp->getElem() != "H")
         {
@@ -207,7 +207,7 @@ int MolSelect::index(const std::string &iupac) const
 }
 
 static void printAtomtypeStatistics(FILE                                 *fp,
-                                    const alexandria::Poldata            &pd,
+                                    const alexandria::Poldata            *pd,
                                     const std::vector<alexandria::MyMol> &mymol)
 {
     struct NN
@@ -216,7 +216,7 @@ static void printAtomtypeStatistics(FILE                                 *fp,
         int         count;
     };
     std::vector<NN> nn;
-    for (auto atype = pd.getAtypeBegin(); atype < pd.getAtypeEnd(); ++atype)
+    for (auto atype = pd->getAtypeBegin(); atype < pd->getAtypeEnd(); ++atype)
     {
         struct NN n;
         n.name   = atype->getType();

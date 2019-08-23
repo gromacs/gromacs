@@ -132,10 +132,8 @@ class QmCount
 
 };
 
-
-
 void generate_composition(std::vector<MolProp> &mp,
-                          const Poldata        &pd);
+                          const Poldata        *pd);
 
 void generate_formula(std::vector<MolProp> &mp,
                       gmx_atomprop_t        ap);

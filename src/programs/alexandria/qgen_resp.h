@@ -141,7 +141,7 @@ class QgenResp
         }
 
         void setAtomInfo(t_atoms                         *atoms,
-                         const Poldata                   &pd,
+                         const Poldata                   *pd,
                          const gmx::HostVector<gmx::RVec> x,
                          const int                        qtotal);
 
@@ -216,7 +216,7 @@ class QgenResp
 
         real myWeight(int iatom) const;
 
-        void updateZeta(t_atoms *atoms, const Poldata &pd);
+        void updateZeta(t_atoms *atoms, const Poldata *pd);
 
     private:
         //! Return the charge for one "shell" of an atom

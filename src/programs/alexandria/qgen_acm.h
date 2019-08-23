@@ -66,18 +66,17 @@ class QgenAcm
     
         QgenAcm(){};
     
-        void setInfo(const Poldata            &pd,
-                     t_atoms                 *atoms,
-                     ChargeDistributionModel  iChargeDistributionModel,
-                     double                   hfac, 
-                     int                      qtotal, 
-                     bool                     haveShell);
+        void setInfo(const Poldata *pd,
+                     t_atoms       *atoms,
+                     double         hfac, 
+                     int            qtotal, 
+                     bool           haveShell);
                      
-        void updateInfo(const Poldata &pd);
+        void updateInfo(const Poldata *pd);
 
         int generateCharges(FILE              *fp,
                             const std::string  molname,
-                            const Poldata     &pd,
+                            const Poldata     *pd,
                             t_atoms           *atoms,
                             const gmx::HostVector<gmx::RVec> x);     
                             
@@ -97,7 +96,7 @@ class QgenAcm
         
         double getQ(int atom, int z);
 
-        void checkSupport(const Poldata &pd);
+        void checkSupport(const Poldata *pd);
 
         double getZeta(int atom, int z);
 
@@ -125,9 +124,7 @@ class QgenAcm
         std::vector<std::vector<int>>                      row_;       
         std::vector<std::vector<double>>                   q_, zeta_, qsave_, zetasave_, Jcc_;
 
-
-        double calcJ(ChargeDistributionModel iChargeDistributionModel,
-                     rvec                    xI, 
+        double calcJ(rvec                    xI, 
                      rvec                    xJ,
                      double                  zetaI,
                      double                  zetaJ,

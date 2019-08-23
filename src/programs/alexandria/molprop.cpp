@@ -1489,7 +1489,7 @@ void MolProp::Dump(FILE *fp)
     }
 }
 
-bool MolProp::GenerateComposition(const Poldata &pd)
+bool MolProp::GenerateComposition(const Poldata *pd)
 {
     ExperimentIterator   ci;
     CalcAtomIterator     cai;
@@ -1515,16 +1515,16 @@ bool MolProp::GenerateComposition(const Poldata &pd)
             mci_alexandria.AddAtom(ans);
 
             std::string ptype;
-            if (pd.atypeToPtype(cai->getObtype(), ptype))
+            if (pd->atypeToPtype(cai->getObtype(), ptype))
             {
                 std::string bos_type;
-                if (pd.ptypeToBosque(ptype, bos_type))
+                if (pd->ptypeToBosque(ptype, bos_type))
                 {
                     AtomNum anb(bos_type, 1);
                     mci_bosque.AddAtom(anb);
                 }
                 std::string mil_type;
-                if (pd.ptypeToMiller(ptype, mil_type))
+                if (pd->ptypeToMiller(ptype, mil_type))
                 {
                     AtomNum anm(mil_type.c_str(), 1);
                     mci_miller.AddAtom(anm);

@@ -29,7 +29,7 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-
+#include <map>
 
 #include <math.h>
 
@@ -53,6 +53,8 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
+#include "poldata_utils.h"
+
 namespace alexandria
 {
 
@@ -69,26 +71,15 @@ class AcmTest : public gmx::test::CommandLineTestBase
 {
     protected:
         gmx::test::TestReferenceChecker checker_;
-        alexandria::Poldata             pd_;
         alexandria::MyMol               mp_;
         gmx_atomprop_t                  aps_;
 
         //init set tolerance
         AcmTest () : checker_(this->rootChecker())
         {
-            aps_ = gmx_atomprop_init();
-
-            //read input file for poldata
-            std::string dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
-            try
-            {
-                alexandria::readPoldata(dataName.c_str(), pd_, aps_);
-            }
-            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-
-
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-5);
             checker_.setDefaultTolerance(tolerance);
+            aps_ = gmx_atomprop_init();
         }
 
         // Static initiation, only run once every test.
@@ -131,23 +122,22 @@ class AcmTest : public gmx::test::CommandLineTestBase
                       basis,
                       maxpot, 
                       nsymm, 
-                      pd_.getForceField().c_str(), 
                       jobtype,
                       0.0);
             
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());
             
-            
             // Generate charges and topology
-            
             eDih            edih       = (eDih) get_option(dihopt);
             t_inputrec      inputrecInstance;
             t_inputrec     *inputrec   = &inputrecInstance;
             fill_inputrec(inputrec);
             mp_.setInputrec(inputrec);
 
-            mp_.GenerateTopology(aps_, pd_, lot, model, false, false, edih, false, nullptr);
+            // Get poldata
+            auto pd = getPoldata(model);
+            mp_.GenerateTopology(aps_, pd, lot, false, false, edih, false, nullptr);
 
             // Needed for GenerateCharges
             real           hfac                  = 0;
@@ -160,7 +150,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             int            qcycle                = 100;
             real           qtol                  = 1e-3;
 
-            mp_.GenerateCharges(pd_, mdlog, aps_, model,
+            mp_.GenerateCharges(pd, mdlog, aps_,
                                 eqgACM, watoms, hfac, lot,
                                 true, symm_string, cr,
                                 nullptr, hwinfo, qcycle,

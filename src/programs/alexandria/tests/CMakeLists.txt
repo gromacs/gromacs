@@ -40,7 +40,8 @@ gmx_add_unit_test(
     ${exename}
     # files with code for tests
     molpropTest.cpp
-    poldataTest.cpp	
+    poldataTest.cpp
+    poldata_utils.cpp
     qgen_acmTest.cpp
     qgen_respTest.cpp
     regression.cpp

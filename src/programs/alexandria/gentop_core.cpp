@@ -176,7 +176,7 @@ void reset_q(t_atoms *atoms)
 void symmetrize_charges(gmx_bool                   bQsym, 
                         t_atoms                   *atoms,
                         ConstPlistWrapperIterator  bonds,
-                        const Poldata             &pd,
+                        const Poldata             *pd,
                         gmx_atomprop_t             aps, 
                         const char                *symm_string,
                         std::vector<int>          &sym_charges)
@@ -211,8 +211,8 @@ void symmetrize_charges(gmx_bool                   bQsym,
         }
         else
         {
-            for (auto symcharges = pd.getSymchargesBegin();
-                 symcharges != pd.getSymchargesEnd(); symcharges++)
+            for (auto symcharges = pd->getSymchargesBegin();
+                 symcharges != pd->getSymchargesEnd(); symcharges++)
             {
                 anr_central  = gmx_atomprop_atomnumber(aps, symcharges->getCentral().c_str());
                 anr_attached = gmx_atomprop_atomnumber(aps, symcharges->getAttached().c_str());

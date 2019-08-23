@@ -633,7 +633,7 @@ int alex_analyze(int argc, char *argv[])
     else if (mpname.size() > 0)
     {
         MolPropRead(mpname[0].c_str(), mp);
-        generate_composition(mp, pd);
+        generate_composition(mp, &pd);
         generate_formula(mp, ap);
     }
     if (mpsa != MPSA_NR)

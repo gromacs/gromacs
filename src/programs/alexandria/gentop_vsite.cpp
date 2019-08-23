@@ -550,7 +550,7 @@ static void set_linear_angle_params(const int                  atoms[],
     }
 }
 
-void GentopVsites::gen_Vsites(const Poldata             &pd,
+void GentopVsites::gen_Vsites(const Poldata             *pd,
                               t_atoms                   *atoms,
                               std::vector<PlistWrapper> &plist,
                               gpp_atomtype              *atype,
@@ -596,8 +596,8 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
         renum[i] = i+nvsite;
         inv_renum[i+nvsite] = i;
         const auto atype(*atoms->atomtype[i]);
-        auto vsite = pd.findVsite(atype);
-        if (vsite != pd.getVsiteEnd())
+        auto vsite = pd->findVsite(atype);
+        if (vsite != pd->getVsiteEnd())
         {
             nvsite += vsite->nvsite();
             nuclei.insert(std::pair<int,int>(i, vsite->nvsite()));            
@@ -609,13 +609,13 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
     for (int i = 0; i < atoms->nr; i++)
     {
         const auto atype(*atoms->atomtype[i]);
-        auto vsite = pd.findVsite(atype);
-        if (vsite != pd.getVsiteEnd())
+        auto vsite = pd->findVsite(atype);
+        if (vsite != pd->getVsiteEnd())
         {
-            auto lengthUnit = string2unit(pd.getVsite_length_unit().c_str());
+            auto lengthUnit = string2unit(pd->getVsite_length_unit().c_str());
             if (-1 == lengthUnit)
             {
-                gmx_fatal(FARGS, "No such length unit '%s'", pd.getVsite_length_unit().c_str());
+                gmx_fatal(FARGS, "No such length unit '%s'", pd->getVsite_length_unit().c_str());
             }
             if(vsite->type() == evtIN_PLANE)
             {
@@ -647,9 +647,9 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
                 auto outplane = findOutPlane(vsite->nvsite(), i);
                 if (outplane != outplaneEnd())
                 {
-                    if (pd.atypeToBtype(*atoms->atomtype[outplane->bca1()], k) &&
-                        pd.atypeToBtype(*atoms->atomtype[outplane->ca()],   j) &&
-                        pd.atypeToBtype(*atoms->atomtype[outplane->bca2()], l))
+                    if (pd->atypeToBtype(*atoms->atomtype[outplane->bca1()], k) &&
+                        pd->atypeToBtype(*atoms->atomtype[outplane->ca()],   j) &&
+                        pd->atypeToBtype(*atoms->atomtype[outplane->bca2()], l))
                     {
                         bij      = convert2gmx(vsite->distance(), lengthUnit);
                         aijk     = 
@@ -658,9 +658,9 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
                         Bjk      = {j, k};
                         Bjl      = {j, l};
                         //bond order needs to be fixed. 
-                        if (pd.searchForce(Akjl, params, &akjl, &sigma, &ntrain, bondorder, eitANGLES) &&
-                            pd.searchForce(Bjk,  params, &bjk,  &sigma, &ntrain, bondorder, eitBONDS)  &&
-                            pd.searchForce(Bjl,  params, &bjl,  &sigma, &ntrain, bondorder, eitBONDS))
+                        if (pd->searchForce(Akjl, params, &akjl, &sigma, &ntrain, bondorder, eitANGLES) &&
+                            pd->searchForce(Bjk,  params, &bjk,  &sigma, &ntrain, bondorder, eitBONDS)  &&
+                            pd->searchForce(Bjl,  params, &bjl,  &sigma, &ntrain, bondorder, eitBONDS))
                         {   
                             bjk  = convert2gmx(bjk, lengthUnit);
                             bjl  = convert2gmx(bjl, lengthUnit);
@@ -877,7 +877,7 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
     }
 }
 
-void GentopVsites::generateSpecial(const Poldata              &pd,
+void GentopVsites::generateSpecial(const Poldata              *pd,
                                    bool                        bUseVsites,
                                    t_atoms                    *atoms,
                                    rvec                      **x,
@@ -894,11 +894,11 @@ void GentopVsites::generateSpecial(const Poldata              &pd,
 
     mergeLinear(bUseVsites);
 
-    ftb     = pd.findForces(eitBONDS)->fType();
-    fta     = pd.findForces(eitANGLES)->fType();
-    ftl     = pd.findForces(eitLINEAR_ANGLES)->fType();
-    ftp     = pd.findForces(eitPROPER_DIHEDRALS)->fType();
-    fti     = pd.findForces(eitIMPROPER_DIHEDRALS)->fType();
+    ftb     = pd->findForces(eitBONDS)->fType();
+    fta     = pd->findForces(eitANGLES)->fType();
+    ftl     = pd->findForces(eitLINEAR_ANGLES)->fType();
+    ftp     = pd->findForces(eitPROPER_DIHEDRALS)->fType();
+    fti     = pd->findForces(eitIMPROPER_DIHEDRALS)->fType();
 
     nlin_at = 0;
     for (unsigned int i = 0; (i < linear_.size()); i++)

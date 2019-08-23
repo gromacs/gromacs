@@ -51,8 +51,7 @@ RespAtomType::RespAtomType(int                             atype,
                            int                             particleType,
                            bool                            hasShell,
                            const char                     *atomtype,
-                           const Poldata                  &pd,
-                           ChargeDistributionModel         iDistributionModel,
+                           const Poldata                  *pd,
                            const std::vector<std::string> &dzatoms,
                            double                          zeta,
                            double                          q)
@@ -72,7 +71,7 @@ RespAtomType::RespAtomType(int                             atype,
     atomtype_    = atomtype;
     bRestrained_ = bRestr;
     bHasShell_   = hasShell;
-    int nZeta    = std::max(1, pd.getNzeta(iDistributionModel, atomtype_));
+    int nZeta    = std::max(1, pd->getNzeta(atomtype_));
     if (ptype_ == eptShell)
     {
         int         shell        = nZeta-1;
@@ -83,8 +82,7 @@ RespAtomType::RespAtomType(int                             atype,
             shell        = 1;
             atomtype_new = atomtype_.substr(0, shell_name);
         }
-        rz_.push_back(RowZetaQ(pd.getRow(iDistributionModel, atomtype_new, shell),
-                               zeta, q));
+        rz_.push_back(RowZetaQ(pd->getRow(atomtype_new, shell), zeta, q));
     }
     else if (ptype_ == eptVSite)
     {
@@ -96,8 +94,7 @@ RespAtomType::RespAtomType(int                             atype,
             vsite        = 1;
             atomtype_new = atomtype_.substr(0, vsite_name);
         }
-        rz_.push_back(RowZetaQ(pd.getRow(iDistributionModel, atomtype_new, vsite),
-                               zeta, q));
+        rz_.push_back(RowZetaQ(pd->getRow(atomtype_new, vsite), zeta, q));
     }
     else
     {
@@ -107,8 +104,7 @@ RespAtomType::RespAtomType(int                             atype,
         }
         for (int i = 0; i < nZeta; i++)
         {
-            rz_.push_back(RowZetaQ(pd.getRow(iDistributionModel, atomtype, i),
-                                   zeta, q));
+            rz_.push_back(RowZetaQ(pd->getRow(atomtype, i), zeta, q));
         }
     }
 }

@@ -54,11 +54,12 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
+#include "poldata_utils.h"
+
 class RespTest : public gmx::test::CommandLineTestBase
 {
     protected:
         gmx::test::TestReferenceChecker checker_;
-        alexandria::Poldata             pd_;
         alexandria::MyMol               mp_;
         gmx_atomprop_t                  aps_;
 
@@ -77,18 +78,10 @@ class RespTest : public gmx::test::CommandLineTestBase
             int         maxpot   = 100;
             int         nsymm    = 0;
 
-            //read input file for poldata
-            std::string dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
-            try
-            {
-                alexandria::readPoldata(dataName.c_str(), pd_, aps_);
-            }
-            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-
             //Read input file for molprop
-            dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
+            auto dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
             readBabel(dataName.c_str(), molprop, molnm, iupac, conf, basis,
-                      maxpot, nsymm, pd_.getForceField(), jobtype, 0.0);
+                      maxpot, nsymm, jobtype, 0.0);
             std::vector<MolProp> vmp;
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());
@@ -109,7 +102,8 @@ class RespTest : public gmx::test::CommandLineTestBase
             t_inputrec    inputrec;
             fill_inputrec(&inputrec);
             mp_.SetForceField("gaff");
-            mp_.GenerateTopology(aps_, pd_, lot, qdist, false, false, false,  false, nullptr);
+            mp_.GenerateTopology(aps_, getPoldata(qdist), lot,
+                                 false, false, false,  false, nullptr);
             
             //Needed for GenerateCharges
             real           hfac        = 0;
@@ -129,7 +123,7 @@ class RespTest : public gmx::test::CommandLineTestBase
                 tabFile = fileManager().getInputFilePath("table.xvg");
             }
             mp_.setInputrec(&inputrec);
-            mp_.GenerateCharges(pd_, mdlog, aps_, qdist, eqgESP, watoms,
+            mp_.GenerateCharges(getPoldata(qdist), mdlog, aps_, eqgESP, watoms,
                                 hfac, lot, false, symm_string, cr, 
                                 tabFile.empty() ? nullptr : tabFile.c_str(),
                                 hwinfo, qcycle, maxpot, qtol, nullptr, nullptr);

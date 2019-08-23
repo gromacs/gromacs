@@ -242,7 +242,7 @@ void cp_plist(t_params                   plist[],
     }
 }
 
-real calc_r13(const Poldata     &pd,
+real calc_r13(const Poldata     *pd,
               const std::string  aai,
               const std::string  aaj,
               const std::string  aak,
@@ -258,11 +258,11 @@ real calc_r13(const Poldata     &pd,
     std::vector<std::string> aij = {aai, aaj};
     std::vector<std::string> ajk = {aaj, aak};
 
-    auto                     fs = pd.findForces(eitBONDS);
+    auto                     fs = pd->findForces(eitBONDS);
     auto                     lu = string2unit(fs->unit().c_str());
 
-    pd.searchForce(aij, params, &rij, &sigma, &ntrain);
-    pd.searchForce(ajk, params, &rjk, &sigma, &ntrain);
+    pd->searchForce(aij, params, &rij, &sigma, &ntrain);
+    pd->searchForce(ajk, params, &rjk, &sigma, &ntrain);
 
     r12 = convert2gmx(rij, lu);
     r23 = convert2gmx(rjk, lu);
@@ -272,7 +272,7 @@ real calc_r13(const Poldata     &pd,
     return r13;
 }
 
-real calc_relposition(const Poldata     &pd,
+real calc_relposition(const Poldata     *pd,
                       const std::string  aai,
                       const std::string  aaj,
                       const std::string  aak)
@@ -287,11 +287,11 @@ real calc_relposition(const Poldata     &pd,
     std::vector<std::string> aij = {aai, aaj};
     std::vector<std::string> ajk = {aaj, aak};
 
-    auto                     fs = pd.findForces(eitBONDS);
+    auto                     fs = pd->findForces(eitBONDS);
     auto                     lu = string2unit(fs->unit().c_str());
 
-    pd.searchForce(aij, params, &rij, &sigma, &ntrain);
-    pd.searchForce(ajk, params, &rjk, &sigma, &ntrain);
+    pd->searchForce(aij, params, &rij, &sigma, &ntrain);
+    pd->searchForce(ajk, params, &rjk, &sigma, &ntrain);
 
     b0 = convert2gmx(rij, lu);
     b1 = convert2gmx(rjk, lu);
@@ -301,7 +301,7 @@ real calc_relposition(const Poldata     &pd,
     return relative_position;
 }
 
-immStatus updatePlist(const Poldata             &pd,
+immStatus updatePlist(const Poldata             *pd,
                       std::vector<PlistWrapper> &plist,
                       t_topology                *top,
                       bool                       bBASTAT,
@@ -316,9 +316,9 @@ immStatus updatePlist(const Poldata             &pd,
     for (auto &pw : plist)
     {
         auto iType = pw.getItype();
-        auto fs    = pd.findForces(iType);
+        auto fs    = pd->findForces(iType);
 
-        if (fs != pd.forcesEnd())
+        if (fs != pd->forcesEnd())
         {
             pw.setFtype(fs->fType());
 
@@ -328,8 +328,8 @@ immStatus updatePlist(const Poldata             &pd,
                 lu = string2unit(fs->unit().c_str());
                 for (auto pwi = pw.beginParam(); pwi < pw.endParam(); ++pwi)
                 {
-                    if (pd.atypeToBtype(*top->atoms.atomtype[pwi->a[0]], aai) &&
-                        pd.atypeToBtype(*top->atoms.atomtype[pwi->a[1]], aaj))
+                    if (pd->atypeToBtype(*top->atoms.atomtype[pwi->a[0]], aai) &&
+                        pd->atypeToBtype(*top->atoms.atomtype[pwi->a[1]], aaj))
                     {
                         atoms = {aai, aaj};
                         auto  bondOrder = pw.bondOrder(bondOrder_index);
@@ -366,9 +366,9 @@ immStatus updatePlist(const Poldata             &pd,
             {
                 for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
                 {
-                    if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
-                        pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
-                        pd.atypeToBtype(*top->atoms.atomtype[b->a[2]], aak))
+                    if (pd->atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
+                        pd->atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
+                        pd->atypeToBtype(*top->atoms.atomtype[b->a[2]], aak))
                     {
                         atoms = {aai, aaj, aak};
                         n     = 0;
@@ -409,10 +409,10 @@ immStatus updatePlist(const Poldata             &pd,
             {
                 for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
                 {
-                    if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
-                        pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
-                        pd.atypeToBtype(*top->atoms.atomtype[b->a[2]], aak) &&
-                        pd.atypeToBtype(*top->atoms.atomtype[b->a[3]], aal))
+                    if (pd->atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
+                        pd->atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
+                        pd->atypeToBtype(*top->atoms.atomtype[b->a[2]], aak) &&
+                        pd->atypeToBtype(*top->atoms.atomtype[b->a[3]], aal))
                     {
                         atoms = {aai, aaj, aak, aal};
                         n     = 0;
@@ -469,16 +469,16 @@ std::vector<double> getDoubles(const std::string &s)
     return d;
 }
 
-void getLjParams(const Poldata     &pd,
-                 const std::string &ai,
-                 const std::string &aj,
-                 double            *c6,
-                 double            *cn)
+static void getLjParams(const Poldata     *pd,
+                        const std::string &ai,
+                        const std::string &aj,
+                        double            *c6,
+                        double            *cn)
 {
     std::vector<double> vdwi, vdwj;
 
-    auto                fai = pd.findAtype(ai);
-    if (fai != pd.getAtypeEnd())
+    auto                fai = pd->findAtype(ai);
+    if (fai != pd->getAtypeEnd())
     {
         vdwi  = getDoubles(fai->getVdwparams());
     }
@@ -486,8 +486,8 @@ void getLjParams(const Poldata     &pd,
     {
         gmx_fatal(FARGS, "Cannot find atomtype %s looking for LJ", ai.c_str());
     }
-    auto faj = pd.findAtype(aj);
-    if (faj != pd.getAtypeEnd())
+    auto faj = pd->findAtype(aj);
+    if (faj != pd->getAtypeEnd())
     {
         vdwj  = getDoubles(faj->getVdwparams());
     }
@@ -502,7 +502,7 @@ void getLjParams(const Poldata     &pd,
     auto sj = vdwj[0];
     auto ej = vdwj[1];
 
-    switch (pd.getCombRule())
+    switch (pd->getCombRule())
     {
         case eCOMB_GEOMETRIC:
         {
@@ -530,22 +530,23 @@ void getLjParams(const Poldata     &pd,
         break;
         case eCOMB_NONE:
         case eCOMB_NR:
-            gmx_fatal(FARGS, "Unsupported combination rule %d for Lennard Jones", pd.getCombRule());
+            gmx_fatal(FARGS, "Unsupported combination rule %d for Lennard Jones", 
+                      pd->getCombRule());
     }
 }
 
-void getBhamParams(const Poldata     &pd,
-                   const std::string &ai,
-                   const std::string &aj,
-                   double            *a,
-                   double            *b,
-                   double            *c)
+static void getBhamParams(const Poldata     *pd,
+                          const std::string &ai,
+                          const std::string &aj,
+                          double            *a,
+                          double            *b,
+                          double            *c)
 {
     std::vector<std::vector<double> > vdw;
     for (auto a : { ai, aj })
     {
-        auto fai = pd.findAtype(a);
-        if (fai != pd.getAtypeEnd())
+        auto fai = pd->findAtype(a);
+        if (fai != pd->getAtypeEnd())
         {
             vdw.push_back(getDoubles(fai->getVdwparams()));
         }
@@ -563,7 +564,7 @@ void getBhamParams(const Poldata     &pd,
     auto ej = vdw[1][1];
     auto gj = vdw[1][2];
 
-    switch (pd.getCombRule())
+    switch (pd->getCombRule())
     {
         case eCOMB_GEOMETRIC:
             *a = std::sqrt(si * sj);
@@ -583,7 +584,8 @@ void getBhamParams(const Poldata     &pd,
         case eCOMB_GEOM_SIG_EPS:
         case eCOMB_NONE:
         case eCOMB_NR:
-            gmx_fatal(FARGS, "Unsupported combination rule %d for Buckingham", pd.getCombRule());
+            gmx_fatal(FARGS, "Unsupported combination rule %d for Buckingham",
+                      pd->getCombRule());
     }
     if (debug)
     {
@@ -594,7 +596,7 @@ void getBhamParams(const Poldata     &pd,
 
 void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                            t_atoms       *atoms,
-                           const Poldata &pd,
+                           const Poldata *pd,
                            t_forcerec    *fr)
 {
     auto ntype  = mtop->ffparams.atnr;
@@ -607,7 +609,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
     {
         mtop->ffparams.iparams.resize(ntype2, {});
     }
-    auto ftypeVdW   = pd.getVdwFtype();
+    auto ftypeVdW   = pd->getVdwFtype();
     typedef struct
     {
         std::string name;
@@ -694,7 +696,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                         break;
                         default:
                             fprintf(stderr, "Invalid van der waals type %s\n",
-                                    pd.getVdwFunction().c_str());
+                                    pd->getVdwFunction().c_str());
                     }
                 }
             }
@@ -702,7 +704,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
     }
 }
 
-void plist_to_mtop(const Poldata                   &pd,
+void plist_to_mtop(const Poldata                   *pd,
                    const std::vector<PlistWrapper> &plist,
                    gmx_mtop_t                      *mtop_)
 {
@@ -720,7 +722,7 @@ void plist_to_mtop(const Poldata                   &pd,
         }
         //mtop_->moltype[0].ilist[ftype].iatoms.resize(nratot, {0});
         /* For generating pairs */
-        double fudgeLJ = pd.getFudgeLJ();
+        double fudgeLJ = pd->getFudgeLJ();
         for (auto j = pw.beginParam(); (j < pw.endParam()); ++j)
         {
             std::vector<real> c;
@@ -756,7 +758,7 @@ void plist_to_mtop(const Poldata                   &pd,
     }
 }
 
-gmx_mtop_t *do_init_mtop(const Poldata                   &pd,
+gmx_mtop_t *do_init_mtop(const Poldata                   *pd,
                          char                           **molname,
                          t_atoms                         *atoms,
                          const std::vector<PlistWrapper> &plist,
@@ -1119,7 +1121,7 @@ void write_top(FILE                            *out,
                gpp_atomtype_t                   atype,
                int                             *cgnr,
                int                              nrexcl,
-               const Poldata                   &pd)
+               const Poldata                   *pd)
 {
     if (at && atype && cgnr)
     {
@@ -1127,7 +1129,7 @@ void write_top(FILE                            *out,
         fprintf(out, "; %-15s %5s\n", "Name", "nrexcl");
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", nrexcl);
         print_atoms(out, atype, at, cgnr, bRTPresname);
-        for (auto fs = pd.forcesBegin(); fs != pd.forcesEnd(); fs++)
+        for (auto fs = pd->forcesBegin(); fs != pd->forcesEnd(); fs++)
         {
             if (eitBONDS == fs->iType())
             {
@@ -1160,10 +1162,9 @@ void write_top(FILE                            *out,
 }
 
 void print_top_header(FILE                    *fp,
-                      const Poldata           &pd,
+                      const Poldata           *pd,
                       gmx_atomprop_t           aps,
                       bool                     bPol,
-                      ChargeDistributionModel  iChargeDistributionModel,
                       std::vector<std::string> commercials,
                       bool                     bItp)
 {
@@ -1171,7 +1172,8 @@ void print_top_header(FILE                    *fp,
     std::string   btype;
     int           atomnumber;
     real          mass;
-
+    ChargeDistributionModel iChargeDistributionModel = pd->getEqdModel();
+                      
     fprintf(fp, ";\n");
     fprintf(fp, "; Topology generated by alexandria gentop.\n");
     fprintf(fp, "; Watch this space for information & commercials.\n");
@@ -1184,16 +1186,16 @@ void print_top_header(FILE                    *fp,
     {
         fprintf(fp, "[ defaults ]\n");
         fprintf(fp, "; nbfunc         comb-rule       gen-pairs       fudgeLJ     fudgeQQ\n");
-        std::string ff = pd.getVdwFunction();
+        std::string ff = pd->getVdwFunction();
         if (strcasecmp(ff.c_str(), "LJ_SR") == 0)
         {
             ff = "LJ";
         }
         fprintf(fp, "%-15s  %-15s no           %10g  %10g\n\n",
                 ff.c_str(),
-                pd.getCombinationRule().c_str(),
-                pd.getFudgeLJ(),
-                pd.getFudgeQQ());
+                pd->getCombinationRule().c_str(),
+                pd->getFudgeLJ(),
+                pd->getFudgeQQ());
 
         fprintf(fp, "[ atomtypes ]\n");
         fprintf(fp, "%-7s%-6s  %6s  %11s  %10s  %5s %-s  %s\n",
@@ -1202,7 +1204,7 @@ void print_top_header(FILE                    *fp,
 
         gt_old = "";
 
-        for (auto aType = pd.getAtypeBegin(); aType != pd.getAtypeEnd(); aType++)
+        for (auto aType = pd->getAtypeBegin(); aType != pd->getAtypeEnd(); aType++)
         {
             gt_type = aType->getType();
             btype   = aType->getBtype();
@@ -1242,10 +1244,10 @@ void print_top_header(FILE                    *fp,
             iChargeDistributionModel == eqdAXps)
         {
             fprintf(fp, "[ distributed_charges ]\n");
-            for (auto atype = pd.getAtypeBegin(); atype != pd.getAtypeEnd(); atype++)
+            for (auto atype = pd->getAtypeBegin(); atype != pd->getAtypeEnd(); atype++)
             {
-                auto eem = pd.findEem(iChargeDistributionModel, atype->getType());
-                if (eem == pd.EndEemprops())
+                auto eem = pd->findEem(atype->getType());
+                if (eem == pd->EndEemprops())
                 {
                     continue;
                 }

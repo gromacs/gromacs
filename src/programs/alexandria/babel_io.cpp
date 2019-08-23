@@ -216,7 +216,6 @@ void readBabel(const char          *g09,
                const char          *basisset,
                int                  maxPotential,
                int                  nsymm,
-               std::string          forcefield,
                const char          *jobType,
                double               qtot)
 {
@@ -468,6 +467,7 @@ void readBabel(const char          *g09,
     mpt.LastExperiment()->AddEnergy(mes);
 
     // Atoms
+    std::string forcefield = "gaff";
     auto *ff = OpenBabel::OBForceField::FindForceField(forcefield);
     if (ff && (ff->Setup(mol)))
     {

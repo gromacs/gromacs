@@ -226,12 +226,7 @@ int alex_fit_qs_zeta(int argc, char *argv[])
     {
         return 0;
     }
-    if ((iChargeDistributionModel = alexandria::name2eemtype(cqdist[0])) == 
-        alexandria::eqdNR)
-    {
-        gmx_fatal(FARGS, "Invalid Charge Distribution model %s.\n",
-                  cqdist[0]);
-    }
+    iChargeDistributionModel = alexandria::name2eemtype(cqdist[0]);
 
     alexandria::Poldata       pd;
     const char *gentop_fnm = opt2fn_null("-d", NFILE, fnm);
@@ -245,35 +240,29 @@ int alex_fit_qs_zeta(int argc, char *argv[])
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         for(auto ai = pd.getAtypeBegin(); ai < pd.getAtypeEnd(); ++ai)
         {
-            alexandria::ChargeDistributionModel cdm[2] = 
-                {
-                    alexandria::eqdAXpg, 
-                    alexandria::eqdAXps
-                };
+            alexandria::ChargeDistributionModel cdm = pd.getEqdModel();
 
-            for(int i = 0; i < 2; i++)
+            auto eem = pd.findEem(ai->getType());
+            if (pd.EndEemprops() != eem)
             {
-                auto eem = pd.findEem(cdm[i], ai->getType());
-                if (pd.EndEemprops() != eem)
-                {
-                    double zeta, qs;
-                    auto pname = ai->getPtype();
-                    auto ptype = pd.findPtype(pname);
-                    fit_polarization(ptype->getPolarizability()/1000, 
-                                     0.5, rmax, 
-                                     eem->getRow(1),
-                                     cdm[i], 
-                                     maxiter, tolerance,
-                                     &zeta, &qs, bVerbose);
-                    printf("atype %s zeta_old %7g qs_old %3g alpha %7g zeta_new %7g qs_new %7g\n",
-                           ai->getType().c_str(), eem->getZeta(1), eem->getQ(1),  
-                           ptype->getPolarizability(), zeta, qs);
-                    eem->setZeta(1, zeta);
-                    eem->setQ(1, qs);
-                }
+                double zeta, qs;
+                auto pname = ai->getPtype();
+                auto ptype = pd.findPtype(pname);
+                // TODO: Fix unit conversion
+                fit_polarization(ptype->getPolarizability()/1000, 
+                                 0.5, rmax, 
+                                 eem->getRow(1),
+                                 cdm,
+                                 maxiter, tolerance,
+                                 &zeta, &qs, bVerbose);
+                printf("atype %s zeta_old %7g qs_old %3g alpha %7g zeta_new %7g qs_new %7g\n",
+                       ai->getType().c_str(), eem->getZeta(1), eem->getQ(1),  
+                       ptype->getPolarizability(), zeta, qs);
+                eem->setZeta(1, zeta);
+                eem->setQ(1, qs);
             }
         }
-        writePoldata(opt2fn("-do", NFILE, fnm), pd, true);
+        writePoldata(opt2fn("-do", NFILE, fnm), &pd, true);
     }
     else
     {

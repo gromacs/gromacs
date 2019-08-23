@@ -200,7 +200,6 @@ class MolGen
         IndexCount                      indexCount_;
         gmx_hw_info_t                  *hwinfo_;
         gmx_atomprop_t                  atomprop_;
-        ChargeDistributionModel         iChargeDistributionModel_;
         ChargeGenerationAlgorithm       iChargeGenerationAlgorithm_;
         gmx::MDModules                  mdModules_;
         std::vector<alexandria::MyMol>  mymol_;
@@ -233,10 +232,10 @@ class MolGen
                                          IndexCount        *ic);
                                          
         //! \brief Return the poldata as const variable
-        const Poldata &poldata() const { return pd_; }
+        const Poldata *poldata() const { return &pd_; }
         
         //! \brief Return the poldata
-        Poldata &poldata() { return pd_; }
+        Poldata *poldata() { return &pd_; }
 
         //! \brief Return the atomprop structure
         gmx_atomprop_t atomprop() const { return atomprop_; }
@@ -246,9 +245,6 @@ class MolGen
 
         //! \brief Return the mutable vector of molecules
         std::vector<MyMol> &mymols() { return mymol_; }
-
-        //! \brief Return the ChargeDistributionModel
-        ChargeDistributionModel iChargeDistributionModel() const { return iChargeDistributionModel_; }
 
         //! \brief Return the ChargeGenerationAlgorithm
         ChargeGenerationAlgorithm iChargeGenerationAlgorithm() const { return iChargeGenerationAlgorithm_; }

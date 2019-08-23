@@ -1484,7 +1484,7 @@ class MolProp
         int NAtom();
 
         //! Routine to generate compositions based on calculation data
-        bool GenerateComposition(const Poldata &pd);
+        bool GenerateComposition(const Poldata *pd);
 
         //! Returns boolean stating whether a particular composition is present
         bool HasComposition(const std::string &composition) const;

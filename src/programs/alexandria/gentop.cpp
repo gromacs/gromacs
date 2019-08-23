@@ -249,19 +249,35 @@ int alex_gentop(int argc, char *argv[])
     {
         gmx_fatal(FARGS, "Charge tolerance should be between 0 and 1 (not %g)", qtol);
     }
-    if ((iChargeDistributionModel = name2eemtype(cqdist[0])) == eqdNR)
+    
+    const char *gentop_fnm = opt2fn_null("-d", NFILE, fnm);
+    if (opt2parg_bSet("-qdist", asize(pa), pa) && nullptr == gentop_fnm)
     {
-        gmx_fatal(FARGS, "Invalid Charge Distribution model %s.\n", cqdist[0]);
+        iChargeDistributionModel = name2eemtype(cqdist[0]);
+        gentop_fnm = gmx::formatString("alexandria-%s_2019.dat",
+                                       cqdist[0]).c_str();
+    }
+    if (nullptr == gentop_fnm)
+    {
+        fprintf(stderr, "Please specify either a force field file name or use the -qdist flag");
+        return 0;
+    }
+    else
+    {
+        printf("Will use %s as the force field file.\n", gentop_fnm);
     }
 
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
     try
     {
-        const char *gentop_fnm = opt2fn_null("-d", NFILE, fnm);
-        alexandria::readPoldata(gentop_fnm ? gentop_fnm : "", pd, aps);
+        alexandria::readPoldata(gentop_fnm, pd, aps);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    iChargeDistributionModel = pd.getEqdModel();
+    printf("Using force field file %s and charge distribution model %s\n",
+           gentop_fnm, getEemtypeName(iChargeDistributionModel));
+    
     if (pd.getNexcl() != nexcl)
     {
         printf("Exclusion number changed from %d to %d.\n", pd.getNexcl(), nexcl);
@@ -320,7 +336,6 @@ int alex_gentop(int argc, char *argv[])
                           basis,
                           maxpot,
                           nsymm,
-                          pd.getForceField().c_str(),
                           jobtype,
                           qtot);
                 mps.push_back(mp);
@@ -339,9 +354,8 @@ int alex_gentop(int argc, char *argv[])
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
     imm = mymol.GenerateTopology(aps,
-                                 pd,
+                                 &pd,
                                  lot,
-                                 iChargeDistributionModel,
                                  bGenVSites,
                                  bPairs,
                                  bDihedral,
@@ -351,10 +365,9 @@ int alex_gentop(int argc, char *argv[])
     if (immOK == imm)
     {
         maxpot = 100; //Use 100 percent of the ESP read from Gaussian file.
-        imm    = mymol.GenerateCharges(pd,
+        imm    = mymol.GenerateCharges(&pd,
                                        mdlog,
                                        aps,
-                                       iChargeDistributionModel,
                                        iChargeGenerationAlgorithm,
                                        watoms,
                                        hfac,
@@ -373,8 +386,7 @@ int alex_gentop(int argc, char *argv[])
     if (bCUBE && immOK == imm)
     {
         fprintf(stderr, "Fix me: GenerateCube is broken\n");
-        mymol.GenerateCube(iChargeDistributionModel,
-                           pd,
+        mymol.GenerateCube(&pd,
                            spacing,
                            opt2fn_null("-ref",      NFILE, fnm),
                            opt2fn_null("-pc",       NFILE, fnm),
@@ -396,9 +408,8 @@ int alex_gentop(int argc, char *argv[])
     {
         mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
         mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm),
-                            iChargeDistributionModel,
                             bVerbose,
-                            pd,
+                            &pd,
                             aps,
                             cr,
                             efield,

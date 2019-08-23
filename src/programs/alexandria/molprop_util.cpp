@@ -60,7 +60,7 @@ void generate_index(std::vector<MolProp> *mp)
 }
 
 void generate_composition(std::vector<MolProp> &mp,
-                          const Poldata        &pd)
+                          const Poldata        *pd)
 {
     int              nOK = 0;
     CompositionSpecs cs;
@@ -214,7 +214,7 @@ int merge_xml(gmx::ArrayRef<const std::string> filens,
             continue;
         }
         MolPropRead(fn.c_str(), mp);
-        generate_composition(mp, pd);
+        generate_composition(mp, &pd);
         generate_formula(mp, ap);
         for (mpi = mp.begin(); (mpi < mp.end()); )
         {

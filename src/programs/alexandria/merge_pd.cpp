@@ -83,7 +83,6 @@ static EemAtomProps name2eemprop(const std::string name)
 }
 
 static void merge_J00Chi(std::vector<alexandria::Poldata>     pds,
-                         alexandria::ChargeDistributionModel  ieqd,
                          alexandria::Poldata                 &pdout,
                          EemAtomProps                         eematp)
 {
@@ -103,7 +102,7 @@ static void merge_J00Chi(std::vector<alexandria::Poldata>     pds,
     {
         for (const auto& pd : pds)
         {
-            auto ei = pd.findEem(ieqd, atp->getType());
+            auto ei = pd.findEem(atp->getType());
             if (ei != pd.EndEemprops())
             {
                 switch (eematp)
@@ -130,7 +129,7 @@ static void merge_J00Chi(std::vector<alexandria::Poldata>     pds,
     for (auto atp = pdout.getAtypeBegin(); 
          atp < pdout.getAtypeEnd(); atp++, j++)
     {
-        auto ei = pdout.findEem(ieqd, atp->getType());
+        auto ei = pdout.findEem(atp->getType());
         if (ei != pdout.EndEemprops())
         {
             if ((estatsOK == gmx_stats_get_average(lsq[j], &average))&&
@@ -174,7 +173,6 @@ static void merge_J00Chi(std::vector<alexandria::Poldata>     pds,
 }
 
 static void merge_zeta(std::vector<alexandria::Poldata>     pds,
-                       alexandria::ChargeDistributionModel  ieqd,
                        alexandria::Poldata                 &pdout)
 {
     real core_ave  = 0;
@@ -204,18 +202,18 @@ static void merge_zeta(std::vector<alexandria::Poldata>     pds,
     {
         for (const auto& pd : pds)
         {
-            auto ei = pd.findEem(ieqd, atp->getZtype());
+            auto ei = pd.findEem(atp->getZtype());
             if (ei != pd.EndEemprops())
             {
-                auto nzeta = pd.getNzeta(ieqd, ei->getName());
+                auto nzeta = pd.getNzeta(ei->getName());
                 if (nzeta == 1)
                 {
-                    gmx_stats_add_point(core[j], 0, pd.getZeta(ieqd, ei->getName(), 0), 0, 0);
+                    gmx_stats_add_point(core[j], 0, pd.getZeta(ei->getName(), 0), 0, 0);
                 }
                 else if (nzeta == 2)
                 {
-                    gmx_stats_add_point(core[j],  0, pd.getZeta(ieqd, ei->getName(), 0), 0, 0);
-                    gmx_stats_add_point(shell[j], 0, pd.getZeta(ieqd, ei->getName(), 1), 0, 0);
+                    gmx_stats_add_point(core[j],  0, pd.getZeta(ei->getName(), 0), 0, 0);
+                    gmx_stats_add_point(shell[j], 0, pd.getZeta(ei->getName(), 1), 0, 0);
                 }
                 else
                 {
@@ -230,12 +228,12 @@ static void merge_zeta(std::vector<alexandria::Poldata>     pds,
     for (auto atp = pdout.getAtypeBegin(); 
          atp < pdout.getAtypeEnd(); atp++, j++)
     {
-        auto ei = pdout.findEem(ieqd, atp->getZtype());
+        auto ei = pdout.findEem(atp->getZtype());
         if (ei != pdout.EndEemprops())
         {
             zstr[0]  = '\0';
             z_sig[0] = '\0';
-            auto nzeta  = pdout.getNzeta(ieqd, ei->getName());            
+            auto nzeta  = pdout.getNzeta(ei->getName());            
             if (nzeta == 1)
             {
                 if ((estatsOK == gmx_stats_get_average(core[j], &core_ave))&&
@@ -349,26 +347,25 @@ int alex_merge_pd(int argc, char *argv[])
     if (filenames.size() > 0)
     {
         readPoldata(filenames[0].c_str(), pdout, aps);    
-        alexandria::ChargeDistributionModel   ieqd   = alexandria::name2eemtype(cqdist[0]);
         EemAtomProps                          eem    = name2eemprop(eemprop[0]);        
         if (eem == eEMJ00 || eem == eEMChi)
         {
-            merge_J00Chi(pds, ieqd, pdout, eem);
+            merge_J00Chi(pds, pdout, eem);
         }
         else if (eem == eEMZeta)
         {
-            merge_zeta(pds, ieqd, pdout);
+            merge_zeta(pds, pdout);
         }
         else
         {
             gmx_fatal(FARGS, "There is no atomic electric property called %s in alexandria.\n", eemprop[0]);
         }    
-        alexandria::writePoldata(opt2fn("-do", NFILE, fnm), pdout, bcompress);
+        alexandria::writePoldata(opt2fn("-do", NFILE, fnm), &pdout, bcompress);
         if (bPrintTable)
         {
             FILE        *tp;
             tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
-            alexandria_poldata_eemprops_table(tp, pdout, ieqd);
+            alexandria_poldata_eemprops_table(tp, &pdout);
             gmx_ffclose(tp);
         }           
     }
