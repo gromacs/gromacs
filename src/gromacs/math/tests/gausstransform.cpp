@@ -168,7 +168,7 @@ class GaussTransformTest : public ::testing::Test
     public:
         void isZeroWithinFloatTolerance()
         {
-            for (const auto &x : gaussTransform_.view())
+            for (const auto &x : gaussTransform_.constView())
             {
                 EXPECT_FLOAT_EQ_TOL(0, x, tolerance_);
             }
@@ -196,7 +196,7 @@ TEST_F(GaussTransformTest, isZeroAddingZeroAmplitudeGauss)
 TEST_F(GaussTransformTest, isZeroAfterSettingZero)
 {
     gaussTransform_.add({latticeCenter_, 1.});
-    for (const auto value : gaussTransform_.view())
+    for (const auto value : gaussTransform_.constView())
     {
         EXPECT_GT(value, 0);
     }
@@ -255,7 +255,39 @@ TEST_F(GaussTransformTest, centerGaussianInCubeHasExpectedValues)
     };
     // This assignment to std::vector is needed because the view() on the GaussTransform (aka basic_mdspan) does not provide size() needed by Pointwise
     std::vector<float> gaussTransformVector;
-    gaussTransformVector.assign(gaussTransform_.view().data(), gaussTransform_.view().data() + gaussTransform_.view().mapping().required_span_size());
+    gaussTransformVector.assign(gaussTransform_.constView().data(),
+                                gaussTransform_.constView().data() + gaussTransform_.constView().mapping().required_span_size());
+    EXPECT_THAT(expectedValues, testing::Pointwise(FloatEq(tolerance_), gaussTransformVector));
+}
+
+TEST_F(GaussTransformTest, view)
+{
+    gaussTransform_.add({latticeCenter_, 1.});
+    const float        f              = 0.0385108403861522674560546875;   // face
+    const float        e              = 0.0233580060303211212158203125;   // edge
+    const float        c              = 0.014167346991598606109619140625; // corner
+    std::vector<float> expectedValues = {
+        c, e, c,
+        e, f, e,
+        c, e, c,
+
+        e, f, e,
+        f, 0., f,
+        e, f, e,
+
+        c, e, c,
+        e, f, e,
+        c, e, c
+    };
+
+    gaussTransform_.view()[1][1][1] = 0;
+    // This assignment to std::vector is needed because the view() on the
+    // GaussTransform (aka basic_mdspan) does not provide size() that is
+    // needed by Pointwise
+    // \todo Update when mdspan functionality is extended
+    std::vector<float> gaussTransformVector;
+    gaussTransformVector.assign(gaussTransform_.view().data(),
+                                gaussTransform_.view().data() + gaussTransform_.view().mapping().required_span_size());
     EXPECT_THAT(expectedValues, testing::Pointwise(FloatEq(tolerance_), gaussTransformVector));
 }
 

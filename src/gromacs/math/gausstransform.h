@@ -174,22 +174,32 @@ class GaussTransform3D
         GaussTransform3D(const dynamicExtents3D &extent, const GaussianSpreadKernelParameters::Shape &globalParameters);
 
         ~GaussTransform3D();
+
         //! Copy constructor
         GaussTransform3D(const GaussTransform3D &other);
+
         //! Copy assignment
         GaussTransform3D &operator=(const GaussTransform3D &other);
+
         //! Move constructor
         GaussTransform3D(GaussTransform3D &&other) noexcept;
+
         //! Move assignment
         GaussTransform3D &operator=(GaussTransform3D &&other) noexcept;
+
         /*! \brief Add a three dimensional Gaussian with given amplitude at a coordinate.
          * \param[in] localParameters of the spreading kernel
          */
         void add(const GaussianSpreadKernelParameters::PositionAndAmplitude &localParameters);
+
         //! \brief Set all values on the lattice to zero.
         void setZero();
+
         //! Return a view on the spread lattice.
-        basic_mdspan<const float, dynamicExtents3D> view();
+        basic_mdspan<float, dynamicExtents3D> view();
+
+        //! Return a const view on the spread lattice.
+        basic_mdspan<const float, dynamicExtents3D> constView() const;
 
     private:
         class Impl;

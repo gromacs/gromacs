@@ -396,7 +396,12 @@ void GaussTransform3D::setZero()
     std::fill(begin(impl_->data_), end(impl_->data_), 0.);
 }
 
-basic_mdspan<const float, dynamicExtents3D> GaussTransform3D::view()
+basic_mdspan<float, dynamicExtents3D> GaussTransform3D::view()
+{
+    return impl_->data_.asView();
+}
+
+basic_mdspan<const float, dynamicExtents3D> GaussTransform3D::constView() const
 {
     return impl_->data_.asConstView();
 }
