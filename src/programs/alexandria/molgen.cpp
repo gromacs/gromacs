@@ -79,7 +79,6 @@ const char *rmsName(int e)
 namespace alexandria
 {
 
-static const char *cqdist[] = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", nullptr};
 static const char *cqgen[]  = {nullptr, "None", "ACM", "ESP", "RESP", nullptr};
 
 static void dump_index_count(const IndexCount       *ic,
@@ -321,8 +320,6 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
     {
         { "-mindata", FALSE, etINT, {&mindata_},
           "Minimum number of data points to optimize force field parameters" },
-        { "-qdist",   FALSE, etENUM, {cqdist},
-          "Model used for charge distribution" },
         { "-qgen",   FALSE, etENUM, {cqgen},
           "Algorithm used for charge generation" },
         { "-lot",    FALSE, etSTR,  {&lot_},
@@ -372,7 +369,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
         { "-fc_esp",   FALSE, etREAL, {&fc_[ermsESP]},
           "Force constant in the penalty function for the magnitude of the electrostatic potential." },
         { "-fc_charge",  FALSE, etREAL, {&fc_[ermsCHARGE]},
-          "Force constant in the penalty function for the magnitude of the charges with respect to the ESP charges." },
+          "Force constant in the penalty function for 'unchemical' charges, i.e. negative hydrogens, and positive oxygens." },
         { "-fc_polar",  FALSE, etREAL, {&fc_[ermsPolar]},
           "Force constant in the penalty function for polarizability." },
         { "-hfac",  FALSE, etREAL, {&hfac_},

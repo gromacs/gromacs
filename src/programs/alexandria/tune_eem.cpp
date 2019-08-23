@@ -857,7 +857,6 @@ int alex_tune_eem(int argc, char *argv[])
     char                       *opt_elem      = nullptr;
     gmx_bool                    bRandom       = false;
     gmx_bool                    bcompress     = false;
-    gmx_bool                    bZPE          = false;
     gmx_bool                    bPrintTable   = false;
     gmx_bool                    bZero         = true;
     gmx_bool                    bOptimize     = true;
@@ -873,8 +872,6 @@ int alex_tune_eem(int argc, char *argv[])
           "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
         { "-zero", FALSE, etBOOL, {&bZero},
           "Use molecules with zero dipole in the fit as well" },
-        { "-zpe",     FALSE, etBOOL, {&bZPE},
-          "Consider zero-point energy from thermochemistry calculations in order to calculate the reference enthalpy of the molecule" },
         { "-dip_toler", FALSE, etREAL, {&dip_toler},
           "Tolerance (Debye) for marking dipole as an outlier in the log file" },
         { "-quad_toler", FALSE, etREAL, {&quad_toler},
@@ -896,7 +893,7 @@ int alex_tune_eem(int argc, char *argv[])
         { "-efield",  FALSE, etREAL, {&efield},
           "The magnitude of the external electeric field to calculate polarizability tensor." },
         { "-optimize",     FALSE, etBOOL, {&bOptimize},
-          "Optimize zeta values" },
+          "Do parameter optimization when true, or a single calculation otherwise." }
     };
 
     FILE                       *fp;
@@ -949,7 +946,7 @@ int alex_tune_eem(int argc, char *argv[])
              true,
              false,
              false,
-             bZPE,
+             false,
              opt.fitZeta(),
              tabfn);
 
