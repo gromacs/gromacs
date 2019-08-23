@@ -62,6 +62,7 @@ class KeyValueTreeObject;
 class KeyValueTreeBuilder;
 class IMDModule;
 class LocalAtomSetManager;
+class IndexGroupsAndNames;
 
 /*! \libinternal \brief
  * \brief Signals that the communication record is set up and provides this record.
@@ -111,6 +112,7 @@ class MDModules
         //! Register callback function types for MDModules
         using notifier_type = registerMdModuleNotification<
                     CommunicationIsSetup,
+                    IndexGroupsAndNames,
                     KeyValueTreeBuilder*,
                     const KeyValueTreeObject &,
                     LocalAtomSetManager *

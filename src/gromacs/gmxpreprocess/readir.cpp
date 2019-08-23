@@ -63,6 +63,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/selection/indexutil.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/index.h"
@@ -3050,6 +3051,7 @@ static void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char
 void do_index(const char* mdparin, const char *ndx,
               gmx_mtop_t *mtop,
               bool bVerbose,
+              const gmx::MDModules::notifier_type &notifier,
               t_inputrec *ir,
               warninp_t wi)
 {
@@ -3395,6 +3397,10 @@ void do_index(const char* mdparin, const char *ndx,
     {
         make_IMD_group(ir->imd, is->imd_grp, defaultIndexGroups, gnames);
     }
+
+    gmx::IndexGroupsAndNames defaultIndexGroupsAndNames(
+            *defaultIndexGroups, gmx::arrayRefFromArray(gnames, defaultIndexGroups->nr));
+    notifier.notify(defaultIndexGroupsAndNames);
 
     auto accelerations          = gmx::splitString(is->acc);
     auto accelerationGroupNames = gmx::splitString(is->accgrps);

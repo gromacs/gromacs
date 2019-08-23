@@ -2147,8 +2147,7 @@ int gmx_grompp(int argc, char *argv[])
         fprintf(stderr, "initialising group options...\n");
     }
     do_index(mdparin, ftp2fn_null(efNDX, NFILE, fnm),
-             &sys, bVerbose, ir,
-             wi);
+             &sys, bVerbose, mdModules.notifier(), ir, wi);
 
     if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol > 0)
     {

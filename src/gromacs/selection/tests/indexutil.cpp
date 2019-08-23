@@ -46,12 +46,15 @@
 
 #include "gromacs/selection/indexutil.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "testutils/refdata.h"
+#include "testutils/testasserts.h"
 
 #include "toputils.h"
 
@@ -679,5 +682,81 @@ TEST_F(IndexMapTest, HandlesMultipleRequests)
     testUpdate(evalGroup, false, "EvaluatedNoMask");
     testUpdate(maxGroup, false, "Initialized");
 }
+
+/***********************************************************************
+ * IndexGroupsAndNames tests
+ */
+
+class IndexGroupsAndNamesTest : public ::testing::Test
+{
+    public:
+        IndexGroupsAndNamesTest()
+        {
+            init_blocka(&blockA_);
+            addGroupToBlocka_(indicesGroupA_);
+            addGroupToBlocka_(indicesGroupB_);
+            addGroupToBlocka_(indicesGroupSecondA_);
+            addGroupToBlocka_(indicesGroupC_);
+
+            const char *const namesAsConstCharArray[4] = {
+                groupNames[0].c_str(), groupNames[1].c_str(),
+                groupNames[2].c_str(), groupNames[3].c_str()
+            };
+            indexGroupAndNames_ = std::make_unique<gmx::IndexGroupsAndNames>(blockA_, namesAsConstCharArray);
+        }
+        ~IndexGroupsAndNamesTest() override
+        {
+            done_blocka(&blockA_);
+        }
+    protected:
+        std::unique_ptr<gmx::IndexGroupsAndNames> indexGroupAndNames_;
+        const std::vector<std::string>            groupNames     = { "A", "B - Name", "A", "C" };
+        const std::vector<gmx::index>             indicesGroupA_ = { };
+        const std::vector<gmx::index>             indicesGroupB_       = { 1, 2 };
+        const std::vector<gmx::index>             indicesGroupSecondA_ = { 5 };
+        const std::vector<gmx::index>             indicesGroupC_       = { 10 };
+
+    private:
+        //! Add a new group to t_blocka
+        void addGroupToBlocka_(gmx::ArrayRef<const gmx::index> index)
+        {
+            srenew(blockA_.index, blockA_.nr + 2);
+            srenew(blockA_.a, blockA_.nra + index.size());
+            for (int i = 0; (i < index.ssize()); i++)
+            {
+                blockA_.a[blockA_.nra++] = index[i];
+            }
+            blockA_.nr++;
+            blockA_.index[blockA_.nr] = blockA_.nra;
+        }
+
+        t_blocka               blockA_;
+};
+
+TEST_F(IndexGroupsAndNamesTest, containsNames)
+{
+    EXPECT_TRUE(indexGroupAndNames_->containsGroupName("a"));
+    EXPECT_TRUE(indexGroupAndNames_->containsGroupName("A"));
+    EXPECT_TRUE(indexGroupAndNames_->containsGroupName("B - Name"));
+    EXPECT_TRUE(indexGroupAndNames_->containsGroupName("b - Name"));
+    EXPECT_TRUE(indexGroupAndNames_->containsGroupName("B - naMe"));
+    EXPECT_TRUE(indexGroupAndNames_->containsGroupName("C"));
+    EXPECT_FALSE(indexGroupAndNames_->containsGroupName("D"));
+}
+
+TEST_F(IndexGroupsAndNamesTest, throwsWhenNameMissing)
+{
+    EXPECT_ANY_THROW(indexGroupAndNames_->indices("D"));
+}
+
+TEST_F(IndexGroupsAndNamesTest, groupIndicesCorrect)
+{
+    using ::testing::Pointwise;
+    using ::testing::Eq;
+    EXPECT_THAT(indicesGroupA_, Pointwise(Eq(), indexGroupAndNames_->indices("A")));
+    EXPECT_THAT(indicesGroupB_, Pointwise(Eq(), indexGroupAndNames_->indices("B - name")));
+    EXPECT_THAT(indicesGroupC_, Pointwise(Eq(), indexGroupAndNames_->indices("C")));
+}
+
 
 } // namespace

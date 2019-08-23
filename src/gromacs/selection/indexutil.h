@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,13 +64,60 @@
 #include <cstdio>
 
 #include <string>
+#include <vector>
 
 #include "gromacs/topology/block.h"
+#include "gromacs/utility/arrayref.h"
 
 namespace gmx
 {
 class TextWriter;
-}
+
+/*!\internal \brief Bundle index groups with their names.
+ *
+ * \note This class has to outlive the t_blocka &indexGroup it is given.
+ *       We want to avoid a deep-copy due to the potentially very large data
+ *       stored in the t_blocka.
+ *
+ * \todo update this class, once the two legacy data structures, t_blocka and
+ *       the char ** of group names are refactored.
+ */
+class IndexGroupsAndNames
+{
+    public:
+
+        /*!\brief Construct from index group and group names
+         * \param[in] indexGroup
+         * \param[in] groupNames names of the index groups
+         */
+        IndexGroupsAndNames(const t_blocka &indexGroup, ArrayRef<char const *const> groupNames);
+
+        /*!\brief Return if a group name is contained in the groups.
+         *
+         * String comparison is case insensitive
+         *
+         * \param[in] groupName the group name to be queried
+         * \returns true if index group name is contained
+         */
+        bool containsGroupName(const std::string &groupName) const;
+
+        /*!\brief Return the integer indices of a group.
+         *
+         * If two index groups share a name, return the one found first.
+         *
+         * Indices may be empty.
+         *
+         * \param[in] groupName the name of the group whose indices shall be returned
+         * \returns atom indices of the selected index group
+         * \throws if groupName is not present as index group
+         */
+        std::vector<index> indices(const std::string &groupName) const;
+    private:
+        const t_blocka                &indexGroup_;
+        std::vector<std::string>       groupNames_;
+};
+
+} // namespace gmx
 
 struct gmx_mtop_t;
 
