@@ -43,8 +43,11 @@
 
 #include "densityfitting.h"
 
+#include <memory>
+
 #include "gromacs/mdrunutility/mdmodulenotification.h"
 #include "gromacs/mdtypes/imdmodule.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 
 #include "densityfittingforceprovider.h"
@@ -60,6 +63,70 @@ class DensityFittingForceProvider;
 
 namespace
 {
+
+/*! \internal
+ * \brief Collect density fitting parameters only available during simulation setup.
+ *
+ * To build the density fitting force provider during simulation setup,
+ * the DensityFitting class needs access to parameters that become available
+ * only during simulation setup.
+ *
+ * This class collects these parameters via MdModuleNotifications in the
+ * simulation setup phase and provides a check if all necessary parameters have
+ * been provided.
+ */
+class DensityFittingSimulationParameterSetup
+{
+    public:
+
+        /*! \brief Return local atom set for density fitting.
+         * \throws InternalError if local atom set is not set
+         * \returns local atom set for density fitting
+         */
+        const LocalAtomSet &localAtomSet() const
+        {
+            if (localAtomSet_ == nullptr)
+            {
+                GMX_THROW(
+                        InternalError("Transformation to reference density not set for density "
+                                      "guided simulation."));
+            }
+            return *localAtomSet_;
+        }
+        /*! \brief Return transformation into density lattice.
+         * \throws InternalError if transformation into density lattice is not set
+         * \returns transormation into density lattice
+         */
+        const TranslateAndScale &transformationToDensityLattice() const
+        {
+            if (transformationToDensityLattice_ == nullptr)
+            {
+                GMX_THROW(
+                        InternalError("Transformation to reference density not set for density guided simulation."));
+            }
+            return *transformationToDensityLattice_;
+        }
+        /*! \brief Return reference density
+         * \throws InternalError if reference density is not set
+         * \returns the reference density
+         */
+        const basic_mdspan<const float, dynamicExtents3D> &referenceDensity() const
+        {
+            if (referenceDensity_ == nullptr)
+            {
+                GMX_THROW(InternalError("Reference density not set for density guided simulation."));
+            }
+            return *referenceDensity_;
+        }
+
+    private:
+        //! The reference density to fit to
+        std::unique_ptr < basic_mdspan < const float, dynamicExtents3D>> referenceDensity_;
+        //! The coordinate transformation into the reference density
+        std::unique_ptr<TranslateAndScale> transformationToDensityLattice_;
+        //! The local atom set to act on
+        std::unique_ptr<LocalAtomSet>      localAtomSet_;
+};
 
 /*! \internal
  * \brief Density fitting
@@ -117,7 +184,11 @@ class DensityFitting final : public IMDModule
             if (densityFittingOptions_.active())
             {
                 const auto &parameters = densityFittingOptions_.buildParameters();
-                forceProvider_ = std::make_unique<DensityFittingForceProvider>(parameters);
+                forceProvider_ = std::make_unique<DensityFittingForceProvider>(
+                            parameters,
+                            densityFittingSimulationParameters_.referenceDensity(),
+                            densityFittingSimulationParameters_.transformationToDensityLattice(),
+                            densityFittingSimulationParameters_.localAtomSet());
                 forceProviders->addForceProvider(forceProvider_.get());
             }
         }
@@ -132,6 +203,10 @@ class DensityFitting final : public IMDModule
         DensityFittingOptions                        densityFittingOptions_;
         //! Object that evaluates the forces
         std::unique_ptr<DensityFittingForceProvider> forceProvider_;
+        /*! \brief Parameters for density fitting that become available at
+         * simulation setup time.
+         */
+        DensityFittingSimulationParameterSetup       densityFittingSimulationParameters_;
 };
 
 }   // namespace

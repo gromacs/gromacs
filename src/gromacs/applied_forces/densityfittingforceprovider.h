@@ -44,19 +44,38 @@
 
 #include <memory>
 
+#include "gromacs/domdec/localatomset.h"
+#include "gromacs/math/coordinatetransformation.h"
+#include "gromacs/mdspan/extensions.h"
 #include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
+
 struct DensityFittingParameters;
 
+/*! \internal \brief
+ * Implements IForceProvider for density-fitting forces.
+ */
 class DensityFittingForceProvider final : public IForceProvider
 {
     public:
-        DensityFittingForceProvider(const DensityFittingParameters &parameters);
+        //! Construct force provider for density fitting from its parameters
+        DensityFittingForceProvider(const DensityFittingParameters &parameters,
+                                    basic_mdspan<const float, dynamicExtents3D> referenceDensity,
+                                    const TranslateAndScale &transformationToDensityLattice,
+                                    const LocalAtomSet &localAtomSet);
+        ~DensityFittingForceProvider();
+        /* \brief Calculate forces that maximise goodness-of-fit with a reference density map
+         * \param[in] forceProviderInput input for force provider
+         * \param[out] forceProviderOutput output for force provider
+         */
         void calculateForces(const ForceProviderInput &forceProviderInput,
                              ForceProviderOutput      *forceProviderOutput) override;
-
+    private:
+        class Impl;
+        PrivateImplPointer<Impl> impl_;
 };
 
 }      // namespace gmx

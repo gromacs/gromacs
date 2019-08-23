@@ -97,35 +97,8 @@ TEST(DensityFittingTest, ForceOnSingleOption)
 
     // Build the force provider, once all input data is gathered
     ForceProviders densityFittingForces;
-    densityFittingModule->initForceProviders(&densityFittingForces);
+    EXPECT_ANY_THROW(densityFittingModule->initForceProviders(&densityFittingForces));
 
-    // Build a minimal simulation system.
-    t_mdatoms               mdAtoms;
-    mdAtoms.homenr = 1;
-    PaddedVector<RVec>      x             = {{0, 0, 0}};
-    matrix                  simulationBox = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-    const double            t             = 0.0;
-    t_commrec              *cr            = init_commrec();
-    ForceProviderInput      forceProviderInput(x, mdAtoms, t, simulationBox, *cr);
-
-    // The forces that the force-provider is to update
-    PaddedVector<RVec>       f = {{0, 0, 0}};
-    ForceWithVirial          forceWithVirial(f, false);
-
-    gmx_enerdata_t           energyData(1, 0);
-    ForceProviderOutput      forceProviderOutput(&forceWithVirial, &energyData);
-
-    // update the forces
-    densityFittingForces.calculateForces(forceProviderInput, &forceProviderOutput);
-
-    // check that calculated forces match expected forces
-    std::vector<RVec> expectedForce = {{0, 0, 0}};
-    EXPECT_THAT(expectedForce, Pointwise(test::RVecEq(test::defaultFloatTolerance()),
-                                         forceProviderOutput.forceWithVirial_.force_));
-
-    // clean up C-style commrec, so this test leaks no memory
-    // \todo remove once commrec manages its own memory
-    done_commrec(cr);
 }
 
 } // namespace
