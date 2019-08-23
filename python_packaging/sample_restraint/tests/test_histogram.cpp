@@ -7,9 +7,6 @@
 #include <iostream>
 #include <vector>
 
-#include "gromacs/utility/classhelpers.h"
-#include "gromacs/utility/arrayref.h"
-
 #include "ensemblepotential.h"
 #include "sessionresources.h"
 

@@ -9,9 +9,6 @@
 
 #include "ensemblepotential.h"
 
-#include "gromacs/utility/classhelpers.h"
-#include "gromacs/utility/arrayref.h"
-
 #include <gtest/gtest.h>
 
 namespace {

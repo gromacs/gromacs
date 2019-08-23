@@ -7,17 +7,9 @@
 #include <memory>
 #include <vector>
 
-#include "gmxapi/context.h"
 #include "gmxapi/md/mdmodule.h"
-#include "gmxapi/md.h"
-#include "gmxapi/session.h"
-#include "gmxapi/status.h"
-#include "gmxapi/system.h"
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/restraint/restraintpotential.h"
-#include "gromacs/utility/classhelpers.h"
-#include "gromacs/utility/arrayref.h"
 
 #include <gtest/gtest.h>
 
