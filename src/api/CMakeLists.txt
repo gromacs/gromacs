@@ -57,18 +57,20 @@ set(GMXAPI_RELEASE ${GMXAPI_MAJOR}.${GMXAPI_MINOR}.${GMXAPI_PATCH})
 # absolute paths in the build tree. Path component before `gmxapi` can be
 # stripped as appropriate by consumers of this list.
 set(GMXAPI_PUBLIC_HEADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/compat/exceptions.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/compat/mdparams.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/compat/tpr.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/context.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/exceptions.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/gmxapi.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/gmxapicompat.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/gromacsfwd.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/md.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/md/mdmodule.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/session.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/status.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/system.h
-    ${CMAKE_CURRENT_BINARY_DIR}/cpp/include/gmxapi/version.h)
+    ${CMAKE_CURRENT_BINARY_DIR}/cpp/include/gmxapi/version.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/compat/mdparams.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/compat/tpr.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/md/mdmodule.h
+    )
 
 add_subdirectory(cpp)
 

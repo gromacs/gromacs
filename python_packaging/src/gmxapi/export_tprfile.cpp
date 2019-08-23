@@ -49,11 +49,13 @@
 
 #include "gmxapi/exceptions.h"
 
-#include "gmxapi/compat/exceptions.h"
+#include "gmxapi/gmxapicompat.h"
 #include "gmxapi/compat/mdparams.h"
 #include "gmxapi/compat/tpr.h"
 
 #include "module.h"
+
+using gmxapi::GmxapiType;
 
 namespace gmxpy
 {
@@ -88,11 +90,11 @@ void detail::export_tprfile(pybind11::module &module)
                              // We can use templates and/or tag dispatch in a more complete
                              // future implementation.
                              const auto &paramType = gmxapicompat::mdParamToType(key);
-                             if (paramType == gmxapicompat::GmxapiType::FLOAT64)
+                             if (paramType == GmxapiType::FLOAT64)
                              {
                                  dictionary[key.c_str()] = extractParam(self, key, double());
                              }
-                             else if (paramType == gmxapicompat::GmxapiType::INT64)
+                             else if (paramType == GmxapiType::INT64)
                              {
                                  dictionary[key.c_str()] = extractParam(self, key, int64_t());
                              }
@@ -154,7 +156,7 @@ void detail::export_tprfile(pybind11::module &module)
                    auto structure = gmxapicompat::getStructureSource(tprReadHandle);
                    auto state = gmxapicompat::getSimulationState(tprReadHandle);
                    auto topology = gmxapicompat::getTopologySource(tprReadHandle);
-                   gmxapicompat::writeTprFile(filename, params, structure, state, topology);
+                   gmxapicompat::writeTprFile(filename, *params, *structure, *state, *topology);
                },
                py::arg("filename").none(false),
                py::arg("parameters"),

@@ -58,8 +58,11 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/programcontext.h"
 
-#include "gmxapi/compat/exceptions.h"
+#include "gmxapi/gmxapi.h"
+#include "gmxapi/gmxapicompat.h"
 #include "gmxapi/compat/mdparams.h"
+
+using gmxapi::GmxapiType;
 
 namespace gmxapicompat
 {
@@ -222,7 +225,7 @@ std::map<std::string, GmxapiType> simulationParameterTypeMap()
 //            TBD
 
     };
-};
+}
 
 /*
  * TODO: Visitor for predetermined known types.
@@ -519,7 +522,7 @@ class GmxMdParamsImpl final
                 if (source_)
                 {
                     auto memberPointer                    = float32Params().at(key);
-                    source_->inputRecord().*memberPointer = value;
+                    source_->inputRecord().*memberPointer = static_cast<float>(value);
                 }
 
             }
@@ -747,41 +750,41 @@ std::vector<std::string> keys(const GmxMdParams &params)
 }
 
 
-TprReadHandle readTprFile(const std::string &filename)
+std::unique_ptr<TprReadHandle> readTprFile(const std::string &filename)
 {
     auto tprfile = gmxapicompat::TprContents(filename);
-    auto handle  = gmxapicompat::TprReadHandle(std::move(tprfile));
+    auto handle  = std::make_unique<gmxapicompat::TprReadHandle>(std::move(tprfile));
     return handle;
 }
 
-GmxMdParams getMdParams(const TprReadHandle &handle)
+std::unique_ptr<GmxMdParams> getMdParams(const TprReadHandle &handle)
 {
     auto tprfile = handle.get();
     // TODO: convert to exception / decide whether null handles are allowed.
     assert(tprfile);
-    GmxMdParams params;
-    params.params_ = std::make_unique<GmxMdParamsImpl>(tprfile);
+    auto params_impl = std::make_unique<GmxMdParamsImpl>(tprfile);
+    auto params      = std::make_unique<GmxMdParams>(std::move(params_impl));
     return params;
 }
 
-TopologySource getTopologySource(const TprReadHandle &handle)
+std::unique_ptr<TopologySource> getTopologySource(const TprReadHandle &handle)
 {
-    TopologySource source;
-    source.tprFile_ = handle.get();
+    auto source = std::make_unique<TopologySource>();
+    source->tprFile_ = handle.get();
     return source;
 }
 
-SimulationState getSimulationState(const TprReadHandle &handle)
+std::unique_ptr<SimulationState> getSimulationState(const TprReadHandle &handle)
 {
-    SimulationState source;
-    source.tprFile_ = handle.get();
+    auto source = std::make_unique<SimulationState>();
+    source->tprFile_ = handle.get();
     return source;
 }
 
-StructureSource getStructureSource(const TprReadHandle &handle)
+std::unique_ptr<StructureSource> getStructureSource(const TprReadHandle &handle)
 {
-    StructureSource source;
-    source.tprFile_ = handle.get();
+    auto source = std::make_unique<StructureSource>();
+    source->tprFile_ = handle.get();
     return source;
 }
 
@@ -846,24 +849,32 @@ GmxMdParams::GmxMdParams(GmxMdParams &&) noexcept = default;
 
 GmxMdParams &GmxMdParams::operator=(GmxMdParams &&) noexcept = default;
 
+GmxMdParams::GmxMdParams(std::unique_ptr<GmxMdParamsImpl> &&impl)
+{
+    // We use swap instead of move construction so that we don't have
+    // to worry about the restrictions on Deleters.
+    // Ref: https://en.cppreference.com/w/cpp/memory/unique_ptr/unique_ptr
+    params_.swap(impl);
+};
+
 // maybe this should return a handle to the new file?
-bool copy_tprfile(const gmxapicompat::TprReadHandle &input, std::string outFile)
+bool copy_tprfile(const gmxapicompat::TprReadHandle &input, const std::string &outFile)
 {
     if (!input.get())
     {
         return false;
     }
     gmxapicompat::writeTprFile(outFile,
-                               gmxapicompat::getMdParams(input),
-                               gmxapicompat::getStructureSource(input),
-                               gmxapicompat::getSimulationState(input),
-                               gmxapicompat::getTopologySource(input));
+                               *gmxapicompat::getMdParams(input),
+                               *gmxapicompat::getStructureSource(input),
+                               *gmxapicompat::getSimulationState(input),
+                               *gmxapicompat::getTopologySource(input));
     return true;
 }
 
-bool rewrite_tprfile(std::string inFile, std::string outFile, double endTime)
+bool rewrite_tprfile(const std::string &inFile, const std::string &outFile, double endTime)
 {
-    bool              success = false;
+    auto              success = false;
 
     const char      * top_fn = inFile.c_str();
 
@@ -887,7 +898,7 @@ bool rewrite_tprfile(std::string inFile, std::string outFile, double endTime)
 
     double  run_t    = irInstance.init_step*irInstance.delta_t + irInstance.init_t;
 
-    irInstance.nsteps = static_cast<int64_t>((endTime - run_t) / irInstance.delta_t + 0.5);
+    irInstance.nsteps = lround((endTime - run_t) / irInstance.delta_t);
 
     write_tpx_state(outFile.c_str(), &irInstance, &state, &mtop);
 

@@ -46,25 +46,11 @@
 #include <memory>
 #include <vector>
 
+#include "gmxapi/gmxapicompat.h"
 #include "gmxapi/compat/mdparams.h"
 
 namespace gmxapicompat
 {
-
-/*!
- * \brief Facade for objects that can provide atomic data for a configuration.
- */
-class StructureSource;
-
-/*!
- * \brief Facade for objects that can provide molecular topology information for a structure.
- */
-class TopologySource;
-
-/*!
- * \brief Proxy to simulation state data.
- */
-class SimulationState;
 
 /*!
  * \brief Manager for TPR file resources.
@@ -86,18 +72,6 @@ class SimulationState;
  */
 class TprContents;
 
-/*!
- * \brief Handle for a TPR data resource.
- *
- * Can provide StructureSource, TopologySource, GmxMdParams, and SimulationState.
- *
- * This is the type of object we allow Python clients to hold references to, though
- * we don't expose any methods to Python. Python clients should acquire access
- * to TPR file contents with read_tpr().
- *
- * \todo gmxapi C++ API should provide mechanisms for subscribing to simulation
- *       input data from various sources.
- */
 class TprReadHandle
 {
     public:
@@ -124,29 +98,6 @@ class TprReadHandle
 };
 
 /*!
- * \brief Open a TPR file and retrieve a handle.
- *
- * \param filename Path of file to read.
- * \return handle that may share ownership of TPR file resource.
- */
-TprReadHandle readTprFile(const std::string &filename);
-
-/*!
- * \brief Write a new TPR file to the filesystem with the provided contents.
- *
- * \param filename output file path
- * \param params simulation parameters
- * \param structure system structure (atomic configuration)
- * \param state simulation state
- * \param topology molecular topology
- */
-void writeTprFile(const std::string     &filename,
-                  const GmxMdParams     &params,
-                  const StructureSource &structure,
-                  const SimulationState &state,
-                  const TopologySource  &topology);
-
-/*!
  * \brief Helper function for early implementation.
  *
  * Allows extraction of TPR file information from special params objects.
@@ -154,41 +105,6 @@ void writeTprFile(const std::string     &filename,
  * \todo This is a very temporary shim! Find a better way to construct simulation input.
  */
 TprReadHandle getSourceFileHandle(const GmxMdParams &params);
-
-/*!
- * \brief Get a topology source from the TPR contents collection.
- * \param handle
- * \return
- *
- * \todo replace with a helper template on T::topologySource() member function existence.
- */
-
-TopologySource getTopologySource(const TprReadHandle &handle);
-
-/*!
- * \brief Get a source of simulation state from the TPR contents collection.
- * \param handle
- * \return
- *
- * \todo template on T::simulationState() member function existence.
- */
-SimulationState getSimulationState(const TprReadHandle &handle);
-
-/*!
- * \brief Get a source of atomic structure from the TPR contents collection.
- * \param handle
- * \return
- */
-StructureSource getStructureSource(const TprReadHandle &handle);
-
-/*!
- * \brief Get an initialized parameters structure.
- * \param handle
- * \return
- */
-GmxMdParams getMdParams(const TprReadHandle &handle);
-
-std::vector<std::string> keys(const GmxMdParams &params);
 
 class StructureSource
 {
@@ -215,7 +131,7 @@ class SimulationState
  * \param outFile output TPR file name
  * \return true if successful. else false.
  */
-bool copy_tprfile(const gmxapicompat::TprReadHandle &input, std::string outFile);
+bool copy_tprfile(const gmxapicompat::TprReadHandle &input, const std::string &outFile);
 
 /*!
  * \brief Copy and possibly update TPR file by name.
@@ -225,7 +141,7 @@ bool copy_tprfile(const gmxapicompat::TprReadHandle &input, std::string outFile)
  * \param endTime Replace `nsteps` in infile with `endTime/dt`
  * \return true if successful, else false
  */
-bool rewrite_tprfile(std::string inFile, std::string outFile, double endTime);
+bool rewrite_tprfile(const std::string &inFile, const std::string &outFile, double endTime);
 
 }      // end namespace gmxapicompat
 

@@ -499,6 +499,28 @@ class MDHolder
         /*! \endcond */
 };
 
-}      // end namespace gmxapi
+/*!
+ * \brief Label the types recognized by gmxapi.
+ *
+ * Provide an enumeration to aid in translating data between languages, APIs,
+ * and storage formats.
+ *
+ * \todo The spec should explicitly map these to types in APIs already used.
+ * e.g. MPI, Python, numpy, GROMACS, JSON, etc.
+ * \todo Actually check the size of the types.
+ *
+ * \see https://redmine.gromacs.org/issues/2993 for discussion.
+ */
+enum class GmxapiType
+{
+    NULLTYPE, //! Reserved
+    MAP,      //! Mapping of key name (string) to a value of some MdParamType
+    BOOL,     //! Boolean logical type
+    INT64,    //! 64-bit integer type
+    FLOAT64,  //! 64-bit float type
+    STRING,   //! string with metadata
+    NDARRAY,  //! multi-dimensional array with metadata
+};
+}             // end namespace gmxapi
 
-#endif // header guard
+#endif        // header guard

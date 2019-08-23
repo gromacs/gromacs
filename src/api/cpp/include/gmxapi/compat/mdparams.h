@@ -34,13 +34,8 @@
  */
 
 /*! \file
- * \brief Compatibility header for functionality differences in gmxapi releases.
+ * \brief Compatibility header for simulation parameters.
  *
- * Also handle the transitioning installed headers from GROMACS 2019 moving forward.
- *
- * \todo Configure for gmxapi 0.0.7, 0.0.8, GROMACS 2019, GROMACS master...
- *
- * \defgroup gmxapi_compat
  * \author M. Eric Irrgang <ericirrgang@gmail.com>
  * \ingroup gmxapi_compat
  */
@@ -51,85 +46,17 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
-struct t_inputrec;
+#include "gmxapi/gmxapicompat.h"
+#include "gmxapi/gmxapi.h"
 
-/*!
- * \brief Compatibility code for features that may not be in gmxapi yet.
- */
 namespace gmxapicompat
 {
-
-
-/*!
- * \brief Label the types recognized by gmxapi.
- *
- * Provide an enumeration to aid in translating data between languages, APIs,
- * and storage formats.
- *
- * \todo The spec should explicitly map these to types in APIs already used.
- * e.g. MPI, Python, numpy, GROMACS, JSON, etc.
- * \todo Actually check the size of the types.
- *
- * \see https://redmine.gromacs.org/issues/2993 for discussion.
- */
-enum class GmxapiType
-{
-    NULLTYPE,     //! Reserved
-    MAP,          //! Mapping of key name (string) to a value of some MdParamType
-    BOOL,         //! Boolean logical type
-    INT64,        //! 64-bit integer type
-    FLOAT64,      //! 64-bit float type
-    STRING,       //! string with metadata
-    NDARRAY,      //! multi-dimensional array with metadata
-};
-
-
-/*!
- * \brief Static map of GROMACS MDP user input to normalized "type".
- *
- * Note that only fields present in the TPR file are named. Additional names
- * may be accepted as mdp file entries, but we cannot discern which parameter
- * name was used from inspection of the TPR file and this is an interim solution
- * that does not need to support a complete MDP file converter.
- */
-std::map<std::string, GmxapiType> simulationParameterTypeMap();
-
-std::map<std::string, bool t_inputrec::*> boolParams();
-std::map<std::string, int t_inputrec::*> int32Params();
-std::map<std::string, float t_inputrec::*> float32Params();
-std::map<std::string, double t_inputrec::*> float64Params();
-std::map<std::string, int64_t t_inputrec::*> int64Params();
-
-/*!
- * \brief Static mapping of parameter names to gmxapi types for GROMACS.
- *
- * \param name MDP entry name.
- * \return enumeration value for known parameters.
- *
- * \throws gmxapi_compat::ValueError for parameters with no mapping.
- */
-GmxapiType mdParamToType(const std::string &name);
 
 // Forward declaration for private implementation class for GmxMdParams
 class GmxMdParamsImpl;
 
-/*!
- * \brief Handle / manager for GROMACS molecular computation input parameters.
- *
- * Interface should be consistent with MDP file entries, but data maps to TPR
- * file interface. For type safety and simplicity, we don't have generic operator
- * accessors. Instead, we have templated accessors that throw exceptions when
- * there is trouble.
- *
- * When MDP input is entirely stored in a key-value tree, this class can be a
- * simple adapter or wrapper. Until then, we need a manually maintained mapping
- * of MDP entries to TPR data.
- *
- * Alternatively, we could update the infrastructure used by list_tpx to provide
- * more generic output, but our efforts may be better spent in updating the
- * infrastructure for the key-value tree input system.
- */
 class GmxMdParams
 {
     public:
@@ -140,27 +67,21 @@ class GmxMdParams
         GmxMdParams(GmxMdParams &&) noexcept;
         GmxMdParams &operator=(GmxMdParams &&) noexcept;
 
+        explicit GmxMdParams(std::unique_ptr<GmxMdParamsImpl> &&impl);
+
         std::unique_ptr<GmxMdParamsImpl> params_;
 };
 
 /*!
- * \brief A set of overloaded functions to fetch parameters of the indicated type, if possible.
+ * \brief Get the list of parameter key words.
  *
- * \param params Handle to a parameters structure from which to extract.
- * \param name Parameter name
- * \param (tag) type for dispatch
+ * \param params molecular simulation parameters object reference.
+ * \return A new vector of parameter names.
  *
- * Could be used for dispatch and/or some sort of templating in the future, but
- * invoked directly for now.
+ * \note The returned data is a copy. Modifying the return value has no affect on
+ * the original object inspected.
  */
-int extractParam(const gmxapicompat::GmxMdParams &params, const std::string &name, int);
-int64_t extractParam(const gmxapicompat::GmxMdParams& params, const std::string& name, int64_t);
-float extractParam(const gmxapicompat::GmxMdParams &params, const std::string &name, float);
-double extractParam(const gmxapicompat::GmxMdParams &params, const std::string &name, double);
-
-void setParam(gmxapicompat::GmxMdParams* params, const std::string &name, double value);
-void setParam(gmxapicompat::GmxMdParams* params, const std::string &name, int64_t value);
-// TODO: unsetParam
+std::vector<std::string> keys(const GmxMdParams &params);
 
 }      // end namespace gmxapicompat
 
