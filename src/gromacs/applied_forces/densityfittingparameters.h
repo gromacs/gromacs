@@ -44,7 +44,10 @@
 
 #include <vector>
 
+#include "gromacs/math/densityfit.h"
 #include "gromacs/utility/basedefinitions.h"
+
+#include "densityfittingamplitudelookup.h"
 
 namespace gmx
 {
@@ -57,12 +60,22 @@ namespace gmx
 struct DensityFittingParameters
 {
     //! Indicate if density fitting is active
-    bool               active_ = false;
+    bool                           active_ = false;
     //! Indices of the atoms that shall be fit to the density
-    std::vector<index> indices_;
+    std::vector<index>             indices_;
+    //! Determines how to measure similarity between simulated and reference density
+    DensitySimilarityMeasureMethod similarityMeasureMethod_ = DensitySimilarityMeasureMethod::innerProduct;
+    //! Determines with what weight atoms are spread
+    DensityFittingAmplitudeMethod  amplitudeLookupMethod_ = DensityFittingAmplitudeMethod::Unity;
+    //! The force constant to be used for the density fitting
+    real                           forceConstant_ = 1e9;
+    //! The spreading width used for the gauss transform of atoms onto the density grid
+    real                           gaussianTransformSpreadingWidth_ = 0.2;
+    //! The spreading range for spreading atoms onto the grid in multiples of the spreading width
+    real                           gaussianTransformSpreadingRangeInMultiplesOfWidth_ = 4.0;
 };
 
-/*! \brief Check if two structs holding density fitting parameters are equal.
+/*!\brief Check if two structs holding density fitting parameters are equal.
  *
  * \param[in] lhs left hand side to be compared
  * \param[in] rhs right hand side to be compared
@@ -70,7 +83,7 @@ struct DensityFittingParameters
  */
 bool operator==(const DensityFittingParameters &lhs, const DensityFittingParameters &rhs);
 
-/*! \brief Check if two structs holding density fitting parameters are not equal.
+/*!\brief Check if two structs holding density fitting parameters are not equal.
  *
  * \param[in] lhs left hand side to be compared
  * \param[in] rhs right hand side to be compared

@@ -107,6 +107,16 @@ class DensityFittingOptions final : public IMdpOptionProvider
         const std::string        c_groupTag_  = "group";
         std::string              groupString_ = "protein";
 
+        const std::string        c_similarityMeasureTag_ = "similarity-measure";
+
+        const std::string        c_amplitudeMethodTag_ = "amplitude-method";
+
+        const std::string        c_forceConstantTag_ = "force-constant";
+
+        const std::string        c_gaussianTransformSpreadingWidthTag_ = "gaussian-transform-spreading-width";
+        const std::string        c_gaussianTransformSpreadingRangeInMultiplesOfWidthTag_
+            = "gaussian-transform-spreading-range-in-multiples-of-width";
+
         DensityFittingParameters parameters_;
 };
 

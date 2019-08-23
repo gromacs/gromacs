@@ -137,7 +137,14 @@ class DensityFittingOptionsTest : public ::testing::Test
 
 TEST_F(DensityFittingOptionsTest, DefaultParameters)
 {
-    EXPECT_FALSE(densityFittingOptions_.buildParameters().active_);
+    const auto defaultParameters = densityFittingOptions_.buildParameters();
+    EXPECT_FALSE(defaultParameters.active_);
+    EXPECT_EQ(0, defaultParameters.indices_.size());
+    EXPECT_EQ(DensitySimilarityMeasureMethod::innerProduct, defaultParameters.similarityMeasureMethod_);
+    EXPECT_EQ(DensityFittingAmplitudeMethod::Unity, defaultParameters.amplitudeLookupMethod_);
+    EXPECT_REAL_EQ(1e9, defaultParameters.forceConstant_);
+    EXPECT_REAL_EQ(0.2, defaultParameters.gaussianTransformSpreadingWidth_);
+    EXPECT_REAL_EQ(4.0, defaultParameters.gaussianTransformSpreadingRangeInMultiplesOfWidth_);
 }
 
 TEST_F(DensityFittingOptionsTest, OptionSetsActive)
@@ -147,7 +154,7 @@ TEST_F(DensityFittingOptionsTest, OptionSetsActive)
     EXPECT_TRUE(densityFittingOptions_.buildParameters().active_);
 }
 
-TEST_F(DensityFittingOptionsTest, OutputDefaultValues)
+TEST_F(DensityFittingOptionsTest, OutputNoDefaultValuesWhenInactive)
 {
     // Transform module data into a flat key-value tree for output.
 
@@ -164,6 +171,36 @@ TEST_F(DensityFittingOptionsTest, OutputDefaultValues)
 
     EXPECT_EQ(stream.toString(), std::string("density-guided-simulation-active = false\n"));
 }
+
+TEST_F(DensityFittingOptionsTest, OutputDefaultValuesWhenActive)
+{
+    setFromMdpValues(densityFittingSetActiveAsMdpValues());
+    // Transform module data into a flat key-value tree for output.
+
+    StringOutputStream        stream;
+    KeyValueTreeBuilder       builder;
+    KeyValueTreeObjectBuilder builderObject = builder.rootObject();
+
+    densityFittingOptions_.buildMdpOutput(&builderObject);
+    {
+        TextWriter writer(&stream);
+        writeKeyValueTreeAsMdp(&writer, builder.build());
+    }
+    stream.close();
+    std::string expected
+        = {
+        "density-guided-simulation-active = true\n"
+        "density-guided-simulation-group = protein\n"
+        "density-guided-simulation-similarity-measure = inner-product\n"
+        "density-guided-simulation-amplitude-method = unity\n"
+        "density-guided-simulation-force-constant = 1e+09\n"
+        "density-guided-simulation-gaussian-transform-spreading-width = 0.2\n"
+        "density-guided-simulation-gaussian-transform-spreading-range-in-multiples-of-width = 4\n"
+        };
+
+    EXPECT_EQ(expected, stream.toString());
+}
+
 
 TEST_F(DensityFittingOptionsTest, CanConvertGroupStringToIndexGroup)
 {

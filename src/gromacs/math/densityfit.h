@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \inlibraryapi \file
  * \brief
  * Declares density similarity measures and their derivatives.
  *
@@ -44,6 +44,7 @@
 
 #include "gromacs/mdspan/extensions.h"
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 namespace gmx
 {
@@ -61,12 +62,12 @@ enum class DensitySimilarityMeasureMethod
      * \f]
      */
     innerProduct,
-    count,
+    Count,
 };
 
 //! Name the methods that may be used to evaluate similarity between densities
-const char * const c_densitySimilarityMeasureMethodNames[static_cast<int>(DensitySimilarityMeasureMethod::count)]
-    = {"inner-product"};
+const EnumerationArray<DensitySimilarityMeasureMethod, const char *const>
+c_densitySimilarityMeasureMethodNames = {{ "inner-product" }};
 
 /* Forward declaration of implementation class outside class to allow
  * choose implementation class during construction of the DensitySimilarityMeasure*/

@@ -44,6 +44,7 @@
 #include "densityfittingoptions.h"
 
 #include "gromacs/applied_forces/densityfitting.h"
+#include "gromacs/math/densityfit.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/optionsection.h"
 #include "gromacs/selection/indexutil.h"
@@ -51,6 +52,8 @@
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/strconvert.h"
+
+#include "densityfittingamplitudelookup.h"
 
 namespace gmx
 {
@@ -111,6 +114,11 @@ void DensityFittingOptions::initMdpTransform(IKeyValueTreeTransformRules * rules
         };
     densityfittingMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_activeTag_);
     densityfittingMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_groupTag_);
+    densityfittingMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_similarityMeasureTag_);
+    densityfittingMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_amplitudeMethodTag_);
+    densityfittingMdpTransformFromString<real>(rules, &fromStdString<real>, c_forceConstantTag_);
+    densityfittingMdpTransformFromString<real>(rules, &fromStdString<real>, c_gaussianTransformSpreadingWidthTag_);
+    densityfittingMdpTransformFromString<real>(rules, &fromStdString<real>, c_gaussianTransformSpreadingRangeInMultiplesOfWidthTag_);
 }
 
 void DensityFittingOptions::buildMdpOutput(KeyValueTreeObjectBuilder *builder) const
@@ -119,6 +127,17 @@ void DensityFittingOptions::buildMdpOutput(KeyValueTreeObjectBuilder *builder) c
     if (parameters_.active_)
     {
         addDensityFittingMdpOutputValue(builder, groupString_, c_groupTag_);
+        addDensityFittingMdpOutputValue<std::string>(builder,
+                                                     c_densitySimilarityMeasureMethodNames[parameters_.similarityMeasureMethod_],
+                                                     c_similarityMeasureTag_);
+
+        addDensityFittingMdpOutputValue<std::string>(builder,
+                                                     c_densityFittingAmplitudeMethodNames[parameters_.amplitudeLookupMethod_],
+                                                     c_amplitudeMethodTag_);
+
+        addDensityFittingMdpOutputValue(builder, parameters_.forceConstant_, c_forceConstantTag_);
+        addDensityFittingMdpOutputValue(builder, parameters_.gaussianTransformSpreadingWidth_, c_gaussianTransformSpreadingWidthTag_);
+        addDensityFittingMdpOutputValue(builder, parameters_.gaussianTransformSpreadingRangeInMultiplesOfWidth_, c_gaussianTransformSpreadingRangeInMultiplesOfWidthTag_);
     }
 }
 
@@ -128,6 +147,18 @@ void DensityFittingOptions::initMdpOptions(IOptionsContainerWithSections *option
 
     section.addOption(BooleanOption(c_activeTag_.c_str()).store(&parameters_.active_));
     section.addOption(StringOption(c_groupTag_.c_str()).store(&groupString_));
+
+    section.addOption(EnumOption<DensitySimilarityMeasureMethod>(c_similarityMeasureTag_.c_str())
+                          .enumValue(c_densitySimilarityMeasureMethodNames.m_elements)
+                          .store(&parameters_.similarityMeasureMethod_));
+
+    section.addOption(EnumOption<DensityFittingAmplitudeMethod>(c_amplitudeMethodTag_.c_str())
+                          .enumValue(c_densityFittingAmplitudeMethodNames.m_elements)
+                          .store(&parameters_.amplitudeLookupMethod_));
+
+    section.addOption(RealOption(c_forceConstantTag_.c_str()).store(&parameters_.forceConstant_));
+    section.addOption(RealOption(c_gaussianTransformSpreadingWidthTag_.c_str()).store(&parameters_.gaussianTransformSpreadingWidth_));
+    section.addOption(RealOption(c_gaussianTransformSpreadingRangeInMultiplesOfWidthTag_.c_str()).store(&parameters_.gaussianTransformSpreadingRangeInMultiplesOfWidth_));
 }
 
 bool DensityFittingOptions::active() const
