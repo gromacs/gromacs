@@ -51,7 +51,7 @@ configure_file(include/version.h.in include/gmxapi/version.h)
 
 add_library(gmxapi SHARED
             context.cpp
-            compat_exceptions.cpp
+            exceptions.cpp
             gmxapi.cpp
             md.cpp
             mdmodule.cpp
@@ -60,7 +60,9 @@ add_library(gmxapi SHARED
             status.cpp
             system.cpp
             version.cpp
-            workflow.cpp)
+            workflow.cpp
+            tpr.cpp
+            )
 gmx_target_compile_options(gmxapi)
 target_compile_definitions(gmxapi PRIVATE HAVE_CONFIG_H)
 target_include_directories(gmxapi SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)

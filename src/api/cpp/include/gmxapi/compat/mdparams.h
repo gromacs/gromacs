@@ -32,8 +32,6 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMXPY_MDPARAMS_H
-#define GMXPY_MDPARAMS_H
 
 /*! \file
  * \brief Compatibility header for functionality differences in gmxapi releases.
@@ -47,11 +45,12 @@
  * \ingroup gmxapi_compat
  */
 
+#ifndef GMXAPICOMPAT_MDPARAMS_H
+#define GMXAPICOMPAT_MDPARAMS_H
+
 #include <map>
 #include <memory>
 #include <string>
-
-#include "compat_exceptions.h"
 
 struct t_inputrec;
 
@@ -76,13 +75,13 @@ namespace gmxapicompat
  */
 enum class GmxapiType
 {
-    NULLTYPE, //! Reserved
-    MAP,      //! Mapping of key name (string) to a value of some MdParamType
-    BOOL,     //! Boolean logical type
-    INT64,    //! 64-bit integer type
-    FLOAT64,  //! 64-bit float type
-    STRING,   //! string with metadata
-    NDARRAY,  //! multi-dimensional array with metadata
+    NULLTYPE,     //! Reserved
+    MAP,          //! Mapping of key name (string) to a value of some MdParamType
+    BOOL,         //! Boolean logical type
+    INT64,        //! 64-bit integer type
+    FLOAT64,      //! 64-bit float type
+    STRING,       //! string with metadata
+    NDARRAY,      //! multi-dimensional array with metadata
 };
 
 
@@ -94,13 +93,13 @@ enum class GmxapiType
  * name was used from inspection of the TPR file and this is an interim solution
  * that does not need to support a complete MDP file converter.
  */
-const std::map<std::string, GmxapiType> simulationParameterTypeMap();
+std::map<std::string, GmxapiType> simulationParameterTypeMap();
 
-const std::map<std::string, bool t_inputrec::*> boolParams();
-const std::map<std::string, int t_inputrec::*> int32Params();
-const std::map<std::string, float t_inputrec::*> float32Params();
-const std::map<std::string, double t_inputrec::*> float64Params();
-const std::map<std::string, int64_t t_inputrec::*> int64Params();
+std::map<std::string, bool t_inputrec::*> boolParams();
+std::map<std::string, int t_inputrec::*> int32Params();
+std::map<std::string, float t_inputrec::*> float32Params();
+std::map<std::string, double t_inputrec::*> float64Params();
+std::map<std::string, int64_t t_inputrec::*> int64Params();
 
 /*!
  * \brief Static mapping of parameter names to gmxapi types for GROMACS.
@@ -163,23 +162,6 @@ void setParam(gmxapicompat::GmxMdParams* params, const std::string &name, double
 void setParam(gmxapicompat::GmxMdParams* params, const std::string &name, int64_t value);
 // TODO: unsetParam
 
-
-// Anonymous namespace to confine helper function definitions to file scope.
-namespace
-{
-
-bool isFloat(GmxapiType dataType)
-{
-    return (dataType == GmxapiType::FLOAT64);
-}
-
-bool isInt(GmxapiType dataType)
-{
-    return (dataType == GmxapiType::INT64);
-}
-
-}      // end anonymous namespace
-
 }      // end namespace gmxapicompat
 
-#endif //GMXPY_MDPARAMS_H
+#endif //GMXAPICOMPAT_MDPARAMS_H

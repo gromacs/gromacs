@@ -32,14 +32,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
 /*! \file
  * \brief Helper code for TPR file access.
  *
  * \author M. Eric Irrgang <ericirrgang@gmail.com>
- * \ingroup module_python
+ * \ingroup gmxapi_compat
  */
 
-#include "tprfile.h"
+#include "gmxapi/compat/tpr.h"
 
 #include <cassert>
 
@@ -57,8 +58,8 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/programcontext.h"
 
-#include "compat_exceptions.h"
-#include "mdparams.h"
+#include "gmxapi/compat/exceptions.h"
+#include "gmxapi/compat/mdparams.h"
 
 namespace gmxapicompat
 {
@@ -122,7 +123,7 @@ class TprContents
 
 // Note: This mapping is incomplete. Hopefully we can replace it before more mapping is necessary.
 // TODO: (#2993) Replace with GROMACS library header resources when available.
-const std::map<std::string, GmxapiType> simulationParameterTypeMap()
+std::map<std::string, GmxapiType> simulationParameterTypeMap()
 {
     return {
                {
@@ -151,7 +152,7 @@ const std::map<std::string, GmxapiType> simulationParameterTypeMap()
                },
                {
                    "comm-grps",     GmxapiType::NDARRAY
-               },                                      // Note: we do not have processing for this yet.
+               },                               // Note: we do not have processing for this yet.
                {
                    "bd-fric",     GmxapiType::FLOAT64
                },
@@ -224,7 +225,7 @@ const std::map<std::string, GmxapiType> simulationParameterTypeMap()
 };
 
 /*
- * Visitor for predetermined known types.
+ * TODO: Visitor for predetermined known types.
  *
  * Development sequence:
  * 1. map pointers
@@ -234,7 +235,7 @@ const std::map<std::string, GmxapiType> simulationParameterTypeMap()
  * 5. switch to Variant type for input as well? (Variant in public API?)
  */
 
-const std::map<std::string, bool t_inputrec::*> boolParams()
+std::map<std::string, bool t_inputrec::*> boolParams()
 {
     return {
                {
@@ -244,7 +245,7 @@ const std::map<std::string, bool t_inputrec::*> boolParams()
     };
 }
 
-const std::map<std::string, int t_inputrec::*> int32Params()
+std::map<std::string, int t_inputrec::*> int32Params()
 {
     return {
                {
@@ -290,7 +291,22 @@ const std::map<std::string, int t_inputrec::*> int32Params()
     };
 }
 
-const std::map<std::string, float t_inputrec::*> float32Params()
+namespace
+{
+
+// Provide a helper to disambiguate `real` typed inputrec values.
+
+// Primary template returns empty map.
+template<typename RealT>
+std::map<std::string, RealT t_inputrec::*> compatibleRealParams()
+{
+    return {};
+}
+
+// Specialize for the compile-time typedef of `real` to get the inputrec parameters
+// compatible with the template parameter whose type is not known until compile time.
+template<>
+std::map<std::string, real t_inputrec::*> compatibleRealParams()
 {
     return {
                {
@@ -315,20 +331,40 @@ const std::map<std::string, float t_inputrec::*> float32Params()
 
     };
 }
-const std::map<std::string, double t_inputrec::*> float64Params()
+
+}
+
+std::map<std::string, float t_inputrec::*> float32Params()
 {
-    return {
-               {
-                   "dt", &t_inputrec::delta_t
-               },
-               {
-                   "tinit", &t_inputrec::init_t
-               },
+    return compatibleRealParams<float>();
+}
+
+std::map<std::string, double t_inputrec::*> float64Params()
+{
+    static const std::map<std::string, double t_inputrec::*> explicitDoubles = {
+        {
+            "dt", &t_inputrec::delta_t
+        },
+        {
+            "tinit", &t_inputrec::init_t
+        },
 //            ...
 
     };
+
+    // Initialize map to be returned with any compile-time-only doubles.
+    auto fullMap = compatibleRealParams<double>();
+
+    // Get the explicitly `double` parameters.
+    for (const auto &item : explicitDoubles)
+    {
+        fullMap.emplace(item);
+    }
+
+    return fullMap;
 }
-const std::map<std::string, int64_t t_inputrec::*> int64Params()
+
+std::map<std::string, int64_t t_inputrec::*> int64Params()
 {
     return {
                {
@@ -425,7 +461,7 @@ class GmxMdParamsImpl final
             return keyList;
         };
 
-        template<typename T> T extract(const std::string &key) const
+        template<typename T> T extract(const std::string & /* key */) const
         {
             auto value = T();
             // should be an APIError
@@ -492,14 +528,6 @@ class GmxMdParamsImpl final
                 throw KeyError("Named parameter is incompatible with floating point type value.");
             }
         };
-//
-//    // Uses expression SFINAE of the return type to be sure of the right overload
-//    // at template instantiation. Causes compile error if a setter is not available
-//    // for the parameter type T.
-//    template<typename T> auto set(const std::string& key, const T& value) -> decltype(setParam(key, value), void())
-//    {
-//        this->set(key, value);
-//    }
 
         TprReadHandle getSource() const
         {
@@ -818,11 +846,6 @@ GmxMdParams::GmxMdParams(GmxMdParams &&) noexcept = default;
 
 GmxMdParams &GmxMdParams::operator=(GmxMdParams &&) noexcept = default;
 
-} // end namespace gmxapicompat
-
-namespace gmxpy
-{
-
 // maybe this should return a handle to the new file?
 bool copy_tprfile(const gmxapicompat::TprReadHandle &input, std::string outFile)
 {
@@ -872,4 +895,4 @@ bool rewrite_tprfile(std::string inFile, std::string outFile, double endTime)
     return success;
 }
 
-} // end namespace gmxpy
+} // end namespace gmxapicompat

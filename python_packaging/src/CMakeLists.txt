@@ -105,7 +105,6 @@ set(GMXAPI_PYTHON_EXTENSION_SOURCES
     gmxapi/export_tprfile.cpp
     gmxapi/pycontext.cpp
     gmxapi/pysystem.cpp
-    gmxapi/tprfile.cpp
     )
 
 pybind11_add_module(_gmxapi

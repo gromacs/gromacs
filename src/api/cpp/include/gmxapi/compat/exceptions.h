@@ -38,7 +38,7 @@
  * Used internally for the gmxapi compatibility helpers that manage type
  * mappings of older GROMACS structures. The long-term disposition of this
  * code is uncertain, but the headers are not likely to be public. If they
- * do persist in some form, we can integrate the exception heirarchy into
+ * do persist in some form, we can integrate the exception hierarchy into
  * whatever module takes ownership of this code.
  *
  * Exceptions defined here should only be caught by code that understands the
@@ -46,7 +46,7 @@
  * exceptions outside of the installed object files should be treated as a bug.
  *
  * \author M. Eric Irrgang <ericirrgang@gmail.com>
- * \ingroup module_python
+ * \ingroup gmxapi_compat
  */
 
 #ifndef GMXAPICOMPAT_EXCEPTIONS_H

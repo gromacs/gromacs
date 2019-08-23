@@ -49,9 +49,11 @@
 
 #include "gmxapi/exceptions.h"
 
+#include "gmxapi/compat/exceptions.h"
+#include "gmxapi/compat/mdparams.h"
+#include "gmxapi/compat/tpr.h"
+
 #include "module.h"
-#include "mdparams.h"
-#include "tprfile.h"
 
 namespace gmxpy
 {
@@ -86,11 +88,11 @@ void detail::export_tprfile(pybind11::module &module)
                              // We can use templates and/or tag dispatch in a more complete
                              // future implementation.
                              const auto &paramType = gmxapicompat::mdParamToType(key);
-                             if (gmxapicompat::isFloat(paramType))
+                             if (paramType == gmxapicompat::GmxapiType::FLOAT64)
                              {
                                  dictionary[key.c_str()] = extractParam(self, key, double());
                              }
-                             else if (gmxapicompat::isInt(paramType))
+                             else if (paramType == gmxapicompat::GmxapiType::INT64)
                              {
                                  dictionary[key.c_str()] = extractParam(self, key, int64_t());
                              }
@@ -161,7 +163,7 @@ void detail::export_tprfile(pybind11::module &module)
     module.def("copy_tprfile",
                [](const gmxapicompat::TprReadHandle &input, std::string outFile)
                {
-                   return gmxpy::copy_tprfile(input, outFile);
+                   return gmxapicompat::copy_tprfile(input, outFile);
                },
                py::arg("source"),
                py::arg("destination"),
@@ -171,7 +173,7 @@ void detail::export_tprfile(pybind11::module &module)
     module.def("rewrite_tprfile",
                [](std::string input, std::string output, double end_time)
                {
-                   return gmxpy::rewrite_tprfile(input, output, end_time);
+                   return gmxapicompat::rewrite_tprfile(input, output, end_time);
                },
                py::arg("source"),
                py::arg("destination"),

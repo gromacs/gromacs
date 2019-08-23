@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,21 +32,21 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
 /*! \file
- * \brief Declare TPR file helpers.
+ * \brief Tools for converting simulation input data to and from TPR files.
  *
- * \ingroup module_python
  * \author M. Eric Irrgang <ericirrgang@gmail.com>
+ * \ingroup gmxapi_compat
  */
 
-#ifndef GMXPY_TPRFILE_H
-#define GMXPY_TPRFILE_H
+#ifndef GMXAPICOMPAT_TPR_H
+#define GMXAPICOMPAT_TPR_H
 
-#include <string>
+#include <memory>
 #include <vector>
 
-#include "compat_exceptions.h"
-#include "mdparams.h"
+#include "gmxapi/compat/mdparams.h"
 
 namespace gmxapicompat
 {
@@ -103,6 +103,10 @@ class TprReadHandle
     public:
         explicit TprReadHandle(std::shared_ptr<TprContents> tprFile);
         explicit TprReadHandle(TprContents &&tprFile);
+        TprReadHandle(const TprReadHandle &)                = default;
+        TprReadHandle &operator=(const TprReadHandle &)     = default;
+        TprReadHandle(TprReadHandle &&) noexcept            = default;
+        TprReadHandle &operator=(TprReadHandle &&) noexcept = default;
         ~TprReadHandle();
 
         /*!
@@ -204,11 +208,6 @@ class SimulationState
         std::shared_ptr<TprContents> tprFile_;
 };
 
-} // end namespace gmxapicompat
-
-namespace gmxpy
-{
-
 /*!
  * \brief Copy TPR file.
  *
@@ -228,6 +227,6 @@ bool copy_tprfile(const gmxapicompat::TprReadHandle &input, std::string outFile)
  */
 bool rewrite_tprfile(std::string inFile, std::string outFile, double endTime);
 
-}      // end namespace gmxpy
+}      // end namespace gmxapicompat
 
-#endif //GMXPY_TPRFILE_H
+#endif //GMXAPICOMPAT_TPR_H

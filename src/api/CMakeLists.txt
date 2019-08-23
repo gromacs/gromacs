@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2018, by the GROMACS development team, led by
+# Copyright (c) 2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,9 @@ set(GMXAPI_RELEASE ${GMXAPI_MAJOR}.${GMXAPI_MINOR}.${GMXAPI_PATCH})
 # absolute paths in the build tree. Path component before `gmxapi` can be
 # stripped as appropriate by consumers of this list.
 set(GMXAPI_PUBLIC_HEADERS
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/compat/exceptions.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/compat/mdparams.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/compat/tpr.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/context.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/exceptions.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/gmxapi.h
