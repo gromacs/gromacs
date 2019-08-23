@@ -347,19 +347,19 @@ static float clusterBoundingBoxDistance2(const BoundingBox &bb_i,
     float dl   = bb_i.lower.x - bb_j.upper.x;
     float dh   = bb_j.lower.x - bb_i.upper.x;
     float dm   = std::max(dl, dh);
-    float dm0  = std::max(dm, 0.0f);
+    float dm0  = std::max(dm, 0.0F);
     float d2   = dm0*dm0;
 
     dl         = bb_i.lower.y - bb_j.upper.y;
     dh         = bb_j.lower.y - bb_i.upper.y;
     dm         = std::max(dl, dh);
-    dm0        = std::max(dm, 0.0f);
+    dm0        = std::max(dm, 0.0F);
     d2        += dm0*dm0;
 
     dl         = bb_i.lower.z - bb_j.upper.z;
     dh         = bb_j.lower.z - bb_i.upper.z;
     dm         = std::max(dl, dh);
-    dm0        = std::max(dm, 0.0f);
+    dm0        = std::max(dm, 0.0F);
     d2        += dm0*dm0;
 
     return d2;
