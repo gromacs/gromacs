@@ -480,16 +480,10 @@ void LincsCuda::apply(const float3 *d_x,
     }
     config.stream           = stream_;
 
-    // This is to satisfy prepareGpuKernelArguments(...)
-    // It there a better way?
-    const float3 * gm_x  = d_x;
-    float3       * gm_xp = d_xp;
-    float3       * gm_v  = d_v;
-
     const auto     kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
                                                           &kernelParams_,
-                                                          &gm_x, &gm_xp,
-                                                          &gm_v, &invdt);
+                                                          &d_x, &d_xp,
+                                                          &d_v, &invdt);
 
     launchGpuKernel(kernelPtr, config, nullptr,
                     "lincs_kernel<updateVelocities, computeVirial>", kernelArgs);

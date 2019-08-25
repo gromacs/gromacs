@@ -142,18 +142,13 @@ void LeapFrogCuda::integrate(const float3 *d_x,
     config.stream           = stream_;
 
     auto          kernelPtr         = leapfrog_kernel;
-    const float3 *gm_x              = d_x;
-    float3       *gm_xp             = d_xp;
-    float3       *gm_v              = d_v;
-    const float3 *gm_f              = d_f;
-    const float  *gm_inverseMasses  = d_inverseMasses_;
 
     const auto    kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
                                                          &numAtoms_,
-                                                         &gm_x, &gm_xp,
-                                                         &gm_v,
-                                                         &gm_f,
-                                                         &gm_inverseMasses, &dt);
+                                                         &d_x, &d_xp,
+                                                         &d_v,
+                                                         &d_f,
+                                                         &d_inverseMasses_, &dt);
     launchGpuKernel(kernelPtr, config, nullptr, "leapfrog_kernel", kernelArgs);
 
     return;

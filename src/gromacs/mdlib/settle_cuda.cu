@@ -455,22 +455,16 @@ void SettleCuda::apply(const float3 *d_x,
     }
     config.stream           = stream_;
 
-    const int3    *gm_atomIds                  = d_atomIds_;
-    const float3  *gm_x                        = d_x;
-    float3        *gm_xp                       = d_xp;
-    float3        *gm_v                        = d_v;
-    float         *gm_virialScaled             = d_virialScaled_;
-
     const auto     kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
                                                           &numSettles_,
-                                                          &gm_atomIds,
+                                                          &d_atomIds_,
                                                           &settleParameters_,
-                                                          &gm_x,
-                                                          &gm_xp,
+                                                          &d_x,
+                                                          &d_xp,
                                                           &pbcAiuc_,
                                                           &invdt,
-                                                          &gm_v,
-                                                          &gm_virialScaled);
+                                                          &d_v,
+                                                          &d_virialScaled_);
 
     launchGpuKernel(kernelPtr, config, nullptr,
                     "settle_kernel<updateVelocities, computeVirial>", kernelArgs);
