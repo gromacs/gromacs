@@ -61,6 +61,7 @@ namespace gmx
 class GpuBonded;
 class ForceProviders;
 class StatePropagatorDataGpu;
+class PmePpCommGpu;
 }
 
 /* macros for the cginfo data in forcerec
@@ -117,6 +118,13 @@ struct gmx_ewald_tab_t;
 struct ewald_corr_thread_t;
 
 struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
+    // Declare an explicit constructor and destructor, so they can be
+    // implemented in a single source file, so that not every source
+    // file that includes this one needs to understand how to find the
+    // destructors of the objects pointed to by unique_ptr members.
+    t_forcerec();
+    ~t_forcerec();
+
     struct interaction_const_t *ic = nullptr;
 
     /* PBC stuff */
@@ -274,6 +282,9 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     // TODO: This is not supposed to be here. StatePropagatorDataGpu should be a part of
     //       general StatePropagatorData object that is passed around
     gmx::StatePropagatorDataGpu  *stateGpu = nullptr;
+
+    /* For PME-PP GPU communication */
+    std::unique_ptr<gmx::PmePpCommGpu> pmePpCommGpu;
 };
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have

@@ -53,6 +53,7 @@
 #include "gromacs/domdec/partition.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
@@ -186,9 +187,11 @@ static void pull_potential_wrapper(const t_commrec *cr,
     wallcycle_stop(wcycle, ewcPULLPOT);
 }
 
-static void pme_receive_force_ener(const t_commrec      *cr,
+static void pme_receive_force_ener(t_forcerec           *fr,
+                                   const t_commrec      *cr,
                                    gmx::ForceWithVirial *forceWithVirial,
                                    gmx_enerdata_t       *enerd,
+                                   bool                  useGpuPmePpComms,
                                    gmx_wallcycle_t       wcycle)
 {
     real   e_q, e_lj, dvdl_q, dvdl_lj;
@@ -203,8 +206,9 @@ static void pme_receive_force_ener(const t_commrec      *cr,
     wallcycle_start(wcycle, ewcPP_PMEWAITRECVF);
     dvdl_q  = 0;
     dvdl_lj = 0;
-    gmx_pme_receive_f(cr, forceWithVirial, &e_q, &e_lj, &dvdl_q, &dvdl_lj,
-                      &cycles_seppme);
+    gmx_pme_receive_f(fr->pmePpCommGpu.get(),
+                      cr, forceWithVirial, &e_q, &e_lj, &dvdl_q, &dvdl_lj,
+                      useGpuPmePpComms, &cycles_seppme);
     enerd->term[F_COUL_RECIP] += e_q;
     enerd->term[F_LJ_RECIP]   += e_lj;
     enerd->dvdl_lin[efptCOUL] += dvdl_q;
@@ -1008,7 +1012,13 @@ void do_force(FILE                                     *fplog,
         gmx_pme_send_coordinates(cr, box, as_rvec_array(x.unpaddedArrayRef().data()),
                                  lambda[efptCOUL], lambda[efptVDW],
                                  (stepWork.computeVirial || stepWork.computeEnergy),
-                                 step, wcycle);
+                                 step, simulationWork.useGpuPmePPCommunication, wcycle);
+
+        if (stepWork.doNeighborSearch && simulationWork.useGpuPmePPCommunication)
+        {
+            fr->pmePpCommGpu->receiveForceBufferAddress();
+        }
+
     }
 #endif /* GMX_MPI */
 
@@ -1748,7 +1758,8 @@ void do_force(FILE                                     *fplog,
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
          */
-        pme_receive_force_ener(cr, &forceOut.forceWithVirial(), enerd, wcycle);
+        pme_receive_force_ener(fr, cr, &forceOut.forceWithVirial(), enerd,
+                               simulationWork.useGpuPmePPCommunication, wcycle);
     }
 
     if (stepWork.computeForces)

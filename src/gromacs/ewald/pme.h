@@ -80,6 +80,7 @@ using PmeGpuProgramHandle = const PmeGpuProgram *;
 
 namespace gmx
 {
+class PmePpCommGpu;
 class ForceWithVirial;
 class MDLogger;
 enum class PinningPolicy : int;
@@ -228,7 +229,7 @@ void gmx_pme_send_parameters(const t_commrec *cr,
 void gmx_pme_send_coordinates(const t_commrec *cr, const matrix box, const rvec *x,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir,
-                              int64_t step, gmx_wallcycle *wcycle);
+                              int64_t step, bool useGpuPmePpComms, gmx_wallcycle *wcycle);
 
 /*! \brief Tell our PME-only node to finish */
 void gmx_pme_send_finish(const t_commrec *cr);
@@ -237,11 +238,12 @@ void gmx_pme_send_finish(const t_commrec *cr);
 void gmx_pme_send_resetcounters(const t_commrec *cr, int64_t step);
 
 /*! \brief PP nodes receive the long range forces from the PME nodes */
-void gmx_pme_receive_f(const t_commrec *cr,
+void gmx_pme_receive_f(gmx::PmePpCommGpu *pmePpCommGpu,
+                       const t_commrec *cr,
                        gmx::ForceWithVirial *forceWithVirial,
                        real *energy_q, real *energy_lj,
                        real *dvdlambda_q, real *dvdlambda_lj,
-                       float *pme_cycles);
+                       bool useGpuPmePpComms, float *pme_cycles);
 
 /*! \brief
  * This function updates the local atom data on GPU after DD (charges, coordinates, etc.).

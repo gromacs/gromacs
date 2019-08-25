@@ -54,6 +54,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -95,7 +96,7 @@ static void gmx_pme_send_coeffs_coords(const t_commrec *cr, unsigned int flags,
                                        const matrix box, const rvec gmx_unused *x,
                                        real lambda_q, real lambda_lj,
                                        int maxshift_x, int maxshift_y,
-                                       int64_t step)
+                                       int64_t step, bool useGpuPmePpComms)
 {
     gmx_domdec_t         *dd;
     gmx_pme_comm_n_box_t *cnb;
@@ -112,6 +113,11 @@ static void gmx_pme_send_coeffs_coords(const t_commrec *cr, unsigned int flags,
                 (flags & PP_PME_SQRTC6) ? " sqrtC6" : "",
                 (flags & PP_PME_SIGMA)  ? " sigma" : "",
                 (flags & PP_PME_COORD)  ? " coordinates" : "");
+    }
+
+    if (useGpuPmePpComms)
+    {
+        flags |= PP_PME_GPUCOMMS;
     }
 
     if (c_useDelayedWait)
@@ -243,13 +249,13 @@ void gmx_pme_send_parameters(const t_commrec *cr,
     gmx_pme_send_coeffs_coords(cr, flags,
                                chargeA, chargeB,
                                sqrt_c6A, sqrt_c6B, sigmaA, sigmaB,
-                               nullptr, nullptr, 0, 0, maxshift_x, maxshift_y, -1);
+                               nullptr, nullptr, 0, 0, maxshift_x, maxshift_y, -1, false);
 }
 
 void gmx_pme_send_coordinates(const t_commrec *cr, const matrix box, const rvec *x,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir,
-                              int64_t step, gmx_wallcycle *wcycle)
+                              int64_t step, bool useGpuPmePpComms, gmx_wallcycle *wcycle)
 {
     wallcycle_start(wcycle, ewcPP_PMESENDX);
 
@@ -259,7 +265,7 @@ void gmx_pme_send_coordinates(const t_commrec *cr, const matrix box, const rvec 
         flags |= PP_PME_ENER_VIR;
     }
     gmx_pme_send_coeffs_coords(cr, flags, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-                               box, x, lambda_q, lambda_lj, 0, 0, step);
+                               box, x, lambda_q, lambda_lj, 0, 0, step, useGpuPmePpComms);
 
     wallcycle_stop(wcycle, ewcPP_PMESENDX);
 }
@@ -268,7 +274,7 @@ void gmx_pme_send_finish(const t_commrec *cr)
 {
     unsigned int flags = PP_PME_FINISH;
 
-    gmx_pme_send_coeffs_coords(cr, flags, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, -1);
+    gmx_pme_send_coeffs_coords(cr, flags, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, -1, false);
 }
 
 void gmx_pme_send_switchgrid(const t_commrec *cr,
@@ -362,10 +368,37 @@ static void receive_virial_energy(const t_commrec *cr,
     }
 }
 
-void gmx_pme_receive_f(const t_commrec *cr,
+/*! \brief Recieve force data from PME ranks */
+static void recvFFromPme(gmx::PmePpCommGpu *pmePpCommGpu,
+                         void             * recvptr,
+                         int                n,
+                         const t_commrec   *cr,
+                         bool               useGpuPmePpComms)
+{
+    if (useGpuPmePpComms)
+    {
+        GMX_ASSERT(pmePpCommGpu != nullptr, "Need valid pmePpCommGpu");
+        //Receive directly using CUDA memory copy
+        pmePpCommGpu->receiveForceFromPmeCudaDirect(recvptr, n);
+    }
+    else
+    {
+        //Receive data using MPI
+#if GMX_MPI
+        MPI_Recv(recvptr, n*sizeof(rvec), MPI_BYTE,
+                 cr->dd->pme_nodeid, 0, cr->mpi_comm_mysim,
+                 MPI_STATUS_IGNORE);
+#endif
+    }
+}
+
+
+void gmx_pme_receive_f(gmx::PmePpCommGpu *pmePpCommGpu,
+                       const t_commrec *cr,
                        gmx::ForceWithVirial *forceWithVirial,
                        real *energy_q, real *energy_lj,
                        real *dvdlambda_q, real *dvdlambda_lj,
+                       bool useGpuPmePpComms,
                        float *pme_cycles)
 {
     if (c_useDelayedWait)
@@ -378,12 +411,8 @@ void gmx_pme_receive_f(const t_commrec *cr,
     std::vector<gmx::RVec> &buffer = cr->dd->pmeForceReceiveBuffer;
     buffer.resize(natoms);
 
-#if GMX_MPI
-    MPI_Recv(buffer.data(),
-             natoms*sizeof(rvec), MPI_BYTE,
-             cr->dd->pme_nodeid, 0, cr->mpi_comm_mysim,
-             MPI_STATUS_IGNORE);
-#endif
+    void *recvptr = reinterpret_cast<void*>(buffer.data());
+    recvFFromPme(pmePpCommGpu, recvptr, natoms, cr, useGpuPmePpComms);
 
     int nt = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, natoms);
 

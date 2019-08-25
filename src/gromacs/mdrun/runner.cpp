@@ -66,6 +66,7 @@
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_gpu_program.h"
+#include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/oenv.h"
@@ -210,7 +211,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger &md
     devFlags.enableGpuBufferOps    = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr) && (GMX_GPU == GMX_GPU_CUDA) && useGpuForNonbonded;
     devFlags.useGpuUpdateConstrain = (getenv("GMX_UPDATE_CONSTRAIN_GPU") != nullptr);
     devFlags.enableGpuHaloExchange = (getenv("GMX_GPU_DD_COMMS") != nullptr && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA));
-    devFlags.enableGpuPmePPComm    = (getenv("GMX_GPU_DD_COMMS") != nullptr && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA));
+    devFlags.enableGpuPmePPComm    = (getenv("GMX_GPU_PME_PP_COMMS") != nullptr && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA));
 #pragma GCC diagnostic pop
 
     if (devFlags.enableGpuBufferOps)
@@ -231,6 +232,12 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger &md
     {
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                 "NOTE: This run uses the 'GPU update/constraints' feature, enabled by the GMX_UPDATE_CONSTRAIN_GPU environment variable.");
+    }
+
+    if (devFlags.enableGpuPmePPComm)
+    {
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                "NOTE: This run uses the 'GPU PME-PP communications' feature, enabled by the GMX_GPU_PME_PP_COMMS environment variable.");
     }
 
     return devFlags;
@@ -1283,6 +1290,7 @@ int Mdrunner::mdrunner()
                       opt2fns("-tableb", filenames.size(), filenames.data()),
                       *hwinfo, nonbondedDeviceInfo,
                       useGpuForBonded,
+                      pmeRunMode == PmeRunMode::GPU && !thisRankHasDuty(cr, DUTY_PME),
                       pforce,
                       wcycle);
 

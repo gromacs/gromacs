@@ -95,22 +95,23 @@ void init_interaction_const_tables(FILE                   *fp,
 
 /*! \brief Initialize forcerec structure.
  *
- * \param[in]  fplog       File for printing
- * \param[in]  mdlog       File for printing
- * \param[out] fr          The forcerec
- * \param[in]  fcd         Force constant data
- * \param[in]  ir          Inputrec structure
- * \param[in]  mtop        Molecular topology
- * \param[in]  cr          Communication structures
- * \param[in]  box         Simulation box
- * \param[in]  tabfn       Table potential file for non-bonded interactions
- * \param[in]  tabpfn      Table potential file for pair interactions
- * \param[in]  tabbfnm     Table potential files for bonded interactions
- * \param[in]  hardwareInfo  Information about hardware
- * \param[in]  deviceInfo  Info about GPU device to use for short-ranged work
- * \param[in]  useGpuForBonded  Whether bonded interactions will run on a GPU
- * \param[in]  print_force Print forces for atoms with force >= print_force
- * \param[out] wcycle      Pointer to cycle counter object
+ * \param[in]  fplog              File for printing
+ * \param[in]  mdlog              File for printing
+ * \param[out] fr                 The forcerec
+ * \param[in]  fcd                Force constant data
+ * \param[in]  ir                 Inputrec structure
+ * \param[in]  mtop               Molecular topology
+ * \param[in]  cr                 Communication structures
+ * \param[in]  box                Simulation box
+ * \param[in]  tabfn              Table potential file for non-bonded interactions
+ * \param[in]  tabpfn             Table potential file for pair interactions
+ * \param[in]  tabbfnm            Table potential files for bonded interactions
+ * \param[in]  hardwareInfo       Information about hardware
+ * \param[in]  deviceInfo         Info about GPU device to use for short-ranged work
+ * \param[in]  useGpuForBonded    Whether bonded interactions will run on a GPU
+ * \param[in]  pmeOnlyRankUsesGpu Whether there is a PME task on a GPU on a PME-only rank
+ * \param[in]  print_force        Print forces for atoms with force >= print_force
+ * \param[out] wcycle             Pointer to cycle counter object
  */
 void init_forcerec(FILE                             *fplog,
                    const gmx::MDLogger              &mdlog,
@@ -126,6 +127,7 @@ void init_forcerec(FILE                             *fplog,
                    const gmx_hw_info_t              &hardwareInfo,
                    const gmx_device_info_t          *deviceInfo,
                    bool                              useGpuForBonded,
+                   bool                              pmeOnlyRankUsesGpu,
                    real                              print_force,
                    gmx_wallcycle                    *wcycle);
 

@@ -75,6 +75,7 @@ enum {
 #define PP_PME_FINISH         (1<<10)
 #define PP_PME_SWITCHGRID     (1<<11)
 #define PP_PME_RESETCOUNTERS  (1<<12)
+#define PP_PME_GPUCOMMS       (1<<13)
 //@}
 
 /*! \brief Return values for gmx_pme_recv_q_x */

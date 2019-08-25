@@ -53,6 +53,7 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/ewald.h"
 #include "gromacs/ewald/ewald_utils.h"
+#include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
@@ -96,6 +97,10 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
+
+/*! \brief environment variable to enable GPU P2P communication */
+static const bool c_enableGpuPmePpComms = (getenv("GMX_GPU_PME_PP_COMMS") != nullptr)
+    && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA);
 
 static real *mk_nbfp(const gmx_ffparams_t *idef, gmx_bool bBHAM)
 {
@@ -971,6 +976,7 @@ void init_forcerec(FILE                             *fp,
                    const gmx_hw_info_t              &hardwareInfo,
                    const gmx_device_info_t          *deviceInfo,
                    const bool                        useGpuForBonded,
+                   const bool                        pmeOnlyRankUsesGpu,
                    real                              print_force,
                    gmx_wallcycle                    *wcycle)
 {
@@ -1485,7 +1491,17 @@ void init_forcerec(FILE                             *fp,
          */
         fprintf(fp, "\n");
     }
+
+    if (pmeOnlyRankUsesGpu && c_enableGpuPmePpComms)
+    {
+        fr->pmePpCommGpu = std::make_unique<gmx::PmePpCommGpu>(cr->mpi_comm_mysim,
+                                                               cr->dd->pme_nodeid);
+    }
 }
+
+t_forcerec::t_forcerec() = default;
+
+t_forcerec::~t_forcerec() = default;
 
 /* Frees GPU memory and sets a tMPI node barrier.
  *

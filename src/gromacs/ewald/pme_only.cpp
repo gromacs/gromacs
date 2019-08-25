@@ -73,6 +73,7 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme_force_sender_gpu.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/network.h"
@@ -97,14 +98,9 @@
 #include "pme_internal.h"
 #include "pme_pp_communication.h"
 
-//! Contains information about the PP ranks that partner this PME rank.
-struct PpRanks
-{
-    //! The MPI rank ID of this partner PP rank.
-    int rankId;
-    //! The number of atoms to communicate with this partner PP rank.
-    int numAtoms;
-};
+/*! \brief environment variable to enable GPU P2P communication */
+static const bool c_enableGpuPmePpComms = (getenv("GMX_GPU_PME_PP_COMMS") != nullptr)
+    && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA);
 
 /*! \brief Master PP-PME communication data structure */
 struct gmx_pme_pp {
@@ -127,6 +123,12 @@ struct gmx_pme_pp {
     std::vector<MPI_Request> req;
     std::vector<MPI_Status>  stat;
     //@}
+
+    /*! \brief object for sending PME force using communications operating on GPU memory space */
+    std::unique_ptr<gmx::PmeForceSenderGpu> pmeForceSenderGpu;
+
+    /*! \brief whether GPU direct communications are active for PME-PP transfers */
+    bool useGpuDirectComm = false;
 };
 
 /*! \brief Initialize the PME-only side of the PME <-> PP communication */
@@ -274,6 +276,11 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
                     (cnb.flags & PP_PME_SWITCHGRID)    ? " switch grid" : "",
                     (cnb.flags & PP_PME_RESETCOUNTERS) ? " reset counters" : "");
         }
+
+        pme_pp->useGpuDirectComm = ((cnb.flags & PP_PME_GPUCOMMS) != 0);
+        GMX_ASSERT(!pme_pp->useGpuDirectComm || (pme_pp->pmeForceSenderGpu != nullptr),
+                   "The use of GPU direct communication for PME-PP is enabled, "
+                   "but the PME GPU force reciever object does not exist" );
 
         if (cnb.flags & PP_PME_FINISH)
         {
@@ -462,8 +469,33 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
     return status;
 }
 
+/*! \brief Send force data to PP ranks */
+static void sendFToPP(void* sendbuf, PpRanks receiver, gmx_pme_pp *pme_pp, int *messages)
+{
+
+    if (pme_pp->useGpuDirectComm)
+    {
+        GMX_ASSERT((pme_pp->pmeForceSenderGpu != nullptr),
+                   "The use of GPU direct communication for PME-PP is enabled, "
+                   "but the PME GPU force reciever object does not exist" );
+
+        pme_pp->pmeForceSenderGpu->sendFToPpCudaDirect(receiver.rankId);
+    }
+    else
+    {
+#if GMX_MPI
+        //Send using MPI
+        MPI_Isend(sendbuf, receiver.numAtoms*sizeof(rvec), MPI_BYTE, receiver.rankId,
+                  0, pme_pp->mpi_comm_mysim, &pme_pp->req[*messages]);
+        *messages = *messages+1;
+#endif
+    }
+
+}
+
 /*! \brief Send the PME mesh force, virial and energy to the PP-only ranks. */
-static void gmx_pme_send_force_vir_ener(gmx_pme_pp *pme_pp,
+static void gmx_pme_send_force_vir_ener(const gmx_pme_t &pme,
+                                        gmx_pme_pp *pme_pp,
                                         const PmeOutput &output,
                                         real dvdlambda_q, real dvdlambda_lj,
                                         float cycles)
@@ -480,13 +512,14 @@ static void gmx_pme_send_force_vir_ener(gmx_pme_pp *pme_pp,
     {
         ind_start = ind_end;
         ind_end   = ind_start + receiver.numAtoms;
-        if (MPI_Isend(const_cast<void *>(static_cast<const void *>(output.forces_[ind_start])),
-                      (ind_end-ind_start)*sizeof(rvec), MPI_BYTE,
-                      receiver.rankId, 0,
-                      pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]) != 0)
+        void *sendbuf = const_cast<void *>(static_cast<const void *>(output.forces_[ind_start]));
+        if (pme_pp->useGpuDirectComm)
         {
-            gmx_comm("MPI_Isend failed in do_pmeonly");
+            //Data will be transferred directly from GPU.
+            rvec* d_f = reinterpret_cast<rvec*> (pme_gpu_get_device_f(&pme));
+            sendbuf = reinterpret_cast<void*> (&d_f[ind_start]);
         }
+        sendFToPP(sendbuf, receiver, pme_pp, &messages);
     }
 
     /* send virial and energy to our last PP node */
@@ -554,6 +587,13 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     {
         changePinningPolicy(&pme_pp->chargeA, pme_get_pinning_policy());
         changePinningPolicy(&pme_pp->x, pme_get_pinning_policy());
+        if (c_enableGpuPmePpComms)
+        {
+            pme_pp->pmeForceSenderGpu =
+                std::make_unique<gmx::PmeForceSenderGpu>(pme_gpu_get_device_stream(pme),
+                                                         pme_pp->mpi_comm_mysim,
+                                                         pme_pp->ppRanks);
+        }
     }
 
     std::unique_ptr<gmx::StatePropagatorDataGpu> stateGpu;
@@ -603,6 +643,16 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
                     stateGpu->reinit(natoms, natoms);
                     pme_gpu_set_device_x(pme, stateGpu->getCoordinates());
                 }
+
+                if (pme_pp->useGpuDirectComm)
+                {
+                    GMX_ASSERT(runMode == PmeRunMode::GPU, "GPU Direct PME-PP communication has been enabled, "
+                               "but PME run mode is not PmeRunMode::GPU\n");
+
+                    // This rank will have data pulled from PP rank, so needs to send the remote receive address.
+                    rvec* d_f = reinterpret_cast<rvec*> (pme_gpu_get_device_f(pme));
+                    pme_pp->pmeForceSenderGpu->sendForceBufferAddressToPpRanks(d_f);
+                }
             }
 
             if (ret == pmerecvqxRESETCOUNTERS)
@@ -639,7 +689,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         if (useGpuForPme)
         {
             const bool boxChanged              = false;
-            const bool useGpuPmeForceReduction = false;
+            const bool useGpuPmeForceReduction = pme_pp->useGpuDirectComm;
             //TODO this should be set properly by gmx_pme_recv_coeffs_coords,
             // or maybe use inputrecDynamicBox(ir), at the very least - change this when this codepath is tested!
             pme_gpu_prepare_computation(pme, boxChanged, box, wcycle, pmeFlags, useGpuPmeForceReduction);
@@ -670,8 +720,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         }
 
         cycles = wallcycle_stop(wcycle, ewcPMEMESH);
-
-        gmx_pme_send_force_vir_ener(pme_pp.get(), output,
+        gmx_pme_send_force_vir_ener(*pme, pme_pp.get(), output,
                                     dvdlambda_q, dvdlambda_lj, cycles);
 
         count++;
