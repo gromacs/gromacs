@@ -8,7 +8,7 @@
 ; e.g.: -I/home/joe/doe -I/home/mary/roe
 include                  = -I/home/me/stuff
 ; e.g.: -DPOSRES -DFLEXIBLE (note these variable names are case sensitive)
-define                   = 
+define                   = -DBOOLVAR -DVAR=VALUE
 
 ; RUN CONTROL PARAMETERS
 integrator               = steep

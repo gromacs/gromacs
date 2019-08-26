@@ -85,11 +85,8 @@ read_inpfile(gmx::TextInputStream *stream, const char *fn,
         auto tokens = gmx::splitAndTrimDelimitedString(line, '=');
         if (tokens.size() < 2)
         {
-            // TODO this seems like it silently ignores the user accidentally deleting an equals sign...
-            if (debug)
-            {
-                fprintf(debug, "No = on line %d in file %s, ignored\n", indexOfLineReadFromFile, fn);
-            }
+            auto message = gmx::formatString("No '=' to separate .mdp parameter key and value was found on line:\n'%s'", line.c_str());
+            warning_error(wi, message);
             continue;
         }
         if (tokens.size() > 2)
@@ -104,22 +101,25 @@ read_inpfile(gmx::TextInputStream *stream, const char *fn,
             auto firstEqualsPos = line.find('=');
             tokens.emplace_back(gmx::stripString(line.substr(firstEqualsPos + 1)));
         }
+        GMX_RELEASE_ASSERT(tokens.size() == 2, "Must have tokens for key and value");
+        if (tokens[0].empty() && tokens[1].empty())
+        {
+            auto message = gmx::formatString("No .mdp parameter name or value was found on line:\n'%s'", line.c_str());
+            warning_error(wi, message);
+            continue;
+        }
         if (tokens[0].empty())
         {
-            // TODO ignoring such lines does not seem like good behaviour
-            if (debug)
-            {
-                fprintf(debug, "Empty left hand side on line %d in file %s, ignored\n", indexOfLineReadFromFile, fn);
-            }
+            auto message = gmx::formatString("No .mdp parameter name was found on the left-hand side of '=' on line:\n'%s'", line.c_str());
+            warning_error(wi, message);
             continue;
         }
         if (tokens[1].empty())
         {
-            // TODO ignoring such lines does not seem like good behaviour
-            if (debug)
-            {
-                fprintf(debug, "Empty right hand side on line %d in file %s, ignored\n", indexOfLineReadFromFile, fn);
-            }
+            // Users are probably using this for lines like
+            //   tcoupl = ;v-rescale
+            //   comm-grps =
+            // so we accept their intent to use the default behavior.
             continue;
         }
 
@@ -136,7 +136,7 @@ read_inpfile(gmx::TextInputStream *stream, const char *fn,
         {
             auto message = gmx::formatString("Parameter \"%s\" doubly defined\n",
                                              tokens[0].c_str());
-            warning_error(wi, message.c_str());
+            warning_error(wi, message);
         }
     }
     /* This preserves the behaviour of the old code, which issues some

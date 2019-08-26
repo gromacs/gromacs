@@ -123,11 +123,13 @@ TEST_F(GetIrTest, HandlesDifferentKindsOfMdpLines)
     const char *inputMdpFile[] = {
         "; File to run my simulation",
         "title = simulation",
+        "define = -DBOOLVAR -DVAR=VALUE",
         ";",
         "xtc_grps = System ; was Protein",
         "include = -I/home/me/stuff",
         "",
         "tau-t = 0.1 0.3",
+        "ref-t = ;290 290",
         "tinit = 0.3",
         "init_step = 0",
         "nstcomm = 100",
@@ -145,19 +147,32 @@ TEST_F(GetIrTest, HandlesOnlyCutoffScheme)
     runTest(inputMdpFile);
 }
 
-// TODO Stop accepting any of these
-TEST_F(GetIrTest, UserErrorsSilentlyTolerated)
+TEST_F(GetIrTest, RejectsNonCommentLineWithNoEquals)
 {
-    const char *inputMdpFile[] = {
-        "title simulation",
-        "xtc_grps = ",
-        "= -I/home/me/stuff",
-        "="
-    };
-    runTest(joinStrings(inputMdpFile, "\n"));
+    const char *inputMdpFile = "title simulation";
+    EXPECT_DEATH_IF_SUPPORTED(runTest(inputMdpFile), "No '=' to separate");
 }
 
-TEST_F(GetIrTest, DefineHandlesAssignmentOnRhs)
+TEST_F(GetIrTest, AcceptsKeyWithoutValue)
+{
+    // Users are probably using lines like this
+    const char *inputMdpFile = "xtc_grps = ";
+    runTest(inputMdpFile);
+}
+
+TEST_F(GetIrTest, RejectsValueWithoutKey)
+{
+    const char *inputMdpFile = "= -I/home/me/stuff";
+    EXPECT_DEATH_IF_SUPPORTED(runTest(inputMdpFile), "No .mdp parameter name was found");
+}
+
+TEST_F(GetIrTest, RejectsEmptyKeyAndEmptyValue)
+{
+    const char *inputMdpFile = " = ";
+    EXPECT_DEATH_IF_SUPPORTED(runTest(inputMdpFile), "No .mdp parameter name or value was found");
+}
+
+TEST_F(GetIrTest, AcceptsDefineParametersWithValuesIncludingAssignment)
 {
     const char *inputMdpFile[] = {
         "define = -DBOOL -DVAR=VALUE",
@@ -165,7 +180,7 @@ TEST_F(GetIrTest, DefineHandlesAssignmentOnRhs)
     runTest(joinStrings(inputMdpFile, "\n"));
 }
 
-TEST_F(GetIrTest, EmptyInputWorks)
+TEST_F(GetIrTest, AcceptsEmptyLines)
 {
     const char *inputMdpFile = "";
     runTest(inputMdpFile);
@@ -173,43 +188,43 @@ TEST_F(GetIrTest, EmptyInputWorks)
 
 // These tests observe how the electric-field keys behave, since they
 // are currently the only ones using the new Options-style handling.
-TEST_F(GetIrTest, ProducesOutputFromElectricField)
+TEST_F(GetIrTest, AcceptsElectricField)
 {
     const char *inputMdpFile = "electric-field-x = 1.2 0 0 0";
     runTest(inputMdpFile);
 }
 
-TEST_F(GetIrTest, ProducesOutputFromElectricFieldPulsed)
+TEST_F(GetIrTest, AcceptsElectricFieldPulsed)
 {
     const char *inputMdpFile = "electric-field-y = 3.7 2.0 6.5 1.0";
     runTest(inputMdpFile);
 }
 
-TEST_F(GetIrTest, ProducesOutputFromElectricFieldOscillating)
+TEST_F(GetIrTest, AcceptsElectricFieldOscillating)
 {
     const char *inputMdpFile = "electric-field-z = 3.7 7.5 0 0";
     runTest(inputMdpFile);
 }
 
-TEST_F(GetIrTest, TerminatesOnDuplicateOldAndNewKeys)
+TEST_F(GetIrTest, RejectsDuplicateOldAndNewKeys)
 {
     const char *inputMdpFile[] = {"verlet-buffer-drift = 1.3", "verlet-buffer-tolerance = 2.7"};
     EXPECT_DEATH_IF_SUPPORTED(runTest(joinStrings(inputMdpFile, "\n")), "A parameter is present with both");
 }
 
-TEST_F(GetIrTest, ImplicitSolventNoWorks)
+TEST_F(GetIrTest, AcceptsImplicitSolventNo)
 {
     const char *inputMdpFile = "implicit-solvent = no";
     runTest(inputMdpFile);
 }
 
-TEST_F(GetIrTest, ImplicitSolventYesWorks)
+TEST_F(GetIrTest, RejectsImplicitSolventYes)
 {
     const char *inputMdpFile = "implicit-solvent = yes";
     EXPECT_DEATH_IF_SUPPORTED(runTest(inputMdpFile), "Invalid enum");
 }
 
-TEST_F(GetIrTest, HandlesMimic)
+TEST_F(GetIrTest, AcceptsMimic)
 {
     const char *inputMdpFile[] = {"integrator = mimic", "QMMM-grps = QMatoms"};
     runTest(joinStrings(inputMdpFile, "\n"));
