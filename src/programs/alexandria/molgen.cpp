@@ -565,7 +565,10 @@ void MolGen::Read(FILE            *fp,
             {
                 int               dest = (ntopol % cr_->nnodes);
                 alexandria::MyMol mymol;
-                printf("%s\n", mpi->getMolname().c_str());
+                if (fp)
+                {
+                    fprintf(fp, "%s\n", mpi->getMolname().c_str());
+                }
                 mymol.molProp()->Merge(mpi);
                 mymol.setInputrec(inputrec_);
                 imm = mymol.GenerateTopology(atomprop_,

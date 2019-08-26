@@ -389,8 +389,9 @@ void OptZeta::calcDeviation()
                 increaseEnergy(ermsCHARGE, gmx::square(qtot - mymol.molProp()->getCharge()));
             }
             mymol.Qgresp_.calcPot();
+            real cosangle = 0;
             increaseEnergy(ermsESP,
-                           convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e));
+                           convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms, &cosangle), eg2cHartree_e));
             if (bDipole_)
             {
                 mymol.CalcDipole();

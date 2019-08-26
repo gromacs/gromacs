@@ -1351,13 +1351,14 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             real   rrms      = 0;
             real   wtot      = 0;
             int    cur       = 0;
+            real   cosangle  = 0;
             EspRms_          = 0;
             iter             = 0;
 
             initQgresp(pd, lot, watoms, maxESP);
             Qgresp_.optimizeCharges();
             Qgresp_.calcPot();
-            EspRms_ = chi2[cur] = Qgresp_.getRms(&wtot, &rrms);
+            EspRms_ = chi2[cur] = Qgresp_.getRms(&wtot, &rrms, &cosangle);
             if (debug)
             {
                 fprintf(debug, "RESP: RMS %g\n", chi2[cur]);
@@ -1376,7 +1377,8 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 }
                 Qgresp_.optimizeCharges();
                 Qgresp_.calcPot();
-                EspRms_ = chi2[cur] = Qgresp_.getRms(&wtot, &rrms);
+                real cosangle = 0;
+                EspRms_ = chi2[cur] = Qgresp_.getRms(&wtot, &rrms, &cosangle);
                 if (debug)
                 {
                     fprintf(debug, "RESP: RMS %g\n", chi2[cur]);

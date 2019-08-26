@@ -166,7 +166,7 @@ class QgenResp
 
         void calcRms();
 
-        real getRms(real *wtot, real *rrms);
+        real getRms(real *wtot, real *rrms, real *cosangle);
 
         void plotLsq(const gmx_output_env_t *oenv,
                      const char             *ESPcorr);
@@ -234,7 +234,8 @@ class QgenResp
         double                    watoms_;
         int                       qtot_;
         int                       qshell_;
-        double                    rms_, rrms_, penalty_, pfac_, wtot_;
+        double                    rms_, rrms_, cosangle_;
+        double                    penalty_, pfac_, wtot_;
         dvec                      origin_, space_;
         bool                      bFitZeta_;
         bool                      bRandZeta_, bRandQ_;

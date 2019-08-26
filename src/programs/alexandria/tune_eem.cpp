@@ -175,7 +175,16 @@ class OptACM : public MolGen
 
         double calcPenalty(AtomIndexIterator ai);
 
-        void optRun(FILE                   *fp,
+        /*! \brief
+         * Do the actual optimization.
+         * \param[in] fp     FILE pointer for logging
+         * \param[in] fplog  FILE pointer for logging
+         * \param[in] oenv   Output environment for managing xvg files etc.
+         * \param[in] xvgconv Output file monitoring parameters
+         * \param[in] xvgepot Output file monitoring penalty function
+         * \return true if better parameters were found.
+         */
+        bool optRun(FILE                   *fp,
                     FILE                   *fplog,
                     int                     nrun,
                     const gmx_output_env_t *oenv,
@@ -346,8 +355,9 @@ void OptACM::calcDeviation()
             }
             if (weight(ermsESP))
             {
-                real  rrms   = 0;
-                real  wtot   = 0;
+                real rrms     = 0;
+                real wtot     = 0;
+                real cosangle = 0;
                 if (nullptr != mymol.shellfc_)
                 {
                     mymol.Qgresp_.updateAtomCoords(mymol.x());
@@ -358,7 +368,7 @@ void OptACM::calcDeviation()
                 }
                 mymol.Qgresp_.updateAtomCharges(&mymol.topology_->atoms);
                 mymol.Qgresp_.calcPot();
-                increaseEnergy(ermsESP, convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e));
+                increaseEnergy(ermsESP, convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms, &cosangle), eg2cHartree_e));
             }
             if (weight(ermsMU))
             {
@@ -701,7 +711,7 @@ double OptACM::objFunction(const double v[])
     return energy(ermsTOT);
 }
 
-void OptACM::optRun(FILE                   *fp,
+bool OptACM::optRun(FILE                   *fp,
                     FILE                   *fplog,
                     int                     nrun,
                     const gmx_output_env_t *oenv,
@@ -710,7 +720,7 @@ void OptACM::optRun(FILE                   *fp,
 {
     std::vector<double> optb, opts, optm;
     double              chi2, chi2_min;
-    gmx_bool            bMinimum = false;
+    bool                bMinimum = false;
 
     auto                func = [&] (const double v[]) {
             return objFunction(v);
@@ -784,6 +794,7 @@ void OptACM::optRun(FILE                   *fp,
         printEnergies(fp);
         printEnergies(fplog);
     }
+    return bMinimum;
 }
 }
 
@@ -866,6 +877,7 @@ int alex_tune_eem(int argc, char *argv[])
     gmx_bool                    bPrintTable   = false;
     gmx_bool                    bZero         = true;
     gmx_bool                    bOptimize     = true;
+    gmx_bool                    bForceOutput  = true;
 
     t_pargs                     pa[]         = {
         { "-reinit", FALSE, etINT, {&reinit},
@@ -899,7 +911,10 @@ int alex_tune_eem(int argc, char *argv[])
         { "-efield",  FALSE, etREAL, {&efield},
           "The magnitude of the external electeric field to calculate polarizability tensor." },
         { "-optimize",     FALSE, etBOOL, {&bOptimize},
-          "Do parameter optimization when true, or a single calculation otherwise." }
+          "Do parameter optimization when true, or a single calculation otherwise." },
+        { "-force_output", FALSE, etBOOL, {&bForceOutput},
+          "Write output even if no new minimum is found" }
+          
     };
 
     FILE                       *fp;
@@ -971,6 +986,7 @@ int alex_tune_eem(int argc, char *argv[])
         opt.initQgacm();
     }
 
+    bool bMinimum = false;
     if (bOptimize)
     {
         if (MASTER(opt.commrec()))
@@ -978,67 +994,73 @@ int alex_tune_eem(int argc, char *argv[])
             opt.InitOpt(factor);
         }
         
-        opt.optRun(MASTER(opt.commrec()) ? stderr : nullptr,
-                   fp,
-                   nrun,
-                   oenv,
-                   opt2fn("-conv", NFILE, fnm),
-                   opt2fn("-epot", NFILE, fnm));                   
+        bMinimum = opt.optRun(MASTER(opt.commrec()) ? stderr : nullptr,
+                              fp,
+                              nrun,
+                              oenv,
+                              opt2fn("-conv", NFILE, fnm),
+                              opt2fn("-epot", NFILE, fnm));                   
     }
 
     if (MASTER(opt.commrec()))
     {
-        auto iModel = opt.poldata()->getEqdModel();
-        gmx_bool bPolar = (iModel == eqdAXpp  ||
-                           iModel == eqdAXpg  ||
-                           iModel == eqdAXps);
-
-        auto *ic = opt.indexCount();
-        print_electric_props(fp,
-                             opt.mymols(),
-                             opt.poldata(),
-                             opt.mdlog(),
-                             opt.atomprop(),
-                             eqgACM,
-                             opt.watoms(),
-                             opt.hfac(),
-                             opt.lot(),
-                             tabfn,
-                             opt.hwinfo(),
-                             500, //opt.qcycle(),
-                             opt.maxPot(),
-                             1e-6, //opt.qtol(),                          
-                             opt2fn("-qhisto",    NFILE, fnm),
-                             opt2fn("-dipcorr",   NFILE, fnm),
-                             opt2fn("-mucorr",    NFILE, fnm),
-                             opt2fn("-thetacorr", NFILE, fnm),
-                             opt2fn("-espcorr",   NFILE, fnm),
-                             opt2fn("-alphacorr", NFILE, fnm),
-                             opt2fn("-isopol",    NFILE, fnm),
-                             opt2fn("-anisopol",  NFILE, fnm),
-                             opt2fn("-qcorr",     NFILE, fnm),
-                             dip_toler,
-                             quad_toler,
-                             alpha_toler,
-                             isopol_toler,
-                             oenv,
-                             bPolar,
-                             opt.dipole(),
-                             opt.quadrupole(),
-                             opt.fullTensor(),
-                             ic,
-                             opt.commrec(),
-                             efield);
-
-        writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), bcompress);
-        gmx_ffclose(fp);
-        if (bPrintTable)
+        if (bMinimum || bForceOutput)
         {
-            FILE        *tp;
-            tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
-            alexandria_poldata_eemprops_table(tp, opt.poldata());
-            gmx_ffclose(tp);
+            auto iModel = opt.poldata()->getEqdModel();
+            gmx_bool bPolar = (iModel == eqdAXpp  ||
+                               iModel == eqdAXpg  ||
+                               iModel == eqdAXps);
+            
+            auto *ic = opt.indexCount();
+            print_electric_props(fp,
+                                 opt.mymols(),
+                                 opt.poldata(),
+                                 opt.mdlog(),
+                                 opt.atomprop(),
+                                 eqgACM,
+                                 opt.watoms(),
+                                 opt.hfac(),
+                                 opt.lot(),
+                                 tabfn,
+                                 opt.hwinfo(),
+                                 500, //opt.qcycle(),
+                                 opt.maxPot(),
+                                 1e-6, //opt.qtol(),                          
+                                 opt2fn("-qhisto",    NFILE, fnm),
+                                 opt2fn("-dipcorr",   NFILE, fnm),
+                                 opt2fn("-mucorr",    NFILE, fnm),
+                                 opt2fn("-thetacorr", NFILE, fnm),
+                                 opt2fn("-espcorr",   NFILE, fnm),
+                                 opt2fn("-alphacorr", NFILE, fnm),
+                                 opt2fn("-isopol",    NFILE, fnm),
+                                 opt2fn("-anisopol",  NFILE, fnm),
+                                 opt2fn("-qcorr",     NFILE, fnm),
+                                 dip_toler,
+                                 quad_toler,
+                                 alpha_toler,
+                                 isopol_toler,
+                                 oenv,
+                                 bPolar,
+                                 opt.dipole(),
+                                 opt.quadrupole(),
+                                 opt.fullTensor(),
+                                 ic,
+                                 opt.commrec(),
+                                 efield);
+            writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), bcompress);
+            if (bPrintTable)
+            {
+                FILE        *tp;
+                tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
+                alexandria_poldata_eemprops_table(tp, opt.poldata());
+                gmx_ffclose(tp);
+            }
         }
+        else if (!bMinimum)
+        {
+            printf("No improved parameters found. Please try again with more iterations.\n");
+        }
+        gmx_ffclose(fp);
     }
     return 0;
 }
