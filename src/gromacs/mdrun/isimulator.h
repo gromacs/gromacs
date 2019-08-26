@@ -73,6 +73,7 @@ class BoxDeformation;
 class Constraints;
 class PpForceWorkload;
 class IMDOutputProvider;
+struct MdModulesNotifier;
 class ImdSession;
 class MDLogger;
 class MDAtoms;
@@ -113,6 +114,7 @@ class ISimulator
             gmx_enfrot                         *enforcedRotation,
             BoxDeformation                     *deform,
             IMDOutputProvider                  *outputProvider,
+            const MdModulesNotifier            &mdModulesNotifier,
             t_inputrec                         *inputrec,
             ImdSession                         *imdSession,
             pull_t                             *pull_work,
@@ -147,6 +149,7 @@ class ISimulator
             enforcedRotation(enforcedRotation),
             deform(deform),
             outputProvider(outputProvider),
+            mdModulesNotifier(mdModulesNotifier),
             inputrec(inputrec),
             imdSession(imdSession),
             pull_work(pull_work),
@@ -198,6 +201,8 @@ class ISimulator
         BoxDeformation                     *deform;
         //! Handles writing output files.
         IMDOutputProvider                  *outputProvider;
+        //! Handles notifications to MdModules for checkpoint writing
+        const MdModulesNotifier            &mdModulesNotifier;
         //! Contains user input mdp options.
         t_inputrec                         *inputrec;
         //! The Interactive Molecular Dynamics session.

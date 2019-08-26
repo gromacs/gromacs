@@ -38,7 +38,7 @@
  *
  * \author Christian Blau <blau@kth.se>
  * \inlibraryapi
- * \ingroup module_mdrunutility
+ * \ingroup module_utility
  */
 
 #ifndef GMX_MDRUNUTILITY_MDMODULENOTIFICATION_H
@@ -46,8 +46,6 @@
 
 #include <functional>
 #include <vector>
-
-#include "gromacs/utility/basedefinitions.h"
 
 struct t_commrec;
 
@@ -198,6 +196,9 @@ class KeyValueTreeObject;
 class KeyValueTreeObjectBuilder;
 class LocalAtomSetManager;
 class IndexGroupsAndNames;
+struct MdModulesCheckpointReadingDataOnMaster;
+struct MdModulesCheckpointReadingBroadcast;
+struct MdModulesWriteCheckpointData;
 
 struct MdModulesNotifier
 {
@@ -207,7 +208,10 @@ struct MdModulesNotifier
         IndexGroupsAndNames,
         KeyValueTreeObjectBuilder,
         const KeyValueTreeObject &,
-        LocalAtomSetManager *>::type notifier_;
+        LocalAtomSetManager *,
+        MdModulesCheckpointReadingDataOnMaster,
+        MdModulesCheckpointReadingBroadcast,
+        MdModulesWriteCheckpointData>::type notifier_;
 };
 
 } // namespace gmx

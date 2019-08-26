@@ -46,11 +46,11 @@
 #include <memory>
 
 #include "gromacs/domdec/localatomsetmanager.h"
-#include "gromacs/mdrunutility/mdmodulenotification.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/mdmodulenotification.h"
 
 #include "densityfittingforceprovider.h"
 #include "densityfittingoptions.h"

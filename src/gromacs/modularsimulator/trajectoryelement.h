@@ -58,6 +58,7 @@ struct t_inputrec;
 namespace gmx
 {
 class IMDOutputProvider;
+struct MdModulesNotifier;
 struct MdrunOptions;
 enum class StartingBehavior;
 
@@ -149,6 +150,7 @@ class TrajectoryElement :
             const MdrunOptions &mdrunOptions,
             const t_commrec *cr,
             IMDOutputProvider *outputProvider,
+            const MdModulesNotifier &mdModulesNotifier,
             const t_inputrec *inputrec, gmx_mtop_t *top_global,
             const gmx_output_env_t *oenv, gmx_wallcycle *wcycle,
             StartingBehavior startingBehavior);

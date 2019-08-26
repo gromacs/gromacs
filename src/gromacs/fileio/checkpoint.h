@@ -53,6 +53,10 @@ struct t_fileio;
 struct t_inputrec;
 class t_state;
 struct t_trxframe;
+namespace gmx
+{
+struct MdModulesNotifier;
+}
 
 /* the name of the environment variable to disable fsync failure checks with */
 #define GMX_IGNORE_FSYNC_FAILURE_ENV "GMX_IGNORE_FSYNC_FAILURE"
@@ -114,7 +118,8 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                       int eIntegrator, int simulation_part,
                       gmx_bool bExpanded, int elamstats,
                       int64_t step, double t,
-                      t_state *state, ObservablesHistory *observablesHistory);
+                      t_state *state, ObservablesHistory *observablesHistory,
+                      const gmx::MdModulesNotifier &notifier);
 
 /* Loads a checkpoint from fn for run continuation.
  * Generates a fatal error on system size mismatch.
@@ -127,7 +132,8 @@ void load_checkpoint(const char *fn, t_fileio *logfio,
                      const t_commrec *cr, const ivec dd_nc,
                      t_inputrec *ir, t_state *state,
                      ObservablesHistory *observablesHistory,
-                     gmx_bool reproducibilityRequested);
+                     gmx_bool reproducibilityRequested,
+                     const gmx::MdModulesNotifier &mdModulesNotifier);
 
 /* Read everything that can be stored in t_trxframe from a checkpoint file */
 void read_checkpoint_trxframe(struct t_fileio *fp, t_trxframe *fr);

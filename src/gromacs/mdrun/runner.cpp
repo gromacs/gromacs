@@ -102,7 +102,6 @@
 #include "gromacs/mdrun/simulationcontext.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/logging.h"
-#include "gromacs/mdrunutility/mdmodulenotification.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdrunutility/printtime.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
@@ -145,6 +144,7 @@
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/loggerbuilder.h"
+#include "gromacs/utility/mdmodulenotification.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/programcontext.h"
@@ -946,7 +946,7 @@ int Mdrunner::mdrunner()
                         cr, domdecOptions.numCells,
                         inputrec, globalState.get(),
                         &observablesHistory,
-                        mdrunOptions.reproducible);
+                        mdrunOptions.reproducible, mdModules_->notifier());
 
         if (startingBehavior == StartingBehavior::RestartWithAppending && logFileHandle)
         {
@@ -1518,6 +1518,7 @@ int Mdrunner::mdrunner()
                     enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
                     deform.get(),
                     mdModules_->outputProvider(),
+                    mdModules_->notifier(),
                     inputrec, imdSession.get(), pull_work, swap, &mtop,
                     fcd,
                     globalState.get(),

@@ -82,7 +82,6 @@
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdrun/mdmodules.h"
-#include "gromacs/mdrunutility/mdmodulenotification.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
@@ -103,6 +102,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/mdmodulenotification.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 

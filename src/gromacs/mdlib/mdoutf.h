@@ -55,6 +55,7 @@ namespace gmx
 {
 enum class StartingBehavior;
 class IMDOutputProvider;
+struct MdModulesNotifier;
 struct MdrunOptions;
 }
 
@@ -65,17 +66,18 @@ typedef struct gmx_mdoutf *gmx_mdoutf_t;
  * Returns a pointer to a data structure with all output file pointers
  * and names required by mdrun.
  */
-gmx_mdoutf_t init_mdoutf(FILE                    *fplog,
-                         int                      nfile,
-                         const t_filenm           fnm[],
-                         const gmx::MdrunOptions &mdrunOptions,
-                         const t_commrec         *cr,
-                         gmx::IMDOutputProvider  *outputProvider,
-                         const t_inputrec        *ir,
-                         gmx_mtop_t              *mtop,
-                         const gmx_output_env_t  *oenv,
-                         gmx_wallcycle_t          wcycle,
-                         gmx::StartingBehavior    startingBehavior);
+gmx_mdoutf_t init_mdoutf(FILE                         *fplog,
+                         int                           nfile,
+                         const t_filenm                fnm[],
+                         const gmx::MdrunOptions      &mdrunOptions,
+                         const t_commrec              *cr,
+                         gmx::IMDOutputProvider       *outputProvider,
+                         const gmx::MdModulesNotifier &mdModulesNotifier,
+                         const t_inputrec             *ir,
+                         gmx_mtop_t                   *mtop,
+                         const gmx_output_env_t       *oenv,
+                         gmx_wallcycle_t               wcycle,
+                         gmx::StartingBehavior         startingBehavior);
 
 /*! \brief Getter for file pointer */
 ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of);

@@ -57,6 +57,7 @@ TrajectoryElement::TrajectoryElement(
         const MdrunOptions &mdrunOptions,
         const t_commrec *cr,
         gmx::IMDOutputProvider *outputProvider,
+        const MdModulesNotifier &mdModulesNotifier,
         const t_inputrec *inputrec, gmx_mtop_t *top_global,
         const gmx_output_env_t *oenv, gmx_wallcycle *wcycle,
         StartingBehavior startingBehavior) :
@@ -64,7 +65,7 @@ TrajectoryElement::TrajectoryElement(
     writeStateStep_(-1),
     outf_(init_mdoutf(
                   fplog, nfile, fnm, mdrunOptions, cr,
-                  outputProvider, inputrec, top_global, oenv, wcycle,
+                  outputProvider, mdModulesNotifier, inputrec, top_global, oenv, wcycle,
                   startingBehavior)),
     nstxout_(inputrec->nstxout),
     nstvout_(inputrec->nstvout),

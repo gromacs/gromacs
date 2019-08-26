@@ -80,6 +80,7 @@ struct gmx_mdoutf {
     gmx_wallcycle_t                wcycle;
     rvec                          *f_global;
     gmx::IMDOutputProvider        *outputProvider;
+    const gmx::MdModulesNotifier  *mdModulesNotifier;
 };
 
 
@@ -87,6 +88,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
                          const gmx::MdrunOptions &mdrunOptions,
                          const t_commrec *cr,
                          gmx::IMDOutputProvider *outputProvider,
+                         const gmx::MdModulesNotifier &mdModulesNotifier,
                          const t_inputrec *ir, gmx_mtop_t *top_global,
                          const gmx_output_env_t *oenv, gmx_wallcycle_t wcycle,
                          const gmx::StartingBehavior startingBehavior)
@@ -200,6 +202,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
         }
 
         outputProvider->initOutput(fplog, nfile, fnm, restartWithAppending, oenv);
+        of->mdModulesNotifier = &mdModulesNotifier;
 
         /* Set up atom counts so they can be passed to actual
            trajectory-writing routines later. Also, XTC writing needs
@@ -302,7 +305,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                              DOMAINDECOMP(cr) ? cr->dd->nnodes : cr->nnodes,
                              of->eIntegrator, of->simulation_part,
                              of->bExpanded, of->elamstats, step, t,
-                             state_global, observablesHistory);
+                             state_global, observablesHistory, *(of->mdModulesNotifier));
         }
 
         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))
