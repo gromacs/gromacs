@@ -1478,6 +1478,7 @@ int alex_tune_fc(int argc, char *argv[])
     gmx_bool              bZPE          = false;
     gmx_bool              bZero         = true;
     gmx_bool              bTestPar      = false;
+    gmx_bool              bForceOutput  = true;
     t_pargs               pa[]          = {
         { "-multi",   FALSE, etINT, {&nmultisim},
           "Do optimization in multiple simulation" },
@@ -1488,7 +1489,9 @@ int alex_tune_fc(int argc, char *argv[])
         { "-testpar", FALSE, etBOOL, {&bTestPar},
           "Test the parallel execution gives the same result." },
         { "-compress", FALSE, etBOOL, {&compress},
-          "Compress output XML file" }
+          "Compress output XML file" },
+        { "-force_output", FALSE, etBOOL, {&bForceOutput},
+          "Write output even if no new minimum is found" }
     };
 
     FILE                 *fplog;
@@ -1592,7 +1595,7 @@ int alex_tune_fc(int argc, char *argv[])
 
     if (MASTER(opt.commrec()))
     {
-        if (bMinimum)
+        if (bMinimum || bForceOutput)
         {
             // Now print the output.
             opt.printMolecules(fplog, true, false);
@@ -1602,7 +1605,7 @@ int alex_tune_fc(int argc, char *argv[])
                              oenv);
             writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), compress);
         }
-        else
+        else if (!bMinimum)
         {
             printf("No improved parameters found. Please try again with more iterations.\n");
         }
