@@ -92,7 +92,7 @@ void print_quadrapole(FILE                  *fp,
                       real                   toler);
 
 void print_electric_props(FILE                           *fp,
-                          std::vector<alexandria::MyMol>  mymol,
+                          std::vector<alexandria::MyMol> &mymol,
                           const Poldata                  *pd,
                           const gmx::MDLogger            &fplog,
                           gmx_atomprop_t                  ap,

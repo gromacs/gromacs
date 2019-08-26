@@ -836,20 +836,21 @@ void QgenResp::regularizeCharges()
 
 void QgenResp::calcRms()
 {
-    double pot2, s2, sum2;
-
-    pot2 = sum2 = 0;
+    double pot2 = 0, sum2 = 0, ip = 0, calc2 = 0;
     for (size_t i = 0; (i < nEsp()); i++)
     {
-        double diff = ep_[i].v() - ep_[i].vCalc();
+        double vesp  = ep_[i].v();
+        double vcalc = ep_[i].vCalc();
+        double diff  = vesp - vcalc;
         if (debug && (i < 4*nRespAtom()))
         {
             fprintf(debug, "ESP %zu QM: %g FIT: %g DIFF: %g\n",
                     i, ep_[i].v(), ep_[i].vCalc(), diff);
         }
-        s2    = gmx::square(diff);
-        sum2 += s2;
-        pot2 += gmx::square(ep_[i].v());
+        sum2  += gmx::square(diff);
+        pot2  += gmx::square(vesp);
+        ip    += vesp*vcalc;
+        calc2 += gmx::square(vcalc);
     }
     wtot_ = nEsp();
     if (wtot_ > 0)
@@ -860,14 +861,24 @@ void QgenResp::calcRms()
     {
         rms_     = 0;
     }
-    rrms_ = sqrt(sum2/pot2);
+    rrms_     = sqrt(sum2/pot2);
+    double denom = std::sqrt(pot2*calc2);
+    if (denom > 0)
+    {
+        cosangle_ = ip/denom;
+    }
+    else
+    {
+        cosangle_ = 0.0;
+    }
 }
 
-real QgenResp::getRms(real *wtot, real *rrms)
+real QgenResp::getRms(real *wtot, real *rrms, real *cosangle)
 {
     calcRms();
-    *wtot = wtot_;
-    *rrms = rrms_;
+    *wtot     = wtot_;
+    *rrms     = rrms_;
+    *cosangle = cosangle_;
     return rms_;
 }
 

@@ -113,11 +113,12 @@ if(GMX_NATIVE_WINDOWS OR GMX_BUILD_MDRUN_ONLY OR NOT BUILD_SHARED_LIBS)
     # GMXAPI has not been tested in Microsoft environments.
     # GMXAPI relies on libgromacs and is incompatible with an `mdrun`-only build.
     # GMXAPI requires position-independent code
-    set(_GMXAPI_DEFAULT ON)
+    set(_GMXAPI_DEFAULT OFF)
 else()
     set(_GMXAPI_DEFAULT OFF)
 endif()
-option(GMXAPI "Experimental external interfaces" ${_GMXAPI_DEFAULT})
+#option(GMXAPI "Experimental external interfaces" ${_GMXAPI_DEFAULT})
+option(GMXAPI "Experimental external interfaces" OFF)
 if (GMXAPI)
    if (GMX_BUILD_MDRUN_ONLY)
        message(FATAL_ERROR "GMXAPI relies on libgromacs and is incompatible with GMX_BUILD_MDRUN_ONLY.")

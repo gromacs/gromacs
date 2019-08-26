@@ -349,8 +349,9 @@ void OptACM::calcDeviation()
             }
             if (weight(ermsESP))
             {
-                real  rrms   = 0;
-                real  wtot   = 0;
+                real rrms     = 0;
+                real wtot     = 0;
+                real cosangle = 0;
                 if (nullptr != mymol.shellfc_)
                 {
                     mymol.Qgresp_.updateAtomCoords(mymol.x());
@@ -361,7 +362,7 @@ void OptACM::calcDeviation()
                 }
                 mymol.Qgresp_.updateAtomCharges(&mymol.topology_->atoms);
                 mymol.Qgresp_.calcPot();
-                increaseEnergy(ermsESP, convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e));
+                increaseEnergy(ermsESP, convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms, &cosangle), eg2cHartree_e));
             }
             if (weight(ermsMU))
             {

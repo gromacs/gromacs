@@ -233,7 +233,7 @@ static void print_dipole(FILE              *fp,
 }
 
 void print_electric_props(FILE                           *fp,
-                          std::vector<alexandria::MyMol>  mymol,
+                          std::vector<alexandria::MyMol> &mymol,
                           const Poldata                  *pd,
                           const gmx::MDLogger            &fplog,
                           gmx_atomprop_t                  ap,
@@ -271,7 +271,6 @@ void print_electric_props(FILE                           *fp,
     int            i    = 0, j     = 0, n     = 0;
     int            nout = 0, mm    = 0, nn    = 0;
     real           sse  = 0, sigma = 0, qCalc = 0;
-    real           rrms = 0, wtot  = 0;
 
     FILE          *dipc, *muc,  *Qc;
     FILE          *hh,   *espc, *alphac, *isopolc, *anisopolc, *qc;
@@ -335,10 +334,12 @@ void print_electric_props(FILE                           *fp,
                 mol.Qgresp_.updateAtomCoords(mol.x());                
                 mol.Qgresp_.calcPot();
             }
-            rrms   = 0;
-            wtot   = 0;
-            auto  espRms = convert2gmx(mol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e);         
+            real rrms = 0, wtot = 0, cosangle = 0;
+            auto rms  = mol.Qgresp_.getRms(&wtot, &rrms, &cosangle);
+            auto espRms = convert2gmx(rms, eg2cHartree_e);         
             fprintf(fp, "ESP rms: %g (kJ/mol e) %s\n", espRms, (espRms > 11) ? "XXX" : "");
+            fprintf(fp, "ESP cosangle: %.3f%s\n", cosangle,
+                    (cosangle < 0.5) ? " WWW" : "");
             
             for (size_t i = 0; i < mol.Qgresp_.nEsp(); i++)
             {
