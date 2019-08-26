@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -139,7 +139,7 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
              */
             for (ftype = 0; (ftype < F_NRE); ftype++)
             {
-                if (interaction_function[ftype].flags & IF_BTYPE)
+                if (interaction_function[ftype].flags & IF_CHEMBOND)
                 {
                     bonds = &(plist[ftype]);
 
@@ -193,6 +193,12 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
                                     }
                                     if (bFound)
                                     {
+                                        if (ftype == F_CONNBONDS ||
+                                            ftype_a == F_CONNBONDS)
+                                        {
+                                            gmx_fatal(FARGS, "Can not constrain all angles when they involved bonds of type %s",
+                                                      interaction_function[F_CONNBONDS].longname);
+                                        }
                                         /* apply law of cosines */
                                         p.c0() = std::sqrt( b_ij*b_ij + b_jk*b_jk -
                                                             2.0*b_ij*b_jk*cos(DEG2RAD*ang->c0()) );

@@ -37,6 +37,15 @@ Fix segmentation fault in grompp and mdrun with cosine COM pulling
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix grompp not adding angle constraints between constraints
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using the mdp option constraints=all-angles, angles involving
+bonds supplied as constraints in the topology would be removed,
+but not replaced by angle constraints.
+
+:issue:`3067`
+
 Fix bug in gmx xpm2ps
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
