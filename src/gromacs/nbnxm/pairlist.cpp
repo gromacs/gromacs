@@ -2707,11 +2707,11 @@ static void combine_nblists(gmx::ArrayRef<const NbnxnPairlistGpu>  nbls,
             int cj4_offset  = ncj4;
             int excl_offset = nexcl;
 
-            for (const auto &nbl : nbls)
+            for (gmx::index i = n; i < nbls.ssize(); i++)
             {
-                sci_offset  -= nbl.sci.size();
-                cj4_offset  -= nbl.cj4.size();
-                excl_offset -= nbl.excl.size();
+                sci_offset  -= nbls[i].sci.size();
+                cj4_offset  -= nbls[i].cj4.size();
+                excl_offset -= nbls[i].excl.size();
             }
 
             const NbnxnPairlistGpu &nbli = nbls[n];
