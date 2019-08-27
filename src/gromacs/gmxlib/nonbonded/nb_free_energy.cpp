@@ -224,7 +224,11 @@ potSwitchPotentialMod(const real potentialInp, const real sw, const SCReal r, co
 
 
 //! Templated free-energy non-bonded kernel
-template<SoftCoreTreatment softCoreTreatment, bool scLambdasOrAlphasDiffer>
+template<SoftCoreTreatment softCoreTreatment,
+         bool              scLambdasOrAlphasDiffer,
+         bool              vdwInteractionTypeIsEwald,
+         bool              elecInteractionTypeIsEwald,
+         bool              vdwModifierIsPotSwitch>
 static void
 nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                       rvec * gmx_restrict              xx,
@@ -261,7 +265,7 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     SCReal        rp, rpm2, rC, rV, rpinvC, rpinvV; /* Needs double for sc_power==48 */
     real          sigma_pow[NSTATES];
     real          VV, FF;
-    int           icoul, ivdw;
+    int           icoul = GMX_NBKERNEL_ELEC_NONE;
     int           nri;
     const int *   iinr;
     const int *   jindex;
@@ -281,7 +285,6 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     real *        Vv;
     real *        Vc;
     gmx_bool      bDoForces, bDoShiftForces, bDoPotential;
-    gmx_bool      bEwald, bEwaldLJ;
     real          rcutoff_max2;
     const real *  tab_ewald_F_lj = nullptr;
     const real *  tab_ewald_V_lj = nullptr;
@@ -352,7 +355,7 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     GMX_ASSERT(ic->coulomb_modifier != eintmodPOTSWITCH,
                "Potential switching is not supported for Coulomb with FEP");
 
-    if (ic->vdw_modifier == eintmodPOTSWITCH)
+    if (vdwModifierIsPotSwitch)
     {
         real d          = ic->rvdw - ic->rvdw_switch;
         vdw_swV3        = -10.0/(d*d*d);
@@ -368,35 +371,15 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
         vdw_swV3 = vdw_swV4 = vdw_swV5 = vdw_swF2 = vdw_swF3 = vdw_swF4 = 0.0;
     }
 
-    if (EVDW_PME(ic->vdwtype))
-    {
-        ivdw         = GMX_NBKERNEL_VDW_LJEWALD;
-    }
-    else
-    {
-        ivdw         = GMX_NBKERNEL_VDW_LENNARDJONES;
-    }
-
     if (ic->eeltype == eelCUT || EEL_RF(ic->eeltype))
     {
-        icoul        = GMX_NBKERNEL_ELEC_REACTIONFIELD;
-    }
-    else if (EEL_PME_EWALD(ic->eeltype))
-    {
-        icoul        = GMX_NBKERNEL_ELEC_EWALD;
-    }
-    else
-    {
-        gmx_incons("Unsupported eeltype with Verlet and free-energy");
+        icoul = GMX_NBKERNEL_ELEC_REACTIONFIELD;
     }
 
     rcutoff_max2    = std::max(ic->rcoulomb, ic->rvdw);
     rcutoff_max2    = rcutoff_max2*rcutoff_max2;
 
-    bEwald          = (icoul == GMX_NBKERNEL_ELEC_EWALD);
-    bEwaldLJ        = (ivdw == GMX_NBKERNEL_VDW_LJEWALD);
-
-    if (bEwald || bEwaldLJ)
+    if (elecInteractionTypeIsEwald || vdwInteractionTypeIsEwald)
     {
         const auto &tables = *ic->coulombEwaldTables;
         sh_ewald       = ic->sh_ewald;
@@ -419,8 +402,7 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
      * things (1/r rather than short-range Ewald). For these settings, we just
      * use the traditional short-range Ewald interaction in that case.
      */
-    GMX_RELEASE_ASSERT(!(bEwald   && ic->coulomb_modifier == eintmodPOTSWITCH) &&
-                       !(bEwaldLJ && ic->vdw_modifier   == eintmodPOTSWITCH),
+    GMX_RELEASE_ASSERT(!(vdwInteractionTypeIsEwald  && vdwModifierIsPotSwitch),
                        "Can not apply soft-core to switched Ewald potentials");
 
     dvdl_coul  = 0;
@@ -633,12 +615,12 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                          * used in the kernel), or if we are within the cutoff.
                          */
                         bComputeElecInteraction =
-                            ( bEwald && r < rcoulomb) ||
-                            (!bEwald && rC < rcoulomb);
+                            ( elecInteractionTypeIsEwald && r < rcoulomb) ||
+                            (!elecInteractionTypeIsEwald && rC < rcoulomb);
 
                         if ( (qq[i] != 0) && bComputeElecInteraction)
                         {
-                            if (bEwald)
+                            if (elecInteractionTypeIsEwald)
                             {
                                 Vcoul[i]  = ewaldPotential(qq[i], rinvC, sh_ewald);
                                 FscalC[i] = ewaldScalarForce(qq[i], rinvC);
@@ -656,8 +638,8 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                          * in the kernel), or if we are within the cutoff.
                          */
                         bComputeVdwInteraction =
-                            ( bEwaldLJ && r < rvdw) ||
-                            (!bEwaldLJ && rV < rvdw);
+                            ( vdwInteractionTypeIsEwald && r < rvdw) ||
+                            (!vdwInteractionTypeIsEwald && rV < rvdw);
                         if ((c6[i] != 0 || c12[i] != 0) && bComputeVdwInteraction)
                         {
                             real rinv6;
@@ -675,13 +657,13 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                             Vvdw[i]     = lennardJonesPotential(Vvdw6, Vvdw12, c6[i], c12[i], repulsionShift, dispersionShift, onesixth, onetwelfth);
                             FscalV[i]   = lennardJonesScalarForce(Vvdw6, Vvdw12);
 
-                            if (bEwaldLJ)
+                            if (vdwInteractionTypeIsEwald)
                             {
                                 /* Subtract the grid potential at the cut-off */
                                 Vvdw[i] += ewaldLennardJonesGridSubtract(nbfp_grid[tj[i]], sh_lj_ewald, onesixth);
                             }
 
-                            if (ic->vdw_modifier == eintmodPOTSWITCH)
+                            if (vdwModifierIsPotSwitch)
                             {
                                 real d    = rV - ic->rvdw_switch;
                                 d         = (d > zero) ? d : zero;
@@ -748,7 +730,7 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                 }
             }
 
-            if (bEwald && r < rcoulomb)
+            if (elecInteractionTypeIsEwald && r < rcoulomb)
             {
                 /* See comment in the preamble. When using Ewald interactions
                  * (unless we use a switch modifier) we subtract the reciprocal-space
@@ -790,7 +772,7 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                 }
             }
 
-            if (bEwaldLJ && r < rvdw)
+            if (vdwInteractionTypeIsEwald && r < rvdw)
             {
                 /* See comment in the preamble. When using LJ-Ewald interactions
                  * (unless we use a switch modifier) we subtract the reciprocal-space
@@ -909,6 +891,121 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     inc_nrnb(nrnb, eNR_NBKERNEL_FREE_ENERGY, nlist->nri*12 + nlist->jindex[n]*150);
 }
 
+typedef void (* KernelFunction)(const t_nblist * gmx_restrict    nlist,
+                                rvec * gmx_restrict              xx,
+                                gmx::ForceWithShiftForces *      forceWithShiftForces,
+                                const t_forcerec * gmx_restrict  fr,
+                                const t_mdatoms * gmx_restrict   mdatoms,
+                                nb_kernel_data_t * gmx_restrict  kernel_data,
+                                t_nrnb * gmx_restrict            nrnb);
+
+template<SoftCoreTreatment softCoreTreatment,
+         bool scLambdasOrAlphasDiffer,
+         bool vdwInteractionTypeIsEwald,
+         bool elecInteractionTypeIsEwald>
+static KernelFunction
+dispatchKernelOnVdwModifier(const bool vdwModifierIsPotSwitch)
+{
+    if (vdwModifierIsPotSwitch)
+    {
+        return(nb_free_energy_kernel<softCoreTreatment, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald,
+                                     elecInteractionTypeIsEwald, true>);
+    }
+    else
+    {
+        return(nb_free_energy_kernel<softCoreTreatment, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald,
+                                     elecInteractionTypeIsEwald, false>);
+    }
+}
+
+template<SoftCoreTreatment softCoreTreatment,
+         bool scLambdasOrAlphasDiffer,
+         bool vdwInteractionTypeIsEwald>
+static KernelFunction
+dispatchKernelOnElecInteractionType(const bool elecInteractionTypeIsEwald,
+                                    const bool vdwModifierIsPotSwitch)
+{
+    if (elecInteractionTypeIsEwald)
+    {
+        return(dispatchKernelOnVdwModifier<softCoreTreatment, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald,
+                                           true>(vdwModifierIsPotSwitch));
+    }
+    else
+    {
+        return(dispatchKernelOnVdwModifier<softCoreTreatment, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald,
+                                           false>(vdwModifierIsPotSwitch));
+    }
+}
+
+template<SoftCoreTreatment softCoreTreatment,
+         bool scLambdasOrAlphasDiffer>
+static KernelFunction
+dispatchKernelOnVdwInteractionType(const bool vdwInteractionTypeIsEwald,
+                                   const bool elecInteractionTypeIsEwald,
+                                   const bool vdwModifierIsPotSwitch)
+{
+    if (vdwInteractionTypeIsEwald)
+    {
+        return(dispatchKernelOnElecInteractionType<softCoreTreatment, scLambdasOrAlphasDiffer,
+                                                   true>(elecInteractionTypeIsEwald, vdwModifierIsPotSwitch));
+    }
+    else
+    {
+        return(dispatchKernelOnElecInteractionType<softCoreTreatment, scLambdasOrAlphasDiffer,
+                                                   false>(elecInteractionTypeIsEwald, vdwModifierIsPotSwitch));
+    }
+}
+
+template<SoftCoreTreatment softCoreTreatment>
+static KernelFunction
+dispatchKernelOnScLambdasOrAlphasDifference(const bool scLambdasOrAlphasDiffer,
+                                            const bool vdwInteractionTypeIsEwald,
+                                            const bool elecInteractionTypeIsEwald,
+                                            const bool vdwModifierIsPotSwitch)
+{
+    if (scLambdasOrAlphasDiffer)
+    {
+        return(dispatchKernelOnVdwInteractionType<softCoreTreatment, true>(vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald,
+                                                                           vdwModifierIsPotSwitch));
+    }
+    else
+    {
+        return(dispatchKernelOnVdwInteractionType<softCoreTreatment, false>(vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald,
+                                                                            vdwModifierIsPotSwitch));
+    }
+}
+
+static KernelFunction
+dispatchKernel(const bool                 scLambdasOrAlphasDiffer,
+               const bool                 vdwInteractionTypeIsEwald,
+               const bool                 elecInteractionTypeIsEwald,
+               const bool                 vdwModifierIsPotSwitch,
+               const t_forcerec          *fr)
+{
+    if (fr->sc_alphacoul == 0 && fr->sc_alphavdw == 0)
+    {
+        return(dispatchKernelOnScLambdasOrAlphasDifference<SoftCoreTreatment::None>(scLambdasOrAlphasDiffer,
+                                                                                    vdwInteractionTypeIsEwald,
+                                                                                    elecInteractionTypeIsEwald,
+                                                                                    vdwModifierIsPotSwitch));
+    }
+    else if (fr->sc_r_power == 6.0_real)
+    {
+        return(dispatchKernelOnScLambdasOrAlphasDifference<SoftCoreTreatment::RPower6>(scLambdasOrAlphasDiffer,
+                                                                                       vdwInteractionTypeIsEwald,
+                                                                                       elecInteractionTypeIsEwald,
+                                                                                       vdwModifierIsPotSwitch));
+    }
+    else
+    {
+        return(dispatchKernelOnScLambdasOrAlphasDifference<SoftCoreTreatment::RPower48>(scLambdasOrAlphasDiffer,
+                                                                                        vdwInteractionTypeIsEwald,
+                                                                                        elecInteractionTypeIsEwald,
+                                                                                        vdwModifierIsPotSwitch));
+    }
+}
+
+
 void gmx_nb_free_energy_kernel(const t_nblist            *nlist,
                                rvec                      *xx,
                                gmx::ForceWithShiftForces *ff,
@@ -917,28 +1014,31 @@ void gmx_nb_free_energy_kernel(const t_nblist            *nlist,
                                nb_kernel_data_t          *kernel_data,
                                t_nrnb                    *nrnb)
 {
+    GMX_ASSERT(EEL_PME_EWALD(fr->ic->eeltype)  || fr->ic->eeltype == eelCUT || EEL_RF(fr->ic->eeltype),
+               "Unsupported eeltype with free energy");
+
+    const bool vdwInteractionTypeIsEwald  = (EVDW_PME(fr->ic->vdwtype));
+    const bool elecInteractionTypeIsEwald = (EEL_PME_EWALD(fr->ic->eeltype));
+    const bool vdwModifierIsPotSwitch     = (fr->ic->vdw_modifier == eintmodPOTSWITCH);
+    bool       scLambdasOrAlphasDiffer    = true;
+
     if (fr->sc_alphacoul == 0 && fr->sc_alphavdw == 0)
     {
-        nb_free_energy_kernel<SoftCoreTreatment::None, false>(nlist, xx, ff, fr, mdatoms, kernel_data, nrnb);
+        scLambdasOrAlphasDiffer = false;
     }
-    else if (fr->sc_r_power == 6.0_real)
+    else if (fr->sc_r_power == 6.0_real || fr->sc_r_power == 48.0_real)
     {
         if (kernel_data->lambda[efptCOUL] == kernel_data->lambda[efptVDW] &&
             fr->sc_alphacoul == fr->sc_alphavdw)
         {
-            nb_free_energy_kernel<SoftCoreTreatment::RPower6, false>(nlist, xx, ff, fr, mdatoms, kernel_data, nrnb);
+            scLambdasOrAlphasDiffer = false;
         }
-        else
-        {
-            nb_free_energy_kernel<SoftCoreTreatment::RPower6, true>(nlist, xx, ff, fr, mdatoms, kernel_data, nrnb);
-        }
-    }
-    else if (fr->sc_r_power == 48.0_real)
-    {
-        nb_free_energy_kernel<SoftCoreTreatment::RPower48, true>(nlist, xx, ff, fr, mdatoms, kernel_data, nrnb);
     }
     else
     {
         GMX_RELEASE_ASSERT(false, "Unsupported soft-core r-power");
     }
+    KernelFunction kernelFunc = dispatchKernel(scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald,
+                                               vdwModifierIsPotSwitch, fr);
+    kernelFunc(nlist, xx, ff, fr, mdatoms, kernel_data, nrnb);
 }
