@@ -79,7 +79,7 @@ namespace
  * one- or two-part run.
  *
  * \todo This class has a similar interface with one in
- * mdcomparison.cpp, but not enough to warrant extracting an interface
+ * mdcomparison.h, but not enough to warrant extracting an interface
  * class. Perhaps parts of this should be cast as a class that returns
  * iterators to successive frames, so that the fancy footwork for
  * pretending a two-part run is one sequence is separate from the
@@ -192,8 +192,8 @@ class ContinuationFramePairManager
         {
             while (shouldContinueComparing())
             {
-                Frame firstFrame  = full_->frame();
-                Frame secondFrame = isFirstPart_ ? firstPart_->frame() : secondPart_->frame();
+                EnergyFrame firstFrame  = full_->frame();
+                EnergyFrame secondFrame = isFirstPart_ ? firstPart_->frame() : secondPart_->frame();
                 SCOPED_TRACE("Comparing frames from two runs '" + firstFrame.frameName() + "' and '" + secondFrame.frameName() + "'");
                 compareTwoFrames(firstFrame, secondFrame);
             }
@@ -298,13 +298,12 @@ void runTest(TestFileManager        *fileManager,
         secondPartRunEdrFileName += ".part0002.edr";
     }
 
-    // Build the functor that will compare reference and test
-    // energy frames on the chosen energy fields.
-    //
-    // TODO It would be less code if we used a lambda for this, but either
-    // clang 3.4 or libstdc++ 5.2.1 have an issue with capturing a
-    // std::unordered_map
-    EnergyComparator energyComparator(energiesToMatch);
+    // Build the functor that will compare energy frames on the chosen
+    // energy fields.
+    auto energyComparator = [&energiesToMatch](const EnergyFrame &fullRun, const EnergyFrame &twoPartRun)
+        {
+            compareEnergyFrames(fullRun, twoPartRun, energiesToMatch);
+        };
     // Build the manager that will present matching pairs of frames to compare.
     //
     // TODO Here is an unnecessary copy of keys (ie. the energy field

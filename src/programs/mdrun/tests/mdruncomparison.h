@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,8 +53,15 @@ namespace test
 
 /*! \internal
  * \brief Manages returning a pair of frames from two
- * equivalent simulations that are meaningful to compare. */
-template <class FrameReader, class Frame>
+ * equivalent simulations that are meaningful to compare.
+ *
+ * \todo This is largely duplicated by ContinuationFrameManager. These
+ * could be refactored into components that compare iterators to
+ * frames.
+ *
+ * \tparam FrameReader  Has readNextFrame() and frame() methods
+ *                      useful for returning successive Frame objects */
+template <class FrameReader>
 class FramePairManager
 {
     public:
@@ -101,13 +108,17 @@ class FramePairManager
             return false;
         }
     public:
-        //! Compare all possible pairs of frames using \c compareTwoFrames.
+        /*! \brief Compare all possible pairs of frames using \c compareTwoFrames.
+         *
+         * \tparam Frame  The type of frame used in the comparison (returned
+         *                by FrameReader and used by compareTwoFrames). */
+        template <class Frame>
         void compareAllFramePairs(std::function<void(const Frame &, const Frame &)> compareTwoFrames)
         {
             while (shouldContinueComparing())
             {
-                auto firstFrame  = first_->frame();
-                auto secondFrame = second_->frame();
+                Frame firstFrame  = first_->frame();
+                Frame secondFrame = second_->frame();
                 SCOPED_TRACE("Comparing frames from two runs '" + firstFrame.frameName() + "' and '" + secondFrame.frameName() + "'");
                 compareTwoFrames(firstFrame, secondFrame);
             }

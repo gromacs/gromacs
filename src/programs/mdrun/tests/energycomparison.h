@@ -88,24 +88,6 @@ checkEnergiesAgainstReferenceData(const std::string      &energyFilename,
                                   const EnergyTolerances &energiesToMatch,
                                   TestReferenceChecker   *checker);
 
-/*! \internal
- * \brief Functor for comparing reference and test frames on
- * particular energies to match. */
-class EnergyComparator
-{
-    public:
-        //! Constructor
-        EnergyComparator(const EnergyTolerances &energiesToMatch)
-            : energiesToMatch_(energiesToMatch) {}
-        //! The functor method.
-        void operator()(const EnergyFrame &reference, const EnergyFrame &test)
-        {
-            compareEnergyFrames(reference, test, energiesToMatch_);
-        }
-        //! Container of the energies to match and the tolerance required.
-        const EnergyTolerances &energiesToMatch_;
-};
-
 }  // namespace test
 }  // namespace gmx
 
