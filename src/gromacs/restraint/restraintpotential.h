@@ -61,19 +61,9 @@
 
 #include "gromacs/math/vectypes.h"
 
-struct gmx_mtop_t;
-struct gmx_output_env_t;
-struct pull_params_t;
-struct pull_t;
-struct t_commrec;
-struct t_filenm;
-struct t_inputrec;
-struct t_mdatoms;
-struct t_pbc;
-
+// TODO: Get from a header once the public API settles down a bit.
 namespace gmxapi
 {
-class Session;
 class SessionResources;
 }
 
