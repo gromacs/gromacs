@@ -81,7 +81,7 @@ using MdpField = MdpFieldValues::value_type;
 
 /*! \brief Test fixture base for normal mode analysis
  *
- * This test ensures mdrun can run a normal mode analys, reaching
+ * This test ensures mdrun can run a normal mode analysis, reaching
  * a reproducible eigenvalues following diagonalization.
  *
  * The choices for tolerance are arbitrary but sufficient. */
@@ -140,6 +140,7 @@ TEST_P(NormalModesTest, WithinTolerances)
                 .checkCompound("System", simulationName)
                 .checkCompound("Integrator", integrator);
         auto          settings = XvgMatchSettings();
+        settings.tolerance = relativeToleranceAsFloatingPoint(1.0, 1e-05);
         TextInputFile input("eigenval.xvg");
         checkXvgFile(&input, &checker, settings);
     }
