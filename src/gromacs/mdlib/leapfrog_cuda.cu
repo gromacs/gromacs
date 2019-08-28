@@ -206,7 +206,7 @@ void LeapFrogCuda::integrate(const float3                      *d_x,
 
     if (doTempCouple)
     {
-        GMX_ASSERT(numTempScaleValues_ == h_lambdas_.size(), "Number of temperature scaling factors changed since it was set for the last time.");
+        GMX_ASSERT(numTempScaleValues_ == ssize(h_lambdas_), "Number of temperature scaling factors changed since it was set for the last time.");
         for (int i = 0; i < numTempScaleValues_; i++)
         {
             h_lambdas_[i] = tcstat[i].lambda;
