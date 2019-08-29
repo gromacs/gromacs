@@ -92,7 +92,7 @@ static inline void pthRoot(const real  r,
 //! Computes r^(1/p) and 1/r^(1/p) for the standard p=6
 template <SoftCoreTreatment softCoreTreatment>
 static inline void pthRoot(const double  r,
-                           double       *pthRoot,
+                           real         *pthRoot,
                            double       *invPthRoot)
 {
     *invPthRoot = gmx::invsqrt(std::cbrt(r));
@@ -103,7 +103,7 @@ static inline void pthRoot(const double  r,
 //! Computes r^(1/p) and 1/r^(1/p) for p=48
 template <>
 inline void pthRoot<SoftCoreTreatment::RPower48>(const double  r,
-                                                 double       *pthRoot,
+                                                 real         *pthRoot,
                                                  double       *invPthRoot)
 {
     *pthRoot    = std::pow(r, 1.0/48.0);
@@ -132,7 +132,7 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     real          shX, shY, shZ;
     real          tx, ty, tz, Fscal;
     SCReal        FscalC[NSTATES], FscalV[NSTATES];  /* Needs double for sc_power==48 */
-    SCReal        Vcoul[NSTATES], Vvdw[NSTATES];     /* Needs double for sc_power==48 */
+    real          Vcoul[NSTATES], Vvdw[NSTATES];
     real          rinv6, r;
     real          iqA, iqB;
     real          qq[NSTATES], vctot;
@@ -145,7 +145,8 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     SCReal        dvdl_coul, dvdl_vdw;
     real          lfac_coul[NSTATES], dlfac_coul[NSTATES], lfac_vdw[NSTATES], dlfac_vdw[NSTATES];
     real          sigma6[NSTATES], alpha_vdw_eff, alpha_coul_eff;
-    SCReal        rp, rpm2, rC, rV, rinvC, rpinvC, rinvV, rpinvV; /* Needs double for sc_power==48 */
+    real          rinvC, rinvV;
+    SCReal        rp, rpm2, rC, rV, rpinvC, rpinvV; /* Needs double for sc_power==48 */
     real          sigma_pow[NSTATES];
     real          VV, FF;
     int           icoul, ivdw;
