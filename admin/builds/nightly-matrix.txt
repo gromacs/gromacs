@@ -29,7 +29,7 @@ icc-19 mpi release simd=avx2_256 no-hwloc
 gcc-5 openmp simd=avx_128_fma cmake-3.11.4 buildfftw
 
 # Test with SSE2 + double
-gcc-9 simd=sse2 double
+gcc-9 simd=sse2 fftpack double
 
 # Test OpenMP with clang-tidy
 # Test AVX2_256 SIMD with clang-tidy

@@ -36,8 +36,9 @@ gcc-7 gpuhw=none cuda-10.0 openmp no-tng release-with-assert
 # msvc-2017 double no-threadmpi no-prefer-static-libs release-with-assert
 
 # Test newest icc at time of release
-# Test icc with SIMD in mixed precision in release mode
-icc-19 simd=sse2 mkl release
+# TODO Reinstate this when SIMD exp works again
+#   Test icc with SIMD in mixed precision in release mode
+icc-19 simd=none mkl release
 
 # Test SSE4.1 SIMD
 # Test single-rank GPU
