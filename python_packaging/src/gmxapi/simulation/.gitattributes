@@ -1,0 +1,5 @@
+# Some files in this directory are borrowed from the Kasson Lab gmxapi project
+# release 0.0.7.4 and used in accordance with
+# https://github.com/kassonlab/gmxapi/blob/v0.0.7.4/LICENSE
+context.py !filter=copyright
+workflow.py !filter=copyright
