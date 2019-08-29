@@ -942,6 +942,8 @@ std::string getCoolQuote()
         { "Don’t bring an anecdote to a data fight.", "Molly Hodgdon" },
         { "Give someone a program, you frustrate them for a day; teach them how to program, you frustrate them for a lifetime.", "David Leinweber" },
         { "Or (horrors!) use Berendsen!", "Justin Lemkul" },
+        { "The absence of real intelligence doesn't prove you're using AI", "Magnus Lundborg" },
+        { "People who do QM/MM must be rather patient and enjoy quality over speed", "Kresten Lindorff-Larsen" },
     };
 
     if (beCool())
