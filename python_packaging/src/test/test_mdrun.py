@@ -46,26 +46,24 @@ import logging
 import os
 import pytest
 
+import gmxapi as gmx
+gmx.logger.setLevel(logging.WARNING)
+
 # Configure the `logging` module before and non-built-in packages start to use it.
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.WARNING)
 # create console handler
 ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
+ch.setLevel(logging.WARNING)
 # create formatter and add it to the handler
 formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s: %(message)s')
 ch.setFormatter(formatter)
 # add the handlers to the logger
 logging.getLogger().addHandler(ch)
 
-from gmxapi import _gmxapi
-
-from pytesthelpers import withmpi_only
 
 @pytest.mark.usefixtures('cleandir')
 def test_run_from_tpr(spc_water_box):
     assert os.path.exists(spc_water_box)
-    filename = os.path.abspath(spc_water_box)
-    system = _gmxapi.from_tpr(filename)
-    context = _gmxapi.Context()
-    md = system.launch(context)
+
+    md = gmx.mdrun(spc_water_box)
     md.run()

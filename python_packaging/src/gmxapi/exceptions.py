@@ -1,3 +1,4 @@
+#
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2019, by the GROMACS development team, led by
@@ -84,6 +85,15 @@ class NotImplementedError(Error):
     """
     # May be useful for error checking in base classes or as a development tool
     # to avoid releasing incomplete implementations (e.g. overlooked "To do"s)
+
+
+class FeatureNotAvailableError(Error):
+    """Requested feature not available in the current environment.
+
+    This exception will usually indicate an issue with the user's environment or
+    run time details. There may be a missing optional dependency, which should
+    be specified in the exception message.
+    """
 
 
 class ProtocolError(Error):

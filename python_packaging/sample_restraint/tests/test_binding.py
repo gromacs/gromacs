@@ -10,7 +10,7 @@ import logging
 import os
 
 import gmxapi as gmx
-from gmxapi.simulation.context import ParallelArrayContext
+from gmxapi.simulation.context import Context
 from gmxapi.simulation.workflow import WorkElement, from_tpr
 from gmxapi import version as gmx_version
 import pytest
@@ -30,6 +30,8 @@ logger = logging.getLogger()
 
 
 def test_import():
+    # Suppress inspection warning outside of testing context.
+    # noinspection PyUnresolvedReferences
     import myplugin
     assert myplugin
 
@@ -64,7 +66,7 @@ def test_ensemble_potential_nompi(tpr_filename):
     potential.name = "ensemble_restraint"
     md.add_dependency(potential)
 
-    context = ParallelArrayContext(md)
+    context = Context(md)
 
     with context as session:
         session.run()
@@ -108,6 +110,6 @@ def test_ensemble_potential_withmpi(tpr_filename):
     potential.name = "ensemble_restraint"
     md.add_dependency(potential)
 
-    context = ParallelArrayContext(md)
+    context = Context(md)
     with context as session:
         session.run()

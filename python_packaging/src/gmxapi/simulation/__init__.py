@@ -31,3 +31,11 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
+"""GROMACS simulation subpackage for gmxapi.
+
+Provides operations for configuring and running molecular simulations.
+"""
+
+__all__ = ['mdrun']
+
+from .mdrun import mdrun

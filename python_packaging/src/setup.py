@@ -55,10 +55,10 @@ setup(
 
     # TODO: (pending infrastructure and further discussion) Replace with CMake variables from GMXAPI version.
     version='0.1.0.dev3',
-    python_requires='>=3.4, <4',
+    python_requires='>=3.5, <4',
     setup_requires=['setuptools>=28'],
 
-    packages=['gmxapi'],
+    packages=['gmxapi', 'gmxapi.simulation'],
     cmake_args=['-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=10.9',
                 '-DCMAKE_OSX_ARCHITECTURES:STRING=x86_64'],
 

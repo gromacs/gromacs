@@ -71,7 +71,7 @@ namespace py = pybind11;
  * http://manual.gromacs.org/current/onlinehelp/gmx-mdrun.html#options
  */
 static void setMDArgs(std::vector<std::string>* mdargs,
-                      py::dict                  params)
+                      const py::dict           &params)
 {
     mdargs->clear();
     if (params.contains("grid"))
@@ -117,7 +117,7 @@ static void setMDArgs(std::vector<std::string>* mdargs,
     }
     if (params.contains("pme_threads_per_rank"))
     {
-        auto val = py::cast<std::string>(py::str(params["pme_threads_per_rank"]));
+        auto val = py::cast<std::string>(py::str(params["threads_per_pme_rank"]));
         mdargs->emplace_back("-ntomp_pme");
         mdargs->emplace_back(val);
     }
@@ -158,7 +158,7 @@ void export_context(py::module &m)
     py::class_ < MDArgs, std::unique_ptr < MDArgs>> mdargs(m, "MDArgs");
     mdargs.def(py::init(), "Create an empty MDArgs object.");
     mdargs.def("set",
-               [](MDArgs* self, py::dict params){ setMDArgs(self, params); },
+               [](MDArgs* self, const py::dict &params){ setMDArgs(self, params); },
                "Assign parameters in MDArgs from Python dict.");
 
     // Export execution context class

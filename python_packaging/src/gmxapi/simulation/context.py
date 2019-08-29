@@ -1,11 +1,44 @@
+#
+# This file is part of the GROMACS molecular simulation package.
+#
+# Copyright (c) 2019, by the GROMACS development team, led by
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
+#
+# GROMACS is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 2.1
+# of the License, or (at your option) any later version.
+#
+# GROMACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with GROMACS; if not, see
+# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+#
+# If you want to redistribute modifications to GROMACS, please
+# consider that scientific software is very special. Version
+# control is crucial - bugs must be traceable. We will be happy to
+# consider code for inclusion in the official distribution, but
+# derived work must not be called official GROMACS. Details are found
+# in the README & COPYING files - if they are missing, get the
+# official version at http://www.gromacs.org.
+#
+# To help us fund GROMACS development, we humbly ask that you cite
+# the research papers on the package. Check out http://www.gromacs.org.
+#
+# This file is based on the Kasson Lab gmxapi project release 0.0.7.4.
+# https://github.com/kassonlab/gmxapi/blob/v0.0.7.4/src/gmx/context.py
+# https://github.com/kassonlab/gmxapi/blob/v0.0.7.4/LICENSE
 """
 Execution Context
 =================
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 __all__ = ['Context']
 
@@ -14,15 +47,13 @@ import os
 import warnings
 import tempfile
 
-from gmx import exceptions
-from gmx import logging
-from gmx import status
-import gmx.core as gmxapi
-
+from gmxapi import exceptions
+from gmxapi import logger as root_logger
+import gmxapi._gmxapi as _gmxapi
 
 # Module-level logger
-logger = logging.getLogger(__name__)
-logger.info('Importing gmx.context')
+logger = root_logger.getChild('context')
+logger.info('Importing {}'.format(__name__))
 
 
 def _load_tpr(self, element):
@@ -102,7 +133,7 @@ def _md(context, element):
                     and hasattr(dag, 'add_edge')
                     and hasattr(dag, 'graph')
                     and hasattr(dag, 'nodes')):
-                raise gmx.exceptions.TypeError("dag argument does not have a DiGraph interface.")
+                raise exceptions.ProtocolError("Argument 'dag' must provide the DiGraph interface.")
             name = self.name
             dag.add_node(name)
             for neighbor in self.input_nodes:
@@ -124,17 +155,17 @@ def _md(context, element):
                     # altered input.
                     _, temp_filename = tempfile.mkstemp(suffix='.tpr')
                     logger.debug('Updating input. Using temp file {}'.format(temp_filename))
-                    gmxapi.copy_tprfile(source=infile[rank],
-                                          destination=temp_filename,
-                                          end_time=self.runtime_params['end_time'])
+                    _gmxapi.rewrite_tprfile(source=infile[rank],
+                                         destination=temp_filename,
+                                         end_time=self.runtime_params['end_time'])
                     tpr_file = temp_filename
                 else:
                     tpr_file = infile[rank]
 
                 logger.info('Loading TPR file: {}'.format(tpr_file))
-                system = gmxapi.from_tpr(tpr_file)
+                system = _gmxapi.from_tpr(tpr_file)
                 dag.nodes[name]['system'] = system
-                mdargs = gmxapi.MDArgs()
+                mdargs = _gmxapi.MDArgs()
                 mdargs.set(self.runtime_params)
                 # Workaround to give access to plugin potentials used in a context.
                 pycontext = element.workspec._context
@@ -436,170 +467,39 @@ def _get_ensemble_update(context):
     return functor
 
 
-class _libgromacsContext(object):
-    """Low level API to libgromacs library context provides Python context manager.
-
-    Binds to a workflow and manages computation resources.
-
-    Attributes:
-        workflow (:obj:`gmx.workflow.WorkSpec`): bound workflow to be executed.
-
-    Example:
-        >>> with _libgromacsContext(my_workflow) as session: # doctest: +SKIP
-        ...    session.run()
-
-    Things are still fluid, but what we might do is have all of the WorkSpec operations that are supported
-    by a given Context to correspond to member functions in the Context, a SessionBuilder, or Session. In
-    any case, the operations allow a Context implementation to transform a work specification into a
-    directed acyclic graph of schedulable work.
-    """
-    # The Context is the appropriate entity to own or mediate access to an appropriate logging facility,
-    # but right now we are using the module-level Python logger.
-    # Reference https://github.com/kassonlab/gmxapi/issues/135
-    def __init__(self, workflow=None):
-        """Create new context bound to the provided workflow, if any.
-
-        Args:
-            workflow (gmx.workflow.WorkSpec) work specification object to bind.
-
-        """
-        self._session = None
-        self.__workflow = workflow
-
-    @property
-    def workflow(self):
-        return self.__workflow
-
-    @workflow.setter
-    def workflow(self, workflow):
-        """Before accepting a workflow, the context must check whether it can interpret the work specification."""
-
-        self.__workflow = workflow
-
-    @classmethod
-    def check_workspec(cls, workspec, raises=False):
-        """Check the validity of the work specification in this Context.
-
-        Args:
-            workspec: work specification to check
-            raises: Boolean (default False)
-
-        If raises == True, raises exceptions for problems found in the work specification.
-
-        Returns:
-            True if workspec is processable in this Context, else False.
-        """
-        from gmx.workflow import workspec_version, get_source_elements, WorkElement
-        # initialize return value.
-        is_valid = True
-        # Check compatibility
-        if workspec.version != workspec_version:
-            is_valid = False
-            if raises:
-                raise exceptions.ApiError('Incompatible workspec version.')
-        # Check that Elements are uniquely identifiable.
-        elements = dict()
-        for element in workspec.elements:
-            if element.name is not None and element.name not in elements:
-                elements[element.name] = element
-            else:
-                is_valid = False
-                if raises:
-                    raise exceptions.ApiError('WorkSpec must contain uniquely named elements.')
-        # Check that the specification is complete. There must be at least one source element and all
-        # dependencies must be fulfilled.
-        sources = set([element.name for element in get_source_elements(workspec)])
-        if len(sources) < 1:
-            is_valid = False
-            if raises:
-                raise exceptions.ApiError('WorkSpec must contain at least one source element')
-        return is_valid
-
-
-    def __enter__(self):
-        """Implement Python context manager protocol.
-
-        Returns:
-            runnable session object.
-        """
-        if self._session is not None:
-            raise exceptions.Error('Already running.')
-        # The API runner currently has an implicit context.
-        try:
-            # launch() with no arguments is deprecated.
-            # Ref: https://github.com/kassonlab/gmxapi/issues/124
-            self._session = self.workflow.launch()
-        except:
-            self._session = None
-            raise
-        return self._session
-
-    def __exit__(self, exception_type, exception_value, traceback):
-        """Implement Python context manager protocol.
-
-        Closing a session should not produce Python exceptions. Instead, exit
-        state is accessible through API objects like Status.
-        For evolving design points, see
-        - https://github.com/kassonlab/gmxapi/issues/41
-        - https://github.com/kassonlab/gmxapi/issues/121
-        """
-        self._session.close()
-        self._session = None
-        return False
-
-
-class DefaultContext(_libgromacsContext):
-    """ Produce an appropriate context for the work and compute environment.
-
-    Deprecated:
-        Use gmx.context.get_context() to find an appropriate high-level API
-        context. For lower-level access to the library that does not employ the
-        full API Context abstraction, but instead explicitly uses a local
-        libgromacs instance, a replacement still needs to be devised. It may
-        have this same interface, but the name and scoping of DefaultContext is
-        misleading.
-    """
-    def __init__(self, work):
-        # There is very little context abstraction at this point...
-        warnings.warn("Behavior of DefaultContext is unspecified starting in gmxapi 0.0.8.", DeprecationWarning)
-        super(DefaultContext, self).__init__(work)
-
 class Context(object):
     """Manage an array of simulation work executing in parallel.
 
-    This is the first implementation of a new style of Context class that has some extra abstraction
-    and uses the new WorkSpec idea.
+    .. deprecated:: 0.0.7
 
-    Additional facilities are available to elements of the array members.
+    This execution context implementation is imported from the gmxapi 0.0.7
+    package for GROMACS 2019 and does not conform to the protocols of gmxapi 0.1+.
+    It is used internally to support legacy code.
 
-      * array element corresponding to work in the current sub-context
-      * "global" resources managed by the ParallelArrayContext
+    The following features are subject to be changed or removed without further
+    notice.
 
     Attributes:
         work :obj:`gmx.workflow.WorkSpec`: specification of work to be performed when a session is launched.
         rank : numerical index of the current worker in a running session (None if not running)
-        work_width : Minimum width needed for the parallelism required by the array of work being executed.
+        work_width : Detected number of co-scheduled work elements.
         elements : dictionary of references to elements of the workflow.
 
     `rank`, `work_width`, and `elements` are empty or None until the work is processed, as during session launch.
 
-    Example:
-        Use ``mpiexec -n 2 python -m mpi4py myscript.py`` to run two jobs at the same time.
-        In this example the jobs are identical. In myscript.py:
-
-        >>> import gmx
-        >>> import gmx.core
-        >>> from gmx.data import tpr_filename # Get a test tpr filename
-        >>> work = gmx.workflow.from_tpr([tpr_filename, tpr_filename])
-        >>> gmx.run(work)
+    To run multiple simulations at a time, whether ensembles or independent
+    simulations, Python should be invoked in an MPI environment with `mpi4py`.
+    The Context can then use one MPI rank per simulation. It is recommended that
+    GROMACS is compiled without MPI in this case. (Thread-MPI is recommended.)
+    MPI domain decomposition is not explicitly supported with this Context
+    implementation.
 
     Example:
 
-        >>> import gmx
-        >>> import gmx.core
-        >>> from gmx.data import tpr_filename # Get a test tpr filename
-        >>> work = gmx.workflow.from_tpr([tpr_filename, tpr_filename])
-        >>> context = gmx.context.get_context(work)
+        >>> from gmxapi.simulation.context import get_context
+        >>> from gmxapi.simulation.workflow import from_tpr
+        >>> work = from_tpr([tpr_filename, tpr_filename])
+        >>> context = get_context(work)
         >>> with context as session:
         ...    session.run()
         ...    # The session is one abstraction too low to know what rank it is. It lets the spawning context manage
@@ -610,6 +510,11 @@ class Context(object):
         ...    output_path = os.path.join(context.workdir_list[rank], 'traj.trr')
         ...    assert(os.path.exists(output_path))
         ...    print('Worker {} produced {}'.format(rank, output_path))
+
+    Warning:
+        Do not run a gmxapi script in an MPI environment without `mpi4py`. gmxapi
+        will not be able to determine that other processes are running the same
+        script.
 
     Implementation notes:
 
@@ -628,7 +533,7 @@ class Context(object):
 
     Each node has a `launch()` method. When the session is entered, the `launch()` method is called for each node in
     dependency order. The launch method returns either a callable (`run()` function) or None, raising an exception in
-    case of an error. The sequence of non-None callables is stored by the Session. When Session.run() is called, the
+    case of an error. The sequence of callables is stored by the Session. When Session.run() is called, the
     sequence of callables is called in order. If StopIteration is raised by the callable, it is removed from the sequence.
     The sequence is processed repeatedly until there are no more callables.
 
@@ -664,7 +569,7 @@ class Context(object):
         """
 
         # self.__context_array = list([Context(work_element) for work_element in work])
-        from gmx.workflow import WorkSpec
+        from .workflow import WorkSpec
 
         # Until better Session abstraction exists at the Python level, a
         # _session_communicator attribute will be added to and removed from the
@@ -677,8 +582,8 @@ class Context(object):
         self.__workdir_list = workdir_list
 
         self._session = None
-        # This may not belong here. Is it confusing for the Context to have both global and local properties?
-        # Alternatively, maybe a trivial `property` that gets the rank from a bound session, if any.
+        # Note: this attribute is a detail of MPI-based Contexts. Client access
+        # is subject to change.
         self.rank = None
 
         # `work_width` notes the required width of an array of synchronous tasks to perform the specified work.
@@ -697,10 +602,9 @@ class Context(object):
         #
         # The gmxapi namespace of operations should be consistent with a specified universal set of functionalities
         self.__operations['gmxapi'] = {'md': lambda element : _md(self, element),
-                                       # 'global_data' : shared_data_maker,
                                       }
         # Even if TPR file loading were to become a common and stable enough operation to be specified in
-        # and API, it is unlikely to be implemented by any code outside of GROMACS, so let's not clutter
+        # an API, it is unlikely to be implemented by any code outside of GROMACS, so let's not clutter
         # a potentially more universal namespace.
         self.__operations['gromacs'] = {'load_tpr': lambda element : _load_tpr(self, element),
                                        }
@@ -723,7 +627,11 @@ class Context(object):
         # This setter must be called after the operations map has been populated.
         self.work = work
 
-        self._api_object = gmxapi.Context()
+        try:
+            self._api_object = _gmxapi.Context()
+        except Exception as e:
+            logger.error('Got exception when trying to create default library context: ' + str(e))
+            raise exceptions.ApiError('Uncaught exception in API object creation.') from e
 
     @property
     def work(self):
@@ -743,7 +651,7 @@ class Context(object):
 
         For discussion on error handling, see https://github.com/kassonlab/gmxapi/issues/125
         """
-        from gmx.workflow import WorkSpec, WorkElement
+        from .workflow import WorkSpec, WorkElement
         if work is None:
             return
 
@@ -809,6 +717,7 @@ class Context(object):
         self.__work = workspec
 
     def add_operation(self, namespace, operation, get_builder):
+        # noinspection PyUnresolvedReferences
         """Add a builder factory to the operation map.
 
         Extends the known operations of the Context by mapping an operation in a namespace to a function
@@ -863,7 +772,16 @@ class Context(object):
         return self.__ensemble_update(self, send, recv, tag)
 
     def __enter__(self):
-        """Implement Python context manager protocol, producing a Session for the specified work in this Context.
+        """Implement Python context manager protocol, producing a Session.
+
+        The work specified in this Context is inspected to build a directed
+        acyclic dependency graph (DAG). A Session is launched after reconciling
+        the configured work with available computing resources. Each time the
+        `run()` method of the Session is called, the graph is executed, and any
+        nodes that have no more work to do are pruned from the graph.
+
+        In practice, there are not currently any types of work implemented that
+        do not complete on the first pass.
 
         Returns:
             Session object that can be run and/or inspected.
@@ -945,6 +863,7 @@ class Context(object):
                 builders[name].add_subscriber(new_builder)
             builders[element.name] = new_builder
             builder_sequence.append(element.name)
+            logger.debug("Appended {} to builder sequence.".format(element.name))
 
         # Call the builders in dependency order
         # Note: session_communicator is available, but ensemble_communicator has not been created yet.
@@ -955,6 +874,7 @@ class Context(object):
             logger.info("Building {}".format(builder))
             logger.debug("Has build attribute {}.".format(builder.build))
             builder.build(graph)
+            logger.debug("Built.")
         self.work_width = graph.graph['width']
 
         # Prepare working directories. This should probably be moved to some aspect of the Session and either
@@ -994,7 +914,7 @@ class Context(object):
             self.workdir = self.__workdir_list[self.rank]
             if os.path.exists(self.workdir):
                 if not os.path.isdir(self.workdir):
-                    raise exceptions.FileError('{} is not a valid working directory.'.format(self.workdir))
+                    raise exceptions.Error('{} is not a valid working directory.'.format(self.workdir))
             else:
                 os.mkdir(self.workdir)
             os.chdir(self.workdir)
@@ -1033,9 +953,8 @@ class Context(object):
                         logger.debug("Closing node: {}".format(close))
                         close()
                     # Workaround for bug gmxapi-214
-                    if not gmxapi.has_feature('0.0.7-bugfix-https://github.com/kassonlab/gmxapi/issues/214'):
-                        context._api_object = gmxapi.Context()
-
+                    if not _gmxapi.has_feature('0.0.7-bugfix-https://github.com/kassonlab/gmxapi/issues/214'):
+                        context._api_object = _gmxapi.Context()
 
             self._session = Session(runners, closers)
         else:
@@ -1045,12 +964,12 @@ class Context(object):
             class NullSession(object):
                 def run(self):
                     logger.info("Running null session on rank {}.".format(self.rank))
-                    return status.Status()
+                    return True
                 def close(self):
                     logger.info("Closing null session.")
                     # Workaround for bug gmxapi-214
-                    if not gmxapi.has_feature('0.0.7-bugfix-https://github.com/kassonlab/gmxapi/issues/214'):
-                        context._api_object = gmxapi.Context()
+                    if not _gmxapi.has_feature('0.0.7-bugfix-https://github.com/kassonlab/gmxapi/issues/214'):
+                        context._api_object = _gmxapi.Context()
                     return
 
             self._session = NullSession()
@@ -1099,11 +1018,6 @@ class Context(object):
         return False
 
 
-# The interface and functionality of ParallelArrayContext is the new generic
-# Context behavior, but we need to keep the old name for compatibility for
-# the moment.
-ParallelArrayContext = Context
-
 def get_context(work=None):
     """Get a concrete Context object.
 
@@ -1131,13 +1045,13 @@ def get_context(work=None):
     """
     # We need to define an interface for WorkSpec objects so that we don't need
     # to rely on typing and inter-module dependencies.
-    from gmx import workflow
+    from .workflow import WorkSpec
     workspec = None
     if work is not None:
-        if isinstance(work, workflow.WorkSpec):
+        if isinstance(work, WorkSpec):
             workspec = work
         elif hasattr(work, 'workspec') and isinstance(work.workspec,
-                                                      workflow.WorkSpec):
+                                                      WorkSpec):
             workspec = work.workspec
         else:
             raise exceptions.ValueError('work argument must provide a gmx.workflow.WorkSpec.')
