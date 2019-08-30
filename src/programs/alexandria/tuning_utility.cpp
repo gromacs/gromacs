@@ -321,8 +321,7 @@ void print_electric_props(FILE                           *fp,
                     mol.molProp()->getMultiplicity());
             
             // Recalculate the atomic charges using the optmized parameters.
-            mol.GenerateCharges(pd, fplog, ap, qgen,
-                                watoms, hfac, lot, false, nullptr,
+            mol.GenerateCharges(pd, fplog, ap, watoms, hfac, lot, false, nullptr,
                                 cr, tabfn, hwinfo, qcycle,
                                 maxESP, qtol, nullptr, nullptr);
             

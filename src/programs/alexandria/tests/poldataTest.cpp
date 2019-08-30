@@ -56,9 +56,9 @@ namespace
 class PoldataTest : public gmx::test::CommandLineTestBase
 {
     protected:
-        gmx::test::TestReferenceChecker                   checker_;
-        static std::vector<std::string>                   atomNames;
-        static std::string                                atomName;
+        gmx::test::TestReferenceChecker checker_;
+        static std::vector<std::string> atomNames;
+        static std::string              atomName;
         
         PoldataTest () : checker_(this->rootChecker())
         {
@@ -69,7 +69,7 @@ class PoldataTest : public gmx::test::CommandLineTestBase
         // Static initiation, only run once every test.
         static void SetUpTestCase()
         {
-            Poldata *mypd = getPoldata("AXg");
+            Poldata *mypd = getPoldata("ACM-g");
             auto atomName = mypd->findAtype("ha")->getType();
             for (auto iter = mypd->getAtypeBegin(); iter != mypd->getAtypeEnd(); iter++)
             {
@@ -88,7 +88,7 @@ std::vector<std::string> PoldataTest::atomNames;
 std::string              PoldataTest::atomName;
 
 TEST_F (PoldataTest, getAtype){
-    alexandria::FfatypeIterator aType =  getPoldata("AXg")->findAtype("h1");
+    alexandria::FfatypeIterator aType =  getPoldata("ACM-g")->findAtype("h1");
 
     checker_.checkString(aType->getElem(), "elem");
     checker_.checkString(aType->getDesc(), "desc");
@@ -110,7 +110,7 @@ TEST_F(PoldataTest, addAtype){
           std::string        vdwparams    = "10.0 11.1 12.2";
     const std::string        ref_enthalpy = "1000";
     bool                     fixVdw       = true;
-    alexandria::Poldata     *pd           = getPoldata("AXg");
+    alexandria::Poldata     *pd           = getPoldata("ACM-g");
     pd->addAtype(elem,
                  desc,
                  atype,
@@ -140,7 +140,7 @@ TEST_F(PoldataTest, addAtype){
 
 TEST_F (PoldataTest, Ptype)
 {
-    auto pd    = getPoldata("AXg");
+    auto pd    = getPoldata("ACM-pg");
     auto ptype = pd->findPtype("p_ha");
     if (ptype != pd->getPtypeEnd())
     {
@@ -154,7 +154,7 @@ TEST_F (PoldataTest, Ptype)
 
 TEST_F (PoldataTest, Miller)
 {
-    auto pd    = getPoldata("AXg");
+    auto pd    = getPoldata("ACM-g");
     alexandria::MillerIterator miller = pd->getMillerBegin();
     checker_.checkInteger(miller->getAtomnumber(), "atomnumber");
     checker_.checkDouble(miller->getTauAhc(), "tauAhc");
@@ -164,7 +164,7 @@ TEST_F (PoldataTest, Miller)
 
 TEST_F (PoldataTest, Bosque)
 {
-    auto pd    = getPoldata("AXg");
+    auto pd    = getPoldata("ACM-g");
     alexandria::BosqueIterator bosque = pd->getBosqueBegin();
     checker_.checkString(bosque->getBosque(), "bosque");
     checker_.checkDouble(bosque->getPolarizability(), "polarizability");
@@ -173,7 +173,7 @@ TEST_F (PoldataTest, Bosque)
 TEST_F (PoldataTest, chi)
 {
     std::vector<double>                  chi0s;
-    std::vector<ChargeDistributionModel> eqd = { eqdAXpp, eqdAXpg, eqdAXps };
+    std::vector<ChargeDistributionModel> eqd = { eqdACM_g, eqdACM_pg };
 
     for (auto model : eqd)
     {
@@ -204,7 +204,7 @@ TEST_F (PoldataTest, row){
 TEST_F (PoldataTest, zeta)
 {
     std::vector<double>                  zetas;
-    std::vector<ChargeDistributionModel> eqd = { eqdAXpp, eqdAXpg, eqdAXps };
+    std::vector<ChargeDistributionModel> eqd = { eqdACM_pg, eqdESP_ps };
 
     for (auto model : eqd)
     {        
@@ -220,7 +220,7 @@ TEST_F (PoldataTest, zeta)
 
 TEST_F (PoldataTest, forceField)
 {
-    std::vector<ChargeDistributionModel> eqd = { eqdAXpp, eqdAXpg, eqdAXps };
+    std::vector<ChargeDistributionModel> eqd = { eqdESP_pp, eqdESP_pg, eqdESP_ps };
 
     std::vector<std::string> forces;
     for (auto model : eqd)
@@ -234,21 +234,21 @@ TEST_F (PoldataTest, forceField)
 
 TEST_F (PoldataTest, lenghtUnit)
 {
-    auto fs = getPoldata("AXg")->findForces(alexandria::eitBONDS);
+    auto fs = getPoldata("ACM-g")->findForces(alexandria::eitBONDS);
     std::string length =  fs->unit();
     checker_.checkString(length, "lenghtUnit");
 }
 
 TEST_F (PoldataTest, polarUnit)
 {
-    std::string polarUnit = getPoldata("AXg")->getPolarUnit( );
+    std::string polarUnit = getPoldata("ACM-g")->getPolarUnit( );
     checker_.checkString(polarUnit, "polarUnit");
 }
 
 
 TEST_F (PoldataTest, polarRef)
 {
-    std::string polarRef =  getPoldata("AXg")->getPolarRef( );
+    std::string polarRef =  getPoldata("ACM-g")->getPolarRef( );
     checker_.checkString(polarRef, "polarRef");
 }
 

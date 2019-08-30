@@ -96,7 +96,7 @@ class QgenResp
 
         /*! \brief Set options for ESP charge generation
          *
-         * \param[in] c          Charge distribution model eqdAXp, eqdAXg or eqdAXs
+         * \param[in] c          Charge distribution model
          * \param[in] watoms     Weighting factor for atoms in ESP fit
          */
         void setChargeDistributionModel(ChargeDistributionModel qd)

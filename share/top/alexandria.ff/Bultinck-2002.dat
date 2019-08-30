@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <atomtypes forcefield="alexandria-Bultinck_2019" function="BHAM" combination_rule="Geometric" nexclusions="2">
+  <atomtypes forcefield="Bultinck_2002" function="BHAM" combination_rule="Geometric" nexclusions="2">
     <atomtype elem="H" description="hydrogen on aliphatic C with 1 electron-withdrawal group" atype="h1" ptype="p_ha" btype="b_ha" ztype="z_h1" vdwparams="2.471350e-01 6.568880e-02 1.300000e+01" ref_enthalpy="222.2325"/>
     <atomtype elem="H" description="hydrogen on aliphatic C with 2 electron-withdrawal groups" atype="h2" ptype="p_ha" btype="b_ha" ztype="z_h1" vdwparams="2.293170e-01 6.568880e-02 1.300000e+01" ref_enthalpy="222.2325"/>
     <atomtype elem="H" description="hydrogen on aliphatic C with 3 electron-withdrawal groups" atype="h3" ptype="p_ha" btype="b_ha" ztype="z_h1" vdwparams="2.114990e-01 6.568880e-02 1.300000e+01" ref_enthalpy="222.2325"/>
@@ -70,27 +70,7 @@
     <atomtype elem="Br" description="general bromine" atype="br" ptype="p_br" btype="b_br" ztype="z_br" vdwparams="3.599230e-01 1.757280e+00 1.300000e+01" ref_enthalpy="124.1145"/>
     <atomtype elem="I" description="general iodine" atype="i" ptype="p_i" btype="b_i" ztype="z_i" vdwparams="3.830860e-01 2.092000e+00 1.300000e+01" ref_enthalpy="113.361"/>
   </atomtypes>
-  <poltypes polarizability_unit="Angstrom3" reference="Molina2011a,Ghahremanpour2018b">
-    <poltype ptype="p_ha" miller="H" bosque="H" polarizability="0.384" sigma_pol="0.012"/>
-    <poltype ptype="p_hp" miller="H" bosque="H" polarizability="0.432" sigma_pol="0.014"/>
-    <poltype ptype="p_hw" miller="hw" bosque="H" polarizability="0.375609" sigma_pol="0"/>
-    <poltype ptype="p_c1" miller="CDI" bosque="C" polarizability="1.459" sigma_pol="0.015"/>
-    <poltype ptype="p_ca" miller="ca" bosque="C" polarizability="1.411" sigma_pol="0.014"/>
-    <poltype ptype="p_c2" miller="CTR" bosque="C" polarizability="1.417" sigma_pol="0.018"/>
-    <poltype ptype="p_c3" miller="CTE" bosque="C" polarizability="1.074" sigma_pol="0.027"/>
-    <poltype ptype="p_na" miller="na" bosque="N" polarizability="0.863" sigma_pol="0.078"/>
-    <poltype ptype="p_n" miller="NTE" bosque="N" polarizability="0.928" sigma_pol="0.023"/>
-    <poltype ptype="p_no" miller="no" bosque="N" polarizability="1.657" sigma_pol="0.063"/>
-    <poltype ptype="p_ow" miller="ow" bosque="O" polarizability="0.688782" sigma_pol="0"/>
-    <poltype ptype="p_o" miller="OTE" bosque="O" polarizability="0.565" sigma_pol="0.01"/>
-    <poltype ptype="p_f" miller="F" bosque="F" polarizability="0.415" sigma_pol="0.016"/>
-    <poltype ptype="p_p4" miller="p4" bosque="P" polarizability="2.214" sigma_pol="0.06"/>
-    <poltype ptype="p_p2" miller="p2" bosque="P" polarizability="3.044" sigma_pol="0.314"/>
-    <poltype ptype="p_s" miller="STE" bosque="S" polarizability="2.932" sigma_pol="0.041"/>
-    <poltype ptype="p_cl" miller="Cl" bosque="Cl" polarizability="2.307" sigma_pol="0.013"/>
-    <poltype ptype="p_br" miller="Br" bosque="Br" polarizability="3.441" sigma_pol="0.023"/>
-    <poltype ptype="p_i" miller="I" bosque="I" polarizability="5.459" sigma_pol="0.09"/>
-  </poltypes>
+  <poltypes polarizability_unit="Angstrom3" reference="Molina2011a,Ghahremanpour2018b"/>
   <gt_bonds unit="pm" interaction="BONDS" function="MORSE"/>
   <gt_angles unit="degree" interaction="ANGLES" function="UREY_BRADLEY"/>
   <gt_angles unit="degree" interaction="LINEAR_ANGLES" function="LINEAR_ANGLES"/>

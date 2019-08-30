@@ -708,10 +708,7 @@ immStatus MyMol::zeta2atoms(const Poldata *pd)
     {
         zeta = pd->getZeta(*topology_->atoms.atomtype[i], 0);
         row  = pd->getRow(*topology_->atoms.atomtype[i], 0);
-        if (zeta == 0 && (eqdModel != eqdAXp  &&
-                          eqdModel != eqdAXpp &&
-                          eqdModel != eqdAXpg &&
-                          eqdModel != eqdBultinck))
+        if (zeta == 0 && getEemtypeDistributed(eqdModel))
         {
             return immZeroZeta;
         }
@@ -838,9 +835,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t  ap,
         svmul((1.0/atntot), coc_, coc_);
         /*Center of charge*/
 
-        bool bAddShells = (iChargeDistributionModel == eqdAXpp ||
-                           iChargeDistributionModel == eqdAXpg ||
-                           iChargeDistributionModel == eqdAXps);
+        bool bAddShells = getEemtypePolarizable(iChargeDistributionModel);
         if (bAddShells)
         {
             addShells(pd);
@@ -1158,7 +1153,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
     {
         make_local_shells(cr, mdatoms, shellfc_);
     }
-    if (ieqd != eqdAXs && ieqd != eqdAXps)
+    if (!getEemtypeSlater(ieqd))
     {
         for (auto i = 0; i < mtop_->natoms; i++)
         {
@@ -1293,7 +1288,6 @@ void MyMol::initQgresp(const Poldata             *pd,
 immStatus MyMol::GenerateCharges(const Poldata             *pd,
                                  const gmx::MDLogger       &mdlog,
                                  gmx_atomprop_t             ap,
-                                 ChargeGenerationAlgorithm  iChargeGenerationAlgorithm,
                                  real                       watoms,
                                  real                       hfac,
                                  const char                *lot,
@@ -1332,7 +1326,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             symmetric_charges_.push_back(i);
         }
     }
-    switch (iChargeGenerationAlgorithm)
+    switch (chargeGenerationAlgorithm(pd->getEqdModel()))
     {
         case eqgNONE:
             if (debug)

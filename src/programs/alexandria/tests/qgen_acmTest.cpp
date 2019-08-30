@@ -127,7 +127,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());
-            
+            fprintf(stderr, "Read babel for %s\n", dataName.c_str());
             // Generate charges and topology
             eDih            edih       = (eDih) get_option(dihopt);
             t_inputrec      inputrecInstance;
@@ -136,9 +136,16 @@ class AcmTest : public gmx::test::CommandLineTestBase
             mp_.setInputrec(inputrec);
 
             // Get poldata
-            auto pd = getPoldata(model);
-            mp_.GenerateTopology(aps_, pd, lot, false, false, edih, false, nullptr);
-
+            auto pd  = getPoldata(model);
+            auto imm = mp_.GenerateTopology(aps_, pd, lot, false, false, 
+                                            edih, false, nullptr);
+            if (immOK != imm)
+            {
+                fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
+                return;
+            }
+            fprintf(stderr, "Generated topology for %s\n", dataName.c_str());
+            
             // Needed for GenerateCharges
             real           hfac                  = 0;
             real           watoms                = 0;
@@ -151,11 +158,12 @@ class AcmTest : public gmx::test::CommandLineTestBase
             real           qtol                  = 1e-3;
 
             mp_.GenerateCharges(pd, mdlog, aps_,
-                                eqgACM, watoms, hfac, lot,
+                                watoms, hfac, lot,
                                 true, symm_string, cr,
                                 nullptr, hwinfo, qcycle,
                                 maxpot, qtol, nullptr, nullptr);
-
+            fprintf(stderr, "Generated charges for %s\n", dataName.c_str());
+            
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.topology_->atoms.nr; atom++)
             {
@@ -205,24 +213,13 @@ TEST_F (AcmTest, YangPDB)
 
 TEST_F (AcmTest, AXpgLOG)
 {
-    testAcm(eqdAXpg, einfLOG);
+    testAcm(eqdACM_pg, einfLOG);
 }
 
 TEST_F (AcmTest, AXpgPDB)
 {
-    testAcm(eqdAXpg, einfPDB);
+    testAcm(eqdACM_pg, einfPDB);
 }
-
-TEST_F (AcmTest, AXpsLOG)
-{
-    testAcm(eqdAXps, einfLOG);
-}
-
-TEST_F (AcmTest, AXpsPDB)
-{
-    testAcm(eqdAXps, einfPDB);
-}
- 
 
 }
 

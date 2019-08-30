@@ -1053,23 +1053,45 @@ void Eemprops::setRowZetaQ(const std::string &rowstr,
 }
 
 typedef struct {
-    ChargeDistributionModel eqd;
-    const char             *name;
-    const char             *ref;
-    gmx_bool                bWeight;
+    ChargeDistributionModel    eqd;
+    const char                *name;
+    bool                       polarizable;
+    ChargeGenerationAlgorithm  eqg;
 } t_eemtype_props;
 
-t_eemtype_props eemtype_props[eqdNR] = {
-    { eqdAXp,      "AXp",      "Ghahremanpour2018a",   false },
-    { eqdAXg,      "AXg",      "Ghahremanpour2018a",   true },
-    { eqdAXs,      "AXs",      "Ghahremanpour2018a",   false },
-    { eqdAXpp,     "AXpp",     "Ghahremanpour2018a",   false },
-    { eqdAXpg,     "AXpg",     "Ghahremanpour2018a",   true },
-    { eqdAXps,     "AXps",     "Ghahremanpour2018a",   false },
-    { eqdYang,     "Yang",     "Yang2006b",            true },
-    { eqdBultinck, "Bultinck", "Bultinck2002a",        false },
-    { eqdRappe,    "Rappe",    "Rappe1991a",           true }
+t_eemtype_props eemtype_props[eqdNR] = 
+    {
+     { eqdESP_p,    "ESP-p",    false, eqgESP },
+     { eqdESP_pp,   "ESP-pp",   true,  eqgESP },
+     { eqdESP_pg,   "ESP-pg",   true,  eqgESP },
+     { eqdESP_ps,   "ESP-ps",   true,  eqgESP },
+     { eqdACM_g,    "ACM-g",    false, eqgACM },
+     { eqdACM_pg,   "ACM-pg",   true,  eqgACM },
+     { eqdACM_ps,   "ACM-ps",   true,  eqgACM },
+     { eqdYang,     "Yang",     false, eqgACM },
+     { eqdBultinck, "Bultinck", false, eqgACM },
+     { eqdRappe,    "Rappe"  ,  false, eqgACM }
 };
+
+bool getEemtypePolarizable(ChargeDistributionModel eem)
+{
+    return eemtype_props[eem].polarizable;
+}
+
+bool getEemtypeDistributed(ChargeDistributionModel eem)
+{
+    return getEemtypeGaussian(eem) || getEemtypeSlater(eem);
+}
+
+bool getEemtypeSlater(ChargeDistributionModel eem)
+{
+    return (eem == eqdESP_ps || eem == eqdACM_ps || eem == eqdYang || eem == eqdRappe);
+}
+
+bool getEemtypeGaussian(ChargeDistributionModel eem)
+{
+    return (eem == eqdESP_pg || eem == eqdACM_pg || eem == eqdACM_g);
+}
 
 ChargeDistributionModel name2eemtype(const std::string name)
 {
@@ -1095,6 +1117,18 @@ const char *getEemtypeName(ChargeDistributionModel eem)
         }
     }
     return nullptr;
+}
+
+ChargeGenerationAlgorithm chargeGenerationAlgorithm(ChargeDistributionModel eem)
+{
+    for (auto i = 0; i < eqdNR; i++)
+    {
+        if (eem == eemtype_props[i].eqd)
+        {
+            return eemtype_props[i].eqg;
+        }
+    }
+    return eqgNONE;
 }
 
 } // namespace alexandria

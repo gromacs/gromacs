@@ -677,38 +677,34 @@ void QgenResp::calcRho()
             int                  atype = ra.atype();
             RespAtomTypeIterator rat   = findRAT(atype);
             GMX_RELEASE_ASSERT(rat == endRAT(), "Cannot find atomtype");
-            switch (iDistributionModel_)
+            if (getEemtypeGaussian(iDistributionModel_))
             {
-                case eqdYang:
-                case eqdRappe:
-                    vv = ra.q()*Nuclear_SS(r,
-                                           rat->beginRZ()->row(),
-                                           rat->beginRZ()->zeta());
-                    break;
-                case eqdAXpg:
-                case eqdAXg:
-                    vv = 0;
-                    for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
+                vv = 0;
+                for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
+                {
+                    real z = k->zeta();
+                    real q = k->q();
+                    // TODO Check
+                    if (q == 0)
                     {
-                        real z = k->zeta();
-                        real q = k->q();
-                        // TODO Check
-                        if (q == 0)
-                        {
-                            q = ra.q();
-                        }
-                        if (z > 0 && q != 0)
-                        {
-                            vv -= (q*pi32*exp(-gmx::square(r*z))*
-                                   pow(z, 3));
-                        }
+                        q = ra.q();
                     }
-                    break;
-                case eqdBultinck:
-                case eqdAXp:
-                case eqdAXs:
-                default:
-                    gmx_fatal(FARGS, "Unsupported charge model %d", iDistributionModel_);
+                    if (z > 0 && q != 0)
+                    {
+                        vv -= (q*pi32*exp(-gmx::square(r*z))*
+                               pow(z, 3));
+                    }
+                }
+            }
+            else if (getEemtypeSlater(iDistributionModel_))
+            {
+                vv = ra.q()*Nuclear_SS(r,
+                                       rat->beginRZ()->row(),
+                                       rat->beginRZ()->zeta());
+            }
+            else
+            {
+                gmx_fatal(FARGS, "Unsupported charge model %d", iDistributionModel_);
             }
             V  += vv;
         }
@@ -898,30 +894,23 @@ static double calcJ(ChargeDistributionModel iChargeDistributionModel,
     r = norm(dx);
     if (zeta <= 0)
     {
-        iChargeDistributionModel = eqdAXp;
+        iChargeDistributionModel = eqdESP_p;
     }
     if (watoms == 0 && r == 0)
     {
         gmx_fatal(FARGS, "Zero distance between the atom and the grid.");
     }
-    switch (iChargeDistributionModel)
+    if (getEemtypeGaussian(iChargeDistributionModel))
     {
-        case eqdAXp:
-        case eqdAXpp:
-            eTot = (1.0/r);
-            break;
-        case eqdAXs:
-        case eqdAXps:
-        case eqdRappe:
-        case eqdYang:
-            eTot = Nuclear_SS(r, row, zeta);
-            break;
-        case eqdAXg:
-        case eqdAXpg:
-            eTot = Nuclear_GG(r, zeta);
-            break;
-        default:
-            gmx_fatal(FARGS, "Unsupported charge model %d", iChargeDistributionModel);
+        eTot = Nuclear_GG(r, zeta);
+    }
+    else if (getEemtypeSlater(iChargeDistributionModel))
+    {
+        eTot = Nuclear_SS(r, row, zeta);
+    }
+    else
+    {
+        eTot = (1.0/r);
     }
     return (ONE_4PI_EPS0*eTot);
 }

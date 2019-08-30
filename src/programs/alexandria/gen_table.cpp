@@ -203,12 +203,12 @@ static void gen_alexandria_rho(Poldata                 &pd,
                 row[j]  = pd.getRow(name, j);
                 switch (iDistributionModel)
                 {
-                    case eqdAXg:
-                    case eqdAXpg:
+                    case eqdACM_g:
+                    case eqdACM_pg:
+                    case eqdESP_pg:
                         A[j] = pow(zeta[j]*zeta[j]/M_PI, 1.5);
                         break;
-                    case eqdAXs:
-                    case eqdAXps:
+                    case eqdESP_ps:
                         A[j] = pow(2*zeta[j], 2*row[j]+1)/(4*M_PI*faculty(2*row[j]));
                         break;
                     default:
@@ -232,12 +232,12 @@ static void gen_alexandria_rho(Poldata                 &pd,
                     {
                         switch (iDistributionModel)
                         {
-                            case eqdAXg:
-                            case eqdAXpg:
+                            case eqdACM_g:
+                            case eqdACM_pg:
+                            case eqdESP_pg:
                                 rho += A[j]*exp(-gmx::square(rr*zeta[j]));
                                 break;
-                            case eqdAXs:
-                            case eqdAXps:
+                            case eqdESP_ps:
                                 rho += A[j]*pow(rr, 2*row[j]-2)*exp(-2*zeta[j]*rr);
                                 break;
                             default:
@@ -318,13 +318,14 @@ static void gen_alexandria_tables(Poldata                 &pd,
                         rr = n*spacing;
                         switch (iDistributionModel)
                         {
-                            case eqdAXp:
-                            case eqdAXpp:
+                            case eqdESP_p:
+                            case eqdESP_pp:
                                 cv = Coulomb_PP(rr);
                                 cf = DCoulomb_PP(rr);
                                 break;
-                            case eqdAXg:
-                            case eqdAXpg:
+                            case eqdACM_g:
+                            case eqdACM_pg:
+                            case eqdESP_pg:
                                 cv = Coulomb_GG(rr, zetaI, zetaJ);
                                 if (zetaI == 0 && zetaJ == 0 && rr != 0)
                                 {
@@ -335,8 +336,7 @@ static void gen_alexandria_tables(Poldata                 &pd,
                                     cf = DCoulomb_GG(rr, zetaI, zetaJ);
                                 }
                                 break;
-                            case eqdAXs:
-                            case eqdAXps:
+                            case eqdESP_ps:
                             case eqdRappe:
                             case eqdYang:
                                 cv = Coulomb_SS(rr, rowI, rowJ, zetaI, zetaJ);
@@ -391,9 +391,8 @@ int alex_gen_table(int argc, char *argv[])
         "is used instead.[PAR]",
         "The program can read the [TT]gentop.dat[tt] file (or otherwise as",
         "specified with the [TT]-di[tt] option) and generate tables for all",
-        "possible interactions for a given charge model (as specified with",
-        "the [TT]-qdist[tt] option).[PAR]",
-        "For Slater interactions four parameters must be passed: the 1/Width",
+        "possible interactions for the charge model specified in the file.[PAR]",
+        "Broken: For Slater interactions four parameters must be passed: the 1/Width",
         "and the row number of the element. The interactions are computed analytically",
         "which may be slow due to the fact that arbitraray precision arithmetic is",
         "needed. If the width of one of the Slater is zero a Nucleus-Slater interaction",
@@ -421,13 +420,10 @@ int alex_gen_table(int argc, char *argv[])
     static double                 w1         = 20;
     static double                 w2         = 20;
     static char                  *atypes     = nullptr;
-    static const char            *cqdist[]   = {nullptr, "None", "Yang", "Rappe", "AXp", "AXpp", "AXg", "AXpg", "AXs", "AXps", nullptr};
     static const char            *opt[]      = {nullptr, "cut", "rf", "pme", nullptr};
     static const char            *vdw[]      = {nullptr, "lj", "bk", "wbk", nullptr};
     
     t_pargs                       pa[]       = {
-        { "-qdist",  FALSE, etENUM, {cqdist},
-          "Algorithm used for charge distribution" },
         { "-el",     FALSE, etENUM, {opt},
           "Electrostatics type: cut, rf or pme" },
         { "-rc",     FALSE, etREAL, {&rc},
@@ -470,16 +466,8 @@ int alex_gen_table(int argc, char *argv[])
     }
      
     Poldata                  pd;
-    std::string              gentop;
-    ChargeDistributionModel  iDistributionModel;
     gmx_atomprop_t           aps = gmx_atomprop_init();
-    
-    iDistributionModel = name2eemtype(cqdist[0]);  
-    const char    *ptr = opt2fn_null("-d", NFILE, fnm);
-    if (nullptr != ptr)
-    {
-        gentop.assign(ptr);
-    }
+    const char              *gentop = opt2fn_null("-d", NFILE, fnm);
     try
     {
         readPoldata(gentop, pd, aps);
@@ -487,11 +475,6 @@ int alex_gen_table(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     
     gen_alexandria_tables(pd, opt2fn("-o", NFILE, fnm), rc, 1.0/pts_nm, oenv, atypes);
-    
-    /*if (iDistributionModel != eqdAXp && iDistributionModel != eqdAXpp)
-    {
-        gen_alexandria_rho(pd, "rho.xvg", iDistributionModel, rc, 1.0/pts_nm, oenv);
-        }*/
     
     return 0;
 }

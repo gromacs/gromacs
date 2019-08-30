@@ -117,13 +117,13 @@ class RespTest : public gmx::test::CommandLineTestBase
             real           qtol        = 1e-3;
             int            maxpot      = 100;
             std::string    tabFile;
-            if (qdist == eqdAXps)
+            if (getEemtypeSlater(qdist))
             {
                 inputrec.coulombtype = eelUSER;
                 tabFile = fileManager().getInputFilePath("table.xvg");
             }
             mp_.setInputrec(&inputrec);
-            mp_.GenerateCharges(getPoldata(qdist), mdlog, aps_, eqgESP, watoms,
+            mp_.GenerateCharges(getPoldata(qdist), mdlog, aps_, watoms,
                                 hfac, lot, false, symm_string, cr, 
                                 tabFile.empty() ? nullptr : tabFile.c_str(),
                                 hwinfo, qcycle, maxpot, qtol, nullptr, nullptr);
@@ -134,8 +134,8 @@ class RespTest : public gmx::test::CommandLineTestBase
                 qtotValues.push_back(mp_.mtop_->moltype[0].atoms.atom[atom].q);
             }
             char buf[256];
-            snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%d",
-                     static_cast<int>(qdist));
+            snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%s",
+                     getEemtypeName(qdist));
             checker_.checkSequence(qtotValues.begin(),
                                    qtotValues.end(), buf);
         }
@@ -148,25 +148,15 @@ class RespTest : public gmx::test::CommandLineTestBase
 
 TEST_F (RespTest, AXpValues)
 {
-    testResp(eqdAXp);
-}
-
-TEST_F (RespTest, AXgValues)
-{
-    testResp(eqdAXg);
+    testResp(eqdESP_p);
 }
 
 TEST_F (RespTest, AXgPolarValues)
 {
-    testResp(eqdAXpg);
-}
-
-TEST_F (RespTest, AXsValues)
-{
-    testResp(eqdAXs);
+    testResp(eqdESP_pg);
 }
 
 TEST_F (RespTest, AXsPolarValues)
 {
-    testResp(eqdAXps);
+    testResp(eqdESP_ps);
 }

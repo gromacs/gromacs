@@ -51,7 +51,7 @@ alexandria::Poldata *getPoldata(std::string qdist)
     }
     if (pdTest.count(qdist) == 0)
     {
-        std::string baseName = gmx::formatString("alexandria-%s.dat", qdist.c_str());
+        std::string baseName = gmx::formatString("%s.dat", qdist.c_str());
         std::string dataName = gmx::test::TestFileManager::getInputFilePath(baseName);
         try
         {

@@ -51,12 +51,6 @@ enum {
     eQGEN_NR
 };
 
-enum ChargeGenerationAlgorithm {
-    eqgNONE, 
-    eqgACM, 
-    eqgESP
-};
-
 namespace alexandria
 {
 

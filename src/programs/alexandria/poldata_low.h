@@ -51,22 +51,35 @@ namespace alexandria
 {
 
 /*! \brief
- * Enumerated type holding the charge distribution models used in PolData
+ * Enumerated type holding the charge models used in PolData
  *
  * \inpublicapi
  * \ingroup module_alexandria
  */
 enum ChargeDistributionModel {
-    eqdAXp      = 0,
-    eqdAXg      = 1,
-    eqdAXs      = 2,
-    eqdAXpp     = 3,
-    eqdAXpg     = 4,
-    eqdAXps     = 5,
-    eqdYang     = 6,
-    eqdBultinck = 7,
-    eqdRappe    = 8,
-    eqdNR       = 9
+    eqdESP_p    = 0,
+    eqdESP_pg   = 1,
+    eqdESP_ps   = 2,
+    eqdESP_pp   = 3,
+    eqdACM_g    = 4,
+    eqdACM_pg   = 5,
+    eqdACM_ps   = 6,
+    eqdYang     = 7,
+    eqdBultinck = 8,
+    eqdRappe    = 9,
+    eqdNR       = 10
+};
+
+/*! \brief
+ * Enumerated type holding the charge generation algorithms
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+enum ChargeGenerationAlgorithm {
+    eqgNONE, 
+    eqgACM, 
+    eqgESP
 };
 
 enum VsiteType
@@ -1106,7 +1119,18 @@ using EempropsConstIterator = typename std::vector<Eemprops>::const_iterator;
 
 const char *getEemtypeName(ChargeDistributionModel eem);
 
+bool getEemtypePolarizable(ChargeDistributionModel eem);
+
+bool getEemtypeDistributed(ChargeDistributionModel eem);
+
+bool getEemtypeSlater(ChargeDistributionModel eem);
+
+bool getEemtypeGaussian(ChargeDistributionModel eem);
+
 ChargeDistributionModel name2eemtype(const std::string name);
+
+/* Return the charge generation algorithm */
+ChargeGenerationAlgorithm chargeGenerationAlgorithm(ChargeDistributionModel eem);
 
 } // namespace aleaxndria
 #endif

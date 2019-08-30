@@ -3,8 +3,8 @@
 <ReferenceData>
   <Sequence Name="forceField">
     <Int Name="Length">3</Int>
-    <String>alexandria-AXpp</String>
-    <String>alexandria-AXpg</String>
-    <String>alexandria-AXps</String>
+    <String>ESP-pp</String>
+    <String>ESP-pg</String>
+    <String>ESP-ps</String>
   </Sequence>
 </ReferenceData>

@@ -670,7 +670,7 @@ int alex_bastat(int argc, char *argv[])
 
     // This a hack to prevent that no bonds will be found to shells.
     iModel = pd.getEqdModel();
-    pd.setEqdModel(eqdAXp);
+    pd.setEqdModel(eqdESP_p);
 
     /* Read Molprops */
     auto nwarn = merge_xml(opt2fns("-f", NFILE, fnm), mp, nullptr, nullptr, nullptr, aps, pd, true);

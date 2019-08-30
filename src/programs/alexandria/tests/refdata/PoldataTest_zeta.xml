@@ -2,9 +2,7 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Sequence Name="zeta">
-    <Int Name="Length">6</Int>
-    <Real>0</Real>
-    <Real>0</Real>
+    <Int Name="Length">4</Int>
     <Real>17.694099999999999</Real>
     <Real>17.694099999999999</Real>
     <Real>10</Real>

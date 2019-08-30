@@ -225,7 +225,6 @@ class Poldata
 
         std::string  getGeometry(std::string gtBrule);
 
-
         /*! \brief
          * Return the discription corresponding to the atom type
          *
@@ -681,7 +680,7 @@ class Poldata
         std::vector<Symcharges>               symcharges_;
         std::vector<Eemprops>                 eep_;
         std::string                           eepReference_;
-        ChargeDistributionModel               eqdModel_ = eqdAXg;
+        ChargeDistributionModel               eqdModel_ = eqdACM_g;
 
         void addBtype(const std::string &btype);
 

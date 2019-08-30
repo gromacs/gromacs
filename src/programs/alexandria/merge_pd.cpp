@@ -305,15 +305,12 @@ int alex_merge_pd(int argc, char *argv[])
     
     static gmx_bool                  bcompress   = false;    
     static gmx_bool                  bPrintTable = false;
-    static const char               *cqdist[]    = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", nullptr};
     static const char               *eemprop[]   = {nullptr, "j0", "chi", "zeta", nullptr};
     
     t_pargs                          pa[]        =
     {
         { "-compress", FALSE, etBOOL, {&bcompress},
           "Compress output XML files" },
-        { "-qdist",   FALSE, etENUM, {cqdist},
-          "Model used for charge distribution" },
         { "-eemprop", FALSE, etENUM, {eemprop},
           "Atomic property used to describe molecular eletric properties." },
         { "-btex", FALSE, etBOOL, {&bPrintTable},

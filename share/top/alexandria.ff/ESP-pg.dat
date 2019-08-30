@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
+<gentop>
+  <atomtypes forcefield="ESP-pg" function="LJ_SR" combination_rule="Geometric" nexclusions="2">
+    <atomtype elem="H" description="hydrogen on aliphatic C with 1 electron-withdrawal group" atype="h1" ptype="p_ha" btype="b_ha" ztype="z_h1" vdwparams="2.471350e-01 6.568880e-02" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on aliphatic C with 2 electron-withdrawal groups" atype="h2" ptype="p_ha" btype="b_ha" ztype="z_h1" vdwparams="2.293170e-01 6.568880e-02" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on aliphatic C with 3 electron-withdrawal groups" atype="h3" ptype="p_ha" btype="b_ha" ztype="z_h1" vdwparams="2.114990e-01 6.568880e-02" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on aromatic C with 1 electron-withdrawal group" atype="h4" ptype="p_ha" btype="b_ha" ztype="z_h4" vdwparams="2.510550e-01 6.276000e-02" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on aromatic C with 2 electron-withdrawal groups" atype="h5" ptype="p_ha" btype="b_ha" ztype="z_h4" vdwparams="2.421460e-01 6.276000e-02" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on aromatic or sp2 aliphatic C" atype="ha" ptype="p_ha" btype="b_ha" ztype="z_ha" vdwparams="2.599640e-01 6.276000e-02" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on sp3 aliphatic C" atype="hc" ptype="p_ha" btype="b_ha" ztype="z_hc" vdwparams="2.649530e-01 6.568880e-02" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on nitrogen" atype="hn" ptype="p_hp" btype="b_hp" ztype="z_hp" vdwparams="1.069080e-01 6.568880e-02" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on oxygen" atype="ho" ptype="p_hp" btype="b_hp" ztype="z_hp" vdwparams="1.069080e-01 6.568880e-02" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on phosphor" atype="hp" ptype="p_hp" btype="b_hp" ztype="z_hp" vdwparams="1.069080e-01 6.568880e-02" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on sulphur" atype="hs" ptype="p_hp" btype="b_hp" ztype="z_hp" vdwparams="1.069080e-01 6.568880e-02" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen in water" atype="hw" ptype="p_hw" btype="b_hw" ztype="z_hw" vdwparams="1.069080e-01 6.568880e-02" ref_enthalpy="222.2325"/>
+    <atomtype elem="Li" description="lithium ion" atype="Li+" ptype="p_Li+" btype="b_Li+" ztype="z_Li+" fixed="true" vdwparams="3.042613e-01 3.785352e-02 1.669646e+01" ref_enthalpy="0"/>
+    <atomtype elem="Be" description="beryllium ion" atype="Be2+" ptype="p_Be2+" btype="b_Be2+" ztype="z_Be2+" vdwparams="0.2 0.2" ref_enthalpy="0"/>
+    <atomtype elem="C" description="sp C" atype="c1" ptype="p_c1" btype="b_c1" ztype="z_c1" vdwparams="3.399670e-01 8.786400e-01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="C=O or C=S" atype="c" ptype="p_c2" btype="b_c" ztype="z_c2" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="pure aromatic atom" atype="ca" ptype="p_ca" btype="b_ca" ztype="z_ca" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="bridge aromatic c in byphenyl system" atype="cq" ptype="p_c2" btype="b_c2" ztype="z_c2" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="bridge aromatic c in byphenyl system" atype="cp" ptype="p_c2" btype="b_c2" ztype="z_c2" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="inner sp2 C of conjugated ring systems" atype="cc" ptype="p_c2" btype="b_c2" ztype="z_c2" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="inner sp2 C of conjugated ring systems" atype="cd" ptype="p_c2" btype="b_c2" ztype="z_c2" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="sp C of conjugated system" atype="cg" ptype="p_c2" btype="b_c2" ztype="z_c2" vdwparams="3.399670e-01 8.786400e-01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="inner sp2 C of conjugated chain systems" atype="ce" ptype="p_c2" btype="b_c2" ztype="z_c2" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="inner sp2 C of conjugated chain systems" atype="cf" ptype="p_c2" btype="b_c2" ztype="z_c2" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="sp2 carbon in a 3-membered ring" atype="cu" ptype="p_c2" btype="b_c2" ztype="z_cu" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="sp2 carbon in a 4-membered ring" atype="cv" ptype="p_c2" btype="b_c2" ztype="z_cu" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="guanidine carbon" atype="cz" ptype="p_c2" btype="b_c2" ztype="z_cz" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="sp2 C, aliphatic" atype="c2" ptype="p_c2" btype="b_c2" ztype="z_c2" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="sp3 C" atype="c3" ptype="p_c3" btype="b_c3" ztype="z_c3" vdwparams="3.399670e-01 4.577300e-01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="3-membered ring atom" atype="cx" ptype="p_c3" btype="b_c3" ztype="z_cu" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="4-membered ring atom" atype="cy" ptype="p_c3" btype="b_c3" ztype="z_cu" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
+    <atomtype elem="N" description="sp2 N in amides" atype="n" ptype="p_n" btype="b_n" ztype="z_n" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="sp1 N" atype="n1" ptype="p_n" btype="b_n1" ztype="z_n1" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="sp2 N with 2 subst." atype="n2" ptype="p_n" btype="b_n2" ztype="z_n2" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="sp3 N with 3 subst." atype="n3" ptype="p_n" btype="b_n3" ztype="z_n3" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="sp3 N with 4 subst." atype="n4" ptype="p_n" btype="b_n3" ztype="z_n3" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="sp2 N with 3 subst." atype="na" ptype="p_na" btype="b_na" ztype="z_n2" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="aromatic N" atype="nb" ptype="p_na" btype="b_na" ztype="z_nb" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="inner sp2 N of conjugated ring systems" atype="nc" ptype="p_n" btype="b_na" ztype="z_n2" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="inner sp2 N of conjugated ring systems" atype="nd" ptype="p_n" btype="b_na" ztype="z_n2" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="inner sp2 N of conjugated chain system" atype="ne" ptype="p_n" btype="b_na" ztype="z_n2" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="amine N connected to aromatic ring" atype="nh" ptype="p_n" btype="b_nh" ztype="z_nh" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="N in nitro group" atype="no" ptype="p_no" btype="b_no" ztype="z_no" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
+    <atomtype elem="O" description="sp2 O" atype="o" ptype="p_o" btype="b_o" ztype="z_o" vdwparams="2.959920e-01 8.786400e-01" ref_enthalpy="253.5145"/>
+    <atomtype elem="O" description="sp3 O in hydroxyl group" atype="oh" ptype="p_o" btype="b_oh" ztype="z_oh" vdwparams="3.066470e-01 8.803140e-01" ref_enthalpy="253.5145"/>
+    <atomtype elem="O" description="O in water" atype="ow" ptype="p_ow" btype="b_ow" ztype="z_ow" vdwparams="3.000010e-01 7.112800e-01" ref_enthalpy="253.5145"/>
+    <atomtype elem="O" description="O in NO2" atype="on" ptype="p_o" btype="b_on" ztype="z_o" vdwparams="3.000010e-01 7.112800e-01" ref_enthalpy="253.5145"/>
+    <atomtype elem="O" description="O- in COO" atype="om" ptype="p_o" btype="b_o" ztype="z_om" vdwparams="0.2 0.2" ref_enthalpy="253.5145"/>
+    <atomtype elem="O" description="sp3 O in esters and ethers" atype="os" ptype="p_o" btype="b_os" ztype="z_os" vdwparams="3.000010e-01 7.112800e-01" ref_enthalpy="253.5145"/>
+    <atomtype elem="F" description="general fluorine" atype="f" ptype="p_f" btype="b_f" ztype="z_f" vdwparams="3.118150e-01 2.552240e-01" ref_enthalpy="83.8025"/>
+    <atomtype elem="F" description="fluoride ion" atype="F-" ptype="p_F-" btype="b_F-" ztype="z_F-" fixed="true" vdwparams="3.903453e-01 3.311747e-02 1.494227e+01" ref_enthalpy="0"/>
+    <atomtype elem="Na" description="sodium ion" atype="Na+" ptype="p_Na+" btype="b_Na+" ztype="z_Na+" fixed="true" vdwparams="3.426391e-01 1.001337e-01 1.834767e+01" ref_enthalpy="0"/>
+    <atomtype elem="Mg" description="magnesium ion" atype="Mg2+" ptype="p_Mg2+" btype="b_Mg2+" ztype="z_Mg2+" vdwparams="0.2 0.2" ref_enthalpy="152.098"/>
+    <atomtype elem="P" description="other sp2 P" atype="p2" ptype="p_p2" btype="b_p2" ztype="z_p2" vdwparams="3.741770e-01 8.368000e-01" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="other sp3 P" atype="p3" ptype="p_p2" btype="b_p3" ztype="z_p2" vdwparams="3.741770e-01 8.368000e-01" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="hypervalent P" atype="p4" ptype="p_p4" btype="b_p4" ztype="z_p4" vdwparams="3.741770e-01 8.368000e-01" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="hypervalent P" atype="p5" ptype="p_p4" btype="b_p4" ztype="z_p4" vdwparams="3.741770e-01 8.368000e-01" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="aromatic P" atype="pb" ptype="p_p2" btype="b_p" ztype="z_p2" vdwparams="3.741770e-01 8.368000e-01" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="inner sp2 P of conjugated ring systems" atype="pc" ptype="p_p2" btype="b_p" ztype="z_p2" vdwparams="3.741770e-01 8.368000e-01" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="inner sp2 P of conjugated chain system" atype="pe" ptype="p_p2" btype="b_p" ztype="z_p2" vdwparams="3.741770e-01 8.368000e-01" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="sp2 P of conjugated system" atype="px" ptype="p_p2" btype="b_p" ztype="z_p2" vdwparams="3.741770e-01 8.368000e-01" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="P of conjugated system" atype="py" ptype="p_p2" btype="b_p" ztype="z_p2" vdwparams="3.741770e-01 8.368000e-01" ref_enthalpy="321.75"/>
+    <atomtype elem="S" description="sp2 sulphur, p=s and c=s" atype="s" ptype="p_s" btype="b_s" ztype="z_s" vdwparams="3.563590e-01 1.046000e+00" ref_enthalpy="281.392"/>
+    <atomtype elem="S" description="hypervalent S, 3 subst." atype="s4" ptype="p_s" btype="b_s4" ztype="z_s4" vdwparams="3.563590e-01 1.046000e+00" ref_enthalpy="281.392"/>
+    <atomtype elem="S" description="hypervalent S, 4 subst" atype="s6" ptype="p_s" btype="b_s4" ztype="z_s4" vdwparams="3.563590e-01 1.046000e+00" ref_enthalpy="281.392"/>
+    <atomtype elem="S" description="sp3 S in thiol" atype="sh" ptype="p_s" btype="b_s" ztype="z_s" vdwparams="3.563590e-01 1.046000e+00" ref_enthalpy="281.392"/>
+    <atomtype elem="S" description="sp3 sulphur in S-R and S-S" atype="ss" ptype="p_s" btype="b_s" ztype="z_s" vdwparams="3.563590e-01 1.046000e+00" ref_enthalpy="281.392"/>
+    <atomtype elem="S" description="conjugated S, 3 subst." atype="sx" ptype="p_s" btype="b_s" ztype="z_s" vdwparams="3.563590e-01 1.046000e+00" ref_enthalpy="281.392"/>
+    <atomtype elem="S" description="conjugated S, 4 subst." atype="sy" ptype="p_s" btype="b_s" ztype="z_s" vdwparams="3.563590e-01 1.046000e+00" ref_enthalpy="281.392"/>
+    <atomtype elem="Cl" description="general chlorine" atype="cl" ptype="p_cl" btype="b_cl" ztype="z_cl" vdwparams="3.470940e-01 1.108760e+00" ref_enthalpy="125.8925"/>
+    <atomtype elem="Cl" description="chloride ion" atype="Cl-" ptype="p_Cl-" btype="b_Cl-" ztype="z_Cl-" fixed="true" vdwparams="4.519235e-01 2.884392e-01 1.507286e+01" ref_enthalpy="0"/>
+    <atomtype elem="K" description="potassium ion" atype="K+" ptype="p_K+" btype="b_K+" ztype="z_K+" fixed="true" vdwparams="4.170159e-01 3.105139e-01 1.689629e+01" ref_enthalpy="0"/>
+    <atomtype elem="Ca" description="calcium ion" atype="Ca2+" ptype="p_Ca2+" btype="b_Ca2+" ztype="z_Ca2+" vdwparams="0.2 0.2" ref_enthalpy="0"/>
+    <atomtype elem="Br" description="general bromine" atype="br" ptype="p_br" btype="b_br" ztype="z_br" vdwparams="3.599230e-01 1.757280e+00" ref_enthalpy="124.1145"/>
+    <atomtype elem="Br" description="bromide ion" atype="Br-" ptype="p_Br-" btype="b_Br-" ztype="z_Br-" fixed="true" vdwparams="4.729458e-01 4.520353e-01 1.510116e+01" ref_enthalpy="0"/>
+    <atomtype elem="Rb" description="rubidium ion" atype="Rb+" ptype="p_Rb+" btype="b_Rb+" ztype="z_Rb+" fixed="true" vdwparams="4.477634e-01 3.882736e-01 1.683291e+01" ref_enthalpy="0"/>
+    <atomtype elem="I" description="general iodine" atype="i" ptype="p_i" btype="b_i" ztype="z_i" vdwparams="3.830860e-01 2.092000e+00" ref_enthalpy="113.361"/>
+    <atomtype elem="I" description="iodide ion" atype="I-" ptype="p_I-" btype="b_I-" ztype="z_I-" fixed="true" vdwparams="4.961618e-01 8.907727e-01 1.510427e+01" ref_enthalpy="0"/>
+    <atomtype elem="Cs" description="cesium ion" atype="Cs+" ptype="p_Cs+" btype="b_Cs+" ztype="z_Cs+" fixed="true" vdwparams="4.751549e-01  3.427416e-01  1.862935e+01" ref_enthalpy="0"/>
+  </atomtypes>
+  <poltypes polarizability_unit="Angstrom3" reference="Molina2011a,Ghahremanpour2018b">
+    <poltype ptype="p_ha" miller="H" bosque="H" polarizability="0.384" sigma_pol="0.012"/>
+    <poltype ptype="p_hp" miller="H" bosque="H" polarizability="0.432" sigma_pol="0.014"/>
+    <poltype ptype="p_hw" miller="hw" bosque="H" polarizability="0.375609" sigma_pol="0"/>
+    <poltype ptype="p_Li+" miller="Li+" bosque="Li" polarizability="0.029" sigma_pol="0"/>
+    <poltype ptype="p_Be2+" miller="Be2+" bosque="Be" polarizability="0" sigma_pol="0"/>
+    <poltype ptype="p_c1" miller="CDI" bosque="C" polarizability="1.459" sigma_pol="0.015"/>
+    <poltype ptype="p_ca" miller="ca" bosque="C" polarizability="1.411" sigma_pol="0.014"/>
+    <poltype ptype="p_c2" miller="CTR" bosque="C" polarizability="1.417" sigma_pol="0.018"/>
+    <poltype ptype="p_c3" miller="CTE" bosque="C" polarizability="1.074" sigma_pol="0.027"/>
+    <poltype ptype="p_na" miller="na" bosque="N" polarizability="0.863" sigma_pol="0.078"/>
+    <poltype ptype="p_n" miller="NTE" bosque="N" polarizability="0.928" sigma_pol="0.023"/>
+    <poltype ptype="p_no" miller="no" bosque="N" polarizability="1.657" sigma_pol="0.063"/>
+    <poltype ptype="p_ow" miller="ow" bosque="O" polarizability="0.688782" sigma_pol="0"/>
+    <poltype ptype="p_o" miller="OTE" bosque="O" polarizability="0.565" sigma_pol="0.01"/>
+    <poltype ptype="p_f" miller="F" bosque="F" polarizability="0.415" sigma_pol="0.016"/>
+    <poltype ptype="p_F-" miller="F-" bosque="F" polarizability="1.3" sigma_pol="0"/>
+    <poltype ptype="p_Na+" miller="Na+" bosque="Na" polarizability="0.18" sigma_pol="0"/>
+    <poltype ptype="p_Mg2+" miller="Mg2+" bosque="Mg" polarizability="0" sigma_pol="0"/>
+    <poltype ptype="p_p4" miller="p4" bosque="P" polarizability="2.214" sigma_pol="0.06"/>
+    <poltype ptype="p_p2" miller="p2" bosque="P" polarizability="3.044" sigma_pol="0.314"/>
+    <poltype ptype="p_s" miller="STE" bosque="S" polarizability="2.932" sigma_pol="0.041"/>
+    <poltype ptype="p_cl" miller="Cl" bosque="Cl" polarizability="2.307" sigma_pol="0.013"/>
+    <poltype ptype="p_Cl-" miller="Cl-" bosque="Cl" polarizability="3.5" sigma_pol="0"/>
+    <poltype ptype="p_K+" miller="K+" bosque="K" polarizability="0.81" sigma_pol="0"/>
+    <poltype ptype="p_Ca2+" miller="Ca2+" bosque="Ca" polarizability="0" sigma_pol="0"/>
+    <poltype ptype="p_br" miller="Br" bosque="Br" polarizability="3.441" sigma_pol="0.023"/>
+    <poltype ptype="p_Br-" miller="Br-" bosque="Br" polarizability="4.6" sigma_pol="0"/>
+    <poltype ptype="p_Rb+" miller="Rb+" bosque="Rb" polarizability="1.32" sigma_pol="0"/>
+    <poltype ptype="p_i" miller="I" bosque="I" polarizability="5.459" sigma_pol="0.09"/>
+    <poltype ptype="p_I-" miller="I-" bosque="I" polarizability="7.5" sigma_pol="0"/>
+    <poltype ptype="p_Cs+" miller="Cs+" bosque="Cs" polarizability="2.02" sigma_pol="0"/>
+  </poltypes>
+  <bsatoms polarizability_unit="A3" reference="Bosque2002a">
+    <bsatom elem="H" polarizability="0.17"/>
+    <bsatom elem="C" polarizability="1.51"/>
+    <bsatom elem="N" polarizability="1.05"/>
+    <bsatom elem="O" polarizability="0.57"/>
+    <bsatom elem="F" polarizability="0.22"/>
+    <bsatom elem="P" polarizability="2.48"/>
+    <bsatom elem="S" polarizability="2.99"/>
+    <bsatom elem="Cl" polarizability="2.16"/>
+    <bsatom elem="Br" polarizability="3.29"/>
+    <bsatom elem="I" polarizability="5.45"/>
+    <bsatom elem="0" polarizability="0.32"/>
+  </bsatoms>
+  <milatoms tau_ahc_unit="A3/2" alpha_ahp_unit="A3" reference="Miller1990a">
+    <milatom milname="H" atomnumber="1" tau_ahc="0.313" alpha_ahp="0.387"/>
+    <milatom milname="F" atomnumber="9" tau_ahc="1.089" alpha_ahp="0.296"/>
+    <milatom milname="Cl" atomnumber="17" tau_ahc="3.165" alpha_ahp="2.315"/>
+    <milatom milname="Br" atomnumber="35" tau_ahc="5.566" alpha_ahp="3.013"/>
+    <milatom milname="I" atomnumber="53" tau_ahc="8.593" alpha_ahp="5.415"/>
+    <milatom milname="CTE" atomnumber="6" tau_ahc="1.294" alpha_ahp="1.061"/>
+    <milatom milname="CTR" atomnumber="6" tau_ahc="1.433" alpha_ahp="1.352"/>
+    <milatom milname="CRB" atomnumber="6" tau_ahc="1.707" alpha_ahp="1.896" alexandria_equiv="C2"/>
+    <milatom milname="CDI" atomnumber="6" tau_ahc="1.393" alpha_ahp="1.283"/>
+    <milatom milname="NTE" atomnumber="7" tau_ahc="1.373" alpha_ahp="0.964"/>
+    <milatom milname="NTR3" atomnumber="7" tau_ahc="1.262" alpha_ahp="1.03"/>
+    <milatom milname="NPI2" atomnumber="7" tau_ahc="1.22" alpha_ahp="1.09" alexandria_equiv="N2"/>
+    <milatom milname="NDI" atomnumber="7" tau_ahc="1.304" alpha_ahp="0.956"/>
+    <milatom milname="OTE" atomnumber="8" tau_ahc="1.249" alpha_ahp="0.637"/>
+    <milatom milname="OTR4" atomnumber="8" tau_ahc="1.216" alpha_ahp="0.569"/>
+    <milatom milname="OPI2" atomnumber="8" tau_ahc="1.083" alpha_ahp="0.274" alexandria_equiv="O2"/>
+    <milatom milname="STE" atomnumber="16" tau_ahc="3.496" alpha_ahp="3"/>
+    <milatom milname="STR4" atomnumber="16" tau_ahc="3.827" alpha_ahp="3.729"/>
+    <milatom milname="SPI2" atomnumber="16" tau_ahc="2.982" alpha_ahp="2.7" alexandria_equiv="S2"/>
+    <milatom milname="PTE" atomnumber="15" tau_ahc="2.485" alpha_ahp="1.538"/>
+    <milatom milname="Si" atomnumber="14" tau_ahc="2.7" alpha_ahp="1.97"/>
+  </milatoms>
+  <gt_bonds unit="pm" interaction="BONDS" function="MORSE"/>
+  <gt_angles unit="degree" interaction="ANGLES" function="UREY_BRADLEY"/>
+  <gt_angles unit="degree" interaction="LINEAR_ANGLES" function="LINEAR_ANGLES"/>
+  <gt_dihedrals unit="degree" interaction="PROPER_DIHEDRALS" function="FOURDIHS"/>
+  <gt_dihedrals unit="degree" interaction="IMPROPER_DIHEDRALS" function="IDIHS"/>
+  <symmetric_charges>
+    <sym_charge central="C" attached="H" numattach="3"/>
+    <sym_charge central="N" attached="H" numattach="3"/>
+    <sym_charge central="N" attached="H" numattach="2"/>
+    <sym_charge central="N" attached="O" numattach="2"/>
+    <sym_charge central="O" attached="H" numattach="2"/>
+    <sym_charge central="C" attached="F" numattach="3"/>
+    <sym_charge central="C" attached="Cl" numattach="3"/>
+    <sym_charge central="C" attached="Br" numattach="3"/>
+    <sym_charge central="C" attached="I" numattach="3"/>
+    <sym_charge central="Si" attached="H" numattach="3"/>
+  </symmetric_charges>
+  <eemprops model="ESP-pg" reference="Ghahremanpour2018b">
+  <!-- row equals zero means that point charge will be used instead of Slater -->
+  </eemprops>
+</gentop>

@@ -72,22 +72,28 @@ int alex_gentop(int argc, char *argv[])
         "If the flag [TT]-qgen[tt] is given, charges will be generated using the",
         "specified algorithm. Without the flag the charges from the QM calculation",
         "will be used.",
-        "The only supported force field for this tool is Alexandria.[PAR]",
-        "oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)[PAR]",
+        "The supported force field for this tool are Alexandria with two",
+        "different flavors (specify with the -ff flag): [BR]",
+        "ACM-g  : Alexandria Charge Model with Gaussian charges, and[BR]",
+        "ACM-pg : Alexandria Charge Model with Polarrizable Gaussian charges.[PAR]",
+        "A few other choices are available for historical reasons and for",
+        "development:[PAR]",
+        "ESP-p  : ElectroStatic Potential with point charges[PAR]",
+        "ESP-pp : ESP with with polarizable point charges[PAR]",
+        "ESP-pg : ESP with with polarizable Gaussian-distributed charges[PAR]",
+        "ESP-ps : ESP with with polarizable Slater-distributed charges[PAR]",
+        "Rappe  : Rappe and Goddard (J Phys Chem 95 (1991) 3358)[PAR]",
+        "Yang   : Yang & Sharp (J Chem Theory Comput 2 (2006), 1152)[PAR]",
+        "Bultinck: Bultinck et al. (J Phys Chem A 106 (2002) 7887)[PAR]",
         "The corresponding data files can be found in the library directory",
-        "with names like ffXXXX.YYY. Check chapter 5 of the manual for more",
-        "information about file formats. The default forcefield is Alexandria",
-        "but selection can be made interactive, using the [TT]-ff select[tt] option.",
-        "one of the short names above on the command line instead.[PAR]"
+        "in subdirectory alexandria.ff. Check chapter 5 of the manual for more",
+        "information about file formats.[PAR]"
     };
     const char                      *bugs[] = {
         "No force constants for impropers are generated"
     };
     gmx_output_env_t                *oenv;
     gmx_atomprop_t                   aps;
-    char                             forcefield[STRLEN];
-    char                             ffdir[STRLEN];
-    char                             ffname[STRLEN];
     std::vector<alexandria::MolProp> mps;
     alexandria::MolPropIterator      mpi;
     alexandria::MyMol                mymol;
@@ -145,19 +151,15 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bH14           = true;
     static gmx_bool                  bVerbose       = true;
 
-    static const char               *cqdist[]       = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", "Yang", "Bultinck", "Rappe", nullptr};
-    static const char               *cqgen[]        = {nullptr, "None", "ACM", "ESP", "RESP", nullptr};
+    static const char               *ff[ ]          = {nullptr, "ACM-g", "ACM-pg", "ESP-p", "ESP-pp", "ESP-pg", "ESP-ps", "Yang", "Bultinck", "Rappe", nullptr};
     static const char               *cgopt[]        = {nullptr, "Atom", "Group", "Neutral", nullptr};
     static const char               *lot            = "AFF/ACM";
-    static const char               *ff             = "alexandria";
 
     t_pargs                          pa[]     = {
         { "-v",      FALSE, etBOOL, {&bVerbose},
           "Generate verbose output in the top file and on terminal." },
         { "-cube",   FALSE, etBOOL, {&bCUBE},
           "Generate cube." },
-        { "-ff",     FALSE, etSTR,  {&ff},
-          "Force field, interactive by default. Use -h for information." },
         { "-db",     FALSE, etSTR,  {&dbname},
           "Read a molecule from the database rather than from a file" },
         { "-lot",    FALSE, etSTR,  {&lot},
@@ -188,10 +190,8 @@ int alex_gentop(int argc, char *argv[])
           "Spacing of grid points for computing the potential (not used when a reference file is read)." },
         { "-watoms", FALSE, etREAL, {&watoms},
           "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use 0. For point+smeared charges 1 is recommended." },
-        { "-qgen",   FALSE, etENUM, {cqgen},
-          "Algorithm used for charge generation" },
-        { "-qdist",   FALSE, etENUM, {cqdist},
-          "Charge distribution used" },
+        { "-ff",     FALSE, etENUM, {ff},
+          "Force field model. Note that only ACM-g and ACM-pg will yield complete topologies but see help text ([TT]-h[tt])." },
         { "-qtol",   FALSE, etREAL, {&qtol},
           "Tolerance for assigning charge generation algorithm" },
         { "-qtot",   FALSE, etREAL, {&qtot},
@@ -221,28 +221,13 @@ int alex_gentop(int argc, char *argv[])
     }
 
     alexandria::Poldata       pd;
-    t_inputrec               *inputrec                   = new t_inputrec();
-    t_commrec                *cr                         = init_commrec();
-    const char               *tabfn                      = opt2fn_null("-table", NFILE, fnm);
-    eChargeGroup              ecg                        = (eChargeGroup) get_option(cgopt);
-    ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
-    ChargeDistributionModel   iChargeDistributionModel;
+    t_inputrec               *inputrec = new t_inputrec();
+    t_commrec                *cr       = init_commrec();
+    const char               *tabfn    = opt2fn_null("-table", NFILE, fnm);
+    eChargeGroup              ecg      = (eChargeGroup) get_option(cgopt);
     gmx::MDLogger             mdlog {};
-
-    /* Force field selection, interactive or direct */
-    choose_ff(strcmp(ff, "select") == 0 ? nullptr : ff,
-              forcefield, sizeof(forcefield), ffdir, sizeof(ffdir));
-
-    if (strlen(forcefield) > 0)
-    {
-        strcpy(ffname, forcefield);
-        ffname[0] = toupper(ffname[0]);
-    }
-    else
-    {
-        gmx_fatal(FARGS, "Empty forcefield string");
-    }
-
+    ChargeDistributionModel   iModel;
+    
     /* Check the options */
     bITP = opt2bSet("-oi", NFILE, fnm);
     if ((qtol < 0) || (qtol > 1))
@@ -251,22 +236,17 @@ int alex_gentop(int argc, char *argv[])
     }
     
     const char *gentop_fnm = opt2fn_null("-d", NFILE, fnm);
-    if (opt2parg_bSet("-qdist", asize(pa), pa) && nullptr == gentop_fnm)
+    if (opt2parg_bSet("-ff", asize(pa), pa) && nullptr == gentop_fnm)
     {
-        iChargeDistributionModel = name2eemtype(cqdist[0]);
-        gentop_fnm = gmx::formatString("alexandria-%s_2019.dat",
-                                       cqdist[0]).c_str();
+        iModel = name2eemtype(ff[0]);
+        gentop_fnm = gmx::formatString("%s_2020.dat", ff[0]).c_str();
     }
     if (nullptr == gentop_fnm)
     {
-        fprintf(stderr, "Please specify either a force field file name or use the -qdist flag");
+        fprintf(stderr, "Please specify either a force field file name or use the -ff flag");
         return 0;
     }
-    else
-    {
-        printf("Will use %s as the force field file.\n", gentop_fnm);
-    }
-
+    
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
     try
@@ -274,9 +254,9 @@ int alex_gentop(int argc, char *argv[])
         alexandria::readPoldata(gentop_fnm, pd, aps);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    iChargeDistributionModel = pd.getEqdModel();
+    iModel = pd.getEqdModel();
     printf("Using force field file %s and charge distribution model %s\n",
-           gentop_fnm, getEemtypeName(iChargeDistributionModel));
+           gentop_fnm, getEemtypeName(iModel));
     
     if (pd.getNexcl() != nexcl)
     {
@@ -350,7 +330,7 @@ int alex_gentop(int argc, char *argv[])
     {
         mymol.molProp()->Merge(mpi);
     }
-    mymol.SetForceField(forcefield);
+    mymol.SetForceField(ff[0]);
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
     imm = mymol.GenerateTopology(aps,
@@ -368,7 +348,6 @@ int alex_gentop(int argc, char *argv[])
         imm    = mymol.GenerateCharges(&pd,
                                        mdlog,
                                        aps,
-                                       iChargeGenerationAlgorithm,
                                        watoms,
                                        hfac,
                                        lot,

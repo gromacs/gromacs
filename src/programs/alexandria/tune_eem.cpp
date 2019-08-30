@@ -499,7 +499,7 @@ void OptACM::TuneACM2PolData()
                 std::string qstr   = ei->getQstr();
                 std::string rowstr = ei->getRowstr();
                 auto iModel = poldata()->getEqdModel();
-                if (iModel == eqdAXps || iModel == eqdAXpg)
+                if (getEemtypeDistributed(iModel))
                 {
                     if (bSameZeta_)
                     {
@@ -1001,9 +1001,7 @@ int alex_tune_eem(int argc, char *argv[])
         if (bMinimum || bForceOutput)
         {
             auto iModel = opt.poldata()->getEqdModel();
-            gmx_bool bPolar = (iModel == eqdAXpp  ||
-                               iModel == eqdAXpg  ||
-                               iModel == eqdAXps);
+            gmx_bool bPolar = getEemtypePolarizable(iModel);
             
             auto *ic = opt.indexCount();
             print_electric_props(fp,

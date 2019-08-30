@@ -346,18 +346,17 @@ immStatus updatePlist(const Poldata             *pd,
                         }
                         else if (!bBASTAT)
                         {
-                            if (debug)
-                            {
-                                fprintf(debug, "Could not find bond information for %s - %s with bondorder of %zu in %s\n",
-                                        aai.c_str(), aaj.c_str(), bondOrder, molname.c_str());
-                            }
+                            fprintf(stderr, "Could not find bond information for %s - %s with bondorder of %zu in %s\n",
+                                    aai.c_str(), aaj.c_str(), bondOrder, molname.c_str());
                             return immNotSupportedBond;
                         }
                         bondOrder_index++;
                     }
                     else
                     {
-                        gmx_fatal(FARGS, "Unsupported atom types: %d, %d!\n", pwi->a[0], pwi->a[1]);
+                        fprintf(stderr, "Unsupported atom types: %d, %d!\n",
+                                pwi->a[0], pwi->a[1]);
+                        return immAtomTypes;
                     }
                 }
             }
@@ -943,7 +942,7 @@ void write_zeta_q(FILE                   *fp,
     fprintf(fp, "; charge as well. The final charge is different between atoms however,\n");
     fprintf(fp, "; and it is listed below in the [ atoms ] section.\n");
     fprintf(fp, "; atype stype  nq%s      zeta          q  ...\n",
-            (iChargeDistributionModel == eqdAXs) ? "  row" : "");
+            getEemtypeSlater(iChargeDistributionModel) ? "  row" : "");
 
     k = -1;
     for (i = 0; (i < atoms->nr); i++)
@@ -985,7 +984,7 @@ void write_zeta_q(FILE                   *fp,
                     }
                     if (!bTypeSet)
                     {
-                        if (iChargeDistributionModel == eqdAXs)
+                        if (getEemtypeSlater(iChargeDistributionModel))
                         {
                             fprintf(fp, "  %4d", row);
                         }
@@ -1240,8 +1239,7 @@ void print_top_header(FILE                    *fp,
             gt_old = gt_type;
         }
         fprintf(fp, "\n");
-        if (iChargeDistributionModel == eqdAXpg ||
-            iChargeDistributionModel == eqdAXps)
+        if (getEemtypeDistributed(iChargeDistributionModel))
         {
             fprintf(fp, "[ distributed_charges ]\n");
             for (auto atype = pd->getAtypeBegin(); atype != pd->getAtypeEnd(); atype++)
@@ -1252,22 +1250,19 @@ void print_top_header(FILE                    *fp,
                     continue;
                 }
                 std::string shellName = atype->getType() + std::string("_s");
-                switch (iChargeDistributionModel)
+                if (getEemtypeSlater(iChargeDistributionModel))
                 {
-                    case eqdAXpg:
-                    {
-                        fprintf(fp, "%-5s  1  %g\n",  shellName.c_str(),
-                                eem->getZeta(1));
-                        break;
-                    }
-                    case eqdAXps:
-                    {
-                        fprintf(fp, "%-5s  2  %d  %g\n",  shellName.c_str(),
-                                eem->getRow(1), eem->getZeta(1));
-                        break;
-                    }
-                    default:
-                        GMX_RELEASE_ASSERT(false, "Death horror");
+                    fprintf(fp, "%-5s  2  %d  %g\n",  shellName.c_str(),
+                            eem->getRow(1), eem->getZeta(1));
+                }
+                else if (getEemtypeGaussian(iChargeDistributionModel))
+                {
+                    fprintf(fp, "%-5s  1  %g\n",  shellName.c_str(),
+                            eem->getZeta(1));
+                }
+                else
+                {
+                    GMX_RELEASE_ASSERT(false, "Incorrect charge distribution.");
                 }
             }
             fprintf(fp, "\n");

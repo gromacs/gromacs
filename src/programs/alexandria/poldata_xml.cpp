@@ -298,6 +298,20 @@ static double my_atof(const char *str)
     return d;
 }
 
+static double xbuf_atof(const std::string xbuf[],
+                        int               xbuf_index)
+{
+    char   *ptr = nullptr;
+    double  d   = strtod(xbuf[xbuf_index].c_str(), &ptr);
+    if (ptr == nullptr)
+    {
+        d = -1;
+        fprintf(stderr, "Cannot read variable %s from string '%s'. Returning %g instead\n",
+                rmap[xbuf_index].c_str(), xbuf[xbuf_index].c_str(), d);
+    }
+    return d;
+}
+
 static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                         int indent, Poldata &pd)
 {
@@ -437,8 +451,8 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 pd.addPtype(xbuf[exmlPTYPE],
                             xbuf[exmlMILLER],
                             xbuf[exmlBOSQUE],
-                            my_atof(xbuf[exmlPOLARIZABILITY].c_str()),
-                            my_atof(xbuf[exmlSIGPOL].c_str()));
+                            xbuf_atof(xbuf, exmlPOLARIZABILITY),
+                            xbuf_atof(xbuf, exmlSIGPOL));
             }
             break;
         case exmlATOMTYPE:
@@ -660,7 +674,7 @@ void readPoldata(const std::string &fileName,
     fn = fileName;
     if (fn.empty())
     {
-        fn.assign("alexandria-AXg_2019.dat");
+        fn.assign("ACM-g_2020.dat");
     }
     fn2 = gmx::findLibraryFile(fn, true, false);
     if (fn2.empty())

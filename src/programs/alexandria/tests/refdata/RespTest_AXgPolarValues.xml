@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Sequence Name="qtotValuesEqdModel_4">
+  <Sequence Name="qtotValuesEqdModel_ESP-pg">
     <Int Name="Length">30</Int>
     <Real>1.7878325034558469</Real>
     <Real>-2</Real>

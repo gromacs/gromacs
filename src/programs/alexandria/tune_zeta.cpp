@@ -230,7 +230,7 @@ void OptZeta::tuneZeta2PolData()
 
             // Begin to add  optimized zeta to poldata
             auto iModel = poldata()->getEqdModel();
-            if (iModel == eqdAXps || iModel == eqdAXpg)
+            if (getEemtypeDistributed(iModel))
             {
                 if (bSameZeta_)
                 {
@@ -731,7 +731,7 @@ int alex_tune_zeta(int argc, char *argv[])
     if (MASTER(opt.commrec()))
     {
         auto iModel = opt.poldata()->getEqdModel();
-        bool bPolar = (iModel == eqdAXpp  || iModel == eqdAXpg  || iModel == eqdAXps);
+        bool bPolar = getEemtypePolarizable(iModel);
 
         auto *ic = opt.indexCount();
         print_electric_props(fp,

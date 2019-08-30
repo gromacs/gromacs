@@ -400,7 +400,6 @@ class MyMol
          * \param[in] pd                             Data structure containing atomic properties
          * \param[in] ap                             Gromacs atom properties
          * \param[in] iModel                         The distrbution model of charge (e.x. point charge, gaussian, and slater models)
-         * \param[in] iChargeGenerationAlgorithm     The algorithm calculating the partial charge (e.x. ESP, RESP)
          * \param[in] watoms
          * \param[in] hfac
          * \param[in] lot                            The level of theory used for QM calculation
@@ -412,7 +411,6 @@ class MyMol
         immStatus GenerateCharges(const Poldata             *pd,
                                   const gmx::MDLogger       &fplog,
                                   gmx_atomprop_t             ap,
-                                  ChargeGenerationAlgorithm  iChargeGenerationAlgorithm,
                                   real                       watoms,
                                   real                       hfac,
                                   const char                *lot,

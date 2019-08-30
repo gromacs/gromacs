@@ -418,31 +418,27 @@ double QgenAcm::calcJ(rvec                    xI,
     
     if ((zetaI < 0) || (zetaJ < 0))
     {
-        iModel = eqdAXp;
+        iModel = eqdESP_p;
     }
-    if (r == 0 && (iModel == eqdAXp || iModel == eqdAXpp))
+    if (r == 0 && (!getEemtypeDistributed(iModel)))
     {
         gmx_fatal(FARGS, "Zero distance between atoms!\n");
     }
-    switch (iModel)
+    if (!getEemtypeDistributed(iModel))
     {
-        case eqdAXp:
-        case eqdAXpp:
-        case eqdBultinck:
-            eTot = Coulomb_PP(r);
-            break;
-        case eqdAXs:
-        case eqdAXps:
-        case eqdRappe:
-        case eqdYang:
-            eTot = Coulomb_SS(r, rowI, rowJ, zetaI, zetaJ);
-            break;
-        case eqdAXg:
-        case eqdAXpg:
-            eTot = Coulomb_GG(r, zetaI, zetaJ);
-            break;
-        default:
-            gmx_fatal(FARGS, "Unsupported model %d in calc_jcc", iModel);
+        eTot = Coulomb_PP(r);
+    }
+    else if (getEemtypeGaussian(iModel))
+    {
+        eTot = Coulomb_GG(r, zetaI, zetaJ);
+    }
+    else if (getEemtypeSlater(iModel))
+    {
+        eTot = Coulomb_SS(r, rowI, rowJ, zetaI, zetaJ);
+    }
+    else
+    {
+        gmx_fatal(FARGS, "Unsupported model %d in calc_jcc", iModel);
     }
     return (ONE_4PI_EPS0*eTot)/ELECTRONVOLT;
 }

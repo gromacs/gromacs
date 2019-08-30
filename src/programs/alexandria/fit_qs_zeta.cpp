@@ -67,10 +67,10 @@ static double chi2_coulomb(double zeta, double qs, double alpha,
         
         switch (iChargeDistributionModel)
         {
-        case alexandria::eqdAXpg:
+        case alexandria::eqdESP_pg:
             fcoulomb = DNuclear_GG(r, zeta);
             break;
-        case alexandria::eqdAXps:
+        case alexandria::eqdESP_ps:
             fcoulomb = DNuclear_SS(r, row, zeta);
             break;
         default:
@@ -99,7 +99,7 @@ static double zeta0(alexandria::ChargeDistributionModel iChargeDistributionModel
     {
         zeta = std::pow(3.0*std::sqrt(M_PI)/(4.0*alpha), 1.0/3.0);
     }
-    if (iChargeDistributionModel == alexandria::eqdAXps)
+    if (iChargeDistributionModel == alexandria::eqdESP_ps)
     {
         zeta *= 2.0;
     }
@@ -192,7 +192,7 @@ int alex_fit_qs_zeta(int argc, char *argv[])
     };
 
     const  int         NFILE          = asize(fnm);
-    static const char *cqdist[]       = { nullptr, "AXpg", "AXps", nullptr };
+    static const char *cqdist[]       = { nullptr, "ESP-pg", "ESP-ps", nullptr };
     bool               bVerbose       = false;
     real               alpha          = 0;
     real               delta_q        = 0;
@@ -226,7 +226,6 @@ int alex_fit_qs_zeta(int argc, char *argv[])
     {
         return 0;
     }
-    iChargeDistributionModel = alexandria::name2eemtype(cqdist[0]);
 
     alexandria::Poldata       pd;
     const char *gentop_fnm = opt2fn_null("-d", NFILE, fnm);
