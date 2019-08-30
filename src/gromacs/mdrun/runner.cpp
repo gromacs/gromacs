@@ -1502,7 +1502,7 @@ int Mdrunner::mdrunner()
                                                          fcd->disres.nsystems != 0);
 
         const void *commandStream = ((GMX_GPU == GMX_GPU_OPENCL) && thisRankHasPmeGpuTask) ? pme_gpu_get_device_stream(fr->pmedata) : nullptr;
-        const void *gpuContext    = ((GMX_GPU == GMX_GPU_OPENCL) && thisRankHasPmeGpuTask) ? pme_gpu_get_device_context(fr->pmedata) : nullptr;
+        const void *deviceContext = ((GMX_GPU == GMX_GPU_OPENCL) && thisRankHasPmeGpuTask) ? pme_gpu_get_device_context(fr->pmedata) : nullptr;
         const int   paddingSize   = pme_gpu_get_padding_size(fr->pmedata);
 
         const bool  inputIsCompatibleWithModularSimulator = ModularSimulator::isInputCompatible(
@@ -1517,7 +1517,7 @@ int Mdrunner::mdrunner()
         // We initialize GPU state even for the CPU runs so we will have a more verbose
         // error if someone will try accessing it from the CPU codepath
         gmx::StatePropagatorDataGpu stateGpu(commandStream,
-                                             gpuContext,
+                                             deviceContext,
                                              transferKind,
                                              paddingSize);
         fr->stateGpu = &stateGpu;

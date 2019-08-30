@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
  *
  * \inlibraryapi
+ * \ingroup module_gpu_utils
  */
 
 #include "gromacs/gpu_utils/gmxopencl.h"
@@ -49,7 +50,7 @@ using CommandStream = cl_command_queue;
 //! \brief Single GPU call timing event
 using CommandEvent  = cl_event;
 //! \brief Context used explicitly in OpenCL
-using Context       = cl_context;
+using DeviceContext = cl_context;
 
 /*! \internal \brief
  * GPU kernels scheduling description. This is same in OpenCL/CUDA.

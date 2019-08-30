@@ -548,7 +548,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     //TODO the variable below should be queried from the task assignment info
     const bool  useGpuForPme   = (runMode == PmeRunMode::GPU) || (runMode == PmeRunMode::Mixed);
     const void *commandStream  = useGpuForPme ? pme_gpu_get_device_stream(pme) : nullptr;
-    const void *gpuContext     = useGpuForPme ? pme_gpu_get_device_context(pme) : nullptr;
+    const void *deviceContext  = useGpuForPme ? pme_gpu_get_device_context(pme) : nullptr;
     const int   paddingSize    = pme_gpu_get_padding_size(pme);
     if (useGpuForPme)
     {
@@ -557,7 +557,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     }
 
     // Unconditionally initialize the StatePropagatorDataGpu object to get more verbose message if it is used from CPU builds
-    auto stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(commandStream, gpuContext, GpuApiCallBehavior::Sync, paddingSize);
+    auto stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(commandStream, deviceContext, GpuApiCallBehavior::Sync, paddingSize);
 
     clear_nrnb(mynrnb);
 

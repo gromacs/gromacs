@@ -63,7 +63,7 @@ namespace gmx
 {
 
 StatePropagatorDataGpu::Impl::Impl(gmx_unused const void *commandStream,
-                                   gmx_unused const void *gpuContext,
+                                   gmx_unused const void *deviceContext,
                                    GpuApiCallBehavior     transferKind,
                                    int                    paddingSize) :
     transferKind_(transferKind),
@@ -79,9 +79,9 @@ StatePropagatorDataGpu::Impl::Impl(gmx_unused const void *commandStream,
     {
         commandStream_ = *static_cast<const CommandStream*>(commandStream);
     }
-    if (gpuContext != nullptr)
+    if (deviceContext != nullptr)
     {
-        gpuContext_ = *static_cast<const Context*>(gpuContext);
+        deviceContext_ = *static_cast<const DeviceContext*>(deviceContext);
     }
 #endif
 
@@ -94,7 +94,7 @@ StatePropagatorDataGpu::Impl::~Impl()
 void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll)
 {
 #if GMX_GPU == GMX_GPU_OPENCL
-    GMX_ASSERT(gpuContext_ != nullptr, "GPU context should be set in OpenCL builds.");
+    GMX_ASSERT(deviceContext_ != nullptr, "GPU context should be set in OpenCL builds.");
 #endif
     numAtomsLocal_ = numAtomsLocal;
     numAtomsAll_   = numAtomsAll;
@@ -109,7 +109,7 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll)
         numAtomsPadded = numAtomsAll_;
     }
 
-    reallocateDeviceBuffer(&d_x_, DIM*numAtomsPadded, &d_xSize_, &d_xCapacity_, gpuContext_);
+    reallocateDeviceBuffer(&d_x_, DIM*numAtomsPadded, &d_xSize_, &d_xCapacity_, deviceContext_);
 
     const size_t paddingAllocationSize = numAtomsPadded - numAtomsAll_;
     if (paddingAllocationSize > 0)
@@ -117,8 +117,8 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll)
         clearDeviceBufferAsync(&d_x_, DIM*numAtomsAll_, DIM*paddingAllocationSize, commandStream_);
     }
 
-    reallocateDeviceBuffer(&d_v_, DIM*numAtomsAll_, &d_vSize_, &d_vCapacity_, gpuContext_);
-    reallocateDeviceBuffer(&d_f_, DIM*numAtomsAll_, &d_fSize_, &d_fCapacity_, gpuContext_);
+    reallocateDeviceBuffer(&d_v_, DIM*numAtomsAll_, &d_vSize_, &d_vCapacity_, deviceContext_);
+    reallocateDeviceBuffer(&d_f_, DIM*numAtomsAll_, &d_fSize_, &d_fCapacity_, deviceContext_);
 
 }
 
@@ -155,7 +155,7 @@ void StatePropagatorDataGpu::Impl::copyToDevice(DeviceBuffer<float>             
 {
 
 #if GMX_GPU == GMX_GPU_OPENCL
-    GMX_ASSERT(gpuContext_ != nullptr, "GPU context should be set in OpenCL builds.");
+    GMX_ASSERT(deviceContext_ != nullptr, "GPU context should be set in OpenCL builds.");
 #endif
 
     GMX_UNUSED_VALUE(dataSize);
@@ -187,7 +187,7 @@ void StatePropagatorDataGpu::Impl::copyFromDevice(gmx::ArrayRef<gmx::RVec>  h_da
 {
 
 #if GMX_GPU == GMX_GPU_OPENCL
-    GMX_ASSERT(gpuContext_ != nullptr, "GPU context should be set in OpenCL builds.");
+    GMX_ASSERT(deviceContext_ != nullptr, "GPU context should be set in OpenCL builds.");
 #endif
 
     GMX_UNUSED_VALUE(dataSize);
@@ -284,11 +284,11 @@ int StatePropagatorDataGpu::Impl::numAtomsAll()
 
 
 StatePropagatorDataGpu::StatePropagatorDataGpu(const void        *commandStream,
-                                               const void        *gpuContext,
+                                               const void        *deviceContext,
                                                GpuApiCallBehavior transferKind,
                                                int                paddingSize)
     : impl_(new Impl(commandStream,
-                     gpuContext,
+                     deviceContext,
                      transferKind,
                      paddingSize))
 {

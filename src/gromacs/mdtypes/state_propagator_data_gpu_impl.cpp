@@ -55,7 +55,7 @@ class StatePropagatorDataGpu::Impl
 };
 
 StatePropagatorDataGpu::StatePropagatorDataGpu(const void *       /* commandStream */,
-                                               const void *       /* gpuContext    */,
+                                               const void *       /* deviceContext */,
                                                GpuApiCallBehavior /* transferKind  */,
                                                int                /* paddingSize   */)
     : impl_(nullptr)

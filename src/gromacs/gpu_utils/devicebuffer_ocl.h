@@ -57,17 +57,17 @@
  * \tparam        ValueType            Raw value type of the \p buffer.
  * \param[in,out] buffer               Pointer to the device-side buffer.
  * \param[in]     numValues            Number of values to accomodate.
- * \param[in]     context              The buffer's context-to-be.
+ * \param[in]     deviceContext        The buffer's device context-to-be.
  */
 template <typename ValueType>
 void allocateDeviceBuffer(DeviceBuffer<ValueType> *buffer,
                           size_t                   numValues,
-                          Context                  context)
+                          DeviceContext            deviceContext)
 {
     GMX_ASSERT(buffer, "needs a buffer pointer");
     void  *hostPtr = nullptr;
     cl_int clError;
-    *buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, numValues * sizeof(ValueType), hostPtr, &clError);
+    *buffer = clCreateBuffer(deviceContext, CL_MEM_READ_WRITE, numValues * sizeof(ValueType), hostPtr, &clError);
     GMX_RELEASE_ASSERT(clError == CL_SUCCESS, "clCreateBuffer failure");
 }
 

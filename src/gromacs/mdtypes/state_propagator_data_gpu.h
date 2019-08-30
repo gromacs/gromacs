@@ -87,22 +87,22 @@ class StatePropagatorDataGpu
          * PME work on the GPU, and if that rank also does PP work that is the only
          * rank. So all coordinates are always transferred.
          *
-         * \note \p commandStream and \p gpuContext are allowed to be nullptr if
+         * \note \p commandStream and \p deviceContext are allowed to be nullptr if
          *       StatePropagatorDataGpu is not used in the OpenCL run (e.g. if PME
          *       does not run on the GPU).
          *
-         * \todo Make \p CommandStream visible in the CPU parts of the code so we
-         *       will not have to pass a void*.
-         * \todo Make \p Context visible in CPU parts of the code so we will not
-         *       have to pass a void*.
+         * \todo A CommandStream is now visible in the CPU parts of the code so we
+         *       can stop passing a void*.
+         * \todo A DeviceContext object is visible in CPU parts of the code so we
+         *       can stop passing a void*.
          *
          *  \param[in] commandStream  GPU stream, nullptr allowed.
-         *  \param[in] gpuContext     GPU context, nullptr allowed.
+         *  \param[in] deviceContext  GPU context, nullptr allowed.
          *  \param[in] transferKind   H2D/D2H transfer call behavior (synchronous or not).
          *  \param[in] paddingSize    Padding size for coordinates buffer.
          */
         StatePropagatorDataGpu(const void        *commandStream,
-                               const void        *gpuContext,
+                               const void        *deviceContext,
                                GpuApiCallBehavior transferKind,
                                int                paddingSize);
         //! Move constructor

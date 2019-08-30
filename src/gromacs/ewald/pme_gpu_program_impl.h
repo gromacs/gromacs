@@ -44,16 +44,8 @@
 
 #include "config.h"
 
+#include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/utility/classhelpers.h"
-
-#if GMX_GPU == GMX_GPU_CUDA
-#include "gromacs/gpu_utils/gputraits.cuh"
-#elif GMX_GPU == GMX_GPU_OPENCL
-#include "gromacs/gpu_utils/gputraits_ocl.h"
-#elif GMX_GPU == GMX_GPU_NONE
-// TODO place in gputraits_stub.h
-using Context = void *;
-#endif
 
 struct gmx_device_info_t;
 
@@ -85,7 +77,7 @@ struct PmeGpuProgramImpl
      * TODO: Later we want to be able to own the context at a higher level and not here,
      * but this class would still need the non-owning context handle to build the kernels.
      */
-    Context context;
+    DeviceContext context;
 
     //! Conveniently all the PME kernels use the same single argument type
 #if GMX_GPU == GMX_GPU_CUDA

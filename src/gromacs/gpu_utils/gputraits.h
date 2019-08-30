@@ -32,39 +32,36 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_GPU_UTILS_GPUTRAITS_CUH
-#define GMX_GPU_UTILS_GPUTRAITS_CUH
+#ifndef GMX_GPU_UTILS_GPUTRAITS_H
+#define GMX_GPU_UTILS_GPUTRAITS_H
 
 /*! \libinternal \file
- *  \brief Declares the CUDA type traits.
- *  \author Aleksei Iupinov <a.yupinov@gmail.com>
+ *  \brief Declares the GPU type traits for non-GPU builds
+ *  \author Mark Abraham <mark.j.abraham@gmail.com>
  *
  * \inlibraryapi
  * \ingroup module_gpu_utils
  */
 
+#include "config.h"
+
+#if GMX_GPU == GMX_GPU_CUDA
+
+#include "gromacs/gpu_utils/gputraits.cuh"
+
+#elif GMX_GPU == GMX_GPU_OPENCL
+
+#include "gromacs/gpu_utils/gputraits_ocl.h"
+
+#else
+
 //! \brief GPU command stream
-using CommandStream = cudaStream_t;
-//! \brief Single GPU call timing event - meaningless in CUDA
-using CommandEvent  = void;
-//! \brief Context used explicitly in OpenCL, does nothing in CUDA
+using CommandStream = void *;
+//! \brief Single GPU call timing event
+using CommandEvent  = void *;
+//! \brief GPU context
 using DeviceContext = void *;
 
-/*! \internal \brief
- * GPU kernels scheduling description. This is same in OpenCL/CUDA.
- * Provides reasonable defaults, one typically only needs to set the GPU stream
- * and non-1 work sizes.
- */
-struct KernelLaunchConfig
-{
-    size_t        gridSize[3]      = {1, 1, 1}; //!< Block counts
-    size_t        blockSize[3]     = {1, 1, 1}; //!< Per-block thread counts
-    size_t        sharedMemorySize = 0;         //!< Shared memory size in bytes
-    CommandStream stream           = nullptr;   //!< Stream to launch kernel in
-};
+#endif // GMX_GPU
 
-//! Sets whether device code can use arrays that are embedded in structs.
-#define c_canEmbedBuffers true
-// TODO this should be constexpr bool
-
-#endif
+#endif // GMX_GPU_UTILS_GPUTRAITS_H

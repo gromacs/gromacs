@@ -823,7 +823,7 @@ void gpu_init_pairlist(gmx_nbnxn_ocl_t           *nb,
     }
 
     // TODO most of this function is same in CUDA and OpenCL, move into the header
-    Context context = nb->dev_rundata->context;
+    DeviceContext context = nb->dev_rundata->context;
 
     reallocateDeviceBuffer(&d_plist->sci, h_plist->sci.size(),
                            &d_plist->nsci, &d_plist->sci_nalloc, context);

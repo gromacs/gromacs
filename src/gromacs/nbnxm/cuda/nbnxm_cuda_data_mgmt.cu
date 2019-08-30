@@ -550,7 +550,7 @@ void gpu_init_pairlist(gmx_nbnxn_cuda_t          *nb,
         iTimers.didPairlistH2D = true;
     }
 
-    Context context = nullptr;
+    DeviceContext context = nullptr;
 
     reallocateDeviceBuffer(&d_plist->sci, h_plist->sci.size(),
                            &d_plist->nsci, &d_plist->sci_nalloc, context);
