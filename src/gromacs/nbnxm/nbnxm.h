@@ -286,7 +286,6 @@ struct nonbonded_verlet_t
         //! \brief Executes the non-bonded kernel of the GPU or launches it on the GPU
         void dispatchNonbondedKernel(Nbnxm::InteractionLocality  iLocality,
                                      const interaction_const_t  &ic,
-                                     int                         legacyForceFlags,
                                      const gmx::ForceFlags      &forceFlags,
                                      int                         clearF,
                                      const t_forcerec           &fr,
@@ -302,7 +301,7 @@ struct nonbonded_verlet_t
                                       t_lambda                   *fepvals,
                                       real                       *lambda,
                                       gmx_enerdata_t             *enerd,
-                                      int                         forceFlags,
+                                      const gmx::ForceFlags      &forceFlags,
                                       t_nrnb                     *nrnb);
 
         /*! \brief Add the forces stored in nbat to f, zeros the forces in nbat

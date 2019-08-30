@@ -72,6 +72,8 @@ class ForceFlags
         bool computeNonbondedForces = false;
         //! Whether listed forces need to be computed this step
         bool computeListedForces = false;
+        //! Whether this step DHDL needs to be computed
+        bool computeDhdl = false;
 };
 
 /*! \libinternal

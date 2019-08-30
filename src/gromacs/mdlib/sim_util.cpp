@@ -314,7 +314,6 @@ static void post_process_forces(const t_commrec       *cr,
 static void do_nb_verlet(t_forcerec                       *fr,
                          const interaction_const_t        *ic,
                          gmx_enerdata_t                   *enerd,
-                         int                               legacyForceFlags,
                          const gmx::ForceFlags            &forceFlags,
                          const Nbnxm::InteractionLocality  ilocality,
                          const int                         clearF,
@@ -322,7 +321,7 @@ static void do_nb_verlet(t_forcerec                       *fr,
                          t_nrnb                           *nrnb,
                          gmx_wallcycle_t                   wcycle)
 {
-    if (!(legacyForceFlags & GMX_FORCE_NONBONDED))
+    if (!forceFlags.computeNonbondedForces)
     {
         /* skip non-bonded calculation */
         return;
@@ -352,7 +351,7 @@ static void do_nb_verlet(t_forcerec                       *fr,
         }
     }
 
-    nbv->dispatchNonbondedKernel(ilocality, *ic, legacyForceFlags, forceFlags, clearF, *fr, enerd, nrnb);
+    nbv->dispatchNonbondedKernel(ilocality, *ic, forceFlags, clearF, *fr, enerd, nrnb);
 }
 
 static inline void clear_rvecs_omp(int n, rvec v[])
@@ -803,6 +802,7 @@ setupForceFlags(gmx::ForceFlags *flags,
     flags->computeForces          = ((legacyFlags & GMX_FORCE_FORCES) != 0);
     flags->computeListedForces    = ((legacyFlags & GMX_FORCE_LISTED) != 0);
     flags->computeNonbondedForces = ((legacyFlags & GMX_FORCE_NONBONDED) != 0) && isNonbondedOn;
+    flags->computeDhdl            = ((legacyFlags & GMX_FORCE_DHDL) != 0);
 }
 
 
@@ -1150,7 +1150,7 @@ void do_force(FILE                                     *fplog,
 
         /* launch local nonbonded work on GPU */
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        do_nb_verlet(fr, ic, enerd, flags, forceFlags, Nbnxm::InteractionLocality::Local, enbvClearFNo,
+        do_nb_verlet(fr, ic, enerd, forceFlags, Nbnxm::InteractionLocality::Local, enbvClearFNo,
                      step, nrnb, wcycle);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
@@ -1212,7 +1212,7 @@ void do_force(FILE                                     *fplog,
 
             /* launch non-local nonbonded tasks on GPU */
             wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-            do_nb_verlet(fr, ic, enerd, flags, forceFlags, Nbnxm::InteractionLocality::NonLocal, enbvClearFNo,
+            do_nb_verlet(fr, ic, enerd, forceFlags, Nbnxm::InteractionLocality::NonLocal, enbvClearFNo,
                          step, nrnb, wcycle);
             wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
@@ -1316,7 +1316,7 @@ void do_force(FILE                                     *fplog,
 
     if (!bUseOrEmulGPU)
     {
-        do_nb_verlet(fr, ic, enerd, flags, forceFlags, Nbnxm::InteractionLocality::Local, enbvClearFYes,
+        do_nb_verlet(fr, ic, enerd, forceFlags, Nbnxm::InteractionLocality::Local, enbvClearFYes,
                      step, nrnb, wcycle);
     }
 
@@ -1328,14 +1328,14 @@ void do_force(FILE                                     *fplog,
         nbv->dispatchFreeEnergyKernel(Nbnxm::InteractionLocality::Local,
                                       fr, as_rvec_array(x.unpaddedArrayRef().data()), &forceOut.forceWithShiftForces(), *mdatoms,
                                       inputrec->fepvals, lambda.data(),
-                                      enerd, flags, nrnb);
+                                      enerd, forceFlags, nrnb);
 
         if (havePPDomainDecomposition(cr))
         {
             nbv->dispatchFreeEnergyKernel(Nbnxm::InteractionLocality::NonLocal,
                                           fr, as_rvec_array(x.unpaddedArrayRef().data()), &forceOut.forceWithShiftForces(), *mdatoms,
                                           inputrec->fepvals, lambda.data(),
-                                          enerd, flags, nrnb);
+                                          enerd, forceFlags, nrnb);
         }
     }
 
@@ -1343,7 +1343,7 @@ void do_force(FILE                                     *fplog,
     {
         if (havePPDomainDecomposition(cr))
         {
-            do_nb_verlet(fr, ic, enerd, flags, forceFlags, Nbnxm::InteractionLocality::NonLocal, enbvClearFNo,
+            do_nb_verlet(fr, ic, enerd, forceFlags, Nbnxm::InteractionLocality::NonLocal, enbvClearFNo,
                          step, nrnb, wcycle);
         }
 
@@ -1413,7 +1413,7 @@ void do_force(FILE                                     *fplog,
             else
             {
                 wallcycle_start_nocount(wcycle, ewcFORCE);
-                do_nb_verlet(fr, ic, enerd, flags, forceFlags, Nbnxm::InteractionLocality::NonLocal, enbvClearFYes,
+                do_nb_verlet(fr, ic, enerd, forceFlags, Nbnxm::InteractionLocality::NonLocal, enbvClearFYes,
                              step, nrnb, wcycle);
                 wallcycle_stop(wcycle, ewcFORCE);
             }
@@ -1516,7 +1516,7 @@ void do_force(FILE                                     *fplog,
         // NOTE: emulation kernel is not included in the balancing region,
         // but emulation mode does not target performance anyway
         wallcycle_start_nocount(wcycle, ewcFORCE);
-        do_nb_verlet(fr, ic, enerd, flags, forceFlags, Nbnxm::InteractionLocality::Local,
+        do_nb_verlet(fr, ic, enerd, forceFlags, Nbnxm::InteractionLocality::Local,
                      DOMAINDECOMP(cr) ? enbvClearFNo : enbvClearFYes,
                      step, nrnb, wcycle);
         wallcycle_stop(wcycle, ewcFORCE);
