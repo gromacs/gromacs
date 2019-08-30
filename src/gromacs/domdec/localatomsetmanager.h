@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 #include <memory>
 
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 
 class gmx_ga2la_t;
@@ -71,10 +72,20 @@ class LocalAtomSetManager
 
         /*! \brief Add a new atom set to be managed and give back a handle.
          *
+         * \todo remove this routine once all indices are represented as
+         *       gmx::index instead of int.
+         *
          * \param[in] globalAtomIndex Indices of the atoms to be managed
          * \returns Handle to LocalAtomSet.
          */
         LocalAtomSet add(ArrayRef<const int> globalAtomIndex);
+
+        /*! \brief Add a new atom set to be managed and give back a handle.
+         *
+         * \param[in] globalAtomIndex Indices of the atoms to be managed
+         * \returns Handle to LocalAtomSet.
+         */
+        LocalAtomSet add(ArrayRef<const index> globalAtomIndex);
 
         /*! \brief Recalculate local and collective indices from ga2la.
          * Uses global atom to local atom lookup structure to

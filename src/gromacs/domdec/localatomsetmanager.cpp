@@ -81,6 +81,13 @@ LocalAtomSetManager::add(ArrayRef<const int> globalAtomIndex)
     return LocalAtomSet(*impl_->atomSetData_.back());
 }
 
+LocalAtomSet
+LocalAtomSetManager::add(ArrayRef<const index> globalAtomIndex)
+{
+    impl_->atomSetData_.push_back(std::make_unique<internal::LocalAtomSetData>(globalAtomIndex));
+    return LocalAtomSet(*impl_->atomSetData_.back());
+}
+
 void
 LocalAtomSetManager::setIndicesInDomainDecomposition(const gmx_ga2la_t &ga2la)
 {
