@@ -286,7 +286,8 @@ struct nonbonded_verlet_t
         //! \brief Executes the non-bonded kernel of the GPU or launches it on the GPU
         void dispatchNonbondedKernel(Nbnxm::InteractionLocality  iLocality,
                                      const interaction_const_t  &ic,
-                                     int                         forceFlags,
+                                     int                         legacyForceFlags,
+                                     const gmx::ForceFlags      &forceFlags,
                                      int                         clearF,
                                      const t_forcerec           &fr,
                                      gmx_enerdata_t             *enerd,

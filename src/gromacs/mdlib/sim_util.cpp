@@ -314,14 +314,15 @@ static void post_process_forces(const t_commrec       *cr,
 static void do_nb_verlet(t_forcerec                       *fr,
                          const interaction_const_t        *ic,
                          gmx_enerdata_t                   *enerd,
-                         const int                         flags,
+                         int                               legacyForceFlags,
+                         const gmx::ForceFlags            &forceFlags,
                          const Nbnxm::InteractionLocality  ilocality,
                          const int                         clearF,
                          const int64_t                     step,
                          t_nrnb                           *nrnb,
                          gmx_wallcycle_t                   wcycle)
 {
-    if (!(flags & GMX_FORCE_NONBONDED))
+    if (!(legacyForceFlags & GMX_FORCE_NONBONDED))
     {
         /* skip non-bonded calculation */
         return;
@@ -351,7 +352,7 @@ static void do_nb_verlet(t_forcerec                       *fr,
         }
     }
 
-    nbv->dispatchNonbondedKernel(ilocality, *ic, flags, clearF, *fr, enerd, nrnb);
+    nbv->dispatchNonbondedKernel(ilocality, *ic, legacyForceFlags, forceFlags, clearF, *fr, enerd, nrnb);
 }
 
 static inline void clear_rvecs_omp(int n, rvec v[])
@@ -644,7 +645,7 @@ static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
  * \param[in,out] pmedata          PME module data
  * \param[in,out] forceOutputs     Output buffer for the forces and virial
  * \param[in,out] enerd            Energy data structure results are reduced into
- * \param[in]     flags            Force flags
+ * \param[in]     forceFlags       Force schedule flags
  * \param[in]     pmeFlags         PME flags
  * \param[in]     wcycle           The wallcycle structure
  */
@@ -652,7 +653,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
                                         gmx_pme_t                           *pmedata,
                                         gmx::ForceOutputs                   *forceOutputs,
                                         gmx_enerdata_t                      *enerd,
-                                        int                                  flags,
+                                        const gmx::ForceFlags               &forceFlags,
                                         int                                  pmeFlags,
                                         gmx_wallcycle_t                      wcycle)
 {
@@ -678,7 +679,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
         {
             GpuTaskCompletion completionType = (isPmeGpuDone) ? GpuTaskCompletion::Wait : GpuTaskCompletion::Check;
             isNbGpuDone = Nbnxm::gpu_try_finish_task(nbv->gpu_nbv,
-                                                     flags, // FIXME remove this
+                                                     forceFlags,
                                                      Nbnxm::AtomLocality::Local,
                                                      enerd->grpp.ener[egLJSR].data(),
                                                      enerd->grpp.ener[egCOULSR].data(),
@@ -1149,7 +1150,7 @@ void do_force(FILE                                     *fplog,
 
         /* launch local nonbonded work on GPU */
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        do_nb_verlet(fr, ic, enerd, flags, Nbnxm::InteractionLocality::Local, enbvClearFNo,
+        do_nb_verlet(fr, ic, enerd, flags, forceFlags, Nbnxm::InteractionLocality::Local, enbvClearFNo,
                      step, nrnb, wcycle);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
@@ -1211,7 +1212,7 @@ void do_force(FILE                                     *fplog,
 
             /* launch non-local nonbonded tasks on GPU */
             wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-            do_nb_verlet(fr, ic, enerd, flags, Nbnxm::InteractionLocality::NonLocal, enbvClearFNo,
+            do_nb_verlet(fr, ic, enerd, flags, forceFlags, Nbnxm::InteractionLocality::NonLocal, enbvClearFNo,
                          step, nrnb, wcycle);
             wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
@@ -1230,12 +1231,10 @@ void do_force(FILE                                     *fplog,
         if (havePPDomainDecomposition(cr))
         {
             Nbnxm::gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat.get(),
-                                      // FIXME
-                                      flags, Nbnxm::AtomLocality::NonLocal, copyBackNbForce);
+                                      forceFlags, Nbnxm::AtomLocality::NonLocal, copyBackNbForce);
         }
         Nbnxm::gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat.get(),
-                                  // FIXME
-                                  flags, Nbnxm::AtomLocality::Local, copyBackNbForce);
+                                  forceFlags, Nbnxm::AtomLocality::Local, copyBackNbForce);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
         if (forceWork.haveGpuBondedWork && forceFlags.computeEnergy)
@@ -1317,7 +1316,7 @@ void do_force(FILE                                     *fplog,
 
     if (!bUseOrEmulGPU)
     {
-        do_nb_verlet(fr, ic, enerd, flags, Nbnxm::InteractionLocality::Local, enbvClearFYes,
+        do_nb_verlet(fr, ic, enerd, flags, forceFlags, Nbnxm::InteractionLocality::Local, enbvClearFYes,
                      step, nrnb, wcycle);
     }
 
@@ -1344,7 +1343,7 @@ void do_force(FILE                                     *fplog,
     {
         if (havePPDomainDecomposition(cr))
         {
-            do_nb_verlet(fr, ic, enerd, flags, Nbnxm::InteractionLocality::NonLocal, enbvClearFNo,
+            do_nb_verlet(fr, ic, enerd, flags, forceFlags, Nbnxm::InteractionLocality::NonLocal, enbvClearFNo,
                          step, nrnb, wcycle);
         }
 
@@ -1405,7 +1404,7 @@ void do_force(FILE                                     *fplog,
             if (bUseGPU)
             {
                 cycles_wait_gpu += Nbnxm::gpu_wait_finish_task(nbv->gpu_nbv,
-                                                               flags, Nbnxm::AtomLocality::NonLocal,
+                                                               forceFlags, Nbnxm::AtomLocality::NonLocal,
                                                                enerd->grpp.ener[egLJSR].data(),
                                                                enerd->grpp.ener[egCOULSR].data(),
                                                                forceWithShiftForces.shiftForces(),
@@ -1414,7 +1413,7 @@ void do_force(FILE                                     *fplog,
             else
             {
                 wallcycle_start_nocount(wcycle, ewcFORCE);
-                do_nb_verlet(fr, ic, enerd, flags, Nbnxm::InteractionLocality::NonLocal, enbvClearFYes,
+                do_nb_verlet(fr, ic, enerd, flags, forceFlags, Nbnxm::InteractionLocality::NonLocal, enbvClearFYes,
                              step, nrnb, wcycle);
                 wallcycle_stop(wcycle, ewcFORCE);
             }
@@ -1470,7 +1469,7 @@ void do_force(FILE                                     *fplog,
     if (alternateGpuWait)
     {
         alternatePmeNbGpuWaitReduce(fr->nbv.get(), fr->pmedata, &forceOut, enerd,
-                                    flags, pmeFlags, wcycle);
+                                    forceFlags, pmeFlags, wcycle);
     }
 
     if (!alternateGpuWait && useGpuPme)
@@ -1489,7 +1488,7 @@ void do_force(FILE                                     *fplog,
         const float gpuWaitApiOverheadMargin = 2e6F; /* cycles */
         const float waitCycles               =
             Nbnxm::gpu_wait_finish_task(nbv->gpu_nbv,
-                                        flags, Nbnxm::AtomLocality::Local,
+                                        forceFlags, Nbnxm::AtomLocality::Local,
                                         enerd->grpp.ener[egLJSR].data(),
                                         enerd->grpp.ener[egCOULSR].data(),
                                         forceOut.forceWithShiftForces().shiftForces(),
@@ -1517,7 +1516,7 @@ void do_force(FILE                                     *fplog,
         // NOTE: emulation kernel is not included in the balancing region,
         // but emulation mode does not target performance anyway
         wallcycle_start_nocount(wcycle, ewcFORCE);
-        do_nb_verlet(fr, ic, enerd, flags, Nbnxm::InteractionLocality::Local,
+        do_nb_verlet(fr, ic, enerd, flags, forceFlags, Nbnxm::InteractionLocality::Local,
                      DOMAINDECOMP(cr) ? enbvClearFNo : enbvClearFYes,
                      step, nrnb, wcycle);
         wallcycle_stop(wcycle, ewcFORCE);

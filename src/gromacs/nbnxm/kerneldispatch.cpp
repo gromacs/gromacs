@@ -464,7 +464,8 @@ static void accountFlops(t_nrnb                           *nrnb,
 void
 nonbonded_verlet_t::dispatchNonbondedKernel(Nbnxm::InteractionLocality iLocality,
                                             const interaction_const_t &ic,
-                                            int                        forceFlags,
+                                            int                        legacyForceFlags,
+                                            const gmx::ForceFlags     &forceFlags,
                                             int                        clearF,
                                             const t_forcerec          &fr,
                                             gmx_enerdata_t            *enerd,
@@ -482,7 +483,7 @@ nonbonded_verlet_t::dispatchNonbondedKernel(Nbnxm::InteractionLocality iLocality
                              nbat.get(),
                              ic,
                              fr.shift_vec,
-                             forceFlags,
+                             legacyForceFlags,
                              clearF,
                              enerd->grpp.ener[egCOULSR].data(),
                              fr.bBHAM ?
@@ -499,7 +500,7 @@ nonbonded_verlet_t::dispatchNonbondedKernel(Nbnxm::InteractionLocality iLocality
             nbnxn_kernel_gpu_ref(pairlistSet.gpuList(),
                                  nbat.get(), &ic,
                                  fr.shift_vec,
-                                 forceFlags,
+                                 legacyForceFlags,
                                  clearF,
                                  nbat->out[0].f,
                                  nbat->out[0].fshift.data(),
@@ -514,7 +515,7 @@ nonbonded_verlet_t::dispatchNonbondedKernel(Nbnxm::InteractionLocality iLocality
 
     }
 
-    accountFlops(nrnb, pairlistSet, *this, ic, forceFlags);
+    accountFlops(nrnb, pairlistSet, *this, ic, legacyForceFlags);
 }
 
 void
