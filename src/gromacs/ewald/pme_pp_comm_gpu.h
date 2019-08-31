@@ -63,17 +63,28 @@ class PmePpCommGpu
         PmePpCommGpu(MPI_Comm comm, int pmeRank);
         ~PmePpCommGpu();
 
-        /*! \brief
-         * Initialization GPU PME-PP comms
+        /*! \brief Perform steps required when buffer size changes
+         * \param[in]  size   Number of elements in buffer
          */
-        void receiveForceBufferAddress();
+        void reinit(int size);
 
         /*! \brief
          * Pull data from PME GPU directly using CUDA Memory copy.
          * \param[out] recvPtr  Buffer to receive PME force data
          * \param[in]  recvSize Number of elements to receive
+         * \param[in] recvPmeForceToGpu Whether receive is to GPU, otherwise CPU
          */
-        void receiveForceFromPmeCudaDirect(void *recvPtr, int recvSize);
+        void receiveForceFromPmeCudaDirect(void *recvPtr, int recvSize, bool recvPmeForceToGpu);
+
+        /*! \brief
+         * Return pointer to buffer used for staging PME force on GPU
+         */
+        void* getGpuForceStagingPtr();
+
+        /*! \brief
+         * Return pointer to event recorded when forces are ready
+         */
+        void* getForcesReadySynchronizer();
 
     private:
         class Impl;

@@ -71,14 +71,26 @@ PmePpCommGpu::PmePpCommGpu(MPI_Comm gmx_unused comm, int gmx_unused pmeRank)
 PmePpCommGpu::~PmePpCommGpu() = default;
 
 /*!\brief init PME-PP GPU communication stub */
-void PmePpCommGpu::receiveForceBufferAddress()
+void PmePpCommGpu::reinit(int gmx_unused size)
 {
     GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication initialization was called instead of the correct implementation.");
 }
 
-void PmePpCommGpu::receiveForceFromPmeCudaDirect(void gmx_unused *recvPtr, int gmx_unused recvSize)
+void PmePpCommGpu::receiveForceFromPmeCudaDirect(void gmx_unused *recvPtr, int gmx_unused recvSize, bool gmx_unused receivePmeForceToGpu)
 {
     GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
+}
+
+void* PmePpCommGpu::getGpuForceStagingPtr()
+{
+    GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
+    return nullptr;
+}
+
+void* PmePpCommGpu::getForcesReadySynchronizer()
+{
+    GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
+    return nullptr;
 }
 
 }      // namespace gmx

@@ -48,6 +48,7 @@
 #include "config.h"
 
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/utility/gmxmpi.h"
 
@@ -64,15 +65,21 @@ PmePpCommGpu::Impl::Impl(MPI_Comm comm, int pmeRank)
 
 PmePpCommGpu::Impl::~Impl() = default;
 
-void PmePpCommGpu::Impl::receiveForceBufferAddress()
+void PmePpCommGpu::Impl::reinit(int size)
 {
     // This rank will pull data from the PME rank, so needs to recieve the remote PME buffer address.
     MPI_Recv(&remotePmeFBuffer_, sizeof(void**), MPI_BYTE, pmeRank_,
              0, comm_, MPI_STATUS_IGNORE);
+
+    // Reallocate buffer used for staging PME force on GPU
+    reallocateDeviceBuffer(&d_pmeForces_, size, &d_pmeForcesSize_, &d_pmeForcesSizeAlloc_, nullptr);
+
     return;
 }
 
-void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(void *recvPtr, int recvSize)
+// TODO make this asynchronous by splitting into this into
+// launchRecvForceFromPmeCudaDirect() and sycnRecvForceFromPmeCudaDirect()
+void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(void *recvPtr, int recvSize, bool receivePmeForceToGpu)
 {
 
     // Receive event from PME task and add to stream, to ensure pull of data doesn't
@@ -84,14 +91,35 @@ void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(void *recvPtr, int recvSi
     pmeSync->enqueueWaitEvent(pmePpCommStream_);
 
     // Pull force data from remote GPU
-    cudaError_t stat = cudaMemcpyAsync(recvPtr, remotePmeFBuffer_,
-                                       recvSize*3*sizeof(float), cudaMemcpyDefault,
-                                       pmePpCommStream_);
+    void      * pmeForcePtr = receivePmeForceToGpu ? static_cast<void*> (d_pmeForces_) : recvPtr;
+    cudaError_t stat        = cudaMemcpyAsync(pmeForcePtr, remotePmeFBuffer_,
+                                              recvSize*3*sizeof(float), cudaMemcpyDefault,
+                                              pmePpCommStream_);
     CU_RET_ERR(stat, "cudaMemcpyAsync on Recv from PME CUDA direct data transfer failed");
 
-    // Ensure CPU waits for PME forces to be copied before reducing
-    // them with other forces on the CPU
-    cudaStreamSynchronize(pmePpCommStream_);
+    if (receivePmeForceToGpu)
+    {
+        // Record event to be enqueued in the GPU local buffer operations, to
+        // satisfy dependency on receiving the PME force data before
+        // reducing it with the other force contributions.
+        forcesReadySynchronizer_.markEvent(pmePpCommStream_);
+    }
+    else
+    {
+        // Ensure CPU waits for PME forces to be copied before reducing
+        // them with other forces on the CPU
+        cudaStreamSynchronize(pmePpCommStream_);
+    }
+}
+
+void* PmePpCommGpu::Impl::getGpuForceStagingPtr()
+{
+    return static_cast<void*> (d_pmeForces_);
+}
+
+void* PmePpCommGpu::Impl::getForcesReadySynchronizer()
+{
+    return static_cast<void*> (&forcesReadySynchronizer_);
 }
 
 PmePpCommGpu::PmePpCommGpu(MPI_Comm comm, int pmeRank)
@@ -101,14 +129,24 @@ PmePpCommGpu::PmePpCommGpu(MPI_Comm comm, int pmeRank)
 
 PmePpCommGpu::~PmePpCommGpu() = default;
 
-void PmePpCommGpu::receiveForceBufferAddress()
+void PmePpCommGpu::reinit(int size)
 {
-    impl_->receiveForceBufferAddress();
+    impl_->reinit(size);
 }
 
-void PmePpCommGpu::receiveForceFromPmeCudaDirect(void *recvPtr, int recvSize)
+void PmePpCommGpu::receiveForceFromPmeCudaDirect(void *recvPtr, int recvSize, bool receivePmeForceToGpu)
 {
-    impl_->receiveForceFromPmeCudaDirect(recvPtr, recvSize);
+    impl_->receiveForceFromPmeCudaDirect(recvPtr, recvSize, receivePmeForceToGpu);
+}
+
+void* PmePpCommGpu::getGpuForceStagingPtr()
+{
+    return impl_->getGpuForceStagingPtr();
+}
+
+void* PmePpCommGpu::getForcesReadySynchronizer()
+{
+    return impl_->getForcesReadySynchronizer();
 }
 
 } //namespace gmx

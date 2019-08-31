@@ -373,13 +373,14 @@ static void recvFFromPme(gmx::PmePpCommGpu *pmePpCommGpu,
                          void             * recvptr,
                          int                n,
                          const t_commrec   *cr,
-                         bool               useGpuPmePpComms)
+                         bool               useGpuPmePpComms,
+                         bool               receivePmeForceToGpu)
 {
     if (useGpuPmePpComms)
     {
         GMX_ASSERT(pmePpCommGpu != nullptr, "Need valid pmePpCommGpu");
         //Receive directly using CUDA memory copy
-        pmePpCommGpu->receiveForceFromPmeCudaDirect(recvptr, n);
+        pmePpCommGpu->receiveForceFromPmeCudaDirect(recvptr, n, receivePmeForceToGpu);
     }
     else
     {
@@ -398,7 +399,7 @@ void gmx_pme_receive_f(gmx::PmePpCommGpu *pmePpCommGpu,
                        gmx::ForceWithVirial *forceWithVirial,
                        real *energy_q, real *energy_lj,
                        real *dvdlambda_q, real *dvdlambda_lj,
-                       bool useGpuPmePpComms,
+                       bool useGpuPmePpComms, bool receivePmeForceToGpu,
                        float *pme_cycles)
 {
     if (c_useDelayedWait)
@@ -412,29 +413,32 @@ void gmx_pme_receive_f(gmx::PmePpCommGpu *pmePpCommGpu,
     buffer.resize(natoms);
 
     void *recvptr = reinterpret_cast<void*>(buffer.data());
-    recvFFromPme(pmePpCommGpu, recvptr, natoms, cr, useGpuPmePpComms);
+    recvFFromPme(pmePpCommGpu, recvptr, natoms, cr, useGpuPmePpComms, receivePmeForceToGpu);
 
     int nt = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, natoms);
 
     gmx::ArrayRef<gmx::RVec> f = forceWithVirial->force_;
 
-    /* Note that we would like to avoid this conditional by putting it
-     * into the omp pragma instead, but then we still take the full
-     * omp parallel for overhead (at least with gcc5).
-     */
-    if (nt == 1)
+    if (!receivePmeForceToGpu)
     {
-        for (int i = 0; i < natoms; i++)
+        /* Note that we would like to avoid this conditional by putting it
+         * into the omp pragma instead, but then we still take the full
+         * omp parallel for overhead (at least with gcc5).
+         */
+        if (nt == 1)
         {
-            f[i] += buffer[i];
+            for (int i = 0; i < natoms; i++)
+            {
+                f[i] += buffer[i];
+            }
         }
-    }
-    else
-    {
-#pragma omp parallel for num_threads(nt) schedule(static)
-        for (int i = 0; i < natoms; i++)
+        else
         {
-            f[i] += buffer[i];
+#pragma omp parallel for num_threads(nt) schedule(static)
+            for (int i = 0; i < natoms; i++)
+            {
+                f[i] += buffer[i];
+            }
         }
     }
 

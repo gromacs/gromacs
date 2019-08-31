@@ -243,7 +243,8 @@ void gmx_pme_receive_f(gmx::PmePpCommGpu *pmePpCommGpu,
                        gmx::ForceWithVirial *forceWithVirial,
                        real *energy_q, real *energy_lj,
                        real *dvdlambda_q, real *dvdlambda_lj,
-                       bool useGpuPmePpComms, float *pme_cycles);
+                       bool useGpuPmePpComms, bool receivePmeForceToGpu,
+                       float *pme_cycles);
 
 /*! \brief
  * This function updates the local atom data on GPU after DD (charges, coordinates, etc.).

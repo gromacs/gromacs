@@ -44,6 +44,8 @@
 #define GMX_PME_PP_COMM_GPU_IMPL_H
 
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
+#include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxmpi.h"
 
 namespace gmx
@@ -61,22 +63,38 @@ class PmePpCommGpu::Impl
         Impl(MPI_Comm comm, int pmeRank);
         ~Impl();
 
-        /*! \brief Receive address of GPU force buffer on remote PME task, to allow this rank to
-         * pull data directly from GPU memory space using a CUDA memory copy.
+        /*! \brief Perform steps required when buffer size changes
+         * \param[in]  size   Number of elements in buffer
          */
-        void receiveForceBufferAddress();
+        void reinit(int size);
 
         /*! \brief Pull force buffer directly from GPU memory on PME
-         * task to CPU memory on PP task using CUDA Memory copy.
+         * rank to either GPU or CPU memory on PP task using CUDA
+         * Memory copy.
          *
-         * recvPtr should be in CPU memory. This method should be
-         * called forces are reduced with the other force
-         * contributions. It will automatically wait for remote PME
-         * force data to be ready.
+         * recvPtr should be in GPU or CPU memory if recvPmeForceToGpu
+         * is true or false, respectively. If receiving to GPU, this
+         * method should be called before the local GPU buffer
+         * operations. If receiving to CPU it should be called
+         * before forces are reduced with the other force
+         * contributions on the CPU. It will automatically wait for
+         * remote PME force data to be ready.
+         *
          * \param[out] recvPtr CPU buffer to receive PME force data
          * \param[in] recvSize Number of elements to receive
+         * \param[in] receivePmeForceToGpu Whether receive is to GPU, otherwise CPU
          */
-        void receiveForceFromPmeCudaDirect(void *recvPtr, int recvSize);
+        void receiveForceFromPmeCudaDirect(void *recvPtr, int recvSize, bool receivePmeForceToGpu);
+
+        /*! \brief
+         * Return pointer to buffer used for staging PME force on GPU
+         */
+        void* getGpuForceStagingPtr();
+
+        /*! \brief
+         * Return pointer to event recorded when forces are ready
+         */
+        void* getForcesReadySynchronizer();
 
     private:
         //! CUDA stream used for the communication operations in this class
@@ -87,7 +105,14 @@ class PmePpCommGpu::Impl
         MPI_Comm               comm_;
         //! Rank of PME task
         int                    pmeRank_ = -1;
-
+        //! Buffer for staging PME force on GPU
+        rvec                  *d_pmeForces_ = nullptr;
+        //! number of atoms in PME force staging array
+        int                    d_pmeForcesSize_ = -1;
+        //! number of atoms allocated in recvbuf array
+        int                    d_pmeForcesSizeAlloc_ = -1;
+        //
+        GpuEventSynchronizer   forcesReadySynchronizer_;
 };
 
 } // namespace gmx

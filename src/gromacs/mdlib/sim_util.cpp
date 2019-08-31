@@ -192,6 +192,7 @@ static void pme_receive_force_ener(t_forcerec           *fr,
                                    gmx::ForceWithVirial *forceWithVirial,
                                    gmx_enerdata_t       *enerd,
                                    bool                  useGpuPmePpComms,
+                                   bool                  receivePmeForceToGpu,
                                    gmx_wallcycle_t       wcycle)
 {
     real   e_q, e_lj, dvdl_q, dvdl_lj;
@@ -208,7 +209,7 @@ static void pme_receive_force_ener(t_forcerec           *fr,
     dvdl_lj = 0;
     gmx_pme_receive_f(fr->pmePpCommGpu.get(),
                       cr, forceWithVirial, &e_q, &e_lj, &dvdl_q, &dvdl_lj,
-                      useGpuPmePpComms, &cycles_seppme);
+                      useGpuPmePpComms, receivePmeForceToGpu, &cycles_seppme);
     enerd->term[F_COUL_RECIP] += e_q;
     enerd->term[F_LJ_RECIP]   += e_lj;
     enerd->dvdl_lin[efptCOUL] += dvdl_q;
@@ -829,7 +830,8 @@ setupStepWorkload(const int                 legacyFlags,
     // on virial steps the CPU reduction path is taken
     // TODO: remove flags.computeEnergy, ref #3128
     flags.useGpuFBufferOps    = simulationWork.useGpuBufferOps && !(flags.computeVirial || flags.computeEnergy);
-    flags.useGpuPmeFReduction = flags.useGpuFBufferOps && (simulationWork.usePmeGpu && rankHasPmeDuty);
+    flags.useGpuPmeFReduction = flags.useGpuFBufferOps && (simulationWork.usePmeGpu &&
+                                                           (rankHasPmeDuty || simulationWork.useGpuPmePPCommunication));
 
     return flags;
 }
@@ -1016,7 +1018,7 @@ void do_force(FILE                                     *fplog,
 
         if (stepWork.doNeighborSearch && simulationWork.useGpuPmePPCommunication)
         {
-            fr->pmePpCommGpu->receiveForceBufferAddress();
+            fr->pmePpCommGpu->reinit(x.unpaddedArrayRef().size());
         }
 
     }
@@ -1670,15 +1672,40 @@ void do_force(FILE                                     *fplog,
         wallcycle_stop(wcycle, ewcFORCE);
     }
 
+    // If on GPU PME-PP comms path, receive forces from PME before GPU buffer ops
+    // TODO refoactor this and unify with below default-path call to the same function
+    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME) && simulationWork.useGpuPmePPCommunication)
+    {
+        /* In case of node-splitting, the PP nodes receive the long-range
+         * forces, virial and energy from the PME nodes here.
+         */
+        pme_receive_force_ener(fr, cr, &forceOut.forceWithVirial(), enerd, simulationWork.useGpuPmePPCommunication, stepWork.useGpuPmeFReduction, wcycle);
+    }
+
+
     /* Do the nonbonded GPU (or emulation) force buffer reduction
      * on the non-alternating path. */
     if (useOrEmulateGpuNb && !alternateGpuWait)
     {
+        //TODO simplify the below conditionals. Pass buffer and sync pointers at init stage rather than here. Unify getter fns for sameGPU/otherGPU cases.
+        void* pmeForcePtr = stepWork.useGpuPmeFReduction ?
+            (thisRankHasDuty(cr, DUTY_PME) ?
+             pme_gpu_get_device_f(fr->pmedata) :        // PME force buffer on same GPU
+             fr->pmePpCommGpu->getGpuForceStagingPtr()) // buffer received from other GPU
+            : nullptr;                                  // PME reduction not active on GPU
+
+        GpuEventSynchronizer* const pmeSynchronizer = stepWork.useGpuPmeFReduction ?
+            (thisRankHasDuty(cr, DUTY_PME) ?
+             pme_gpu_get_f_ready_synchronizer(fr->pmedata) :   // PME force buffer on same GPU
+             static_cast<GpuEventSynchronizer*>
+             (fr->pmePpCommGpu->getForcesReadySynchronizer())) // buffer received from other GPU
+            : nullptr;                                         // PME reduction not active on GPU
+
         gmx::FixedCapacityVector<GpuEventSynchronizer*, 2> dependencyList;
 
         if (stepWork.useGpuPmeFReduction)
         {
-            dependencyList.push_back(pme_gpu_get_f_ready_synchronizer(fr->pmedata));
+            dependencyList.push_back(pmeSynchronizer);
         }
 
         gmx::ArrayRef<gmx::RVec>  forceWithShift = forceOut.forceWithShiftForces().force();
@@ -1717,7 +1744,7 @@ void do_force(FILE                                     *fplog,
             }
             nbv->atomdata_add_nbat_f_to_f_gpu(Nbnxm::AtomLocality::Local,
                                               stateGpu->getForces(),
-                                              pme_gpu_get_device_f(fr->pmedata),
+                                              pmeForcePtr,
                                               dependencyList,
                                               stepWork.useGpuPmeFReduction, haveLocalForceContribInCpuBuffer);
             stateGpu->copyForcesFromGpu(forceWithShift, gmx::StatePropagatorDataGpu::AtomLocality::Local);
@@ -1764,13 +1791,14 @@ void do_force(FILE                                     *fplog,
         }
     }
 
-    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME))
+    // TODO refoactor this and unify with above PME-PP GPU communication path call to the same function
+    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME) && !simulationWork.useGpuPmePPCommunication)
     {
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
          */
         pme_receive_force_ener(fr, cr, &forceOut.forceWithVirial(), enerd,
-                               simulationWork.useGpuPmePPCommunication, wcycle);
+                               simulationWork.useGpuPmePPCommunication, false, wcycle);
     }
 
     if (stepWork.computeForces)
