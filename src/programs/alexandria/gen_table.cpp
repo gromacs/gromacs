@@ -276,9 +276,6 @@ static void gen_alexandria_tables(Poldata                 &pd,
     
     const char  *ns[2]  = {"", "_s"};
     
-    char         buf1[STRLEN];
-    char         buf2[STRLEN];
-    char         fnbuf[STRLEN];
     FILE        *fp1 = nullptr;
     FILE        *fp2 = nullptr;
 
@@ -303,15 +300,26 @@ static void gen_alexandria_tables(Poldata                 &pd,
                     auto zetaJ = pd.getZeta(eej->getName(), j);
                     auto rowJ  = pd.getRow(eej->getName(), j);
 
-                    strncpy(fnbuf, fn, strlen(fn)-4);
-                    fnbuf[strlen(fn)-4] = '\0';
-                    sprintf(buf1, "%s_%s%s_%s%s.xvg", fnbuf, atpi->getType().c_str(), ns[i], atpj->getType().c_str(), ns[j]);
+                    std::string fnbuf(fn, fn+strlen(fn)-4);
+                    std::string buf1 = 
+                        gmx::formatString("%s_%s%s_%s%s.xvg",
+                                          fnbuf.c_str(),
+                                          atpi->getType().c_str(), 
+                                          ns[i], atpj->getType().c_str(), 
+                                          ns[j]);
                     if (atpi->getType() != atpj->getType())
                     {
-                        sprintf(buf2, "%s_%s%s_%s%s.xvg", fnbuf, atpj->getType().c_str(), ns[j], atpi->getType().c_str(), ns[i]);
-                        fp2 = xvgropen(buf2, buf2, "r (nm)", "V (kJ/mol e)", oenv);
+                        std::string buf2 =
+                            gmx::formatString("%s_%s%s_%s%s.xvg", 
+                                              fnbuf.c_str(), 
+                                              atpj->getType().c_str(), 
+                                              ns[j], atpi->getType().c_str(), 
+                                              ns[i]);
+                        fp2 = xvgropen(buf2.c_str(), buf2.c_str(),
+                                       "r (nm)", "V (kJ/mol e)", oenv);
                     }
-                    fp1 = xvgropen(buf1, buf1, "r (nm)", "V (kJ/mol e)", oenv);
+                    fp1 = xvgropen(buf1.c_str(), buf1.c_str(),
+                                   "r (nm)", "V (kJ/mol e)", oenv);
                     
                     for (auto n = 0; n <= nmax; n++)
                     {

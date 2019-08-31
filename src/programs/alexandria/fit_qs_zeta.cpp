@@ -200,7 +200,6 @@ int alex_fit_qs_zeta(int argc, char *argv[])
     real               tolerance      = 0.1;
     int                maxiter        = 10000;
     int                row            = 1;
-    alexandria::ChargeDistributionModel iChargeDistributionModel;
 
     t_pargs                  pa[]     = {
         { "-v",       FALSE, etBOOL, {&bVerbose},
@@ -239,8 +238,7 @@ int alex_fit_qs_zeta(int argc, char *argv[])
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         for(auto ai = pd.getAtypeBegin(); ai < pd.getAtypeEnd(); ++ai)
         {
-            alexandria::ChargeDistributionModel cdm = pd.getEqdModel();
-
+            auto cdm = pd.getEqdModel();
             auto eem = pd.findEem(ai->getType());
             if (pd.EndEemprops() != eem)
             {
@@ -265,10 +263,10 @@ int alex_fit_qs_zeta(int argc, char *argv[])
     }
     else
     {
+        auto   cdm = alexandria::name2eemtype(cqdist[0]);
         double zeta, qs;
         fit_polarization(alpha, delta_q, rmax, row,
-                         iChargeDistributionModel, maxiter, tolerance,
-                         &zeta, &qs, bVerbose);
+                         cdm, maxiter, tolerance, &zeta, &qs, bVerbose);
         if (zeta > 0)
         {
             printf("qdist = %s alpha = %g delta_q = %g zeta = %g qs = %g\n",
