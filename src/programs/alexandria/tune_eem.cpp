@@ -313,6 +313,7 @@ void OptACM::calcDeviation()
             {
                 int    nChargeResidual = 0; // number of charge residuals added per molecule
                 double ChargeResidual  = 0;
+                bool   isPolarizable   = (nullptr != mymol.shellfc_);
                 qtot = 0;
                 for (j = i = 0; j < mymol.topology_->atoms.nr; j++)
                 {
@@ -322,23 +323,28 @@ void OptACM::calcDeviation()
                     if (mymol.topology_->atoms.atom[j].ptype == eptAtom ||
                         mymol.topology_->atoms.atom[j].ptype == eptNucleus)
                     {
-                        auto q_H        = 0 ? (nullptr != mymol.shellfc_) : 1;
-                        auto q_OFSClBrI = 0 ? (nullptr != mymol.shellfc_) : 2;
-                        if (((qq < q_H) && (atomnr == 1)) ||
-                            ((qq > q_OFSClBrI) && ((atomnr == 8)  || (atomnr == 9) ||
-                                                   (atomnr == 16) || (atomnr == 17) ||
-                                                   (atomnr == 35) || (atomnr == 53))))
+                        double qref = (isPolarizable ? mymol.topology_->atoms.atom[j+1].q : 0);
+                        double dq   = 0;
+                        if (atomnr == 1)
                         {
-                            ChargeResidual += gmx::square(qq);
+                            // Penalty if qH < 0
+                            dq = qq + qref;
+                        }
+                        else if ((atomnr == 8)  || (atomnr == 9) ||
+                                 (atomnr == 16) || (atomnr == 17) ||
+                                 (atomnr == 35) || (atomnr == 53))
+                        {
+                            // Penalty if qO > 0, therefore we reverse the sign
+                            dq = -(qq + qref);
+                        }
+                        if (dq < 0)
+                        {
+                            ChargeResidual += gmx::square(dq);
                             nChargeResidual++;
                         }
                         if (useCM5())
                         {
-                            if (nullptr != mymol.shellfc_)
-                            {
-                                qq += mymol.topology_->atoms.atom[j+1].q;
-                            }
-                            ChargeResidual += gmx::square(qq - mymol.chargeQM(qtCM5)[i++]);
+                            ChargeResidual += gmx::square(qq + qref - mymol.chargeQM(qtCM5)[i++]);
                             nChargeResidual++;
                         }
                     }
