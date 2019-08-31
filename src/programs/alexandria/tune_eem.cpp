@@ -499,9 +499,10 @@ void OptACM::TuneACM2PolData()
                 std::string qstr   = ei->getQstr();
                 std::string rowstr = ei->getRowstr();
                 auto iModel = poldata()->getEqdModel();
+                auto nZeta  = ei->getNzeta();
                 if (getEemtypeDistributed(iModel))
                 {
-                    if (bSameZeta_)
+                    if (bSameZeta_ && nZeta == 2)
                     {
                         zeta   = param_[n]; // Same zeta will be used for both core and shell
                         sigma  = psigma_[n++];
@@ -513,7 +514,7 @@ void OptACM::TuneACM2PolData()
                     }
                     else
                     {
-                        for (auto i = 0; i < ei->getNzeta(); i++)
+                        for (auto i = 0; i < nZeta; i++)
                         {   
                             zeta  = ei->getZeta(i); //zeta for core read from poladata
                             sigma = 0;
@@ -531,7 +532,7 @@ void OptACM::TuneACM2PolData()
                 }
                 else
                 {
-                    for (auto i = 0; i < ei->getNzeta(); i++)
+                    for (auto i = 0; i < nZeta; i++)
                     {
                         zeta   = param_[n];
                         sigma  = psigma_[n++];

@@ -870,7 +870,7 @@ RowZetaQ::RowZetaQ(int row, double zeta, double q)
 {
     zindex_ = -1;
     char buf[256];
-    #if HAVE_LIBCLN
+#if HAVE_LIBCLN
     row_ = std::min(row_, SLATER_MAX_CLN);
     if (row_ < row && debug)
     {
@@ -878,7 +878,7 @@ RowZetaQ::RowZetaQ(int row, double zeta, double q)
     }
     snprintf(buf, sizeof(buf), "Row (%d) is bigger than Slater Max (%d)", row_, SLATER_MAX_CLN);
     GMX_RELEASE_ASSERT(row_ <= SLATER_MAX_CLN, buf);
-    #else
+#else
     row_ = std::min(row_, SLATER_MAX);
     if (row_ < row && debug)
     {
@@ -886,7 +886,7 @@ RowZetaQ::RowZetaQ(int row, double zeta, double q)
     }
     snprintf(buf, sizeof(buf), "Row (%d) is bigger than Slater Max (%d)", row_, SLATER_MAX);
     GMX_RELEASE_ASSERT(row_ <= SLATER_MAX, buf);
-    #endif
+#endif
     fixedQ_ = (q != 0);
 }
 
@@ -1034,16 +1034,13 @@ void Eemprops::setRowZetaQ(const std::string &rowstr,
     sq = gmx::splitString(qstr);
     size_t nn = std::min(sz.size(), std::min(sq.size(), sr.size()));
 
-    char   buf[256];
-    snprintf(buf, sizeof(buf), "More zeta values than q/row values for %s n = %d\n",
-             getName(), static_cast<int>(nn));
-    GMX_RELEASE_ASSERT(sz.size() <= nn, buf);
-    snprintf(buf, sizeof(buf), "More q values than zeta/row values for %s n = %d\n",
-             getName(), static_cast<int>(nn));
-    GMX_RELEASE_ASSERT(sq.size() <= nn, buf);
-    snprintf(buf, sizeof(buf), "More row values than q/zeta values for %s n = %d\n",
-             getName(), static_cast<int>(nn));
-    GMX_RELEASE_ASSERT(sr.size() <= nn, buf);
+    std::string buf = 
+        gmx::formatString("%d zeta (%s), %d q (%s) and %d row (%s) values for %s\n",
+                          static_cast<int>(sz.size()), zetastr.c_str(),
+                          static_cast<int>(sq.size()), qstr.c_str(),
+                          static_cast<int>(sr.size()), rowstr.c_str(),
+                          getName());
+    GMX_RELEASE_ASSERT(sz.size() == sr.size() && sz.size() == sq.size(), buf.c_str());
 
     for (size_t n = 0; n < nn; n++)
     {

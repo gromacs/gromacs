@@ -230,9 +230,10 @@ void OptZeta::tuneZeta2PolData()
 
             // Begin to add  optimized zeta to poldata
             auto iModel = poldata()->getEqdModel();
+            auto nZeta  = ei->getNzeta();
             if (getEemtypeDistributed(iModel))
             {
-                if (bSameZeta_)
+                if (bSameZeta_ && nZeta == 2)
                 {
                     zeta   = param_[n]; // Same zeta will be used for both core and shell
                     sigma  = psigma_[n++];
@@ -246,7 +247,7 @@ void OptZeta::tuneZeta2PolData()
                 {
                     zeta    = ei->getZeta(0); //zeta for core read from poldata
                     sigma   = 0;
-                    for (auto i = 0; i < ei->getNzeta(); i++)
+                    for (auto i = 0; i < nZeta; i++)
                     {
                         if (i > 0)
                         {
@@ -264,7 +265,7 @@ void OptZeta::tuneZeta2PolData()
             {
                 zeta   = param_[n];
                 sigma  = psigma_[n++];
-                for (auto i = 0; i < ei->getNzeta(); i++)
+                for (auto i = 0; i < nZeta; i++)
                 {
                     sprintf(buf, "%g ", zeta);
                     sprintf(buf_sig, "%g ", sigma);
