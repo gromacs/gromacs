@@ -41,4 +41,4 @@
 alexandria::Poldata *getPoldata(std::string qdist);
 
 //! Return testing poldata structure
-alexandria::Poldata *getPoldata(alexandria::ChargeDistributionModel qdist);
+alexandria::Poldata *getPoldata(alexandria::ChargeModel qdist);

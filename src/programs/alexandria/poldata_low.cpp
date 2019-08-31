@@ -1050,7 +1050,7 @@ void Eemprops::setRowZetaQ(const std::string &rowstr,
 }
 
 typedef struct {
-    ChargeDistributionModel    eqd;
+    ChargeModel    eqd;
     const char                *name;
     bool                       polarizable;
     ChargeGenerationAlgorithm  eqg;
@@ -1070,27 +1070,27 @@ t_eemtype_props eemtype_props[eqdNR] =
      { eqdRappe,    "Rappe"  ,  false, eqgACM }
 };
 
-bool getEemtypePolarizable(ChargeDistributionModel eem)
+bool getEemtypePolarizable(ChargeModel eem)
 {
     return eemtype_props[eem].polarizable;
 }
 
-bool getEemtypeDistributed(ChargeDistributionModel eem)
+bool getEemtypeDistributed(ChargeModel eem)
 {
     return getEemtypeGaussian(eem) || getEemtypeSlater(eem);
 }
 
-bool getEemtypeSlater(ChargeDistributionModel eem)
+bool getEemtypeSlater(ChargeModel eem)
 {
     return (eem == eqdESP_ps || eem == eqdACM_ps || eem == eqdYang || eem == eqdRappe);
 }
 
-bool getEemtypeGaussian(ChargeDistributionModel eem)
+bool getEemtypeGaussian(ChargeModel eem)
 {
     return (eem == eqdESP_pg || eem == eqdACM_pg || eem == eqdACM_g);
 }
 
-ChargeDistributionModel name2eemtype(const std::string name)
+ChargeModel name2eemtype(const std::string name)
 {
     for (auto i = 0; i < eqdNR; i++)
     {
@@ -1104,7 +1104,7 @@ ChargeDistributionModel name2eemtype(const std::string name)
     return eqdNR;
 }
 
-const char *getEemtypeName(ChargeDistributionModel eem)
+const char *getEemtypeName(ChargeModel eem)
 {
     for (auto i = 0; i < eqdNR; i++)
     {
@@ -1116,7 +1116,7 @@ const char *getEemtypeName(ChargeDistributionModel eem)
     return nullptr;
 }
 
-ChargeGenerationAlgorithm chargeGenerationAlgorithm(ChargeDistributionModel eem)
+ChargeGenerationAlgorithm chargeGenerationAlgorithm(ChargeModel eem)
 {
     for (auto i = 0; i < eqdNR; i++)
     {

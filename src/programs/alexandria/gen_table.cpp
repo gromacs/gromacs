@@ -162,7 +162,7 @@ static void wbk(double r,   double eps, double sig,
 
 static void gen_alexandria_rho(Poldata                 &pd,
                                const char             *fn,
-                               ChargeDistributionModel iDistributionModel,
+                               ChargeModel iDistributionModel,
                                real                    rcut,
                                real                    spacing,
                                const gmx_output_env_t *oenv)
@@ -264,7 +264,7 @@ static void gen_alexandria_tables(Poldata                 &pd,
                                   const gmx_output_env_t  *oenv,
                                   char                    *atypes)
 {
-    ChargeDistributionModel  iDistributionModel = pd.getEqdModel();
+    ChargeModel  iDistributionModel = pd.getEqdModel();
                                   
     double       cv = 0;
     double       cf = 0;

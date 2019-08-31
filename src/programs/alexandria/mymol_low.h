@@ -148,12 +148,12 @@ void put_in_box(int natom, matrix box, rvec x[], real dbox);
 void write_zeta_q(FILE                   *fp,
                   QgenAcm                *qgen,
                   t_atoms                *atoms,
-                  ChargeDistributionModel iChargeDistributionModel);
+                  ChargeModel iChargeModel);
 
 void write_zeta_q2(QgenAcm                *qgen,
                    gpp_atomtype_t          atype,
                    t_atoms                *atoms,
-                   ChargeDistributionModel iChargeDistributionModel);
+                   ChargeModel iChargeModel);
 
 int get_subtype(directive d, int ftype);
 

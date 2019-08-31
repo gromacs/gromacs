@@ -879,7 +879,7 @@ real QgenResp::getRms(real *wtot, real *rrms, real *cosangle)
 }
 
 
-static double calcJ(ChargeDistributionModel iChargeDistributionModel,
+static double calcJ(ChargeModel iChargeModel,
                     rvec                    espx,
                     rvec                    rax,
                     double                  zeta,
@@ -894,17 +894,17 @@ static double calcJ(ChargeDistributionModel iChargeDistributionModel,
     r = norm(dx);
     if (zeta <= 0)
     {
-        iChargeDistributionModel = eqdESP_p;
+        iChargeModel = eqdESP_p;
     }
     if (watoms == 0 && r == 0)
     {
         gmx_fatal(FARGS, "Zero distance between the atom and the grid.");
     }
-    if (getEemtypeGaussian(iChargeDistributionModel))
+    if (getEemtypeGaussian(iChargeModel))
     {
         eTot = Nuclear_GG(r, zeta);
     }
-    else if (getEemtypeSlater(iChargeDistributionModel))
+    else if (getEemtypeSlater(iChargeModel))
     {
         eTot = Nuclear_SS(r, row, zeta);
     }

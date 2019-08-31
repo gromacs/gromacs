@@ -91,7 +91,7 @@ class QgenResp
     public:
         QgenResp();
 
-        ChargeDistributionModel chargeDistributionModel()
+        ChargeModel chargeDistributionModel()
         { return iDistributionModel_; }
 
         /*! \brief Set options for ESP charge generation
@@ -99,7 +99,7 @@ class QgenResp
          * \param[in] c          Charge distribution model
          * \param[in] watoms     Weighting factor for atoms in ESP fit
          */
-        void setChargeDistributionModel(ChargeDistributionModel qd)
+        void setChargeModel(ChargeModel qd)
         { iDistributionModel_ = qd; }
 
         void setAtomWeight(real watoms) { watoms_ = watoms; }
@@ -230,7 +230,7 @@ class QgenResp
 
         double calcPenalty();
 
-        ChargeDistributionModel   iDistributionModel_;
+        ChargeModel   iDistributionModel_;
         double                    watoms_;
         int                       qtot_;
         int                       qshell_;

@@ -56,7 +56,7 @@ namespace alexandria
  * \inpublicapi
  * \ingroup module_alexandria
  */
-enum ChargeDistributionModel {
+enum ChargeModel {
     eqdESP_p    = 0,
     eqdESP_pg   = 1,
     eqdESP_ps   = 2,
@@ -1117,20 +1117,20 @@ class Eemprops
 using EempropsIterator      = typename std::vector<Eemprops>::iterator;
 using EempropsConstIterator = typename std::vector<Eemprops>::const_iterator;
 
-const char *getEemtypeName(ChargeDistributionModel eem);
+const char *getEemtypeName(ChargeModel eem);
 
-bool getEemtypePolarizable(ChargeDistributionModel eem);
+bool getEemtypePolarizable(ChargeModel eem);
 
-bool getEemtypeDistributed(ChargeDistributionModel eem);
+bool getEemtypeDistributed(ChargeModel eem);
 
-bool getEemtypeSlater(ChargeDistributionModel eem);
+bool getEemtypeSlater(ChargeModel eem);
 
-bool getEemtypeGaussian(ChargeDistributionModel eem);
+bool getEemtypeGaussian(ChargeModel eem);
 
-ChargeDistributionModel name2eemtype(const std::string name);
+ChargeModel name2eemtype(const std::string name);
 
 /* Return the charge generation algorithm */
-ChargeGenerationAlgorithm chargeGenerationAlgorithm(ChargeDistributionModel eem);
+ChargeGenerationAlgorithm chargeGenerationAlgorithm(ChargeModel eem);
 
 } // namespace aleaxndria
 #endif

@@ -61,7 +61,7 @@ void QgenAcm::setInfo(const Poldata            *pd,
     bool         bSupport = true;
     std::string  atp;
 
-    iChargeDistributionModel_  = pd->getEqdModel();
+    iChargeModel_  = pd->getEqdModel();
     bWarned_                   = false;
     bAllocSave_                = false;
     bHaveShell_                = haveShell;
@@ -142,7 +142,7 @@ void QgenAcm::setInfo(const Poldata            *pd,
                     char buf[256];
                     snprintf(buf, sizeof(buf), "Row should be at least 1. Here: atype = %s q = %g zeta = %g row = %d model = %s",
                              atp.c_str(), q_[j][k], zeta_[j][k], row_[j][k],
-                             getEemtypeName(iChargeDistributionModel_));
+                             getEemtypeName(iChargeModel_));
                     #if HAVE_LIBCLN
                     if (row_[j][k] > SLATER_MAX_CLN)
                     {
@@ -412,7 +412,7 @@ double QgenAcm::calcJ(rvec                    xI,
     rvec   dx;
     double r    = 0;
     double eTot = 0;
-    ChargeDistributionModel iModel = iChargeDistributionModel_;
+    ChargeModel iModel = iChargeModel_;
     rvec_sub(xI, xJ, dx);
     r = norm(dx);
     
@@ -465,7 +465,7 @@ void QgenAcm::calcJcc(t_atoms *atoms)
                                     zeta_[j][0],
                                     row_[i][0],
                                     row_[j][0]);
-                        if (iChargeDistributionModel_ == eqdYang)
+                        if (iChargeModel_ == eqdYang)
                         {
                             Jcc *= calcSij(i, j);
                         }
@@ -474,8 +474,8 @@ void QgenAcm::calcJcc(t_atoms *atoms)
                     else
                     {
                         auto j0 = hardnessFactor_*j00_[i];
-                        if (((iChargeDistributionModel_ == eqdYang) ||
-                             (iChargeDistributionModel_ == eqdRappe)) &&
+                        if (((iChargeModel_ == eqdYang) ||
+                             (iChargeModel_ == eqdRappe)) &&
                             (atomnr_[i] == 1))
                         {
                             auto zetaH = 1.0698;

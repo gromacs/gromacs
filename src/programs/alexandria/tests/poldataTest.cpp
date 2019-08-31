@@ -173,7 +173,7 @@ TEST_F (PoldataTest, Bosque)
 TEST_F (PoldataTest, chi)
 {
     std::vector<double>                  chi0s;
-    std::vector<ChargeDistributionModel> eqd = { eqdACM_g, eqdACM_pg };
+    std::vector<ChargeModel> eqd = { eqdACM_g, eqdACM_pg };
 
     for (auto model : eqd)
     {
@@ -193,7 +193,7 @@ TEST_F (PoldataTest, row){
     {
         for (int model = 0; model <  numModels; model++)
         {
-            auto pd       = getPoldata(static_cast<ChargeDistributionModel>(model));
+            auto pd       = getPoldata(static_cast<ChargeModel>(model));
             auto atomName = pd->findAtype("ha")->getType();
             rows.push_back(pd->getRow(atomName, 0));
         }
@@ -204,7 +204,7 @@ TEST_F (PoldataTest, row){
 TEST_F (PoldataTest, zeta)
 {
     std::vector<double>                  zetas;
-    std::vector<ChargeDistributionModel> eqd = { eqdACM_pg, eqdESP_ps };
+    std::vector<ChargeModel> eqd = { eqdACM_pg, eqdESP_ps };
 
     for (auto model : eqd)
     {        
@@ -220,7 +220,7 @@ TEST_F (PoldataTest, zeta)
 
 TEST_F (PoldataTest, forceField)
 {
-    std::vector<ChargeDistributionModel> eqd = { eqdESP_pp, eqdESP_pg, eqdESP_ps };
+    std::vector<ChargeModel> eqd = { eqdESP_pp, eqdESP_pg, eqdESP_ps };
 
     std::vector<std::string> forces;
     for (auto model : eqd)

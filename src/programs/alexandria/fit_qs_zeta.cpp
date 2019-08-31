@@ -55,7 +55,7 @@
 static double chi2_coulomb(double zeta, double qs, double alpha, 
                            double delta_q, double rmax,
                            int row, 
-                           alexandria::ChargeDistributionModel iChargeDistributionModel)
+                           alexandria::ChargeModel iChargeModel)
 {
     double chi2 = 0;
     int    imax = 10;
@@ -65,7 +65,7 @@ static double chi2_coulomb(double zeta, double qs, double alpha,
         double fpol     = -qs*r/alpha;
         double fcoulomb = 0;
         
-        switch (iChargeDistributionModel)
+        switch (iChargeModel)
         {
         case alexandria::eqdESP_pg:
             fcoulomb = DNuclear_GG(r, zeta);
@@ -91,7 +91,7 @@ static void print_stats(bool verbose, int iter,
     }
 }
 
-static double zeta0(alexandria::ChargeDistributionModel iChargeDistributionModel,
+static double zeta0(alexandria::ChargeModel iChargeModel,
                     double alpha)
 {
     double zeta = 0;
@@ -99,7 +99,7 @@ static double zeta0(alexandria::ChargeDistributionModel iChargeDistributionModel
     {
         zeta = std::pow(3.0*std::sqrt(M_PI)/(4.0*alpha), 1.0/3.0);
     }
-    if (iChargeDistributionModel == alexandria::eqdESP_ps)
+    if (iChargeModel == alexandria::eqdESP_ps)
     {
         zeta *= 2.0;
     }
@@ -107,7 +107,7 @@ static double zeta0(alexandria::ChargeDistributionModel iChargeDistributionModel
 }
 
 static void fit_polarization(double alpha, double delta_q, double rmax, int row,
-                             alexandria::ChargeDistributionModel iChargeDistributionModel,
+                             alexandria::ChargeModel iChargeModel,
                              int maxiter, double tolerance,
                              double *zeta_opt, double *qs_opt,
                              bool verbose)
@@ -156,7 +156,7 @@ static void fit_polarization(double alpha, double delta_q, double rmax, int row,
         }
         chi2[Try] = chi2_coulomb(zeta[Try], qs[Try],
                                  alpha, delta_q, rmax, row, 
-                                 iChargeDistributionModel);
+                                 iChargeModel);
         if (chi2[Try] < chi2[Min])
         {
             Min = Try;

@@ -891,7 +891,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         nmiller               = gmx_recv_int(cr, src);
         nbosque               = gmx_recv_int(cr, src);
         nsymcharges           = gmx_recv_int(cr, src);
-        eqdModel_             = static_cast<ChargeDistributionModel>(gmx_recv_int(cr, src));
+        eqdModel_             = static_cast<ChargeModel>(gmx_recv_int(cr, src));
         gmx_recv_str(cr, src, &eepReference_);
         neep                  = gmx_recv_int(cr, src);
 

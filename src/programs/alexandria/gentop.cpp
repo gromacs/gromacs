@@ -226,7 +226,7 @@ int alex_gentop(int argc, char *argv[])
     const char               *tabfn    = opt2fn_null("-table", NFILE, fnm);
     eChargeGroup              ecg      = (eChargeGroup) get_option(cgopt);
     gmx::MDLogger             mdlog {};
-    ChargeDistributionModel   iModel;
+    ChargeModel   iModel;
     
     /* Check the options */
     bITP = opt2bSet("-oi", NFILE, fnm);

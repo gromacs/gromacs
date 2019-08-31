@@ -64,7 +64,7 @@ alexandria::Poldata *getPoldata(std::string qdist)
     return &(pdTest[qdist]);
 }
 
-alexandria::Poldata *getPoldata(alexandria::ChargeDistributionModel qdist)
+alexandria::Poldata *getPoldata(alexandria::ChargeModel qdist)
 {
     return getPoldata(getEemtypeName(qdist));
 }

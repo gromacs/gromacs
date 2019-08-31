@@ -78,7 +78,7 @@ class QgenAcm
 
         const char *message() const;
         
-        gmx_bool SplitQ(ChargeDistributionModel iDistributionModel);
+        gmx_bool SplitQ(ChargeModel iDistributionModel);
 
         int getNzeta(int atom);
 
@@ -109,7 +109,7 @@ class QgenAcm
         double                                             hardnessFactor_;
         gmx_bool                                           bAllocSave_;
         gmx_bool                                           bHaveShell_;
-        ChargeDistributionModel                            iChargeDistributionModel_;
+        ChargeModel                            iChargeModel_;
                
         std::vector<int>                                   atomnr_, nZeta_, coreIndex_, shellIndex_;
         std::vector<double>                                chi0_, rhs_, j00_;

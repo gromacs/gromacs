@@ -169,7 +169,7 @@ class MyMol
          *
          * \param[in] ap      Gromacs atom properties
          * \param[in] lot     Level of theory used for QM calculations
-         * \param[in] iChargeDistributionModel The model for charge distributions
+         * \param[in] iChargeModel The model for charge distributions
          */
         immStatus GenerateAtoms(gmx_atomprop_t            ap,
                                 const char               *lot);
@@ -596,7 +596,7 @@ class MyMol
                                   t_commrec                *cr,
                                   const char               *tabfn,
                                   gmx_hw_info_t            *hwinfo,
-                                  ChargeDistributionModel   iModel);
+                                  ChargeModel   iModel);
 
         /*! \brief
          * Generate cube

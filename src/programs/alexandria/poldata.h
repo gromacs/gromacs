@@ -634,10 +634,10 @@ class Poldata
         EempropsIterator ztype2Eem(const std::string &ztype);
                                    
         //! Return the charge distribution model used
-        ChargeDistributionModel getEqdModel() const { return eqdModel_; }
+        ChargeModel getEqdModel() const { return eqdModel_; }
         
         //! Set the charge distribution model used
-        void setEqdModel(ChargeDistributionModel eqdModel) { eqdModel_ = eqdModel; }
+        void setEqdModel(ChargeModel eqdModel) { eqdModel_ = eqdModel; }
         
         //! Return the array of eemprops
         std::vector<Eemprops> &getEemprops() {return eep_; }
@@ -680,7 +680,7 @@ class Poldata
         std::vector<Symcharges>               symcharges_;
         std::vector<Eemprops>                 eep_;
         std::string                           eepReference_;
-        ChargeDistributionModel               eqdModel_ = eqdACM_g;
+        ChargeModel               eqdModel_ = eqdACM_g;
 
         void addBtype(const std::string &btype);
 

@@ -87,7 +87,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
         {
         }
 
-        void testAcm(ChargeDistributionModel model, informat inputformat)
+        void testAcm(ChargeModel model, informat inputformat)
         {                       
             int        maxpot    = 100; 
             int        nsymm     = 0;

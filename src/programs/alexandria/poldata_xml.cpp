@@ -961,7 +961,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
     }
 
     child = add_xml_child(parent, exml_names(exmlEEMPROPS));
-    ChargeDistributionModel model = pd->getEqdModel();
+    ChargeModel model = pd->getEqdModel();
     add_xml_char(child, exml_names(exmlMODEL), getEemtypeName(model));
     add_xml_char(child, exml_names(exmlREFERENCE), pd->getEpref().c_str());
     for (auto eep = pd->BeginEemprops();

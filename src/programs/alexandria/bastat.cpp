@@ -624,7 +624,7 @@ int alex_bastat(int argc, char *argv[])
     };
 
     FILE                            *fp;
-    ChargeDistributionModel          iModel;
+    ChargeModel          iModel;
     time_t                           my_t;
     t_bonds                         *bonds = new(t_bonds);
     rvec                             dx, dx2, r_ij, r_kj, r_kl, mm, nn;

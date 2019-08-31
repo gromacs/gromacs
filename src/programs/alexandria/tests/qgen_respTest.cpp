@@ -95,7 +95,7 @@ class RespTest : public gmx::test::CommandLineTestBase
         {
         }
 
-        void testResp(ChargeDistributionModel qdist)
+        void testResp(ChargeModel qdist)
         {
             //Generate charges and topology
             const char   *lot        = "B3LYP/Gen";
