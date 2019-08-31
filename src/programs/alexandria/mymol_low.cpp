@@ -654,7 +654,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                     {
                         case F_LJ:
                         {
-                            double c6, c12;
+                            double c6 = 0, c12 = 0;
                             getLjParams(pd, mytypes[i].name,
                                         mytypes[j].name, &c6, &c12);
                             mtop->ffparams.iparams[idx].lj.c6  = c6;
@@ -668,7 +668,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                         break;
                         case F_BHAM:
                         {
-                            double a, b, c;
+                            double a = 0, b = 0, c = 0;
                             getBhamParams(pd, mytypes[i].name,
                                           mytypes[j].name, &a, &b, &c);
                             mtop->ffparams.iparams[idx].bham.a = a;
