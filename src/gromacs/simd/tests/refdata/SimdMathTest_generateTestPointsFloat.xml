@@ -1,0 +1,134 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Test points for interval [-1e10,-1[">
+    <Int Name="Length">10</Int>
+    <Real>-1e+10</Real>
+    <Real>-9.9199674e+08</Real>
+    <Real>-1.0276532e+08</Real>
+    <Real>-10191381</Real>
+    <Real>-995356.56</Real>
+    <Real>-103682.98</Real>
+    <Real>-10368.298</Real>
+    <Real>-998.01398</Real>
+    <Real>-104.50117</Real>
+    <Real>-1.0000001</Real>
+  </Sequence>
+  <Sequence Name="Test points for interval [-1e10, -1e-10[">
+    <Int Name="Length">10</Int>
+    <Real>-1e+10</Real>
+    <Real>-1.0197438e+08</Real>
+    <Real>-982998.06</Real>
+    <Real>-10078.646</Real>
+    <Real>-101.48396</Real>
+    <Real>-0.9705351</Real>
+    <Real>-0.010128544</Real>
+    <Real>-0.00010082013</Real>
+    <Real>-9.6056021e-07</Real>
+    <Real>-1.0000001e-10</Real>
+  </Sequence>
+  <Sequence Name="Test points for interval [1, 1e10[">
+    <Int Name="Length">10</Int>
+    <Real>1</Real>
+    <Real>10.531322</Real>
+    <Real>104.50116</Real>
+    <Real>998.01392</Real>
+    <Real>10368.297</Real>
+    <Real>103682.97</Real>
+    <Real>995356.5</Real>
+    <Real>10191380</Real>
+    <Real>1.0276531e+08</Real>
+    <Real>9.999999e+09</Real>
+  </Sequence>
+  <Sequence Name="Test points for interval [1e-10, 1e10[">
+    <Int Name="Length">10</Int>
+    <Real>1e-10</Real>
+    <Real>1.0152188e-08</Real>
+    <Real>9.6055999e-07</Real>
+    <Real>0.00010082011</Real>
+    <Real>0.010128542</Real>
+    <Real>0.97053498</Real>
+    <Real>101.48394</Real>
+    <Real>10078.644</Real>
+    <Real>982997.94</Real>
+    <Real>9.999999e+09</Real>
+  </Sequence>
+  <Sequence Name="Test points for interval [-1e10, 1e-10[">
+    <Int Name="Length">10</Int>
+    <Real>-1e+10</Real>
+    <Real>-2.6626453</Real>
+    <Real>-6.9778977e-10</Real>
+    <Real>-1.8059139e-19</Real>
+    <Real>-1.1754945e-38</Real>
+    <Real>0</Real>
+    <Real>1.1754944e-38</Real>
+    <Real>1.1630735e-31</Real>
+    <Real>1.1241329e-24</Real>
+    <Real>9.9999994e-11</Real>
+  </Sequence>
+  <Sequence Name="Test points for interval [-1e-10, 1e-10[">
+    <Int Name="Length">10</Int>
+    <Real>-1e-10</Real>
+    <Real>-2.6076687e-16</Real>
+    <Real>-6.9066739e-22</Real>
+    <Real>-1.7564581e-27</Real>
+    <Real>-1.1754945e-38</Real>
+    <Real>0</Real>
+    <Real>1.1754944e-38</Real>
+    <Real>1.1630735e-31</Real>
+    <Real>1.1241329e-24</Real>
+    <Real>9.9999994e-11</Real>
+  </Sequence>
+  <Sequence Name="Test points for interval [-1e-10, 1e10[">
+    <Int Name="Length">10</Int>
+    <Real>-1e-10</Real>
+    <Real>-2.6076687e-16</Real>
+    <Real>-6.9066739e-22</Real>
+    <Real>-1.7564581e-27</Real>
+    <Real>-1.1754945e-38</Real>
+    <Real>0</Real>
+    <Real>1.1754944e-38</Real>
+    <Real>1.1574314e-26</Real>
+    <Real>1.124133e-14</Real>
+    <Real>9.999999e+09</Real>
+  </Sequence>
+  <Sequence Name="Test points for interval [-1e10, 1e10[">
+    <Int Name="Length">10</Int>
+    <Real>-1e+10</Real>
+    <Real>-2.6626453</Real>
+    <Real>-6.9778977e-10</Real>
+    <Real>-1.8059139e-19</Real>
+    <Real>-1.1754945e-38</Real>
+    <Real>0</Real>
+    <Real>1.1754944e-38</Real>
+    <Real>1.1574314e-26</Real>
+    <Real>1.124133e-14</Real>
+    <Real>9.999999e+09</Real>
+  </Sequence>
+  <Sequence Name="Test points for interval [-1000, 0[">
+    <Int Name="Length">10</Int>
+    <Real>-1000</Real>
+    <Real>-0.084863283</Real>
+    <Real>-6.7234041e-06</Real>
+    <Real>-5.4351407e-10</Real>
+    <Real>-4.4675377e-14</Real>
+    <Real>-3.4287896e-18</Real>
+    <Real>-2.9249109e-22</Real>
+    <Real>-2.3082703e-26</Real>
+    <Real>-1.8784753e-30</Real>
+    <Real>-1.1754945e-38</Real>
+  </Sequence>
+  <Sequence Name="Test points for interval [0, 1000[">
+    <Int Name="Length">10</Int>
+    <Real>0</Real>
+    <Real>1.1754944e-38</Real>
+    <Real>4.2597821e-34</Real>
+    <Real>1.5295134e-29</Real>
+    <Real>5.4499126e-25</Real>
+    <Real>1.9293522e-20</Real>
+    <Real>6.7924038e-16</Real>
+    <Real>2.3798435e-11</Real>
+    <Real>8.3032546e-07</Real>
+    <Real>999.99994</Real>
+  </Sequence>
+</ReferenceData>

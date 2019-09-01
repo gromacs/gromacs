@@ -556,7 +556,11 @@ exp(SimdFloat x)
     p         = fma(p, x, CC1);
     p         = fma(p, x, CC0);
     p         = fma(x*x, p, x);
+#if GMX_SIMD_HAVE_FMA
     x         = fma(p, fexppart, fexppart);
+#else
+    x         = (p + one) * fexppart;
+#endif
     return x;
 }
 #endif
@@ -1926,7 +1930,11 @@ exp(SimdDouble x)
     p         = fma(p, x, CE3);
     p         = fma(p, x, CE2);
     p         = fma(p, x * x, x);
+#if GMX_SIMD_HAVE_FMA
     x         = fma(p, fexppart, fexppart);
+#else
+    x         = (p + one) * fexppart;
+#endif
 
     return x;
 }
@@ -1995,6 +2003,7 @@ erf(SimdDouble x)
 
     const SimdDouble one(1.0);
     const SimdDouble two(2.0);
+    const SimdDouble minFloat(std::numeric_limits<float>::min());
 
     SimdDouble       xabs, x2, x4, t, t2, w, w2;
     SimdDouble       PolyAP0, PolyAP1, PolyAQ0, PolyAQ1;
@@ -2022,7 +2031,7 @@ erf(SimdDouble x)
     PolyAQ0  = fma(PolyAQ0, x4, one);
     PolyAQ0  = fma(PolyAQ1, x2, PolyAQ0);
 
-    res_erf  = PolyAP0 * maskzInv(PolyAQ0, mask_erf);
+    res_erf  = PolyAP0 * maskzInv(PolyAQ0, mask_erf && (minFloat <= abs(PolyAQ0) ) );
     res_erf  = CAoffset + res_erf;
     res_erf  = x * res_erf;
 
@@ -2046,12 +2055,12 @@ erf(SimdDouble x)
     PolyBQ0 = fma(PolyBQ1, t, PolyBQ0);
 
     // The denominator polynomial can be zero outside the range
-    res_erfcB = PolyBP0 * maskzInv(PolyBQ0, notmask_erf);
+    res_erfcB = PolyBP0 * maskzInv(PolyBQ0, notmask_erf && (minFloat <= abs(PolyBQ0) ) );
 
     res_erfcB = res_erfcB * xabs;
 
     // Calculate erfc() in range [4.5,inf]
-    w       = maskzInv(xabs, notmask_erf);
+    w       = maskzInv(xabs, notmask_erf && (minFloat <= xabs) );
     w2      = w * w;
 
     PolyCP0  = fma(CCP6, w2, CCP4);
@@ -2071,7 +2080,7 @@ erf(SimdDouble x)
     expmx2   = exp( -x2 );
 
     // The denominator polynomial can be zero outside the range
-    res_erfcC = PolyCP0 * maskzInv(PolyCQ0, notmask_erf);
+    res_erfcC = PolyCP0 * maskzInv(PolyCQ0, notmask_erf && (minFloat <= abs(PolyCQ0) ) );
     res_erfcC = res_erfcC + CCoffset;
     res_erfcC = res_erfcC * w;
 
@@ -2156,6 +2165,7 @@ erfc(SimdDouble x)
 
     const SimdDouble one(1.0);
     const SimdDouble two(2.0);
+    const SimdDouble minFloat(std::numeric_limits<float>::min());
 
     SimdDouble       xabs, x2, x4, t, t2, w, w2;
     SimdDouble       PolyAP0, PolyAP1, PolyAQ0, PolyAQ1;
@@ -2182,7 +2192,7 @@ erfc(SimdDouble x)
     PolyAQ0  = fma(PolyAQ0, x4, one);
     PolyAQ0  = fma(PolyAQ1, x2, PolyAQ0);
 
-    res_erf  = PolyAP0 * maskzInv(PolyAQ0, mask_erf);
+    res_erf  = PolyAP0 * maskzInv(PolyAQ0, mask_erf && (minFloat <= abs(PolyAQ0) ) );
     res_erf  = CAoffset + res_erf;
     res_erf  = x * res_erf;
 
@@ -2206,12 +2216,13 @@ erfc(SimdDouble x)
     PolyBQ0 = fma(PolyBQ1, t, PolyBQ0);
 
     // The denominator polynomial can be zero outside the range
-    res_erfcB = PolyBP0 * maskzInv(PolyBQ0, notmask_erf);
+    res_erfcB = PolyBP0 * maskzInv(PolyBQ0, notmask_erf && (minFloat <= abs(PolyBQ0) ) );
 
     res_erfcB = res_erfcB * xabs;
 
     // Calculate erfc() in range [4.5,inf]
-    w       = maskzInv(xabs, xabs != setZero());
+    // Note that 1/x can only handle single precision!
+    w       = maskzInv(xabs, minFloat <= xabs );
     w2      = w * w;
 
     PolyCP0  = fma(CCP6, w2, CCP4);
@@ -2231,7 +2242,7 @@ erfc(SimdDouble x)
     expmx2   = exp( -x2 );
 
     // The denominator polynomial can be zero outside the range
-    res_erfcC = PolyCP0 * maskzInv(PolyCQ0, notmask_erf);
+    res_erfcC = PolyCP0 * maskzInv(PolyCQ0, notmask_erf && (minFloat <= abs(PolyCQ0) ) );
     res_erfcC = res_erfcC + CCoffset;
     res_erfcC = res_erfcC * w;
 
@@ -2445,6 +2456,7 @@ tan(SimdDouble x)
     const SimdDouble  CT3(0.0539682539781298417636002);
     const SimdDouble  CT2(0.133333333333125941821962);
     const SimdDouble  CT1(0.333333333333334980164153);
+    const SimdDouble  minFloat(std::numeric_limits<float>::min());
 
     SimdDouble        x2, p, y, z;
     SimdDBool         m;
@@ -2467,6 +2479,7 @@ tan(SimdDouble x)
     const SimdDouble  quarter(0.25);
     const SimdDouble  half(0.5);
     const SimdDouble  threequarter(0.75);
+    const SimdDouble  minFloat(std::numeric_limits<float>::min());
     SimdDouble        w, q;
     SimdDBool         m1, m2, m3;
 
@@ -2505,7 +2518,7 @@ tan(SimdDouble x)
     p       = fma(p, x2, CT1);
     p       = fma(x2, p * x, x);
 
-    p       = blend( p, maskzInv(p, m), m);
+    p       = blend( p, maskzInv(p, m && (minFloat < abs(p) ) ), m);
     return p;
 }
 
@@ -2749,6 +2762,7 @@ atan2(SimdDouble y, SimdDouble x)
 {
     const SimdDouble pi(M_PI);
     const SimdDouble halfpi(M_PI/2.0);
+    const SimdDouble minFloat(std::numeric_limits<float>::min());
     SimdDouble       xinv, p, aoffset;
     SimdDBool        mask_xnz, mask_ynz, mask_xlt0, mask_ylt0;
 
@@ -2763,7 +2777,7 @@ atan2(SimdDouble y, SimdDouble x)
     aoffset   = blend(aoffset, pi, mask_xlt0);
     aoffset   = blend(aoffset, -aoffset, mask_ylt0);
 
-    xinv      = maskzInv(x, mask_xnz);
+    xinv      = maskzInv(x, mask_xnz && (minFloat <= abs(x) ) );
     p         = y * xinv;
     p         = atan(p);
     p         = p + aoffset;
@@ -3115,7 +3129,7 @@ logSingleAccuracy(SimdDouble x)
 {
     const SimdDouble  one(1.0);
     const SimdDouble  two(2.0);
-    const SimdDouble  sqrt2(std::sqrt(2.0));
+    const SimdDouble  invsqrt2(1.0/std::sqrt(2.0));
     const SimdDouble  corr(0.693147180559945286226764);
     const SimdDouble  CL9(0.2371599674224853515625);
     const SimdDouble  CL7(0.285279005765914916992188);
@@ -3129,8 +3143,8 @@ logSingleAccuracy(SimdDouble x)
     x     = frexp(x, &iexp);
     fexp  = cvtI2R(iexp);
 
-    mask  = (x < sqrt2);
-    // Adjust to non-IEEE format for x<sqrt(2): exponent -= 1, mantissa *= 2.0
+    mask  = x < invsqrt2;
+    // Adjust to non-IEEE format for x<1/sqrt(2): exponent -= 1, mantissa *= 2.0
     fexp  = fexp - selectByMask(one, mask);
     x     = x * blend(one, two, mask);
 

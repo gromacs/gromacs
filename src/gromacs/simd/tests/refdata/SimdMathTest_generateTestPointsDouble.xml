@@ -1,0 +1,134 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Test points for interval [-1e10,-1[">
+    <Int Name="Length">10</Int>
+    <Real>-10000000000</Real>
+    <Real>-991996729.60000002</Real>
+    <Real>-102765318.40000001</Real>
+    <Real>-10191380.700000001</Real>
+    <Real>-995356.53750000009</Real>
+    <Real>-103682.97265625001</Real>
+    <Real>-10368.297265625002</Real>
+    <Real>-998.01393432617203</Real>
+    <Real>-104.50116119384768</Real>
+    <Real>-1.0000000000000002</Real>
+  </Sequence>
+  <Sequence Name="Test points for interval [-1e10, -1e-10[">
+    <Int Name="Length">10</Int>
+    <Real>-10000000000</Real>
+    <Real>-101974374.24606848</Real>
+    <Real>-982998.03509481996</Real>
+    <Real>-10078.644865503593</Real>
+    <Real>-101.483948692583</Real>
+    <Real>-0.97053503416733733</Real>
+    <Real>-0.010128542487091718</Real>
+    <Real>-0.00010082011769780306</Real>
+    <Real>-9.605600150812822e-07</Real>
+    <Real>-1.0000000000000002e-10</Real>
+  </Sequence>
+  <Sequence Name="Test points for interval [1, 1e10[">
+    <Int Name="Length">10</Int>
+    <Real>1</Real>
+    <Real>10.531322574615478</Real>
+    <Real>104.50116119384765</Real>
+    <Real>998.01393432617181</Real>
+    <Real>10368.297265624999</Real>
+    <Real>103682.97265624999</Real>
+    <Real>995356.53749999986</Real>
+    <Real>10191380.699999997</Real>
+    <Real>102765318.39999998</Real>
+    <Real>9999999999.9999981</Real>
+  </Sequence>
+  <Sequence Name="Test points for interval [1e-10, 1e10[">
+    <Int Name="Length">10</Int>
+    <Real>1e-10</Real>
+    <Real>1.0152187558911255e-08</Real>
+    <Real>9.6056001508128114e-07</Real>
+    <Real>0.00010082011769780299</Real>
+    <Real>0.01012854248709171</Real>
+    <Real>0.97053503416733677</Real>
+    <Real>101.48394869258293</Real>
+    <Real>10078.644865503584</Real>
+    <Real>982998.03509481938</Real>
+    <Real>9999999999.9999981</Real>
+  </Sequence>
+  <Sequence Name="Test points for interval [-1e10, 1e-10[">
+    <Int Name="Length">10</Int>
+    <Real>-10000000000</Real>
+    <Real>-2.9528897003543909e-54</Real>
+    <Real>-8.7122144673160058e-118</Real>
+    <Real>-2.5681583057540341e-181</Real>
+    <Real>-2.2250738585072019e-308</Real>
+    <Real>0</Real>
+    <Real>2.2250738585072014e-308</Real>
+    <Real>5.9354014910991263e-234</Real>
+    <Real>1.546605876188053e-159</Real>
+    <Real>9.9999999999999991e-11</Real>
+  </Sequence>
+  <Sequence Name="Test points for interval [-1e-10, 1e-10[">
+    <Int Name="Length">10</Int>
+    <Real>-1e-10</Real>
+    <Real>-2.8607100804829301e-70</Real>
+    <Real>-8.8780293855397151e-130</Real>
+    <Real>-2.6703031458988247e-189</Real>
+    <Real>-2.2250738585072019e-308</Real>
+    <Real>0</Real>
+    <Real>2.2250738585072014e-308</Real>
+    <Real>5.9354014910991263e-234</Real>
+    <Real>1.546605876188053e-159</Real>
+    <Real>9.9999999999999991e-11</Real>
+  </Sequence>
+  <Sequence Name="Test points for interval [-1e-10, 1e10[">
+    <Int Name="Length">10</Int>
+    <Real>-1e-10</Real>
+    <Real>-2.8607100804829301e-70</Real>
+    <Real>-8.8780293855397151e-130</Real>
+    <Real>-2.6703031458988247e-189</Real>
+    <Real>-2.2250738585072019e-308</Real>
+    <Real>0</Real>
+    <Real>2.2250738585072014e-308</Real>
+    <Real>5.9066082159438022e-229</Real>
+    <Real>1.5466058761880533e-149</Real>
+    <Real>9999999999.9999981</Real>
+  </Sequence>
+  <Sequence Name="Test points for interval [-1e10, 1e10[">
+    <Int Name="Length">10</Int>
+    <Real>-10000000000</Real>
+    <Real>-2.9528897003543909e-54</Real>
+    <Real>-8.7122144673160058e-118</Real>
+    <Real>-2.5681583057540341e-181</Real>
+    <Real>-2.2250738585072019e-308</Real>
+    <Real>0</Real>
+    <Real>2.2250738585072014e-308</Real>
+    <Real>5.9066082159438022e-229</Real>
+    <Real>1.5466058761880533e-149</Real>
+    <Real>9999999999.9999981</Real>
+  </Sequence>
+  <Sequence Name="Test points for interval [-1000, 0[">
+    <Int Name="Length">10</Int>
+    <Real>-1000</Real>
+    <Real>-8.8746851837363828e-29</Real>
+    <Real>-7.7787690973264271e-60</Real>
+    <Real>-6.7116512220867355e-91</Real>
+    <Real>-5.6727420627675561e-122</Real>
+    <Real>-4.7174005124841308e-153</Real>
+    <Real>-4.1920603122212035e-184</Real>
+    <Real>-3.680435065821814e-215</Real>
+    <Real>-3.182244692724017e-246</Real>
+    <Real>-2.2250738585072019e-308</Real>
+  </Sequence>
+  <Sequence Name="Test points for interval [0, 1000[">
+    <Int Name="Length">10</Int>
+    <Real>0</Real>
+    <Real>2.2250738585072014e-308</Real>
+    <Real>7.6780934120117415e-274</Real>
+    <Real>2.5394866048632681e-239</Real>
+    <Real>7.9114609924336933e-205</Real>
+    <Real>2.7256387784040392e-170</Real>
+    <Real>8.9929968159964736e-136</Real>
+    <Real>2.812820533233723e-101</Real>
+    <Real>9.674846043043021e-67</Real>
+    <Real>999.99999999999989</Real>
+  </Sequence>
+</ReferenceData>

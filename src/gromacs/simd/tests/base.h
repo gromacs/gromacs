@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,17 +55,22 @@
 
 #include <cstdint>
 
+#include <limits>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx
 {
 namespace test
 {
+
+//! \internal \brief Test-time utility macro for current precision accuracy
+#define GMX_SIMD_ACCURACY_BITS_REAL (GMX_DOUBLE ? GMX_SIMD_ACCURACY_BITS_DOUBLE : GMX_SIMD_ACCURACY_BITS_SINGLE)
 
 /*! \internal
  * \brief
@@ -80,6 +85,14 @@ namespace test
 class SimdBaseTest : public ::testing::Test
 {
     public:
+        /*! \brief Return the default ulp tolerance for current precision
+         */
+        static constexpr std::int64_t
+        defaultRealUlpTol()
+        {
+            return (1LL << (2 + std::numeric_limits<real>::digits-GMX_SIMD_ACCURACY_BITS_REAL));
+        }
+
         /*! \brief Initialize new SIMD test fixture with default tolerances.
          *
          * The default absolute tolerance is set to 0, which means the we always
@@ -102,12 +115,7 @@ class SimdBaseTest : public ::testing::Test
          * exponentials, logarithms, and error functions.
          */
         SimdBaseTest() :
-#if GMX_DOUBLE
-            ulpTol_((1LL << (2 + std::numeric_limits<double>::digits-GMX_SIMD_ACCURACY_BITS_DOUBLE))),
-#else
-            ulpTol_((1LL << (2 + std::numeric_limits<float>::digits-GMX_SIMD_ACCURACY_BITS_SINGLE))),
-#endif
-            absTol_(0), range_(std::pair<real, real>(1, 10))
+            ulpTol_(defaultRealUlpTol()), absTol_(0)
         {
         }
 
@@ -117,11 +125,10 @@ class SimdBaseTest : public ::testing::Test
         /*! \brief Adjust ulp tolerance for single accuracy functions. */
         void setUlpTolSingleAccuracy(std::int64_t newTol)
         {
-#if GMX_DOUBLE
-            setUlpTol(newTol * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
-#else
-            setUlpTol(newTol);
-#endif
+            const int realBits   = std::numeric_limits<real>::digits;
+            const int singleBits = std::numeric_limits<float>::digits;
+            // In single precision the expression (1LL << 0) evaluates to 1.
+            setUlpTol(newTol * (1LL << (realBits - singleBits)));
         }
 
         /*! \brief Adjust the absolute tolerance from the default 0.
@@ -131,10 +138,15 @@ class SimdBaseTest : public ::testing::Test
          */
         void setAbsTol(real newTol)          { absTol_ = newTol; }
 
-        /*! \brief Change math function testing range from the default [1,10]. */
-        void setRange(real low, real high) { range_.first = low; range_.second = high; }
-
-        static int  s_nPoints;    //!< Number of test points to use, settable on command line.
+        /*! \brief Number of test points to use, settable on command line.
+         *
+         * \note While this has to be a static non-const variable for the
+         *       command-line option to work, you should never change it
+         *       manually in any of the tests, because the static storage
+         *       class will make the value apply to all subsequent tests
+         *       unless you remember to reset it.
+         */
+        static int  s_nPoints;
 
         /*! \brief Compare two std::vector<real> for approximate equality.
          *
@@ -189,7 +201,6 @@ class SimdBaseTest : public ::testing::Test
     protected:
         std::int64_t           ulpTol_;       //!< Current tolerance in units-in-last-position.
         real                   absTol_;       //!< Current absolute tolerance.
-        std::pair<real, real>  range_;        //!< Range for math function tests.
 };
 
 }      // namespace test
