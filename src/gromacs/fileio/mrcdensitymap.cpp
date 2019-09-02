@@ -48,14 +48,54 @@
 #include <algorithm>
 #include <vector>
 
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/gmxfio_xdr.h"
 #include "gromacs/fileio/mrcdensitymapheader.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/inmemoryserializer.h"
 #include "gromacs/utility/iserializer.h"
 
 #include "mrcserializer.h"
 
 namespace gmx
 {
+
+namespace
+{
+
+/*! \brief Read file into memory as vector of chars
+ *
+ * \param[in] filename of the file to be read
+ * \returns the file contents as a vector
+ * \throws FileIOError if file not found
+ * \throws FileIOError if reading was not successful
+ */
+std::vector<char> readCharBufferFromFile(const std::string &filename)
+{
+    if (!gmx_fexist(filename))
+    {
+        GMX_THROW(FileIOError("Error while reading '" + filename + "' - file not found."));
+    }
+    t_fileio *mrcFile = gmx_fio_open(filename.c_str(), "r");
+
+    // Determine file size
+    gmx_fseek(gmx_fio_getfp(mrcFile), 0, SEEK_END);
+    gmx_off_t fileSize = gmx_fio_ftell(mrcFile);
+    gmx_fseek(gmx_fio_getfp(mrcFile), 0, SEEK_SET);
+    // Read whole file into buffer the size of the file
+    std::vector<char> fileContentBuffer(fileSize);
+    size_t            readSize = fread(fileContentBuffer.data(), sizeof(char), fileContentBuffer.size(), gmx_fio_getfp(mrcFile));
+    gmx_fio_close(mrcFile);
+
+    if (fileContentBuffer.size() != readSize)
+    {
+        GMX_THROW(FileIOError("Error while reading '" + filename + "' - file size and read buffer size do not match."));
+    }
+
+    return fileContentBuffer;
+}
+
+}   // namespace
 
 /********************************************************************
  * MrcDensityMapOfFloatReader::Impl
@@ -100,7 +140,7 @@ MrcDensityMapOfFloatReader::MrcDensityMapOfFloatReader(ISerializer *serializer) 
 {
 }
 
-ArrayRef<const float> MrcDensityMapOfFloatReader::data() const
+ArrayRef<const float> MrcDensityMapOfFloatReader::constView() const
 {
     return impl_->data_;
 }
@@ -112,6 +152,65 @@ const MrcDensityMapHeader &MrcDensityMapOfFloatReader::header() const
 
 MrcDensityMapOfFloatReader::~MrcDensityMapOfFloatReader()
 {
+}
+
+/********************************************************************
+ * MrcDensityMapOfFloatFromFileReader::Impl
+ */
+
+
+class MrcDensityMapOfFloatFromFileReader::Impl
+{
+    public:
+        explicit Impl(const std::string &fileName);
+        ~Impl() = default;
+        const MrcDensityMapOfFloatReader &reader() const;
+    private:
+        std::vector<char>                 buffer_;
+        InMemoryDeserializer              serializer_;
+        const MrcDensityMapOfFloatReader  reader_;
+};
+
+MrcDensityMapOfFloatFromFileReader::Impl::Impl(const std::string &filename) :
+    buffer_(readCharBufferFromFile(filename)),
+    serializer_(buffer_, false),
+    reader_(&serializer_)
+{
+    layout_right::mapping<dynamicExtents3D> map(getDynamicExtents3D(reader_.header()));
+    if (map.required_span_size() != reader_.constView().ssize())
+    {
+        GMX_THROW(FileIOError("File header density extent information of "
+                              + filename + "' does not match density data size"));
+    }
+}
+
+const MrcDensityMapOfFloatReader &MrcDensityMapOfFloatFromFileReader::Impl::reader() const
+{
+    return reader_;
+}
+
+/********************************************************************
+ * MrcDensityMapOfFloatFromFileReader
+ */
+
+MrcDensityMapOfFloatFromFileReader::MrcDensityMapOfFloatFromFileReader(const std::string &filename)
+    : impl_(new Impl(filename))
+{}
+
+MrcDensityMapOfFloatFromFileReader::~MrcDensityMapOfFloatFromFileReader() = default;
+
+TranslateAndScale
+MrcDensityMapOfFloatFromFileReader::transformationToDensityLattice() const
+{
+    return getCoordinateTransformationToLattice(impl_->reader().header());
+}
+
+MultiDimArray<std::vector<float>, dynamicExtents3D>
+MrcDensityMapOfFloatFromFileReader::densityDataCopy() const
+{
+    MultiDimArray<std::vector<float>, dynamicExtents3D> result(getDynamicExtents3D(impl_->reader().header()));
+    std::copy(std::begin(impl_->reader().constView()), std::end(impl_->reader().constView()), begin(result.asView()));
+    return result;
 }
 
 /********************************************************************

@@ -43,17 +43,22 @@
 
 #include "gromacs/fileio/mrcdensitymap.h"
 
+#include <string>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/mrcdensitymapheader.h"
 #include "gromacs/utility/inmemoryserializer.h"
 
+#include "testutils/refdata.h"
 #include "testutils/testasserts.h"
+#include "testutils/testfilemanager.h"
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -76,7 +81,7 @@ TEST(MrcDensityMap, RoundTripIsIdempotent)
     InMemoryDeserializer       deserializer(serializedFile, false);
     MrcDensityMapOfFloatReader mrcDensityMapReader(&deserializer);
 
-    MrcDensityMapOfFloatWriter writerOfDeserializedOutput(mrcDensityMapReader.header(), mrcDensityMapReader.data());
+    MrcDensityMapOfFloatWriter writerOfDeserializedOutput(mrcDensityMapReader.header(), mrcDensityMapReader.constView());
     writerOfDeserializedOutput.write(&serializer);
 
     const auto roundTripResult = serializer.finishAndGetBuffer();
@@ -85,6 +90,53 @@ TEST(MrcDensityMap, RoundTripIsIdempotent)
     EXPECT_THAT(serializedFile, testing::Pointwise(testing::Eq(), roundTripResult));
 }
 
-} // namespace
+TEST(MrcDensityMap, ThrowsFileIOErrorWhenFileNotPresent)
+{
+    EXPECT_THROW(MrcDensityMapOfFloatFromFileReader(""), FileIOError);
+}
 
+TEST(MrcDensityMap, ReadsCoordinateTransformationFromFile)
+{
+    RVec coordinate1(0, 0, 0);
+    RVec coordinate2(0, 0, 1);
+    RVec coordinate3(1, 0, 0);
+    RVec coordinate4(0, 1, 0);
+
+    MrcDensityMapOfFloatFromFileReader mrcFileReader(TestFileManager::getInputFilePath("ellipsoid-density.mrc"));
+    TranslateAndScale                  coordinateTransformation(mrcFileReader.transformationToDensityLattice());
+
+    coordinateTransformation({&coordinate1, &coordinate1+1});
+    coordinateTransformation({&coordinate2, &coordinate2+1});
+
+    EXPECT_REAL_EQ(0, coordinate1[XX]);
+    EXPECT_REAL_EQ(-2, coordinate1[YY]);
+    EXPECT_REAL_EQ(0, coordinate1[ZZ]);
+
+    EXPECT_REAL_EQ(0, coordinate2[XX]);
+    EXPECT_REAL_EQ(-2, coordinate2[YY]);
+    EXPECT_REAL_EQ(1.25, coordinate2[ZZ]);
+
+    EXPECT_REAL_EQ(1, coordinate3[XX]);
+    EXPECT_REAL_EQ(0, coordinate3[YY]);
+    EXPECT_REAL_EQ(0, coordinate3[ZZ]);
+
+    EXPECT_REAL_EQ(0, coordinate4[XX]);
+    EXPECT_REAL_EQ(1, coordinate4[YY]);
+    EXPECT_REAL_EQ(0, coordinate4[ZZ]);
+}
+
+TEST(MrcDensityMap, ReadsDensityDataFromFile)
+{
+    MrcDensityMapOfFloatFromFileReader mrcFileReader(
+            TestFileManager::getInputFilePath("ellipsoid-density.mrc"));
+    const auto                         densityData = mrcFileReader.densityDataCopy();
+
+    TestReferenceData                  refData;
+    TestReferenceChecker               checker(refData.rootChecker());
+    checker.checkSequence(begin(densityData.asConstView()), end(densityData.asConstView()),
+                          "data ellipsoid density");
+}
+
+} // namespace
+} // namespace test
 } // namespace gmx

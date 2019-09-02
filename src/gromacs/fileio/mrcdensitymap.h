@@ -41,6 +41,11 @@
  * \inlibraryapi
  * \ingroup module_fileio
  */
+#include <string>
+#include <vector>
+
+#include "gromacs/math/multidimarray.h"
+#include "gromacs/mdspan/extensions.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 
@@ -49,6 +54,7 @@ namespace gmx
 
 struct MrcDensityMapHeader;
 class ISerializer;
+class TranslateAndScale;
 
 /*! \libinternal \brief Read an mrc/ccp4 file that contains float values.
  */
@@ -65,8 +71,8 @@ class MrcDensityMapOfFloatReader
 
         ~MrcDensityMapOfFloatReader();
 
-        //! Return the data vector that holds the data on the density grid
-        ArrayRef<const float> data() const;
+        //! Return a view on the data of the density grid
+        ArrayRef<const float> constView() const;
         //! Return the header
         const MrcDensityMapHeader &header() const;
 
@@ -74,6 +80,43 @@ class MrcDensityMapOfFloatReader
         class Impl;
         PrivateImplPointer<Impl> impl_;
 
+};
+
+/*! \libinternal \brief Read an mrc density map from a given file.
+ *
+ * Higher level class than MrcDensityMapOfFloatReader that takes a file name
+ * upon construction and returns coordinate transformation into the density
+ * lattice as well as the density data.
+ *
+ * \note File reading is completed during construction. When the constructor
+ *       completes succesfully, transformation to density lattice and density
+ *       data are valid, irrespective of the state of the read file.
+ */
+class MrcDensityMapOfFloatFromFileReader
+{
+    public:
+
+        MrcDensityMapOfFloatFromFileReader();
+
+        /*! \brief Read from filename.
+         * \throws FileIOError if file does not exist
+         * \throws FileIOError if read in buffer size does not match file size
+         * \throws FileIOError if header information does not match density
+         *                     data size
+         */
+        explicit MrcDensityMapOfFloatFromFileReader(const std::string &filename);
+
+        ~MrcDensityMapOfFloatFromFileReader();
+
+        //! Return the coordinate transformation into the density
+        TranslateAndScale transformationToDensityLattice() const;
+
+        //! Return a copy of the density data
+        MultiDimArray<std::vector<float>, dynamicExtents3D> densityDataCopy() const;
+
+    private:
+        class Impl;
+        PrivateImplPointer<Impl> impl_;
 };
 
 /*! \libinternal \brief Write an mrc/ccp4 file that contains float values.
