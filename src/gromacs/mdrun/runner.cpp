@@ -1279,6 +1279,7 @@ int Mdrunner::mdrunner()
     {
         mdModulesNotifier.notify(*cr);
         mdModulesNotifier.notify(&atomSets);
+        mdModulesNotifier.notify(PeriodicBoundaryConditionType {inputrec->ePBC});
         /* Initiate forcerecord */
         fr                 = new t_forcerec;
         fr->forceProviders = mdModules_->initForceProviders();

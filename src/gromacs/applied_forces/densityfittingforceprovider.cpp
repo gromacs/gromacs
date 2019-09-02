@@ -51,6 +51,7 @@
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/pbcutil/pbc.h"
 
 #include "densityfittingamplitudelookup.h"
 #include "densityfittingparameters.h"
@@ -95,7 +96,8 @@ class DensityFittingForceProvider::Impl
         Impl(const DensityFittingParameters &parameters,
              basic_mdspan<const float, dynamicExtents3D> referenceDensity,
              const TranslateAndScale &transformationToDensityLattice,
-             const LocalAtomSet &localAtomSet);
+             const LocalAtomSet &localAtomSet,
+             int pbcType);
         ~Impl();
         void calculateForces(const ForceProviderInput &forceProviderInput, ForceProviderOutput *forceProviderOutput);
     private:
@@ -111,6 +113,8 @@ class DensityFittingForceProvider::Impl
         std::vector<RVec>                     forces_;
         DensityFittingAmplitudeLookup         amplitudeLookup_;
         TranslateAndScale                     transformationToDensityLattice_;
+        RVec                                  referenceDensityCenter_;
+        int                                   pbcType_;
 };
 
 DensityFittingForceProvider::Impl::~Impl() = default;
@@ -118,7 +122,8 @@ DensityFittingForceProvider::Impl::~Impl() = default;
 DensityFittingForceProvider::Impl::Impl(const DensityFittingParameters &parameters,
                                         basic_mdspan<const float, dynamicExtents3D> referenceDensity,
                                         const TranslateAndScale &transformationToDensityLattice,
-                                        const LocalAtomSet &localAtomSet) :
+                                        const LocalAtomSet &localAtomSet,
+                                        int pbcType) :
     parameters_(parameters),
     localAtomSet_(localAtomSet),
     spreadKernel_(makeSpreadKernel(parameters_.gaussianTransformSpreadingWidth_,
@@ -129,8 +134,16 @@ DensityFittingForceProvider::Impl::Impl(const DensityFittingParameters &paramete
     densityFittingForce_(spreadKernel_),
     transformedCoordinates_(localAtomSet_.numAtomsLocal()),
     amplitudeLookup_(parameters_.amplitudeLookupMethod_),
-    transformationToDensityLattice_(transformationToDensityLattice)
+    transformationToDensityLattice_(transformationToDensityLattice),
+    pbcType_(pbcType)
 {
+    referenceDensityCenter_  = {
+        real(referenceDensity.extent(XX))/2,
+        real(referenceDensity.extent(YY))/2,
+        real(referenceDensity.extent(ZZ))/2
+    };
+    transformationToDensityLattice_.scaleOperationOnly().inverseIgnoringZeroScale(
+            { &referenceDensityCenter_, &referenceDensityCenter_ + 1 });
 }
 
 void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput &forceProviderInput,
@@ -147,6 +160,18 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
                    std::cend(localAtomSet_.localIndex()),
                    std::begin(transformedCoordinates_),
                    [&forceProviderInput](int index) { return forceProviderInput.x_[index]; });
+
+    // pick periodic image that is closest to the center of the reference density
+    {
+        t_pbc pbc;
+        set_pbc(&pbc, pbcType_, forceProviderInput.box_);
+        for (RVec &x : transformedCoordinates_)
+        {
+            rvec dx;
+            pbc_dx(&pbc, x, referenceDensityCenter_, dx);
+            x = referenceDensityCenter_ + dx;
+        }
+    }
 
     // transform local atom coordinates to density grid coordinates
     transformationToDensityLattice_(transformedCoordinates_);
@@ -211,8 +236,9 @@ DensityFittingForceProvider::~DensityFittingForceProvider() = default;
 DensityFittingForceProvider::DensityFittingForceProvider(const DensityFittingParameters &parameters,
                                                          basic_mdspan<const float, dynamicExtents3D> referenceDensity,
                                                          const TranslateAndScale &transformationToDensityLattice,
-                                                         const LocalAtomSet &localAtomSet)
-    : impl_(new Impl(parameters, referenceDensity, transformationToDensityLattice, localAtomSet))
+                                                         const LocalAtomSet &localAtomSet,
+                                                         int pbcType)
+    : impl_(new Impl(parameters, referenceDensity, transformationToDensityLattice, localAtomSet, pbcType))
 {}
 
 void DensityFittingForceProvider::calculateForces(const ForceProviderInput  &forceProviderInput,

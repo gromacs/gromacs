@@ -111,7 +111,7 @@ class DensityFittingSimulationParameterSetup
 
         /*! \brief Return transformation into density lattice.
          * \throws InternalError if transformation into density lattice is not set
-         * \returns transormation into density lattice
+         * \returns transformation into density lattice
          */
         const TranslateAndScale &transformationToDensityLattice() const
         {
@@ -151,6 +151,29 @@ class DensityFittingSimulationParameterSetup
             transformationToDensityLattice_
                 = std::make_unique<TranslateAndScale>(reader.transformationToDensityLattice());
         }
+        /*! \brief Set the periodic boundary condition via MdModuleNotifier.
+         *
+         * The pbc type is wrapped in PeriodicBoundaryConditionType to
+         * allow the MdModuleNotifier to statically distinguish the callback
+         * function type from other 'int' function callbacks.
+         *
+         * \param[in] pbc MdModuleNotification class that contains a variable
+         *                that enumerates the periodic boundary condition.
+         */
+        void setPeriodicBoundaryConditionType(PeriodicBoundaryConditionType pbc)
+        {
+            pbcType_ = std::make_unique<int>(pbc.pbcType);
+        }
+
+        //! Get the periodic boundary conditions
+        int periodicBoundaryConditionType()
+        {
+            if (pbcType_ == nullptr)
+            {
+                GMX_THROW(InternalError("Periodic boundary condition enum not set for density guided simulation."));
+            }
+            return *pbcType_;
+        }
 
     private:
         //! The reference density to fit to
@@ -159,6 +182,8 @@ class DensityFittingSimulationParameterSetup
         std::unique_ptr<TranslateAndScale> transformationToDensityLattice_;
         //! The local atom set to act on
         std::unique_ptr<LocalAtomSet>      localAtomSet_;
+        //! The type of periodic boundary conditions in the simulation
+        std::unique_ptr<int>               pbcType_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(DensityFittingSimulationParameterSetup);
 };
@@ -186,6 +211,8 @@ class DensityFitting final : public IMDModule
          *     simulation setup by taking a const KeyValueTreeObject & parameter
          *   - constructing local atom sets in the simulation parameter setup
          *     by taking a LocalAtomSetManager * as parameter
+         *   - the type of periodic boundary conditions that are used
+         *     by taking a PeriodicBoundaryConditionTypeEnum as parameter
          */
         explicit DensityFitting(MdModulesNotifier *notifier)
         {
@@ -210,12 +237,18 @@ class DensityFitting final : public IMDModule
                     densityFittingOptions_.readInternalParametersFromKvt(tree);
                 };
             notifier->notifier_.subscribe(readInternalParametersFunction);
+
             // constructing local atom sets during simulation setup
             const auto setLocalAtomSetFunction = [this](LocalAtomSetManager *localAtomSetManager) {
                     this->constructLocalAtomSet(localAtomSetManager);
                 };
             notifier->notifier_.subscribe(setLocalAtomSetFunction);
 
+            // constructing local atom sets during simulation setup
+            const auto setPeriodicBoundaryContionsFunction = [this](PeriodicBoundaryConditionType pbc) {
+                    this->densityFittingSimulationParameters_.setPeriodicBoundaryConditionType(pbc);
+                };
+            notifier->notifier_.subscribe(setPeriodicBoundaryContionsFunction);
         }
 
         //! From IMDModule
@@ -232,7 +265,8 @@ class DensityFitting final : public IMDModule
                             parameters,
                             densityFittingSimulationParameters_.referenceDensity(),
                             densityFittingSimulationParameters_.transformationToDensityLattice(),
-                            densityFittingSimulationParameters_.localAtomSet());
+                            densityFittingSimulationParameters_.localAtomSet(),
+                            densityFittingSimulationParameters_.periodicBoundaryConditionType());
                 forceProviders->addForceProvider(forceProvider_.get());
             }
         }

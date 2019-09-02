@@ -199,6 +199,10 @@ class IndexGroupsAndNames;
 struct MdModulesCheckpointReadingDataOnMaster;
 struct MdModulesCheckpointReadingBroadcast;
 struct MdModulesWriteCheckpointData;
+struct PeriodicBoundaryConditionType
+{
+    int pbcType;
+};
 
 struct MdModulesNotifier
 {
@@ -211,7 +215,8 @@ struct MdModulesNotifier
         LocalAtomSetManager *,
         MdModulesCheckpointReadingDataOnMaster,
         MdModulesCheckpointReadingBroadcast,
-        MdModulesWriteCheckpointData>::type notifier_;
+        MdModulesWriteCheckpointData,
+        PeriodicBoundaryConditionType>::type notifier_;
 };
 
 } // namespace gmx

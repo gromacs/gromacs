@@ -65,7 +65,8 @@ class DensityFittingForceProvider final : public IForceProvider
         DensityFittingForceProvider(const DensityFittingParameters &parameters,
                                     basic_mdspan<const float, dynamicExtents3D> referenceDensity,
                                     const TranslateAndScale &transformationToDensityLattice,
-                                    const LocalAtomSet &localAtomSet);
+                                    const LocalAtomSet &localAtomSet,
+                                    int pbcType);
         ~DensityFittingForceProvider();
         /* \brief Calculate forces that maximise goodness-of-fit with a reference density map
          * \param[in] forceProviderInput input for force provider
