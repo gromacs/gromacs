@@ -119,6 +119,7 @@ void DensityFittingOptions::initMdpTransform(IKeyValueTreeTransformRules * rules
     densityfittingMdpTransformFromString<real>(rules, &fromStdString<real>, c_forceConstantTag_);
     densityfittingMdpTransformFromString<real>(rules, &fromStdString<real>, c_gaussianTransformSpreadingWidthTag_);
     densityfittingMdpTransformFromString<real>(rules, &fromStdString<real>, c_gaussianTransformSpreadingRangeInMultiplesOfWidthTag_);
+    densityfittingMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_referenceDensityFileNameTag_);
 }
 
 void DensityFittingOptions::buildMdpOutput(KeyValueTreeObjectBuilder *builder) const
@@ -138,6 +139,7 @@ void DensityFittingOptions::buildMdpOutput(KeyValueTreeObjectBuilder *builder) c
         addDensityFittingMdpOutputValue(builder, parameters_.forceConstant_, c_forceConstantTag_);
         addDensityFittingMdpOutputValue(builder, parameters_.gaussianTransformSpreadingWidth_, c_gaussianTransformSpreadingWidthTag_);
         addDensityFittingMdpOutputValue(builder, parameters_.gaussianTransformSpreadingRangeInMultiplesOfWidth_, c_gaussianTransformSpreadingRangeInMultiplesOfWidthTag_);
+        addDensityFittingMdpOutputValue(builder, referenceDensityFileName_, c_referenceDensityFileNameTag_);
     }
 }
 
@@ -159,6 +161,7 @@ void DensityFittingOptions::initMdpOptions(IOptionsContainerWithSections *option
     section.addOption(RealOption(c_forceConstantTag_.c_str()).store(&parameters_.forceConstant_));
     section.addOption(RealOption(c_gaussianTransformSpreadingWidthTag_.c_str()).store(&parameters_.gaussianTransformSpreadingWidth_));
     section.addOption(RealOption(c_gaussianTransformSpreadingRangeInMultiplesOfWidthTag_.c_str()).store(&parameters_.gaussianTransformSpreadingRangeInMultiplesOfWidth_));
+    section.addOption(StringOption(c_referenceDensityFileNameTag_.c_str()).store(&referenceDensityFileName_));
 }
 
 bool DensityFittingOptions::active() const
@@ -207,4 +210,8 @@ void DensityFittingOptions::readInternalParametersFromKvt(const KeyValueTreeObje
                    [](const KeyValueTreeValue &val) { return val.cast<index>(); });
 }
 
+const std::string &DensityFittingOptions::referenceDensityFileName() const
+{
+    return referenceDensityFileName_;
+}
 } // namespace gmx

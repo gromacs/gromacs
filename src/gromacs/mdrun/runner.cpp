@@ -992,7 +992,6 @@ int Mdrunner::mdrunner()
                                            &mtop, inputrec,
                                            box, positionsFromStatePointer(globalState.get()),
                                            &atomSets);
-        mdModulesNotifier.notify(&atomSets);
         // Note that local state still does not exist yet.
     }
     else
@@ -1279,6 +1278,7 @@ int Mdrunner::mdrunner()
     if (thisRankHasDuty(cr, DUTY_PP))
     {
         mdModulesNotifier.notify(*cr);
+        mdModulesNotifier.notify(&atomSets);
         /* Initiate forcerecord */
         fr                 = new t_forcerec;
         fr->forceProviders = mdModules_->initForceProviders();

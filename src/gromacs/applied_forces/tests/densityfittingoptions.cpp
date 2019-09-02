@@ -196,6 +196,7 @@ TEST_F(DensityFittingOptionsTest, OutputDefaultValuesWhenActive)
         "density-guided-simulation-force-constant = 1e+09\n"
         "density-guided-simulation-gaussian-transform-spreading-width = 0.2\n"
         "density-guided-simulation-gaussian-transform-spreading-range-in-multiples-of-width = 4\n"
+        "density-guided-simulation-reference-density-filename = reference.mrc\n"
         };
 
     EXPECT_EQ(expected, stream.toString());

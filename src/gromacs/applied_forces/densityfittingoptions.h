@@ -98,24 +98,31 @@ class DensityFittingOptions final : public IMdpOptionProvider
         //! Set the internal parameters that are stored in the tpr file
         void readInternalParametersFromKvt(const KeyValueTreeObject &tree);
 
+        //! Return the file name of the reference density
+        const std::string &referenceDensityFileName() const;
+
     private:
-        const std::string        c_activeTag_ = "active";
+        const std::string c_activeTag_ = "active";
 
         /*! \brief Denote the .mdp option that defines the group of fit atoms.
          * \note Changing this string will break .tpr backwards compability
          */
-        const std::string        c_groupTag_  = "group";
-        std::string              groupString_ = "protein";
+        const std::string c_groupTag_  = "group";
+        std::string       groupString_ = "protein";
 
-        const std::string        c_similarityMeasureTag_ = "similarity-measure";
+        const std::string c_similarityMeasureTag_ = "similarity-measure";
 
-        const std::string        c_amplitudeMethodTag_ = "amplitude-method";
+        const std::string c_amplitudeMethodTag_ = "amplitude-method";
 
-        const std::string        c_forceConstantTag_ = "force-constant";
+        const std::string c_forceConstantTag_ = "force-constant";
 
-        const std::string        c_gaussianTransformSpreadingWidthTag_ = "gaussian-transform-spreading-width";
-        const std::string        c_gaussianTransformSpreadingRangeInMultiplesOfWidthTag_
+        const std::string c_gaussianTransformSpreadingWidthTag_ = "gaussian-transform-spreading-width";
+        const std::string c_gaussianTransformSpreadingRangeInMultiplesOfWidthTag_
             = "gaussian-transform-spreading-range-in-multiples-of-width";
+
+        const std::string c_referenceDensityFileNameTag_ = "reference-density-filename";
+        std::string       referenceDensityFileName_      = "reference.mrc";
+
 
         DensityFittingParameters parameters_;
 };

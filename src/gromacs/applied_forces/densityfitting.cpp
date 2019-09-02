@@ -46,6 +46,8 @@
 #include <memory>
 
 #include "gromacs/domdec/localatomsetmanager.h"
+#include "gromacs/fileio/mrcdensitymap.h"
+#include "gromacs/math/multidimarray.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
@@ -55,7 +57,6 @@
 #include "densityfittingforceprovider.h"
 #include "densityfittingoptions.h"
 #include "densityfittingoutputprovider.h"
-
 
 namespace gmx
 {
@@ -84,6 +85,7 @@ class DensityFittingSimulationParameterSetup
 {
     public:
         DensityFittingSimulationParameterSetup() = default;
+
         /*! \brief Set the local atom set for the density fitting.
          * \param[in] localAtomSet of atoms to be fitted
          */
@@ -101,7 +103,7 @@ class DensityFittingSimulationParameterSetup
             if (localAtomSet_ == nullptr)
             {
                 GMX_THROW(
-                        InternalError("Transformation to reference density not set for density "
+                        InternalError("Local atom set is not set for density "
                                       "guided simulation."));
             }
             return *localAtomSet_;
@@ -124,22 +126,40 @@ class DensityFittingSimulationParameterSetup
          * \throws InternalError if reference density is not set
          * \returns the reference density
          */
-        const basic_mdspan<const float, dynamicExtents3D> &referenceDensity() const
+        basic_mdspan<const float, dynamicExtents3D>
+        referenceDensity() const
         {
             if (referenceDensity_ == nullptr)
             {
                 GMX_THROW(InternalError("Reference density not set for density guided simulation."));
             }
-            return *referenceDensity_;
+            return referenceDensity_->asConstView();
+        }
+
+        /*! \brief Reads the reference density from file.
+         *
+         * Reads and check file, then set and communicate the internal
+         * parameters related to the reference density with the file data.
+         *
+         * \throws FileIOError if reading from file was not successful
+         */
+        void readReferenceDensityFromFile(const std::string &referenceDensityFileName)
+        {
+            MrcDensityMapOfFloatFromFileReader reader(referenceDensityFileName);
+            referenceDensity_ = std::make_unique<MultiDimArray<std::vector<float>, dynamicExtents3D> >
+                    (reader.densityDataCopy());
+            transformationToDensityLattice_
+                = std::make_unique<TranslateAndScale>(reader.transformationToDensityLattice());
         }
 
     private:
         //! The reference density to fit to
-        std::unique_ptr < basic_mdspan < const float, dynamicExtents3D>> referenceDensity_;
+        std::unique_ptr<MultiDimArray<std::vector<float>, dynamicExtents3D> > referenceDensity_;
         //! The coordinate transformation into the reference density
         std::unique_ptr<TranslateAndScale> transformationToDensityLattice_;
         //! The local atom set to act on
         std::unique_ptr<LocalAtomSet>      localAtomSet_;
+
         GMX_DISALLOW_COPY_AND_ASSIGN(DensityFittingSimulationParameterSetup);
 };
 
@@ -198,7 +218,7 @@ class DensityFitting final : public IMDModule
 
         }
 
-        //! From IMDModule; this class provides the mdpOptions itself
+        //! From IMDModule
         IMdpOptionProvider *mdpOptionProvider() override { return &densityFittingOptions_; }
 
         //! Add this module to the force providers if active
@@ -207,6 +227,7 @@ class DensityFitting final : public IMDModule
             if (densityFittingOptions_.active())
             {
                 const auto &parameters = densityFittingOptions_.buildParameters();
+                densityFittingSimulationParameters_.readReferenceDensityFromFile(densityFittingOptions_.referenceDensityFileName());
                 forceProvider_ = std::make_unique<DensityFittingForceProvider>(
                             parameters,
                             densityFittingSimulationParameters_.referenceDensity(),
@@ -243,6 +264,7 @@ class DensityFitting final : public IMDModule
          * simulation setup time.
          */
         DensityFittingSimulationParameterSetup       densityFittingSimulationParameters_;
+
         GMX_DISALLOW_COPY_AND_ASSIGN(DensityFitting);
 };
 
