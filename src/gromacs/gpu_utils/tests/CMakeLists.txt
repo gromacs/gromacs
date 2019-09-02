@@ -40,6 +40,7 @@
 
 # Always compiled as plain C++
 file(GLOB SOURCES_FROM_CXX
+    clfftinitializer.cpp
     hostallocator.cpp
     )
 

@@ -823,6 +823,8 @@ static void pme_gpu_init(gmx_pme_t               *pme,
     GMX_ASSERT(pmeGpuProgram != nullptr, "GPU kernels must be already compiled");
     pmeGpu->programHandle_ = pmeGpuProgram;
 
+    pmeGpu->initializedClfftLibrary_ = std::make_unique<gmx::ClfftInitializer>();
+
     pme_gpu_init_internal(pmeGpu);
     pme_gpu_alloc_energy_virial(pmeGpu);
 

@@ -55,6 +55,7 @@
 
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_gpu_program.h"
+#include "gromacs/gpu_utils/clfftinitializer.h"
 #include "gromacs/gpu_utils/gpu_utils.h"      // for GpuApiCallBehavior
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
@@ -188,6 +189,9 @@ struct PmeGpu
 
     //! A handle to the program created by buildPmeGpuProgram()
     PmeGpuProgramHandle programHandle_;
+
+    //! Handle that ensures the clFFT library has been initialized once per process.
+    std::unique_ptr<gmx::ClfftInitializer> initializedClfftLibrary_;
 
     /*! \brief The settings. */
     PmeGpuSettings settings;
