@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -117,7 +117,7 @@ struct t_interaction_function // NOLINT (clang-analyzer-optin.performance.Paddin
 #define IS_TABULATED(ftype) (interaction_function[(ftype)].flags & IF_TABULATED)
 
 /* this MUST correspond to the
-   t_interaction_function[F_NRE] in gmxlib/ifunc.c */
+   t_interaction_function[F_NRE] in gmxlib/ifunc.cpp */
 enum
 {
     F_BONDS,
@@ -194,6 +194,7 @@ enum
     F_VSITE4FDN,
     F_VSITEN,
     F_COM_PULL,
+    F_DENSITYFITTING,
     F_EQM,
     F_EPOT,
     F_EKIN,

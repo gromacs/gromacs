@@ -224,7 +224,7 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
     // calculate corresponding potential energy
     const float similarity  = measure_.similarity(gaussTransform_.constView());
     const real  energy      = -similarity * parameters_.forceConstant_;
-    forceProviderOutput->enerd_.term[F_COM_PULL] += energy;
+    forceProviderOutput->enerd_.term[F_DENSITYFITTING] += energy;
 }
 
 /********************************************************************

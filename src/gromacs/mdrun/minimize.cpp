@@ -1115,7 +1115,7 @@ LegacySimulator::do_cg()
             vsite, constr, nullptr);
     gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier, inputrec, top_global, nullptr, wcycle,
                                          StartingBehavior::NewSimulation);
-    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr, false);
+    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr, false, mdModulesNotifier);
 
     /* Print to log file */
     print_em_start(fplog, cr, walltime_accounting, wcycle, CG);
@@ -1754,7 +1754,7 @@ LegacySimulator::do_lbfgs()
             vsite, constr, nullptr);
     gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier, inputrec, top_global, nullptr, wcycle,
                                          StartingBehavior::NewSimulation);
-    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr, false);
+    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr, false, mdModulesNotifier);
 
     start = 0;
     end   = mdatoms->homenr;
@@ -2449,7 +2449,7 @@ LegacySimulator::do_steep()
             vsite, constr, nullptr);
     gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier, inputrec, top_global, nullptr, wcycle,
                                          StartingBehavior::NewSimulation);
-    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr, false);
+    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr, false, mdModulesNotifier);
 
     /* Print to log file  */
     print_em_start(fplog, cr, walltime_accounting, wcycle, SD);

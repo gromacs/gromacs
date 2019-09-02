@@ -79,6 +79,7 @@
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/mdmodulenotification.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -124,12 +125,13 @@ namespace gmx
  * \todo Remove GMX_CONSTRAINTVIR
  * \todo Write free-energy output also to energy file (after adding more tests)
  */
-EnergyOutput::EnergyOutput(ener_file        *fp_ene,
-                           const gmx_mtop_t *mtop,
-                           const t_inputrec *ir,
-                           const pull_t     *pull_work,
-                           FILE             *fp_dhdl,
-                           bool              isRerun)
+EnergyOutput::EnergyOutput(ener_file *              fp_ene,
+                           const gmx_mtop_t *       mtop,
+                           const t_inputrec *       ir,
+                           const pull_t *           pull_work,
+                           FILE *                   fp_dhdl,
+                           bool                     isRerun,
+                           const MdModulesNotifier &mdModulesNotifier)
 {
     const char                *ener_nm[F_NRE];
     static const char         *vir_nm[] = {
@@ -263,6 +265,12 @@ EnergyOutput::EnergyOutput(ener_file        *fp_ene,
     bEner_[F_DISRESVIOL]     = (gmx_mtop_ftype_count(mtop, F_DISRES) > 0);
     bEner_[F_ORIRESDEV]      = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
     bEner_[F_COM_PULL]       = ((ir->bPull && pull_have_potential(pull_work)) || ir->bRot);
+
+    MdModulesEnergyOutputToDensityFittingRequestChecker mdModulesAddOutputToDensityFittingFieldRequest;
+    mdModulesNotifier.notifier_.notify(&mdModulesAddOutputToDensityFittingFieldRequest);
+
+    bEner_[F_DENSITYFITTING] = mdModulesAddOutputToDensityFittingFieldRequest.energyOutputToDensityFitting_;
+
 
     // Counting the energy terms that will be printed and saving their names
     f_nre_ = 0;

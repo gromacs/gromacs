@@ -71,6 +71,7 @@ namespace gmx
 {
 class Awh;
 class Constraints;
+struct MdModulesNotifier;
 }
 
 //! \brief Printed names for intergroup energies
@@ -117,13 +118,15 @@ class EnergyOutput
          * \param[in] pull_work  Pulling simulations data
          * \param[in] fp_dhdl    FEP file.
          * \param[in] isRerun    Is this is a rerun instead of the simulations.
+         * \param[in] mdModulesNotifier Notifications to MD modules.
          */
-        EnergyOutput(ener_file        *fp_ene,
-                     const gmx_mtop_t *mtop,
-                     const t_inputrec *ir,
-                     const pull_t     *pull_work,
-                     FILE             *fp_dhdl,
-                     bool              isRerun);
+        EnergyOutput(ener_file *              fp_ene,
+                     const gmx_mtop_t *       mtop,
+                     const t_inputrec *       ir,
+                     const pull_t *           pull_work,
+                     FILE *                   fp_dhdl,
+                     bool                     isRerun,
+                     const MdModulesNotifier &mdModulesNotifier);
 
         ~EnergyOutput();
 

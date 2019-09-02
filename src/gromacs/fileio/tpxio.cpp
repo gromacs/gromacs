@@ -206,6 +206,7 @@ static const t_ftupd ftupd[] = {
     { 79, F_DVDL_BONDED,      },
     { 79, F_DVDL_RESTRAINT    },
     { 79, F_DVDL_TEMPERATURE  },
+    { tpxv_GenericInternalParameters, F_DENSITYFITTING },
 };
 #define NFTUPD asize(ftupd)
 

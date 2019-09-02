@@ -59,6 +59,7 @@ class Constraints;
 class EnergyOutput;
 class MDAtoms;
 class StatePropagatorData;
+struct MdModulesNotifier;
 
 //! \addtogroup module_modularsimulator
 //! \{
@@ -102,6 +103,7 @@ class EnergyElement final :
             const Constraints *constr,
             FILE              *fplog,
             t_fcdata          *fcd,
+            const MdModulesNotifier &mdModulesNotifier,
             bool               isMaster);
 
         /*! \brief Register run function for step / time
@@ -273,25 +275,27 @@ class EnergyElement final :
          * Pointers to Simulator data
          */
         //! The microstate
-        StatePropagatorData   * statePropagatorData_;
+        StatePropagatorData     *statePropagatorData_;
         //! Contains user input mdp options.
-        const t_inputrec       *inputrec_;
+        const t_inputrec        *inputrec_;
         //! Full system topology.
-        const gmx_mtop_t       *top_global_;
+        const gmx_mtop_t        *top_global_;
         //! Atom parameters for this domain.
-        const MDAtoms          *mdAtoms_;
+        const MDAtoms           *mdAtoms_;
         //! Energy data structure
-        gmx_enerdata_t         *enerd_;
+        gmx_enerdata_t          *enerd_;
         //! Kinetic energy data
-        gmx_ekindata_t         *ekind_;
+        gmx_ekindata_t          *ekind_;
         //! Handles constraints.
-        const Constraints      *constr_;
+        const Constraints       *constr_;
         //! Handles logging.
-        FILE                   *fplog_;
+        FILE                    *fplog_;
         //! Helper struct for force calculations.
-        t_fcdata               *fcd_;
+        t_fcdata                *fcd_;
+        //! Notification to MD modules
+        const MdModulesNotifier &mdModulesNotifier_;
         //! Global topology groups
-        const SimulationGroups *groups_;
+        const SimulationGroups  *groups_;
 };
 
 //! /}

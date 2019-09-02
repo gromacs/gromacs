@@ -64,16 +64,17 @@ namespace gmx
 class Awh;
 
 EnergyElement::EnergyElement(
-        StatePropagatorData *statePropagatorData,
-        const gmx_mtop_t    *globalTopology,
-        const t_inputrec    *inputrec,
-        const MDAtoms       *mdAtoms,
-        gmx_enerdata_t      *enerd,
-        gmx_ekindata_t      *ekind,
-        const Constraints   *constr,
-        FILE                *fplog,
-        t_fcdata            *fcd,
-        bool                 isMaster) :
+        StatePropagatorData     *statePropagatorData,
+        const gmx_mtop_t        *globalTopology,
+        const t_inputrec        *inputrec,
+        const MDAtoms           *mdAtoms,
+        gmx_enerdata_t          *enerd,
+        gmx_ekindata_t          *ekind,
+        const Constraints       *constr,
+        FILE                    *fplog,
+        t_fcdata                *fcd,
+        const MdModulesNotifier &mdModulesNotifier,
+        bool                     isMaster) :
     isMaster_(isMaster),
     energyWritingStep_(-1),
     energyCalculationStep_(-1),
@@ -94,6 +95,7 @@ EnergyElement::EnergyElement(
     constr_(constr),
     fplog_(fplog),
     fcd_(fcd),
+    mdModulesNotifier_(mdModulesNotifier),
     groups_(&globalTopology->groups)
 {
     clear_mat(forceVirial_);
@@ -144,7 +146,8 @@ void EnergyElement::trajectoryWriterSetup(gmx_mdoutf *outf)
     pull_t *pull_work = nullptr;
     energyOutput_ = std::make_unique<EnergyOutput>(
                 mdoutf_get_fp_ene(outf), top_global_,
-                inputrec_, pull_work, mdoutf_get_fp_dhdl(outf), false);
+                inputrec_, pull_work, mdoutf_get_fp_dhdl(outf), false,
+                mdModulesNotifier_);
 
     if (!isMaster_)
     {

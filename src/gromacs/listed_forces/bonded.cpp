@@ -3850,6 +3850,7 @@ const std::array<BondedInteractions, F_NRE> c_bondedInteractionFunctions
     BondedInteractions {unimplemented, -1 },                              // F_VSITE4FDN
     BondedInteractions {unimplemented, -1 },                              // F_VSITEN
     BondedInteractions {unimplemented, -1 },                              // F_COM_PULL
+    BondedInteractions {unimplemented, -1 },                              // F_DENSITYFITTING
     BondedInteractions {unimplemented, -1 },                              // F_EQM
     BondedInteractions {unimplemented, -1 },                              // F_EPOT
     BondedInteractions {unimplemented, -1 },                              // F_EKIN

@@ -249,6 +249,13 @@ class DensityFitting final : public IMDModule
                     this->densityFittingSimulationParameters_.setPeriodicBoundaryConditionType(pbc);
                 };
             notifier->notifier_.subscribe(setPeriodicBoundaryContionsFunction);
+
+            // adding output to energy file
+            const auto requestEnergyOutput
+                = [this](MdModulesEnergyOutputToDensityFittingRequestChecker *energyOutputRequest) {
+                        this->setEnergyOutputRequest(energyOutputRequest);
+                    };
+            notifier->notifier_.subscribe(requestEnergyOutput);
         }
 
         //! From IMDModule
@@ -283,8 +290,19 @@ class DensityFitting final : public IMDModule
          */
         void constructLocalAtomSet(LocalAtomSetManager * localAtomSetManager)
         {
-            LocalAtomSet atomSet = localAtomSetManager->add(densityFittingOptions_.buildParameters().indices_);
-            densityFittingSimulationParameters_.setLocalAtomSet(atomSet);
+            if (densityFittingOptions_.active())
+            {
+                LocalAtomSet atomSet
+                    = localAtomSetManager->add(densityFittingOptions_.buildParameters().indices_);
+                densityFittingSimulationParameters_.setLocalAtomSet(atomSet);
+            }
+        }
+
+        /*! \brief Request energy output to energy file during simulation.
+         */
+        void setEnergyOutputRequest(MdModulesEnergyOutputToDensityFittingRequestChecker *energyOutputRequest)
+        {
+            energyOutputRequest->energyOutputToDensityFitting_ = densityFittingOptions_.active();
         }
 
     private:

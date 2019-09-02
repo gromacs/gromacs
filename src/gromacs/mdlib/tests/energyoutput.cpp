@@ -67,6 +67,7 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/mdmodulenotification.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/unique_cptr.h"
@@ -541,7 +542,6 @@ class EnergyOutputTest : public ::testing::TestWithParam<EnergyOutputTestParamet
                 state_.nhpres_xi[k]  = (*testValue += 0.1);
                 state_.nhpres_vxi[k] = (*testValue += 0.1);
             }
-
         }
 
         /*! \brief Check if the contents of the .edr file correspond to the reference data.
@@ -623,7 +623,8 @@ TEST_P(EnergyOutputTest, CheckOutput)
         inputrec_.ref_p[YY][XX]   = 1.0;
     }
 
-    std::unique_ptr<EnergyOutput> energyOutput = std::make_unique<EnergyOutput>(energyFile_, &mtop_, &inputrec_, nullptr, nullptr, parameters.isRerun);
+    MdModulesNotifier             mdModulesNotifier;
+    std::unique_ptr<EnergyOutput> energyOutput = std::make_unique<EnergyOutput>(energyFile_, &mtop_, &inputrec_, nullptr, nullptr, parameters.isRerun, mdModulesNotifier);
 
     // Add synthetic data for a single step
     double testValue = 10.0;

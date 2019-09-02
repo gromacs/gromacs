@@ -204,6 +204,11 @@ struct PeriodicBoundaryConditionType
     int pbcType;
 };
 
+struct MdModulesEnergyOutputToDensityFittingRequestChecker
+{
+    bool energyOutputToDensityFitting_ = false;
+};
+
 struct MdModulesNotifier
 {
 //! Register callback function types for MdModule
@@ -213,6 +218,7 @@ struct MdModulesNotifier
         KeyValueTreeObjectBuilder,
         const KeyValueTreeObject &,
         LocalAtomSetManager *,
+        MdModulesEnergyOutputToDensityFittingRequestChecker *,
         MdModulesCheckpointReadingDataOnMaster,
         MdModulesCheckpointReadingBroadcast,
         MdModulesWriteCheckpointData,
