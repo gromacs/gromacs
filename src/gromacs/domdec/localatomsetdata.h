@@ -42,6 +42,7 @@
 #ifndef GMX_DOMDEC_LOCALATOMSETDATA_H
 #define GMX_DOMDEC_LOCALATOMSETDATA_H
 
+#include <numeric>
 #include <vector>
 
 #include "gromacs/utility/arrayref.h"
@@ -70,9 +71,18 @@ class LocalAtomSetData
          * \todo remove this constructor once all indices are represented
          *       as gmx::index instead of int.
          *
+         * \note Not created if the internal int type does match gmx::index
+         *
          * \param[in] globalAtomIndex Indices of the atoms to be managed
          */
-        explicit LocalAtomSetData(ArrayRef<const int> globalAtomIndex);
+        template <typename T = void, typename U = std::enable_if_t<!std::is_same<int, index>::value, T> >
+        explicit LocalAtomSetData(ArrayRef<const int> globalAtomIndex) :
+            globalIndex_(globalAtomIndex.begin(), globalAtomIndex.end()),
+            localIndex_(globalAtomIndex.begin(), globalAtomIndex.end())
+        {
+            collectiveIndex_.resize(localIndex_.size());
+            std::iota(collectiveIndex_.begin(), collectiveIndex_.end(), 0);
+        }
 
         /*! \brief Store the data for an atom set with an index group.
          *

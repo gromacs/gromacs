@@ -81,6 +81,11 @@
 
 #include "pull_internal.h"
 
+namespace gmx
+{
+extern template LocalAtomSet LocalAtomSetManager::add<void, void>(ArrayRef<const int> globalAtomIndex);
+} // namespace gmx
+
 static int groupPbcFromParams(const t_pull_group &params, bool setPbcRefToPrevStepCOM)
 {
     if (params.nat <= 1)

@@ -104,6 +104,8 @@ static const char* DomainString[eDomainNr] = { "not_assigned", "Domain_A", "Doma
 namespace gmx
 {
 
+extern template LocalAtomSet LocalAtomSetManager::add<void, void>(ArrayRef<const int> globalAtomIndex);
+
 /*! \internal
  * \brief Implement Computational Electrophysiology swapping.
  */

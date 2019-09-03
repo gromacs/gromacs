@@ -58,13 +58,6 @@ namespace internal
  * LocalAtomSetData
  */
 
-LocalAtomSetData::LocalAtomSetData(ArrayRef<const int> globalIndex) :
-    globalIndex_(globalIndex.begin(), globalIndex.end()), localIndex_(globalIndex.begin(), globalIndex.end())
-{
-    collectiveIndex_.resize(localIndex_.size());
-    std::iota(collectiveIndex_.begin(), collectiveIndex_.end(), 0);
-}
-
 LocalAtomSetData::LocalAtomSetData(ArrayRef<const index> globalIndex) :
     globalIndex_(globalIndex.begin(), globalIndex.end()), localIndex_(globalIndex.begin(), globalIndex.end())
 {

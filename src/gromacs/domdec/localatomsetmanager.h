@@ -69,17 +69,24 @@ class LocalAtomSetManager
     public:
         LocalAtomSetManager();
         ~LocalAtomSetManager();
-
+#ifndef DOXYGEN
         /*! \brief Add a new atom set to be managed and give back a handle.
          *
          * \todo remove this routine once all indices are represented as
          *       gmx::index instead of int.
          *
+         * \note Not created if the internal int type does match index
+         *
+         * \tparam T template parameter to use SFINAE for conditional function
+         *           activation
+         * \tparam U template parameter for conditional function activation
+         *
          * \param[in] globalAtomIndex Indices of the atoms to be managed
          * \returns Handle to LocalAtomSet.
          */
+        template<typename T = void, typename U = std::enable_if_t< !std::is_same<int, index>::value, T> >
         LocalAtomSet add(ArrayRef<const int> globalAtomIndex);
-
+#endif
         /*! \brief Add a new atom set to be managed and give back a handle.
          *
          * \param[in] globalAtomIndex Indices of the atoms to be managed

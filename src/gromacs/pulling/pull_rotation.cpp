@@ -300,6 +300,8 @@ gmx_enfrot::~gmx_enfrot()
 namespace gmx
 {
 
+extern template LocalAtomSet LocalAtomSetManager::add<void, void>(ArrayRef<const int> globalAtomIndex);
+
 class EnforcedRotation::Impl
 {
     public:
