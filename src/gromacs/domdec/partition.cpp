@@ -282,10 +282,10 @@ static void dd_move_cellx(gmx_domdec_t      *dd,
                     {
                         c = 0;
                     }
-                    real det = (1 + c*c)*comm->cutoff*comm->cutoff - dist_d*dist_d;
+                    real det = (1 + c*c)*gmx::square(comm->systemInfo.cutoff) - dist_d*dist_d;
                     if (det > 0)
                     {
-                        dh[d1] = comm->cutoff - (c*dist_d + std::sqrt(det))/(1 + c*c);
+                        dh[d1] = comm->systemInfo.cutoff - (c*dist_d + std::sqrt(det))/(1 + c*c);
                     }
                     else
                     {
@@ -823,7 +823,7 @@ static void comm_dd_ns_cell_sizes(gmx_domdec_t *dd,
         dd_move_cellx(dd, ddbox, cell_ns_x0, cell_ns_x1);
         if (isDlbOn(dd->comm) && dd->ndim > 1)
         {
-            check_grid_jump(step, dd, dd->comm->cutoff, ddbox, TRUE);
+            check_grid_jump(step, dd, dd->comm->systemInfo.cutoff, ddbox, TRUE);
         }
     }
 }
@@ -1916,12 +1916,12 @@ static void setup_dd_communication(gmx_domdec_t *dd,
     bBondComm = comm->bBondComm;
 
     /* Do we need to determine extra distances for multi-body bondeds? */
-    bDistMB = (comm->haveInterDomainMultiBodyBondeds && isDlbOn(dd->comm) && dd->ndim > 1);
+    bDistMB = (comm->systemInfo.haveInterDomainMultiBodyBondeds && isDlbOn(dd->comm) && dd->ndim > 1);
 
     /* Do we need to determine extra distances for only two-body bondeds? */
     bDist2B = (bBondComm && !bDistMB);
 
-    const real r_comm2  = gmx::square(domainToDomainIntoAtomToDomainCutoff(*comm, comm->cutoff));
+    const real r_comm2  = gmx::square(domainToDomainIntoAtomToDomainCutoff(*comm, comm->systemInfo.cutoff));
     const real r_bcomm2 = gmx::square(domainToDomainIntoAtomToDomainCutoff(*comm, comm->cutoff_mbody));
 
     if (debug)
@@ -2296,7 +2296,9 @@ static void set_zones_size(gmx_domdec_t *dd,
     zones = &comm->zones;
 
     /* Do we need to determine extra distances for multi-body bondeds? */
-    bDistMB = (comm->haveInterDomainMultiBodyBondeds && isDlbOn(dd->comm) && dd->ndim > 1);
+    bDistMB = (comm->systemInfo.haveInterDomainMultiBodyBondeds &&
+               isDlbOn(dd->comm) &&
+               dd->ndim > 1);
 
     for (z = zone_start; z < zone_end; z++)
     {
@@ -2331,7 +2333,7 @@ static void set_zones_size(gmx_domdec_t *dd,
             }
         }
 
-        rcs   = comm->cutoff;
+        rcs   = comm->systemInfo.cutoff;
         rcmbs = comm->cutoff_mbody;
         if (ddbox->tric_dir[dim])
         {

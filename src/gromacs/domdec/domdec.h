@@ -67,6 +67,7 @@
 #include "gromacs/utility/real.h"
 
 struct cginfo_mb_t;
+struct DDSystemInfo;
 struct gmx_domdec_t;
 struct gmx_ddbox_t;
 struct gmx_domdec_zones_t;
@@ -338,7 +339,6 @@ dd_choose_grid(const gmx::MDLogger &mdlog,
                const matrix box, const gmx_ddbox_t *ddbox,
                int numPmeRanksRequested,
                gmx_bool bDynLoadBal, real dlb_scale,
-               real cellsize_limit, real cutoff_dd,
-               gmx_bool bInterCGBondeds);
+               const DDSystemInfo &systemInfo);
 
 #endif

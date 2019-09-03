@@ -93,7 +93,7 @@ static void set_pme_maxshift(gmx_domdec_t *dd, gmx_ddpme_t *ddpme,
          * between performance and support for most charge-group/cut-off
          * combinations.
          */
-        range  = 2.0/3.0*comm->cutoff/ddbox->box_size[ddpme->dim];
+        range  = 2.0/3.0*comm->systemInfo.cutoff/ddbox->box_size[ddpme->dim];
         /* Avoid extra communication when we are exactly at a boundary */
         range *= 0.999;
 
@@ -192,7 +192,7 @@ static real cellsize_min_dlb(gmx_domdec_comm_t *comm, int dim_ind, int dim)
         /* The cut-off might have changed, e.g. by PME load balacning,
          * from the value used to set comm->cellsize_min, so check it.
          */
-        cellsize_min = std::max(cellsize_min, comm->cutoff/comm->cd[dim_ind].np_dlb);
+        cellsize_min = std::max(cellsize_min, comm->systemInfo.cutoff/comm->cd[dim_ind].np_dlb);
 
         if (comm->bPMELoadBalDLBLimits)
         {
@@ -246,7 +246,7 @@ set_dd_cell_sizes_slb(gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
                     break;
             }
             real cellsize = cell_dx*ddbox->skew_fac[d];
-            while (cellsize*npulse[d] < comm->cutoff)
+            while (cellsize*npulse[d] < comm->systemInfo.cutoff)
             {
                 npulse[d]++;
             }
@@ -276,7 +276,7 @@ set_dd_cell_sizes_slb(gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
                 real cell_dx  = ddbox->box_size[d]*comm->slb_frac[d][j];
                 cell_x[j+1]   = cell_x[j] + cell_dx;
                 real cellsize = cell_dx*ddbox->skew_fac[d];
-                while (cellsize*npulse[d] < comm->cutoff &&
+                while (cellsize*npulse[d] < comm->systemInfo.cutoff &&
                        npulse[d] < dd->nc[d]-1)
                 {
                     npulse[d]++;
@@ -301,7 +301,7 @@ set_dd_cell_sizes_slb(gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
             sprintf(error_string,
                     "The box size in direction %c (%f) times the triclinic skew factor (%f) is too small for a cut-off of %f with %d domain decomposition cells, use 1 or more than %d %s or increase the box size in this direction",
                     dim2char(d), ddbox->box_size[d], ddbox->skew_fac[d],
-                    comm->cutoff,
+                    comm->systemInfo.cutoff,
                     dd->nc[d], dd->nc[d],
                     dd->nnodes > dd->nc[d] ? "cells" : "ranks");
 
@@ -621,7 +621,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
 
     real cellsize_limit_f  = cellsize_min_dlb(comm, d, dim)/ddbox->box_size[dim];
     cellsize_limit_f      *= DD_CELL_MARGIN;
-    real dist_min_f_hard   = grid_jump_limit(comm, comm->cutoff, d)/ddbox->box_size[dim];
+    real dist_min_f_hard   = grid_jump_limit(comm, comm->systemInfo.cutoff, d)/ddbox->box_size[dim];
     real dist_min_f        = dist_min_f_hard * DD_CELL_MARGIN;
     if (ddbox->tric_dir[dim])
     {

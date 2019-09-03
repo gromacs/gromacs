@@ -649,34 +649,31 @@ void dd_atom_sum_real(gmx_domdec_t *dd, real v[])
 
 real dd_cutoff_multibody(const gmx_domdec_t *dd)
 {
-    gmx_domdec_comm_t *comm;
-    int                di;
-    real               r;
+    const gmx_domdec_comm_t &comm       = *dd->comm;
+    const DDSystemInfo      &systemInfo = comm.systemInfo;
 
-    comm = dd->comm;
-
-    r = -1;
-    if (comm->haveInterDomainMultiBodyBondeds)
+    real                     r = -1;
+    if (systemInfo.haveInterDomainMultiBodyBondeds)
     {
-        if (comm->cutoff_mbody > 0)
+        if (comm.cutoff_mbody > 0)
         {
-            r = comm->cutoff_mbody;
+            r = comm.cutoff_mbody;
         }
         else
         {
             /* cutoff_mbody=0 means we do not have DLB */
-            r = comm->cellsize_min[dd->dim[0]];
-            for (di = 1; di < dd->ndim; di++)
+            r = comm.cellsize_min[dd->dim[0]];
+            for (int di = 1; di < dd->ndim; di++)
             {
-                r = std::min(r, comm->cellsize_min[dd->dim[di]]);
+                r = std::min(r, comm.cellsize_min[dd->dim[di]]);
             }
-            if (comm->bBondComm)
+            if (comm.bBondComm)
             {
-                r = std::max(r, comm->cutoff_mbody);
+                r = std::max(r, comm.cutoff_mbody);
             }
             else
             {
-                r = std::min(r, comm->cutoff);
+                r = std::min(r, systemInfo.cutoff);
             }
         }
     }
@@ -690,7 +687,7 @@ real dd_cutoff_twobody(const gmx_domdec_t *dd)
 
     r_mb = dd_cutoff_multibody(dd);
 
-    return std::max(dd->comm->cutoff, r_mb);
+    return std::max(dd->comm->systemInfo.cutoff, r_mb);
 }
 
 
@@ -2157,10 +2154,12 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
         setupUpdateGroups(mdlog, *mtop, *ir, cutoffMargin, cr->nnodes, comm);
     }
 
+    DDSystemInfo &systemInfo = comm->systemInfo;
+
     // TODO: Check whether all bondeds are within update groups
-    comm->haveInterDomainBondeds          = (mtop->natoms > gmx_mtop_num_molecules(*mtop) ||
-                                             mtop->bIntermolecularInteractions);
-    comm->haveInterDomainMultiBodyBondeds = (multi_body_bondeds_count(mtop) > 0);
+    systemInfo.haveInterDomainBondeds          = (mtop->natoms > gmx_mtop_num_molecules(*mtop) ||
+                                                  mtop->bIntermolecularInteractions);
+    systemInfo.haveInterDomainMultiBodyBondeds = (multi_body_bondeds_count(mtop) > 0);
 
     if (comm->useUpdateGroups)
     {
@@ -2179,17 +2178,17 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
          * so we don't need if statements everywhere in the code.
          * We use sqrt, since the cut-off is squared in some places.
          */
-        comm->cutoff   = GMX_CUTOFF_INF;
+        systemInfo.cutoff = GMX_CUTOFF_INF;
     }
     else
     {
-        comm->cutoff   = atomToAtomIntoDomainToDomainCutoff(*comm, ir->rlist);
+        systemInfo.cutoff = atomToAtomIntoDomainToDomainCutoff(*comm, ir->rlist);
     }
-    comm->cutoff_mbody = 0;
+    systemInfo.minCutoffForMultiBody = 0;
 
     /* Determine the minimum cell size limit, affected by many factors */
-    comm->cellsize_limit = 0;
-    comm->bBondComm      = FALSE;
+    systemInfo.cellsizeLimit = 0;
+    comm->bBondComm          = FALSE;
 
     /* We do not allow home atoms to move beyond the neighboring domain
      * between domain decomposition steps, which limits the cell size.
@@ -2207,8 +2206,8 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
             "Minimum cell size due to atom displacement: %.3f nm",
             limitForAtomDisplacement);
 
-    comm->cellsize_limit = std::max(comm->cellsize_limit,
-                                    limitForAtomDisplacement);
+    systemInfo.cellsizeLimit = std::max(systemInfo.cellsizeLimit,
+                                        limitForAtomDisplacement);
 
     /* TODO: PME decomposition currently requires atoms not to be more than
      *       2/3 of comm->cutoff, which is >=rlist, outside of their domain.
@@ -2219,27 +2218,29 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
      *       Note that we would need to improve the pairlist buffer case.
      */
 
-    if (comm->haveInterDomainBondeds)
+    if (systemInfo.haveInterDomainBondeds)
     {
         if (options.minimumCommunicationRange > 0)
         {
-            comm->cutoff_mbody = atomToAtomIntoDomainToDomainCutoff(*comm, options.minimumCommunicationRange);
+            systemInfo.minCutoffForMultiBody =
+                atomToAtomIntoDomainToDomainCutoff(*comm, options.minimumCommunicationRange);
             if (options.useBondedCommunication)
             {
-                comm->bBondComm = (comm->cutoff_mbody > comm->cutoff);
+                comm->bBondComm = (systemInfo.minCutoffForMultiBody > systemInfo.cutoff);
             }
             else
             {
-                comm->cutoff = std::max(comm->cutoff, comm->cutoff_mbody);
+                systemInfo.cutoff = std::max(systemInfo.cutoff,
+                                             systemInfo.minCutoffForMultiBody);
             }
-            r_bonded_limit = comm->cutoff_mbody;
+            r_bonded_limit = systemInfo.minCutoffForMultiBody;
         }
         else if (ir->bPeriodicMols)
         {
             /* Can not easily determine the required cut-off */
             GMX_LOG(mdlog.warning).appendText("NOTE: Periodic molecules are present in this system. Because of this, the domain decomposition algorithm cannot easily determine the minimum cell size that it requires for treating bonded interactions. Instead, domain decomposition will assume that half the non-bonded cut-off will be a suitable lower bound.");
-            comm->cutoff_mbody = comm->cutoff/2;
-            r_bonded_limit     = comm->cutoff_mbody;
+            systemInfo.minCutoffForMultiBody = systemInfo.cutoff/2;
+            r_bonded_limit                   = systemInfo.minCutoffForMultiBody;
         }
         else
         {
@@ -2259,7 +2260,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
              */
             if (options.useBondedCommunication)
             {
-                if (std::max(r_2b, r_mb) > comm->cutoff)
+                if (std::max(r_2b, r_mb) > comm->systemInfo.cutoff)
                 {
                     r_bonded        = std::max(r_2b, r_mb);
                     r_bonded_limit  = tenPercentMargin*r_bonded;
@@ -2268,7 +2269,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                 else
                 {
                     r_bonded       = r_mb;
-                    r_bonded_limit = std::min(tenPercentMargin*r_bonded, comm->cutoff);
+                    r_bonded_limit = std::min(tenPercentMargin*r_bonded, systemInfo.cutoff);
                 }
                 /* We determine cutoff_mbody later */
             }
@@ -2277,16 +2278,17 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                 /* No special bonded communication,
                  * simply increase the DD cut-off.
                  */
-                r_bonded_limit     = tenPercentMargin*std::max(r_2b, r_mb);
-                comm->cutoff_mbody = r_bonded_limit;
-                comm->cutoff       = std::max(comm->cutoff, comm->cutoff_mbody);
+                r_bonded_limit                   = tenPercentMargin*std::max(r_2b, r_mb);
+                systemInfo.minCutoffForMultiBody = r_bonded_limit;
+                systemInfo.cutoff                = std::max(systemInfo.cutoff,
+                                                            systemInfo.minCutoffForMultiBody);
             }
         }
         GMX_LOG(mdlog.info).appendTextFormatted(
                 "Minimum cell size due to bonded interactions: %.3f nm",
                 r_bonded_limit);
 
-        comm->cellsize_limit = std::max(comm->cellsize_limit, r_bonded_limit);
+        systemInfo.cellsizeLimit = std::max(systemInfo.cellsizeLimit, r_bonded_limit);
     }
 
     real rconstr = 0;
@@ -2297,7 +2299,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
         GMX_LOG(mdlog.info).appendTextFormatted(
                 "Estimated maximum distance required for P-LINCS: %.3f nm",
                 rconstr);
-        if (rconstr > comm->cellsize_limit)
+        if (rconstr > systemInfo.cellsizeLimit)
         {
             GMX_LOG(mdlog.info).appendText("This distance will limit the DD cell size, you can override this with -rcon");
         }
@@ -2313,7 +2315,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                 options.constraintCommunicationRange);
         rconstr = options.constraintCommunicationRange;
     }
-    comm->cellsize_limit = std::max(comm->cellsize_limit, rconstr);
+    systemInfo.cellsizeLimit = std::max(systemInfo.cellsizeLimit, rconstr);
 
     comm->cgs_gl = gmx_mtop_global_cgs(mtop);
 
@@ -2346,8 +2348,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                            options.numPmeRanks,
                            !isDlbDisabled(comm),
                            options.dlbScaling,
-                           comm->cellsize_limit, comm->cutoff,
-                           comm->haveInterDomainBondeds);
+                           systemInfo);
 
         if (ddSetup.numDomains[XX] == 0)
         {
@@ -2369,7 +2370,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     }
 
     const real acs = average_cellsize_min(*ddbox, ddSetup.numDomains);
-    if (acs < comm->cellsize_limit)
+    if (acs < systemInfo.cellsizeLimit)
     {
         if (options.numCells[XX] <= 0)
         {
@@ -2379,7 +2380,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
         {
             gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
                                  "The initial cell size (%f) is smaller than the cell size limit (%f), change options -dd, -rdd or -rcon, see the log file for details",
-                                 acs, comm->cellsize_limit);
+                                 acs, systemInfo.cellsizeLimit);
         }
     }
 
@@ -2467,7 +2468,10 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
         comm->slb_frac[ZZ] = get_slb_frac(mdlog, "z", dd->nc[ZZ], options.cellSizeZ);
     }
 
-    if (comm->haveInterDomainBondeds && comm->cutoff_mbody == 0)
+    /* Set the multi-body cut-off and cellsize limit for DLB */
+    comm->cutoff_mbody   = systemInfo.minCutoffForMultiBody;
+    comm->cellsize_limit = systemInfo.cellsizeLimit;
+    if (systemInfo.haveInterDomainBondeds && comm->cutoff_mbody == 0)
     {
         if (comm->bBondComm || !isDlbDisabled(comm))
         {
@@ -2486,15 +2490,15 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
             if (!comm->bBondComm)
             {
                 /* Without bBondComm do not go beyond the n.b. cut-off */
-                comm->cutoff_mbody = std::min(comm->cutoff_mbody, comm->cutoff);
-                if (comm->cellsize_limit >= comm->cutoff)
+                comm->cutoff_mbody = std::min(comm->cutoff_mbody, systemInfo.cutoff);
+                if (comm->cellsize_limit >= systemInfo.cutoff)
                 {
                     /* We don't loose a lot of efficieny
                      * when increasing it to the n.b. cut-off.
                      * It can even be slightly faster, because we need
                      * less checks for the communication setup.
                      */
-                    comm->cutoff_mbody = comm->cutoff;
+                    comm->cutoff_mbody = systemInfo.cutoff;
                 }
             }
             /* Check if we did not end up below our original limit */
@@ -2636,7 +2640,7 @@ static void writeSettings(gmx::TextWriter       *log,
     const bool haveInterDomainVsites =
         (countInterUpdategroupVsites(*mtop, comm->updateGroupingPerMoleculetype) != 0);
 
-    if (comm->haveInterDomainBondeds ||
+    if (comm->systemInfo.haveInterDomainBondeds ||
         haveInterDomainVsites ||
         dd->splitConstraints || dd->splitSettles)
     {
@@ -2651,7 +2655,7 @@ static void writeSettings(gmx::TextWriter       *log,
         }
 
         log->writeLineFormatted("The maximum allowed distance for %s involved in interactions is:", decompUnits.c_str());
-        log->writeLineFormatted("%40s  %-7s %6.3f nm", "non-bonded interactions", "", comm->cutoff);
+        log->writeLineFormatted("%40s  %-7s %6.3f nm", "non-bonded interactions", "", comm->systemInfo.cutoff);
 
         if (bDynLoadBal)
         {
@@ -2670,14 +2674,14 @@ static void writeSettings(gmx::TextWriter       *log,
             }
         }
 
-        if (comm->haveInterDomainBondeds)
+        if (comm->systemInfo.haveInterDomainBondeds)
         {
             log->writeLineFormatted("%40s  %-7s %6.3f nm",
                                     "two-body bonded interactions", "(-rdd)",
-                                    std::max(comm->cutoff, comm->cutoff_mbody));
+                                    std::max(comm->systemInfo.cutoff, comm->cutoff_mbody));
             log->writeLineFormatted("%40s  %-7s %6.3f nm",
                                     "multi-body bonded interactions", "(-rdd)",
-                                    (comm->bBondComm || isDlbOn(dd->comm)) ? comm->cutoff_mbody : std::min(comm->cutoff, limit));
+                                    (comm->bBondComm || isDlbOn(dd->comm)) ? comm->cutoff_mbody : std::min(comm->systemInfo.cutoff, limit));
         }
         if (haveInterDomainVsites)
         {
@@ -2735,7 +2739,7 @@ static void set_cell_limits_dlb(const gmx::MDLogger &mdlog,
     comm->cellsize_limit = std::max(comm->cellsize_limit, comm->cutoff_mbody);
 
     /* Determine the maximum required number of grid pulses */
-    if (comm->cellsize_limit >= comm->cutoff)
+    if (comm->cellsize_limit >= comm->systemInfo.cutoff)
     {
         /* Only a single pulse is required */
         npulse = 1;
@@ -2748,7 +2752,7 @@ static void set_cell_limits_dlb(const gmx::MDLogger &mdlog,
          * Later cellsize_limit is redetermined,
          * so we can not miss interactions due to this rounding.
          */
-        npulse = static_cast<int>(0.96 + comm->cutoff/comm->cellsize_limit);
+        npulse = static_cast<int>(0.96 + comm->systemInfo.cutoff/comm->cellsize_limit);
     }
     else
     {
@@ -2763,7 +2767,7 @@ static void set_cell_limits_dlb(const gmx::MDLogger &mdlog,
         for (d = 0; d < dd->ndim; d++)
         {
             dim      = dd->dim[d];
-            npulse_d = static_cast<int>(1 + dd->nc[dim]*comm->cutoff
+            npulse_d = static_cast<int>(1 + dd->nc[dim]*comm->systemInfo.cutoff
                                         /(ddbox->box_size[dim]*ddbox->skew_fac[dim]*dlb_scale));
             npulse_d_max = std::max(npulse_d_max, npulse_d);
         }
@@ -2793,26 +2797,26 @@ static void set_cell_limits_dlb(const gmx::MDLogger &mdlog,
     if (!comm->bVacDLBNoLimit)
     {
         comm->cellsize_limit = std::max(comm->cellsize_limit,
-                                        comm->cutoff/comm->maxpulse);
+                                        comm->systemInfo.cutoff/comm->maxpulse);
     }
     comm->cellsize_limit = std::max(comm->cellsize_limit, comm->cutoff_mbody);
     /* Set the minimum cell size for each DD dimension */
     for (d = 0; d < dd->ndim; d++)
     {
         if (comm->bVacDLBNoLimit ||
-            comm->cd[d].np_dlb*comm->cellsize_limit >= comm->cutoff)
+            comm->cd[d].np_dlb*comm->cellsize_limit >= comm->systemInfo.cutoff)
         {
             comm->cellsize_min_dlb[dd->dim[d]] = comm->cellsize_limit;
         }
         else
         {
             comm->cellsize_min_dlb[dd->dim[d]] =
-                comm->cutoff/comm->cd[d].np_dlb;
+                comm->systemInfo.cutoff/comm->cd[d].np_dlb;
         }
     }
     if (comm->cutoff_mbody <= 0)
     {
-        comm->cutoff_mbody = std::min(comm->cutoff, comm->cellsize_limit);
+        comm->cutoff_mbody = std::min(comm->systemInfo.cutoff, comm->cellsize_limit);
     }
     if (isDlbOn(comm))
     {
@@ -2826,7 +2830,7 @@ gmx_bool dd_bonded_molpbc(const gmx_domdec_t *dd, int ePBC)
      * or we use domain decomposition for each periodic dimension,
      * we do not need to take pbc into account for the bonded interactions.
      */
-    return (ePBC != epbcNONE && dd->comm->haveInterDomainBondeds &&
+    return (ePBC != epbcNONE && dd->comm->systemInfo.haveInterDomainBondeds &&
             !(dd->nc[XX] > 1 &&
               dd->nc[YY] > 1 &&
               (dd->nc[ZZ] > 1 || ePBC == epbcXY)));
@@ -2864,7 +2868,7 @@ static void set_ddgrid_parameters(const gmx::MDLogger &mdlog,
 
     if (debug)
     {
-        fprintf(debug, "The DD cut-off is %f\n", comm->cutoff);
+        fprintf(debug, "The DD cut-off is %f\n", comm->systemInfo.cutoff);
     }
     if (!isDlbDisabled(comm))
     {
@@ -2880,7 +2884,7 @@ static void set_ddgrid_parameters(const gmx::MDLogger &mdlog,
     else
     {
         vol_frac =
-            (1 + comm_box_frac(dd->nc, comm->cutoff, ddbox))/static_cast<double>(dd->nnodes);
+            (1 + comm_box_frac(dd->nc, comm->systemInfo.cutoff, ddbox))/static_cast<double>(dd->nnodes);
     }
     if (debug)
     {
@@ -3060,7 +3064,7 @@ gmx_bool change_dd_cutoff(t_commrec     *cr,
 
     if (bCutoffAllowed)
     {
-        cr->dd->comm->cutoff = cutoffRequested;
+        cr->dd->comm->systemInfo.cutoff = cutoffRequested;
     }
 
     return bCutoffAllowed;

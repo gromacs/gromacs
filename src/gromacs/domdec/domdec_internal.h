@@ -435,6 +435,22 @@ struct dd_comm_setup_work_t
     int                    nsend_zone = 0;
 };
 
+/*! \brief Information about the simulated system */
+struct DDSystemInfo
+{
+    //! Are there inter-domain bonded interactions?
+    bool haveInterDomainBondeds          = false;
+    //! Are there inter-domain multi-body interactions?
+    bool haveInterDomainMultiBodyBondeds = false;
+
+    //! Cut-off for multi-body interactions
+    real minCutoffForMultiBody = 0;
+    //! Cut-off for non-bonded/2-body interactions
+    real cutoff = 0;
+    //! The lower limit for the DD cell size
+    real cellsizeLimit = 0;
+};
+
 /*! \brief Struct for domain decomposition communication
  *
  * This struct contains most information about domain decomposition
@@ -490,10 +506,6 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Centers of mass of local update groups
     std::unique_ptr<gmx::UpdateGroupsCog> updateGroupsCog;
 
-    /* Are there charge groups? */
-    bool haveInterDomainBondeds          = false; /**< Are there inter-domain bonded interactions? */
-    bool haveInterDomainMultiBodyBondeds = false; /**< Are there inter-domain multi-body interactions? */
-
     /* Data for the optional bonded interaction atom communication range */
     /**< Only communicate atoms beyond the non-bonded cut-off when they are involved in bonded interactions with non-local atoms */
     gmx_bool  bBondComm = false;
@@ -512,11 +524,12 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     /* Cell sizes for static load balancing, first index cartesian */
     real **slb_frac = nullptr;
 
+    /**< Information about the simulated system */
+    DDSystemInfo systemInfo;
+
     /* The width of the communicated boundaries */
     /**< Cut-off for multi-body interactions, also 2-body bonded when \p cutoff_mody > \p cutoff */
     real     cutoff_mbody = 0;
-    /**< Cut-off for non-bonded/2-body interactions */
-    real     cutoff = 0;
     /**< The minimum guaranteed cell-size, Cartesian indexing */
     rvec     cellsize_min = { };
     /**< The minimum guaranteed cell-size with dlb=auto */

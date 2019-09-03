@@ -65,6 +65,8 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "domdec_internal.h"
+
 /*! \brief Margin for setting up the DD grid */
 #define DD_GRID_MARGIN_PRES_SCALE 1.05
 
@@ -606,8 +608,7 @@ static real optimize_ncells(const gmx::MDLogger &mdlog,
                             const gmx_mtop_t *mtop,
                             const matrix box, const gmx_ddbox_t *ddbox,
                             const t_inputrec *ir,
-                            real cellsize_limit, real cutoff,
-                            const bool haveInterDomainBondeds,
+                            const DDSystemInfo &systemInfo,
                             ivec nc)
 {
     int      npp, npme, d, nmax;
@@ -615,7 +616,7 @@ static real optimize_ncells(const gmx::MDLogger &mdlog,
     real     limit;
     ivec     itry;
 
-    limit  = cellsize_limit;
+    limit  = systemInfo.cellsizeLimit;
 
     npp = nnodes_tot - npme_only;
     if (EEL_PME(ir->coulombtype))
@@ -627,7 +628,7 @@ static real optimize_ncells(const gmx::MDLogger &mdlog,
         npme = 0;
     }
 
-    if (haveInterDomainBondeds)
+    if (systemInfo.haveInterDomainBondeds)
     {
         /* If we can skip PBC for distance calculations in plain-C bondeds,
          * we can save some time (e.g. 3D DD with pbc=xyz).
@@ -705,7 +706,7 @@ static real optimize_ncells(const gmx::MDLogger &mdlog,
     itry[YY] = 1;
     itry[ZZ] = 1;
     clear_ivec(nc);
-    assign_factors(limit, cutoff, box, ddbox, mtop->natoms, ir, pbcdxr,
+    assign_factors(limit, systemInfo.cutoff, box, ddbox, mtop->natoms, ir, pbcdxr,
                    npme, div.size(), div.data(), mdiv.data(), itry, nc);
 
     return limit;
@@ -719,8 +720,7 @@ dd_choose_grid(const gmx::MDLogger &mdlog,
                const matrix box, const gmx_ddbox_t *ddbox,
                const int numPmeRanksRequested,
                const gmx_bool bDynLoadBal, const real dlb_scale,
-               const real cellsize_limit, const real cutoff_dd,
-               const bool haveInterDomainBondeds)
+               const DDSystemInfo &systemInfo)
 {
     DDSetup ddSetup;
 
@@ -796,8 +796,7 @@ dd_choose_grid(const gmx::MDLogger &mdlog,
             optimize_ncells(mdlog, cr->nnodes, ddSetup.numPmeRanks,
                             bDynLoadBal, dlb_scale,
                             mtop, box, ddbox, ir,
-                            cellsize_limit, cutoff_dd,
-                            haveInterDomainBondeds,
+                            systemInfo,
                             ddSetup.numDomains);
     }
 
