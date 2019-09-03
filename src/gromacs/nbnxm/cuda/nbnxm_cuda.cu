@@ -1074,6 +1074,11 @@ void* nbnxn_get_gpu_xrvec(gmx_nbnxn_gpu_t *gpu_nbv)
     return static_cast<void *> (gpu_nbv->xrvec);
 }
 
+void* nbnxn_get_gpu_frvec(gmx_nbnxn_gpu_t *gpu_nbv)
+{
+    return static_cast<void *> (gpu_nbv->frvec);
+}
+
 void* nbnxn_get_x_on_device_event(const gmx_nbnxn_cuda_t   *nb)
 {
     return static_cast<void*> (nb->xAvailableOnDevice);
@@ -1082,6 +1087,16 @@ void* nbnxn_get_x_on_device_event(const gmx_nbnxn_cuda_t   *nb)
 void nbnxn_wait_nonlocal_x_copy_D2H_done(gmx_nbnxn_cuda_t   *nb)
 {
     nb->xNonLocalCopyD2HDone->waitForEvent();
+}
+
+void nbnxn_stream_local_wait_for_nonlocal(gmx_nbnxn_cuda_t   *nb)
+{
+    cudaStream_t         localStream     = nb->stream[InteractionLocality::Local];
+    cudaStream_t         nonLocalStream  = nb->stream[InteractionLocality::NonLocal];
+
+    GpuEventSynchronizer event;
+    event.markEvent(nonLocalStream);
+    event.enqueueWaitEvent(localStream);
 }
 
 } // namespace Nbnxm

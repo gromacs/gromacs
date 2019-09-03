@@ -411,5 +411,17 @@ void* nbnxn_get_gpu_xrvec(gmx_nbnxn_gpu_t     gmx_unused *nb) CUDA_FUNC_TERM_WIT
 CUDA_FUNC_QUALIFIER
 void nbnxn_wait_nonlocal_x_copy_D2H_done(gmx_nbnxn_gpu_t     gmx_unused *nb) CUDA_FUNC_TERM;
 
+/*! \brief return GPU pointer to f in rvec format
+ * \param[in] nb                   The nonbonded data GPU structure
+ */
+CUDA_FUNC_QUALIFIER
+void* nbnxn_get_gpu_frvec(gmx_nbnxn_gpu_t     gmx_unused *nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr);
+
+/*! \brief Ensure local stream waits for non-local stream
+ * \param[in] nb                   The nonbonded data GPU structure
+ */
+CUDA_FUNC_QUALIFIER
+void nbnxn_stream_local_wait_for_nonlocal(gmx_nbnxn_gpu_t     gmx_unused *nb) CUDA_FUNC_TERM;
+
 } // namespace Nbnxm
 #endif

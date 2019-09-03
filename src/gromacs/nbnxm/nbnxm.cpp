@@ -330,4 +330,14 @@ void nonbonded_verlet_t::wait_nonlocal_x_copy_D2H_done()
     Nbnxm::nbnxn_wait_nonlocal_x_copy_D2H_done(gpu_nbv);
 }
 
+void* nonbonded_verlet_t::get_gpu_frvec()
+{
+    return Nbnxm::nbnxn_get_gpu_frvec(gpu_nbv);
+}
+
+void nonbonded_verlet_t::stream_local_wait_for_nonlocal()
+{
+    Nbnxm::nbnxn_stream_local_wait_for_nonlocal(gpu_nbv);
+}
+
 /*! \endcond */

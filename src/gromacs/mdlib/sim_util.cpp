@@ -1210,7 +1210,8 @@ void do_force(FILE                                     *fplog,
             if (ddUsesGpuDirectCommunication)
             {
                 rvec* d_x    = static_cast<rvec *> (nbv->get_gpu_xrvec());
-                gpuHaloExchange->reinitHalo(d_x);
+                rvec* d_f    = static_cast<rvec *> (nbv->get_gpu_frvec());
+                gpuHaloExchange->reinitHalo(d_x, d_f);
             }
         }
         else
@@ -1519,6 +1520,12 @@ void do_force(FILE                                     *fplog,
         }
     }
 
+    const bool useGpuForcesHaloExchange = ddUsesGpuDirectCommunication && (useGpuFBufOps == BufferOpsUseGpu::True);
+    const bool useCpuPmeFReduction      = thisRankHasDuty(cr, DUTY_PME) && !useGpuPmeFReduction;
+    // TODO: move this into DomainLifetimeWorkload, including the second part of the condition
+    const bool haveCpuLocalForces     = (forceWork.haveSpecialForces || forceWork.haveCpuListedForceWork || useCpuPmeFReduction ||
+                                         (fr->efep != efepNO));
+
     if (havePPDomainDecomposition(cr))
     {
         /* We are done with the CPU compute.
@@ -1530,11 +1537,27 @@ void do_force(FILE                                     *fplog,
 
         if (forceFlags.computeForces)
         {
-            if (useGpuFBufOps == BufferOpsUseGpu::True)
+            gmx::ArrayRef<gmx::RVec>  force  = forceOut.forceWithShiftForces().force();
+            rvec                     *f      = as_rvec_array(force.data());
+
+            if (useGpuForcesHaloExchange)
             {
-                nbv->wait_for_gpu_force_reduction(Nbnxm::AtomLocality::NonLocal);
+                if (haveCpuLocalForces)
+                {
+                    nbv->launch_copy_f_to_gpu(f, Nbnxm::AtomLocality::Local);
+                }
+                bool accumulateHaloForces = haveCpuLocalForces;
+                gpuHaloExchange->communicateHaloForces(accumulateHaloForces);
             }
-            dd_move_f(cr->dd, &forceOut.forceWithShiftForces(), wcycle);
+            else
+            {
+                if (useGpuFBufOps == BufferOpsUseGpu::True)
+                {
+                    nbv->wait_for_gpu_force_reduction(Nbnxm::AtomLocality::NonLocal);
+                }
+                dd_move_f(cr->dd, &forceOut.forceWithShiftForces(), wcycle);
+            }
+
         }
     }
 
@@ -1604,12 +1627,6 @@ void do_force(FILE                                     *fplog,
     {
         gmx::ArrayRef<gmx::RVec>  forceWithShift = forceOut.forceWithShiftForces().force();
 
-
-        const bool useCpuPmeFReduction    = thisRankHasDuty(cr, DUTY_PME) && !useGpuPmeFReduction;
-        // TODO: move this into DomainLifetimeWorkload, including the second part of the condition
-        const bool haveCpuLocalForces     = (forceWork.haveSpecialForces || forceWork.haveCpuListedForceWork || useCpuPmeFReduction ||
-                                             (fr->efep != efepNO));
-
         if (useGpuFBufOps == BufferOpsUseGpu::True)
         {
             // Flag to specify whether the CPU force buffer has contributions to
@@ -1622,11 +1639,22 @@ void do_force(FILE                                     *fplog,
             // - CPU f H2D should be as soon as all CPU-side forces are done
             // - wait for force reduction does not need to block host (at least not here, it's sufficient to wait
             //   before the next CPU task that consumes the forces: vsite spread or update)
-            //
+            // - copy is not perfomed if GPU force halo exchange is active, because it would overwrite the result
+            //   of the halo exchange. In that case the copy is instead performed above, before the exchange.
+            //   These should be unified.
             rvec *f = as_rvec_array(forceWithShift.data());
-            if (haveLocalForceContribInCpuBuffer)
+            if (haveLocalForceContribInCpuBuffer && !useGpuForcesHaloExchange)
             {
                 nbv->launch_copy_f_to_gpu(f, Nbnxm::AtomLocality::Local);
+            }
+            if (useGpuForcesHaloExchange)
+            {
+                // Add a stream synchronization to satisfy a dependency
+                // for the local buffer ops on the result of GPU halo
+                // exchange, which operates in the non-local stream and
+                // writes to to local parf og the force buffer.
+                // TODO improve this through use of an event - see Redmine #3093
+                nbv->stream_local_wait_for_nonlocal();
             }
             nbv->atomdata_add_nbat_f_to_f_gpu(Nbnxm::AtomLocality::Local,
                                               nbv->getDeviceForces(),

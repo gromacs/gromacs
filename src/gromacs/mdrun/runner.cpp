@@ -1337,11 +1337,15 @@ int Mdrunner::mdrunner()
 
         // TODO Move this to happen during domain decomposition setup,
         // once stream and event handling works well with that.
+        // TODO remove need to pass local stream into GPU halo exchange - Redmine #3093
         if (havePPDomainDecomposition(cr) && c_enableGpuHaloExchange && useGpuForNonbonded)
         {
-            void *stream                   = Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::NonLocal);
+            void *streamLocal                   = Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::NonLocal);
+            void *streamNonLocal                =
+                Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::NonLocal);
             void *coordinatesOnDeviceEvent = fr->nbv->get_x_on_device_event();
-            cr->dd->gpuHaloExchange = std::make_unique<GpuHaloExchange>(cr->dd, cr->mpi_comm_mysim, stream, coordinatesOnDeviceEvent);
+            cr->dd->gpuHaloExchange = std::make_unique<GpuHaloExchange>(cr->dd, cr->mpi_comm_mysim, streamLocal,
+                                                                        streamNonLocal, coordinatesOnDeviceEvent);
         }
 
         /* Initialize the mdAtoms structure.

@@ -62,6 +62,7 @@ class GpuHaloExchange::Impl
 /*!\brief Constructor stub. */
 GpuHaloExchange::GpuHaloExchange(gmx_domdec_t * /* dd */,
                                  MPI_Comm       /* mpi_comm_mysim */,
+                                 void         * /*streamLocal */,
                                  void         * /*streamNonLocal */,
                                  void         * /*coordinatesOnDeviceEvent*/)
     : impl_(nullptr)
@@ -72,7 +73,8 @@ GpuHaloExchange::GpuHaloExchange(gmx_domdec_t * /* dd */,
 GpuHaloExchange::~GpuHaloExchange() = default;
 
 /*!\brief init halo exhange stub. */
-void GpuHaloExchange::reinitHalo(rvec * /* d_coordinatesBuffer */)
+void GpuHaloExchange::reinitHalo(rvec * /* d_coordinatesBuffer */,
+                                 rvec * /* d_forcesBuffer */)
 {
     GMX_ASSERT(false, "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
 }
@@ -83,6 +85,11 @@ void GpuHaloExchange::communicateHaloCoordinates(const matrix /* box */)
     GMX_ASSERT(false, "A CPU stub for GPU Halo Exchange exchange was called insted of the correct implementation.");
 }
 
+/*!\brief apply F halo exchange stub. */
+void GpuHaloExchange::communicateHaloForces(bool gmx_unused accumulateForces)
+{
+    GMX_ASSERT(false, "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+}
 
 }      // namespace gmx
 

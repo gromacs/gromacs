@@ -37,7 +37,7 @@
  * \brief Implements GPU halo exchange using CUDA.
  *
  *
- * \author Alan Gray <alang@nvidia.com.com>
+ * \author Alan Gray <alang@nvidia.com>
  *
  * \ingroup module_domdec
  */
@@ -95,10 +95,44 @@ __global__ void packSendBufKernel(float3 * __restrict__       dataPacked,
     return;
 }
 
-void GpuHaloExchange::Impl::reinitHalo(float3      *d_coordinatesBuffer)
+/*! \brief unpack non-local force data buffer on the GPU using pre-populated "map" containing index information
+ * \param[out] data        full array of force values
+ * \param[in]  dataPacked  packed array of force values to be transferred
+ * \param[in]  map         array of indices defining mapping from full to packed array
+ * \param[in]  mapSize     number of elements in map array
+ */
+template <bool accumulate>
+__global__ void unpackRecvBufKernel(float3 * __restrict__       data,
+                                    const float3 * __restrict__ dataPacked,
+                                    const int * __restrict__    map,
+                                    const int                   mapSize)
+{
+
+    int           threadIndex           = blockIdx.x*blockDim.x+threadIdx.x;
+    const float3 *gm_dataSrc            = &dataPacked[threadIndex];
+    float3       *gm_dataDest           = &data[map[threadIndex]];
+
+    if (threadIndex < mapSize)
+    {
+        if (accumulate)
+        {
+            *gm_dataDest += *gm_dataSrc;
+        }
+        else
+        {
+            *gm_dataDest = *gm_dataSrc;
+        }
+    }
+
+    return;
+}
+
+void GpuHaloExchange::Impl::reinitHalo(float3      *d_coordinatesBuffer,
+                                       float3      *d_forcesBuffer)
 {
 
     d_x_ = d_coordinatesBuffer;
+    d_f_ = d_forcesBuffer;
 
     cudaStream_t                  stream            = nonLocalStream_;
     int                           nzone             = 1;
@@ -128,7 +162,7 @@ void GpuHaloExchange::Impl::reinitHalo(float3      *d_coordinatesBuffer)
     fSendSize_ = xRecvSize_;
     fRecvSize_ = xSendSize_;
 
-    localOffset_ = comm.atomRanges.numHomeAtoms();  //offset for data recieved by this rank
+    numHomeAtoms_ = comm.atomRanges.numHomeAtoms();  //offset for data recieved by this rank
 
     GMX_ASSERT(ind.index.size() == h_indexMap_.size(), "Size mismatch");
     std::copy(ind.index.begin(), ind.index.end(), h_indexMap_.begin());
@@ -141,7 +175,7 @@ void GpuHaloExchange::Impl::reinitHalo(float3      *d_coordinatesBuffer)
     // since the pointers will not change until the next NS step.
 
     //Coordinates buffer:
-    void* recvPtr  = static_cast<void*> (&d_coordinatesBuffer[localOffset_]);
+    void* recvPtr  = static_cast<void*> (&d_coordinatesBuffer[numHomeAtoms_]);
     MPI_Sendrecv(&recvPtr, sizeof(void*), MPI_BYTE, recvRankX_, 0,
                  &remoteXPtr_, sizeof(void*), MPI_BYTE, sendRankX_, 0,
                  mpi_comm_mysim_, MPI_STATUS_IGNORE);
@@ -208,6 +242,58 @@ void GpuHaloExchange::Impl::communicateHaloCoordinates(const matrix box)
     return;
 }
 
+// The following method should be called after non-local buffer operations,
+// and before the local buffer operations. It operates in the non-local stream.
+void GpuHaloExchange::Impl::communicateHaloForces(bool accumulateForces)
+{
+
+    // Communicate halo data (in non-local stream)
+    communicateHaloData(d_f_, HaloQuantity::HaloForces);
+
+    float3            *d_f            = d_f_;
+
+    if (!accumulateForces)
+    {
+        //Clear local portion of force array (in local stream)
+        cudaMemsetAsync(d_f, 0, numHomeAtoms_*sizeof(rvec), localStream_);
+    }
+
+    // ensure non-local stream waits for local stream, due to dependence on
+    // the previous H2D copy of CPU forces (if accumulateForces is true)
+    // or the above clearing.
+    // TODO remove this dependency on localStream - edmine issue #3093
+    GpuEventSynchronizer eventLocal;
+    eventLocal.markEvent(localStream_);
+    eventLocal.enqueueWaitEvent(nonLocalStream_);
+
+    //Unpack halo buffer into force array
+
+    KernelLaunchConfig config;
+    config.blockSize[0]     = c_threadsPerBlock;
+    config.blockSize[1]     = 1;
+    config.blockSize[2]     = 1;
+    config.gridSize[0]      = (fRecvSize_+c_threadsPerBlock-1)/c_threadsPerBlock;
+    config.gridSize[1]      = 1;
+    config.gridSize[2]      = 1;
+    config.sharedMemorySize = 0;
+    config.stream           = nonLocalStream_;
+
+    const float3    *recvBuf    = d_recvBuf_;
+    const int       *indexMap   = d_indexMap_;
+    const int        size       = fRecvSize_;
+
+    if (size > 0)
+    {
+        auto             kernelFn = accumulateForces ? unpackRecvBufKernel<true> : unpackRecvBufKernel<false>;
+
+        const auto       kernelArgs   = prepareGpuKernelArguments(kernelFn, config, &d_f,
+                                                                  &recvBuf, &indexMap,
+                                                                  &size);
+
+        launchGpuKernel(kernelFn, config, nullptr, "Domdec GPU Apply F Halo Exchange", kernelArgs);
+    }
+}
+
 
 void GpuHaloExchange::Impl::communicateHaloData(float3     * d_ptr,
                                                 HaloQuantity haloQuantity)
@@ -218,6 +304,7 @@ void GpuHaloExchange::Impl::communicateHaloData(float3     * d_ptr,
     void * remotePtr;
     int    sendRank;
     int    recvRank;
+
     if (haloQuantity == HaloQuantity::HaloCoordinates)
     {
         sendPtr   = static_cast<void*> (d_sendBuf_);
@@ -225,10 +312,16 @@ void GpuHaloExchange::Impl::communicateHaloData(float3     * d_ptr,
         remotePtr = remoteXPtr_;
         sendRank  = sendRankX_;
         recvRank  = recvRankX_;
+
+        //Wait for signal from receiving task that it is ready, and similarly send signal to task that will push data to this task
+        char thisTaskIsReady, remoteTaskIsReady;
+        MPI_Sendrecv(&thisTaskIsReady, sizeof(char), MPI_BYTE, recvRank, 0,
+                     &remoteTaskIsReady, sizeof(char), MPI_BYTE, sendRank, 0,
+                     mpi_comm_mysim_, MPI_STATUS_IGNORE);
     }
     else
     {
-        sendPtr   = static_cast<void*> (&(d_ptr[localOffset_]));
+        sendPtr   = static_cast<void*> (&(d_ptr[numHomeAtoms_]));
         sendSize  = fSendSize_;
         remotePtr = remoteFPtr_;
         sendRank  = sendRankF_;
@@ -238,7 +331,6 @@ void GpuHaloExchange::Impl::communicateHaloData(float3     * d_ptr,
     communicateHaloDataWithCudaDirect(sendPtr, sendSize, sendRank, remotePtr, recvRank);
 }
 
-
 void GpuHaloExchange::Impl::communicateHaloDataWithCudaDirect(void *sendPtr,
                                                               int   sendSize,
                                                               int   sendRank,
@@ -247,6 +339,7 @@ void GpuHaloExchange::Impl::communicateHaloDataWithCudaDirect(void *sendPtr,
 {
 
     cudaError_t  stat;
+    cudaStream_t stream = nonLocalStream_;
 
     // We asynchronously push data to remote rank. The remote
     // destination pointer has already been set in the init fn.  We
@@ -257,7 +350,7 @@ void GpuHaloExchange::Impl::communicateHaloDataWithCudaDirect(void *sendPtr,
     // send data to neighbor, if any data exists to send
     if (sendSize > 0)
     {
-        stat = cudaMemcpyAsync(remotePtr, sendPtr, sendSize*DIM*sizeof(float), cudaMemcpyDeviceToDevice, nonLocalStream_);
+        stat = cudaMemcpyAsync(remotePtr, sendPtr, sendSize*DIM*sizeof(float), cudaMemcpyDeviceToDevice, stream);
         CU_RET_ERR(stat, "cudaMemcpyAsync on GPU Domdec CUDA direct data transfer failed");
     }
 
@@ -267,19 +360,20 @@ void GpuHaloExchange::Impl::communicateHaloDataWithCudaDirect(void *sendPtr,
     // its stream.
     GpuEventSynchronizer *haloDataTransferRemote;
 
-    haloDataTransferLaunched_->markEvent(nonLocalStream_);
+    haloDataTransferLaunched_->markEvent(stream);
 
     MPI_Sendrecv(&haloDataTransferLaunched_, sizeof(GpuEventSynchronizer*), MPI_BYTE, sendRank, 0,
                  &haloDataTransferRemote, sizeof(GpuEventSynchronizer*), MPI_BYTE, recvRank, 0,
                  mpi_comm_mysim_, MPI_STATUS_IGNORE);
 
-    haloDataTransferRemote->enqueueWaitEvent(nonLocalStream_);
+    haloDataTransferRemote->enqueueWaitEvent(stream);
 
 }
 
 /*! \brief Create Domdec GPU object */
 GpuHaloExchange::Impl::Impl(gmx_domdec_t *dd,
                             MPI_Comm      mpi_comm_mysim,
+                            void        * localStream,
                             void        * nonLocalStream,
                             void        * coordinatesOnDeviceEvent)
     : dd_(dd),
@@ -290,6 +384,7 @@ GpuHaloExchange::Impl::Impl(gmx_domdec_t *dd,
       usePBC_(dd->ci[dd->dim[0]] == 0),
       haloDataTransferLaunched_(new GpuEventSynchronizer()),
       mpi_comm_mysim_(mpi_comm_mysim),
+      localStream_(*static_cast<cudaStream_t*> (localStream)),
       nonLocalStream_(*static_cast<cudaStream_t*> (nonLocalStream)),
       coordinatesOnDeviceEvent_(static_cast<GpuEventSynchronizer*> (coordinatesOnDeviceEvent))
 {
@@ -323,22 +418,29 @@ GpuHaloExchange::Impl::~Impl()
 
 GpuHaloExchange::GpuHaloExchange(gmx_domdec_t *dd,
                                  MPI_Comm      mpi_comm_mysim,
+                                 void         *localStream,
                                  void         *nonLocalStream,
                                  void         *coordinatesOnDeviceEvent)
-    : impl_(new Impl(dd, mpi_comm_mysim, nonLocalStream, coordinatesOnDeviceEvent))
+    : impl_(new Impl(dd, mpi_comm_mysim, localStream, nonLocalStream, coordinatesOnDeviceEvent))
 {
 }
 
 GpuHaloExchange::~GpuHaloExchange() = default;
 
-void GpuHaloExchange::reinitHalo(rvec        *d_coordinatesBuffer)
+void GpuHaloExchange::reinitHalo(rvec        *d_coordinatesBuffer,
+                                 rvec        *d_forcesBuffer)
 {
-    impl_->reinitHalo(reinterpret_cast<float3*>(d_coordinatesBuffer));
+    impl_->reinitHalo(reinterpret_cast<float3*>(d_coordinatesBuffer), reinterpret_cast<float3*>(d_forcesBuffer));
 }
 
 void GpuHaloExchange::communicateHaloCoordinates(const matrix box)
 {
     impl_->communicateHaloCoordinates(box);
+}
+
+void GpuHaloExchange::communicateHaloForces(bool accumulateForces)
+{
+    impl_->communicateHaloForces(accumulateForces);
 }
 
 } //namespace gmx
