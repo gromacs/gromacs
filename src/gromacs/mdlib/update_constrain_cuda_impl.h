@@ -87,7 +87,7 @@ class UpdateConstrainCuda::Impl
          *   2. This is the temperature coupling step.
          * Parameters virial/lambdas can be nullptr if computeVirial/doTempCouple are false.
          *
-         * \param[in]  dt                     Timestep
+         * \param[in]  dt                     Timestep.
          * \param[in]  updateVelocities       If the velocities should be constrained.
          * \param[in]  computeVirial          If virial should be updated.
          * \param[out] virial                 Place to save virial tensor.
@@ -97,26 +97,31 @@ class UpdateConstrainCuda::Impl
          * \param[in]  dtPressureCouple       Period between pressure coupling steps
          * \param[in]  velocityScalingMatrix  Parrinello-Rahman velocity scaling matrix
          */
-        void integrate(const real                        dt,
-                       const bool                        updateVelocities,
-                       const bool                        computeVirial,
+        void integrate(real                              dt,
+                       bool                              updateVelocities,
+                       bool                              computeVirial,
                        tensor                            virial,
-                       const bool                        doTempCouple,
+                       bool                              doTempCouple,
                        gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                       const bool                        doPressureCouple,
-                       const float                       dtPressureCouple,
+                       bool                              doPressureCouple,
+                       float                             dtPressureCouple,
                        const matrix                      velocityScalingMatrix);
 
-        /*! \brief
-         * Update data-structures (e.g. after NB search step).
+        /*! \brief Set the pointers and update data-structures (e.g. after NB search step).
          *
-         * \param[in] idef                 System topology
-         * \param[in] md                   Atoms data.
-         * \param[in] numTempScaleValues   Number of temperature scaling groups. Set zero for no temperature coupling.
+         * \param[in,out]  d_x            Device buffer with coordinates.
+         * \param[in,out]  d_v            Device buffer with velocities.
+         * \param[in]      d_f            Device buffer with forces.
+         * \param[in] idef                System topology
+         * \param[in] md                  Atoms data.
+         * \param[in] numTempScaleValues  Number of temperature scaling groups. Set zero for no temperature coupling.
          */
-        void set(const t_idef    &idef,
-                 const t_mdatoms &md,
-                 const int        numTempScaleValues);
+        void set(DeviceBuffer<float>        d_x,
+                 DeviceBuffer<float>        d_v,
+                 const DeviceBuffer<float>  d_f,
+                 const t_idef              &idef,
+                 const t_mdatoms           &md,
+                 const int                  numTempScaleValues);
 
         /*! \brief
          * Update PBC data.
@@ -126,73 +131,6 @@ class UpdateConstrainCuda::Impl
          * \param[in] pbc The PBC data in t_pbc format.
          */
         void setPbc(const t_pbc *pbc);
-
-        /*! \brief
-         * Copy coordinates from CPU to GPU.
-         *
-         * The data are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_x  CPU pointer where coordinates should be copied from.
-         */
-        void copyCoordinatesToGpu(const rvec *h_x);
-
-        /*! \brief
-         * Copy velocities from CPU to GPU.
-         *
-         * The data are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_v  CPU pointer where velocities should be copied from.
-         */
-        void copyVelocitiesToGpu(const rvec *h_v);
-
-        /*! \brief
-         * Copy forces from CPU to GPU.
-         *
-         * The data are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_f  CPU pointer where forces should be copied from.
-         */
-        void copyForcesToGpu(const rvec *h_f);
-
-        /*! \brief
-         * Copy coordinates from GPU to CPU.
-         *
-         * The data are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[out] h_xp CPU pointer where coordinates should be copied to.
-         */
-        void copyCoordinatesFromGpu(rvec *h_xp);
-
-        /*! \brief
-         * Copy velocities from GPU to CPU.
-         *
-         * The velocities are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_v  Pointer to velocities data.
-         */
-        void copyVelocitiesFromGpu(rvec *h_v);
-
-        /*! \brief
-         * Copy forces from GPU to CPU.
-         *
-         * The forces are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_f  Pointer to forces data.
-         */
-        void copyForcesFromGpu(rvec *h_f);
-
-        /*! \brief
-         * Set the internal GPU-memory x, xprime and v pointers.
-         *
-         * Data is not copied. The data are assumed to be in float3/fvec format
-         * (float3 is used internally, but the data layout should be identical).
-         *
-         * \param[in] d_x   Pointer to the coordinates for the input (on GPU)
-         * \param[in] d_xp  Pointer to the coordinates for the output (on GPU)
-         * \param[in] d_v   Pointer to the velocities (on GPU)
-         * \param[in] d_f   Pointer to the forces (on GPU)
-         */
-        void setXVFPointers(rvec *d_x, rvec *d_xp, rvec *d_v, rvec *d_f);
 
     private:
 
@@ -205,33 +143,20 @@ class UpdateConstrainCuda::Impl
         //! Number of atoms
         int                 numAtoms_;
 
-        //! Coordinates before the timestep (on GPU)
+        //! Local copy of the pointer to the device positions buffer
         float3             *d_x_;
-        //! Number of elements in coordinates buffer
-        int                 numX_                  = -1;
-        //! Allocation size for the coordinates buffer
-        int                 numXAlloc_             = -1;
+        //! Local copy of the pointer to the device velocities buffer
+        float3             *d_v_;
+        //! Local copy of the pointer to the device forces buffer
+        float3             *d_f_;
 
-        //! Coordinates after the timestep (on GPU).
+        //! Device buffer for intermediate positions (maintained internally)
         float3             *d_xp_;
         //! Number of elements in shifted coordinates buffer
         int                 numXp_                 = -1;
         //! Allocation size for the shifted coordinates buffer
         int                 numXpAlloc_            = -1;
 
-        //! Velocities of atoms (on GPU)
-        float3             *d_v_;
-        //! Number of elements in velocities buffer
-        int                 numV_                  = -1;
-        //! Allocation size for the velocities buffer
-        int                 numVAlloc_             = -1;
-
-        //! Forces, exerted by atoms (on GPU)
-        float3             *d_f_;
-        //! Number of elements in forces buffer
-        int                 numF_                  = -1;
-        //! Allocation size for the forces buffer
-        int                 numFAlloc_             = -1;
 
         //! 1/mass for all atoms (GPU)
         real               *d_inverseMasses_;

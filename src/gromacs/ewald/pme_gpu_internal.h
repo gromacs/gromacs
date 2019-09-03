@@ -186,17 +186,6 @@ bool pme_gpu_stream_query(const PmeGpu *pmeGpu);
 void pme_gpu_realloc_coordinates(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
- * Copies the input coordinates from the CPU buffer onto the GPU.
- *
- * \param[in] pmeGpu            The PME GPU structure.
- * \param[in] h_coordinates     Input coordinates (XYZ rvec array).
- *
- * Needs to be called for every PME computation. The coordinates are then used in the spline calculation.
- */
-GPU_FUNC_QUALIFIER void pme_gpu_copy_input_coordinates(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu),
-                                                       const rvec   *GPU_FUNC_ARGUMENT(h_coordinates)) GPU_FUNC_TERM;
-
-/*! \libinternal \brief
  * Frees the coordinates on the GPU.
  *
  * \param[in] pmeGpu            The PME GPU structure.
@@ -448,6 +437,13 @@ GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu                *GPU_FUNC_ARGUMENT(
  */
 GPU_FUNC_QUALIFIER DeviceBuffer<float> pme_gpu_get_kernelparam_coordinates(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM_WITH_RETURN(DeviceBuffer<float> {});
 
+/*! \brief Sets the device pointer to coordinate data
+ * \param[in] pmeGpu         The PME GPU structure.
+ * \param[in] d_x            Pointer to coordinate data
+ */
+GPU_FUNC_QUALIFIER void pme_gpu_set_kernelparam_coordinates(const PmeGpu        *GPU_FUNC_ARGUMENT(pmeGpu),
+                                                            DeviceBuffer<float>  GPU_FUNC_ARGUMENT(d_x)) GPU_FUNC_TERM;
+
 /*! \brief Return pointer to device copy of force data.
  * \param[in] pmeGpu         The PME GPU structure.
  * \returns                  Pointer to force data
@@ -459,6 +455,12 @@ GPU_FUNC_QUALIFIER void * pme_gpu_get_kernelparam_forces(const PmeGpu *GPU_FUNC_
  * \returns                  Pointer to stream object.
  */
 GPU_FUNC_QUALIFIER void * pme_gpu_get_stream(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM_WITH_RETURN(nullptr);
+
+/*! \brief Return pointer to GPU context (for OpenCL builds).
+ * \param[in] pmeGpu         The PME GPU structure.
+ * \returns                  Pointer to context object.
+ */
+GPU_FUNC_QUALIFIER void * pme_gpu_get_context(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /*! \brief Return pointer to the sync object triggered after the PME force calculation completion
  * \param[in] pmeGpu         The PME GPU structure.

@@ -388,12 +388,13 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
             TestReferenceData refData;
             for (const auto &context : getPmeTestEnv()->getHardwareContexts())
             {
+                std::shared_ptr<StatePropagatorDataGpu> stateGpu;
                 CodePath   codePath       = context->getCodePath();
                 const bool supportedInput = pmeSupportsInputForMode(*getPmeTestEnv()->hwinfo(), &inputRec, codePath);
                 if (!supportedInput)
                 {
                     /* Testing the failure for the unsupported input */
-                    EXPECT_THROW(pmeInitAtoms(&inputRec, codePath, nullptr, nullptr, inputAtomData.coordinates, inputAtomData.charges, box), NotImplementedError);
+                    EXPECT_THROW(pmeInitAtoms(&inputRec, codePath, nullptr, nullptr, inputAtomData.coordinates, inputAtomData.charges, box, stateGpu), NotImplementedError);
                     continue;
                 }
 
@@ -408,7 +409,7 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
                                           ));
 
                 PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, codePath, context->getDeviceInfo(),
-                                                      context->getPmeGpuProgram(), inputAtomData.coordinates, inputAtomData.charges, box);
+                                                      context->getPmeGpuProgram(), inputAtomData.coordinates, inputAtomData.charges, box, stateGpu);
 
                 /* Setting some more inputs */
                 pmeSetRealGrid(pmeSafe.get(), codePath, nonZeroGridValues);

@@ -743,60 +743,11 @@ void cuda_set_cacheconfig()
     }
 }
 
-/* X buffer operations on GPU: copies coordinates to the GPU in rvec format. */
-void nbnxn_gpu_copy_x_to_gpu(const Nbnxm::Grid               &grid,
-                             gmx_nbnxn_gpu_t                 *nb,
-                             const Nbnxm::AtomLocality        locality,
-                             const rvec                      *coordinatesHost)
-{
-    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
-
-    bool                       bDoTime = nb->bDoTime;
-
-    Nbnxm::InteractionLocality interactionLoc            = gpuAtomToInteractionLocality(locality);
-    int                        numCopyAtoms              = grid.srcAtomEnd() - grid.srcAtomBegin();
-    int                        copyAtomStart             = grid.srcAtomBegin();
-
-    cudaStream_t               stream  = nb->stream[interactionLoc];
-
-    // empty domain avoid launching zero-byte copy
-    if (numCopyAtoms == 0)
-    {
-        return;
-    }
-    GMX_ASSERT(coordinatesHost,  "Need a valid host pointer");
-
-    if (bDoTime)
-    {
-        nb->timers->xf[locality].nb_h2d.openTimingRegion(stream);
-    }
-
-    rvec       *devicePtrDest = reinterpret_cast<rvec *> (nb->xrvec[copyAtomStart]);
-    const rvec *devicePtrSrc  = reinterpret_cast<const rvec *> (coordinatesHost[copyAtomStart]);
-    copyToDeviceBuffer(&devicePtrDest, devicePtrSrc, 0, numCopyAtoms,
-                       stream, GpuApiCallBehavior::Async, nullptr);
-
-    if (interactionLoc == Nbnxm::InteractionLocality::Local)
-    {
-        nb->xAvailableOnDevice->markEvent(stream);
-    }
-
-    if (bDoTime)
-    {
-        nb->timers->xf[locality].nb_h2d.closeTimingRegion(stream);
-    }
-}
-
-DeviceBuffer<float> nbnxn_gpu_get_x_gpu(gmx_nbnxn_gpu_t *nb)
-{
-    return reinterpret_cast< DeviceBuffer<float> >(nb->xrvec);
-}
-
 /* X buffer operations on GPU: performs conversion from rvec to nb format. */
 void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
                            bool                             setFillerCoords,
                            gmx_nbnxn_gpu_t                 *nb,
-                           DeviceBuffer<float>              coordinatesDevice,
+                           DeviceBuffer<float>              d_x,
                            const Nbnxm::AtomLocality        locality,
                            int                              gridId,
                            int                              numColumnsMax)
@@ -817,7 +768,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
     if (numAtoms != 0)
     {
         // TODO: This will only work with CUDA
-        GMX_ASSERT(coordinatesDevice, "Need a valid device pointer");
+        GMX_ASSERT(d_x, "Need a valid device pointer");
 
         KernelLaunchConfig config;
         config.blockSize[0]     = c_bufOpsThreadsPerBlock;
@@ -839,7 +790,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
                                                               &numColumns,
                                                               &xqPtr,
                                                               &setFillerCoords,
-                                                              &coordinatesDevice,
+                                                              &d_x,
                                                               &d_atomIndices,
                                                               &d_cxy_na,
                                                               &d_cxy_ind,
@@ -920,142 +871,6 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality               atomLocality,
 
 }
 
-DeviceBuffer<float> nbnxn_gpu_get_f_gpu(gmx_nbnxn_gpu_t *nb)
-{
-    return reinterpret_cast< DeviceBuffer<float> >(nb->frvec);
-}
-
-void nbnxn_launch_copy_f_to_gpu(const AtomLocality               atomLocality,
-                                const Nbnxm::GridSet            &gridSet,
-                                gmx_nbnxn_gpu_t                 *nb,
-                                rvec                            *f)
-{
-    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
-
-    const InteractionLocality iLocality = gpuAtomToInteractionLocality(atomLocality);
-    cudaStream_t              stream    = nb->stream[iLocality];
-
-    bool                      bDoTime = nb->bDoTime;
-    cu_timers_t              *t       = nb->timers;
-
-    int                       atomStart = 0, numCopyAtoms = 0;
-
-    nbnxn_get_atom_range(atomLocality, gridSet, &atomStart, &numCopyAtoms);
-
-    // Avoiding launching copy with no work
-    if (numCopyAtoms == 0)
-    {
-        return;
-    }
-    GMX_ASSERT(f, "Need a valid f pointer");
-
-    if (bDoTime)
-    {
-        t->xf[atomLocality].nb_h2d.openTimingRegion(stream);
-    }
-
-    rvec       *ptrDest  = reinterpret_cast<rvec *> (nb->frvec[atomStart]);
-    rvec       *ptrSrc   = reinterpret_cast<rvec *> (f[atomStart]);
-    //copyToDeviceBuffer(&ptrDest, ptrSrc, 0, numCopyAtoms,
-    //                   stream, GpuApiCallBehavior::Async, nullptr);
-    //TODO use above API call rather than direct memcpy when force has been implemented in a hostvector
-    cudaMemcpyAsync(ptrDest, ptrSrc, numCopyAtoms*sizeof(rvec), cudaMemcpyHostToDevice,
-                    stream);
-
-    if (bDoTime)
-    {
-        t->xf[atomLocality].nb_h2d.closeTimingRegion(stream);
-    }
-
-    return;
-}
-
-void nbnxn_launch_copy_f_from_gpu(const AtomLocality               atomLocality,
-                                  const Nbnxm::GridSet            &gridSet,
-                                  gmx_nbnxn_gpu_t                 *nb,
-                                  rvec                            *f)
-{
-    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
-
-    const InteractionLocality iLocality = gpuAtomToInteractionLocality(atomLocality);
-    cudaStream_t              stream    = nb->stream[iLocality];
-
-    bool                      bDoTime = nb->bDoTime;
-    cu_timers_t              *t       = nb->timers;
-    int                       atomStart, numCopyAtoms;
-
-    nbnxn_get_atom_range(atomLocality, gridSet, &atomStart, &numCopyAtoms);
-
-    // Avoiding launching copy with no work
-    if (numCopyAtoms == 0)
-    {
-        return;
-    }
-    GMX_ASSERT(f, "Need a valid f pointer");
-
-    if (bDoTime)
-    {
-        t->xf[atomLocality].nb_d2h.openTimingRegion(stream);
-    }
-
-    GMX_ASSERT(nb->frvec,  "Need a valid nb->frvec pointer");
-    rvec       *ptrDest = reinterpret_cast<rvec *> (f[atomStart]);
-    rvec       *ptrSrc  = reinterpret_cast<rvec *> (nb->frvec[atomStart]);
-    //copyFromDeviceBuffer(ptrDest, &ptrSrc, 0, numCopyAtoms,
-    //                   stream, GpuApiCallBehavior::Async, nullptr);
-    //TODO use above API call rather than direct memcpy when force has been implemented in a hostvector
-    cudaMemcpyAsync(ptrDest, ptrSrc, numCopyAtoms*sizeof(rvec), cudaMemcpyDeviceToHost,
-                    stream);
-
-    if (bDoTime)
-    {
-        t->xf[atomLocality].nb_d2h.closeTimingRegion(stream);
-    }
-
-    return;
-}
-
-void nbnxn_launch_copy_x_from_gpu(const AtomLocality               atomLocality,
-                                  const Nbnxm::GridSet            &gridSet,
-                                  gmx_nbnxn_gpu_t                 *nb,
-                                  rvec                            *x)
-{
-    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
-    GMX_ASSERT(x,  "Need a valid x pointer");
-
-    const InteractionLocality iLocality = gpuAtomToInteractionLocality(atomLocality);
-    cudaStream_t              stream    = nb->stream[iLocality];
-
-    bool                      bDoTime = nb->bDoTime;
-    cu_timers_t              *t       = nb->timers;
-    int                       atomStart, nAtoms;
-
-    nbnxn_get_atom_range(atomLocality, gridSet, &atomStart, &nAtoms);
-
-    if (bDoTime)
-    {
-        t->xf[atomLocality].nb_d2h.openTimingRegion(stream);
-    }
-
-    GMX_ASSERT(nb->xrvec,  "Need a valid nb->xrvec pointer");
-    rvec       *ptrDest = reinterpret_cast<rvec *> (x[atomStart]);
-    rvec       *ptrSrc  = reinterpret_cast<rvec *> (nb->xrvec[atomStart]);
-    copyFromDeviceBuffer(ptrDest, &ptrSrc, 0, nAtoms,
-                         stream, GpuApiCallBehavior::Async, stream);
-
-    if (atomLocality == AtomLocality::NonLocal)
-    {
-        nb->xNonLocalCopyD2HDone->markEvent(stream);
-    }
-
-    if (bDoTime)
-    {
-        t->xf[atomLocality].nb_d2h.closeTimingRegion(stream);
-    }
-
-    return;
-}
-
 void nbnxn_wait_for_gpu_force_reduction(const AtomLocality      gmx_unused atomLocality,
                                         gmx_nbnxn_gpu_t                   *nb)
 {
@@ -1067,16 +882,6 @@ void nbnxn_wait_for_gpu_force_reduction(const AtomLocality      gmx_unused atomL
 
     cudaStreamSynchronize(stream);
 
-}
-
-void* nbnxn_get_gpu_xrvec(gmx_nbnxn_gpu_t *gpu_nbv)
-{
-    return static_cast<void *> (gpu_nbv->xrvec);
-}
-
-void* nbnxn_get_gpu_frvec(gmx_nbnxn_gpu_t *gpu_nbv)
-{
-    return static_cast<void *> (gpu_nbv->frvec);
 }
 
 void* nbnxn_get_x_on_device_event(const gmx_nbnxn_cuda_t   *nb)

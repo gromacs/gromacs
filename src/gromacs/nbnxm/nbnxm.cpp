@@ -147,37 +147,16 @@ void nonbonded_verlet_t::convertCoordinates(const Nbnxm::AtomLocality       loca
     wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);
 }
 
-
-void nonbonded_verlet_t::copyCoordinatesToGpu(const Nbnxm::AtomLocality       locality,
-                                              const bool                      fillLocal,
-                                              gmx::ArrayRef<const gmx::RVec>  coordinatesHost)
-{
-    wallcycle_start(wcycle_, ewcNB_XF_BUF_OPS);
-    wallcycle_sub_start(wcycle_, ewcsNB_X_BUF_OPS);
-
-    nbnxn_atomdata_copy_x_to_gpu(pairSearch_->gridSet(), locality, fillLocal,
-                                 nbat.get(), gpu_nbv,
-                                 as_rvec_array(coordinatesHost.data()));
-
-    wallcycle_sub_stop(wcycle_, ewcsNB_X_BUF_OPS);
-    wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);
-}
-
-DeviceBuffer<float> nonbonded_verlet_t::getDeviceCoordinates()
-{
-    return nbnxn_atomdata_get_x_gpu(gpu_nbv);
-}
-
 void nonbonded_verlet_t::convertCoordinatesGpu(const Nbnxm::AtomLocality       locality,
                                                const bool                      fillLocal,
-                                               DeviceBuffer<float>             coordinatesDevice)
+                                               DeviceBuffer<float>             d_x)
 {
     wallcycle_start(wcycle_, ewcNB_XF_BUF_OPS);
     wallcycle_sub_start(wcycle_, ewcsNB_X_BUF_OPS);
 
     nbnxn_atomdata_x_to_nbat_x_gpu(pairSearch_->gridSet(), locality, fillLocal,
                                    gpu_nbv,
-                                   coordinatesDevice);
+                                   d_x);
 
     wallcycle_sub_stop(wcycle_, ewcsNB_X_BUF_OPS);
     wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);
@@ -254,11 +233,6 @@ nonbonded_verlet_t::atomdata_init_add_nbat_f_to_f_gpu()
     wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);
 }
 
-DeviceBuffer<float> nonbonded_verlet_t::getDeviceForces()
-{
-    return nbnxn_atomdata_get_f_gpu(gpu_nbv);
-}
-
 real nonbonded_verlet_t::pairlistInnerRadius() const
 {
     return pairlistSets_->params().rlistInner;
@@ -286,38 +260,9 @@ void nonbonded_verlet_t::insertNonlocalGpuDependency(const Nbnxm::InteractionLoc
     Nbnxm::nbnxnInsertNonlocalGpuDependency(gpu_nbv, interactionLocality);
 }
 
-void nonbonded_verlet_t::launch_copy_f_to_gpu(rvec *f, const Nbnxm::AtomLocality locality)
-{
-    nbnxn_launch_copy_f_to_gpu(locality,
-                               pairSearch_->gridSet(),
-                               gpu_nbv,
-                               f);
-}
-
-void nonbonded_verlet_t::launch_copy_f_from_gpu(rvec *f, const Nbnxm::AtomLocality locality)
-{
-    nbnxn_launch_copy_f_from_gpu(locality,
-                                 pairSearch_->gridSet(),
-                                 gpu_nbv,
-                                 f);
-}
-
-void nonbonded_verlet_t::launch_copy_x_from_gpu(rvec *x, const Nbnxm::AtomLocality locality)
-{
-    nbnxn_launch_copy_x_from_gpu(locality,
-                                 pairSearch_->gridSet(),
-                                 gpu_nbv,
-                                 x);
-}
-
 void nonbonded_verlet_t::wait_for_gpu_force_reduction(const Nbnxm::AtomLocality locality)
 {
     nbnxn_wait_for_gpu_force_reduction(locality, gpu_nbv);
-}
-
-void* nonbonded_verlet_t::get_gpu_xrvec()
-{
-    return Nbnxm::nbnxn_get_gpu_xrvec(gpu_nbv);
 }
 
 void* nonbonded_verlet_t::get_x_on_device_event()
@@ -328,11 +273,6 @@ void* nonbonded_verlet_t::get_x_on_device_event()
 void nonbonded_verlet_t::wait_nonlocal_x_copy_D2H_done()
 {
     Nbnxm::nbnxn_wait_nonlocal_x_copy_D2H_done(gpu_nbv);
-}
-
-void* nonbonded_verlet_t::get_gpu_frvec()
-{
-    return Nbnxm::nbnxn_get_gpu_frvec(gpu_nbv);
 }
 
 void nonbonded_verlet_t::stream_local_wait_for_nonlocal()

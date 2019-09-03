@@ -115,6 +115,7 @@
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/pairlist_tuning.h"
@@ -1501,6 +1502,27 @@ int Mdrunner::mdrunner()
                                                          fcd->orires.nr != 0,
                                                          fcd->disres.nsystems != 0);
 
+        const void *commandStream = ((GMX_GPU == GMX_GPU_OPENCL) && thisRankHasPmeGpuTask) ? pme_gpu_get_device_stream(fr->pmedata) : nullptr;
+        const void *gpuContext    = ((GMX_GPU == GMX_GPU_OPENCL) && thisRankHasPmeGpuTask) ? pme_gpu_get_device_context(fr->pmedata) : nullptr;
+        const int   paddingSize   = pme_gpu_get_padding_size(fr->pmedata);
+
+        const bool  inputIsCompatibleWithModularSimulator = ModularSimulator::isInputCompatible(
+                    false,
+                    inputrec, doRerun, vsite.get(), ms, replExParams,
+                    fcd, static_cast<int>(filenames.size()), filenames.data(),
+                    &observablesHistory, membed);
+
+        const bool          useModularSimulator = inputIsCompatibleWithModularSimulator && !(getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
+        GpuApiCallBehavior  transferKind        = (inputrec->eI == eiMD && !doRerun && !useModularSimulator) ? GpuApiCallBehavior::Async : GpuApiCallBehavior::Sync;
+
+        // We initialize GPU state even for the CPU runs so we will have a more verbose
+        // error if someone will try accessing it from the CPU codepath
+        gmx::StatePropagatorDataGpu stateGpu(commandStream,
+                                             gpuContext,
+                                             transferKind,
+                                             paddingSize);
+        fr->stateGpu = &stateGpu;
+
         // TODO This is not the right place to manage the lifetime of
         // this data structure, but currently it's the easiest way to
         // make it work.
@@ -1510,11 +1532,6 @@ int Mdrunner::mdrunner()
         SimulatorBuilder simulatorBuilder;
 
         // build and run simulator object based on user-input
-        const bool inputIsCompatibleWithModularSimulator = ModularSimulator::isInputCompatible(
-                    false,
-                    inputrec, doRerun, vsite.get(), ms, replExParams,
-                    fcd, static_cast<int>(filenames.size()), filenames.data(),
-                    &observablesHistory, membed);
         auto simulator = simulatorBuilder.build(
                     inputIsCompatibleWithModularSimulator,
                     fplog, cr, ms, mdlog, static_cast<int>(filenames.size()), filenames.data(),

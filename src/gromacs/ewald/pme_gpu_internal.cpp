@@ -233,23 +233,6 @@ void pme_gpu_realloc_coordinates(const PmeGpu *pmeGpu)
     }
 }
 
-void pme_gpu_copy_input_coordinates(const PmeGpu *pmeGpu, const rvec *h_coordinates)
-{
-    GMX_ASSERT(h_coordinates, "Bad host-side coordinate buffer in PME GPU");
-#if GMX_DOUBLE
-    GMX_RELEASE_ASSERT(false, "Only single precision is supported");
-    GMX_UNUSED_VALUE(h_coordinates);
-#else
-    const float *h_coordinatesFloat = reinterpret_cast<const float *>(h_coordinates);
-    copyToDeviceBuffer(&pmeGpu->kernelParams->atoms.d_coordinates, h_coordinatesFloat,
-                       0, pmeGpu->kernelParams->atoms.nAtoms * DIM,
-                       pmeGpu->archSpecific->pmeStream, pmeGpu->settings.transferKind, nullptr);
-    // FIXME: sync required since the copied data will be used by PP stream when using single GPU for both
-    //        Remove after adding the required event-based sync between the above H2D and the transform kernel
-    pme_gpu_synchronize(pmeGpu);
-#endif
-}
-
 void pme_gpu_free_coordinates(const PmeGpu *pmeGpu)
 {
     freeDeviceBuffer(&pmeGpu->kernelParams->atoms.d_coordinates);
@@ -967,7 +950,6 @@ void pme_gpu_destroy(PmeGpu *pmeGpu)
     pme_gpu_free_energy_virial(pmeGpu);
     pme_gpu_free_bspline_values(pmeGpu);
     pme_gpu_free_forces(pmeGpu);
-    pme_gpu_free_coordinates(pmeGpu);
     pme_gpu_free_coefficients(pmeGpu);
     pme_gpu_free_spline_data(pmeGpu);
     pme_gpu_free_grid_indices(pmeGpu);
@@ -1002,7 +984,6 @@ void pme_gpu_reinit_atoms(PmeGpu *pmeGpu, const int nAtoms, const real *charges)
 
     if (haveToRealloc)
     {
-        pme_gpu_realloc_coordinates(pmeGpu);
         pme_gpu_realloc_forces(pmeGpu);
         pme_gpu_realloc_spline_data(pmeGpu);
         pme_gpu_realloc_grid_indices(pmeGpu);
@@ -1317,11 +1298,61 @@ void * pme_gpu_get_kernelparam_forces(const PmeGpu *pmeGpu)
     }
 }
 
+/*! \brief Check the validity of the device buffer.
+ *
+ * Checks if the buffer is not nullptr and, when possible, if it is big enough.
+ *
+ * \todo Split and move this function to gpu_utils.
+ *
+ * \param[in] buffer        Device buffer to be checked.
+ * \param[in] requiredSize  Number of elements that the buffer will have to accommodate.
+ *
+ * \returns If the device buffer can be set.
+ */
+template<typename T>
+static bool checkDeviceBuffer(gmx_unused DeviceBuffer<T> buffer, gmx_unused int requiredSize)
+{
+#if GMX_GPU == GMX_GPU_CUDA
+    GMX_ASSERT(buffer != nullptr, "The device pointer is nullptr");
+    return buffer != nullptr;
+#elif GMX_GPU == GMX_GPU_OPENCL
+    size_t size;
+    int    retval = clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size), &size, NULL);
+    GMX_ASSERT(retval == CL_SUCCESS, gmx::formatString("clGetMemObjectInfo failed with error code #%d", retval).c_str());
+    GMX_ASSERT(static_cast<int>(size) >= requiredSize, "Number of atoms in device buffer is smaller then required size.");
+    return retval == CL_SUCCESS && static_cast<int>(size) >= requiredSize;
+#elif GMX_GPU == GMX_GPU_NONE
+    GMX_ASSERT(false, "Setter for device-side coordinates was called in non-GPU build.");
+    return false;
+#endif
+}
+
+void pme_gpu_set_kernelparam_coordinates(const PmeGpu *pmeGpu, DeviceBuffer<float> d_x)
+{
+    GMX_ASSERT(pmeGpu && pmeGpu->kernelParams, "PME GPU device buffer can not be set in non-GPU builds or before the GPU PME was initialized.");
+
+    GMX_ASSERT(checkDeviceBuffer(d_x, pmeGpu->kernelParams->atoms.nAtoms), "The device-side buffer can not be set.");
+
+    pmeGpu->kernelParams->atoms.d_coordinates = d_x;
+}
+
 void * pme_gpu_get_stream(const PmeGpu *pmeGpu)
 {
     if (pmeGpu)
     {
         return static_cast<void *>(&pmeGpu->archSpecific->pmeStream);
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
+void * pme_gpu_get_context(const PmeGpu *pmeGpu)
+{
+    if (pmeGpu)
+    {
+        return static_cast<void *>(&pmeGpu->archSpecific->context);
     }
     else
     {

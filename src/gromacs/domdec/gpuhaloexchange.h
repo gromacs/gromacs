@@ -42,6 +42,7 @@
 #ifndef GMX_DOMDEC_GPUHALOEXCHANGE_H
 #define GMX_DOMDEC_GPUHALOEXCHANGE_H
 
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
@@ -95,8 +96,9 @@ class GpuHaloExchange
          * \param [in] d_coordinateBuffer   pointer to coordinates buffer in GPU memory
          * \param [in] d_forcesBuffer   pointer to coordinates buffer in GPU memory
          */
-        void reinitHalo(rvec        *d_coordinateBuffer,
-                        rvec        *d_forcesBuffer);
+        void reinitHalo(DeviceBuffer<float>  d_coordinateBuffer,
+                        DeviceBuffer<float>  d_forcesBuffer);
+
 
         /*! \brief GPU halo exchange of coordinates buffer.
          *

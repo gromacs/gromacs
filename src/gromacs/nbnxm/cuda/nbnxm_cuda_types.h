@@ -219,18 +219,6 @@ struct gmx_nbnxn_cuda_t
     bool                                                            bUseTwoStreams;
     //! atom data
     cu_atomdata_t                                                  *atdat;
-    //! coordinates in rvec format
-    rvec                                                           *xrvec;
-    //! number of atoms
-    int                                                             natoms;
-    //! number of atoms allocated in device buffer
-    int                                                             natoms_alloc;
-    //! force in rvec format
-    rvec                                                           *frvec;
-    //! number of atoms in force buffer
-    int                                                             nfrvec;
-    //! number of atoms allocated in force buffer
-    int                                                             nfrvec_alloc;
     //! f buf ops cell index mapping
     int                                                            *cell;
     //! number of indices in cell buffer

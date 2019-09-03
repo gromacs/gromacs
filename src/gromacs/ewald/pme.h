@@ -365,24 +365,13 @@ GPU_FUNC_QUALIFIER void pme_gpu_prepare_computation(gmx_pme_t      *GPU_FUNC_ARG
                                                     bool            GPU_FUNC_ARGUMENT(useGpuForceReduction)) GPU_FUNC_TERM;
 
 /*! \brief
- * Launches H2D input transfers for PME on GPU.
- *
- * \param[in] pme               The PME data structure.
- * \param[in] coordinatesHost   The array of local atoms' coordinates.
- * \param[in] wcycle            The wallclock counter.
- */
-GPU_FUNC_QUALIFIER void pme_gpu_copy_coordinates_to_gpu(gmx_pme_t            *GPU_FUNC_ARGUMENT(pme),
-                                                        const rvec           *GPU_FUNC_ARGUMENT(coordinatesHost),
-                                                        gmx_wallcycle        *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
-
-/*! \brief
- * Launches first stage of PME on GPU - spreading kernel, and D2H grid transfer if needed.
+ * Launches first stage of PME on GPU - spreading kernel.
  *
  * \param[in] pme                The PME data structure.
  * \param[in] wcycle             The wallclock counter.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t           *GPU_FUNC_ARGUMENT(pme),
-                                              gmx_wallcycle       *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
+GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t      *GPU_FUNC_ARGUMENT(pme),
+                                              gmx_wallcycle  *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
 
 /*! \brief
  * Launches middle stages of PME (FFT R2C, solving, FFT C2R) either on GPU or on CPU, depending on the run mode.
@@ -476,6 +465,13 @@ GPU_FUNC_QUALIFIER void pme_gpu_reinit_computation(const gmx_pme_t *GPU_FUNC_ARG
  */
 GPU_FUNC_QUALIFIER DeviceBuffer<float> pme_gpu_get_device_x(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(DeviceBuffer<float> {});
 
+/*! \brief Set pointer to device copy of coordinate data.
+ * \param[in] pme            The PME data structure.
+ * \param[in] d_x            The pointer to the positions buffer to be set
+ */
+GPU_FUNC_QUALIFIER void pme_gpu_set_device_x(const gmx_pme_t     *GPU_FUNC_ARGUMENT(pme),
+                                             DeviceBuffer<float>  GPU_FUNC_ARGUMENT(d_x)) GPU_FUNC_TERM;
+
 /*! \brief Get pointer to device copy of force data.
  * \param[in] pme            The PME data structure.
  * \returns                  Pointer to force data
@@ -487,6 +483,12 @@ GPU_FUNC_QUALIFIER void *pme_gpu_get_device_f(const gmx_pme_t *GPU_FUNC_ARGUMENT
  *  \returns                  Pointer to GPU stream object.
  */
 GPU_FUNC_QUALIFIER void *pme_gpu_get_device_stream(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(nullptr);
+
+/*! \brief Returns the pointer to the GPU context.
+ *  \param[in] pme            The PME data structure.
+ *  \returns                  Pointer to GPU context object.
+ */
+GPU_FUNC_QUALIFIER void *pme_gpu_get_device_context(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /*! \brief Get pointer to the device synchronizer object that allows syncing on PME force calculation completion
  * \param[in] pme            The PME data structure.

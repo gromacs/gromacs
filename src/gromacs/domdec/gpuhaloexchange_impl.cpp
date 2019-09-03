@@ -73,8 +73,8 @@ GpuHaloExchange::GpuHaloExchange(gmx_domdec_t * /* dd */,
 GpuHaloExchange::~GpuHaloExchange() = default;
 
 /*!\brief init halo exhange stub. */
-void GpuHaloExchange::reinitHalo(rvec * /* d_coordinatesBuffer */,
-                                 rvec * /* d_forcesBuffer */)
+void GpuHaloExchange::reinitHalo(DeviceBuffer<float> /* d_coordinatesBuffer */,
+                                 DeviceBuffer<float> /* d_forcesBuffer */)
 {
     GMX_ASSERT(false, "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
 }

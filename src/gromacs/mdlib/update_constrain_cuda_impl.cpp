@@ -78,52 +78,17 @@ void UpdateConstrainCuda::integrate(gmx_unused const real                       
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
 }
 
-void UpdateConstrainCuda::set(gmx_unused const t_idef     &idef,
-                              gmx_unused const t_mdatoms  &md,
-                              gmx_unused const int         numTempScaleValues)
+void UpdateConstrainCuda::set(gmx_unused DeviceBuffer<float>        d_x,
+                              gmx_unused DeviceBuffer<float>        d_v,
+                              gmx_unused const DeviceBuffer<float>  d_f,
+                              gmx_unused const t_idef              &idef,
+                              gmx_unused const t_mdatoms           &md,
+                              gmx_unused const int                  numTempScaleValues)
 {
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
 }
 
 void UpdateConstrainCuda::setPbc(gmx_unused const t_pbc *pbc)
-{
-    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
-}
-
-void UpdateConstrainCuda::copyCoordinatesToGpu(gmx_unused const rvec *h_x)
-{
-    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
-}
-
-void UpdateConstrainCuda::copyVelocitiesToGpu(gmx_unused const rvec *h_v)
-{
-    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
-}
-
-void UpdateConstrainCuda::copyForcesToGpu(gmx_unused const rvec *h_f)
-{
-    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
-}
-
-void UpdateConstrainCuda::copyCoordinatesFromGpu(gmx_unused rvec *h_xp)
-{
-    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
-}
-
-void UpdateConstrainCuda::copyVelocitiesFromGpu(gmx_unused rvec *h_v)
-{
-    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
-}
-
-void UpdateConstrainCuda::copyForcesFromGpu(gmx_unused rvec *h_f)
-{
-    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
-}
-
-void UpdateConstrainCuda::setXVFPointers(gmx_unused rvec *d_x,
-                                         gmx_unused rvec *d_xp,
-                                         gmx_unused rvec *d_v,
-                                         gmx_unused rvec *d_f)
 {
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
 }

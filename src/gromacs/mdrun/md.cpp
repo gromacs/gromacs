@@ -117,7 +117,9 @@
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/modularsimulator/energyelement.h"
+#include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -315,8 +317,15 @@ void gmx::LegacySimulator::do_md()
         upd.setNumAtoms(state->natoms);
     }
 
+/*****************************************************************************************/
+// TODO: The following block of code should be refactored, once:
+//       1. We have the useGpuForBufferOps variable set and available here and in do_force(...)
+//       2. The proper GPU syncronization is introduced, so that the H2D and D2H data copies can be performed in the separate
+//          stream owned by the StatePropagatorDataGpu
     bool useGpuForPme       = (fr->pmedata != nullptr) && (pme_run_mode(fr->pmedata) != PmeRunMode::CPU);
     bool useGpuForNonbonded = fr->nbv->useGpu();
+    // Temporary solution to make sure that the buffer ops are offloaded when update is offloaded
+    bool useGpuForBufferOps   = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
 
     if (useGpuForUpdate)
     {
@@ -346,10 +355,19 @@ void gmx::LegacySimulator::do_md()
         integrator = std::make_unique<UpdateConstrainCuda>(*ir, *top_global, nullptr);
     }
 
-    if (fr->nbv->useGpu())
+    if (useGpuForPme || (useGpuForNonbonded && useGpuForBufferOps) || useGpuForUpdate)
     {
-        changePinningPolicy(&state->x, gmx::PinningPolicy::PinnedIfSupported);
+        changePinningPolicy(&state->x, PinningPolicy::PinnedIfSupported);
     }
+    if ((useGpuForNonbonded && useGpuForBufferOps) || useGpuForUpdate)
+    {
+        changePinningPolicy(&f, PinningPolicy::PinnedIfSupported);
+    }
+    if (useGpuForUpdate)
+    {
+        changePinningPolicy(&state->v, PinningPolicy::PinnedIfSupported);
+    }
+/*****************************************************************************************/
 
     // NOTE: The global state is no longer used at this point.
     // But state_global is still used as temporary storage space for writing
@@ -1200,16 +1218,19 @@ void gmx::LegacySimulator::do_md()
 
         if (useGpuForUpdate)
         {
+            StatePropagatorDataGpu *stateGpu = fr->stateGpu;
             if (bNS)
             {
-                integrator->set(top.idef, *mdatoms, ekind->ngtc);
+                integrator->set(stateGpu->getCoordinates(), stateGpu->getVelocities(), stateGpu->getForces(),
+                                top.idef, *mdatoms, ekind->ngtc);
                 t_pbc pbc;
                 set_pbc(&pbc, epbcXYZ, state->box);
                 integrator->setPbc(&pbc);
             }
-            integrator->copyCoordinatesToGpu(state->x.rvec_array());
-            integrator->copyVelocitiesToGpu(state->v.rvec_array());
-            integrator->copyForcesToGpu(as_rvec_array(f.data()));
+
+            stateGpu->copyCoordinatesToGpu(ArrayRef<RVec>(state->x), StatePropagatorDataGpu::AtomLocality::All);
+            stateGpu->copyVelocitiesToGpu(state->v, StatePropagatorDataGpu::AtomLocality::All);
+            stateGpu->copyForcesToGpu(ArrayRef<RVec>(f), StatePropagatorDataGpu::AtomLocality::All);
 
             bool doTempCouple     = (ir->etc != etcNO && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
             bool doPressureCouple = (ir->epc == epcPARRINELLORAHMAN && do_per_step(step + ir->nstpcouple - 1, ir->nstpcouple));
@@ -1218,9 +1239,9 @@ void gmx::LegacySimulator::do_md()
             integrator->integrate(ir->delta_t, true, bCalcVir, shake_vir,
                                   doTempCouple, ekind->tcstat,
                                   doPressureCouple, ir->nstpcouple*ir->delta_t, M);
-
-            integrator->copyCoordinatesFromGpu(state->x.rvec_array());
-            integrator->copyVelocitiesFromGpu(state->v.rvec_array());
+            stateGpu->copyCoordinatesFromGpu(ArrayRef<RVec>(state->x), StatePropagatorDataGpu::AtomLocality::All);
+            stateGpu->copyVelocitiesFromGpu(state->v, StatePropagatorDataGpu::AtomLocality::All);
+            stateGpu->synchronizeStream();
         }
         else
         {

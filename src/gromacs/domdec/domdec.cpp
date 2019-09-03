@@ -235,6 +235,11 @@ gmx_domdec_zones_t *domdec_zones(gmx_domdec_t *dd)
     return &dd->comm->zones;
 }
 
+int dd_numAtomsZones(const gmx_domdec_t &dd)
+{
+    return dd.comm->atomRanges.end(DDAtomRanges::Type::Zones);
+}
+
 int dd_numHomeAtoms(const gmx_domdec_t &dd)
 {
     return dd.comm->atomRanges.numHomeAtoms();

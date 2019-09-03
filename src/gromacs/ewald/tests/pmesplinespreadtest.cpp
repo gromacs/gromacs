@@ -122,12 +122,13 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
 
             for (const auto &context : getPmeTestEnv()->getHardwareContexts())
             {
+                std::shared_ptr<StatePropagatorDataGpu> stateGpu;
                 CodePath   codePath       = context->getCodePath();
                 const bool supportedInput = pmeSupportsInputForMode(*getPmeTestEnv()->hwinfo(), &inputRec, codePath);
                 if (!supportedInput)
                 {
                     /* Testing the failure for the unsupported input */
-                    EXPECT_THROW(pmeInitAtoms(&inputRec, codePath, nullptr, nullptr, coordinates, charges, box), NotImplementedError);
+                    EXPECT_THROW(pmeInitAtoms(&inputRec, codePath, nullptr, nullptr, coordinates, charges, box, stateGpu), NotImplementedError);
                     continue;
                 }
 
@@ -146,7 +147,7 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
                     /* Running the test */
 
                     PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, codePath, context->getDeviceInfo(),
-                                                          context->getPmeGpuProgram(), coordinates, charges, box);
+                                                          context->getPmeGpuProgram(), coordinates, charges, box, stateGpu);
 
                     const bool     computeSplines = (option.first == PmeSplineAndSpreadOptions::SplineOnly) || (option.first == PmeSplineAndSpreadOptions::SplineAndSpreadUnified);
                     const bool     spreadCharges  = (option.first == PmeSplineAndSpreadOptions::SpreadOnly) || (option.first == PmeSplineAndSpreadOptions::SplineAndSpreadUnified);

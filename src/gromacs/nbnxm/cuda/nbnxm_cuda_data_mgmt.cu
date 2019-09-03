@@ -502,16 +502,12 @@ gpu_init(const gmx_device_info_t   *deviceInfo,
 
     cuda_init_const(nb, ic, listParams, nbat->params());
 
-    nb->natoms                   = 0;
-    nb->natoms_alloc             = 0;
     nb->atomIndicesSize          = 0;
     nb->atomIndicesSize_alloc    = 0;
     nb->ncxy_na                  = 0;
     nb->ncxy_na_alloc            = 0;
     nb->ncxy_ind                 = 0;
     nb->ncxy_ind_alloc           = 0;
-    nb->nfrvec                   = 0;
-    nb->nfrvec_alloc             = 0;
     nb->ncell                    = 0;
     nb->ncell_alloc              = 0;
 
@@ -903,10 +899,7 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
         const int           atomIndicesSize   = gridSet.atomIndices().size();
         const int          *cxy_na            = grid.cxy_na().data();
         const int          *cxy_ind           = grid.cxy_ind().data();
-        // TODO Should be done once per gridset
-        const int           numRealAtomsTotal = gridSet.numRealAtomsTotal();
 
-        reallocateDeviceBuffer(&gpu_nbv->xrvec, numRealAtomsTotal, &gpu_nbv->natoms, &gpu_nbv->natoms_alloc, nullptr);
         reallocateDeviceBuffer(&gpu_nbv->atomIndices, atomIndicesSize, &gpu_nbv->atomIndicesSize, &gpu_nbv->atomIndicesSize_alloc, nullptr);
 
         if (atomIndicesSize > 0)
@@ -976,8 +969,6 @@ void nbnxn_gpu_init_add_nbat_f_to_f(const int                *cell,
 {
 
     cudaStream_t         stream  = gpu_nbv->stream[InteractionLocality::Local];
-
-    reallocateDeviceBuffer(&gpu_nbv->frvec, natoms_total, &gpu_nbv->nfrvec, &gpu_nbv->nfrvec_alloc, nullptr);
 
     if (natoms_total > 0)
     {

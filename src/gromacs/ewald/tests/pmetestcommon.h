@@ -51,6 +51,7 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_gpu_internal.h"
 #include "gromacs/math/gmxcomplex.h"
+#include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/unique_cptr.h"
 
@@ -125,13 +126,14 @@ PmeSafePointer pmeInitEmpty(const t_inputrec *inputRec,
                             const Matrix3x3 &box = {{1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F}},
                             real ewaldCoeff_q = 0.0F, real ewaldCoeff_lj = 0.0F);
 //! PME initialization with atom data and system box
-PmeSafePointer pmeInitAtoms(const t_inputrec         *inputRec,
-                            CodePath                  mode,
-                            const gmx_device_info_t  *gpuInfo,
-                            PmeGpuProgramHandle       pmeGpuProgram,
-                            const CoordinatesVector  &coordinates,
-                            const ChargesVector      &charges,
-                            const Matrix3x3          &box
+PmeSafePointer pmeInitAtoms(const t_inputrec                        *inputRec,
+                            CodePath                                 mode,
+                            const gmx_device_info_t                 *gpuInfo,
+                            PmeGpuProgramHandle                      pmeGpuProgram,
+                            const CoordinatesVector                 &coordinates,
+                            const ChargesVector                     &charges,
+                            const Matrix3x3                         &box,
+                            std::shared_ptr<StatePropagatorDataGpu>  stateGpu
                             );
 //! PME spline computation and charge spreading
 void pmePerformSplineAndSpread(gmx_pme_t *pme, CodePath mode,

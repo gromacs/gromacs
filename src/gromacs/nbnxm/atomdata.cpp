@@ -1084,42 +1084,12 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet     &gridSet,
     }
 }
 
-void nbnxn_atomdata_copy_x_to_gpu(const Nbnxm::GridSet     &gridSet,
-                                  const Nbnxm::AtomLocality locality,
-                                  bool                      fillLocal,
-                                  nbnxn_atomdata_t         *nbat,
-                                  gmx_nbnxn_gpu_t          *gpu_nbv,
-                                  const rvec               *coordinatesHost)
-{
-    int gridBegin = 0;
-    int gridEnd   = 0;
-    getAtomRanges(gridSet, locality, &gridBegin, &gridEnd);
-
-    if (fillLocal)
-    {
-        nbat->natoms_local = gridSet.grids()[0].atomIndexEnd();
-    }
-
-    for (int g = gridBegin; g < gridEnd; g++)
-    {
-        nbnxn_gpu_copy_x_to_gpu(gridSet.grids()[g],
-                                gpu_nbv,
-                                locality,
-                                coordinatesHost);
-    }
-}
-
-DeviceBuffer<float> nbnxn_atomdata_get_x_gpu(gmx_nbnxn_gpu_t *gpu_nbv)
-{
-    return Nbnxm::nbnxn_gpu_get_x_gpu(gpu_nbv);
-}
-
 /* Copies (and reorders) the coordinates to nbnxn_atomdata_t on the GPU*/
 void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet     &gridSet,
                                     const Nbnxm::AtomLocality locality,
                                     bool                      fillLocal,
                                     gmx_nbnxn_gpu_t          *gpu_nbv,
-                                    DeviceBuffer<float>       coordinatesDevice)
+                                    DeviceBuffer<float>       d_x)
 {
 
     int gridBegin = 0;
@@ -1131,7 +1101,7 @@ void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet     &gridSet,
         nbnxn_gpu_x_to_nbat_x(gridSet.grids()[g],
                               fillLocal && g == 0,
                               gpu_nbv,
-                              coordinatesDevice,
+                              d_x,
                               locality,
                               g,
                               gridSet.numColumnsMax());
@@ -1550,11 +1520,6 @@ void reduceForcesGpu(const Nbnxm::AtomLocality        locality,
                                      atomsStart, numAtoms,
                                      useGpuFPmeReduction,
                                      accumulateForce);
-}
-
-DeviceBuffer<float> nbnxn_atomdata_get_f_gpu(gmx_nbnxn_gpu_t *gpu_nbv)
-{
-    return Nbnxm::nbnxn_gpu_get_f_gpu(gpu_nbv);
 }
 
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t   &nbat,

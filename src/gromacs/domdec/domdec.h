@@ -110,6 +110,9 @@ void dd_store_state(struct gmx_domdec_t *dd, t_state *state);
 /*! \brief Returns a pointer to the gmx_domdec_zones_t struct */
 struct gmx_domdec_zones_t *domdec_zones(struct gmx_domdec_t *dd);
 
+/*! \brief Returns the range for atoms in zones*/
+int dd_numAtomsZones(const gmx_domdec_t &dd);
+
 /*! \brief Returns the number of home atoms */
 int dd_numHomeAtoms(const gmx_domdec_t &dd);
 

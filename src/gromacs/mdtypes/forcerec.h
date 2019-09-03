@@ -60,6 +60,7 @@ namespace gmx
 {
 class GpuBonded;
 class ForceProviders;
+class StatePropagatorDataGpu;
 }
 
 /* macros for the cginfo data in forcerec
@@ -268,6 +269,11 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     struct ewald_corr_thread_t *ewc_t       = nullptr;
 
     gmx::ForceProviders        *forceProviders = nullptr;
+
+    // The stateGpu object is created in runner, forcerec just keeps the copy of the pointer.
+    // TODO: This is not supposed to be here. StatePropagatorDataGpu should be a part of
+    //       general StatePropagatorData object that is passed around
+    gmx::StatePropagatorDataGpu  *stateGpu = nullptr;
 };
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have

@@ -438,8 +438,8 @@ GpuHaloExchange::GpuHaloExchange(gmx_domdec_t *dd,
 
 GpuHaloExchange::~GpuHaloExchange() = default;
 
-void GpuHaloExchange::reinitHalo(rvec        *d_coordinatesBuffer,
-                                 rvec        *d_forcesBuffer)
+void GpuHaloExchange::reinitHalo(DeviceBuffer<float>  d_coordinatesBuffer,
+                                 DeviceBuffer<float>  d_forcesBuffer)
 {
     impl_->reinitHalo(reinterpret_cast<float3*>(d_coordinatesBuffer), reinterpret_cast<float3*>(d_forcesBuffer));
 }
