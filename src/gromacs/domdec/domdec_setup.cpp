@@ -537,8 +537,7 @@ static float comm_cost_est(real limit, real cutoff,
 }
 
 /*! \brief Assign penalty factors to possible domain decompositions, based on the estimated communication costs. */
-static void assign_factors(const gmx_domdec_t *dd,
-                           real limit, real cutoff,
+static void assign_factors(real limit, real cutoff,
                            const matrix box, const gmx_ddbox_t *ddbox,
                            int natoms, const t_inputrec *ir,
                            float pbcdxr, int npme,
@@ -581,7 +580,7 @@ static void assign_factors(const gmx_domdec_t *dd,
             }
 
             /* recurse */
-            assign_factors(dd, limit, cutoff, box, ddbox, natoms, ir, pbcdxr, npme,
+            assign_factors(limit, cutoff, box, ddbox, natoms, ir, pbcdxr, npme,
                            ndiv-1, div+1, mdiv+1, ir_try, opt);
 
             for (i = 0; i < mdiv[0]-x-y; i++)
@@ -607,7 +606,6 @@ static real optimize_ncells(const gmx::MDLogger &mdlog,
                             const gmx_mtop_t *mtop,
                             const matrix box, const gmx_ddbox_t *ddbox,
                             const t_inputrec *ir,
-                            gmx_domdec_t *dd,
                             real cellsize_limit, real cutoff,
                             const bool haveInterDomainBondeds,
                             ivec nc)
@@ -618,10 +616,6 @@ static real optimize_ncells(const gmx::MDLogger &mdlog,
     ivec     itry;
 
     limit  = cellsize_limit;
-
-    dd->nc[XX] = 1;
-    dd->nc[YY] = 1;
-    dd->nc[ZZ] = 1;
 
     npp = nnodes_tot - npme_only;
     if (EEL_PME(ir->coulombtype))
@@ -711,53 +705,53 @@ static real optimize_ncells(const gmx::MDLogger &mdlog,
     itry[YY] = 1;
     itry[ZZ] = 1;
     clear_ivec(nc);
-    assign_factors(dd, limit, cutoff, box, ddbox, mtop->natoms, ir, pbcdxr,
+    assign_factors(limit, cutoff, box, ddbox, mtop->natoms, ir, pbcdxr,
                    npme, div.size(), div.data(), mdiv.data(), itry, nc);
 
     return limit;
 }
 
-real dd_choose_grid(const gmx::MDLogger &mdlog,
-                    t_commrec *cr, gmx_domdec_t *dd,
-                    const t_inputrec *ir,
-                    const gmx_mtop_t *mtop,
-                    const matrix box, const gmx_ddbox_t *ddbox,
-                    int nPmeRanks,
-                    gmx_bool bDynLoadBal, real dlb_scale,
-                    real cellsize_limit, real cutoff_dd,
-                    const bool haveInterDomainBondeds)
+DDSetup
+dd_choose_grid(const gmx::MDLogger &mdlog,
+               const t_commrec *cr,
+               const t_inputrec *ir,
+               const gmx_mtop_t *mtop,
+               const matrix box, const gmx_ddbox_t *ddbox,
+               const int numPmeRanksRequested,
+               const gmx_bool bDynLoadBal, const real dlb_scale,
+               const real cellsize_limit, const real cutoff_dd,
+               const bool haveInterDomainBondeds)
 {
-    int64_t         nnodes_div, ldiv;
-    real            limit;
+    DDSetup ddSetup;
 
     if (MASTER(cr))
     {
-        nnodes_div = cr->nnodes;
+        int64_t nnodes_div = cr->nnodes;
         if (EEL_PME(ir->coulombtype))
         {
-            if (nPmeRanks > 0)
+            if (numPmeRanksRequested > 0)
             {
-                if (nPmeRanks >= cr->nnodes)
+                if (numPmeRanksRequested >= cr->nnodes)
                 {
                     gmx_fatal(FARGS,
                               "Cannot have %d separate PME ranks with just %d total ranks",
-                              nPmeRanks, cr->nnodes);
+                              numPmeRanksRequested, cr->nnodes);
                 }
 
                 /* If the user purposely selected the number of PME nodes,
                  * only check for large primes in the PP node count.
                  */
-                nnodes_div -= nPmeRanks;
+                nnodes_div -= numPmeRanksRequested;
             }
         }
         else
         {
-            cr->npmenodes = 0;
+            ddSetup.numPmeRanks = 0;
         }
 
         if (nnodes_div > 12)
         {
-            ldiv = largest_divisor(nnodes_div);
+            const int64_t ldiv = largest_divisor(nnodes_div);
             /* Check if the largest divisor is more than nnodes^2/3 */
             if (ldiv*ldiv*ldiv > nnodes_div*nnodes_div)
             {
@@ -768,12 +762,12 @@ real dd_choose_grid(const gmx::MDLogger &mdlog,
 
         if (EEL_PME(ir->coulombtype))
         {
-            if (nPmeRanks < 0)
+            if (numPmeRanksRequested < 0)
             {
                 /* Use PME nodes when the number of nodes is more than 16 */
                 if (cr->nnodes <= 18)
                 {
-                    cr->npmenodes = 0;
+                    ddSetup.numPmeRanks = 0;
                     GMX_LOG(mdlog.info).appendTextFormatted(
                             "Using %d separate PME ranks, as there are too few total\n"
                             " ranks for efficient splitting",
@@ -781,44 +775,42 @@ real dd_choose_grid(const gmx::MDLogger &mdlog,
                 }
                 else
                 {
-                    cr->npmenodes = guess_npme(mdlog, mtop, ir, box, cr->nnodes);
+                    ddSetup.numPmeRanks = guess_npme(mdlog, mtop, ir, box, cr->nnodes);
                     GMX_LOG(mdlog.info).appendTextFormatted(
-                            "Using %d separate PME ranks, as guessed by mdrun", cr->npmenodes);
+                            "Using %d separate PME ranks, as guessed by mdrun", ddSetup.numPmeRanks);
                 }
             }
             else
             {
                 /* We checked above that nPmeRanks is a valid number */
-                cr->npmenodes = nPmeRanks;
+                ddSetup.numPmeRanks = numPmeRanksRequested;
                 GMX_LOG(mdlog.info).appendTextFormatted(
-                        "Using %d separate PME ranks", cr->npmenodes);
+                        "Using %d separate PME ranks", ddSetup.numPmeRanks);
                 // TODO: there was a ", per user request" note here, but it's not correct anymore,
                 // as with GPUs decision about nPmeRanks can be made in runner() as well.
                 // Consider a single spot for setting nPmeRanks.
             }
         }
 
-        limit = optimize_ncells(mdlog, cr->nnodes, cr->npmenodes,
-                                bDynLoadBal, dlb_scale,
-                                mtop, box, ddbox, ir, dd,
-                                cellsize_limit, cutoff_dd,
-                                haveInterDomainBondeds,
-                                dd->nc);
-    }
-    else
-    {
-        limit = 0;
-    }
-    /* Communicate the information set by the master to all nodes */
-    gmx_bcast(sizeof(dd->nc), dd->nc, cr);
-    if (EEL_PME(ir->coulombtype))
-    {
-        gmx_bcast(sizeof(cr->npmenodes), &cr->npmenodes, cr);
-    }
-    else
-    {
-        cr->npmenodes = 0;
+        ddSetup.cellsizeLimit =
+            optimize_ncells(mdlog, cr->nnodes, ddSetup.numPmeRanks,
+                            bDynLoadBal, dlb_scale,
+                            mtop, box, ddbox, ir,
+                            cellsize_limit, cutoff_dd,
+                            haveInterDomainBondeds,
+                            ddSetup.numDomains);
     }
 
-    return limit;
+    /* Communicate the information set by the master to all nodes */
+    gmx_bcast(sizeof(ddSetup.numDomains), ddSetup.numDomains, cr);
+    if (EEL_PME(ir->coulombtype))
+    {
+        gmx_bcast(sizeof(ddSetup.numPmeRanks), &ddSetup.numPmeRanks, cr);
+    }
+    else
+    {
+        ddSetup.numPmeRanks = 0;
+    }
+
+    return ddSetup;
 }

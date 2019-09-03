@@ -2349,13 +2349,16 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
         set_ddbox_cr(*cr, nullptr, *ir, box, xGlobal, ddbox);
 
         /* We need to choose the optimal DD grid and possibly PME nodes */
-        real limit =
-            dd_choose_grid(mdlog, cr, dd, ir, mtop, box, ddbox,
+        const DDSetup ddSetup =
+            dd_choose_grid(mdlog, cr, ir, mtop, box, ddbox,
                            options.numPmeRanks,
                            !isDlbDisabled(comm),
                            options.dlbScaling,
                            comm->cellsize_limit, comm->cutoff,
                            comm->haveInterDomainBondeds);
+
+        cr->npmenodes = ddSetup.numPmeRanks;
+        copy_ivec(ddSetup.numDomains, dd->nc);
 
         if (dd->nc[XX] == 0)
         {
@@ -2370,7 +2373,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                                  "There is no domain decomposition for %d ranks that is compatible with the given box and a minimum cell size of %g nm\n"
                                  "%s\n"
                                  "Look in the log file for details on the domain decomposition",
-                                 cr->nnodes-cr->npmenodes, limit, buf);
+                                 cr->nnodes-cr->npmenodes, ddSetup.cellsizeLimit, buf);
         }
         set_dd_dim(mdlog, dd);
     }
