@@ -159,48 +159,48 @@ struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     /* The communication setup within the communicator all
      * defined in dd->comm in domdec.c
      */
-    int                    nnodes;
-    MPI_Comm               mpi_comm_all;
+    int                    nnodes       = 0;
+    MPI_Comm               mpi_comm_all = MPI_COMM_NULL;
     /* Use MPI_Sendrecv communication instead of non-blocking calls */
-    gmx_bool               bSendRecv2;
+    gmx_bool               bSendRecv2 = FALSE;
     /* The local DD cell index and rank */
-    ivec                   ci;
-    int                    rank;
-    ivec                   master_ci;
-    int                    masterrank;
+    ivec                   ci         = { 0, 0, 0 };
+    int                    rank       = 0;
+    ivec                   master_ci  = { 0, 0, 0 };
+    int                    masterrank = 0;
     /* Communication with the PME only nodes */
-    int                    pme_nodeid;
-    gmx_bool               pme_receive_vir_ener;
-    gmx_pme_comm_n_box_t  *cnb      = nullptr;
-    int                    nreq_pme = 0;
+    int                    pme_nodeid           = 0;
+    gmx_bool               pme_receive_vir_ener = false;
+    gmx_pme_comm_n_box_t  *cnb                  = nullptr;
+    int                    nreq_pme             = 0;
     MPI_Request            req_pme[8];
 
     /* Properties of the unit cell */
     UnitCellInfo unitCellInfo;
 
     /* The communication setup, identical for each cell, cartesian index */
-    ivec     nc;
-    int      ndim;
-    ivec     dim; /* indexed by 0 to ndim */
+    ivec     nc   = { 0, 0, 0 };
+    int      ndim = 0;
+    ivec     dim  = { 0, 0, 0 }; /* indexed by 0 to ndim */
 
     /* Forward and backward neighboring cells, indexed by 0 to ndim */
-    int  neighbor[DIM][2];
+    int  neighbor[DIM][2] = { { 0, 0 },  { 0, 0 },  { 0, 0 } };
 
     /* Only available on the master node */
     std::unique_ptr<AtomDistribution> ma;
 
     /* Can atoms connected by constraints be assigned to different domains? */
-    bool splitConstraints;
+    bool splitConstraints = false;
     /* Can atoms connected by settles be assigned to different domains? */
-    bool splitSettles;
+    bool splitSettles = false;
 
     /* Global atom number to interaction list */
-    gmx_reverse_top_t  *reverse_top;
-    int                 nbonded_global;
-    int                 nbonded_local;
+    gmx_reverse_top_t  *reverse_top    = nullptr;
+    int                 nbonded_global = 0;
+    int                 nbonded_local  = 0;
 
     /* The number of inter charge-group exclusions */
-    int  n_intercg_excl;
+    int  n_intercg_excl = 0;
 
     /* Vsite stuff */
     gmx::HashedMap<int>       *ga2la_vsite = nullptr;
@@ -223,13 +223,13 @@ struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     gmx_ga2la_t  *ga2la = nullptr;
 
     /* Communication stuff */
-    gmx_domdec_comm_t *comm;
+    gmx_domdec_comm_t *comm = nullptr;
 
     /* The partioning count, to keep track of the state */
-    int64_t ddp_count;
+    int64_t ddp_count = 0;
 
     /* The managed atom sets that are updated in domain decomposition */
-    gmx::LocalAtomSetManager * atomSets;
+    gmx::LocalAtomSetManager * atomSets = nullptr;
 
     /* gmx_pme_recv_f buffer */
     int   pme_recv_f_alloc = 0;

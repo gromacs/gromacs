@@ -2954,10 +2954,6 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
 
     dd->comm = init_dd_comm();
 
-    /* Initialize DD paritioning counters */
-    dd->comm->partition_step = INT_MIN;
-    dd->ddp_count            = 0;
-
     set_dd_envvar_options(mdlog, dd, cr->nodeid);
 
     gmx_ddbox_t ddbox = {0};
@@ -2977,8 +2973,6 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
 
     /* Set overallocation to avoid frequent reallocation of arrays */
     set_over_alloc_dd(TRUE);
-
-    clear_dd_cycle_counts(dd);
 
     dd->atomSets = atomSets;
 

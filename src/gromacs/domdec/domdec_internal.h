@@ -689,7 +689,7 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     double load_pme = 0.0;
 
     /** The last partition step */
-    int64_t partition_step = 0;
+    int64_t partition_step = INT_MIN;
 
     /* Debugging */
     /**< Step interval for dumping the local+non-local atoms to pdb */
