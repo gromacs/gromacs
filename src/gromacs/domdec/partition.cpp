@@ -1921,8 +1921,8 @@ static void setup_dd_communication(gmx_domdec_t *dd,
     /* Do we need to determine extra distances for only two-body bondeds? */
     bDist2B = (bBondComm && !bDistMB);
 
-    const real r_comm2  = gmx::square(domainToDomainIntoAtomToDomainCutoff(*comm, comm->systemInfo.cutoff));
-    const real r_bcomm2 = gmx::square(domainToDomainIntoAtomToDomainCutoff(*comm, comm->cutoff_mbody));
+    const real r_comm2  = gmx::square(domainToDomainIntoAtomToDomainCutoff(comm->systemInfo, comm->systemInfo.cutoff));
+    const real r_bcomm2 = gmx::square(domainToDomainIntoAtomToDomainCutoff(comm->systemInfo, comm->cutoff_mbody));
 
     if (debug)
     {
@@ -3042,7 +3042,7 @@ void dd_partition_system(FILE                    *fplog,
         write_dd_grid_pdb("dd_grid", step, dd, state_local->box, &ddbox);
     }
 
-    if (comm->useUpdateGroups)
+    if (comm->systemInfo.useUpdateGroups)
     {
         comm->updateGroupsCog->addCogs(gmx::arrayRefFromArray(dd->globalAtomGroupIndices.data(), dd->ncg_home),
                                        state_local->x);
@@ -3068,7 +3068,7 @@ void dd_partition_system(FILE                    *fplog,
 
         GMX_RELEASE_ASSERT(bSortCG, "Sorting is required after redistribution");
 
-        if (comm->useUpdateGroups)
+        if (comm->systemInfo.useUpdateGroups)
         {
             comm->updateGroupsCog->addCogs(gmx::arrayRefFromArray(dd->globalAtomGroupIndices.data(), dd->ncg_home),
                                            state_local->x);
@@ -3147,7 +3147,7 @@ void dd_partition_system(FILE                    *fplog,
         }
     }
 
-    if (comm->useUpdateGroups)
+    if (comm->systemInfo.useUpdateGroups)
     {
         /* The update groups cog's are invalid after sorting
          * and need to be cleared before the next partitioning anyhow.

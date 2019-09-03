@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,14 +102,12 @@ void dd_check_alloc_ncg(t_forcerec              *fr,
 
 /*! \brief Returns a domain-to-domain cutoff distance given an atom-to-atom cutoff */
 static inline real
-atomToAtomIntoDomainToDomainCutoff(const gmx_domdec_comm_t &comm,
-                                   real                     cutoff)
+atomToAtomIntoDomainToDomainCutoff(const DDSystemInfo &systemInfo,
+                                   real                cutoff)
 {
-    if (comm.useUpdateGroups)
+    if (systemInfo.useUpdateGroups)
     {
-        GMX_ASSERT(comm.updateGroupsCog, "updateGroupsCog should be initialized here");
-
-        cutoff += 2*comm.updateGroupsCog->maxUpdateGroupRadius();
+        cutoff += 2*systemInfo.maxUpdateGroupRadius;
     }
 
     return cutoff;
@@ -117,14 +115,12 @@ atomToAtomIntoDomainToDomainCutoff(const gmx_domdec_comm_t &comm,
 
 /*! \brief Returns an atom-to-domain cutoff distance given a domain-to-domain cutoff */
 static inline real
-domainToDomainIntoAtomToDomainCutoff(const gmx_domdec_comm_t &comm,
-                                     real                     cutoff)
+domainToDomainIntoAtomToDomainCutoff(const DDSystemInfo &systemInfo,
+                                     real                cutoff)
 {
-    if (comm.useUpdateGroups)
+    if (systemInfo.useUpdateGroups)
     {
-        GMX_ASSERT(comm.updateGroupsCog, "updateGroupsCog should be initialized here");
-
-        cutoff -= comm.updateGroupsCog->maxUpdateGroupRadius();
+        cutoff -= systemInfo.maxUpdateGroupRadius;
     }
 
     return cutoff;

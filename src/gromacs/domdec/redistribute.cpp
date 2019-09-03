@@ -117,7 +117,7 @@ copyMovedUpdateGroupCogs(gmx::ArrayRef<const int> move,
         if (m >= 0)
         {
             /* Copy to the communication buffer */
-            const gmx::RVec &cog = (comm->useUpdateGroups ?
+            const gmx::RVec &cog = (comm->systemInfo.useUpdateGroups ?
                                     comm->updateGroupsCog->cogForAtom(g) :
                                     coordinates[g]);
             copy_rvec(cog, comm->cgcm_state[m][pos_vec[m]]);
@@ -163,7 +163,7 @@ static void print_cg_move(FILE *fplog,
 
     fprintf(fplog, "\nStep %" PRId64 ":\n", step);
 
-    if (comm->useUpdateGroups)
+    if (comm->systemInfo.useUpdateGroups)
     {
         mesg += "The update group starting at atom";
     }
@@ -613,7 +613,7 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
     /* Compute the center of geometry for all home charge groups
      * and put them in the box and determine where they should go.
      */
-    std::vector<PbcAndFlag>  pbcAndFlags(comm->useUpdateGroups ? comm->updateGroupsCog->numCogs() : 0);
+    std::vector<PbcAndFlag>  pbcAndFlags(comm->systemInfo.useUpdateGroups ? comm->updateGroupsCog->numCogs() : 0);
 
 #pragma omp parallel num_threads(nthread)
     {
@@ -621,7 +621,7 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
         {
             const int thread = gmx_omp_get_thread_num();
 
-            if (comm->useUpdateGroups)
+            if (comm->systemInfo.useUpdateGroups)
             {
                 const auto &updateGroupsCog = *comm->updateGroupsCog;
                 const int   numGroups       = updateGroupsCog.numCogs();

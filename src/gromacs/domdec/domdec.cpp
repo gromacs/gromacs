@@ -211,7 +211,7 @@ t_block *dd_charge_groups_global(gmx_domdec_t *dd)
 gmx::ArrayRef<const gmx::RangePartitioning> getUpdateGroupingPerMoleculetype(const gmx_domdec_t &dd)
 {
     GMX_RELEASE_ASSERT(dd.comm, "Need a valid dd.comm");
-    return dd.comm->updateGroupingPerMoleculetype;
+    return dd.comm->systemInfo.updateGroupingPerMoleculetype;
 }
 
 void dd_store_state(gmx_domdec_t *dd, t_state *state)
@@ -2042,9 +2042,8 @@ static bool systemHasConstraintsOrVsites(const gmx_mtop_t &mtop)
 static void setupUpdateGroups(const gmx::MDLogger &mdlog,
                               const gmx_mtop_t    &mtop,
                               const t_inputrec    &inputrec,
-                              real                 cutoffMargin,
-                              int                  numMpiRanksTotal,
-                              gmx_domdec_comm_t   *comm)
+                              const real           cutoffMargin,
+                              DDSystemInfo        *systemInfo)
 {
     /* When we have constraints and/or vsites, it is beneficial to use
      * update groups (when possible) to allow independent update of groups.
@@ -2055,48 +2054,41 @@ static void setupUpdateGroups(const gmx::MDLogger &mdlog,
         return;
     }
 
-    comm->updateGroupingPerMoleculetype = gmx::makeUpdateGroups(mtop);
-    comm->useUpdateGroups               =
-        (!comm->updateGroupingPerMoleculetype.empty() &&
+    systemInfo->updateGroupingPerMoleculetype = gmx::makeUpdateGroups(mtop);
+    systemInfo->useUpdateGroups               =
+        (!systemInfo->updateGroupingPerMoleculetype.empty() &&
          getenv("GMX_NO_UPDATEGROUPS") == nullptr);
 
-    if (comm->useUpdateGroups)
+    if (systemInfo->useUpdateGroups)
     {
         int numUpdateGroups = 0;
         for (const auto &molblock : mtop.molblock)
         {
-            numUpdateGroups += molblock.nmol*comm->updateGroupingPerMoleculetype[molblock.type].numBlocks();
+            numUpdateGroups += molblock.nmol*systemInfo->updateGroupingPerMoleculetype[molblock.type].numBlocks();
         }
 
-        /* Note: We would like to use dd->nnodes for the atom count estimate,
-         *       but that is not yet available here. But this anyhow only
-         *       affect performance up to the second dd_partition_system call.
-         */
-        int homeAtomCountEstimate =  mtop.natoms/numMpiRanksTotal;
-        comm->updateGroupsCog =
-            std::make_unique<gmx::UpdateGroupsCog>(mtop,
-                                                   comm->updateGroupingPerMoleculetype,
-                                                   maxReferenceTemperature(inputrec),
-                                                   homeAtomCountEstimate);
+        systemInfo->maxUpdateGroupRadius =
+            computeMaxUpdateGroupRadius(mtop,
+                                        systemInfo->updateGroupingPerMoleculetype,
+                                        maxReferenceTemperature(inputrec));
 
         /* To use update groups, the large domain-to-domain cutoff distance
          * should be compatible with the box size.
          */
-        comm->useUpdateGroups = (atomToAtomIntoDomainToDomainCutoff(*comm, 0) < cutoffMargin);
+        systemInfo->useUpdateGroups = (atomToAtomIntoDomainToDomainCutoff(*systemInfo, 0) < cutoffMargin);
 
-        if (comm->useUpdateGroups)
+        if (systemInfo->useUpdateGroups)
         {
             GMX_LOG(mdlog.info).appendTextFormatted(
                     "Using update groups, nr %d, average size %.1f atoms, max. radius %.3f nm\n",
                     numUpdateGroups,
                     mtop.natoms/static_cast<double>(numUpdateGroups),
-                    comm->updateGroupsCog->maxUpdateGroupRadius());
+                    systemInfo->maxUpdateGroupRadius);
         }
         else
         {
             GMX_LOG(mdlog.info).appendTextFormatted("The combination of rlist and box size prohibits the use of update groups\n");
-            comm->updateGroupingPerMoleculetype.clear();
-            comm->updateGroupsCog.reset(nullptr);
+            systemInfo->updateGroupingPerMoleculetype.clear();
         }
     }
 }
@@ -2143,22 +2135,37 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     /* Allocate the charge group/atom sorting struct */
     comm->sort = std::make_unique<gmx_domdec_sort_t>();
 
+    /* Generate the simulation system information */
+    DDSystemInfo &systemInfo = comm->systemInfo;
+
     /* We need to decide on update groups early, as this affects communication distances */
-    comm->useUpdateGroups = false;
+    systemInfo.useUpdateGroups = false;
     if (ir->cutoff_scheme == ecutsVERLET)
     {
         real cutoffMargin = std::sqrt(max_cutoff2(ir->ePBC, box)) - ir->rlist;
-        setupUpdateGroups(mdlog, *mtop, *ir, cutoffMargin, cr->nnodes, comm);
-    }
+        setupUpdateGroups(mdlog, *mtop, *ir, cutoffMargin, &systemInfo);
 
-    DDSystemInfo &systemInfo = comm->systemInfo;
+        if (systemInfo.useUpdateGroups)
+        {
+            /* Note: We would like to use dd->nnodes for the atom count estimate,
+             *       but that is not yet available here. But this anyhow only
+             *       affect performance up to the second dd_partition_system call.
+             */
+            const int homeAtomCountEstimate =  mtop->natoms/cr->nnodes;
+            comm->updateGroupsCog =
+                std::make_unique<gmx::UpdateGroupsCog>(*mtop,
+                                                       systemInfo.updateGroupingPerMoleculetype,
+                                                       maxReferenceTemperature(*ir),
+                                                       homeAtomCountEstimate);
+        }
+    }
 
     // TODO: Check whether all bondeds are within update groups
     systemInfo.haveInterDomainBondeds          = (mtop->natoms > gmx_mtop_num_molecules(*mtop) ||
                                                   mtop->bIntermolecularInteractions);
     systemInfo.haveInterDomainMultiBodyBondeds = (multi_body_bondeds_count(mtop) > 0);
 
-    if (comm->useUpdateGroups)
+    if (systemInfo.useUpdateGroups)
     {
         dd->splitConstraints = false;
         dd->splitSettles     = false;
@@ -2179,7 +2186,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     }
     else
     {
-        systemInfo.cutoff = atomToAtomIntoDomainToDomainCutoff(*comm, ir->rlist);
+        systemInfo.cutoff = atomToAtomIntoDomainToDomainCutoff(systemInfo, ir->rlist);
     }
     systemInfo.minCutoffForMultiBody = 0;
 
@@ -2197,7 +2204,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     constexpr real c_chanceThatAtomMovesBeyondDomain = 1e-12;
     const real     limitForAtomDisplacement          =
         minCellSizeForAtomDisplacement(*mtop, *ir,
-                                       comm->updateGroupingPerMoleculetype,
+                                       systemInfo.updateGroupingPerMoleculetype,
                                        c_chanceThatAtomMovesBeyondDomain);
     GMX_LOG(mdlog.info).appendTextFormatted(
             "Minimum cell size due to atom displacement: %.3f nm",
@@ -2220,7 +2227,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
         if (options.minimumCommunicationRange > 0)
         {
             systemInfo.minCutoffForMultiBody =
-                atomToAtomIntoDomainToDomainCutoff(*comm, options.minimumCommunicationRange);
+                atomToAtomIntoDomainToDomainCutoff(systemInfo, options.minimumCommunicationRange);
             if (options.useBondedCommunication)
             {
                 comm->bBondComm = (systemInfo.minCutoffForMultiBody > systemInfo.cutoff);
@@ -2635,14 +2642,14 @@ static void writeSettings(gmx::TextWriter       *log,
     }
 
     const bool haveInterDomainVsites =
-        (countInterUpdategroupVsites(*mtop, comm->updateGroupingPerMoleculetype) != 0);
+        (countInterUpdategroupVsites(*mtop, comm->systemInfo.updateGroupingPerMoleculetype) != 0);
 
     if (comm->systemInfo.haveInterDomainBondeds ||
         haveInterDomainVsites ||
         dd->splitConstraints || dd->splitSettles)
     {
         std::string decompUnits;
-        if (comm->useUpdateGroups)
+        if (comm->systemInfo.useUpdateGroups)
         {
             decompUnits = "atom groups";
         }

@@ -438,6 +438,13 @@ struct dd_comm_setup_work_t
 /*! \brief Information about the simulated system */
 struct DDSystemInfo
 {
+    //! True when update groups are used
+    bool                                useUpdateGroups = false;
+    //! Update atom grouping for each molecule type
+    std::vector<gmx::RangePartitioning> updateGroupingPerMoleculetype;
+    //! The maximum radius over all update groups
+    real                                maxUpdateGroupRadius;
+
     //! Are there inter-domain bonded interactions?
     bool haveInterDomainBondeds          = false;
     //! Are there inter-domain multi-body interactions?
@@ -499,10 +506,6 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     /**< Data structure for cg/atom sorting */
     std::unique_ptr<gmx_domdec_sort_t> sort;
 
-    //! True when update groups are used
-    bool                                  useUpdateGroups = false;
-    //!  Update atom grouping for each molecule type
-    std::vector<gmx::RangePartitioning>   updateGroupingPerMoleculetype;
     //! Centers of mass of local update groups
     std::unique_ptr<gmx::UpdateGroupsCog> updateGroupsCog;
 

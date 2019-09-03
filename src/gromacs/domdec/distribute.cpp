@@ -408,12 +408,12 @@ getAtomGroupDistribution(const gmx::MDLogger &mdlog,
 
     std::vector < std::vector < int>> indices(dd->nnodes);
 
-    if (dd->comm->useUpdateGroups)
+    if (dd->comm->systemInfo.useUpdateGroups)
     {
         int atomOffset = 0;
         for (const gmx_molblock_t &molblock : mtop.molblock)
         {
-            const auto &updateGrouping = dd->comm->updateGroupingPerMoleculetype[molblock.type];
+            const auto &updateGrouping = dd->comm->systemInfo.updateGroupingPerMoleculetype[molblock.type];
 
             for (int mol = 0; mol < molblock.nmol; mol++)
             {
