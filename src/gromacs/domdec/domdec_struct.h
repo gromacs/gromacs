@@ -232,8 +232,7 @@ struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     gmx::LocalAtomSetManager * atomSets = nullptr;
 
     /* gmx_pme_recv_f buffer */
-    int   pme_recv_f_alloc = 0;
-    rvec *pme_recv_f_buf   = nullptr;
+    std::vector<gmx::RVec> pmeForceReceiveBuffer;
 };
 
 //! Are we the master node for domain decomposition

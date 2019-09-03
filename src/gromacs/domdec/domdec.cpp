@@ -2125,9 +2125,6 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     const real         tenPercentMargin = 1.1;
     gmx_domdec_comm_t *comm             = dd->comm;
 
-    dd->pme_recv_f_alloc = 0;
-    dd->pme_recv_f_buf   = nullptr;
-
     /* Initialize to GPU share count to 0, might change later */
     comm->nrank_gpu_shared = 0;
 

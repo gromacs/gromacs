@@ -374,16 +374,12 @@ void gmx_pme_receive_f(const t_commrec *cr,
         gmx_pme_send_coeffs_coords_wait(cr->dd);
     }
 
-    int natoms = dd_numHomeAtoms(*cr->dd);
-
-    if (natoms > cr->dd->pme_recv_f_alloc)
-    {
-        cr->dd->pme_recv_f_alloc = over_alloc_dd(natoms);
-        srenew(cr->dd->pme_recv_f_buf, cr->dd->pme_recv_f_alloc);
-    }
+    const int               natoms = dd_numHomeAtoms(*cr->dd);
+    std::vector<gmx::RVec> &buffer = cr->dd->pmeForceReceiveBuffer;
+    buffer.resize(natoms);
 
 #if GMX_MPI
-    MPI_Recv(cr->dd->pme_recv_f_buf[0],
+    MPI_Recv(buffer.data(),
              natoms*sizeof(rvec), MPI_BYTE,
              cr->dd->pme_nodeid, 0, cr->mpi_comm_mysim,
              MPI_STATUS_IGNORE);
@@ -401,7 +397,7 @@ void gmx_pme_receive_f(const t_commrec *cr,
     {
         for (int i = 0; i < natoms; i++)
         {
-            rvec_inc(f[i], cr->dd->pme_recv_f_buf[i]);
+            f[i] += buffer[i];
         }
     }
     else
@@ -409,7 +405,7 @@ void gmx_pme_receive_f(const t_commrec *cr,
 #pragma omp parallel for num_threads(nt) schedule(static)
         for (int i = 0; i < natoms; i++)
         {
-            rvec_inc(f[i], cr->dd->pme_recv_f_buf[i]);
+            f[i] += buffer[i];
         }
     }
 
