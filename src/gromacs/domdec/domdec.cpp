@@ -1853,17 +1853,17 @@ static void check_dd_restrictions(const gmx_domdec_t  *dd,
     }
 }
 
-static real average_cellsize_min(gmx_domdec_t *dd, gmx_ddbox_t *ddbox)
+static real average_cellsize_min(const gmx_ddbox_t &ddbox,
+                                 const ivec         numDomains)
 {
-    int  di, d;
-    real r;
-
-    r = ddbox->box_size[XX];
-    for (di = 0; di < dd->ndim; di++)
+    real r = ddbox.box_size[XX];
+    for (int d = 0; d < DIM; d++)
     {
-        d = dd->dim[di];
-        /* Check using the initial average cell size */
-        r = std::min(r, ddbox->box_size[d]*ddbox->skew_fac[d]/dd->nc[d]);
+        if (numDomains[d] > 1)
+        {
+            /* Check using the initial average cell size */
+            r = std::min(r, ddbox.box_size[d]*ddbox.skew_fac[d]/numDomains[d]);
+        }
     }
 
     return r;
@@ -2317,15 +2317,15 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
 
     comm->cgs_gl = gmx_mtop_global_cgs(mtop);
 
+    DDSetup ddSetup;
     if (options.numCells[XX] > 0)
     {
-        copy_ivec(options.numCells, dd->nc);
-        set_dd_dim(mdlog, dd);
-        set_ddbox_cr(*cr, &dd->nc, *ir, box, xGlobal, ddbox);
+        copy_ivec(options.numCells, ddSetup.numDomains);
+        set_ddbox_cr(*cr, &ddSetup.numDomains, *ir, box, xGlobal, ddbox);
 
         if (options.numPmeRanks >= 0)
         {
-            cr->npmenodes = options.numPmeRanks;
+            ddSetup.numPmeRanks = options.numPmeRanks;
         }
         else
         {
@@ -2333,15 +2333,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
              * don't use PME ranks. We check later if the DD grid is
              * compatible with the total number of ranks.
              */
-            cr->npmenodes = 0;
-        }
-
-        real acs = average_cellsize_min(dd, ddbox);
-        if (acs < comm->cellsize_limit)
-        {
-            gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
-                                 "The initial cell size (%f) is smaller than the cell size limit (%f), change options -dd, -rdd or -rcon, see the log file for details",
-                                 acs, comm->cellsize_limit);
+            ddSetup.numPmeRanks = 0;
         }
     }
     else
@@ -2349,7 +2341,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
         set_ddbox_cr(*cr, nullptr, *ir, box, xGlobal, ddbox);
 
         /* We need to choose the optimal DD grid and possibly PME nodes */
-        const DDSetup ddSetup =
+        ddSetup =
             dd_choose_grid(mdlog, cr, ir, mtop, box, ddbox,
                            options.numPmeRanks,
                            !isDlbDisabled(comm),
@@ -2357,10 +2349,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                            comm->cellsize_limit, comm->cutoff,
                            comm->haveInterDomainBondeds);
 
-        cr->npmenodes = ddSetup.numPmeRanks;
-        copy_ivec(ddSetup.numDomains, dd->nc);
-
-        if (dd->nc[XX] == 0)
+        if (ddSetup.numDomains[XX] == 0)
         {
             char     buf[STRLEN];
             gmx_bool bC = (dd->splitConstraints && rconstr > r_bonded_limit);
@@ -2373,10 +2362,31 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                                  "There is no domain decomposition for %d ranks that is compatible with the given box and a minimum cell size of %g nm\n"
                                  "%s\n"
                                  "Look in the log file for details on the domain decomposition",
-                                 cr->nnodes-cr->npmenodes, ddSetup.cellsizeLimit, buf);
+                                 cr->nnodes - ddSetup.numPmeRanks,
+                                 ddSetup.cellsizeLimit,
+                                 buf);
         }
-        set_dd_dim(mdlog, dd);
     }
+
+    const real acs = average_cellsize_min(*ddbox, ddSetup.numDomains);
+    if (acs < comm->cellsize_limit)
+    {
+        if (options.numCells[XX] <= 0)
+        {
+            GMX_RELEASE_ASSERT(false, "dd_choose_grid() should return a grid that satisfies the cell size limits");
+        }
+        else
+        {
+            gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
+                                 "The initial cell size (%f) is smaller than the cell size limit (%f), change options -dd, -rdd or -rcon, see the log file for details",
+                                 acs, comm->cellsize_limit);
+        }
+    }
+
+    /* Set the DD setup given by ddSetup */
+    cr->npmenodes = ddSetup.numPmeRanks;
+    copy_ivec(ddSetup.numDomains, dd->nc);
+    set_dd_dim(mdlog, dd);
 
     GMX_LOG(mdlog.info).appendTextFormatted(
             "Domain decomposition grid %d x %d x %d, separate PME ranks %d",
@@ -2465,7 +2475,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
              * the minimum and the maximum,
              * since the extra communication cost is nearly zero.
              */
-            real acs           = average_cellsize_min(dd, ddbox);
+            real acs           = average_cellsize_min(*ddbox, dd->nc);
             comm->cutoff_mbody = 0.5*(r_bonded + acs);
             if (!isDlbDisabled(comm))
             {
