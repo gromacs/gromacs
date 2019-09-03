@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,8 +69,5 @@ void set_ddbox_cr(const t_commrec                &cr,
                   const matrix                    box,
                   gmx::ArrayRef<const gmx::RVec>  x,
                   gmx_ddbox_t                    *ddbox);
-
-//! Returns whether the DD box can change size.
-bool dynamic_dd_box(const gmx_domdec_t &dd);
 
 #endif

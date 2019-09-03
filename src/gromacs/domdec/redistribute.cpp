@@ -328,7 +328,7 @@ static void calc_cg_move(FILE *fplog, int64_t step,
                          int cg_start, int cg_end,
                          gmx::ArrayRef<int> move)
 {
-    const int npbcdim = dd->npbcdim;
+    const int npbcdim = dd->unitCellInfo.npbcdim;
     auto      x       = makeArrayRef(state->x);
 
     for (int a = cg_start; a < cg_end; a++)
@@ -343,7 +343,7 @@ static void calc_cg_move(FILE *fplog, int64_t step,
         {
             if (dd->nc[d] > 1)
             {
-                bool bScrew = (dd->bScrewPBC && d == XX);
+                bool bScrew = (dd->unitCellInfo.haveScrewPBC && d == XX);
                 /* Determine the location of this cg in lattice coordinates */
                 real pos_d = cm_new[d];
                 if (tric_dir[d])
@@ -449,9 +449,9 @@ static void calcGroupMove(FILE *fplog, int64_t step,
                           int groupBegin, int groupEnd,
                           gmx::ArrayRef<PbcAndFlag> pbcAndFlags)
 {
-    GMX_RELEASE_ASSERT(!dd->bScrewPBC, "Screw PBC is not supported here");
+    GMX_RELEASE_ASSERT(!dd->unitCellInfo.haveScrewPBC, "Screw PBC is not supported here");
 
-    const int             npbcdim         = dd->npbcdim;
+    const int             npbcdim         = dd->unitCellInfo.npbcdim;
 
     gmx::UpdateGroupsCog *updateGroupsCog = dd->comm->updateGroupsCog.get();
 
@@ -555,7 +555,7 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
 {
     gmx_domdec_comm_t *comm = dd->comm;
 
-    if (dd->bScrewPBC)
+    if (dd->unitCellInfo.haveScrewPBC)
     {
         check_screw_box(state->box);
     }
@@ -567,7 +567,7 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
     DDBufferAccess<int> moveBuffer(comm->intBuffer, dd->ncg_home);
     gmx::ArrayRef<int>  move = moveBuffer.buffer;
 
-    const int           npbcdim = dd->npbcdim;
+    const int           npbcdim = dd->unitCellInfo.npbcdim;
 
     rvec                cell_x0, cell_x1;
     MoveLimits          moveLimits;

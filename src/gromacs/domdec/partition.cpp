@@ -1645,7 +1645,7 @@ get_zone_pulse_cgs(gmx_domdec_t *dd,
 
     comm = dd->comm;
 
-    bScrew = (dd->bScrewPBC && dim == XX);
+    bScrew = (dd->unitCellInfo.haveScrewPBC && dim == XX);
 
     bDistMB_pulse = (bDistMB && bDistBonded);
 
@@ -2447,7 +2447,7 @@ static void set_zones_size(gmx_domdec_t *dd,
             {
                 corner[ZZ] = zones->size[z].x1[ZZ];
             }
-            if (dd->ndim == 1 && dd->dim[0] < ZZ && ZZ < dd->npbcdim &&
+            if (dd->ndim == 1 && dd->dim[0] < ZZ && ZZ < dd->unitCellInfo.npbcdim &&
                 box[ZZ][1 - dd->dim[0]] != 0)
             {
                 /* With 1D domain decomposition the cg's are not in
@@ -3032,7 +3032,7 @@ void dd_partition_system(FILE                    *fplog,
     copy_rvec(ddbox.box0, comm->box0    );
     copy_rvec(ddbox.box_size, comm->box_size);
 
-    set_dd_cell_sizes(dd, &ddbox, dynamic_dd_box(*dd), bMasterState, bDoDLB,
+    set_dd_cell_sizes(dd, &ddbox, dd->unitCellInfo.ddBoxIsDynamic, bMasterState, bDoDLB,
                       step, wcycle);
 
     if (comm->nstDDDumpGrid > 0 && step % comm->nstDDDumpGrid == 0)
@@ -3186,7 +3186,7 @@ void dd_partition_system(FILE                    *fplog,
     {
         np[dd->dim[i]] = comm->cd[i].numPulses();
     }
-    dd_make_local_top(dd, &comm->zones, dd->npbcdim, state_local->box,
+    dd_make_local_top(dd, &comm->zones, dd->unitCellInfo.npbcdim, state_local->box,
                       comm->cellsize_min, np,
                       fr,
                       state_local->x.rvec_array(),

@@ -326,7 +326,7 @@ void dd_move_x(gmx_domdec_t             *dd,
     for (int d = 0; d < dd->ndim; d++)
     {
         bPBC   = (dd->ci[dd->dim[d]] == 0);
-        bScrew = (bPBC && dd->bScrewPBC && dd->dim[d] == XX);
+        bScrew = (bPBC && dd->unitCellInfo.haveScrewPBC && dd->dim[d] == XX);
         if (bPBC)
         {
             copy_rvec(box[dd->dim[d]], shift);
@@ -424,7 +424,7 @@ void dd_move_f(gmx_domdec_t              *dd,
         /* Only forces in domains near the PBC boundaries need to
            consider PBC in the treatment of fshift */
         const bool shiftForcesNeedPbc = (forceWithShiftForces->computeVirial() && dd->ci[dd->dim[d]] == 0);
-        const bool applyScrewPbc      = (shiftForcesNeedPbc && dd->bScrewPBC && dd->dim[d] == XX);
+        const bool applyScrewPbc      = (shiftForcesNeedPbc && dd->unitCellInfo.haveScrewPBC && dd->dim[d] == XX);
         /* Determine which shift vector we need */
         ivec       vis   = { 0, 0, 0 };
         vis[dd->dim[d]]  = 1;
@@ -2104,6 +2104,14 @@ static void setupUpdateGroups(const gmx::MDLogger &mdlog,
     }
 }
 
+UnitCellInfo::UnitCellInfo(const t_inputrec &ir) :
+    npbcdim(ePBC2npbcdim(ir.ePBC)),
+    numBoundedDimensions(inputrec2nboundeddim(&ir)),
+    ddBoxIsDynamic(numBoundedDimensions < DIM || inputrecDynamicBox(&ir)),
+    haveScrewPBC(ir.ePBC == epbcSCREW)
+{
+}
+
 /*! \brief Set the cell size and interaction limits, as well as the DD grid */
 static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                                    t_commrec *cr, gmx_domdec_t *dd,
@@ -2119,11 +2127,6 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     real               r_bonded_limit   = -1;
     const real         tenPercentMargin = 1.1;
     gmx_domdec_comm_t *comm             = dd->comm;
-
-    dd->npbcdim              = ePBC2npbcdim(ir->ePBC);
-    dd->numBoundedDimensions = inputrec2nboundeddim(ir);
-    dd->haveDynamicBox       = inputrecDynamicBox(ir);
-    dd->bScrewPBC            = (ir->ePBC == epbcSCREW);
 
     dd->pme_recv_f_alloc = 0;
     dd->pme_recv_f_buf   = nullptr;
@@ -2643,7 +2646,7 @@ static void writeSettings(gmx::TextWriter       *log,
         }
         else
         {
-            if (dynamic_dd_box(*dd))
+            if (dd->unitCellInfo.ddBoxIsDynamic)
             {
                 log->writeLine("(the following are initial values, they could change due to box deformation)");
             }
@@ -2910,6 +2913,11 @@ static void set_dd_envvar_options(const gmx::MDLogger &mdlog,
     }
 }
 
+gmx_domdec_t::gmx_domdec_t(const t_inputrec &ir) :
+    unitCellInfo(ir)
+{
+}
+
 gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
                                         t_commrec                     *cr,
                                         const DomdecOptions           &options,
@@ -2925,7 +2933,7 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
     GMX_LOG(mdlog.info).appendTextFormatted(
             "\nInitializing Domain Decomposition on %d ranks", cr->nnodes);
 
-    dd = new gmx_domdec_t;
+    dd = new gmx_domdec_t(*ir);
 
     dd->comm = init_dd_comm();
 
@@ -2981,7 +2989,7 @@ static gmx_bool test_dd_cutoff(t_commrec     *cr,
         dim = dd->dim[d];
 
         inv_cell_size = DD_CELL_MARGIN*dd->nc[dim]/ddbox.box_size[dim];
-        if (dynamic_dd_box(*dd))
+        if (dd->unitCellInfo.ddBoxIsDynamic)
         {
             inv_cell_size *= DD_PRES_SCALE_MARGIN;
         }

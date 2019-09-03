@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -293,7 +293,7 @@ void set_ddbox(const gmx_domdec_t             &dd,
         gmx::ArrayRef<const gmx::RVec> xRef =
             constArrayRefFromArray(x.data(), masterRankHasTheSystemState ? x.size() : dd.comm->atomRanges.numHomeAtoms());
 
-        low_set_ddbox(dd.npbcdim, dd.numBoundedDimensions,
+        low_set_ddbox(dd.unitCellInfo.npbcdim, dd.unitCellInfo.numBoundedDimensions,
                       &dd.nc, box, calculateUnboundedSize, xRef,
                       needToReduceCoordinateData ? &dd.mpi_comm_all : nullptr,
                       ddbox);
@@ -319,9 +319,4 @@ void set_ddbox_cr(const t_commrec                &cr,
     }
 
     gmx_bcast(sizeof(gmx_ddbox_t), ddbox, &cr);
-}
-
-bool dynamic_dd_box(const gmx_domdec_t &dd)
-{
-    return (dd.numBoundedDimensions < DIM || dd.haveDynamicBox);
 }

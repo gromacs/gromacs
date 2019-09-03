@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,7 +94,7 @@ void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             {
                 bPBC   = ((dir == 0 && dd->ci[dim] == 0) ||
                           (dir == 1 && dd->ci[dim] == dd->nc[dim]-1));
-                bScrew = (bPBC && dd->bScrewPBC && dim == XX);
+                bScrew = (bPBC && dd->unitCellInfo.haveScrewPBC && dim == XX);
 
                 spas = &spac->spas[d][dir];
                 /* Sum the buffer into the required forces */
@@ -149,7 +149,7 @@ void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                        f + n, spas->nrecv,
                        as_rvec_array(spac->vbuf.data()), spas->a.size());
             /* Sum the buffer into the required forces */
-            if (dd->bScrewPBC && dim == XX &&
+            if (dd->unitCellInfo.haveScrewPBC && dim == XX &&
                 (dd->ci[dim] == 0 ||
                  dd->ci[dim] == dd->nc[dim]-1))
             {
@@ -205,13 +205,13 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                 if (dir == 0 && dd->ci[dim] == 0)
                 {
                     bPBC   = TRUE;
-                    bScrew = (dd->bScrewPBC && dim == XX);
+                    bScrew = (dd->unitCellInfo.haveScrewPBC && dim == XX);
                     copy_rvec(box[dim], shift);
                 }
                 else if (dir == 1 && dd->ci[dim] == dd->nc[dim]-1)
                 {
                     bPBC   = TRUE;
-                    bScrew = (dd->bScrewPBC && dim == XX);
+                    bScrew = (dd->unitCellInfo.haveScrewPBC && dim == XX);
                     for (i = 0; i < DIM; i++)
                     {
                         shift[i] = -box[dim][i];
@@ -306,7 +306,7 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             for (v = 0; v < nvec; v++)
             {
                 rvec *x = (v == 0 ? x0 : x1);
-                if (dd->bScrewPBC && dim == XX &&
+                if (dd->unitCellInfo.haveScrewPBC && dim == XX &&
                     (dd->ci[XX] == 0 || dd->ci[XX] == dd->nc[XX]-1))
                 {
                     /* Here we only perform the rotation, the rest of the pbc
@@ -392,7 +392,7 @@ int setup_specat_communication(gmx_domdec_t               *dd,
     {
         /* Pulse the grid forward and backward */
         dim  = dd->dim[d];
-        bPBC = (dim < dd->npbcdim);
+        bPBC = (dim < dd->unitCellInfo.npbcdim);
         if (dd->nc[dim] == 2)
         {
             /* Only 2 cells, so we only need to communicate once */
@@ -439,7 +439,7 @@ int setup_specat_communication(gmx_domdec_t               *dd,
     for (int d = 0; d < dd->ndim; d++)
     {
         /* Pulse the grid forward and backward */
-        if (dd->dim[d] >= dd->npbcdim || dd->nc[dd->dim[d]] > 2)
+        if (dd->dim[d] >= dd->unitCellInfo.npbcdim || dd->nc[dd->dim[d]] > 2)
         {
             ndir = 2;
         }

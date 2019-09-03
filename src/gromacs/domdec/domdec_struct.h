@@ -68,6 +68,7 @@ struct gmx_domdec_specat_comm_t;
 class gmx_ga2la_t;
 struct gmx_pme_comm_n_box_t;
 struct gmx_reverse_top_t;
+struct t_inputrec;
 
 namespace gmx
 {
@@ -134,8 +135,26 @@ struct gmx_ddbox_t {
     rvec normal[DIM];
 };
 
+/*! \internal \brief Provides information about properties of the unit cell */
+struct UnitCellInfo
+{
+    //! Constructor
+    UnitCellInfo(const t_inputrec &ir);
+
+    //! We have PBC from dim 0 (X) up to npbcdim
+    int  npbcdim;
+    //! The system is bounded from 0 (X) to numBoundedDimensions
+    int  numBoundedDimensions;
+    //! Tells whether the box bounding the atoms is dynamic
+    bool ddBoxIsDynamic;
+    //! Screw PBC?
+    bool haveScrewPBC;
+};
 
 struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
+    //! Constructor, only partial for now
+    gmx_domdec_t(const t_inputrec &ir);
+
     /* The DD particle-particle nodes only */
     /* The communication setup within the communicator all
      * defined in dd->comm in domdec.c
@@ -156,23 +175,13 @@ struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     int                    nreq_pme = 0;
     MPI_Request            req_pme[8];
 
+    /* Properties of the unit cell */
+    UnitCellInfo unitCellInfo;
 
     /* The communication setup, identical for each cell, cartesian index */
     ivec     nc;
     int      ndim;
     ivec     dim; /* indexed by 0 to ndim */
-
-    /* TODO: Move the next 4, and more from domdec_internal.h, to a simulation system */
-
-    /* PBC from dim 0 (X) to npbcdim */
-    int  npbcdim;
-    /* The system is bounded from 0 (X) to numBoundedDimensions */
-    int  numBoundedDimensions;
-    /* Does the box size change during the simulaton? */
-    bool haveDynamicBox;
-
-    /* Screw PBC? */
-    gmx_bool bScrewPBC;
 
     /* Forward and backward neighboring cells, indexed by 0 to ndim */
     int  neighbor[DIM][2];

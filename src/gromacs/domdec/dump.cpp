@@ -101,7 +101,7 @@ void write_dd_grid_pdb(const char *fn, int64_t step,
         }
         sprintf(fname, "%s_%s.pdb", fn, gmx_step_str(step, buf));
         out = gmx_fio_fopen(fname, "w");
-        gmx_write_pdb_box(out, dd->bScrewPBC ? epbcSCREW : epbcXYZ, box);
+        gmx_write_pdb_box(out, dd->unitCellInfo.haveScrewPBC ? epbcSCREW : epbcXYZ, box);
         a = 1;
         for (i = 0; i < dd->nnodes; i++)
         {
@@ -165,7 +165,7 @@ void write_dd_pdb(const char *fn, int64_t step, const char *title,
     out = gmx_fio_fopen(fname, "w");
 
     fprintf(out, "TITLE     %s\n", title);
-    gmx_write_pdb_box(out, dd->bScrewPBC ? epbcSCREW : epbcXYZ, box);
+    gmx_write_pdb_box(out, dd->unitCellInfo.haveScrewPBC ? epbcSCREW : epbcXYZ, box);
     int molb = 0;
     for (int i = 0; i < natoms; i++)
     {

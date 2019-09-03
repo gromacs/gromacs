@@ -319,9 +319,9 @@ computeAtomGroupDomainIndex(const gmx_domdec_t                         &dd,
     for (int d = DIM - 1; d >= 0; d--)
     {
         real pos_d = cog[d];
-        if (d < dd.npbcdim)
+        if (d < dd.unitCellInfo.npbcdim)
         {
-            bool bScrew = (dd.bScrewPBC && d == XX);
+            bool bScrew = (dd.unitCellInfo.haveScrewPBC && d == XX);
             if (ddbox.tric_dir[d] && dd.nc[d] > 1)
             {
                 /* Use triclinic coordinates for this dimension */
@@ -397,7 +397,7 @@ getAtomGroupDistribution(const gmx::MDLogger &mdlog,
     }
 
     matrix triclinicCorrectionMatrix;
-    make_tric_corr_matrix(dd->npbcdim, box, triclinicCorrectionMatrix);
+    make_tric_corr_matrix(dd->unitCellInfo.npbcdim, box, triclinicCorrectionMatrix);
 
     ivec       npulse;
     const auto cellBoundaries =
@@ -506,7 +506,7 @@ static void distributeAtomGroups(const gmx::MDLogger &mdlog,
     {
         GMX_ASSERT(box && pos, "box or pos not set on master");
 
-        if (dd->bScrewPBC)
+        if (dd->unitCellInfo.haveScrewPBC)
         {
             check_screw_box(box);
         }
