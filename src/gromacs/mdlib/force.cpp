@@ -53,8 +53,8 @@
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
-#include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/forcerec_threading.h"
+#include "gromacs/mdlib/ppforceworkload.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/rf_util.h"
 #include "gromacs/mdlib/wall.h"
@@ -116,7 +116,7 @@ do_force_lowlevel(t_forcerec                               *fr,
                   const real                               *lambda,
                   const t_graph                            *graph,
                   const rvec                               *mu_tot,
-                  const int                                 flags,
+                  const gmx::ForceFlags                    &forceFlags,
                   const DDBalanceRegionHandler             &ddBalanceRegionHandler)
 {
     // TODO: Replace all uses of x by const coordinates
@@ -172,7 +172,7 @@ do_force_lowlevel(t_forcerec                               *fr,
         t_pbc      pbc;
 
         /* Check whether we need to take into account PBC in listed interactions. */
-        const auto needPbcForListedForces = fr->bMolPBC && bool(flags & GMX_FORCE_LISTED) && haveCpuListedForces(*fr, *idef, *fcd);
+        const auto needPbcForListedForces = fr->bMolPBC && forceFlags.computeListedForces && haveCpuListedForces(*fr, *idef, *fcd);
         if (needPbcForListedForces)
         {
             /* Since all atoms are in the rectangular or triclinic unit-cell,
@@ -187,7 +187,7 @@ do_force_lowlevel(t_forcerec                               *fr,
                         forceOutputs,
                         fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
                         DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr,
-                        flags);
+                        forceFlags);
     }
 
     const bool computePmeOnCpu =
@@ -278,15 +278,15 @@ do_force_lowlevel(t_forcerec                               *fr,
             {
                 /* Do reciprocal PME for Coulomb and/or LJ. */
                 assert(fr->n_tpi >= 0);
-                if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
+                if (fr->n_tpi == 0 || forceFlags.stateChanged)
                 {
                     int pme_flags = GMX_PME_SPREAD | GMX_PME_SOLVE;
 
-                    if (flags & GMX_FORCE_FORCES)
+                    if (forceFlags.computeForces)
                     {
                         pme_flags |= GMX_PME_CALC_F;
                     }
-                    if (flags & GMX_FORCE_VIRIAL)
+                    if (forceFlags.computeVirial)
                     {
                         pme_flags |= GMX_PME_CALC_ENER_VIR;
                     }

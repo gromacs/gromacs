@@ -55,6 +55,11 @@ struct t_forcerec;
 struct t_graph;
 struct t_pbc;
 
+namespace gmx
+{
+class ForceFlags;
+}
+
 /*! \brief Calculate VdW/charge listed pair interactions (usually 1-4
  * interactions).
  *
@@ -66,7 +71,7 @@ do_pairs(int ftype, int nbonds, const t_iatom iatoms[], const t_iparams iparams[
          const struct t_pbc *pbc, const struct t_graph *g,
          const real *lambda, real *dvdl, const t_mdatoms *md, const t_forcerec *fr,
          bool havePerturbedPairs,
-         int  forceFlags,
+         const gmx::ForceFlags &forceFlags,
          gmx_grppairener_t *grppener,
          int *global_atom_index);
 

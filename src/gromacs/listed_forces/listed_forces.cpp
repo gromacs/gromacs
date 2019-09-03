@@ -60,7 +60,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/force.h"
-#include "gromacs/mdlib/force_flags.h"
+#include "gromacs/mdlib/ppforceworkload.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcerec.h"
@@ -199,7 +199,7 @@ void
 reduce_thread_output(int n, gmx::ForceWithShiftForces *forceWithShiftForces,
                      real *ener, gmx_grppairener_t *grpp, real *dvdl,
                      const bonded_threading_t *bt,
-                     const int forceFlags)
+                     const gmx::ForceFlags &forceFlags)
 {
     assert(bt->haveBondeds);
 
@@ -212,12 +212,12 @@ reduce_thread_output(int n, gmx::ForceWithShiftForces *forceWithShiftForces,
     rvec * gmx_restrict fshift = as_rvec_array(forceWithShiftForces->shiftForces().data());
 
     /* When necessary, reduce energy and virial using one thread only */
-    if ((forceFlags & (GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL | GMX_FORCE_DHDL)) != 0 &&
+    if ((forceFlags.computeEnergy || forceFlags.computeVirial || forceFlags.computeDhdl) &&
         bt->nthreads > 1)
     {
         gmx::ArrayRef < const std::unique_ptr < f_thread_t>> f_t = bt->f_t;
 
-        if (forceFlags & GMX_FORCE_VIRIAL)
+        if (forceFlags.computeVirial)
         {
             for (int i = 0; i < SHIFTS; i++)
             {
@@ -227,7 +227,7 @@ reduce_thread_output(int n, gmx::ForceWithShiftForces *forceWithShiftForces,
                 }
             }
         }
-        if (forceFlags & GMX_FORCE_ENERGY)
+        if (forceFlags.computeEnergy)
         {
             for (int i = 0; i < F_NRE; i++)
             {
@@ -247,7 +247,7 @@ reduce_thread_output(int n, gmx::ForceWithShiftForces *forceWithShiftForces,
                 }
             }
         }
-        if (forceFlags & GMX_FORCE_DHDL)
+        if (forceFlags.computeDhdl)
         {
             for (int i = 0; i < efptNR; i++)
             {
@@ -268,14 +268,14 @@ reduce_thread_output(int n, gmx::ForceWithShiftForces *forceWithShiftForces,
  * Note that currently we do not have bonded kernels that
  * do not compute forces.
  */
-BondedKernelFlavor selectBondedKernelFlavor(const int  forceFlags,
-                                            const bool useSimdKernels,
-                                            const bool havePerturbedInteractions)
+BondedKernelFlavor selectBondedKernelFlavor(const gmx::ForceFlags &forceFlags,
+                                            const bool             useSimdKernels,
+                                            const bool             havePerturbedInteractions)
 {
     BondedKernelFlavor flavor;
-    if (forceFlags & (GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL))
+    if (forceFlags.computeEnergy || forceFlags.computeVirial)
     {
-        if (forceFlags & GMX_FORCE_VIRIAL)
+        if (forceFlags.computeVirial)
         {
             flavor = BondedKernelFlavor::ForcesAndVirialAndEnergy;
         }
@@ -312,7 +312,7 @@ calc_one_bond(int thread,
               t_nrnb *nrnb,
               const real *lambda, real *dvdl,
               const t_mdatoms *md, t_fcdata *fcd,
-              const int forceFlags,
+              const gmx::ForceFlags &forceFlags,
               int *global_atom_index)
 {
     GMX_ASSERT(idef->ilsort == ilsortNO_FE || idef->ilsort == ilsortFE_SORTED,
@@ -392,20 +392,20 @@ calc_one_bond(int thread,
 /*! \brief Compute the bonded part of the listed forces, parallelized over threads
  */
 static void
-calcBondedForces(const t_idef     *idef,
-                 const rvec        x[],
-                 const t_forcerec *fr,
-                 const t_pbc      *pbc_null,
-                 const t_graph    *g,
-                 rvec             *fshiftMasterBuffer,
-                 gmx_enerdata_t   *enerd,
-                 t_nrnb           *nrnb,
-                 const real       *lambda,
-                 real             *dvdl,
-                 const t_mdatoms  *md,
-                 t_fcdata         *fcd,
-                 const int         forceFlags,
-                 int              *global_atom_index)
+calcBondedForces(const t_idef          *idef,
+                 const rvec             x[],
+                 const t_forcerec      *fr,
+                 const t_pbc           *pbc_null,
+                 const t_graph         *g,
+                 rvec                  *fshiftMasterBuffer,
+                 gmx_enerdata_t        *enerd,
+                 t_nrnb                *nrnb,
+                 const real            *lambda,
+                 real                  *dvdl,
+                 const t_mdatoms       *md,
+                 t_fcdata              *fcd,
+                 const gmx::ForceFlags &forceFlags,
+                 int                   *global_atom_index)
 {
     bonded_threading_t *bt = fr->bondedThreading;
 
@@ -498,7 +498,7 @@ void calc_listed(const t_commrec             *cr,
                  const real *lambda,
                  const t_mdatoms *md,
                  t_fcdata *fcd, int *global_atom_index,
-                 int force_flags)
+                 const gmx::ForceFlags &forceFlags)
 {
     const  t_pbc              *pbc_null;
     bonded_threading_t        *bt  = fr->bondedThreading;
@@ -572,16 +572,16 @@ void calc_listed(const t_commrec             *cr,
         calcBondedForces(idef, x, fr, pbc_null, g,
                          as_rvec_array(forceWithShiftForces.shiftForces().data()),
                          enerd, nrnb, lambda, dvdl, md,
-                         fcd, force_flags, global_atom_index);
+                         fcd, forceFlags, global_atom_index);
         wallcycle_sub_stop(wcycle, ewcsLISTED);
 
         wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);
         reduce_thread_output(fr->natoms_force, &forceWithShiftForces,
                              enerd->term, &enerd->grpp, dvdl,
                              bt,
-                             force_flags);
+                             forceFlags);
 
-        if (force_flags & GMX_FORCE_DHDL)
+        if (forceFlags.computeDhdl)
         {
             for (int i = 0; i < efptNR; i++)
             {
@@ -650,11 +650,12 @@ void calc_listed_lambda(const t_idef *idef,
 
             if (ilist_fe.nr > 0)
             {
+                gmx::ForceFlags tempFlags;
+                tempFlags.computeEnergy  = true;
                 v = calc_one_bond(0, ftype, &idef_fe, workDivision,
                                   x, f, fshift, fr, pbc_null, g,
                                   grpp, nrnb, lambda, dvdl_dum,
-                                  md, fcd,
-                                  GMX_FORCE_ENERGY,
+                                  md, fcd, tempFlags,
                                   global_atom_index);
                 epot[ftype] += v;
             }
@@ -684,11 +685,11 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
                 const t_mdatoms             *md,
                 t_fcdata                    *fcd,
                 int                         *global_atom_index,
-                int                          flags)
+                const gmx::ForceFlags       &forceFlags)
 {
     t_pbc pbc_full; /* Full PBC is needed for position restraints */
 
-    if (!(flags & GMX_FORCE_LISTED))
+    if (!forceFlags.computeListedForces)
     {
         return;
     }
@@ -703,12 +704,12 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
                 forceOutputs,
                 fr, pbc, &pbc_full,
                 graph, enerd, nrnb, lambda, md, fcd,
-                global_atom_index, flags);
+                global_atom_index, forceFlags);
 
     /* Check if we have to determine energy differences
      * at foreign lambda's.
      */
-    if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL))
+    if (fepvals->n_lambda > 0 && forceFlags.computeDhdl)
     {
         posres_wrapper_lambda(wcycle, fepvals, idef, &pbc_full, x, enerd, lambda, fr);
 

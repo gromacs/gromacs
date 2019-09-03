@@ -886,7 +886,7 @@ void do_force(FILE                                     *fplog,
               rvec                                      mu_tot,
               double                                    t,
               gmx_edsam                                *ed,
-              int                                       flags,
+              int                                       legacyFlags,
               const DDBalanceRegionHandler             &ddBalanceRegionHandler)
 {
     int                  i, j;
@@ -900,9 +900,9 @@ void do_force(FILE                                     *fplog,
     /* modify force flag if not doing nonbonded */
     if (!fr->bNonbonded)
     {
-        flags &= ~GMX_FORCE_NONBONDED;
+        legacyFlags &= ~GMX_FORCE_NONBONDED;
     }
-    setupForceFlags(&mdScheduleWork->forceFlags, flags, fr->bNonbonded);
+    setupForceFlags(&mdScheduleWork->forceFlags, legacyFlags, fr->bNonbonded);
 
     const gmx::ForceFlags &forceFlags = mdScheduleWork->forceFlags;
 
@@ -1376,7 +1376,7 @@ void do_force(FILE                                     *fplog,
                       cr, ms, nrnb, wcycle, mdatoms,
                       x, hist, &forceOut, enerd, fcd,
                       box, lambda.data(), graph, fr->mu_tot,
-                      flags,
+                      forceFlags,
                       ddBalanceRegionHandler);
 
     wallcycle_stop(wcycle, ewcFORCE);

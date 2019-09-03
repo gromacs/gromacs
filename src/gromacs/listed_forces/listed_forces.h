@@ -87,6 +87,7 @@ class t_state;
 namespace gmx
 {
 class ForceOutputs;
+class ForceFlags;
 }
 
 //! Type of CPU function to compute a bonded interaction.
@@ -117,7 +118,7 @@ void calc_listed(const t_commrec *cr,
                  gmx_enerdata_t *enerd, t_nrnb *nrnb, const real *lambda,
                  const t_mdatoms *md,
                  struct t_fcdata *fcd, int *ddgatindex,
-                 int force_flags);
+                 const gmx::ForceFlags &forceFlags);
 
 /*! \brief As calc_listed(), but only determines the potential energy
  * for the perturbed interactions.
@@ -153,7 +154,7 @@ do_force_listed(struct gmx_wallcycle           *wcycle,
                 const t_mdatoms                *md,
                 struct t_fcdata                *fcd,
                 int                            *global_atom_index,
-                int                             flags);
+                const gmx::ForceFlags          &forceFlags);
 
 /*! \brief Returns true if there are position restraints. */
 bool havePositionRestraints(const t_idef   &idef,

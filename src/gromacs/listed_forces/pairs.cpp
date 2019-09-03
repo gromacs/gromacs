@@ -50,7 +50,7 @@
 #include "gromacs/listed_forces/bonded.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/force_flags.h"
+#include "gromacs/mdlib/ppforceworkload.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
@@ -652,14 +652,14 @@ do_pairs(int ftype, int nbonds,
          const t_mdatoms *md,
          const t_forcerec *fr,
          const bool havePerturbedInteractions,
-         const int forceFlags,
+         const gmx::ForceFlags &forceFlags,
          gmx_grppairener_t *grppener,
          int *global_atom_index)
 {
     if (ftype == F_LJ14 &&
         fr->ic->vdwtype != evdwUSER && !EEL_USER(fr->ic->eeltype) &&
         !havePerturbedInteractions &&
-        (forceFlags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) == 0)
+        (!forceFlags.computeVirial && !forceFlags.computeEnergy))
     {
         /* We use a fast code-path for plain LJ 1-4 without FEP.
          *
@@ -703,7 +703,7 @@ do_pairs(int ftype, int nbonds,
                                            md, fr->ic->epsfac*fr->fudgeQQ);
         }
     }
-    else if (forceFlags & GMX_FORCE_VIRIAL)
+    else if (forceFlags.computeVirial)
     {
         do_pairs_general<BondedKernelFlavor::ForcesAndVirialAndEnergy>(
                 ftype, nbonds, iatoms, iparams,

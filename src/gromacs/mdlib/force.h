@@ -70,6 +70,7 @@ class ForceWithVirial;
 class ImdSession;
 class MdScheduleWorkload;
 class MDLogger;
+class ForceFlags;
 }
 
 void do_force(FILE                                     *log,
@@ -100,7 +101,7 @@ void do_force(FILE                                     *log,
               rvec                                      mu_tot,
               double                                    t,
               gmx_edsam                                *ed,
-              int                                       flags,
+              int                                       legacyFlags,
               const DDBalanceRegionHandler             &ddBalanceRegionHandler);
 
 /* Communicate coordinates (if parallel).
@@ -131,7 +132,7 @@ do_force_lowlevel(t_forcerec                               *fr,
                   const real                               *lambda,
                   const t_graph                            *graph,
                   const rvec                               *mu_tot,
-                  int                                       flags,
+                  const gmx::ForceFlags                    &forceFlags,
                   const DDBalanceRegionHandler             &ddBalanceRegionHandler);
 /* Call all the force routines */
 
