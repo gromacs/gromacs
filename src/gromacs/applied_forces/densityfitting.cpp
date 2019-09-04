@@ -46,8 +46,11 @@
 #include <memory>
 
 #include "gromacs/domdec/localatomsetmanager.h"
+#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/mrcdensitymap.h"
 #include "gromacs/math/multidimarray.h"
+#include "gromacs/mdlib/broadcaststructs.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
@@ -212,7 +215,13 @@ class DensityFitting final : public IMDModule
          *   - constructing local atom sets in the simulation parameter setup
          *     by taking a LocalAtomSetManager * as parameter
          *   - the type of periodic boundary conditions that are used
-         *     by taking a PeriodicBoundaryConditionTypeEnum as parameter
+         *     by taking a PeriodicBoundaryConditionType as parameter
+         *   - the writing of checkpoint data
+         *     by taking a MdModulesWriteCheckpointData as parameter
+         *   - the reading of checkpoint data
+         *     by taking a MdModulesCheckpointReadingDataOnMaster as parameter
+         *   - the broadcasting of checkpoint data
+         *     by taking MdModulesCheckpointReadingBroadcast as parameter
          */
         explicit DensityFitting(MdModulesNotifier *notifier)
         {
@@ -256,6 +265,24 @@ class DensityFitting final : public IMDModule
                         this->setEnergyOutputRequest(energyOutputRequest);
                     };
             notifier->notifier_.subscribe(requestEnergyOutput);
+
+            // writing checkpoint data
+            const auto checkpointDataWriting = [this](MdModulesWriteCheckpointData checkpointData) {
+                    this->writeCheckpointData(checkpointData);
+                };
+            notifier->notifier_.subscribe(checkpointDataWriting);
+
+            // reading checkpoint data
+            const auto checkpointDataReading = [this](MdModulesCheckpointReadingDataOnMaster checkpointData) {
+                    this->readCheckpointDataOnMaster(checkpointData);
+                };
+            notifier->notifier_.subscribe(checkpointDataReading);
+
+            // broadcasting checkpoint data
+            const auto checkpointDataBroadcast = [this](MdModulesCheckpointReadingBroadcast checkpointData) {
+                    this->broadcastCheckpointData(checkpointData);
+                };
+            notifier->notifier_.subscribe(checkpointDataBroadcast);
         }
 
         //! From IMDModule
@@ -273,7 +300,8 @@ class DensityFitting final : public IMDModule
                             densityFittingSimulationParameters_.referenceDensity(),
                             densityFittingSimulationParameters_.transformationToDensityLattice(),
                             densityFittingSimulationParameters_.localAtomSet(),
-                            densityFittingSimulationParameters_.periodicBoundaryConditionType());
+                            densityFittingSimulationParameters_.periodicBoundaryConditionType(),
+                            densityFittingState_);
                 forceProviders->addForceProvider(forceProvider_.get());
             }
         }
@@ -305,6 +333,55 @@ class DensityFitting final : public IMDModule
             energyOutputRequest->energyOutputToDensityFitting_ = densityFittingOptions_.active();
         }
 
+        /*! \brief Write internal density fitting data to checkpoint file.
+         * \param[in] checkpointWriting enables writing to the Key-Value-Tree
+         *                              that is used for storing the checkpoint
+         *                              information
+         */
+        void writeCheckpointData(MdModulesWriteCheckpointData checkpointWriting)
+        {
+            if (densityFittingOptions_.active())
+            {
+                const DensityFittingForceProviderState &state =
+                    forceProvider_->state();
+                checkpointWriting.builder_.addValue<std::int64_t>(
+                        DensityFittingModuleInfo::name_ + "-stepsSinceLastCalculation",
+                        state.stepsSinceLastCalculation_);
+            }
+        }
+
+        /*! \brief Read the internal parameters from the checkpoint file on master
+         * \param[in] checkpointReading holding the checkpoint information
+         */
+        void readCheckpointDataOnMaster(MdModulesCheckpointReadingDataOnMaster checkpointReading)
+        {
+            if (densityFittingOptions_.active())
+            {
+                if (checkpointReading.checkpointedData_.keyExists(
+                            DensityFittingModuleInfo::name_ + "-stepsSinceLastCalculation"))
+                {
+                    densityFittingState_.stepsSinceLastCalculation_ =
+                        checkpointReading.checkpointedData_[
+                            DensityFittingModuleInfo::name_ + "-stepsSinceLastCalculation"].cast<std::int64_t>();
+                }
+            }
+        }
+
+        /*! \brief Broadcast the internal parameters.
+         * \param[in] checkpointBroadcast containing the communication record to
+         *                                broadcast the checkpoint information
+         */
+        void broadcastCheckpointData(MdModulesCheckpointReadingBroadcast checkpointBroadcast)
+        {
+            if (densityFittingOptions_.active())
+            {
+                if (PAR(&(checkpointBroadcast.cr_)))
+                {
+                    block_bc(&(checkpointBroadcast.cr_), densityFittingState_.stepsSinceLastCalculation_);
+                }
+            }
+        }
+
     private:
         //! The output provider
         DensityFittingOutputProvider                 densityFittingOutputProvider_;
@@ -315,7 +392,9 @@ class DensityFitting final : public IMDModule
         /*! \brief Parameters for density fitting that become available at
          * simulation setup time.
          */
-        DensityFittingSimulationParameterSetup       densityFittingSimulationParameters_;
+        DensityFittingSimulationParameterSetup        densityFittingSimulationParameters_;
+        //! The internal parameters of density fitting force provider
+        DensityFittingForceProviderState              densityFittingState_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(DensityFitting);
 };

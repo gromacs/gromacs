@@ -123,6 +123,8 @@ class DensityFittingOptions final : public IMdpOptionProvider
         const std::string c_referenceDensityFileNameTag_ = "reference-density-filename";
         std::string       referenceDensityFileName_      = "reference.mrc";
 
+        const std::string c_everyNStepsTag_ = "nst";
+
 
         DensityFittingParameters parameters_;
 };

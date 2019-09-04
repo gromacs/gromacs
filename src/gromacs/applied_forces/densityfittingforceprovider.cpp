@@ -97,11 +97,16 @@ class DensityFittingForceProvider::Impl
              basic_mdspan<const float, dynamicExtents3D> referenceDensity,
              const TranslateAndScale &transformationToDensityLattice,
              const LocalAtomSet &localAtomSet,
-             int pbcType);
+             int pbcType,
+             const DensityFittingForceProviderState &state);
         ~Impl();
         void calculateForces(const ForceProviderInput &forceProviderInput, ForceProviderOutput *forceProviderOutput);
+
+        DensityFittingForceProviderState state();
+
     private:
         const DensityFittingParameters       &parameters_;
+        DensityFittingForceProviderState      state_;
         LocalAtomSet                          localAtomSet_;
 
         GaussianSpreadKernelParameters::Shape spreadKernel_;
@@ -115,6 +120,8 @@ class DensityFittingForceProvider::Impl
         TranslateAndScale                     transformationToDensityLattice_;
         RVec                                  referenceDensityCenter_;
         int                                   pbcType_;
+        real                                  forceConstantScale_;
+
 };
 
 DensityFittingForceProvider::Impl::~Impl() = default;
@@ -123,8 +130,10 @@ DensityFittingForceProvider::Impl::Impl(const DensityFittingParameters &paramete
                                         basic_mdspan<const float, dynamicExtents3D> referenceDensity,
                                         const TranslateAndScale &transformationToDensityLattice,
                                         const LocalAtomSet &localAtomSet,
-                                        int pbcType) :
+                                        int pbcType,
+                                        const DensityFittingForceProviderState &state) :
     parameters_(parameters),
+    state_(state),
     localAtomSet_(localAtomSet),
     spreadKernel_(makeSpreadKernel(parameters_.gaussianTransformSpreadingWidth_,
                                    parameters_.gaussianTransformSpreadingRangeInMultiplesOfWidth_,
@@ -135,7 +144,8 @@ DensityFittingForceProvider::Impl::Impl(const DensityFittingParameters &paramete
     transformedCoordinates_(localAtomSet_.numAtomsLocal()),
     amplitudeLookup_(parameters_.amplitudeLookupMethod_),
     transformationToDensityLattice_(transformationToDensityLattice),
-    pbcType_(pbcType)
+    pbcType_(pbcType),
+    forceConstantScale_(parameters_.calculationIntervalInSteps_)
 {
     referenceDensityCenter_  = {
         real(referenceDensity.extent(XX))/2,
@@ -149,6 +159,15 @@ DensityFittingForceProvider::Impl::Impl(const DensityFittingParameters &paramete
 void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput &forceProviderInput,
                                                         ForceProviderOutput      *forceProviderOutput)
 {
+    // do nothing but count number of steps when not in density fitting step
+    if (state_.stepsSinceLastCalculation_ % parameters_.calculationIntervalInSteps_ != 0)
+    {
+        ++(state_.stepsSinceLastCalculation_);
+        return;
+    }
+
+    state_.stepsSinceLastCalculation_ = 0;
+
     // do nothing if there are no density fitting atoms on this node
     if (localAtomSet_.numAtomsLocal() == 0)
     {
@@ -217,7 +236,7 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
     for (const auto localAtomIndex : localAtomSet_.localIndex())
     {
         forceProviderOutput->forceWithVirial_.force_[localAtomIndex] +=
-            parameters_.forceConstant_ * *densityForceIterator;
+            forceConstantScale_ * parameters_.forceConstant_ * *densityForceIterator;
         ++densityForceIterator;
     }
 
@@ -225,6 +244,12 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
     const float similarity  = measure_.similarity(gaussTransform_.constView());
     const real  energy      = -similarity * parameters_.forceConstant_;
     forceProviderOutput->enerd_.term[F_DENSITYFITTING] += energy;
+}
+
+DensityFittingForceProviderState
+DensityFittingForceProvider::Impl::state()
+{
+    return state_;
 }
 
 /********************************************************************
@@ -237,14 +262,20 @@ DensityFittingForceProvider::DensityFittingForceProvider(const DensityFittingPar
                                                          basic_mdspan<const float, dynamicExtents3D> referenceDensity,
                                                          const TranslateAndScale &transformationToDensityLattice,
                                                          const LocalAtomSet &localAtomSet,
-                                                         int pbcType)
-    : impl_(new Impl(parameters, referenceDensity, transformationToDensityLattice, localAtomSet, pbcType))
+                                                         int pbcType,
+                                                         const DensityFittingForceProviderState &state)
+    : impl_(new Impl(parameters, referenceDensity, transformationToDensityLattice, localAtomSet, pbcType, state))
 {}
 
 void DensityFittingForceProvider::calculateForces(const ForceProviderInput  &forceProviderInput,
                                                   ForceProviderOutput      * forceProviderOutput)
 {
     impl_->calculateForces(forceProviderInput, forceProviderOutput);
+}
+
+DensityFittingForceProviderState DensityFittingForceProvider::state()
+{
+    return impl_->state();
 }
 
 } // namespace gmx

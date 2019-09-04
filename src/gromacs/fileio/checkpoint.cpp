@@ -267,39 +267,6 @@ enum class StatePart
     pullHistory         //!< Pull history statistics (sums since last written output)
 };
 
-namespace gmx
-{
-
-struct MdModulesCheckpointReadingDataOnMaster
-{
-    //! The data of the MdModules that is stored in the checkpoint file
-    const KeyValueTreeObject &checkpointedData;
-    //! The version of the read ceckpoint file
-    int                       checkpointFileVersion_;
-};
-
-/*! \libinternal
- * \brief Provides the MdModules with the communication record to broadcast.
- */
-struct MdModulesCheckpointReadingBroadcast
-{
-    //! The communication record
-    const t_commrec &cr;
-    //! The version of the read file version
-    int              checkpointFileVersion_;
-};
-
-/*! \libinternal \brief Writing the MdModules data to a checkpoint file.
- */
-struct MdModulesWriteCheckpointData
-{
-    //! Builder for the Key-Value-Tree to store the MdModule checkpoint data
-    KeyValueTreeObjectBuilder builder;
-    //! The version of the read file version
-    int                       checkpointFileVersion_;
-};
-} // namespace gmx
-
 //! \brief Return the name of a checkpoint entry based on part and part entry
 static const char *entryName(StatePart part, int ecpt)
 {

@@ -73,6 +73,8 @@ struct DensityFittingParameters
     real                           gaussianTransformSpreadingWidth_ = 0.2;
     //! The spreading range for spreading atoms onto the grid in multiples of the spreading width
     real                           gaussianTransformSpreadingRangeInMultiplesOfWidth_ = 4.0;
+    //! Apply density fitting forces only every n-steps
+    std::int64_t                   calculationIntervalInSteps_ = 1;
 };
 
 /*!\brief Check if two structs holding density fitting parameters are equal.

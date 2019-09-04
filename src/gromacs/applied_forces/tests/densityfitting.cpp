@@ -115,7 +115,7 @@ class DensityFittingTest : public ::testing::Test
             densityFittingModule_->initForceProviders(&densityFittingForces_);
         }
 
-    private:
+    protected:
 
         KeyValueTreeBuilder        mdpValueBuilder_;
         MdModulesNotifier          notifier_;
@@ -144,7 +144,6 @@ TEST_F(DensityFittingTest, SingleAtom)
 
     EXPECT_ANY_THROW(intializeForceProviders());
 }
-
 
 } // namespace
 

@@ -55,6 +55,17 @@ namespace gmx
 
 struct DensityFittingParameters;
 
+/*! \internal
+ * \brief Parameters defining the internal density fitting force provider state.
+ */
+struct DensityFittingForceProviderState
+{
+    /*! \brief The steps since the last force calculation.
+     *  Used if density fitting is to be calculated every N steps.
+     */
+    std::int64_t stepsSinceLastCalculation_ = 0;
+};
+
 /*! \internal \brief
  * Implements IForceProvider for density-fitting forces.
  */
@@ -66,14 +77,19 @@ class DensityFittingForceProvider final : public IForceProvider
                                     basic_mdspan<const float, dynamicExtents3D> referenceDensity,
                                     const TranslateAndScale &transformationToDensityLattice,
                                     const LocalAtomSet &localAtomSet,
-                                    int pbcType);
+                                    int pbcType,
+                                    const DensityFittingForceProviderState &state);
         ~DensityFittingForceProvider();
-        /* \brief Calculate forces that maximise goodness-of-fit with a reference density map
+        /*!\brief Calculate forces that maximise goodness-of-fit with a reference density map.
          * \param[in] forceProviderInput input for force provider
          * \param[out] forceProviderOutput output for force provider
          */
         void calculateForces(const ForceProviderInput &forceProviderInput,
                              ForceProviderOutput      *forceProviderOutput) override;
+
+        //! Return the state of the forceprovider.
+        DensityFittingForceProviderState state();
+
     private:
         class Impl;
         PrivateImplPointer<Impl> impl_;

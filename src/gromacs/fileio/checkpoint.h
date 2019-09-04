@@ -44,6 +44,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 
 class energyhistory_t;
 struct gmx_file_position_t;
@@ -53,10 +54,43 @@ struct t_fileio;
 struct t_inputrec;
 class t_state;
 struct t_trxframe;
+
 namespace gmx
 {
+
 struct MdModulesNotifier;
-}
+class KeyValueTreeObject;
+
+struct MdModulesCheckpointReadingDataOnMaster
+{
+    //! The data of the MdModules that is stored in the checkpoint file
+    const KeyValueTreeObject &checkpointedData_;
+    //! The version of the read ceckpoint file
+    int                       checkpointFileVersion_;
+};
+
+/*! \libinternal
+ * \brief Provides the MdModules with the communication record to broadcast.
+ */
+struct MdModulesCheckpointReadingBroadcast
+{
+    //! The communication record
+    const t_commrec &cr_;
+    //! The version of the read file version
+    int              checkpointFileVersion_;
+};
+
+/*! \libinternal \brief Writing the MdModules data to a checkpoint file.
+ */
+struct MdModulesWriteCheckpointData
+{
+    //! Builder for the Key-Value-Tree to store the MdModule checkpoint data
+    KeyValueTreeObjectBuilder builder_;
+    //! The version of the read file version
+    int                       checkpointFileVersion_;
+};
+
+} // namespace gmx
 
 /* the name of the environment variable to disable fsync failure checks with */
 #define GMX_IGNORE_FSYNC_FAILURE_ENV "GMX_IGNORE_FSYNC_FAILURE"
