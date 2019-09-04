@@ -1243,6 +1243,15 @@ int Mdrunner::mdrunner()
                                   *hwinfo->hardwareTopology,
                                   physicalNodeComm, mdlog);
 
+    // Enable Peer access between GPUs where available
+    // Only for DD, only master PP rank needs to perform setup, and only if thread MPI plus
+    // any of the GPU communication features are active.
+    if (DOMAINDECOMP(cr) && MASTER(cr) && thisRankHasDuty(cr, DUTY_PP) && GMX_THREAD_MPI &&
+        (devFlags.enableGpuHaloExchange || devFlags.enableGpuPmePPComm))
+    {
+        setupGpuDevicePeerAccess(gpuIdsToUse, mdlog);
+    }
+
     if (hw_opt.threadAffinity != ThreadAffinity::Off)
     {
         /* Before setting affinity, check whether the affinity has changed

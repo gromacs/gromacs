@@ -58,6 +58,7 @@ struct gmx_gpu_info_t;
 
 namespace gmx
 {
+class MDLogger;
 }
 
 //! Enum which is only used to describe transfer calls at the moment
@@ -271,5 +272,13 @@ void stopGpuProfiler() CUDA_FUNC_TERM;
 //! Tells whether the host buffer was pinned for non-blocking transfers. Only implemented for CUDA.
 CUDA_FUNC_QUALIFIER
 bool isHostMemoryPinned(const void *CUDA_FUNC_ARGUMENT(h_ptr)) CUDA_FUNC_TERM_WITH_RETURN(false);
+
+/*! \brief Enable peer access between GPUs where supported
+ * \param[in] gpuIdsToUse   List of GPU IDs in use
+ * \param[in] mdlog         Logger object
+ */
+CUDA_FUNC_QUALIFIER
+void setupGpuDevicePeerAccess(const std::vector<int>  &CUDA_FUNC_ARGUMENT(gpuIdsToUse),
+                              const gmx::MDLogger     &CUDA_FUNC_ARGUMENT(mdlog)) CUDA_FUNC_TERM;
 
 #endif

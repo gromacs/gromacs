@@ -56,6 +56,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
@@ -544,4 +545,81 @@ void resetGpuProfiler(void)
 int gpu_info_get_stat(const gmx_gpu_info_t &info, int index)
 {
     return info.gpu_dev[index].stat;
+}
+
+/*! \brief Check status returned from peer access CUDA call, and error out or warn appropriately
+ * \param[in] stat           CUDA call return status
+ * \param[in] gpuA           ID for GPU initiating peer access call
+ * \param[in] gpuB           ID for remote GPU
+ * \param[in] mdlog          Logger object
+ * \param[in] cudaCallName   name of CUDA peer access call
+ */
+static void peerAccessCheckStat(const cudaError_t stat, const int gpuA, const int gpuB, const gmx::MDLogger &mdlog, const char *cudaCallName)
+{
+    if ((stat == cudaErrorInvalidDevice) || (stat == cudaErrorInvalidValue))
+    {
+        std::string errorString = gmx::formatString("%s from GPU %d to GPU %d failed", cudaCallName, gpuA, gpuB);
+        CU_RET_ERR(stat, errorString.c_str());
+    }
+    if (stat != cudaSuccess)
+    {
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("GPU peer access not enabled between GPUs %d and %d due to unexpected return value from %s: %s",
+                                                                 gpuA, gpuB, cudaCallName, cudaGetErrorString(stat));
+    }
+}
+
+void setupGpuDevicePeerAccess(const std::vector<int> &gpuIdsToUse, const gmx::MDLogger &mdlog)
+{
+    cudaError_t stat;
+
+    // take a note of currently-set GPU
+    int currentGpu;
+    stat = cudaGetDevice(&currentGpu);
+    CU_RET_ERR(stat, "cudaGetDevice in setupGpuDevicePeerAccess failed");
+
+    std::string message           = gmx::formatString("Note: Peer access enabled between the following GPU pairs in the node:\n ");
+    bool        peerAccessEnabled = false;
+
+    for (unsigned int i = 0; i < gpuIdsToUse.size(); i++)
+    {
+        int gpuA = gpuIdsToUse[i];
+        stat = cudaSetDevice(gpuA);
+        if (stat != cudaSuccess)
+        {
+            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("GPU peer access not enabled due to unexpected return value from cudaSetDevice(%d): %s", gpuA, cudaGetErrorString(stat));
+            return;
+        }
+        for (unsigned int j = 0; j < gpuIdsToUse.size(); j++)
+        {
+            if (j != i)
+            {
+                int gpuB          = gpuIdsToUse[j];
+                int canAccessPeer = 0;
+                stat = cudaDeviceCanAccessPeer(&canAccessPeer, gpuA, gpuB);
+                peerAccessCheckStat(stat, gpuA, gpuB, mdlog, "cudaDeviceCanAccessPeer");
+
+                if (canAccessPeer)
+                {
+                    stat = cudaDeviceEnablePeerAccess(gpuB, 0);
+                    peerAccessCheckStat(stat, gpuA, gpuB, mdlog, "cudaDeviceEnablePeerAccess");
+
+                    message           = gmx::formatString("%s%d->%d ", message.c_str(), gpuA, gpuB);
+                    peerAccessEnabled = true;
+                }
+            }
+        }
+    }
+
+    //re-set GPU to that originally set
+    stat = cudaSetDevice(currentGpu);
+    if (stat != cudaSuccess)
+    {
+        CU_RET_ERR(stat, "cudaSetDevice in setupGpuDevicePeerAccess failed");
+        return;
+    }
+
+    if (peerAccessEnabled)
+    {
+        GMX_LOG(mdlog.info).asParagraph().appendTextFormatted("%s", message.c_str());
+    }
 }
