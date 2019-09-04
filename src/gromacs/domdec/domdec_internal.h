@@ -464,6 +464,8 @@ struct DDSystemInfo
 
     //! Whether to only communicate atoms beyond the non-bonded cut-off when they are involved in bonded interactions with non-local atoms
     bool filterBondedCommunication = false;
+    //! Whether to increase the multi-body cut-off beyond the minimum required
+    bool increaseMultiBodyCutoff = false;
 };
 
 /*! \brief Struct for domain decomposition communication

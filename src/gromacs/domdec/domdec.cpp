@@ -2117,8 +2117,6 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                                    gmx::ArrayRef<const gmx::RVec> xGlobal,
                                    gmx_ddbox_t *ddbox)
 {
-    real               r_bonded         = -1;
-    real               r_bonded_limit   = -1;
     const real         tenPercentMargin = 1.1;
     gmx_domdec_comm_t *comm             = dd->comm;
 
@@ -2242,14 +2240,12 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                 systemInfo.cutoff = std::max(systemInfo.cutoff,
                                              systemInfo.minCutoffForMultiBody);
             }
-            r_bonded_limit = systemInfo.minCutoffForMultiBody;
         }
         else if (ir->bPeriodicMols)
         {
             /* Can not easily determine the required cut-off */
             GMX_LOG(mdlog.warning).appendText("NOTE: Periodic molecules are present in this system. Because of this, the domain decomposition algorithm cannot easily determine the minimum cell size that it requires for treating bonded interactions. Instead, domain decomposition will assume that half the non-bonded cut-off will be a suitable lower bound.");
             systemInfo.minCutoffForMultiBody = systemInfo.cutoff/2;
-            r_bonded_limit                   = systemInfo.minCutoffForMultiBody;
         }
         else
         {
@@ -2271,34 +2267,36 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
             {
                 if (std::max(r_2b, r_mb) > comm->systemInfo.cutoff)
                 {
-                    r_bonded        = std::max(r_2b, r_mb);
-                    r_bonded_limit  = tenPercentMargin*r_bonded;
+                    const real r_bonded              = std::max(r_2b, r_mb);
+                    systemInfo.minCutoffForMultiBody = tenPercentMargin*r_bonded;
                     /* This is the (only) place where we turn on the filtering */
                     systemInfo.filterBondedCommunication = true;
                 }
                 else
                 {
-                    r_bonded       = r_mb;
-                    r_bonded_limit = std::min(tenPercentMargin*r_bonded, systemInfo.cutoff);
+                    const real r_bonded              = r_mb;
+                    systemInfo.minCutoffForMultiBody = std::min(tenPercentMargin*r_bonded,
+                                                                systemInfo.cutoff);
                 }
                 /* We determine cutoff_mbody later */
+                systemInfo.increaseMultiBodyCutoff = true;
             }
             else
             {
                 /* No special bonded communication,
                  * simply increase the DD cut-off.
                  */
-                r_bonded_limit                   = tenPercentMargin*std::max(r_2b, r_mb);
-                systemInfo.minCutoffForMultiBody = r_bonded_limit;
+                systemInfo.minCutoffForMultiBody = tenPercentMargin*std::max(r_2b, r_mb);
                 systemInfo.cutoff                = std::max(systemInfo.cutoff,
                                                             systemInfo.minCutoffForMultiBody);
             }
         }
         GMX_LOG(mdlog.info).appendTextFormatted(
                 "Minimum cell size due to bonded interactions: %.3f nm",
-                r_bonded_limit);
+                systemInfo.minCutoffForMultiBody);
 
-        systemInfo.cellsizeLimit = std::max(systemInfo.cellsizeLimit, r_bonded_limit);
+        systemInfo.cellsizeLimit = std::max(systemInfo.cellsizeLimit,
+                                            systemInfo.minCutoffForMultiBody);
     }
 
     real rconstr = 0;
@@ -2363,7 +2361,8 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
         if (ddSetup.numDomains[XX] == 0)
         {
             char     buf[STRLEN];
-            gmx_bool bC = (systemInfo.haveSplitConstraints && rconstr > r_bonded_limit);
+            gmx_bool bC = (systemInfo.haveSplitConstraints &&
+                           rconstr > systemInfo.minCutoffForMultiBody);
             sprintf(buf, "Change the number of ranks or mdrun option %s%s%s",
                     !bC ? "-rdd" : "-rcon",
                     comm->dlbState != DlbState::offUser ? " or -dds" : "",
@@ -2481,7 +2480,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     /* Set the multi-body cut-off and cellsize limit for DLB */
     comm->cutoff_mbody   = systemInfo.minCutoffForMultiBody;
     comm->cellsize_limit = systemInfo.cellsizeLimit;
-    if (systemInfo.haveInterDomainBondeds && comm->cutoff_mbody == 0)
+    if (systemInfo.haveInterDomainBondeds && systemInfo.increaseMultiBodyCutoff)
     {
         if (systemInfo.filterBondedCommunication || !isDlbDisabled(comm))
         {
@@ -2490,7 +2489,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
              * since the extra communication cost is nearly zero.
              */
             real acs           = average_cellsize_min(*ddbox, dd->nc);
-            comm->cutoff_mbody = 0.5*(r_bonded + acs);
+            comm->cutoff_mbody = 0.5*(systemInfo.minCutoffForMultiBody + acs);
             if (!isDlbDisabled(comm))
             {
                 /* Check if this does not limit the scaling */
@@ -2512,7 +2511,8 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                 }
             }
             /* Check if we did not end up below our original limit */
-            comm->cutoff_mbody = std::max(comm->cutoff_mbody, r_bonded_limit);
+            comm->cutoff_mbody = std::max(comm->cutoff_mbody,
+                                          systemInfo.minCutoffForMultiBody);
 
             if (comm->cutoff_mbody > comm->cellsize_limit)
             {
