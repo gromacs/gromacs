@@ -154,7 +154,7 @@ class NeighborSearchSignaller final :
  */
 class LastStepSignaller final :
     public              ISignaller,
-    public INeighborSearchSignallerClient
+    public              INeighborSearchSignallerClient
 {
     public:
         /*! \brief Run the signaller at a specific step / time
@@ -211,7 +211,7 @@ class LastStepSignaller final :
  */
 class LoggingSignaller final :
     public             ISignaller,
-    public ILastStepSignallerClient
+    public             ILastStepSignallerClient
 {
     public:
         /*! \brief Run the signaller at a specific step / time
@@ -274,8 +274,8 @@ class LoggingSignaller final :
  */
 class EnergySignaller final :
     public            ISignaller,
-    public ITrajectorySignallerClient,
-    public ILoggingSignallerClient
+    public            ITrajectorySignallerClient,
+    public            ILoggingSignallerClient
 {
     public:
         /*! \brief Run the signaller at a specific step / time

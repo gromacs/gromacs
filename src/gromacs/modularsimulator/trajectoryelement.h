@@ -79,10 +79,10 @@ enum class StartingBehavior;
  * element only prepares the output struct, and passes it to the clients who
  * write their part of the trajectory.
  */
-class TrajectoryElement :
-    public ISimulatorElement,
-    public ISignaller,
-    public ILastStepSignallerClient
+class TrajectoryElement final :
+    public              ISimulatorElement,
+    public              ISignaller,
+    public              ILastStepSignallerClient
 {
     public:
         friend class TrajectoryElementBuilder;
@@ -114,7 +114,7 @@ class TrajectoryElement :
          *
          * During setup, the trajectory writer will query the writer clients for
          * their callbacks. It will also call the setup methods of the different
-         * clients. To be ran before the main simulator run, but after all clients
+         * clients. To be run before the main simulator run, but after all clients
          * were registered.
          */
         void elementSetup() override;
@@ -136,7 +136,7 @@ class TrajectoryElement :
          *
          * During teardown, the trajectory writer will call the teardown
          * methods of the clients and perform some additional clean-up.
-         * To be ran after the main simulator run.
+         * To be run after the main simulator run.
          */
         void elementTeardown() override;
 

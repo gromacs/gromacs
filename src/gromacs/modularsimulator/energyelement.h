@@ -85,10 +85,10 @@ class MicroState;
  */
 class EnergyElement final :
     public          ISimulatorElement,
-    public ITrajectoryWriterClient,
-    public ITrajectorySignallerClient,
-    public IEnergySignallerClient,
-    public ILoggingSignallerClient
+    public          ITrajectoryWriterClient,
+    public          ITrajectorySignallerClient,
+    public          IEnergySignallerClient,
+    public          ILoggingSignallerClient
 {
     public:
         //! Constructor

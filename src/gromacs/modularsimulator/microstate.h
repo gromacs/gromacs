@@ -99,8 +99,8 @@ enum class ConstraintVariable;
  */
 class MicroState final :
     public       ISimulatorElement,
-    public ITrajectoryWriterClient,
-    public ITrajectorySignallerClient
+    public       ITrajectoryWriterClient,
+    public       ITrajectorySignallerClient
 {
     public:
         //! Constructor
