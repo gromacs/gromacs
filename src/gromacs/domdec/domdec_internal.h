@@ -461,6 +461,8 @@ struct DDSystemInfo
     bool haveSplitConstraints = false;
     //! Can atoms connected by settles be assigned to different domains?
     bool haveSplitSettles = false;
+    //! Estimated communication range needed for constraints
+    real constraintCommunicationRange = 0;
 
     //! Whether to only communicate atoms beyond the non-bonded cut-off when they are involved in bonded interactions with non-local atoms
     bool filterBondedCommunication = false;

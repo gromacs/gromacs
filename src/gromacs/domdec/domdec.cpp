@@ -2106,40 +2106,19 @@ UnitCellInfo::UnitCellInfo(const t_inputrec &ir) :
 {
 }
 
-/*! \brief Set the cell size and interaction limits, as well as the DD grid */
-static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
-                                   t_commrec *cr, gmx_domdec_t *dd,
-                                   const DomdecOptions &options,
-                                   const gmx::MdrunOptions &mdrunOptions,
-                                   const gmx_mtop_t *mtop,
-                                   const t_inputrec *ir,
-                                   const matrix box,
-                                   gmx::ArrayRef<const gmx::RVec> xGlobal,
-                                   gmx_ddbox_t *ddbox)
+/*! \brief Generate the simulation system information */
+static DDSystemInfo
+getSystemInfo(const gmx::MDLogger           &mdlog,
+              t_commrec                     *cr,
+              const DomdecOptions           &options,
+              const gmx_mtop_t              *mtop,
+              const t_inputrec              *ir,
+              const matrix                   box,
+              gmx::ArrayRef<const gmx::RVec> xGlobal)
 {
     const real         tenPercentMargin = 1.1;
-    gmx_domdec_comm_t *comm             = dd->comm;
 
-    /* Initialize to GPU share count to 0, might change later */
-    comm->nrank_gpu_shared = 0;
-
-    comm->dlbState         = determineInitialDlbState(mdlog, options.dlbOption, comm->bRecordLoad, mdrunOptions, ir);
-    dd_dlb_set_should_check_whether_to_turn_dlb_on(dd, TRUE);
-    /* To consider turning DLB on after 2*nstlist steps we need to check
-     * at partitioning count 3. Thus we need to increase the first count by 2.
-     */
-    comm->ddPartioningCountFirstDlbOff += 2;
-
-    GMX_LOG(mdlog.info).appendTextFormatted(
-            "Dynamic load balancing: %s", edlbs_names[int(comm->dlbState)]);
-
-    comm->bPMELoadBalDLBLimits = FALSE;
-
-    /* Allocate the charge group/atom sorting struct */
-    comm->sort = std::make_unique<gmx_domdec_sort_t>();
-
-    /* Generate the simulation system information */
-    DDSystemInfo &systemInfo = comm->systemInfo;
+    DDSystemInfo       systemInfo;
 
     /* We need to decide on update groups early, as this affects communication distances */
     systemInfo.useUpdateGroups = false;
@@ -2147,20 +2126,6 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     {
         real cutoffMargin = std::sqrt(max_cutoff2(ir->ePBC, box)) - ir->rlist;
         setupUpdateGroups(mdlog, *mtop, *ir, cutoffMargin, &systemInfo);
-
-        if (systemInfo.useUpdateGroups)
-        {
-            /* Note: We would like to use dd->nnodes for the atom count estimate,
-             *       but that is not yet available here. But this anyhow only
-             *       affect performance up to the second dd_partition_system call.
-             */
-            const int homeAtomCountEstimate =  mtop->natoms/cr->nnodes;
-            comm->updateGroupsCog =
-                std::make_unique<gmx::UpdateGroupsCog>(*mtop,
-                                                       systemInfo.updateGroupingPerMoleculetype,
-                                                       maxReferenceTemperature(*ir),
-                                                       homeAtomCountEstimate);
-        }
     }
 
     // TODO: Check whether all bondeds are within update groups
@@ -2265,7 +2230,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
              */
             if (options.useBondedCommunication)
             {
-                if (std::max(r_2b, r_mb) > comm->systemInfo.cutoff)
+                if (std::max(r_2b, r_mb) > systemInfo.cutoff)
                 {
                     const real r_bonded              = std::max(r_2b, r_mb);
                     systemInfo.minCutoffForMultiBody = tenPercentMargin*r_bonded;
@@ -2299,15 +2264,15 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                                             systemInfo.minCutoffForMultiBody);
     }
 
-    real rconstr = 0;
+    systemInfo.constraintCommunicationRange = 0;
     if (systemInfo.haveSplitConstraints && options.constraintCommunicationRange <= 0)
     {
         /* There is a cell size limit due to the constraints (P-LINCS) */
-        rconstr = gmx::constr_r_max(mdlog, mtop, ir);
+        systemInfo.constraintCommunicationRange = gmx::constr_r_max(mdlog, mtop, ir);
         GMX_LOG(mdlog.info).appendTextFormatted(
                 "Estimated maximum distance required for P-LINCS: %.3f nm",
-                rconstr);
-        if (rconstr > systemInfo.cellsizeLimit)
+                systemInfo.constraintCommunicationRange);
+        if (systemInfo.constraintCommunicationRange > systemInfo.cellsizeLimit)
         {
             GMX_LOG(mdlog.info).appendText("This distance will limit the DD cell size, you can override this with -rcon");
         }
@@ -2321,9 +2286,62 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
         GMX_LOG(mdlog.info).appendTextFormatted(
                 "User supplied maximum distance required for P-LINCS: %.3f nm",
                 options.constraintCommunicationRange);
-        rconstr = options.constraintCommunicationRange;
+        systemInfo.constraintCommunicationRange = options.constraintCommunicationRange;
     }
-    systemInfo.cellsizeLimit = std::max(systemInfo.cellsizeLimit, rconstr);
+    systemInfo.cellsizeLimit = std::max(systemInfo.cellsizeLimit,
+                                        systemInfo.constraintCommunicationRange);
+
+    return systemInfo;
+}
+
+/*! \brief Set the cell size and interaction limits, as well as the DD grid */
+static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
+                                   t_commrec *cr, gmx_domdec_t *dd,
+                                   const DomdecOptions &options,
+                                   const gmx::MdrunOptions &mdrunOptions,
+                                   const gmx_mtop_t *mtop,
+                                   const t_inputrec *ir,
+                                   const matrix box,
+                                   gmx::ArrayRef<const gmx::RVec> xGlobal,
+                                   gmx_ddbox_t *ddbox)
+{
+    gmx_domdec_comm_t *comm             = dd->comm;
+
+    /* Initialize to GPU share count to 0, might change later */
+    comm->nrank_gpu_shared = 0;
+
+    comm->dlbState         = determineInitialDlbState(mdlog, options.dlbOption, comm->bRecordLoad, mdrunOptions, ir);
+    dd_dlb_set_should_check_whether_to_turn_dlb_on(dd, TRUE);
+    /* To consider turning DLB on after 2*nstlist steps we need to check
+     * at partitioning count 3. Thus we need to increase the first count by 2.
+     */
+    comm->ddPartioningCountFirstDlbOff += 2;
+
+    GMX_LOG(mdlog.info).appendTextFormatted(
+            "Dynamic load balancing: %s", edlbs_names[int(comm->dlbState)]);
+
+    comm->bPMELoadBalDLBLimits = FALSE;
+
+    /* Allocate the charge group/atom sorting struct */
+    comm->sort = std::make_unique<gmx_domdec_sort_t>();
+
+    /* Generate the simulation system information */
+    comm->systemInfo               = getSystemInfo(mdlog, cr, options, mtop, ir, box, xGlobal);
+    const DDSystemInfo &systemInfo = comm->systemInfo;
+
+    if (systemInfo.useUpdateGroups)
+    {
+        /* Note: We would like to use dd->nnodes for the atom count estimate,
+         *       but that is not yet available here. But this anyhow only
+         *       affect performance up to the second dd_partition_system call.
+         */
+        const int homeAtomCountEstimate =  mtop->natoms/cr->nnodes;
+        comm->updateGroupsCog =
+            std::make_unique<gmx::UpdateGroupsCog>(*mtop,
+                                                   systemInfo.updateGroupingPerMoleculetype,
+                                                   maxReferenceTemperature(*ir),
+                                                   homeAtomCountEstimate);
+    }
 
     comm->cgs_gl = gmx_mtop_global_cgs(mtop);
 
@@ -2362,7 +2380,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
         {
             char     buf[STRLEN];
             gmx_bool bC = (systemInfo.haveSplitConstraints &&
-                           rconstr > systemInfo.minCutoffForMultiBody);
+                           systemInfo.constraintCommunicationRange > systemInfo.minCutoffForMultiBody);
             sprintf(buf, "Change the number of ranks or mdrun option %s%s%s",
                     !bC ? "-rdd" : "-rcon",
                     comm->dlbState != DlbState::offUser ? " or -dds" : "",
