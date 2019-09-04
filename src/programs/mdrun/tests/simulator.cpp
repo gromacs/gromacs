@@ -94,7 +94,7 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
                                                 integrator.c_str(),
                                                 "no", "no");
 
-    EnergyTolerances energiesToMatch
+    EnergyTermsToCompare energyTermsToCompare
     {{
          {
              interaction_function[F_EPOT].longname,
@@ -116,7 +116,7 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
             &fileManager_, &runner_,
             simulationName, numWarningsToTolerate,
             mdpFieldValues,
-            energiesToMatch);
+            energyTermsToCompare);
 }
 
 // TODO The time for OpenCL kernel compilation means these tests time

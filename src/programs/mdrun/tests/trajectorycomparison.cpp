@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,7 +101,7 @@ static void compareBox(const TrajectoryFrame              &reference,
     }
 }
 
-/*! \brief Help put all atom positions in \c frame into its box.
+/*! \brief Help put all atom coordinates in \c frame into its box.
  *
  * This can perhaps go away when frame->x is a container. */
 static std::vector<RVec>
@@ -123,30 +123,73 @@ putAtomsInBox(const TrajectoryFrame &frame)
     return x;
 }
 
-/*! \brief Compares the positions from \c reference and \c test
- * according to the \c matchSettings and \c tolerance. */
-static void comparePositions(const TrajectoryFrame              &reference,
-                             const TrajectoryFrame              &test,
-                             const TrajectoryFrameMatchSettings &matchSettings,
-                             const FloatingPointTolerance        tolerance)
+/*! \brief Return whether the \c comparisonConditions and emptiness of
+ * reference and test frames means that a comparison should be
+ * attempted.
+ *
+ * This allows the framework to determine whether it is an error if a
+ * comparison cannot be made. */
+static bool shouldDoComparison(const ComparisonConditions comparisonConditions,
+                               const bool                 referenceIsEmpty,
+                               const bool                 testIsEmpty)
 {
+    if (comparisonConditions == ComparisonConditions::NoComparison)
+    {
+        return false;
+    }
+
+    bool doComparison = true;
+    if (testIsEmpty)
+    {
+        if (comparisonConditions == ComparisonConditions::MustCompare ||
+            comparisonConditions == ComparisonConditions::CompareIfBothFound ||
+            (!referenceIsEmpty &&
+             comparisonConditions == ComparisonConditions::CompareIfReferenceFound))
+        {
+            ADD_FAILURE() << "Test frame lacked quantitiy for required comparison";
+        }
+        doComparison = false;
+    }
+    if (referenceIsEmpty)
+    {
+        if (comparisonConditions == ComparisonConditions::MustCompare ||
+            comparisonConditions == ComparisonConditions::CompareIfBothFound ||
+            (!testIsEmpty &&
+             comparisonConditions == ComparisonConditions::CompareIfTestFound))
+        {
+            ADD_FAILURE() << "Reference frame lacked quantity for required comparison";
+        }
+        doComparison = false;
+    }
+    return doComparison;
+}
+
+/*! \brief Compares the position coordinates from \c reference and \c test
+ * according to the \c matchSettings and \c tolerance. */
+static void compareCoordinates(const TrajectoryFrame              &reference,
+                               const TrajectoryFrame              &test,
+                               const TrajectoryFrameMatchSettings &matchSettings,
+                               const FloatingPointTolerance        tolerance)
+{
+    SCOPED_TRACE("Comparing coordinates");
+    if (!shouldDoComparison(matchSettings.coordinatesComparison,
+                            reference.x().empty(),
+                            test.x().empty()))
+    {
+        return;
+    }
+
     bool canHandlePbc = true;
     if (!reference.hasBox())
     {
-        if (matchSettings.mustComparePositions)
-        {
-            ADD_FAILURE() << "Comparing positions required PBC handling, "
-            "but the reference frame did not have a box";
-        }
+        ADD_FAILURE() << "Comparing positions required PBC handling, "
+        "but the reference frame did not have a box";
         canHandlePbc = false;
     }
     if (!test.hasBox())
     {
-        if (matchSettings.mustComparePositions)
-        {
-            ADD_FAILURE() << "Comparing positions required PBC handling, "
-            "but the test frame did not have a box";
-        }
+        ADD_FAILURE() << "Comparing positions required PBC handling, "
+        "but the test frame did not have a box";
         canHandlePbc = false;
     }
 
@@ -173,7 +216,10 @@ static void compareVelocities(const TrajectoryFrame              &reference,
                               const TrajectoryFrameMatchSettings &matchSettings,
                               const FloatingPointTolerance        tolerance)
 {
-    if (!matchSettings.mustCompareVelocities)
+    SCOPED_TRACE("Comparing velocities");
+    if (!shouldDoComparison(matchSettings.velocitiesComparison,
+                            reference.v().empty(),
+                            test.v().empty()))
     {
         return;
     }
@@ -187,7 +233,10 @@ static void compareForces(const TrajectoryFrame              &reference,
                           const TrajectoryFrameMatchSettings &matchSettings,
                           const FloatingPointTolerance        tolerance)
 {
-    if (!matchSettings.mustCompareForces)
+    SCOPED_TRACE("Comparing forces");
+    if (!shouldDoComparison(matchSettings.forcesComparison,
+                            reference.f().empty(),
+                            test.f().empty()))
     {
         return;
     }
@@ -195,18 +244,31 @@ static void compareForces(const TrajectoryFrame              &reference,
 }
 
 
-void compareTrajectoryFrames(const TrajectoryFrame              &reference,
-                             const TrajectoryFrame              &test,
-                             const TrajectoryFrameMatchSettings &matchSettings,
-                             const TrajectoryTolerances         &tolerances)
+const TrajectoryTolerances TrajectoryComparison::s_defaultTrajectoryTolerances {
+    defaultRealTolerance(),                                                       // box
+    relativeToleranceAsFloatingPoint(1.0, 1.0e-3),                                // positions
+    defaultRealTolerance(),                                                       // velocities
+    relativeToleranceAsFloatingPoint(100.0, GMX_DOUBLE ? 1.0e-7 : 1.0e-5)         // forces
+};
+
+
+TrajectoryComparison::TrajectoryComparison(const TrajectoryFrameMatchSettings &matchSettings,
+                                           const TrajectoryTolerances         &tolerances)
+    : matchSettings_(matchSettings),
+      tolerances_(tolerances)
 {
-    SCOPED_TRACE("Comparing reference frame " + reference.frameName() + " and test frame " + test.frameName());
+}
+
+void TrajectoryComparison::operator()(const TrajectoryFrame &reference,
+                                      const TrajectoryFrame &test) const
+{
+    SCOPED_TRACE("Comparing trajectory reference frame " + reference.frameName() + " and test frame " + test.frameName());
     EXPECT_EQ(reference.step(), test.step());
     EXPECT_EQ(reference.time(), test.time());
-    compareBox(reference, test, matchSettings, tolerances.box);
-    comparePositions(reference, test, matchSettings, tolerances.positions);
-    compareVelocities(reference, test, matchSettings, tolerances.velocities);
-    compareForces(reference, test, matchSettings, tolerances.forces);
+    compareBox(reference, test, matchSettings_, tolerances_.box);
+    compareCoordinates(reference, test, matchSettings_, tolerances_.coordinates);
+    compareVelocities(reference, test, matchSettings_, tolerances_.velocities);
+    compareForces(reference, test, matchSettings_, tolerances_.forces);
 }
 
 }  // namespace test

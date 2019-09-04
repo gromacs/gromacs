@@ -104,8 +104,8 @@ TEST_P(MdrunRerunTest, WithinTolerances)
                                                 "no", "no");
 
     // bd is much less reproducible in a rerun than the other integrators
-    const int        toleranceScaleFactor = (integrator == "bd") ? 2 : 1;
-    EnergyTolerances energiesToMatch
+    const int            toleranceScaleFactor = (integrator == "bd") ? 2 : 1;
+    EnergyTermsToCompare energyTermsToCompare
     {{
          {
              interaction_function[F_EPOT].longname,
@@ -116,7 +116,7 @@ TEST_P(MdrunRerunTest, WithinTolerances)
     int numWarningsToTolerate = 0;
     executeRerunTest(&fileManager_, &runner_,
                      simulationName, numWarningsToTolerate, mdpFieldValues,
-                     energiesToMatch);
+                     energyTermsToCompare);
 }
 
 // TODO The time for OpenCL kernel compilation means these tests time
@@ -153,7 +153,7 @@ TEST_P(MdrunRerunFreeEnergyTest, WithinTolerances)
                                                 "no", "no");
     mdpFieldValues["other"] += formatString("\ninit-lambda-state = %d", initLambdaState);
 
-    EnergyTolerances energiesToMatch
+    EnergyTermsToCompare energyTermsToCompare
     {{
          {
              interaction_function[F_EPOT].longname, relativeToleranceAsPrecisionDependentUlp(10.0, 24, 32)
@@ -177,7 +177,7 @@ TEST_P(MdrunRerunFreeEnergyTest, WithinTolerances)
     int numWarningsToTolerate = (integrator == "md") ? 1 : 0;
     executeRerunTest(&fileManager_, &runner_,
                      simulationName, numWarningsToTolerate, mdpFieldValues,
-                     energiesToMatch);
+                     energyTermsToCompare);
 }
 
 // TODO The time for OpenCL kernel compilation means these tests time

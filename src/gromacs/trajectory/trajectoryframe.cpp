@@ -156,8 +156,15 @@ int TrajectoryFrame::pbc() const
 
 ArrayRef<const RVec> TrajectoryFrame::x() const
 {
-    return arrayRefFromArray(reinterpret_cast<RVec *>(frame_.x),
-                             frame_.natoms);
+    if (frame_.bX)
+    {
+        return arrayRefFromArray(reinterpret_cast<RVec *>(frame_.x),
+                                 frame_.natoms);
+    }
+    else
+    {
+        return {};
+    }
 }
 
 ArrayRef<const RVec> TrajectoryFrame::v() const

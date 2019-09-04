@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,7 +87,7 @@ class MimicTest : public gmx::test::MdrunTestFixture
         //! Check the output of mdrun
         void checkMdrun()
         {
-            EnergyTolerances energiesToMatch
+            EnergyTermsToCompare energyTermsToCompare
             {{
                  {
                      interaction_function[F_EPOT].longname, relativeToleranceAsFloatingPoint(-20.1, 1e-4)
@@ -97,7 +97,7 @@ class MimicTest : public gmx::test::MdrunTestFixture
             TestReferenceData refData;
             auto              checker = refData.rootChecker();
             checkEnergiesAgainstReferenceData(runner_.edrFileName_,
-                                              energiesToMatch,
+                                              energyTermsToCompare,
                                               &checker);
         }
 };

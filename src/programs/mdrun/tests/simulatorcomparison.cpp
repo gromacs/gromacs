@@ -65,13 +65,13 @@ namespace
 //! Run grompp and mdrun for both sets of mdp field values
 template <bool doEnvironmentVariable, bool doRerun>
 void executeSimulatorComparisonTestImpl(
-        TestFileManager        *fileManager,
-        SimulationRunner       *runner,
-        const std::string      &simulationName,
-        int                     maxWarningsTolerated,
-        const MdpFieldValues   &mdpFieldValues,
-        const EnergyTolerances &energiesToMatch,
-        const std::string      &environmentVariable)
+        TestFileManager            *fileManager,
+        SimulationRunner           *runner,
+        const std::string          &simulationName,
+        int                         maxWarningsTolerated,
+        const MdpFieldValues       &mdpFieldValues,
+        const EnergyTermsToCompare &energyTermsToCompare,
+        const std::string          &environmentVariable)
 {
     // TODO At some point we should also test PME-only ranks.
     int numRanksAvailable = getNumberOfTestMpiRanks();
@@ -159,48 +159,39 @@ void executeSimulatorComparisonTestImpl(
     }
 
     // Build the functor that will compare energy frames on the chosen
-    // energy fields.
-    auto energyComparator = [&energiesToMatch](const EnergyFrame &first, const EnergyFrame &second)
-        {
-            compareEnergyFrames(first, second, energiesToMatch);
-        };
+    // energy terms.
+    EnergyComparison energyComparison(energyTermsToCompare);
+
     // Build the manager that will present matching pairs of frames to compare.
     //
-    // TODO Here is an unnecessary copy of keys (ie. the energy field
+    // TODO Here is an unnecessary copy of keys (ie. the energy term
     // names), for convenience. In the future, use a range.
-    auto namesOfEnergiesToMatch = getKeys(energiesToMatch);
+    auto namesOfEnergiesToMatch = energyComparison.getEnergyNames();
     FramePairManager<EnergyFrameReader>
          energyManager(
-            openEnergyFileToReadFields(simulator1EdrFileName, namesOfEnergiesToMatch),
-            openEnergyFileToReadFields(simulator2EdrFileName, namesOfEnergiesToMatch));
+            openEnergyFileToReadTerms(simulator1EdrFileName, namesOfEnergiesToMatch),
+            openEnergyFileToReadTerms(simulator2EdrFileName, namesOfEnergiesToMatch));
     // Compare the energy frames.
-    energyManager.compareAllFramePairs<EnergyFrame>(energyComparator);
+    energyManager.compareAllFramePairs<EnergyFrame>(energyComparison);
 
     // Specify how trajectory frame matching must work.
     TrajectoryFrameMatchSettings trajectoryMatchSettings {
-        true, true, true, true, !doRerun, true
-    };
-    /* Specify the default expected tolerances for trajectory
-     * components for all simulation systems. */
-    TrajectoryTolerances trajectoryTolerances {
-        defaultRealTolerance(),                                                   // box
-        relativeToleranceAsFloatingPoint(1.0, 1.0e-3),                            // positions
-        defaultRealTolerance(),                                                   // velocities
-        relativeToleranceAsFloatingPoint(100.0, GMX_DOUBLE ? 1.0e-7 : 1.0e-5)     // forces
+        true, true, true, ComparisonConditions::MustCompare,
+        doRerun ? ComparisonConditions::NoComparison : ComparisonConditions::MustCompare,
+        ComparisonConditions::MustCompare
     };
 
     // Build the functor that will compare reference and test
     // trajectory frames in the chosen way.
-    auto trajectoryComparator = [&trajectoryMatchSettings, &trajectoryTolerances](const TrajectoryFrame &reference, const TrajectoryFrame &test)
-        {
-            compareTrajectoryFrames(reference, test, trajectoryMatchSettings, trajectoryTolerances);
-        };
+    TrajectoryComparison trajectoryComparison {
+        trajectoryMatchSettings, TrajectoryComparison::s_defaultTrajectoryTolerances
+    };
     // Build the manager that will present matching pairs of frames to compare
     FramePairManager<TrajectoryFrameReader>
     trajectoryManager(std::make_unique<TrajectoryFrameReader>(simulator1TrajectoryFileName),
                       std::make_unique<TrajectoryFrameReader>(simulator2TrajectoryFileName));
     // Compare the trajectory frames.
-    trajectoryManager.compareAllFramePairs<TrajectoryFrame>(trajectoryComparator);
+    trajectoryManager.compareAllFramePairs<TrajectoryFrame>(trajectoryComparison);
 }
 }       // namespace
 

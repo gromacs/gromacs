@@ -104,6 +104,13 @@ using MdpFieldValues = std::map<std::string, std::string>;
  * \throws  std::bad_alloc     if out of memory
  *          std::out_of_range  if \c simulationName is not in the database */
 MdpFieldValues
+prepareMdpFieldValues(const std::string &simulationName,
+                      const std::string &integrator,
+                      const std::string &tcoupl,
+                      const std::string &pcoupl);
+
+//! \copydoc prepareMdpFieldValues()
+MdpFieldValues
 prepareMdpFieldValues(const char *simulationName,
                       const char *integrator,
                       const char *tcoupl,

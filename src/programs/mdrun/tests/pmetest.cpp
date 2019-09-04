@@ -169,7 +169,7 @@ void PmeTest::runTest(const RunModesList &runModes)
 
         if (thisRankChecks)
         {
-            auto energyReader      = openEnergyFileToReadFields(runner_.edrFileName_, {"Coul. recip.", "Total Energy", "Kinetic En."});
+            auto energyReader      = openEnergyFileToReadTerms(runner_.edrFileName_, {"Coul. recip.", "Total Energy", "Kinetic En."});
             auto conservedChecker  = rootChecker.checkCompound("Energy", "Conserved");
             auto reciprocalChecker = rootChecker.checkCompound("Energy", "Reciprocal");
             bool firstIteration    = true;

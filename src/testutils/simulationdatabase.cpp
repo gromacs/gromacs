@@ -248,7 +248,6 @@ const MdpFileValues mdpFileValueDatabase_g
                                  R"(free-energy         = yes
                                   sc-alpha            = 0.5
                                   sc-r-power          = 6
-                                  nstdhdl             = 4
                                   mass-lambdas        = 0.0 0.5 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0
                                   bonded-lambdas      = 0.0 0.0 0.0 0.5 1.0 1.0 1.0 1.0 1.0 1.0 1.0
                                   restraint-lambdas   = 0.0 0.0 0.0 0.0 0.0 0.5 1.0 1.0 1.0 1.0 1.0
@@ -277,14 +276,24 @@ const MdpFileValues mdpFileValueDatabase_g
  *
  * \throws  std::bad_alloc     if out of memory
  *          std::out_of_range  if \c simulationName is not in the database */
-MdpFieldValues prepareDefaultMdpFieldValues(const char *simulationName)
+MdpFieldValues prepareDefaultMdpFieldValues(const std::string &simulationName)
 {
     using MdpField = MdpFieldValues::value_type;
 
     auto mdpFieldValues = mdpFileValueDatabase_g.at(simulationName).mdpFieldValues;
     mdpFieldValues.insert(MdpField("nsteps", "16"));
+    mdpFieldValues.insert(MdpField("nstenergy", "4"));
+    mdpFieldValues.insert(MdpField("nstxout", "4"));
+    mdpFieldValues.insert(MdpField("nstvout", "4"));
+    mdpFieldValues.insert(MdpField("nstfout", "4"));
+    mdpFieldValues.insert(MdpField("nstxout-compressed", "0"));
+    mdpFieldValues.insert(MdpField("nstdhdl", "4"));
+    mdpFieldValues.insert(MdpField("comm-mode", "linear"));
+    mdpFieldValues.insert(MdpField("nstcomm", "4"));
     mdpFieldValues.insert(MdpField("ref-t", "298"));
+    mdpFieldValues.insert(MdpField("nsttcouple", "4"));
     mdpFieldValues.insert(MdpField("tau-p", "1"));
+    mdpFieldValues.insert(MdpField("nstpcouple", "4"));
     mdpFieldValues.insert(MdpField("compressibility", "5e-5"));
     mdpFieldValues.insert(MdpField("constraints", "none"));
     mdpFieldValues.insert(MdpField("other", ""));
@@ -315,10 +324,10 @@ reportNumbersOfPpRanksSupported(const std::string &simulationName)
 }
 
 MdpFieldValues
-prepareMdpFieldValues(const char *simulationName,
-                      const char *integrator,
-                      const char *tcoupl,
-                      const char *pcoupl)
+prepareMdpFieldValues(const std::string &simulationName,
+                      const std::string &integrator,
+                      const std::string &tcoupl,
+                      const std::string &pcoupl)
 {
     using MdpField = MdpFieldValues::value_type;
 
@@ -329,6 +338,14 @@ prepareMdpFieldValues(const char *simulationName,
     return mdpFieldValues;
 }
 
+MdpFieldValues
+prepareMdpFieldValues(const char *simulationName,
+                      const char *integrator,
+                      const char *tcoupl,
+                      const char *pcoupl)
+{
+    return prepareMdpFieldValues(std::string(simulationName), integrator, tcoupl, pcoupl);
+}
 std::string
 prepareMdpFileContents(const MdpFieldValues &mdpFieldValues)
 {
@@ -357,18 +374,22 @@ prepareMdpFileContents(const MdpFieldValues &mdpFieldValues)
                            bd-fric                 = 1000
                            verlet-buffer-tolerance = 0.000001
                            nsteps                  = %s
-                           nstenergy               = 4
+                           nstenergy               = %s
+                           nstxout                 = %s
+                           nstvout                 = %s
+                           nstfout                 = %s
+                           nstxout-compressed      = %s
+                           nstdhdl                 = %s
                            nstlist                 = 8
-                           nstxout                 = 4
-                           nstvout                 = 4
-                           nstfout                 = 4
                            integrator              = %s
                            ld-seed                 = 234262
                            tcoupl                  = %s
+                           nsttcouple              = %s
                            ref-t                   = %s
                            tau-t                   = 1
                            tc-grps                 = System
                            pcoupl                  = %s
+                           nstpcouple              = %s
                            pcoupltype              = isotropic
                            ref-p                   = 1
                            tau-p                   = %s
@@ -378,18 +399,30 @@ prepareMdpFileContents(const MdpFieldValues &mdpFieldValues)
                            lincs-order             = 2
                            lincs-iter              = 5
                            nstcalcenergy           = %s
+                           comm-mode               = %s
+                           nstcomm                 = %s
                            %s)",
                         mdpFieldValues.at("rcoulomb").c_str(),
                         mdpFieldValues.at("rvdw").c_str(),
                         mdpFieldValues.at("nsteps").c_str(),
+                        mdpFieldValues.at("nstenergy").c_str(),
+                        mdpFieldValues.at("nstxout").c_str(),
+                        mdpFieldValues.at("nstvout").c_str(),
+                        mdpFieldValues.at("nstfout").c_str(),
+                        mdpFieldValues.at("nstxout-compressed").c_str(),
+                        mdpFieldValues.at("nstdhdl").c_str(),
                         mdpFieldValues.at("integrator").c_str(),
                         mdpFieldValues.at("tcoupl").c_str(),
+                        mdpFieldValues.at("nsttcouple").c_str(),
                         mdpFieldValues.at("ref-t").c_str(),
                         mdpFieldValues.at("pcoupl").c_str(),
+                        mdpFieldValues.at("nstpcouple").c_str(),
                         mdpFieldValues.at("tau-p").c_str(),
                         mdpFieldValues.at("compressibility").c_str(),
                         mdpFieldValues.at("constraints").c_str(),
                         mdpFieldValues.at("nstcalcenergy").c_str(),
+                        mdpFieldValues.at("comm-mode").c_str(),
+                        mdpFieldValues.at("nstcomm").c_str(),
                         mdpFieldValues.at("other").c_str());
 }
 

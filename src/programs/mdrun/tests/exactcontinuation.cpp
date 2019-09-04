@@ -209,12 +209,12 @@ class ContinuationFramePairManager
 
 /*! \brief Run grompp for a normal mdrun, the same mdrun stopping part
  * way, doing a continuation, and compare the results. */
-void runTest(TestFileManager        *fileManager,
-             SimulationRunner       *runner,
-             const std::string      &simulationName,
-             int                     maxWarningsTolerated,
-             const MdpFieldValues   &mdpFieldValues,
-             const EnergyTolerances &energiesToMatch)
+void runTest(TestFileManager            *fileManager,
+             SimulationRunner           *runner,
+             const std::string          &simulationName,
+             int                         maxWarningsTolerated,
+             const MdpFieldValues       &mdpFieldValues,
+             const EnergyTermsToCompare &energyTermsToCompare)
 {
     int numRanksAvailable = getNumberOfTestMpiRanks();
     if (!isNumberOfPpRanksSupported(simulationName, numRanksAvailable))
@@ -299,22 +299,20 @@ void runTest(TestFileManager        *fileManager,
     }
 
     // Build the functor that will compare energy frames on the chosen
-    // energy fields.
-    auto energyComparator = [&energiesToMatch](const EnergyFrame &fullRun, const EnergyFrame &twoPartRun)
-        {
-            compareEnergyFrames(fullRun, twoPartRun, energiesToMatch);
-        };
+    // energy terms.
+    EnergyComparison energyComparison(energyTermsToCompare);
+
     // Build the manager that will present matching pairs of frames to compare.
     //
-    // TODO Here is an unnecessary copy of keys (ie. the energy field
+    // TODO Here is an unnecessary copy of keys (ie. the energy term
     // names), for convenience. In the future, use a range.
-    auto namesOfEnergiesToMatch = getKeys(energiesToMatch);
+    auto namesOfEnergiesToMatch = energyComparison.getEnergyNames();
     ContinuationFramePairManager<EnergyFrameReader>
-         energyManager(openEnergyFileToReadFields(fullRunEdrFileName, namesOfEnergiesToMatch),
-                  openEnergyFileToReadFields(firstPartRunEdrFileName, namesOfEnergiesToMatch),
-                  openEnergyFileToReadFields(secondPartRunEdrFileName, namesOfEnergiesToMatch));
+         energyManager(openEnergyFileToReadTerms(fullRunEdrFileName, namesOfEnergiesToMatch),
+                  openEnergyFileToReadTerms(firstPartRunEdrFileName, namesOfEnergiesToMatch),
+                  openEnergyFileToReadTerms(secondPartRunEdrFileName, namesOfEnergiesToMatch));
     // Compare the energy frames.
-    energyManager.compareAllFramePairs<EnergyFrame>(energyComparator);
+    energyManager.compareAllFramePairs<EnergyFrame>(energyComparison);
 }
 
 /*! \brief Test fixture for mdrun exact continuations
@@ -372,7 +370,7 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
     // with forces on CPUs, but there is no real risk of a bug with
     // those propagators that would only be caught with a tighter
     // tolerance in this particular test.
-    EnergyTolerances energiesToMatch
+    EnergyTermsToCompare energyTermsToCompare
     {{
          {
              interaction_function[F_EPOT].longname,
@@ -384,7 +382,7 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
     runTest(&fileManager_, &runner_,
             simulationName,
             numWarningsToTolerate, mdpFieldValues,
-            energiesToMatch);
+            energyTermsToCompare);
 }
 
 // TODO The time for OpenCL kernel compilation means these tests time

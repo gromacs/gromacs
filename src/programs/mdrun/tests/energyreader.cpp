@@ -63,8 +63,8 @@ namespace test
 {
 
 EnergyFrameReaderPtr
-openEnergyFileToReadFields(const std::string              &filename,
-                           const std::vector<std::string> &namesOfRequiredEnergyFields)
+openEnergyFileToReadTerms(const std::string              &filename,
+                          const std::vector<std::string> &namesOfRequiredEnergyTerms)
 {
     ener_file_ptr energyFile(open_enx(filename.c_str(), "r"));
 
@@ -73,7 +73,7 @@ openEnergyFileToReadFields(const std::string              &filename,
         GMX_THROW(FileIOError("Could not open energy file " + filename + " for reading"));
     }
 
-    /* Read in the names of energy fields used in this file. The
+    /* Read in the names of energy terms used in this file. The
      * resulting data structure would leak if an exception was thrown,
      * so transfer the contents that we actually need to a map we can
      * keep.
@@ -82,7 +82,7 @@ openEnergyFileToReadFields(const std::string              &filename,
      * std::bad_alloc and we could leak memory allocated by
      * do_enxnms(), but there's nothing we can do about this right
      * now. */
-    std::map<std::string, int> indicesOfEnergyFields;
+    std::map<std::string, int> indicesOfEnergyTerms;
     {
         int          numEnergyTerms;
         gmx_enxnm_t *energyNames = nullptr;
@@ -90,28 +90,28 @@ openEnergyFileToReadFields(const std::string              &filename,
         for (int i = 0; i != numEnergyTerms; ++i)
         {
             const char *name           = energyNames[i].name;
-            auto        requiredEnergy = std::find_if(std::begin(namesOfRequiredEnergyFields),
-                                                      std::end(namesOfRequiredEnergyFields),
+            auto        requiredEnergy = std::find_if(std::begin(namesOfRequiredEnergyTerms),
+                                                      std::end(namesOfRequiredEnergyTerms),
                                                       [name](const std::string &n){
                                                           return name == n;
                                                       });
-            if (requiredEnergy != namesOfRequiredEnergyFields.end())
+            if (requiredEnergy != namesOfRequiredEnergyTerms.end())
             {
-                indicesOfEnergyFields[name] = i;
+                indicesOfEnergyTerms[name] = i;
             }
         }
         // Clean up old data structures
         free_enxnms(numEnergyTerms, energyNames);
     }
 
-    // Throw if we failed to find the fields we need
-    if (indicesOfEnergyFields.size() != namesOfRequiredEnergyFields.size())
+    // Throw if we failed to find the terms we need
+    if (indicesOfEnergyTerms.size() != namesOfRequiredEnergyTerms.size())
     {
         std::string requiredEnergiesNotFound = "Did not find the following required energies in mdrun output:\n";
-        for (auto &name : namesOfRequiredEnergyFields)
+        for (auto &name : namesOfRequiredEnergyTerms)
         {
-            auto possibleIndex = indicesOfEnergyFields.find(name);
-            if (possibleIndex == indicesOfEnergyFields.end())
+            auto possibleIndex = indicesOfEnergyTerms.find(name);
+            if (possibleIndex == indicesOfEnergyTerms.end())
             {
                 requiredEnergiesNotFound += name + "\n";
             }
@@ -119,7 +119,7 @@ openEnergyFileToReadFields(const std::string              &filename,
         GMX_THROW(APIError(requiredEnergiesNotFound));
     }
 
-    return EnergyFrameReaderPtr(std::make_unique<EnergyFrameReader>(indicesOfEnergyFields,
+    return EnergyFrameReaderPtr(std::make_unique<EnergyFrameReader>(indicesOfEnergyTerms,
                                                                     energyFile.release()));
 }
 
@@ -144,9 +144,9 @@ void done_enxframe(t_enxframe *fr)
 
 // === EnergyFrameReader ===
 
-EnergyFrameReader::EnergyFrameReader(const std::map<std::string, int> &indicesOfEnergyFields,
+EnergyFrameReader::EnergyFrameReader(const std::map<std::string, int> &indicesOfEnergyTerms,
                                      ener_file *energyFile)
-    : indicesOfEnergyFields_(indicesOfEnergyFields),
+    : indicesOfEnergyTerms_(indicesOfEnergyTerms),
       energyFileGuard_(energyFile),
       enxframeGuard_(make_enxframe()),
       haveProbedForNextFrame_(false),
@@ -190,7 +190,7 @@ EnergyFrameReader::frame()
     nextFrameExists_        = false;
 
     // The probe filled enxframe_ with new data, so now we use that data to fill energyFrame
-    return EnergyFrame(*enxframeGuard_.get(), indicesOfEnergyFields_);
+    return EnergyFrame(*enxframeGuard_.get(), indicesOfEnergyTerms_);
 }
 
 }  // namespace test

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,7 +101,7 @@ TEST_P(InitialConstraintsTest, Works)
     runner_.edrFileName_ = fileManager_.getTemporaryFilePath(inputFile + ".edr");
     ASSERT_EQ(0, runner_.callMdrun());
 
-    auto energyReader = openEnergyFileToReadFields(runner_.edrFileName_, {"Total Energy", "Kinetic En."});
+    auto energyReader = openEnergyFileToReadTerms(runner_.edrFileName_, {"Total Energy", "Kinetic En."});
     real totalEnergy  = 0.0, prevTotalEnergy = 0.0;
     auto tolerance    = ulpTolerance(0); // The real value is set below from starting kinetic energy
     for (int i = 0; i <= nsteps; i++)

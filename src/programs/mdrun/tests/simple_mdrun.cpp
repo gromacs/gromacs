@@ -148,9 +148,9 @@ TEST_P(SimpleMdrunTest, WithinTolerances)
     }
     // Do mdrun
     {
-        CommandLine      mdrunCaller;
+        CommandLine          mdrunCaller;
         ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
-        EnergyTolerances energiesToMatch
+        EnergyTermsToCompare energyTermsToCompare
         {{
              {
                  interaction_function[F_EPOT].longname, energyToleranceForSystem_g.at(simulationName)
@@ -167,7 +167,7 @@ TEST_P(SimpleMdrunTest, WithinTolerances)
                 .checkCompound("Simulation", simulationName)
                 .checkCompound("Mdrun", integrator);
         checkEnergiesAgainstReferenceData(runner_.edrFileName_,
-                                          energiesToMatch,
+                                          energyTermsToCompare,
                                           &checker);
         // Now check the forces
         TrajectoryFrameReader reader(runner_.fullPrecisionTrajectoryFileName_);

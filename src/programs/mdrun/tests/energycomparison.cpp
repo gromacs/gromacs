@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 #include <gtest/gtest.h>
 #include <gtest/gtest-spi.h>
 
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/strconvert.h"
@@ -63,10 +64,42 @@ namespace gmx
 namespace test
 {
 
-void compareEnergyFrames(const EnergyFrame      &reference,
-                         const EnergyFrame      &test,
-                         const EnergyTolerances &tolerances)
+const EnergyTermsToCompare EnergyComparison::s_defaultEnergyTermsToCompare =
 {
+    {
+        interaction_function[F_EPOT].longname,
+        relativeToleranceAsPrecisionDependentUlp(10.0, 24, 40)
+    },
+    {
+        interaction_function[F_EKIN].longname,
+        relativeToleranceAsPrecisionDependentUlp(10.0, 24, 40)
+    },
+    {
+        interaction_function[F_PRES].longname,
+        relativeToleranceAsPrecisionDependentUlp(10.0, 24, 40)
+    },
+};
+
+EnergyComparison::EnergyComparison(const EnergyTermsToCompare &energyTermsToCompare)
+    : energyTermsToCompare_(energyTermsToCompare)
+{
+}
+
+std::vector<std::string> EnergyComparison::getEnergyNames() const
+{
+    std::vector<std::string> keys;
+    keys.reserve(energyTermsToCompare_.size());
+    for (const auto &it : energyTermsToCompare_)
+    {
+        keys.push_back(it.first);
+    }
+    return keys;
+}
+
+void EnergyComparison::operator()(const EnergyFrame &reference,
+                                  const EnergyFrame &test) const
+{
+    SCOPED_TRACE("Comparing energy reference frame " + reference.frameName() + " and test frame " + test.frameName());
     for (auto referenceIt = reference.begin(); referenceIt != reference.end(); ++referenceIt)
     {
         auto &energyName = referenceIt->first;
@@ -76,7 +109,7 @@ void compareEnergyFrames(const EnergyFrame      &reference,
         {
             auto &energyValueInReference = referenceIt->second;
             auto &energyValueInTest      = testIt->second;
-            EXPECT_REAL_EQ_TOL(energyValueInReference, energyValueInTest, tolerances.at(energyName));
+            EXPECT_REAL_EQ_TOL(energyValueInReference, energyValueInTest, energyTermsToCompare_.at(energyName));
         }
         else
         {
@@ -86,24 +119,24 @@ void compareEnergyFrames(const EnergyFrame      &reference,
 }
 
 void
-checkEnergiesAgainstReferenceData(const std::string      &energyFilename,
-                                  const EnergyTolerances &energiesToMatch,
-                                  TestReferenceChecker   *checker)
+checkEnergiesAgainstReferenceData(const std::string          &energyFilename,
+                                  const EnergyTermsToCompare &energyTermsToCompare,
+                                  TestReferenceChecker       *checker)
 {
     const bool thisRankChecks = (gmx_node_rank() == 0);
 
     if (thisRankChecks)
     {
-        auto namesOfEnergiesToMatch = getKeys(energiesToMatch);
-        auto energyReader           = openEnergyFileToReadFields(energyFilename,
-                                                                 namesOfEnergiesToMatch);
+        EnergyComparison energyComparison(energyTermsToCompare);
+        auto             energyReader = openEnergyFileToReadTerms(energyFilename,
+                                                                  energyComparison.getEnergyNames());
 
         std::unordered_map<std::string, TestReferenceChecker> checkers;
-        for (const auto &energyToMatch : energiesToMatch)
+        for (const auto &energyTermToCompare : energyTermsToCompare)
         {
-            const auto &energyName = energyToMatch.first;
+            const auto &energyName = energyTermToCompare.first;
             checkers[energyName] = checker->checkCompound("Energy", energyName.c_str());
-            const auto &energyTolerance = energyToMatch.second;
+            const auto &energyTolerance = energyTermToCompare.second;
             checkers[energyName].setDefaultTolerance(energyTolerance);
         }
 
@@ -118,9 +151,9 @@ checkEnergiesAgainstReferenceData(const std::string      &energyFilename,
             const EnergyFrame &frame     = energyReader->frame();
             const std::string  frameName = frame.frameName() + " in frame " + toString(frameNumber);
 
-            for (const auto &energyToMatch : energiesToMatch)
+            for (const auto &energyTermToCompare : energyTermsToCompare)
             {
-                const std::string &energyName  = energyToMatch.first;
+                const std::string &energyName  = energyTermToCompare.first;
                 const real         energyValue = frame.at(energyName);
 
                 SCOPED_TRACE("Comparing " +  energyName + " in " + frameName);

@@ -167,7 +167,7 @@ TEST_P(EnergyMinimizationTest, WithinTolerances)
         }
     }
 
-    EnergyTolerances energiesToMatch
+    EnergyTermsToCompare energyTermsToCompare
     {{
          {
              interaction_function[F_EPOT].longname, potentialEnergyToleranceForSystem_g.at(simulationName)
@@ -179,7 +179,7 @@ TEST_P(EnergyMinimizationTest, WithinTolerances)
             .checkCompound("Simulation", simulationName)
             .checkCompound("Minimizer", minimizer);
     checkEnergiesAgainstReferenceData(runner_.edrFileName_,
-                                      energiesToMatch,
+                                      energyTermsToCompare,
                                       &checker);
 }
 
