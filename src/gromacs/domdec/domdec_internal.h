@@ -456,6 +456,14 @@ struct DDSystemInfo
     real cutoff = 0;
     //! The lower limit for the DD cell size
     real cellsizeLimit = 0;
+
+    //! Can atoms connected by constraints be assigned to different domains?
+    bool haveSplitConstraints = false;
+    //! Can atoms connected by settles be assigned to different domains?
+    bool haveSplitSettles = false;
+
+    //! Whether to only communicate atoms beyond the non-bonded cut-off when they are involved in bonded interactions with non-local atoms
+    bool filterBondedCommunication = false;
 };
 
 /*! \brief Struct for domain decomposition communication
@@ -509,9 +517,7 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Centers of mass of local update groups
     std::unique_ptr<gmx::UpdateGroupsCog> updateGroupsCog;
 
-    /* Data for the optional bonded interaction atom communication range */
-    /**< Only communicate atoms beyond the non-bonded cut-off when they are involved in bonded interactions with non-local atoms */
-    gmx_bool  bBondComm = false;
+    /* Data for the optional filtering of communication of atoms for bonded interactions */
     /**< Links between cg's through bonded interactions */
     t_blocka *cglink = nullptr;
     /**< Local cg availability, TODO: remove when group scheme is removed */

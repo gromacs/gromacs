@@ -189,11 +189,6 @@ struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     /* Only available on the master node */
     std::unique_ptr<AtomDistribution> ma;
 
-    /* Can atoms connected by constraints be assigned to different domains? */
-    bool splitConstraints = false;
-    /* Can atoms connected by settles be assigned to different domains? */
-    bool splitSettles = false;
-
     /* Global atom number to interaction list */
     gmx_reverse_top_t  *reverse_top    = nullptr;
     int                 nbonded_global = 0;

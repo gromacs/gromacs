@@ -1913,7 +1913,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
         comm->dth.resize(numThreads);
     }
 
-    bBondComm = comm->bBondComm;
+    bBondComm = comm->systemInfo.filterBondedCommunication;
 
     /* Do we need to determine extra distances for multi-body bondeds? */
     bDistMB = (comm->systemInfo.haveInterDomainMultiBodyBondeds && isDlbOn(dd->comm) && dd->ndim > 1);
@@ -3212,7 +3212,7 @@ void dd_partition_system(FILE                    *fplog,
                 }
                 break;
             case DDAtomRanges::Type::Constraints:
-                if (dd->splitConstraints || dd->splitSettles)
+                if (dd->comm->systemInfo.haveSplitConstraints || dd->comm->systemInfo.haveSplitSettles)
                 {
                     /* Only for inter-cg constraints we need special code */
                     n = dd_make_local_constraints(dd, n, &top_global, fr->cginfo.data(),

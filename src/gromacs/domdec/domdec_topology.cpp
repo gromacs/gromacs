@@ -746,7 +746,8 @@ void dd_make_reverse_top(FILE *fplog,
     dd->reverse_top  = new gmx_reverse_top_t;
     *dd->reverse_top =
         make_reverse_top(mtop, ir->efep != efepNO,
-                         !dd->splitConstraints, !dd->splitSettles,
+                         !dd->comm->systemInfo.haveSplitConstraints,
+                         !dd->comm->systemInfo.haveSplitSettles,
                          bBCheck, &dd->nbonded_global);
 
     gmx_reverse_top_t *rt = dd->reverse_top;
@@ -796,7 +797,7 @@ void dd_make_reverse_top(FILE *fplog,
         init_domdec_vsites(dd, vsite->numInterUpdategroupVsites);
     }
 
-    if (dd->splitConstraints || dd->splitSettles)
+    if (dd->comm->systemInfo.haveSplitConstraints || dd->comm->systemInfo.haveSplitSettles)
     {
         init_domdec_constraints(dd, mtop);
     }

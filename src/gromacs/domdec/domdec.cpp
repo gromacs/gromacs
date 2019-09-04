@@ -667,7 +667,7 @@ real dd_cutoff_multibody(const gmx_domdec_t *dd)
             {
                 r = std::min(r, comm.cellsize_min[dd->dim[di]]);
             }
-            if (comm.bBondComm)
+            if (comm.systemInfo.filterBondedCommunication)
             {
                 r = std::max(r, comm.cutoff_mbody);
             }
@@ -1079,6 +1079,11 @@ int dd_pme_maxshift_y(const gmx_domdec_t *dd)
     {
         return 0;
     }
+}
+
+bool ddHaveSplitConstraints(const gmx_domdec_t &dd)
+{
+    return dd.comm->systemInfo.haveSplitConstraints;
 }
 
 void dd_cycles_add(const gmx_domdec_t *dd, float cycles, int ddCycl)
@@ -2167,13 +2172,13 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
 
     if (systemInfo.useUpdateGroups)
     {
-        dd->splitConstraints = false;
-        dd->splitSettles     = false;
+        systemInfo.haveSplitConstraints = false;
+        systemInfo.haveSplitSettles     = false;
     }
     else
     {
-        dd->splitConstraints = gmx::inter_charge_group_constraints(*mtop);
-        dd->splitSettles     = gmx::inter_charge_group_settles(*mtop);
+        systemInfo.haveSplitConstraints = gmx::inter_charge_group_constraints(*mtop);
+        systemInfo.haveSplitSettles     = gmx::inter_charge_group_settles(*mtop);
     }
 
     if (ir->rlist == 0)
@@ -2191,8 +2196,8 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     systemInfo.minCutoffForMultiBody = 0;
 
     /* Determine the minimum cell size limit, affected by many factors */
-    systemInfo.cellsizeLimit = 0;
-    comm->bBondComm          = FALSE;
+    systemInfo.cellsizeLimit             = 0;
+    systemInfo.filterBondedCommunication = false;
 
     /* We do not allow home atoms to move beyond the neighboring domain
      * between domain decomposition steps, which limits the cell size.
@@ -2230,7 +2235,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                 atomToAtomIntoDomainToDomainCutoff(systemInfo, options.minimumCommunicationRange);
             if (options.useBondedCommunication)
             {
-                comm->bBondComm = (systemInfo.minCutoffForMultiBody > systemInfo.cutoff);
+                systemInfo.filterBondedCommunication = (systemInfo.minCutoffForMultiBody > systemInfo.cutoff);
             }
             else
             {
@@ -2268,7 +2273,8 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                 {
                     r_bonded        = std::max(r_2b, r_mb);
                     r_bonded_limit  = tenPercentMargin*r_bonded;
-                    comm->bBondComm = TRUE;
+                    /* This is the (only) place where we turn on the filtering */
+                    systemInfo.filterBondedCommunication = true;
                 }
                 else
                 {
@@ -2296,7 +2302,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     }
 
     real rconstr = 0;
-    if (dd->splitConstraints && options.constraintCommunicationRange <= 0)
+    if (systemInfo.haveSplitConstraints && options.constraintCommunicationRange <= 0)
     {
         /* There is a cell size limit due to the constraints (P-LINCS) */
         rconstr = gmx::constr_r_max(mdlog, mtop, ir);
@@ -2357,7 +2363,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
         if (ddSetup.numDomains[XX] == 0)
         {
             char     buf[STRLEN];
-            gmx_bool bC = (dd->splitConstraints && rconstr > r_bonded_limit);
+            gmx_bool bC = (systemInfo.haveSplitConstraints && rconstr > r_bonded_limit);
             sprintf(buf, "Change the number of ranks or mdrun option %s%s%s",
                     !bC ? "-rdd" : "-rcon",
                     comm->dlbState != DlbState::offUser ? " or -dds" : "",
@@ -2477,7 +2483,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     comm->cellsize_limit = systemInfo.cellsizeLimit;
     if (systemInfo.haveInterDomainBondeds && comm->cutoff_mbody == 0)
     {
-        if (comm->bBondComm || !isDlbDisabled(comm))
+        if (systemInfo.filterBondedCommunication || !isDlbDisabled(comm))
         {
             /* Set the bonded communication distance to halfway
              * the minimum and the maximum,
@@ -2491,7 +2497,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                 comm->cutoff_mbody = std::min(comm->cutoff_mbody,
                                               options.dlbScaling*acs);
             }
-            if (!comm->bBondComm)
+            if (!systemInfo.filterBondedCommunication)
             {
                 /* Without bBondComm do not go beyond the n.b. cut-off */
                 comm->cutoff_mbody = std::min(comm->cutoff_mbody, systemInfo.cutoff);
@@ -2520,7 +2526,8 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     {
         fprintf(debug, "Bonded atom communication beyond the cut-off: %s\n"
                 "cellsize limit %f\n",
-                gmx::boolToString(comm->bBondComm), comm->cellsize_limit);
+                gmx::boolToString(systemInfo.filterBondedCommunication),
+                comm->cellsize_limit);
     }
 
     if (MASTER(cr))
@@ -2557,7 +2564,7 @@ void dd_init_bondeds(FILE *fplog,
 
     comm = dd->comm;
 
-    if (comm->bBondComm)
+    if (comm->systemInfo.filterBondedCommunication)
     {
         /* Communicate atoms beyond the cut-off for bonded interactions */
         comm = dd->comm;
@@ -2646,7 +2653,8 @@ static void writeSettings(gmx::TextWriter       *log,
 
     if (comm->systemInfo.haveInterDomainBondeds ||
         haveInterDomainVsites ||
-        dd->splitConstraints || dd->splitSettles)
+        comm->systemInfo.haveSplitConstraints ||
+        comm->systemInfo.haveSplitSettles)
     {
         std::string decompUnits;
         if (comm->systemInfo.useUpdateGroups)
@@ -2685,14 +2693,14 @@ static void writeSettings(gmx::TextWriter       *log,
                                     std::max(comm->systemInfo.cutoff, comm->cutoff_mbody));
             log->writeLineFormatted("%40s  %-7s %6.3f nm",
                                     "multi-body bonded interactions", "(-rdd)",
-                                    (comm->bBondComm || isDlbOn(dd->comm)) ? comm->cutoff_mbody : std::min(comm->systemInfo.cutoff, limit));
+                                    (comm->systemInfo.filterBondedCommunication || isDlbOn(dd->comm)) ? comm->cutoff_mbody : std::min(comm->systemInfo.cutoff, limit));
         }
         if (haveInterDomainVsites)
         {
             log->writeLineFormatted("%40s  %-7s %6.3f nm",
                                     "virtual site constructions", "(-rcon)", limit);
         }
-        if (dd->splitConstraints || dd->splitSettles)
+        if (comm->systemInfo.haveSplitConstraints || comm->systemInfo.haveSplitSettles)
         {
             std::string separation = gmx::formatString("atoms separated by up to %d constraints",
                                                        1+ir->nProjOrder);

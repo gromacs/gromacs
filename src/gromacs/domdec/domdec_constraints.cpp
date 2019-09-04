@@ -69,6 +69,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "domdec_internal.h"
 #include "domdec_specatomcomm.h"
 
 /*! \brief Struct used during constraint setup with domain decomposition */
@@ -421,7 +422,9 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     // This code should not be called unless this condition is true,
     // because that's the only time init_domdec_constraints is
     // called...
-    GMX_RELEASE_ASSERT(dd->splitConstraints || dd->splitSettles, "dd_make_local_constraints called when there are no local constraints");
+    GMX_RELEASE_ASSERT(dd->comm->systemInfo.haveSplitConstraints ||
+                       dd->comm->systemInfo.haveSplitSettles,
+                       "dd_make_local_constraints called when there are no local constraints");
     // ... and init_domdec_constraints always sets
     // dd->constraint_comm...
     GMX_RELEASE_ASSERT(dd->constraint_comm, "Invalid use of dd_make_local_constraints before construction of constraint_comm");
@@ -454,7 +457,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
 
     gmx::ArrayRef < const std::vector < int>> at2settle_mt;
     /* When settle works inside charge groups, we assigned them already */
-    if (dd->splitSettles)
+    if (dd->comm->systemInfo.haveSplitSettles)
     {
         // TODO Perhaps gmx_domdec_constraints_t should keep a valid constr?
         GMX_RELEASE_ASSERT(constr != nullptr, "Must have valid constraints object");

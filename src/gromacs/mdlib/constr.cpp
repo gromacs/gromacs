@@ -1069,13 +1069,13 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
         {
             lincsd = init_lincs(log, mtop,
                                 nflexcon, at2con_mt,
-                                DOMAINDECOMP(cr) && cr->dd->splitConstraints,
+                                DOMAINDECOMP(cr) && ddHaveSplitConstraints(*cr->dd),
                                 ir.nLincsIter, ir.nProjOrder);
         }
 
         if (ir.eConstrAlg == econtSHAKE)
         {
-            if (DOMAINDECOMP(cr) && cr->dd->splitConstraints)
+            if (DOMAINDECOMP(cr) && ddHaveSplitConstraints(*cr->dd))
             {
                 gmx_fatal(FARGS, "SHAKE is not supported with domain decomposition and constraint that cross charge group boundaries, use LINCS");
             }
