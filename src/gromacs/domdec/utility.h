@@ -86,7 +86,7 @@ static inline int ddcginfo(const cginfo_mb_t *cginfo_mb,
 /*! \brief Returns the number of MD steps for which load has been recorded */
 static inline int dd_load_count(const gmx_domdec_comm_t *comm)
 {
-    return (comm->eFlop ? comm->flop_n : comm->cycl_n[ddCyclF]);
+    return (comm->ddSettings.eFlop ? comm->flop_n : comm->cycl_n[ddCyclF]);
 }
 
 /*! \brief Resize the state and f, if !=nullptr, to natoms */

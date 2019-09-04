@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2012,2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,8 @@
 
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/utility/gmxmpi.h"
+
+#include "domdec_internal.h"
 
 
 /*! \brief Returns the MPI rank of the domain decomposition master rank */
@@ -161,7 +163,7 @@ void dd_sendrecv2_rvec(const struct gmx_domdec_t gmx_unused *dd,
     rank_fw = dd->neighbor[ddimind][0];
     rank_bw = dd->neighbor[ddimind][1];
 
-    if (!dd->bSendRecv2)
+    if (!dd->comm->ddSettings.useSendRecv2)
     {
         /* Try to send and receive in two directions simultaneously.
          * Should be faster, especially on machines

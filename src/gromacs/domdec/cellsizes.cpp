@@ -564,7 +564,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     int                range[] = { 0, 0 };
 
     /* Convert the maximum change from the input percentage to a fraction */
-    const real          change_limit = comm->dlb_scale_lim*0.01;
+    const real          change_limit = comm->ddSettings.dlb_scale_lim*0.01;
 
     const int           ncd          = dd->nc[dim];
 

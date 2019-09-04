@@ -470,6 +470,40 @@ struct DDSystemInfo
     bool increaseMultiBodyCutoff = false;
 };
 
+/*! \brief Settings that affect the behavior of the domain decomposition
+ *
+ * These settings depend on options chosen by the user, set by enviroment
+ * variables, as well as hardware support. The initial DLB state also
+ * depends on the integrator.
+ *
+ * Note: Settings that depend on the simulated system are in DDSystemInfo.
+ */
+struct DDSettings
+{
+    //! Use MPI_Sendrecv communication instead of non-blocking calls
+    bool useSendRecv2 = false;
+
+    /* Information for managing the dynamic load balancing */
+    //! Maximum DLB scaling per load balancing step in percent
+    int  dlb_scale_lim = 0;
+    //! Flop counter (0=no,1=yes,2=with (eFlop-1)*5% noise
+    int  eFlop = 0;
+
+    //! Whether we should record the load
+    bool recordLoad = false;
+
+    /* Debugging */
+    //! Step interval for dumping the local+non-local atoms to pdb
+    int  nstDDDump = 0;
+    //! Step interval for duming the DD grid to pdb
+    int  nstDDDumpGrid = 0;
+    //! DD debug print level: 0, 1, 2
+    int  DD_debug = 0;
+
+    //! The DLB state at the start of the run
+    DlbState initialDlbState = DlbState::offCanTurnOn;
+};
+
 /*! \brief Struct for domain decomposition communication
  *
  * This struct contains most information about domain decomposition
@@ -482,6 +516,9 @@ struct DDSystemInfo
  */
 struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
 {
+    /**< Constant parameters that control DD behavior */
+    DDSettings ddSettings;
+
     /* PME and Cartesian communicator stuff */
     /**< The number of decomposition dimensions for PME, 0: no PME */
     int         npmedecompdim = 0;
@@ -631,8 +668,6 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     std::vector<DDCellsizesWithDlb> cellsizesWithDlb;
 
     /* Stuff for load communication */
-    /**< Should we record the load */
-    gmx_bool        bRecordLoad = false;
     /**< The recorded load data */
     domdec_load_t  *load = nullptr;
     /**< The number of MPI ranks sharing the GPU our rank is using */
@@ -644,10 +679,6 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     MPI_Comm        mpi_comm_gpu_shared;
 #endif
 
-    /* Information for managing the dynamic load balancing */
-    /**< Maximum DLB scaling per load balancing step in percent */
-    int            dlb_scale_lim = 0;
-
     /**< Struct for timing the force load balancing region */
     BalanceRegion *balanceRegion = nullptr;
 
@@ -658,8 +689,6 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     int    cycl_n[ddCyclNr] = { };
     /**< The maximum cycle count */
     float  cycl_max[ddCyclNr] = { };
-    /** Flop counter (0=no,1=yes,2=with (eFlop-1)*5% noise */
-    int    eFlop = 0;
     /**< Total flops counted */
     double flop = 0.0;
     /**< The number of flop recordings */
@@ -703,14 +732,6 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
 
     /** The last partition step */
     int64_t partition_step = INT_MIN;
-
-    /* Debugging */
-    /**< Step interval for dumping the local+non-local atoms to pdb */
-    int  nstDDDump = 0;
-    /**< Step interval for duming the DD grid to pdb */
-    int  nstDDDumpGrid = 0;
-    /**< DD debug print level: 0, 1, 2 */
-    int  DD_debug = 0;
 };
 
 /*! \brief DD zone permutation

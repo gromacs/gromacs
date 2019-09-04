@@ -161,8 +161,6 @@ struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
      */
     int                    nnodes       = 0;
     MPI_Comm               mpi_comm_all = MPI_COMM_NULL;
-    /* Use MPI_Sendrecv communication instead of non-blocking calls */
-    gmx_bool               bSendRecv2 = FALSE;
     /* The local DD cell index and rank */
     ivec                   ci         = { 0, 0, 0 };
     int                    rank       = 0;

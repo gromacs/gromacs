@@ -1377,7 +1377,7 @@ static void setup_neighbor_relations(gmx_domdec_t *dd)
         dd->comm->cellsizesWithDlb.resize(dd->ndim);
     }
 
-    if (dd->comm->bRecordLoad)
+    if (dd->comm->ddSettings.recordLoad)
     {
         make_load_communicators(dd);
     }
@@ -2298,19 +2298,20 @@ getSystemInfo(const gmx::MDLogger           &mdlog,
 static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                                    t_commrec *cr, gmx_domdec_t *dd,
                                    const DomdecOptions &options,
-                                   const gmx::MdrunOptions &mdrunOptions,
+                                   const DDSettings &ddSettings,
                                    const gmx_mtop_t *mtop,
                                    const t_inputrec *ir,
                                    const matrix box,
                                    gmx::ArrayRef<const gmx::RVec> xGlobal,
                                    gmx_ddbox_t *ddbox)
 {
-    gmx_domdec_comm_t *comm             = dd->comm;
+    gmx_domdec_comm_t *comm = dd->comm;
+    comm->ddSettings        = ddSettings;
 
     /* Initialize to GPU share count to 0, might change later */
     comm->nrank_gpu_shared = 0;
 
-    comm->dlbState         = determineInitialDlbState(mdlog, options.dlbOption, comm->bRecordLoad, mdrunOptions, ir);
+    comm->dlbState         = comm->ddSettings.initialDlbState;
     dd_dlb_set_should_check_whether_to_turn_dlb_on(dd, TRUE);
     /* To consider turning DLB on after 2*nstlist steps we need to check
      * at partitioning count 3. Thus we need to increase the first count by 2.
@@ -2926,38 +2927,42 @@ static void set_ddgrid_parameters(const gmx::MDLogger &mdlog,
                                  static_cast<int>(vol_frac*natoms_tot));
 }
 
-/*! \brief Set some important DD parameters that can be modified by env.vars */
-static void set_dd_envvar_options(const gmx::MDLogger &mdlog,
-                                  gmx_domdec_t *dd, int rank_mysim)
+/*! \brief Get some important DD parameters which can be modified by env.vars */
+static DDSettings
+getDDSettings(const gmx::MDLogger     &mdlog,
+              const DomdecOptions     &options,
+              const gmx::MdrunOptions &mdrunOptions,
+              const t_inputrec        &ir)
 {
-    gmx_domdec_comm_t *comm = dd->comm;
+    DDSettings ddSettings;
 
-    dd->bSendRecv2      = (dd_getenv(mdlog, "GMX_DD_USE_SENDRECV2", 0) != 0);
-    comm->dlb_scale_lim = dd_getenv(mdlog, "GMX_DLB_MAX_BOX_SCALING", 10);
-    comm->eFlop         = dd_getenv(mdlog, "GMX_DLB_BASED_ON_FLOPS", 0);
-    int recload         = dd_getenv(mdlog, "GMX_DD_RECORD_LOAD", 1);
-    comm->nstDDDump     = dd_getenv(mdlog, "GMX_DD_NST_DUMP", 0);
-    comm->nstDDDumpGrid = dd_getenv(mdlog, "GMX_DD_NST_DUMP_GRID", 0);
-    comm->DD_debug      = dd_getenv(mdlog, "GMX_DD_DEBUG", 0);
+    ddSettings.useSendRecv2  = (dd_getenv(mdlog, "GMX_DD_USE_SENDRECV2", 0) != 0);
+    ddSettings.dlb_scale_lim = dd_getenv(mdlog, "GMX_DLB_MAX_BOX_SCALING", 10);
+    ddSettings.eFlop         = dd_getenv(mdlog, "GMX_DLB_BASED_ON_FLOPS", 0);
+    const int recload        = dd_getenv(mdlog, "GMX_DD_RECORD_LOAD", 1);
+    ddSettings.nstDDDump     = dd_getenv(mdlog, "GMX_DD_NST_DUMP", 0);
+    ddSettings.nstDDDumpGrid = dd_getenv(mdlog, "GMX_DD_NST_DUMP_GRID", 0);
+    ddSettings.DD_debug      = dd_getenv(mdlog, "GMX_DD_DEBUG", 0);
 
-    if (dd->bSendRecv2)
+    if (ddSettings.useSendRecv2)
     {
         GMX_LOG(mdlog.info).appendText("Will use two sequential MPI_Sendrecv calls instead of two simultaneous non-blocking MPI_Irecv and MPI_Isend pairs for constraint and vsite communication");
     }
 
-    if (comm->eFlop)
+    if (ddSettings.eFlop)
     {
         GMX_LOG(mdlog.info).appendText("Will load balance based on FLOP count");
-        if (comm->eFlop > 1)
-        {
-            srand(1 + rank_mysim);
-        }
-        comm->bRecordLoad = TRUE;
+        ddSettings.recordLoad = true;
     }
     else
     {
-        comm->bRecordLoad = (wallcycle_have_counter() && recload > 0);
+        ddSettings.recordLoad = (wallcycle_have_counter() && recload > 0);
     }
+
+    ddSettings.initialDlbState =
+        determineInitialDlbState(mdlog, options.dlbOption, ddSettings.recordLoad, mdrunOptions, &ir);
+
+    return ddSettings;
 }
 
 gmx_domdec_t::gmx_domdec_t(const t_inputrec &ir) :
@@ -2984,10 +2989,16 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
 
     dd->comm = init_dd_comm();
 
-    set_dd_envvar_options(mdlog, dd, cr->nodeid);
+    DDSettings  ddSettings = getDDSettings(mdlog, options, mdrunOptions, *ir);
+    if (ddSettings.eFlop > 1)
+    {
+        /* Ensure that we have different random flop counts on different ranks */
+        srand(1 + cr->nodeid);
+    }
 
     gmx_ddbox_t ddbox = {0};
-    set_dd_limits_and_grid(mdlog, cr, dd, options, mdrunOptions,
+    set_dd_limits_and_grid(mdlog, cr, dd, options,
+                           ddSettings,
                            mtop, ir,
                            box, xGlobal,
                            &ddbox);

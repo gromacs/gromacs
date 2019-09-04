@@ -582,7 +582,7 @@ static void check_index_consistency(gmx_domdec_t *dd,
 
     const int numAtomsInZones = dd->comm->atomRanges.end(DDAtomRanges::Type::Zones);
 
-    if (dd->comm->DD_debug > 1)
+    if (dd->comm->ddSettings.DD_debug > 1)
     {
         std::vector<int> have(natoms_sys);
         for (int a = 0; a < numAtomsInZones; a++)
@@ -732,12 +732,12 @@ static float dd_force_load(gmx_domdec_comm_t *comm)
 {
     float load;
 
-    if (comm->eFlop)
+    if (comm->ddSettings.eFlop)
     {
         load = comm->flop;
-        if (comm->eFlop > 1)
+        if (comm->ddSettings.eFlop > 1)
         {
-            load *= 1.0 + (comm->eFlop - 1)*(0.1*rand()/RAND_MAX - 0.05);
+            load *= 1.0 + (comm->ddSettings.eFlop - 1)*(0.1*rand()/RAND_MAX - 0.05);
         }
     }
     else
@@ -2715,7 +2715,7 @@ void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
     }
     fprintf(fplog, "\n");
 
-    if (comm->bRecordLoad && EI_DYNAMICS(ir->eI))
+    if (comm->ddSettings.recordLoad && EI_DYNAMICS(ir->eI))
     {
         print_dd_load_av(fplog, cr->dd);
     }
@@ -2813,7 +2813,7 @@ void dd_partition_system(FILE                    *fplog,
     }
 
     /* Check if we have recorded loads on the nodes */
-    if (comm->bRecordLoad && dd_load_count(comm) > 0)
+    if (comm->ddSettings.recordLoad && dd_load_count(comm) > 0)
     {
         bCheckWhetherToTurnDlbOn = dd_dlb_get_should_check_whether_to_turn_dlb_on(dd);
 
@@ -3037,7 +3037,7 @@ void dd_partition_system(FILE                    *fplog,
     set_dd_cell_sizes(dd, &ddbox, dd->unitCellInfo.ddBoxIsDynamic, bMasterState, bDoDLB,
                       step, wcycle);
 
-    if (comm->nstDDDumpGrid > 0 && step % comm->nstDDDumpGrid == 0)
+    if (comm->ddSettings.nstDDDumpGrid > 0 && step % comm->ddSettings.nstDDDumpGrid == 0)
     {
         write_dd_grid_pdb("dd_grid", step, dd, state_local->box, &ddbox);
     }
@@ -3316,7 +3316,7 @@ void dd_partition_system(FILE                    *fplog,
 
     wallcycle_sub_stop(wcycle, ewcsDD_TOPOTHER);
 
-    if (comm->nstDDDump > 0 && step % comm->nstDDDump == 0)
+    if (comm->ddSettings.nstDDDump > 0 && step % comm->ddSettings.nstDDDump == 0)
     {
         dd_move_x(dd, state_local->box, state_local->x, nullWallcycle);
         write_dd_pdb("dd_dump", step, "dump", &top_global, cr,
@@ -3338,7 +3338,7 @@ void dd_partition_system(FILE                    *fplog,
         comm->master_cg_ddp_count = (bSortCG ? 0 : dd->ddp_count);
     }
 
-    if (comm->DD_debug > 0)
+    if (comm->ddSettings.DD_debug > 0)
     {
         /* Set the env var GMX_DD_DEBUG if you suspect corrupted indices */
         check_index_consistency(dd, top_global.natoms, ncg_mtop(&top_global),

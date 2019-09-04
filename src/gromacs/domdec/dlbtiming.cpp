@@ -86,7 +86,7 @@ static BalanceRegion *getBalanceRegion(const gmx_domdec_t *dd)
 void DDBalanceRegionHandler::openRegionCpuImpl(DdAllowBalanceRegionReopen gmx_unused allowReopen) const
 {
     BalanceRegion *reg = getBalanceRegion(dd_);
-    if (dd_->comm->bRecordLoad)
+    if (dd_->comm->ddSettings.recordLoad)
     {
         GMX_ASSERT(allowReopen == DdAllowBalanceRegionReopen::yes || !reg->isOpen, "Should not open an already opened region");
 
@@ -211,7 +211,7 @@ static double force_flop_count(const t_nrnb *nrnb)
 
 void dd_force_flop_start(gmx_domdec_t *dd, t_nrnb *nrnb)
 {
-    if (dd->comm->eFlop)
+    if (dd->comm->ddSettings.eFlop)
     {
         dd->comm->flop -= force_flop_count(nrnb);
     }
@@ -219,7 +219,7 @@ void dd_force_flop_start(gmx_domdec_t *dd, t_nrnb *nrnb)
 
 void dd_force_flop_stop(gmx_domdec_t *dd, t_nrnb *nrnb)
 {
-    if (dd->comm->eFlop)
+    if (dd->comm->ddSettings.eFlop)
     {
         dd->comm->flop += force_flop_count(nrnb);
         dd->comm->flop_n++;
