@@ -340,6 +340,56 @@ sqrt(SimdFloat x)
     }
 }
 
+/*! \brief SIMD float log2(x). This is the base-2 logarithm.
+ *
+ * \param x Argument, should be >0.
+ * \result The base-2 logarithm of x. Undefined if argument is invalid.
+ */
+static inline SimdFloat gmx_simdcall
+log2(SimdFloat x)
+{
+    // This implementation computes log2 by
+    // 1) Extracting the exponent and adding it to...
+    // 2) A 9th-order minimax approximation using only odd
+    //    terms of (x-1)/(x+1), where x is the mantissa.
+
+#if GMX_SIMD_HAVE_NATIVE_LOG_FLOAT
+    // Just rescale if native log2() is not present, but log() is.
+    return log(x) * SimdFloat(std::log2(std::exp(1.0)));
+#else
+    const SimdFloat  one(1.0F);
+    const SimdFloat  two(2.0F);
+    const SimdFloat  invsqrt2(1.0F/std::sqrt(2.0F));
+    const SimdFloat  CL9(0.342149508897807708152F);
+    const SimdFloat  CL7(0.411570606888219447939F);
+    const SimdFloat  CL5(0.577085979152320294183F);
+    const SimdFloat  CL3(0.961796550607099898222F);
+    const SimdFloat  CL1(2.885390081777926774009F);
+    SimdFloat        fExp, x2, p;
+    SimdFBool        m;
+    SimdFInt32       iExp;
+
+    x     = frexp(x, &iExp);
+    fExp  = cvtI2R(iExp);
+
+    m     = x < invsqrt2;
+    // Adjust to non-IEEE format for x<1/sqrt(2): exponent -= 1, mantissa *= 2.0
+    fExp  = fExp - selectByMask(one, m);
+    x     = x * blend(one, two, m);
+
+    x     = (x-one) * inv( x+one );
+    x2    = x * x;
+
+    p     = fma(CL9, x2, CL7);
+    p     = fma(p, x2, CL5);
+    p     = fma(p, x2, CL3);
+    p     = fma(p, x2, CL1);
+    p     = fma(p, x, fExp);
+
+    return p;
+#endif
+}
+
 #if !GMX_SIMD_HAVE_NATIVE_LOG_FLOAT
 /*! \brief SIMD float log(x). This is the natural logarithm.
  *
@@ -564,6 +614,55 @@ exp(SimdFloat x)
     return x;
 }
 #endif
+
+/*! \brief SIMD float pow(x,y)
+ *
+ * This returns x^y for SIMD values.
+ *
+ * \tparam opt If this is changed from the default (safe) into the unsafe
+ *             option, there are no guarantees about correct results for x==0.
+ *
+ * \param x Base.
+ *
+ * \param y exponent.
+
+ * \result x^y. Overflowing arguments are likely to either return 0 or inf,
+ *         depending on the underlying implementation. If unsafe optimizations
+ *         are enabled, this is also true for x==0.
+ *
+ * \warning You cannot rely on this implementation returning inf for arguments
+ *          that cause overflow. If you have some very large
+ *          values and need to rely on getting a valid numerical output,
+ *          take the minimum of your variable and the largest valid argument
+ *          before calling this routine.
+ */
+template <MathOptimization opt = MathOptimization::Safe>
+static inline SimdFloat gmx_simdcall
+pow(SimdFloat x, SimdFloat y)
+{
+    SimdFloat xcorr;
+
+    if (opt == MathOptimization::Safe)
+    {
+        xcorr = max(x, SimdFloat(std::numeric_limits<float>::min()));
+    }
+    else
+    {
+        xcorr = x;
+    }
+
+    SimdFloat result = exp2<opt>(y * log2(xcorr));
+
+    if (opt == MathOptimization::Safe)
+    {
+        // if x==0 and y>0 we explicitly set the result to 0.0
+        // For any x with y==0, the result will already be 1.0 since we multiply by y (0.0) and call exp().
+        result = blend(result, setZero(), x == setZero() && setZero() < y );
+    }
+
+    return result;
+}
+
 
 /*! \brief SIMD float erf(x).
  *
@@ -1741,6 +1840,57 @@ sqrt(SimdDouble x)
     }
 }
 
+/*! \brief SIMD double log2(x). This is the base-2 logarithm.
+ *
+ * \param x Argument, should be >0.
+ * \result The base-2 logarithm of x. Undefined if argument is invalid.
+ */
+static inline SimdDouble gmx_simdcall
+log2(SimdDouble x)
+{
+#if GMX_SIMD_HAVE_NATIVE_LOG_DOUBLE
+    // Just rescale if native log2() is not present, but log is.
+    return log(x) * SimdDouble(std::log2(std::exp(1.0)));
+#else
+    const SimdDouble  one(1.0);
+    const SimdDouble  two(2.0);
+    const SimdDouble  invsqrt2(1.0/std::sqrt(2.0));
+    const SimdDouble  CL15(0.2138031565795550370534528);
+    const SimdDouble  CL13(0.2208884091496370882801159);
+    const SimdDouble  CL11(0.2623358279761824340958754);
+    const SimdDouble  CL9(0.3205984930182496084327681);
+    const SimdDouble  CL7(0.4121985864521960363227038);
+    const SimdDouble  CL5(0.5770780163410746954610886);
+    const SimdDouble  CL3(0.9617966939260027547931031);
+    const SimdDouble  CL1(2.885390081777926774009302);
+    SimdDouble        fExp, x2, p;
+    SimdDBool         m;
+    SimdDInt32        iExp;
+
+    x     = frexp(x, &iExp);
+    fExp  = cvtI2R(iExp);
+
+    m     = x < invsqrt2;
+    // Adjust to non-IEEE format for x<1/sqrt(2): exponent -= 1, mantissa *= 2.0
+    fExp  = fExp - selectByMask(one, m);
+    x     = x * blend(one, two, m);
+
+    x     = (x-one) * inv( x+one );
+    x2    = x * x;
+
+    p     = fma(CL15, x2, CL13);
+    p     = fma(p, x2, CL11);
+    p     = fma(p, x2, CL9);
+    p     = fma(p, x2, CL7);
+    p     = fma(p, x2, CL5);
+    p     = fma(p, x2, CL3);
+    p     = fma(p, x2, CL1);
+    p     = fma(p, x, fExp);
+
+    return p;
+#endif
+}
+
 #if !GMX_SIMD_HAVE_NATIVE_LOG_DOUBLE
 /*! \brief SIMD double log(x). This is the natural logarithm.
  *
@@ -1939,6 +2089,55 @@ exp(SimdDouble x)
     return x;
 }
 #endif
+
+/*! \brief SIMD double pow(x,y)
+ *
+ * This returns x^y for SIMD values.
+ *
+ * \tparam opt If this is changed from the default (safe) into the unsafe
+ *             option, there are no guarantees about correct results for x==0.
+ *
+ * \param x Base.
+ *
+ * \param y exponent.
+ *
+ * \result x^y. Overflowing arguments are likely to either return 0 or inf,
+ *         depending on the underlying implementation. If unsafe optimizations
+ *         are enabled, this is also true for x==0.
+ *
+ * \warning You cannot rely on this implementation returning inf for arguments
+ *          that cause overflow. If you have some very large
+ *          values and need to rely on getting a valid numerical output,
+ *          take the minimum of your variable and the largest valid argument
+ *          before calling this routine.
+ */
+template <MathOptimization opt = MathOptimization::Safe>
+static inline SimdDouble gmx_simdcall
+pow(SimdDouble x, SimdDouble y)
+{
+    SimdDouble xcorr;
+
+    if (opt == MathOptimization::Safe)
+    {
+        xcorr = max(x, SimdDouble(std::numeric_limits<double>::min()));
+    }
+    else
+    {
+        xcorr = x;
+    }
+
+    SimdDouble result = exp2<opt>(y * log2(xcorr));
+
+    if (opt == MathOptimization::Safe)
+    {
+        // if x==0 and y>0 we explicitly set the result to 0.0
+        // For any x with y==0, the result will already be 1.0 since we multiply by y (0.0) and call exp().
+        result = blend(result, setZero(), x == setZero() && setZero() < y );
+    }
+
+    return result;
+}
+
 
 /*! \brief SIMD double erf(x).
  *
@@ -3118,6 +3317,49 @@ sqrtSingleAccuracy(SimdDouble x)
     }
 }
 
+/*! \brief SIMD log2(x). Double precision SIMD data, single accuracy.
+ *
+ * \param x Argument, should be >0.
+ * \result The base 2 logarithm of x. Undefined if argument is invalid.
+ */
+static inline SimdDouble gmx_simdcall
+log2SingleAccuracy(SimdDouble x)
+{
+#if GMX_SIMD_HAVE_NATIVE_LOG_DOUBLE
+    return log(x) * SimdDouble(std::log2(std::exp(1.0)));
+#else
+    const SimdDouble  one(1.0);
+    const SimdDouble  two(2.0);
+    const SimdDouble  sqrt2(std::sqrt(2.0));
+    const SimdDouble  CL9(0.342149508897807708152F);
+    const SimdDouble  CL7(0.411570606888219447939F);
+    const SimdDouble  CL5(0.577085979152320294183F);
+    const SimdDouble  CL3(0.961796550607099898222F);
+    const SimdDouble  CL1(2.885390081777926774009F);
+    SimdDouble        fexp, x2, p;
+    SimdDInt32        iexp;
+    SimdDBool         mask;
+
+    x     = frexp(x, &iexp);
+    fexp  = cvtI2R(iexp);
+
+    mask  = (x < sqrt2);
+    // Adjust to non-IEEE format for x<sqrt(2): exponent -= 1, mantissa *= 2.0
+    fexp  = fexp - selectByMask(one, mask);
+    x     = x * blend(one, two, mask);
+
+    x     = (x - one) * invSingleAccuracy( x + one );
+    x2    = x * x;
+
+    p     = fma(CL9, x2, CL7);
+    p     = fma(p, x2, CL5);
+    p     = fma(p, x2, CL3);
+    p     = fma(p, x2, CL1);
+    p     = fma(p, x, fexp);
+
+    return p;
+#endif
+}
 
 /*! \brief SIMD log(x). Double precision SIMD data, single accuracy.
  *
@@ -3127,6 +3369,9 @@ sqrtSingleAccuracy(SimdDouble x)
 static inline SimdDouble gmx_simdcall
 logSingleAccuracy(SimdDouble x)
 {
+#if GMX_SIMD_HAVE_NATIVE_LOG_DOUBLE
+    return log(x);
+#else
     const SimdDouble  one(1.0);
     const SimdDouble  two(2.0);
     const SimdDouble  invsqrt2(1.0/std::sqrt(2.0));
@@ -3158,6 +3403,7 @@ logSingleAccuracy(SimdDouble x)
     p     = fma(p, x, corr * fexp);
 
     return p;
+#endif
 }
 
 /*! \brief SIMD 2^x. Double precision SIMD, single accuracy.
@@ -3168,6 +3414,9 @@ template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble gmx_simdcall
 exp2SingleAccuracy(SimdDouble x)
 {
+#if GMX_SIMD_HAVE_NATIVE_EXP2_DOUBLE
+    return exp2(x);
+#else
     const SimdDouble  CC6(0.0001534581200287996416911311);
     const SimdDouble  CC5(0.001339993121934088894618990);
     const SimdDouble  CC4(0.009618488957115180159497841);
@@ -3215,6 +3464,7 @@ exp2SingleAccuracy(SimdDouble x)
     x         = ldexp<opt>(p, ix);
 
     return x;
+#endif
 }
 
 
@@ -3227,6 +3477,9 @@ template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble gmx_simdcall
 expSingleAccuracy(SimdDouble x)
 {
+#if GMX_SIMD_HAVE_NATIVE_EXP_DOUBLE
+    return exp(x);
+#else
     const SimdDouble  argscale(1.44269504088896341);
     // Lower bound: Clamp args that would lead to an IEEE fp exponent below -1023.
     const SimdDouble  smallArgLimit(-709.0895657128);
@@ -3282,8 +3535,36 @@ expSingleAccuracy(SimdDouble x)
     p         = p + one;
     x         = ldexp<opt>(p, iy);
     return x;
+#endif
 }
 
+/*! \brief SIMD pow(x,y). Double precision SIMD data, single accuracy.
+ *
+ * This returns x^y for SIMD values.
+ *
+ * \tparam opt If this is changed from the default (safe) into the unsafe
+ *             option, there are no guarantees about correct results for x==0.
+ *
+ * \param x Base.
+ *
+ * \param y exponent.
+
+ * \result x^y. Overflowing arguments are likely to either return 0 or inf,
+ *         depending on the underlying implementation. If unsafe optimizations
+ *         are enabled, this is also true for x==0.
+ *
+ * \warning You cannot rely on this implementation returning inf for arguments
+ *          that cause overflow. If you have some very large
+ *          values and need to rely on getting a valid numerical output,
+ *          take the minimum of your variable and the largest valid argument
+ *          before calling this routine.
+ */
+template <MathOptimization opt = MathOptimization::Safe>
+static inline SimdDouble gmx_simdcall
+powSingleAccuracy(SimdDouble x, SimdDouble y)
+{
+    return pow<opt>(x, y);
+}
 
 /*! \brief SIMD erf(x). Double precision SIMD data, single accuracy.
  *
@@ -4371,6 +4652,17 @@ sqrtSingleAccuracy(SimdFloat x)
     return sqrt<opt>(x);
 }
 
+/*! \brief SIMD float log2(x), only targeting single accuracy. This is the base-2 logarithm.
+ *
+ * \param x Argument, should be >0.
+ * \result The base-2 logarithm of x. Undefined if argument is invalid.
+ */
+static inline SimdFloat gmx_simdcall
+log2SingleAccuracy(SimdFloat x)
+{
+    return log2(x);
+}
+
 /*! \brief SIMD float log(x), only targeting single accuracy. This is the natural logarithm.
  *
  * \param x Argument, should be >0.
@@ -4404,6 +4696,16 @@ expSingleAccuracy(SimdFloat x)
     return exp<opt>(x);
 }
 
+/*! \brief SIMD pow(x,y), only targeting single accuracy.
+ *
+ * \copydetails pow(SimdFloat)
+ */
+template <MathOptimization opt = MathOptimization::Safe>
+static inline SimdFloat gmx_simdcall
+powSingleAccuracy(SimdFloat x, SimdFloat y)
+{
+    return pow<opt>(x, y);
+}
 
 /*! \brief SIMD float erf(x), only targeting single accuracy.
  *

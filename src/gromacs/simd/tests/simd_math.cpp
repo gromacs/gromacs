@@ -651,6 +651,17 @@ TEST_F(SimdMathTest, maskzInv)
     GMX_EXPECT_SIMD_REAL_NEAR(ref, maskzInv(x, m));
 }
 
+TEST_F(SimdMathTest, log2)
+{
+    const real      low  = std::numeric_limits<real>::min();
+    const real      high = std::numeric_limits<real>::max();
+
+    CompareSettings settings {
+        Range(low, high), ulpTol_, absTol_, MatchRule::Normal
+    };
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::log2, log2, settings);
+}
+
 TEST_F(SimdMathTest, log)
 {
     const real      low  = std::numeric_limits<real>::min();
@@ -730,6 +741,35 @@ TEST_F(SimdMathTest, expUnsafe)
         Range(lowestRealThatProducesCorrectExp, highestRealThatProducesNormal), ulpTol_, absTol_, MatchRule::Normal
     };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, exp<MathOptimization::Unsafe>, settings);
+}
+
+TEST_F(SimdMathTest, pow)
+{
+    // We already test the log2/exp2 components of pow() extensively above, and it's a very
+    // simple single-line function, so here we just test a handful of values to catch typos
+    // and then some special values.
+
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::pow(c0, c3), std::pow(c1, c4), std::pow(c2, c5)),
+                              pow(rSimd_c0c1c2, rSimd_c3c4c5));
+
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::pow(c0, -c3), std::pow(c1, -c0), std::pow(c2, -c4)),
+                              pow(rSimd_c0c1c2, rSimd_m3m0m4));
+
+    // 0^0 = 1 , 0^c1=0, -c1^0=1
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(1.0, 0.0, 1.0), pow(setSimdRealFrom3R(0, 0.0, -c1), setSimdRealFrom3R(0.0, c1, 0.0)));
+}
+
+TEST_F(SimdMathTest, powUnsafe)
+{
+    // We already test the log2/exp2 components of pow() extensively above, and it's a very
+    // simple single-line function, so here we just test a handful of values to catch typos
+    // and then some special values.
+
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::pow(c0, c3), std::pow(c1, c4), std::pow(c2, c5)),
+                              pow<MathOptimization::Unsafe>(rSimd_c0c1c2, rSimd_c3c4c5));
+
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::pow(c0, -c3), std::pow(c1, -c0), std::pow(c2, -c4)),
+                              pow<MathOptimization::Unsafe>(rSimd_c0c1c2, rSimd_m3m0m4));
 }
 
 /*! \brief Function wrapper for erf(x), with argument/return in default Gromacs precision.
@@ -1045,6 +1085,20 @@ TEST_F(SimdMathTest, invSingleAccuracy)
     GMX_EXPECT_SIMD_FUNC_NEAR(refInv, inv, settings);
 }
 
+TEST_F(SimdMathTest, log2SingleAccuracy)
+{
+    const real low  = std::numeric_limits<real>::min();
+    const real high = std::numeric_limits<real>::max();
+
+    // Increase the allowed error by the difference between the actual precision and single
+    setUlpTolSingleAccuracy(ulpTol_);
+
+    CompareSettings settings {
+        Range(low, high), ulpTol_, absTol_, MatchRule::Normal
+    };
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::log2, log2SingleAccuracy, settings);
+}
+
 TEST_F(SimdMathTest, logSingleAccuracy)
 {
     const real low  = std::numeric_limits<real>::min();
@@ -1135,6 +1189,35 @@ TEST_F(SimdMathTest, expSingleAccuracyUnsafe)
         Range(lowestRealThatProducesCorrectExp, highestRealThatProducesNormal), ulpTol_, absTol_, MatchRule::Normal
     };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, expSingleAccuracy<MathOptimization::Unsafe>, settings);
+}
+
+TEST_F(SimdMathTest, powSingleAccuracy)
+{
+    // We already test the log2/exp2 components of pow() extensively above, and it's a very
+    // simple single-line function, so here we just test a handful of values to catch typos
+    // and then some special values.
+
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::pow(c0, c3), std::pow(c1, c4), std::pow(c2, c5)),
+                              powSingleAccuracy(rSimd_c0c1c2, rSimd_c3c4c5));
+
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::pow(c0, -c3), std::pow(c1, -c0), std::pow(c2, -c4)),
+                              powSingleAccuracy(rSimd_c0c1c2, rSimd_m3m0m4));
+
+    // 0^0 = 1 , 0^c1=0, -c1^0=1
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(1.0, 0.0, 1.0), pow(setSimdRealFrom3R(0, 0.0, -c1), setSimdRealFrom3R(0.0, c1, 0.0)));
+}
+
+TEST_F(SimdMathTest, powSingleAccuracyUnsafe)
+{
+    // We already test the log2/exp2 components of pow() extensively above, and it's a very
+    // simple single-line function, so here we just test a handful of values to catch typos
+    // and then some special values.
+
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::pow(c0, c3), std::pow(c1, c4), std::pow(c2, c5)),
+                              powSingleAccuracy<MathOptimization::Unsafe>(rSimd_c0c1c2, rSimd_c3c4c5));
+
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::pow(c0, -c3), std::pow(c1, -c0), std::pow(c2, -c4)),
+                              powSingleAccuracy<MathOptimization::Unsafe>(rSimd_c0c1c2, rSimd_m3m0m4));
 }
 
 TEST_F(SimdMathTest, erfSingleAccuracy)
