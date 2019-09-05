@@ -14,25 +14,25 @@
 # Test an older version of CUDA
 # Test MPI with CUDA
 # Test MPMD PME with library MPI
-# Test gpubufferops features in the above combination
-gcc-5 gpuhw=nvidia cuda-9.0 mpi npme=1 nranks=2 openmp gpubufferops
+# Test GPU update-constraints features in the above combination
+gcc-5 gpuhw=nvidia cuda-9.0 mpi npme=1 nranks=2 openmp gpuupdate
 
 # Test newest gcc supported by newest CUDA at time of release
 # Test thread-MPI with CUDA
-# Test gpubufferops features in the above combination
-gcc-8 gpuhw=nvidia nranks=1 gpu_id=1 cuda-10.1 thread-mpi openmp cmake-3.10.0 release-with-assert simd=avx2_256 hwloc libhwloc-2.0.4 gpubufferops
+# Test GPU update-constraints features in the above combination
+gcc-8 gpuhw=nvidia nranks=1 gpu_id=1 cuda-10.1 thread-mpi openmp cmake-3.10.0 release-with-assert simd=avx2_256 hwloc libhwloc-2.0.4 gpuupdate
 
 # Test non-default use of mdrun -gpu_id
 # Test GPU-sharing among 4 PP ranks
 # Test no hwloc build, tests internal CPU topology detection (mainly for x86)
-# Test gpubufferops in the above combination
-gcc-7 gpuhw=nvidia nranks=4 gpu_id=1 cuda-10.0 no-hwloc release-with-assert gpubufferops
+# Test GPU update-constraints features in the above combination
+gcc-7 gpuhw=nvidia nranks=4 gpu_id=1 cuda-10.0 no-hwloc release-with-assert gpuupdate
 
 # Test CUDA build on a agent with no CUDA devices
 # Test without TNG support
-# Test gpubufferops in the above combination
-gcc-7 gpuhw=none cuda-10.0 openmp no-tng release-with-assert gpubufferops
+# Test GPU update-constraints features in the above combination
+gcc-7 gpuhw=none cuda-10.0 openmp no-tng release-with-assert gpuupdate
 
 # Test OpenCL build with gpudev features
-# Test gpubufferops on the OpenCL path where it is unsupported
-clang-8 openmp gpuhw=amd opencl-1.2 clFFT-2.14 simd=None gpubufferops
+# Test GPU update-constraints on the OpenCL path where it is unsupported
+clang-8 openmp gpuhw=amd opencl-1.2 clFFT-2.14 simd=None gpuupdate

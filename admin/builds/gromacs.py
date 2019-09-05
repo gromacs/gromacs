@@ -64,6 +64,8 @@ extra_options = {
     # The following options cater for testing code in Jenkins that is
     # currently behind feature flags in master branch.
     'gpubufferops' : Option.bool,
+    'gpucomm': Option.bool,
+    'gpuupdate': Option.bool,
 }
 
 extra_projects = [Project.REGRESSIONTESTS]
@@ -174,6 +176,17 @@ def do_build(context):
 
     if context.opts.gpubufferops:
         context.env.set_env_var('GMX_USE_GPU_BUFFER_OPS', "1")
+
+    # GPU comm flag enables both DD and PP-PME comm as well as buffer ops (hard dependency)
+    if context.opts.gpucomm:
+        context.env.set_env_var('GMX_USE_GPU_BUFFER_OPS', "1")
+        context.env.set_env_var('GMX_GPU_DD_COMMS', "1")
+        context.env.set_env_var('GMX_GPU_PME_PP_COMMS', "1")
+
+    # GPU update flag enables GPU update+constraints as well as buffer ops (dependency)
+    if context.opts.gpuupdate:
+        context.env.set_env_var('GMX_USE_GPU_BUFFER_OPS', "1")
+        context.env.set_env_var('GMX_UPDATE_CONSTRAIN_GPU', "1")
 
     regressiontests_path = context.workspace.get_project_dir(Project.REGRESSIONTESTS)
 
