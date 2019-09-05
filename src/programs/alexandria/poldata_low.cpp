@@ -1072,7 +1072,17 @@ t_eemtype_props eemtype_props[eqdNR] =
 
 bool getEemtypePolarizable(ChargeModel eem)
 {
-    return eemtype_props[eem].polarizable;
+    for (auto i = 0; i < eqdNR; i++)
+    {
+        if (eem == eemtype_props[i].eqd)
+        {
+            return eemtype_props[i].polarizable;
+        }
+    }
+    gmx_fatal(FARGS, "Incorrect eemprops model %s",
+              getEemtypeName(eem));
+
+    return false;
 }
 
 bool getEemtypeDistributed(ChargeModel eem)

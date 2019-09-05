@@ -127,8 +127,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                            const Poldata *pd,
                            t_forcerec    *fr);
 
-void plist_to_mtop(const Poldata                   *pd,
-                   const std::vector<PlistWrapper> &plist,
+void plist_to_mtop(const std::vector<PlistWrapper> &plist,
                    gmx_mtop_t                      *mtop_);
 
 gmx_mtop_t *do_init_mtop(const Poldata                   *pd,

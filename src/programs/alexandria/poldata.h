@@ -89,16 +89,6 @@ class Poldata
         void setNexcl(int nexcl) { nexcl_ = nexcl; }
 
         /*! \brief
-         * Set the scaling factor for 1-4 electrostatic interaction
-         */
-        void setFudgeQQ(double fudgeQQ) { fudgeQQ_ = fudgeQQ; }
-
-        /*! \brief
-         * Set the scaling factor for 1-4 LJ interaction
-         */
-        void setFudgeLJ(double fudgeLJ) { fudgeLJ_ = fudgeLJ; }
-
-        /*! \brief
          * Add the atom types used in Alexandria FF
          *
          **\param[in] elem          The element of the atom type
@@ -198,10 +188,6 @@ class Poldata
         size_t getNatypes() const { return alexandria_.size(); }
 
         size_t getNptypes() const { return ptype_.size(); }
-
-        double getFudgeQQ() const { return fudgeQQ_; }
-
-        double getFudgeLJ() const { return fudgeLJ_; }
 
         /*! \brief
          * Return the reference enthalpy for the given atom type
@@ -667,7 +653,6 @@ class Poldata
         std::string                           vsite_angle_unit_;
         std::string                           vsite_length_unit_;
         int                                   nexcl_;
-        double                                fudgeQQ_, fudgeLJ_;
         std::string                           gtVdwFunction_, gtCombinationRule_;
         int                                   gtVdwFtype_, gtCombRule_;
         std::vector<ListedForces>             forces_;

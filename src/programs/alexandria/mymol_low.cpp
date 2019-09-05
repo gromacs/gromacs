@@ -703,8 +703,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
     }
 }
 
-void plist_to_mtop(const Poldata                   *pd,
-                   const std::vector<PlistWrapper> &plist,
+void plist_to_mtop(const std::vector<PlistWrapper> &plist,
                    gmx_mtop_t                      *mtop_)
 {
     int ffparamsSize = mtop_->ffparams.numTypes();
@@ -721,7 +720,6 @@ void plist_to_mtop(const Poldata                   *pd,
         }
         //mtop_->moltype[0].ilist[ftype].iatoms.resize(nratot, {0});
         /* For generating pairs */
-        double fudgeLJ = pd->getFudgeLJ();
         for (auto j = pw.beginParam(); (j < pw.endParam()); ++j)
         {
             std::vector<real> c;
@@ -731,8 +729,8 @@ void plist_to_mtop(const Poldata                   *pd,
                 int ati = mtop_->moltype[0].atoms.atom[j->a[0]].type;
                 int atj = mtop_->moltype[0].atoms.atom[j->a[1]].type;
                 int tp  = ati*mtop_->ffparams.atnr+atj;
-                c[0] = c[nrfp]   = mtop_->ffparams.iparams[tp].lj.c6*fudgeLJ;
-                c[1] = c[nrfp+1] = mtop_->ffparams.iparams[tp].lj.c12*fudgeLJ;
+                c[0] = c[nrfp]   = mtop_->ffparams.iparams[tp].lj.c6;
+                c[1] = c[nrfp+1] = mtop_->ffparams.iparams[tp].lj.c12;
             }
             else
             {
@@ -836,7 +834,7 @@ gmx_mtop_t *do_init_mtop(const Poldata                   *pd,
     gmx_mtop_finalize(mtop);
     /* Create a charge group block */
     stupid_fill_block(&(mtop->moltype[0].cgs), atoms->nr, false);
-    plist_to_mtop(pd, plist, mtop);
+    plist_to_mtop(plist, mtop);
 
     return mtop;
 }
@@ -1193,8 +1191,7 @@ void print_top_header(FILE                    *fp,
         fprintf(fp, "%-15s  %-15s no           %10g  %10g\n\n",
                 ff.c_str(),
                 pd->getCombinationRule().c_str(),
-                pd->getFudgeLJ(),
-                pd->getFudgeQQ());
+                1.0, 1.0);
 
         fprintf(fp, "[ atomtypes ]\n");
         fprintf(fp, "%-7s%-6s  %6s  %11s  %10s  %5s %-s  %s\n",
