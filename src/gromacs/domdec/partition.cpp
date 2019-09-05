@@ -1057,7 +1057,7 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
 
     char  buf[STRLEN];
     int   numPpRanks   = dd->nnodes;
-    int   numPmeRanks  = (dd->pme_nodeid >= 0) ? comm->ddRankSetup.npmenodes : 0;
+    int   numPmeRanks  = (comm->ddRankSetup.usePmeOnlyRanks ? comm->ddRankSetup.numRanksDoingPme : 0);
     int   numRanks     = numPpRanks + numPmeRanks;
     float lossFraction = 0;
 
@@ -2921,7 +2921,7 @@ void dd_partition_system(FILE                    *fplog,
                          * cost on the PME ranks, which will then surely result
                          * in lower total performance.
                          */
-                        if (cr->npmenodes > 0 &&
+                        if (comm->ddRankSetup.usePmeOnlyRanks &&
                             dd_pme_f_ratio(dd) > 1 - DD_PERF_LOSS_DLB_ON)
                         {
                             turnOnDlb = FALSE;

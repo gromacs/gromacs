@@ -707,7 +707,7 @@ static int ddindex2pmeindex(const DDRankSetup &ddRankSetup,
                             const int          ddCellIndex)
 {
     const int npp  = ddRankSetup.numPPRanks;
-    const int npme = ddRankSetup.npmenodes;
+    const int npme = ddRankSetup.numRanksDoingPme;
 
     /* Here we assign a PME node to communicate with this DD node
      * by assuming that the major index of both is x.
@@ -721,7 +721,7 @@ static int *dd_interleaved_pme_ranks(const DDRankSetup &ddRankSetup)
     int *pme_rank;
     int  n, i, p0, p1;
 
-    snew(pme_rank, ddRankSetup.npmenodes);
+    snew(pme_rank, ddRankSetup.numRanksDoingPme);
     n = 0;
     for (i = 0; i < ddRankSetup.numPPRanks; i++)
     {
@@ -885,9 +885,9 @@ std::vector<int> get_pme_ddranks(const t_commrec *cr,
                                  const int        pmenodeid)
 {
     const DDRankSetup &ddRankSetup = cr->dd->comm->ddRankSetup;
-    GMX_RELEASE_ASSERT(ddRankSetup.npmenodes > 0, "This function should only be called when PME-only ranks are in use");
+    GMX_RELEASE_ASSERT(ddRankSetup.usePmeOnlyRanks, "This function should only be called when PME-only ranks are in use");
     std::vector<int>   ddranks;
-    ddranks.reserve((ddRankSetup.numPPRanks + ddRankSetup.npmenodes - 1)/ddRankSetup.npmenodes);
+    ddranks.reserve((ddRankSetup.numPPRanks + ddRankSetup.numRanksDoingPme - 1)/ddRankSetup.numRanksDoingPme);
 
     for (int x = 0; x < ddRankSetup.numPPCells[XX]; x++)
     {
@@ -923,11 +923,11 @@ std::vector<int> get_pme_ddranks(const t_commrec *cr,
 
 static gmx_bool receive_vir_ener(const gmx_domdec_t *dd, const t_commrec *cr)
 {
-    gmx_bool bReceive = TRUE;
+    gmx_bool           bReceive    = TRUE;
 
-    if (cr->npmenodes < dd->nnodes)
+    const DDRankSetup &ddRankSetup = dd->comm->ddRankSetup;
+    if (ddRankSetup.usePmeOnlyRanks)
     {
-        const DDRankSetup &ddRankSetup = dd->comm->ddRankSetup;
         if (ddRankSetup.bCartesianPP_PME)
         {
 #if GMX_MPI
@@ -1010,7 +1010,7 @@ static void init_ddpme(gmx_domdec_t *dd, gmx_ddpme_t *ddpme, int dimind)
         return;
     }
 
-    const int nso = ddRankSetup.npmenodes/ddpme->nslab;
+    const int nso = ddRankSetup.numRanksDoingPme/ddpme->nslab;
     /* Determine for each PME slab the PP location range for dimension dim */
     snew(ddpme->pp_min, ddpme->nslab);
     snew(ddpme->pp_max, ddpme->nslab);
@@ -1435,7 +1435,7 @@ static void make_pp_communicator(const gmx::MDLogger  &mdlog,
     }
     else if (ddRankSetup.bCartesianPP)
     {
-        if (cr->npmenodes == 0)
+        if (!ddRankSetup.usePmeOnlyRanks)
         {
             /* The PP communicator is also
              * the communicator for this simulation
@@ -1538,7 +1538,7 @@ static void split_communicator(const gmx::MDLogger    &mdlog,
         bool      bDiv[DIM];
         for (int i = 1; i < DIM; i++)
         {
-            bDiv[i] = ((cr->npmenodes*numDDCells[i]) % numDDCellsTot == 0);
+            bDiv[i] = ((ddRankSetup->numRanksDoingPme*numDDCells[i]) % numDDCellsTot == 0);
         }
         if (bDiv[YY] || bDiv[ZZ])
         {
@@ -1561,13 +1561,15 @@ static void split_communicator(const gmx::MDLogger    &mdlog,
                 ddRankSetup->cartpmedim = YY;
             }
             ddRankSetup->ntot[ddRankSetup->cartpmedim]
-                += (cr->npmenodes*numDDCells[ddRankSetup->cartpmedim])/numDDCellsTot;
+                += (ddRankSetup->numRanksDoingPme*numDDCells[ddRankSetup->cartpmedim])/numDDCellsTot;
         }
         else
         {
             GMX_LOG(mdlog.info).appendTextFormatted(
                     "Number of PME-only ranks (%d) is not a multiple of nx*ny (%d*%d) or nx*nz (%d*%d)",
-                    cr->npmenodes, numDDCells[XX], numDDCells[YY], numDDCells[XX], numDDCells[ZZ]);
+                    ddRankSetup->numRanksDoingPme,
+                    numDDCells[XX], numDDCells[YY],
+                    numDDCells[XX], numDDCells[ZZ]);
             GMX_LOG(mdlog.info).appendText("Will not use a Cartesian communicator for PP <-> PME\n");
         }
     }
@@ -1611,7 +1613,7 @@ static void split_communicator(const gmx::MDLogger    &mdlog,
         {
             cr->duty = DUTY_PP;
         }
-        if (cr->npmenodes == 0 ||
+        if (!ddRankSetup->usePmeOnlyRanks ||
             ddCellIndex[ddRankSetup->cartpmedim] >= numDDCells[ddRankSetup->cartpmedim])
         {
             cr->duty = DUTY_PME;
@@ -1672,7 +1674,6 @@ static void split_communicator(const gmx::MDLogger    &mdlog,
  */
 static void makeGroupCommunicators(const gmx::MDLogger &mdlog,
                                    const DDSettings    &ddSettings,
-                                   const DDSetup       &ddSetup,
                                    const DdRankOrder    ddRankOrder,
                                    DDRankSetup         *ddRankSetup,
                                    t_commrec           *cr,
@@ -1681,12 +1682,12 @@ static void makeGroupCommunicators(const gmx::MDLogger &mdlog,
     /* Initially we set ntot to the number of PP cells,
      * This will be increased with PME cells when using Cartesian communicators.
      */
-    copy_ivec(ddSetup.numDomains, ddRankSetup->ntot);
+    copy_ivec(ddRankSetup->numPPCells, ddRankSetup->ntot);
 
     ddRankSetup->bCartesianPP     = (ddRankOrder == DdRankOrder::cartesian);
     ddRankSetup->bCartesianPP_PME = FALSE;
 
-    if (ddSetup.numPmeRanks > 0)
+    if (ddRankSetup->usePmeOnlyRanks)
     {
         /* Split the communicator into a PP and PME part */
         split_communicator(mdlog, cr, ddRankOrder, ddSettings.useCartesianReorder,
@@ -2329,7 +2330,7 @@ getDDSetup(const gmx::MDLogger           &mdlog,
 
         if (options.numPmeRanks >= 0)
         {
-            ddSetup.numPmeRanks = options.numPmeRanks;
+            ddSetup.numPmeOnlyRanks = options.numPmeRanks;
         }
         else
         {
@@ -2337,7 +2338,7 @@ getDDSetup(const gmx::MDLogger           &mdlog,
              * don't use PME ranks. We check later if the DD grid is
              * compatible with the total number of ranks.
              */
-            ddSetup.numPmeRanks = 0;
+            ddSetup.numPmeOnlyRanks = 0;
         }
     }
     else
@@ -2366,7 +2367,7 @@ getDDSetup(const gmx::MDLogger           &mdlog,
                                  "There is no domain decomposition for %d ranks that is compatible with the given box and a minimum cell size of %g nm\n"
                                  "%s\n"
                                  "Look in the log file for details on the domain decomposition",
-                                 cr->nnodes - ddSetup.numPmeRanks,
+                                 cr->nnodes - ddSetup.numPmeOnlyRanks,
                                  ddSetup.cellsizeLimit,
                                  buf);
         }
@@ -2388,16 +2389,16 @@ getDDSetup(const gmx::MDLogger           &mdlog,
     }
 
     const int numPPRanks = ddSetup.numDomains[XX]*ddSetup.numDomains[YY]*ddSetup.numDomains[ZZ];
-    if (cr->nnodes - numPPRanks != ddSetup.numPmeRanks)
+    if (cr->nnodes - numPPRanks != ddSetup.numPmeOnlyRanks)
     {
         gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
                              "The size of the domain decomposition grid (%d) does not match the number of ranks (%d). The total number of ranks is %d",
-                             numPPRanks, cr->nnodes - ddSetup.numPmeRanks, cr->nnodes);
+                             numPPRanks, cr->nnodes - ddSetup.numPmeOnlyRanks, cr->nnodes);
     }
-    if (ddSetup.numPmeRanks > numPPRanks)
+    if (ddSetup.numPmeOnlyRanks > numPPRanks)
     {
         gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
-                             "The number of separate PME ranks (%d) is larger than the number of PP ranks (%d), this is not supported.", ddSetup.numPmeRanks, numPPRanks);
+                             "The number of separate PME ranks (%d) is larger than the number of PP ranks (%d), this is not supported.", ddSetup.numPmeOnlyRanks, numPPRanks);
     }
 
     ddSetup.numDDDimensions = set_dd_dim(ddSetup.numDomains, ddSettings,
@@ -2416,20 +2417,21 @@ getDDRankSetup(const gmx::MDLogger &mdlog,
     GMX_LOG(mdlog.info).appendTextFormatted(
             "Domain decomposition grid %d x %d x %d, separate PME ranks %d",
             ddSetup.numDomains[XX], ddSetup.numDomains[YY], ddSetup.numDomains[ZZ],
-            ddSetup.numPmeRanks);
+            ddSetup.numPmeOnlyRanks);
 
     DDRankSetup ddRankSetup;
 
-    ddRankSetup.numPPRanks = cr->nnodes - cr->npmenodes;
+    ddRankSetup.numPPRanks = cr->nnodes - ddSetup.numPmeOnlyRanks;
     copy_ivec(ddSetup.numDomains, ddRankSetup.numPPCells);
 
-    if (cr->npmenodes > 0)
+    ddRankSetup.usePmeOnlyRanks = (ddSetup.numPmeOnlyRanks > 0);
+    if (ddRankSetup.usePmeOnlyRanks)
     {
-        ddRankSetup.npmenodes = cr->npmenodes;
+        ddRankSetup.numRanksDoingPme = ddSetup.numPmeOnlyRanks;
     }
     else
     {
-        ddRankSetup.npmenodes = ddSetup.numDomains[XX]*ddSetup.numDomains[YY]*ddSetup.numDomains[ZZ];
+        ddRankSetup.numRanksDoingPme = ddSetup.numDomains[XX]*ddSetup.numDomains[YY]*ddSetup.numDomains[ZZ];
     }
 
     if (EEL_PME(ir.coulombtype) || EVDW_PME(ir.vdwtype))
@@ -2445,13 +2447,13 @@ getDDRankSetup(const gmx::MDLogger &mdlog,
         if (ddSetup.numDDDimensions >= 2 &&
             ddSetup.ddDimensions[0] == XX &&
             ddSetup.ddDimensions[1] == YY &&
-            ddRankSetup.npmenodes > ddSetup.numDomains[XX] &&
-            ddRankSetup.npmenodes % ddSetup.numDomains[XX] == 0 &&
+            ddRankSetup.numRanksDoingPme > ddSetup.numDomains[XX] &&
+            ddRankSetup.numRanksDoingPme % ddSetup.numDomains[XX] == 0 &&
             getenv("GMX_PMEONEDD") == nullptr)
         {
             ddRankSetup.npmedecompdim = 2;
             ddRankSetup.npmenodes_x   = ddSetup.numDomains[XX];
-            ddRankSetup.npmenodes_y   = ddRankSetup.npmenodes/ddRankSetup.npmenodes_x;
+            ddRankSetup.npmenodes_y   = ddRankSetup.numRanksDoingPme/ddRankSetup.npmenodes_x;
         }
         else
         {
@@ -2462,11 +2464,11 @@ getDDRankSetup(const gmx::MDLogger &mdlog,
             if (ddSetup.ddDimensions[0] == YY)
             {
                 ddRankSetup.npmenodes_x = 1;
-                ddRankSetup.npmenodes_y = ddRankSetup.npmenodes;
+                ddRankSetup.npmenodes_y = ddRankSetup.numRanksDoingPme;
             }
             else
             {
-                ddRankSetup.npmenodes_x = ddRankSetup.npmenodes;
+                ddRankSetup.npmenodes_x = ddRankSetup.numRanksDoingPme;
                 ddRankSetup.npmenodes_y = 1;
             }
         }
@@ -2532,7 +2534,6 @@ static void set_dd_limits(const gmx::MDLogger &mdlog,
     comm->cgs_gl = gmx_mtop_global_cgs(mtop);
 
     /* Set the DD setup given by ddSetup */
-    cr->npmenodes = ddSetup.numPmeRanks;
     copy_ivec(ddSetup.numDomains, dd->nc);
     dd->ndim = ddSetup.numDDDimensions;
     copy_ivec(ddSetup.ddDimensions, dd->dim);
@@ -2937,7 +2938,7 @@ static void set_ddgrid_parameters(const gmx::MDLogger &mdlog,
     }
     else
     {
-        ddRankSetup.npmenodes = 0;
+        ddRankSetup.numRanksDoingPme = 0;
         if (dd->pme_nodeid >= 0)
         {
             gmx_fatal_collective(FARGS, dd->mpi_comm_all, DDMASTER(dd),
@@ -3049,12 +3050,12 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
     DDSetup      ddSetup    = getDDSetup(mdlog, cr, options, ddSettings, systemInfo,
                                          mtop, ir, box, xGlobal, &ddbox);
 
-    cr->npmenodes = ddSetup.numPmeRanks;
+    cr->npmenodes = ddSetup.numPmeOnlyRanks;
 
     DDRankSetup ddRankSetup = getDDRankSetup(mdlog, cr, ddSetup, *ir);
 
     ivec        ddCellIndex = { 0, 0, 0 };
-    makeGroupCommunicators(mdlog, ddSettings, ddSetup, options.rankOrder,
+    makeGroupCommunicators(mdlog, ddSettings, options.rankOrder,
                            &ddRankSetup, cr, ddCellIndex);
 
     gmx_domdec_t *dd = new gmx_domdec_t(*ir);

@@ -746,7 +746,7 @@ dd_choose_grid(const gmx::MDLogger &mdlog,
         }
         else
         {
-            ddSetup.numPmeRanks = 0;
+            ddSetup.numPmeOnlyRanks = 0;
         }
 
         if (nnodes_div > 12)
@@ -767,25 +767,26 @@ dd_choose_grid(const gmx::MDLogger &mdlog,
                 /* Use PME nodes when the number of nodes is more than 16 */
                 if (cr->nnodes <= 18)
                 {
-                    ddSetup.numPmeRanks = 0;
+                    ddSetup.numPmeOnlyRanks = 0;
                     GMX_LOG(mdlog.info).appendTextFormatted(
                             "Using %d separate PME ranks, as there are too few total\n"
                             " ranks for efficient splitting",
-                            cr->npmenodes);
+                            ddSetup.numPmeOnlyRanks);
                 }
                 else
                 {
-                    ddSetup.numPmeRanks = guess_npme(mdlog, mtop, ir, box, cr->nnodes);
+                    ddSetup.numPmeOnlyRanks = guess_npme(mdlog, mtop, ir, box, cr->nnodes);
                     GMX_LOG(mdlog.info).appendTextFormatted(
-                            "Using %d separate PME ranks, as guessed by mdrun", ddSetup.numPmeRanks);
+                            "Using %d separate PME ranks, as guessed by mdrun",
+                            ddSetup.numPmeOnlyRanks);
                 }
             }
             else
             {
                 /* We checked above that nPmeRanks is a valid number */
-                ddSetup.numPmeRanks = numPmeRanksRequested;
+                ddSetup.numPmeOnlyRanks = numPmeRanksRequested;
                 GMX_LOG(mdlog.info).appendTextFormatted(
-                        "Using %d separate PME ranks", ddSetup.numPmeRanks);
+                        "Using %d separate PME ranks", ddSetup.numPmeOnlyRanks);
                 // TODO: there was a ", per user request" note here, but it's not correct anymore,
                 // as with GPUs decision about nPmeRanks can be made in runner() as well.
                 // Consider a single spot for setting nPmeRanks.
@@ -793,7 +794,7 @@ dd_choose_grid(const gmx::MDLogger &mdlog,
         }
 
         ddSetup.cellsizeLimit =
-            optimize_ncells(mdlog, cr->nnodes, ddSetup.numPmeRanks,
+            optimize_ncells(mdlog, cr->nnodes, ddSetup.numPmeOnlyRanks,
                             bDynLoadBal, dlb_scale,
                             mtop, box, ddbox, ir,
                             systemInfo,
@@ -804,11 +805,11 @@ dd_choose_grid(const gmx::MDLogger &mdlog,
     gmx_bcast(sizeof(ddSetup.numDomains), ddSetup.numDomains, cr);
     if (EEL_PME(ir->coulombtype))
     {
-        gmx_bcast(sizeof(ddSetup.numPmeRanks), &ddSetup.numPmeRanks, cr);
+        gmx_bcast(sizeof(ddSetup.numPmeOnlyRanks), &ddSetup.numPmeOnlyRanks, cr);
     }
     else
     {
-        ddSetup.numPmeRanks = 0;
+        ddSetup.numPmeOnlyRanks = 0;
     }
 
     return ddSetup;

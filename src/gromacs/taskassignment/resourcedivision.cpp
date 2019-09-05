@@ -563,7 +563,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
 
     bool anyRankIsUsingGpus = willUsePhysicalGpu;
     /* Thread-MPI seems to have a bug with reduce on 1 node, so use a cond. */
-    if (cr->nnodes + cr->npmenodes > 1)
+    if (cr->nnodes > 1)
     {
         int count[3], count_max[3];
 

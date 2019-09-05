@@ -373,7 +373,7 @@ reportOpenmpSettings(const gmx::MDLogger &mdlog,
     }
 
 #if GMX_MPI
-    if (cr->nnodes + cr->npmenodes > 1)
+    if (cr->nnodes > 1)
     {
         /* Get the min and max thread counts over the MPI ranks */
         int buf_in[4], buf_out[4];

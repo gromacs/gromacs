@@ -328,7 +328,7 @@ real comm_box_frac(const ivec dd_nc, real cutoff, const gmx_ddbox_t *ddbox);
 
 struct DDSetup
 {
-    int  numPmeRanks     = 0;
+    int  numPmeOnlyRanks = 0;
     ivec numDomains      = { 0, 0, 0 };
     real cellsizeLimit   = 0;
     int  numDDDimensions = 0;

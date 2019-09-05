@@ -519,10 +519,11 @@ struct DDRankSetup
     ivec        numPPCells = { 0, 0, 0 };
 
     /* PME and Cartesian communicator stuff */
+    bool        usePmeOnlyRanks = false;
     /**< The number of decomposition dimensions for PME, 0: no PME */
     int         npmedecompdim = 0;
     /**< The number of ranks doing PME (PP/PME or only PME) */
-    int         npmenodes = 0;
+    int         numRanksDoingPme = 0;
     /**< The number of PME ranks/domains along x */
     int         npmenodes_x = 0;
     /**< The number of PME ranks/domains along y */
