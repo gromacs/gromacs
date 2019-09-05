@@ -103,7 +103,7 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
          },
          {
              interaction_function[F_EKIN].longname,
-             relativeToleranceAsPrecisionDependentUlp(10.0, 100, 40)
+             relativeToleranceAsPrecisionDependentUlp(60.0, 100, 40)
          },
          {
              interaction_function[F_PRES].longname,

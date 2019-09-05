@@ -69,6 +69,8 @@ enum class EmulateGpuNonbonded : bool
     Yes
 };
 
+class MDAtoms;
+
 /*! \brief Decide whether this thread-MPI simulation will run
  * nonbonded tasks on GPUs.
  *
@@ -226,6 +228,33 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
                                      bool       usingElecPmeOrEwald,
                                      int        numPmeRanksPerSimulation,
                                      bool       gpusWereDetected);
+
+/*! \brief Decide whether to use GPU for update.
+ *
+ * \param[in]  isDomainDecomposition     Whether there more than one domain.
+ * \param[in]  useGpuForNonbonded        Whether GPUs will be used for nonbonded interactions.
+ * \param[in]  updateTarget              User choice for running simulation on GPU.
+ * \param[in]  gpusWereDetected          Whether compatible GPUs were detected on any node.
+ * \param[in]  inputrec                  The user input.
+ * \param[in]  mdatoms                   Information about simulation atoms.
+ * \param[in]  useEssentialDynamics      If essential dynamics is active.
+ * \param[in]  doOrientationRestraints   If orientation restraints are enabled.
+ * \param[in]  doDistanceRestraints      If distance restraints are enabled.
+ *
+ * \returns    Whether complete simulation can be run on GPU.
+ * \throws     std::bad_alloc            If out of memory
+ *             InconsistentInputError    If the user requirements are inconsistent.
+ */
+bool decideWhetherToUseGpuForUpdate(bool              isDomainDecomposition,
+                                    bool              useGpuForNonbonded,
+                                    TaskTarget        updateTarget,
+                                    bool              gpusWereDetected,
+                                    const t_inputrec &inputrec,
+                                    const MDAtoms    &mdatoms,
+                                    bool              useEssentialDynamics,
+                                    bool              doOrientationRestraints,
+                                    bool              doDistanceRestraints);
+
 
 }  // namespace gmx
 

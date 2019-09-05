@@ -244,6 +244,7 @@ Mdrunner Mdrunner::cloneOnSpawnedThread() const
     newRunner.pme_opt             = pme_opt;
     newRunner.pme_fft_opt         = pme_fft_opt;
     newRunner.bonded_opt          = bonded_opt;
+    newRunner.update_opt          = update_opt;
     newRunner.nstlist_cmdline     = nstlist_cmdline;
     newRunner.replExParams        = replExParams;
     newRunner.pforce              = pforce;
@@ -655,6 +656,7 @@ int Mdrunner::mdrunner()
     auto       pmeTarget       = findTaskTarget(pme_opt);
     auto       pmeFftTarget    = findTaskTarget(pme_fft_opt);
     auto       bondedTarget    = findTaskTarget(bonded_opt);
+    auto       updateTarget    = findTaskTarget(update_opt);
     PmeRunMode pmeRunMode      = PmeRunMode::None;
 
     // Here we assume that SIMMASTER(cr) does not change even after the
@@ -781,16 +783,17 @@ int Mdrunner::mdrunner()
     // Note that when bonded interactions run on a GPU they always run
     // alongside a nonbonded task, so do not influence task assignment
     // even though they affect the force calculation workload.
-    bool useGpuForNonbonded = false;
-    bool useGpuForPme       = false;
-    bool useGpuForBonded    = false;
+    bool useGpuForNonbonded     = false;
+    bool useGpuForPme           = false;
+    bool useGpuForBonded        = false;
+    bool useGpuForUpdate        = false;
+    bool gpusWereDetected       = hwinfo->ngpu_compatible_tot > 0;
     try
     {
         // It's possible that there are different numbers of GPUs on
         // different nodes, which is the user's responsibilty to
         // handle. If unsuitable, we will notice that during task
         // assignment.
-        bool gpusWereDetected      = hwinfo->ngpu_compatible_tot > 0;
         auto canUseGpuForNonbonded = buildSupportsNonbondedOnGpu(nullptr);
         useGpuForNonbonded = decideWhetherToUseGpusForNonbonded(nonbondedTarget, userGpuTaskAssignment,
                                                                 emulateGpuNonbonded,
@@ -1543,6 +1546,26 @@ int Mdrunner::mdrunner()
                             fr->cginfo_mb);
         }
 
+        if (updateTarget == TaskTarget::Gpu)
+        {
+            if (SIMMASTER(cr))
+            {
+                gmx_fatal(FARGS, "It is currently not possible to redirect the calculation "
+                          "of update and constraints to the GPU!");
+            }
+        }
+
+        // Before we start the actual simulator, try if we can run the update task on the GPU.
+        useGpuForUpdate = decideWhetherToUseGpuForUpdate(DOMAINDECOMP(cr),
+                                                         useGpuForNonbonded,
+                                                         updateTarget,
+                                                         gpusWereDetected,
+                                                         *inputrec,
+                                                         *mdAtoms,
+                                                         doEssentialDynamics,
+                                                         fcd->orires.nr != 0,
+                                                         fcd->disres.nsystems != 0);
+
         // TODO This is not the right place to manage the lifetime of
         // this data structure, but currently it's the easiest way to
         // make it work.
@@ -1580,7 +1603,8 @@ int Mdrunner::mdrunner()
                     membed,
                     walltime_accounting,
                     std::move(stopHandlerBuilder_),
-                    doRerun);
+                    doRerun,
+                    useGpuForUpdate);
         simulator->run();
 
         if (inputrec->bPull)
@@ -1734,6 +1758,8 @@ class Mdrunner::BuilderImplementation
 
         void addBondedTaskAssignment(const char* bonded_opt);
 
+        void addUpdateTaskAssignment(const char* update_opt);
+
         void addHardwareOptions(const gmx_hw_opt_t &hardwareOptions);
 
         void addFilenames(ArrayRef <const t_filenm> filenames);
@@ -1751,10 +1777,11 @@ class Mdrunner::BuilderImplementation
         // Default parameters copied from runner.h
         // \todo Clarify source(s) of default parameters.
 
-        const char* nbpu_opt_    = nullptr;
-        const char* pme_opt_     = nullptr;
-        const char* pme_fft_opt_ = nullptr;
-        const char *bonded_opt_  = nullptr;
+        const char* nbpu_opt_          = nullptr;
+        const char* pme_opt_           = nullptr;
+        const char* pme_fft_opt_       = nullptr;
+        const char *bonded_opt_        = nullptr;
+        const char *update_opt_        = nullptr;
 
         MdrunOptions                          mdrunOptions_;
 
@@ -1925,6 +1952,16 @@ Mdrunner Mdrunner::BuilderImplementation::build()
         GMX_THROW(gmx::APIError("MdrunnerBuilder::addBondedTaskAssignment() is required before build()"));
     }
 
+    if (update_opt_)
+    {
+        newRunner.update_opt = update_opt_;
+    }
+    else
+    {
+        GMX_THROW(gmx::APIError("MdrunnerBuilder::addUpdateTaskAssignment() is required before build()  "));
+    }
+
+
     newRunner.restraintManager_ = std::make_unique<gmx::RestraintManager>();
 
     if (stopHandlerBuilder_)
@@ -1954,6 +1991,11 @@ void Mdrunner::BuilderImplementation::addPME(const char* pme_opt,
 void Mdrunner::BuilderImplementation::addBondedTaskAssignment(const char* bonded_opt)
 {
     bonded_opt_ = bonded_opt;
+}
+
+void Mdrunner::BuilderImplementation::addUpdateTaskAssignment(const char* update_opt)
+{
+    update_opt_ = update_opt;
 }
 
 void Mdrunner::BuilderImplementation::addHardwareOptions(const gmx_hw_opt_t &hardwareOptions)
@@ -2052,6 +2094,12 @@ MdrunnerBuilder &MdrunnerBuilder::addElectrostatics(const char* pme_opt,
 MdrunnerBuilder &MdrunnerBuilder::addBondedTaskAssignment(const char* bonded_opt)
 {
     impl_->addBondedTaskAssignment(bonded_opt);
+    return *this;
+}
+
+MdrunnerBuilder &MdrunnerBuilder::addUpdateTaskAssignment(const char* update_opt)
+{
+    impl_->addUpdateTaskAssignment(update_opt);
     return *this;
 }
 

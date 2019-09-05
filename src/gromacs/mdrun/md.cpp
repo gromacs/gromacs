@@ -148,9 +148,6 @@
 
 using gmx::SimulationSignaller;
 
-//! Whether the GPU versions of Leap-Frog integrator and LINCS and SETTLE constraints
-static const bool c_useGpuUpdateConstrain = (getenv("GMX_UPDATE_CONSTRAIN_GPU") != nullptr);
-
 void gmx::LegacySimulator::do_md()
 {
     // TODO Historically, the EM and MD "integrators" used different
@@ -318,7 +315,7 @@ void gmx::LegacySimulator::do_md()
         upd.setNumAtoms(state->natoms);
     }
 
-    if (c_useGpuUpdateConstrain)
+    if (useGpuForUpdate)
     {
         GMX_RELEASE_ASSERT(ir->eI == eiMD, "Only md integrator is supported on the GPU.");
         GMX_RELEASE_ASSERT(ir->etc != etcNOSEHOOVER, "Nose Hoover temperature coupling is not supported on the GPU.");
@@ -326,7 +323,7 @@ void gmx::LegacySimulator::do_md()
         GMX_RELEASE_ASSERT(!mdatoms->haveVsites, "Virtual sites are not supported on the GPU");
         GMX_RELEASE_ASSERT(ed == nullptr, "Essential dynamics is not supported with GPU-based update constraints.");
         GMX_LOG(mdlog.info).asParagraph().
-            appendText("Using CUDA GPU-based update and constraints module.");
+            appendText("Updating coordinates on the GPU.");
         integrator = std::make_unique<UpdateConstrainCuda>(*ir, *top_global);
         integrator->set(top.idef, *mdatoms, ekind->ngtc);
         t_pbc pbc;
@@ -1186,7 +1183,7 @@ void gmx::LegacySimulator::do_md()
             std::copy(state->x.begin(), state->x.end(), cbuf.begin());
         }
 
-        if (c_useGpuUpdateConstrain)
+        if (useGpuForUpdate)
         {
             if (bNS)
             {

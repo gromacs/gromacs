@@ -237,6 +237,13 @@ class Mdrunner
          */
         const char                             *bonded_opt = nullptr;
 
+        /*! \brief Target update calculation for "cpu", "gpu", or "auto". Default is "auto".
+         *
+         * \internal
+         * \todo replace with string or enum class and initialize with sensible value.
+         */
+        const char                             *update_opt = nullptr;
+
         //! Command-line override for the duration of a neighbor list with the Verlet scheme.
         int                                     nstlist_cmdline = 0;
         //! Parameters for replica-exchange simulations.
@@ -429,6 +436,27 @@ class MdrunnerBuilder final
          * \todo Make optional and/or encapsulate into task assignment module.
          */
         MdrunnerBuilder &addBondedTaskAssignment(const char *bonded_opt);
+
+        /*! \brief
+         * Assign responsibility for tasks for update and constrain calculation.
+         *
+         * Required. Director code should provide valid options for
+         * update and constraint task assignment. The builder does not apply any
+         * defaults, so client code should be prepared to provide
+         * (e.g.) "auto" in the event no user input or logic provides
+         * an alternative argument.
+         *
+         * \param[in] update_opt Target update calculation for "cpu", "gpu", or "auto".
+         *
+         * Calling must guarantee that the pointed-to C strings are valid through
+         * simulation launch.
+         *
+         * \internal
+         * The arguments are passed as references to elements of arrays of C strings.
+         * \todo Replace with modern strings or (better) enum classes.
+         * \todo Make optional and/or encapsulate into task assignment module.
+         */
+        MdrunnerBuilder &addUpdateTaskAssignment(const char *update_opt);
 
         /*!
          * \brief Provide access to the multisim communicator to use.

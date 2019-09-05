@@ -248,6 +248,7 @@ int gmx_mdrun(int argc, char *argv[])
     // \todo pass by value
     builder.addElectrostatics(options.pme_opt_choices[0], options.pme_fft_opt_choices[0]);
     builder.addBondedTaskAssignment(options.bonded_opt_choices[0]);
+    builder.addUpdateTaskAssignment(options.update_opt_choices[0]);
     builder.addNeighborList(options.nstlist_cmdline);
     builder.addReplicaExchange(options.replExParams);
     // \todo take ownership of multisim resources (ms)

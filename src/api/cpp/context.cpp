@@ -186,6 +186,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
         // \todo pass by value
         builder.addElectrostatics(options_.pme_opt_choices[0], options_.pme_fft_opt_choices[0]);
         builder.addBondedTaskAssignment(options_.bonded_opt_choices[0]);
+        builder.addUpdateTaskAssignment(options_.update_opt_choices[0]);
         builder.addNeighborList(options_.nstlist_cmdline);
         builder.addReplicaExchange(options_.replExParams);
         // \todo take ownership of multisim resources (ms)

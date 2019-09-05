@@ -57,9 +57,11 @@
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
+#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/taskassignment/taskassignment.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/baseversion.h"
@@ -487,6 +489,89 @@ bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
     bool usingOurCpuForPmeOrEwald = (usingLJPme || (usingElecPmeOrEwald && !useGpuForPme && numPmeRanksPerSimulation <= 0));
 
     return gpusWereDetected && usingOurCpuForPmeOrEwald;
+}
+
+bool decideWhetherToUseGpuForUpdate(bool              isDomainDecomposition,
+                                    bool              useGpuForNonbonded,
+                                    TaskTarget        updateTarget,
+                                    bool              gpusWereDetected,
+                                    const t_inputrec &inputrec,
+                                    const MDAtoms    &mdatoms,
+                                    bool              useEssentialDynamics,
+                                    bool              doOrientationRestraints,
+                                    bool              doDistanceRestraints)
+{
+    if (updateTarget == TaskTarget::Cpu)
+    {
+        return false;
+    }
+
+    std::string errorMessage;
+
+    if (isDomainDecomposition)
+    {
+        errorMessage += "Domain decomposition is not supported.\n";
+    }
+    if (!useGpuForNonbonded)
+    {
+        errorMessage += "Short-ranged non-bonded interaction tasks must run on the GPU.\n";
+    }
+    if (!gpusWereDetected)
+    {
+        errorMessage += "Compatible GPUs must have been found.\n";
+    }
+    if (GMX_GPU != GMX_GPU_CUDA)
+    {
+        errorMessage += "Only a CUDA build is supported.\n";
+    }
+    if (inputrec.eI != eiMD)
+    {
+        errorMessage += "Only the md integrator is supported.\n";
+    }
+    if (inputrec.etc == etcNOSEHOOVER)
+    {
+        errorMessage += "Nose-Hoover temperature coupling is not supported.\n";
+    }
+    if (inputrec.epc != epcNO && inputrec.epc != epcPARRINELLORAHMAN)
+    {
+        errorMessage += "Only Parrinello-Rahman pressure control is supported.\n";
+    }
+    if (mdatoms.mdatoms()->haveVsites)
+    {
+        errorMessage += "Virtual sites are not supported.\n";
+    }
+    if (useEssentialDynamics)
+    {
+        errorMessage += "Essential dynamics is not supported.\n";
+    }
+    if (inputrec.bPull || inputrec.pull)
+    {
+        errorMessage += "Pulling is not supported.\n";
+    }
+    if (doOrientationRestraints)
+    {
+        errorMessage += "Orientation restraints are not supported.\n";
+    }
+    if (doDistanceRestraints)
+    {
+        errorMessage += "Distance restraints are not supported.\n";
+    }
+    if (inputrec.efep != efepNO)
+    {
+        errorMessage += "Free energy perturbations are not supported.\n";
+    }
+    if (!errorMessage.empty())
+    {
+        if (updateTarget == TaskTarget::Gpu)
+        {
+            std::string prefix = gmx::formatString("Update task on the GPU was required,\n"
+                                                   "but the following condition(s) were not satisfied:\n");
+            GMX_THROW(InconsistentInputError((prefix + errorMessage).c_str()));
+        }
+        return false;
+    }
+
+    return true;
 }
 
 }  // namespace gmx
