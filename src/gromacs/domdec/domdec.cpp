@@ -691,43 +691,43 @@ real dd_cutoff_twobody(const gmx_domdec_t *dd)
 }
 
 
-static void dd_cart_coord2pmecoord(const gmx_domdec_t *dd, const ivec coord,
-                                   ivec coord_pme)
+static void dd_cart_coord2pmecoord(const DDRankSetup &ddRankSetup,
+                                   const ivec         coord,
+                                   ivec               coord_pme)
 {
-    const DDRankSetup &ddRankSetup = dd->comm->ddRankSetup;
-    const int          nc          = dd->nc[ddRankSetup.cartpmedim];
-    const int          ntot        = ddRankSetup.ntot[ddRankSetup.cartpmedim];
+    const int nc   = ddRankSetup.numPPCells[ddRankSetup.cartpmedim];
+    const int ntot = ddRankSetup.ntot[ddRankSetup.cartpmedim];
     copy_ivec(coord, coord_pme);
     coord_pme[ddRankSetup.cartpmedim] =
         nc + (coord[ddRankSetup.cartpmedim]*(ntot - nc) + (ntot - nc)/2)/nc;
 }
 
-static int ddindex2pmeindex(const gmx_domdec_t *dd, int ddindex)
+/* Returns the PME rank index in 0...npmenodes-1 for the PP cell with index ddCellIndex */
+static int ddindex2pmeindex(const DDRankSetup &ddRankSetup,
+                            const int          ddCellIndex)
 {
-    int npp, npme;
-
-    npp  = dd->nnodes;
-    npme = dd->comm->ddRankSetup.npmenodes;
+    const int npp  = ddRankSetup.numPPRanks;
+    const int npme = ddRankSetup.npmenodes;
 
     /* Here we assign a PME node to communicate with this DD node
      * by assuming that the major index of both is x.
-     * We add cr->npmenodes/2 to obtain an even distribution.
+     * We add npme/2 to obtain an even distribution.
      */
-    return (ddindex*npme + npme/2)/npp;
+    return (ddCellIndex*npme + npme/2)/npp;
 }
 
-static int *dd_interleaved_pme_ranks(const gmx_domdec_t *dd)
+static int *dd_interleaved_pme_ranks(const DDRankSetup &ddRankSetup)
 {
     int *pme_rank;
     int  n, i, p0, p1;
 
-    snew(pme_rank, dd->comm->ddRankSetup.npmenodes);
+    snew(pme_rank, ddRankSetup.npmenodes);
     n = 0;
-    for (i = 0; i < dd->nnodes; i++)
+    for (i = 0; i < ddRankSetup.numPPRanks; i++)
     {
-        p0 = ddindex2pmeindex(dd, i);
-        p1 = ddindex2pmeindex(dd, i+1);
-        if (i+1 == dd->nnodes || p1 > p0)
+        p0 = ddindex2pmeindex(ddRankSetup, i);
+        p1 = ddindex2pmeindex(ddRankSetup, i + 1);
+        if (i + 1 == ddRankSetup.numPPRanks || p1 > p0)
         {
             if (debug)
             {
@@ -764,7 +764,7 @@ static int gmx_ddcoord2pmeindex(const t_commrec *cr, int x, int y, int z)
     coords[XX] = x;
     coords[YY] = y;
     coords[ZZ] = z;
-    slab       = ddindex2pmeindex(dd, dd_index(dd->nc, coords));
+    slab       = ddindex2pmeindex(dd->comm->ddRankSetup, dd_index(dd->nc, coords));
 
     return slab;
 }
@@ -807,13 +807,11 @@ static int ddcoord2simnodeid(const t_commrec *cr, int x, int y, int z)
     return nodeid;
 }
 
-static int dd_simnode2pmenode(const gmx_domdec_t         *dd,
+static int dd_simnode2pmenode(const DDRankSetup          &ddRankSetup,
                               const t_commrec gmx_unused *cr,
-                              int                         sim_nodeid)
+                              const int                   sim_nodeid)
 {
     int                pmenode = -1;
-
-    const DDRankSetup &ddRankSetup = dd->comm->ddRankSetup;
 
     /* This assumes a uniform x domain decomposition grid cell size */
     if (ddRankSetup.bCartesianPP_PME)
@@ -821,19 +819,19 @@ static int dd_simnode2pmenode(const gmx_domdec_t         *dd,
 #if GMX_MPI
         ivec coord, coord_pme;
         MPI_Cart_coords(cr->mpi_comm_mysim, sim_nodeid, DIM, coord);
-        if (coord[ddRankSetup.cartpmedim] < dd->nc[ddRankSetup.cartpmedim])
+        if (coord[ddRankSetup.cartpmedim] < ddRankSetup.numPPCells[ddRankSetup.cartpmedim])
         {
-            /* This is a PP node */
-            dd_cart_coord2pmecoord(dd, coord, coord_pme);
+            /* This is a PP rank */
+            dd_cart_coord2pmecoord(ddRankSetup, coord, coord_pme);
             MPI_Cart_rank(cr->mpi_comm_mysim, coord_pme, &pmenode);
         }
 #endif
     }
     else if (ddRankSetup.bCartesianPP)
     {
-        if (sim_nodeid < dd->nnodes)
+        if (sim_nodeid < ddRankSetup.numPPRanks)
         {
-            pmenode = dd->nnodes + ddindex2pmeindex(dd, sim_nodeid);
+            pmenode = ddRankSetup.numPPRanks + ddindex2pmeindex(ddRankSetup, sim_nodeid);
         }
     }
     else
@@ -843,10 +841,10 @@ static int dd_simnode2pmenode(const gmx_domdec_t         *dd,
          */
         if (ddRankSetup.pmenodes == nullptr)
         {
-            if (sim_nodeid < dd->nnodes)
+            if (sim_nodeid < ddRankSetup.numPPRanks)
             {
                 /* The DD index equals the nodeid */
-                pmenode = dd->nnodes + ddindex2pmeindex(dd, sim_nodeid);
+                pmenode = ddRankSetup.numPPRanks + ddindex2pmeindex(ddRankSetup, sim_nodeid);
             }
         }
         else
@@ -883,32 +881,28 @@ NumPmeDomains getNumPmeDomains(const gmx_domdec_t *dd)
     }
 }
 
-std::vector<int> get_pme_ddranks(const t_commrec *cr, int pmenodeid)
+std::vector<int> get_pme_ddranks(const t_commrec *cr,
+                                 const int        pmenodeid)
 {
-    gmx_domdec_t *dd;
-    int           x, y, z;
-    ivec          coord, coord_pme;
+    const DDRankSetup &ddRankSetup = cr->dd->comm->ddRankSetup;
+    GMX_RELEASE_ASSERT(ddRankSetup.npmenodes > 0, "This function should only be called when PME-only ranks are in use");
+    std::vector<int>   ddranks;
+    ddranks.reserve((ddRankSetup.numPPRanks + ddRankSetup.npmenodes - 1)/ddRankSetup.npmenodes);
 
-    dd = cr->dd;
-
-    std::vector<int> ddranks;
-    ddranks.reserve((dd->nnodes+cr->npmenodes-1)/cr->npmenodes);
-
-    for (x = 0; x < dd->nc[XX]; x++)
+    for (int x = 0; x < ddRankSetup.numPPCells[XX]; x++)
     {
-        for (y = 0; y < dd->nc[YY]; y++)
+        for (int y = 0; y < ddRankSetup.numPPCells[YY]; y++)
         {
-            for (z = 0; z < dd->nc[ZZ]; z++)
+            for (int z = 0; z < ddRankSetup.numPPCells[ZZ]; z++)
             {
-                if (dd->comm->ddRankSetup.bCartesianPP_PME)
+                if (ddRankSetup.bCartesianPP_PME)
                 {
-                    coord[XX] = x;
-                    coord[YY] = y;
-                    coord[ZZ] = z;
-                    dd_cart_coord2pmecoord(dd, coord, coord_pme);
-                    if (dd->ci[XX] == coord_pme[XX] &&
-                        dd->ci[YY] == coord_pme[YY] &&
-                        dd->ci[ZZ] == coord_pme[ZZ])
+                    ivec coord = { x, y, z };
+                    ivec coord_pme;
+                    dd_cart_coord2pmecoord(ddRankSetup, coord, coord_pme);
+                    if (cr->dd->ci[XX] == coord_pme[XX] &&
+                        cr->dd->ci[YY] == coord_pme[YY] &&
+                        cr->dd->ci[ZZ] == coord_pme[ZZ])
                     {
                         ddranks.push_back(ddcoord2simnodeid(cr, x, y, z));
                     }
@@ -937,7 +931,7 @@ static gmx_bool receive_vir_ener(const gmx_domdec_t *dd, const t_commrec *cr)
         if (ddRankSetup.bCartesianPP_PME)
         {
 #if GMX_MPI
-            int  pmenode = dd_simnode2pmenode(dd, cr, cr->sim_nodeid);
+            int  pmenode = dd_simnode2pmenode(ddRankSetup, cr, cr->sim_nodeid);
             ivec coords;
             MPI_Cart_coords(cr->mpi_comm_mysim, cr->sim_nodeid, DIM, coords);
             coords[ddRankSetup.cartpmedim]++;
@@ -945,7 +939,7 @@ static gmx_bool receive_vir_ener(const gmx_domdec_t *dd, const t_commrec *cr)
             {
                 int rank;
                 MPI_Cart_rank(cr->mpi_comm_mysim, coords, &rank);
-                if (dd_simnode2pmenode(dd, cr, rank) == pmenode)
+                if (dd_simnode2pmenode(ddRankSetup, cr, rank) == pmenode)
                 {
                     /* This is not the last PP node for pmenode */
                     bReceive = FALSE;
@@ -957,9 +951,9 @@ static gmx_bool receive_vir_ener(const gmx_domdec_t *dd, const t_commrec *cr)
         }
         else
         {
-            int pmenode = dd_simnode2pmenode(dd, cr, cr->sim_nodeid);
+            int pmenode = dd_simnode2pmenode(ddRankSetup, cr, cr->sim_nodeid);
             if (cr->sim_nodeid+1 < cr->nnodes &&
-                dd_simnode2pmenode(dd, cr, cr->sim_nodeid+1) == pmenode)
+                dd_simnode2pmenode(ddRankSetup, cr, cr->sim_nodeid + 1) == pmenode)
             {
                 /* This is not the last PP node for pmenode */
                 bReceive = FALSE;
@@ -1034,7 +1028,7 @@ static void init_ddpme(gmx_domdec_t *dd, gmx_ddpme_t *ddpme, int dimind)
          */
         if (dimind == 0 || xyz[XX] == dd->ci[XX])
         {
-            const int pmeindex = ddindex2pmeindex(dd, i);
+            const int pmeindex = ddindex2pmeindex(ddRankSetup, i);
             int       slab;
             if (dimind == 0)
             {
@@ -1529,24 +1523,25 @@ static void receive_ddindex2simnodeid(gmx_domdec_t         *dd,
 #endif
 }
 
-static void split_communicator(const gmx::MDLogger &mdlog,
-                               t_commrec *cr, gmx_domdec_t *dd,
-                               DdRankOrder gmx_unused rankOrder,
-                               bool gmx_unused reorder)
+static void split_communicator(const gmx::MDLogger    &mdlog,
+                               t_commrec              *cr,
+                               const ivec              numDDCells,
+                               DdRankOrder gmx_unused  rankOrder,
+                               bool gmx_unused         reorder,
+                               DDRankSetup            *ddRankSetup,
+                               ivec                    ddCellIndex)
 {
-    gmx_domdec_comm_t *comm        = dd->comm;
-    DDRankSetup       &ddRankSetup = comm->ddRankSetup;
-
-    if (ddRankSetup.bCartesianPP)
+    if (ddRankSetup->bCartesianPP)
     {
-        bool bDiv[DIM];
+        const int numDDCellsTot = numDDCells[XX]*numDDCells[YY]*numDDCells[ZZ];
+        bool      bDiv[DIM];
         for (int i = 1; i < DIM; i++)
         {
-            bDiv[i] = ((cr->npmenodes*dd->nc[i]) % (dd->nnodes) == 0);
+            bDiv[i] = ((cr->npmenodes*numDDCells[i]) % numDDCellsTot == 0);
         }
         if (bDiv[YY] || bDiv[ZZ])
         {
-            ddRankSetup.bCartesianPP_PME = TRUE;
+            ddRankSetup->bCartesianPP_PME = TRUE;
             /* If we have 2D PME decomposition, which is always in x+y,
              * we stack the PME only nodes in z.
              * Otherwise we choose the direction that provides the thinnest slab
@@ -1554,29 +1549,29 @@ static void split_communicator(const gmx::MDLogger &mdlog,
              * on the PP communication.
              * But for the PME communication the opposite might be better.
              */
-            if (bDiv[ZZ] && (ddRankSetup.npmenodes_y > 1 ||
+            if (bDiv[ZZ] && (ddRankSetup->npmenodes_y > 1 ||
                              !bDiv[YY] ||
-                             dd->nc[YY] > dd->nc[ZZ]))
+                             numDDCells[YY] > numDDCells[ZZ]))
             {
-                ddRankSetup.cartpmedim = ZZ;
+                ddRankSetup->cartpmedim = ZZ;
             }
             else
             {
-                ddRankSetup.cartpmedim = YY;
+                ddRankSetup->cartpmedim = YY;
             }
-            ddRankSetup.ntot[ddRankSetup.cartpmedim]
-                += (cr->npmenodes*dd->nc[ddRankSetup.cartpmedim])/dd->nnodes;
+            ddRankSetup->ntot[ddRankSetup->cartpmedim]
+                += (cr->npmenodes*numDDCells[ddRankSetup->cartpmedim])/numDDCellsTot;
         }
         else
         {
             GMX_LOG(mdlog.info).appendTextFormatted(
                     "Number of PME-only ranks (%d) is not a multiple of nx*ny (%d*%d) or nx*nz (%d*%d)",
-                    cr->npmenodes, dd->nc[XX], dd->nc[YY], dd->nc[XX], dd->nc[ZZ]);
+                    cr->npmenodes, numDDCells[XX], numDDCells[YY], numDDCells[XX], numDDCells[ZZ]);
             GMX_LOG(mdlog.info).appendText("Will not use a Cartesian communicator for PP <-> PME\n");
         }
     }
 
-    if (ddRankSetup.bCartesianPP_PME)
+    if (ddRankSetup->bCartesianPP_PME)
     {
 #if GMX_MPI
         int  rank;
@@ -1584,14 +1579,14 @@ static void split_communicator(const gmx::MDLogger &mdlog,
 
         GMX_LOG(mdlog.info).appendTextFormatted(
                 "Will use a Cartesian communicator for PP <-> PME: %d x %d x %d",
-                ddRankSetup.ntot[XX], ddRankSetup.ntot[YY], ddRankSetup.ntot[ZZ]);
+                ddRankSetup->ntot[XX], ddRankSetup->ntot[YY], ddRankSetup->ntot[ZZ]);
 
         for (int i = 0; i < DIM; i++)
         {
             periods[i] = TRUE;
         }
         MPI_Comm comm_cart;
-        MPI_Cart_create(cr->mpi_comm_mysim, DIM, ddRankSetup.ntot, periods, static_cast<int>(reorder),
+        MPI_Cart_create(cr->mpi_comm_mysim, DIM, ddRankSetup->ntot, periods, static_cast<int>(reorder),
                         &comm_cart);
         MPI_Comm_rank(comm_cart, &rank);
         if (MASTER(cr) && rank != 0)
@@ -1605,18 +1600,18 @@ static void split_communicator(const gmx::MDLogger &mdlog,
         cr->mpi_comm_mysim = comm_cart;
         cr->sim_nodeid     = rank;
 
-        MPI_Cart_coords(cr->mpi_comm_mysim, cr->sim_nodeid, DIM, dd->ci);
+        MPI_Cart_coords(cr->mpi_comm_mysim, cr->sim_nodeid, DIM, ddCellIndex);
 
         GMX_LOG(mdlog.info).appendTextFormatted(
                 "Cartesian rank %d, coordinates %d %d %d\n",
-                cr->sim_nodeid, dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
+                cr->sim_nodeid, ddCellIndex[XX], ddCellIndex[YY], ddCellIndex[ZZ]);
 
-        if (dd->ci[ddRankSetup.cartpmedim] < dd->nc[ddRankSetup.cartpmedim])
+        if (ddCellIndex[ddRankSetup->cartpmedim] < numDDCells[ddRankSetup->cartpmedim])
         {
             cr->duty = DUTY_PP;
         }
         if (cr->npmenodes == 0 ||
-            dd->ci[ddRankSetup.cartpmedim] >= dd->nc[ddRankSetup.cartpmedim])
+            ddCellIndex[ddRankSetup->cartpmedim] >= numDDCells[ddRankSetup->cartpmedim])
         {
             cr->duty = DUTY_PME;
         }
@@ -1624,7 +1619,7 @@ static void split_communicator(const gmx::MDLogger &mdlog,
         /* Split the sim communicator into PP and PME only nodes */
         MPI_Comm_split(cr->mpi_comm_mysim,
                        getThisRankDuties(cr),
-                       dd_index(ddRankSetup.ntot, dd->ci),
+                       dd_index(ddRankSetup->ntot, ddCellIndex),
                        &cr->mpi_comm_mygroup);
 #endif
     }
@@ -1638,7 +1633,7 @@ static void split_communicator(const gmx::MDLogger &mdlog,
             case DdRankOrder::interleave:
                 /* Interleave the PP-only and PME-only ranks */
                 GMX_LOG(mdlog.info).appendText("Interleaving PP and PME ranks");
-                ddRankSetup.pmenodes = dd_interleaved_pme_ranks(dd);
+                ddRankSetup->pmenodes = dd_interleaved_pme_ranks(*ddRankSetup);
                 break;
             case DdRankOrder::cartesian:
                 break;
@@ -1646,7 +1641,7 @@ static void split_communicator(const gmx::MDLogger &mdlog,
                 gmx_fatal(FARGS, "Invalid ddRankOrder=%d", static_cast<int>(rankOrder));
         }
 
-        if (dd_simnode2pmenode(dd, cr, cr->sim_nodeid) == -1)
+        if (dd_simnode2pmenode(*ddRankSetup, cr, cr->sim_nodeid) == -1)
         {
             cr->duty = DUTY_PME;
         }
@@ -1676,6 +1671,11 @@ static void make_dd_communicators(const gmx::MDLogger &mdlog,
 {
     DDRankSetup &ddRankSetup = dd->comm->ddRankSetup;
 
+    ddRankSetup.numPPRanks       = cr->nnodes - cr->npmenodes;
+    copy_ivec(dd->nc, ddRankSetup.numPPCells);
+    /* Initially we set ntot to the number of PP cells,
+     * This will be increased with PME cells when using Cartesian communicators.
+     */
     copy_ivec(dd->nc, ddRankSetup.ntot);
 
     ddRankSetup.bCartesianPP     = (ddRankOrder == DdRankOrder::cartesian);
@@ -1690,7 +1690,8 @@ static void make_dd_communicators(const gmx::MDLogger &mdlog,
     if (cr->npmenodes > 0)
     {
         /* Split the communicator into a PP and PME part */
-        split_communicator(mdlog, cr, dd, ddRankOrder, CartReorder);
+        split_communicator(mdlog, cr, dd->nc, ddRankOrder, CartReorder,
+                           &ddRankSetup, dd->ci);
         if (ddRankSetup.bCartesianPP_PME)
         {
             /* We (possibly) reordered the nodes in split_communicator,
@@ -1721,7 +1722,7 @@ static void make_dd_communicators(const gmx::MDLogger &mdlog,
     if (!thisRankHasDuty(cr, DUTY_PME))
     {
         /* Set up the commnuication to our PME node */
-        dd->pme_nodeid           = dd_simnode2pmenode(dd, cr, cr->sim_nodeid);
+        dd->pme_nodeid           = dd_simnode2pmenode(ddRankSetup, cr, cr->sim_nodeid);
         dd->pme_receive_vir_ener = receive_vir_ener(dd, cr);
         if (debug)
         {

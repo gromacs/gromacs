@@ -507,6 +507,11 @@ struct DDSettings
 /*! \brief Information on how the DD ranks are set up */
 struct DDRankSetup
 {
+    /**< The number of particle-particle (non PME-only) ranks */
+    int         numPPRanks = 0;
+    /**< The DD PP grid */
+    ivec        numPPCells = { 0, 0, 0 };
+
     /* PME and Cartesian communicator stuff */
     /**< The number of decomposition dimensions for PME, 0: no PME */
     int         npmedecompdim = 0;
