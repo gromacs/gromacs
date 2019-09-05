@@ -1671,8 +1671,6 @@ static void make_dd_communicators(const gmx::MDLogger &mdlog,
 {
     DDRankSetup &ddRankSetup = dd->comm->ddRankSetup;
 
-    ddRankSetup.numPPRanks       = cr->nnodes - cr->npmenodes;
-    copy_ivec(dd->nc, ddRankSetup.numPPCells);
     /* Initially we set ntot to the number of PP cells,
      * This will be increased with PME cells when using Cartesian communicators.
      */
@@ -1961,18 +1959,20 @@ static DlbState determineInitialDlbState(const gmx::MDLogger &mdlog,
     return dlbState;
 }
 
-static void set_dd_dim(const gmx::MDLogger &mdlog, gmx_domdec_t *dd)
+/* Sets the order of the DD dimensions, returns the number of DD dimensions */
+static int set_dd_dim(const ivec        numDDCells,
+                      const DDSettings &ddSettings,
+                      ivec              dims)
 {
-    dd->ndim = 0;
-    if (getenv("GMX_DD_ORDER_ZYX") != nullptr)
+    int ndim = 0;
+    if (ddSettings.useDDOrderZYX)
     {
         /* Decomposition order z,y,x */
-        GMX_LOG(mdlog.info).appendText("Using domain decomposition order z, y, x");
-        for (int dim = DIM-1; dim >= 0; dim--)
+        for (int dim = DIM - 1; dim >= 0; dim--)
         {
-            if (dd->nc[dim] > 1)
+            if (numDDCells[dim] > 1)
             {
-                dd->dim[dd->ndim++] = dim;
+                dims[ndim++] = dim;
             }
         }
     }
@@ -1981,18 +1981,20 @@ static void set_dd_dim(const gmx::MDLogger &mdlog, gmx_domdec_t *dd)
         /* Decomposition order x,y,z */
         for (int dim = 0; dim < DIM; dim++)
         {
-            if (dd->nc[dim] > 1)
+            if (numDDCells[dim] > 1)
             {
-                dd->dim[dd->ndim++] = dim;
+                dims[ndim++] = dim;
             }
         }
     }
 
-    if (dd->ndim == 0)
+    if (ndim == 0)
     {
         /* Set dim[0] to avoid extra checks on ndim in several places */
-        dd->dim[0] = XX;
+        dims[0] = XX;
     }
+
+    return ndim;
 }
 
 static gmx_domdec_comm_t *init_dd_comm()
@@ -2372,7 +2374,101 @@ getDDSetup(const gmx::MDLogger           &mdlog,
         }
     }
 
+    const int numPPRanks = ddSetup.numDomains[XX]*ddSetup.numDomains[YY]*ddSetup.numDomains[ZZ];
+    if (cr->nnodes - numPPRanks != ddSetup.numPmeRanks)
+    {
+        gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
+                             "The size of the domain decomposition grid (%d) does not match the number of ranks (%d). The total number of ranks is %d",
+                             numPPRanks, cr->nnodes - ddSetup.numPmeRanks, cr->nnodes);
+    }
+    if (ddSetup.numPmeRanks > numPPRanks)
+    {
+        gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
+                             "The number of separate PME ranks (%d) is larger than the number of PP ranks (%d), this is not supported.", ddSetup.numPmeRanks, numPPRanks);
+    }
+
+    ddSetup.numDDDimensions = set_dd_dim(ddSetup.numDomains, ddSettings,
+                                         ddSetup.ddDimensions);
+
     return ddSetup;
+}
+
+/*! \brief Set the cell size and interaction limits, as well as the DD grid */
+static DDRankSetup
+getDDRankSetup(const gmx::MDLogger &mdlog,
+               t_commrec           *cr,
+               const DDSetup       &ddSetup,
+               const t_inputrec    &ir)
+{
+    GMX_LOG(mdlog.info).appendTextFormatted(
+            "Domain decomposition grid %d x %d x %d, separate PME ranks %d",
+            ddSetup.numDomains[XX], ddSetup.numDomains[YY], ddSetup.numDomains[ZZ],
+            ddSetup.numPmeRanks);
+
+    DDRankSetup ddRankSetup;
+
+    ddRankSetup.numPPRanks = cr->nnodes - cr->npmenodes;
+    copy_ivec(ddSetup.numDomains, ddRankSetup.numPPCells);
+
+    if (cr->npmenodes > 0)
+    {
+        ddRankSetup.npmenodes = cr->npmenodes;
+    }
+    else
+    {
+        ddRankSetup.npmenodes = ddSetup.numDomains[XX]*ddSetup.numDomains[YY]*ddSetup.numDomains[ZZ];
+    }
+
+    if (EEL_PME(ir.coulombtype) || EVDW_PME(ir.vdwtype))
+    {
+        /* The following choices should match those
+         * in comm_cost_est in domdec_setup.c.
+         * Note that here the checks have to take into account
+         * that the decomposition might occur in a different order than xyz
+         * (for instance through the env.var. GMX_DD_ORDER_ZYX),
+         * in which case they will not match those in comm_cost_est,
+         * but since that is mainly for testing purposes that's fine.
+         */
+        if (ddSetup.numDDDimensions >= 2 &&
+            ddSetup.ddDimensions[0] == XX &&
+            ddSetup.ddDimensions[1] == YY &&
+            ddRankSetup.npmenodes > ddSetup.numDomains[XX] &&
+            ddRankSetup.npmenodes % ddSetup.numDomains[XX] == 0 &&
+            getenv("GMX_PMEONEDD") == nullptr)
+        {
+            ddRankSetup.npmedecompdim = 2;
+            ddRankSetup.npmenodes_x   = ddSetup.numDomains[XX];
+            ddRankSetup.npmenodes_y   = ddRankSetup.npmenodes/ddRankSetup.npmenodes_x;
+        }
+        else
+        {
+            /* In case nc is 1 in both x and y we could still choose to
+             * decompose pme in y instead of x, but we use x for simplicity.
+             */
+            ddRankSetup.npmedecompdim = 1;
+            if (ddSetup.ddDimensions[0] == YY)
+            {
+                ddRankSetup.npmenodes_x = 1;
+                ddRankSetup.npmenodes_y = ddRankSetup.npmenodes;
+            }
+            else
+            {
+                ddRankSetup.npmenodes_x = ddRankSetup.npmenodes;
+                ddRankSetup.npmenodes_y = 1;
+            }
+        }
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "PME domain decomposition: %d x %d x %d",
+                ddRankSetup.npmenodes_x, ddRankSetup.npmenodes_y, 1);
+    }
+    else
+    {
+        ddRankSetup.npmedecompdim = 0;
+        ddRankSetup.npmenodes_x   = 0;
+        ddRankSetup.npmenodes_y   = 0;
+    }
+
+    return ddRankSetup;
 }
 
 /*! \brief Set the cell size and interaction limits, as well as the DD grid */
@@ -2425,79 +2521,14 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     /* Set the DD setup given by ddSetup */
     cr->npmenodes = ddSetup.numPmeRanks;
     copy_ivec(ddSetup.numDomains, dd->nc);
-    set_dd_dim(mdlog, dd);
+    dd->ndim = ddSetup.numDDDimensions;
+    copy_ivec(ddSetup.ddDimensions, dd->dim);
 
     GMX_LOG(mdlog.info).appendTextFormatted(
             "Domain decomposition grid %d x %d x %d, separate PME ranks %d",
             dd->nc[XX], dd->nc[YY], dd->nc[ZZ], cr->npmenodes);
 
     dd->nnodes = dd->nc[XX]*dd->nc[YY]*dd->nc[ZZ];
-    if (cr->nnodes - dd->nnodes != cr->npmenodes)
-    {
-        gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
-                             "The size of the domain decomposition grid (%d) does not match the number of ranks (%d). The total number of ranks is %d",
-                             dd->nnodes, cr->nnodes - cr->npmenodes, cr->nnodes);
-    }
-    if (cr->npmenodes > dd->nnodes)
-    {
-        gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
-                             "The number of separate PME ranks (%d) is larger than the number of PP ranks (%d), this is not supported.", cr->npmenodes, dd->nnodes);
-    }
-    DDRankSetup &ddRankSetup = comm->ddRankSetup;
-    if (cr->npmenodes > 0)
-    {
-        ddRankSetup.npmenodes = cr->npmenodes;
-    }
-    else
-    {
-        ddRankSetup.npmenodes = dd->nnodes;
-    }
-
-    if (EEL_PME(ir->coulombtype) || EVDW_PME(ir->vdwtype))
-    {
-        /* The following choices should match those
-         * in comm_cost_est in domdec_setup.c.
-         * Note that here the checks have to take into account
-         * that the decomposition might occur in a different order than xyz
-         * (for instance through the env.var. GMX_DD_ORDER_ZYX),
-         * in which case they will not match those in comm_cost_est,
-         * but since that is mainly for testing purposes that's fine.
-         */
-        if (dd->ndim >= 2 && dd->dim[0] == XX && dd->dim[1] == YY &&
-            ddRankSetup.npmenodes > dd->nc[XX] && ddRankSetup.npmenodes % dd->nc[XX] == 0 &&
-            getenv("GMX_PMEONEDD") == nullptr)
-        {
-            ddRankSetup.npmedecompdim = 2;
-            ddRankSetup.npmenodes_x   = dd->nc[XX];
-            ddRankSetup.npmenodes_y   = ddRankSetup.npmenodes/ddRankSetup.npmenodes_x;
-        }
-        else
-        {
-            /* In case nc is 1 in both x and y we could still choose to
-             * decompose pme in y instead of x, but we use x for simplicity.
-             */
-            ddRankSetup.npmedecompdim = 1;
-            if (dd->dim[0] == YY)
-            {
-                ddRankSetup.npmenodes_x = 1;
-                ddRankSetup.npmenodes_y = ddRankSetup.npmenodes;
-            }
-            else
-            {
-                ddRankSetup.npmenodes_x = ddRankSetup.npmenodes;
-                ddRankSetup.npmenodes_y = 1;
-            }
-        }
-        GMX_LOG(mdlog.info).appendTextFormatted(
-                "PME domain decomposition: %d x %d x %d",
-                ddRankSetup.npmenodes_x, ddRankSetup.npmenodes_y, 1);
-    }
-    else
-    {
-        ddRankSetup.npmedecompdim = 0;
-        ddRankSetup.npmenodes_x   = 0;
-        ddRankSetup.npmenodes_y   = 0;
-    }
 
     snew(comm->slb_frac, DIM);
     if (isDlbDisabled(comm))
@@ -2947,6 +2978,7 @@ getDDSettings(const gmx::MDLogger     &mdlog,
 
     ddSettings.useSendRecv2  = (dd_getenv(mdlog, "GMX_DD_USE_SENDRECV2", 0) != 0);
     ddSettings.dlb_scale_lim = dd_getenv(mdlog, "GMX_DLB_MAX_BOX_SCALING", 10);
+    ddSettings.useDDOrderZYX = bool(dd_getenv(mdlog, "GMX_DD_ORDER_ZYX", 0));
     ddSettings.eFlop         = dd_getenv(mdlog, "GMX_DLB_BASED_ON_FLOPS", 0);
     const int recload        = dd_getenv(mdlog, "GMX_DD_RECORD_LOAD", 1);
     ddSettings.nstDDDump     = dd_getenv(mdlog, "GMX_DD_NST_DUMP", 0);
@@ -3009,9 +3041,15 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
     DDSetup      ddSetup    = getDDSetup(mdlog, cr, options, ddSettings, systemInfo,
                                          mtop, ir, box, xGlobal, &ddbox);
 
+    cr->npmenodes = ddSetup.numPmeRanks;
+
+    DDRankSetup ddRankSetup = getDDRankSetup(mdlog, cr, ddSetup, *ir);
+
     dd = new gmx_domdec_t(*ir);
 
     dd->comm = init_dd_comm();
+
+    dd->comm->ddRankSetup = ddRankSetup;
 
     set_dd_limits_and_grid(mdlog, cr, dd, options,
                            ddSettings, systemInfo, ddSetup,
