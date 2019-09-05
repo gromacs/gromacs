@@ -43,7 +43,6 @@ import tempfile
 import pytest
 
 
-
 @pytest.fixture()
 def cleandir():
     """Provide a clean temporary working directory for a test.

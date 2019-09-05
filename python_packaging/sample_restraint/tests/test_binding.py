@@ -14,7 +14,7 @@ from gmxapi.simulation.context import Context
 from gmxapi.simulation.workflow import WorkElement, from_tpr
 from gmxapi import version as gmx_version
 import pytest
-from tests.conftest import withmpi_only
+from gmxapi.testsupport import withmpi_only
 
 logging.getLogger().setLevel(logging.DEBUG)
 # create console handler
@@ -37,9 +37,10 @@ def test_import():
 
 
 @pytest.mark.usefixtures("cleandir")
-def test_ensemble_potential_nompi(tpr_filename):
+def test_ensemble_potential_nompi(spc_water_box):
     """Test ensemble potential without an ensemble.
     """
+    tpr_filename = spc_water_box
     print("Testing plugin potential with input file {}".format(os.path.abspath(tpr_filename)))
 
     assert gmx.version.api_is_at_least(0, 0, 5)
@@ -74,14 +75,8 @@ def test_ensemble_potential_nompi(tpr_filename):
 
 @withmpi_only
 @pytest.mark.usefixtures("cleandir")
-def test_ensemble_potential_withmpi(tpr_filename):
-    import os
-
-    from mpi4py import MPI
-    rank = MPI.COMM_WORLD.Get_rank()
-
-    rank_dir = os.path.join(os.getcwd(), str(rank))
-    os.mkdir(rank_dir)
+def test_ensemble_potential_withmpi(spc_water_box):
+    tpr_filename = spc_water_box
 
     logger.info("Testing plugin potential with input file {}".format(os.path.abspath(tpr_filename)))
 

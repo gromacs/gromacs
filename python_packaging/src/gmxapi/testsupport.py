@@ -35,6 +35,8 @@
 """Reusable definitions for test modules.
 
 Define the ``withmpi_only`` test decorator.
+
+.. todo:: Consider moving this to a separate optional package.
 """
 
 import pytest

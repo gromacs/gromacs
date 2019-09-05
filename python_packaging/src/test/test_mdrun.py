@@ -47,6 +47,8 @@ import os
 import pytest
 
 import gmxapi as gmx
+from gmxapi.testsupport import withmpi_only
+
 gmx.logger.setLevel(logging.WARNING)
 
 # Configure the `logging` module before and non-built-in packages start to use it.

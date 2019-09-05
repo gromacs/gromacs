@@ -48,7 +48,10 @@ endif() # DOWNLOAD_GOOGLETEST
 
 
 # Copy test files
-# TODO: solve test data file requirement in a follow up change
+# TODO: Deduplicate and leverage CMake dependencies.
+# We also build a test file in the spc_water_box pytest test fixture, but we can
+# presumably extract both of those from the GROMACS installation, or at least
+# through the gmxapi Python package resources.
 file(DOWNLOAD
      https://github.com/kassonlab/sample_restraint/raw/master/tests/data/topol.tpr
      ${CMAKE_CURRENT_SOURCE_DIR}/topol.tpr
