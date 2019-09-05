@@ -504,21 +504,9 @@ struct DDSettings
     DlbState initialDlbState = DlbState::offCanTurnOn;
 };
 
-/*! \brief Struct for domain decomposition communication
- *
- * This struct contains most information about domain decomposition
- * communication setup, some communication buffers, some statistics
- * and also the setup for the communication between particle-particle
- * and PME only ranks.
- *
- * All arrays are indexed with 0 to dd->ndim (not Cartesian indexing),
- * unless stated otherwise.
- */
-struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
+/*! \brief Information on how the DD ranks are set up */
+struct DDRankSetup
 {
-    /**< Constant parameters that control DD behavior */
-    DDSettings ddSettings;
-
     /* PME and Cartesian communicator stuff */
     /**< The number of decomposition dimensions for PME, 0: no PME */
     int         npmedecompdim = 0;
@@ -546,6 +534,25 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     gmx_bool bCartesianPP = false;
     /**< The Cartesian index to DD rank conversion, used with bCartesianPP */
     int     *ddindex2ddnodeid = nullptr;
+};
+
+/*! \brief Struct for domain decomposition communication
+ *
+ * This struct contains most information about domain decomposition
+ * communication setup, some communication buffers, some statistics
+ * and also the setup for the communication between particle-particle
+ * and PME only ranks.
+ *
+ * All arrays are indexed with 0 to dd->ndim (not Cartesian indexing),
+ * unless stated otherwise.
+ */
+struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
+{
+    /**< Constant parameters that control DD behavior */
+    DDSettings ddSettings;
+
+    /**< Information on how the DD ranks are set up */
+    DDRankSetup ddRankSetup;
 
     /* The DLB state, used for reloading old states, during e.g. EM */
     /**< The global charge groups, this defined the DD state (except for the DLB state) */

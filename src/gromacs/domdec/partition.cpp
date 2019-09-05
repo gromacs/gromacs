@@ -1057,7 +1057,7 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
 
     char  buf[STRLEN];
     int   numPpRanks   = dd->nnodes;
-    int   numPmeRanks  = (dd->pme_nodeid >= 0) ? comm->npmenodes : 0;
+    int   numPmeRanks  = (dd->pme_nodeid >= 0) ? comm->ddRankSetup.npmenodes : 0;
     int   numRanks     = numPpRanks + numPmeRanks;
     float lossFraction = 0;
 
