@@ -244,7 +244,7 @@ void dd_move_f_vsites(struct gmx_domdec_t *dd, rvec *f, rvec *fshift);
 void dd_clear_f_vsites(struct gmx_domdec_t *dd, rvec *f);
 
 /*! \brief Move x0 and also x1 if x1!=NULL. bX1IsCoord tells if to do PBC on x1 */
-void dd_move_x_constraints(struct gmx_domdec_t *dd, matrix box,
+void dd_move_x_constraints(struct gmx_domdec_t *dd, const matrix box,
                            rvec *x0, rvec *x1, gmx_bool bX1IsCoord);
 
 /*! \brief Communicates the coordinates involved in virtual sites */

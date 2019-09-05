@@ -99,7 +99,7 @@ struct gmx_domdec_constraints_t
     //! @endcond
 };
 
-void dd_move_x_constraints(gmx_domdec_t *dd, matrix box,
+void dd_move_x_constraints(gmx_domdec_t *dd, const matrix box,
                            rvec *x0, rvec *x1, gmx_bool bX1IsCoord)
 {
     if (dd->constraint_comm)

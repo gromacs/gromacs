@@ -454,7 +454,11 @@ void gmx::LegacySimulator::do_md()
         if (constr)
         {
             /* Constrain the initial coordinates and velocities */
-            do_constrain_first(fplog, constr, ir, mdatoms, state);
+            do_constrain_first(fplog, constr, ir, mdatoms,
+                               state->natoms,
+                               state->x.arrayRefWithPadding(),
+                               state->v.arrayRefWithPadding(),
+                               state->box, state->lambda[efptBONDED]);
         }
         if (vsite)
         {

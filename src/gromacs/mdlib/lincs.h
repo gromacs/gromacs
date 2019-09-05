@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -99,7 +99,7 @@ constrain_lincs(bool computeRmsd,
                 const t_commrec *cr,
                 const gmx_multisim_t *ms,
                 const rvec *x, rvec *xprime, rvec *min_proj,
-                matrix box, t_pbc *pbc,
+                const matrix box, t_pbc *pbc,
                 real lambda, real *dvdlambda,
                 real invdt, rvec *v,
                 bool bCalcVir, tensor vir_r_m_dr,

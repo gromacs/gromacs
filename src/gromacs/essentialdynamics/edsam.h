@@ -102,7 +102,7 @@ class MDLogger;
  * \param ed                The essential dynamics data.
  */
 void do_edsam(const t_inputrec *ir, int64_t step,
-              const t_commrec *cr, rvec xs[], rvec v[], matrix box, gmx_edsam *ed);
+              const t_commrec *cr, rvec xs[], rvec v[], const matrix box, gmx_edsam *ed);
 
 
 /*! \brief Initializes the essential dynamics and flooding module.

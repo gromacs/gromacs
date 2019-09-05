@@ -122,7 +122,7 @@ class Constraints::Impl
                    rvec                 *x,
                    rvec                 *xprime,
                    rvec                 *min_proj,
-                   matrix                box,
+                   const matrix          box,
                    real                  lambda,
                    real                 *dvdlambda,
                    rvec                 *v,
@@ -238,7 +238,7 @@ void too_many_constraint_warnings(int eConstrAlg, int warncount)
 static void write_constr_pdb(const char *fn, const char *title,
                              const gmx_mtop_t &mtop,
                              int start, int homenr, const t_commrec *cr,
-                             const rvec x[], matrix box)
+                             const rvec x[], const matrix box)
 {
     char          fname[STRLEN];
     FILE         *out;
@@ -295,7 +295,7 @@ static void write_constr_pdb(const char *fn, const char *title,
 //! Writes out domain contents to help diagnose crashes.
 static void dump_confs(FILE *log, int64_t step, const gmx_mtop_t &mtop,
                        int start, int homenr, const t_commrec *cr,
-                       const rvec x[], rvec xprime[], matrix box)
+                       const rvec x[], rvec xprime[], const matrix box)
 {
     char  buf[STRLEN], buf2[22];
 
@@ -327,7 +327,7 @@ Constraints::apply(bool                  bLog,
                    rvec                 *x,
                    rvec                 *xprime,
                    rvec                 *min_proj,
-                   matrix                box,
+                   const matrix          box,
                    real                  lambda,
                    real                 *dvdlambda,
                    rvec                 *v,
@@ -359,7 +359,7 @@ Constraints::Impl::apply(bool                  bLog,
                          rvec                 *x,
                          rvec                 *xprime,
                          rvec                 *min_proj,
-                         matrix                box,
+                         const matrix          box,
                          real                  lambda,
                          real                 *dvdlambda,
                          rvec                 *v,
@@ -1273,7 +1273,11 @@ bool inter_charge_group_settles(const gmx_mtop_t &mtop)
 
 void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
                         const t_inputrec *ir, const t_mdatoms *md,
-                        t_state *state)
+                        int natoms,
+                        ArrayRefWithPadding<RVec> x,
+                        ArrayRefWithPadding<RVec> v,
+                        const matrix box,
+                        real lambda)
 {
     int             i, m, start, end;
     int64_t         step;
@@ -1281,10 +1285,13 @@ void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
     real            dvdl_dum;
     rvec           *savex;
 
+    auto            xRvec = as_rvec_array(x.paddedArrayRef().data());
+    auto            vRvec = as_rvec_array(v.paddedArrayRef().data());
+
     /* We need to allocate one element extra, since we might use
      * (unaligned) 4-wide SIMD loads to access rvec entries.
      */
-    snew(savex, state->natoms + 1);
+    snew(savex, natoms + 1);
 
     start = 0;
     end   = md->homenr;
@@ -1307,9 +1314,9 @@ void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
     /* constrain the current position */
     constr->apply(TRUE, FALSE,
                   step, 0, 1.0,
-                  state->x.rvec_array(), state->x.rvec_array(), nullptr,
-                  state->box,
-                  state->lambda[efptBONDED], &dvdl_dum,
+                  xRvec, xRvec, nullptr,
+                  box,
+                  lambda, &dvdl_dum,
                   nullptr, nullptr, gmx::ConstraintVariable::Positions);
     if (EI_VV(ir->eI))
     {
@@ -1317,24 +1324,24 @@ void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
         constr->apply(TRUE, FALSE,
                       step, 0, 1.0,
-                      state->x.rvec_array(), state->v.rvec_array(), state->v.rvec_array(),
-                      state->box,
-                      state->lambda[efptBONDED], &dvdl_dum,
+                      xRvec, vRvec, vRvec,
+                      box,
+                      lambda, &dvdl_dum,
                       nullptr, nullptr, gmx::ConstraintVariable::Velocities);
     }
     /* constrain the inital velocities at t-dt/2 */
     if (EI_STATE_VELOCITY(ir->eI) && ir->eI != eiVV)
     {
-        auto x = makeArrayRef(state->x).subArray(start, end);
-        auto v = makeArrayRef(state->v).subArray(start, end);
+        auto subX = x.paddedArrayRef().subArray(start, end);
+        auto subV = v.paddedArrayRef().subArray(start, end);
         for (i = start; (i < end); i++)
         {
             for (m = 0; (m < DIM); m++)
             {
                 /* Reverse the velocity */
-                v[i][m] = -v[i][m];
+                subV[i][m] = -subV[i][m];
                 /* Store the position at t-dt in buf */
-                savex[i][m] = x[i][m] + dt*v[i][m];
+                savex[i][m] = subX[i][m] + dt*subV[i][m];
             }
         }
         /* Shake the positions at t=-dt with the positions at t=0
@@ -1349,17 +1356,17 @@ void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
         dvdl_dum = 0;
         constr->apply(TRUE, FALSE,
                       step, -1, 1.0,
-                      state->x.rvec_array(), savex, nullptr,
-                      state->box,
-                      state->lambda[efptBONDED], &dvdl_dum,
-                      state->v.rvec_array(), nullptr, gmx::ConstraintVariable::Positions);
+                      xRvec, savex, nullptr,
+                      box,
+                      lambda, &dvdl_dum,
+                      vRvec, nullptr, gmx::ConstraintVariable::Positions);
 
         for (i = start; i < end; i++)
         {
             for (m = 0; m < DIM; m++)
             {
                 /* Re-reverse the velocities */
-                v[i][m] = -v[i][m];
+                subV[i][m] = -subV[i][m];
             }
         }
     }

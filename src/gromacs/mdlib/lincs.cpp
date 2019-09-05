@@ -952,7 +952,7 @@ calc_dist_iter_simd(int                           b0,
 #endif // GMX_SIMD_HAVE_REAL
 
 //! Implements LINCS constraining.
-static void do_lincs(const rvec *x, rvec *xp, matrix box, t_pbc *pbc,
+static void do_lincs(const rvec *x, rvec *xp, const matrix box, t_pbc *pbc,
                      Lincs *lincsd, int th,
                      const real *invmass,
                      const t_commrec *cr,
@@ -2296,7 +2296,7 @@ bool constrain_lincs(bool computeRmsd,
                      const t_commrec *cr,
                      const gmx_multisim_t *ms,
                      const rvec *x, rvec *xprime, rvec *min_proj,
-                     matrix box, t_pbc *pbc,
+                     const matrix box, t_pbc *pbc,
                      real lambda, real *dvdlambda,
                      real invdt, rvec *v,
                      bool bCalcVir, tensor vir_r_m_dr,
