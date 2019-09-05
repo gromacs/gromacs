@@ -78,6 +78,8 @@ function (do_cmake_config)
                    gromacs-config.cmake @ONLY)
     configure_file(gromacs-config-version.cmake.cmakein
                    gromacs-config-version.cmake @ONLY)
+    configure_file(gromacs-toolchain.cmake.cmakein
+                   gromacs-toolchain.cmake @ONLY)
     # The configuration files are also installed with the suffix, even though
     # the directory already contains the suffix. This allows simple
     # find_package(GROMACS NAMES gromacs_d) to find them, without also
@@ -89,6 +91,10 @@ function (do_cmake_config)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gromacs-config-version.cmake
             DESTINATION ${GMX_INSTALL_CMAKEPKGDIR}
             RENAME "gromacs${GMX_LIBS_SUFFIX}-config-version.cmake"
+            COMPONENT development)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gromacs-toolchain.cmake
+            DESTINATION ${GMX_INSTALL_CMAKEPKGDIR}
+            RENAME "gromacs-toolchain${GMX_LIBS_SUFFIX}.cmake"
             COMPONENT development)
 endfunction()
 
