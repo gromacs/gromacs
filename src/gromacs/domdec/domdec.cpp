@@ -1525,15 +1525,16 @@ static void receive_ddindex2simnodeid(gmx_domdec_t         *dd,
 
 static void split_communicator(const gmx::MDLogger    &mdlog,
                                t_commrec              *cr,
-                               const ivec              numDDCells,
                                DdRankOrder gmx_unused  rankOrder,
                                bool gmx_unused         reorder,
                                DDRankSetup            *ddRankSetup,
                                ivec                    ddCellIndex)
 {
+    const ivec &numDDCells    = ddRankSetup->numPPCells;
+
     if (ddRankSetup->bCartesianPP)
     {
-        const int numDDCellsTot = numDDCells[XX]*numDDCells[YY]*numDDCells[ZZ];
+        const int numDDCellsTot = ddRankSetup->numPPRanks;
         bool      bDiv[DIM];
         for (int i = 1; i < DIM; i++)
         {
@@ -1664,53 +1665,65 @@ static void split_communicator(const gmx::MDLogger    &mdlog,
             thisRankHasDuty(cr, DUTY_PP) ? "particle-particle" : "PME-mesh");
 }
 
-/*! \brief Generates the MPI communicators for domain decomposition */
-static void make_dd_communicators(const gmx::MDLogger &mdlog,
-                                  t_commrec *cr,
-                                  gmx_domdec_t *dd, DdRankOrder ddRankOrder)
+/*! \brief Makes the PP communicator and the PME communicator, when needed
+ *
+ * Updates \p ddRankSetup for Cartesian communication aspects.
+ * For PP ranks, sets the DD PP cell index in \p ddCellIndex.
+ */
+static void makeGroupCommunicators(const gmx::MDLogger &mdlog,
+                                   const DDSettings    &ddSettings,
+                                   const DDSetup       &ddSetup,
+                                   const DdRankOrder    ddRankOrder,
+                                   DDRankSetup         *ddRankSetup,
+                                   t_commrec           *cr,
+                                   ivec                 ddCellIndex)
 {
-    DDRankSetup &ddRankSetup = dd->comm->ddRankSetup;
-
     /* Initially we set ntot to the number of PP cells,
      * This will be increased with PME cells when using Cartesian communicators.
      */
-    copy_ivec(dd->nc, ddRankSetup.ntot);
+    copy_ivec(ddSetup.numDomains, ddRankSetup->ntot);
 
-    ddRankSetup.bCartesianPP     = (ddRankOrder == DdRankOrder::cartesian);
-    ddRankSetup.bCartesianPP_PME = FALSE;
+    ddRankSetup->bCartesianPP     = (ddRankOrder == DdRankOrder::cartesian);
+    ddRankSetup->bCartesianPP_PME = FALSE;
 
-    /* Reorder the nodes by default. This might change the MPI ranks.
-     * Real reordering is only supported on very few architectures,
-     * Blue Gene is one of them.
-     */
-    bool CartReorder = getenv("GMX_NO_CART_REORDER") == nullptr;
-
-    if (cr->npmenodes > 0)
+    if (ddSetup.numPmeRanks > 0)
     {
         /* Split the communicator into a PP and PME part */
-        split_communicator(mdlog, cr, dd->nc, ddRankOrder, CartReorder,
-                           &ddRankSetup, dd->ci);
-        if (ddRankSetup.bCartesianPP_PME)
-        {
-            /* We (possibly) reordered the nodes in split_communicator,
-             * so it is no longer required in make_pp_communicator.
-             */
-            CartReorder = false;
-        }
+        split_communicator(mdlog, cr, ddRankOrder, ddSettings.useCartesianReorder,
+                           ddRankSetup, ddCellIndex);
     }
     else
     {
         /* All nodes do PP and PME */
-#if GMX_MPI
         /* We do not require separate communicators */
         cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
-#endif
     }
+}
+
+/*! \brief For PP ranks, sets or makes the communicator
+ *
+ * For PME ranks get the rank id.
+ * For PP only ranks, sets the PME-only rank.
+ */
+static void setupGroupCommunication(const gmx::MDLogger &mdlog,
+                                    const DDSettings    &ddSettings,
+                                    t_commrec           *cr,
+                                    gmx_domdec_t        *dd)
+{
+    DDRankSetup &ddRankSetup = dd->comm->ddRankSetup;
 
     if (thisRankHasDuty(cr, DUTY_PP))
     {
         /* Copy or make a new PP communicator */
-        make_pp_communicator(mdlog, dd, cr, CartReorder);
+
+        /* We (possibly) reordered the nodes in split_communicator,
+         * so it is no longer required in make_pp_communicator.
+         */
+        const bool useCartesianReorder =
+            (ddSettings.useCartesianReorder &&
+             !ddRankSetup.bCartesianPP_PME);
+
+        make_pp_communicator(mdlog, dd, cr, useCartesianReorder);
     }
     else
     {
@@ -2471,16 +2484,16 @@ getDDRankSetup(const gmx::MDLogger &mdlog,
     return ddRankSetup;
 }
 
-/*! \brief Set the cell size and interaction limits, as well as the DD grid */
-static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
-                                   t_commrec *cr, gmx_domdec_t *dd,
-                                   const DomdecOptions &options,
-                                   const DDSettings &ddSettings,
-                                   const DDSystemInfo &systemInfo,
-                                   const DDSetup &ddSetup,
-                                   const gmx_mtop_t *mtop,
-                                   const t_inputrec *ir,
-                                   const gmx_ddbox_t &ddbox)
+/*! \brief Set the cell size and interaction limits */
+static void set_dd_limits(const gmx::MDLogger &mdlog,
+                          t_commrec *cr, gmx_domdec_t *dd,
+                          const DomdecOptions &options,
+                          const DDSettings &ddSettings,
+                          const DDSystemInfo &systemInfo,
+                          const DDSetup &ddSetup,
+                          const gmx_mtop_t *mtop,
+                          const t_inputrec *ir,
+                          const gmx_ddbox_t &ddbox)
 {
     gmx_domdec_comm_t *comm = dd->comm;
     comm->ddSettings        = ddSettings;
@@ -2523,10 +2536,6 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     copy_ivec(ddSetup.numDomains, dd->nc);
     dd->ndim = ddSetup.numDDDimensions;
     copy_ivec(ddSetup.ddDimensions, dd->dim);
-
-    GMX_LOG(mdlog.info).appendTextFormatted(
-            "Domain decomposition grid %d x %d x %d, separate PME ranks %d",
-            dd->nc[XX], dd->nc[YY], dd->nc[ZZ], cr->npmenodes);
 
     dd->nnodes = dd->nc[XX]*dd->nc[YY]*dd->nc[ZZ];
 
@@ -2976,14 +2985,15 @@ getDDSettings(const gmx::MDLogger     &mdlog,
 {
     DDSettings ddSettings;
 
-    ddSettings.useSendRecv2  = (dd_getenv(mdlog, "GMX_DD_USE_SENDRECV2", 0) != 0);
-    ddSettings.dlb_scale_lim = dd_getenv(mdlog, "GMX_DLB_MAX_BOX_SCALING", 10);
-    ddSettings.useDDOrderZYX = bool(dd_getenv(mdlog, "GMX_DD_ORDER_ZYX", 0));
-    ddSettings.eFlop         = dd_getenv(mdlog, "GMX_DLB_BASED_ON_FLOPS", 0);
-    const int recload        = dd_getenv(mdlog, "GMX_DD_RECORD_LOAD", 1);
-    ddSettings.nstDDDump     = dd_getenv(mdlog, "GMX_DD_NST_DUMP", 0);
-    ddSettings.nstDDDumpGrid = dd_getenv(mdlog, "GMX_DD_NST_DUMP_GRID", 0);
-    ddSettings.DD_debug      = dd_getenv(mdlog, "GMX_DD_DEBUG", 0);
+    ddSettings.useSendRecv2        = (dd_getenv(mdlog, "GMX_DD_USE_SENDRECV2", 0) != 0);
+    ddSettings.dlb_scale_lim       = dd_getenv(mdlog, "GMX_DLB_MAX_BOX_SCALING", 10);
+    ddSettings.useDDOrderZYX       = bool(dd_getenv(mdlog, "GMX_DD_ORDER_ZYX", 0));
+    ddSettings.useCartesianReorder = bool(dd_getenv(mdlog, "GMX_NO_CART_REORDER", 1));
+    ddSettings.eFlop               = dd_getenv(mdlog, "GMX_DLB_BASED_ON_FLOPS", 0);
+    const int recload              = dd_getenv(mdlog, "GMX_DD_RECORD_LOAD", 1);
+    ddSettings.nstDDDump           = dd_getenv(mdlog, "GMX_DD_NST_DUMP", 0);
+    ddSettings.nstDDDumpGrid       = dd_getenv(mdlog, "GMX_DD_NST_DUMP_GRID", 0);
+    ddSettings.DD_debug            = dd_getenv(mdlog, "GMX_DD_DEBUG", 0);
 
     if (ddSettings.useSendRecv2)
     {
@@ -3023,8 +3033,6 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
                                         gmx::ArrayRef<const gmx::RVec> xGlobal,
                                         gmx::LocalAtomSetManager      *atomSets)
 {
-    gmx_domdec_t      *dd;
-
     GMX_LOG(mdlog.info).appendTextFormatted(
             "\nInitializing Domain Decomposition on %d ranks", cr->nnodes);
 
@@ -3045,18 +3053,24 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
 
     DDRankSetup ddRankSetup = getDDRankSetup(mdlog, cr, ddSetup, *ir);
 
-    dd = new gmx_domdec_t(*ir);
+    ivec        ddCellIndex = { 0, 0, 0 };
+    makeGroupCommunicators(mdlog, ddSettings, ddSetup, options.rankOrder,
+                           &ddRankSetup, cr, ddCellIndex);
+
+    gmx_domdec_t *dd = new gmx_domdec_t(*ir);
+
+    copy_ivec(ddCellIndex, dd->ci);
 
     dd->comm = init_dd_comm();
 
     dd->comm->ddRankSetup = ddRankSetup;
 
-    set_dd_limits_and_grid(mdlog, cr, dd, options,
-                           ddSettings, systemInfo, ddSetup,
-                           mtop, ir,
-                           ddbox);
+    set_dd_limits(mdlog, cr, dd, options,
+                  ddSettings, systemInfo, ddSetup,
+                  mtop, ir,
+                  ddbox);
 
-    make_dd_communicators(mdlog, cr, dd, options.rankOrder);
+    setupGroupCommunication(mdlog, ddSettings, cr, dd);
 
     if (thisRankHasDuty(cr, DUTY_PP))
     {

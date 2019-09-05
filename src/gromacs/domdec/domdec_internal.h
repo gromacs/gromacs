@@ -492,6 +492,9 @@ struct DDSettings
     //! Whether to order the DD dimensions from z to x
     bool useDDOrderZYX = false;
 
+    //! Whether to use MPI Cartesian reordering of communicators, when supported (almost never)
+    bool useCartesianReorder = true;
+
     //! Whether we should record the load
     bool recordLoad = false;
 
