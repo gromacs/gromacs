@@ -358,15 +358,15 @@ about the data that is written to file - it is only responsible
 to inform clients about trajectory steps, and providing a valid
 file pointer to the objects that need to write to trajectory.
 
-#### `MicroState`
-The `MicroState` takes part in the simulator run, as it might
+#### `StatePropagatorData`
+The `StatePropagatorData` takes part in the simulator run, as it might
 have to save a valid state at the right moment during the
-integration. Placing the MicroState correctly is for now the
+integration. Placing the StatePropagatorData correctly is for now the
 duty of the simulator builder - this might be automated later
 if we have enough meta-data of the variables (i.e., if
-`MicroState` knows at which time the variables currently are,
+`StatePropagatorData` knows at which time the variables currently are,
 and can decide when a valid state (full-time step of all
-variables) is reached. The `MicroState` is also a client of
+variables) is reached. The `StatePropagatorData` is also a client of
 both the trajectory signaller and writer - it will save a
 state for later writeout during the simulator step if it
 knows that trajectory writing will occur later in the step,
@@ -384,8 +384,8 @@ at which it has access to a valid energy state.
 
 ## Data structures
 
-### `MicroState`
-The `MicroState` contains a little more than the pure
+### `StatePropagatorData`
+The `StatePropagatorData` contains a little more than the pure
 statistical-physical micro state, namely the positions,
 velocities, forces, and box matrix, as well as a backup of
 the positions and box of the last time step. While it takes
@@ -393,11 +393,11 @@ part in the simulator loop to be able to backup positions /
 boxes and save the current state if needed, it's main purpose
 is to offer access to its data via getter methods. All elements
 reading or writing to this data need a pointer to the
-`MicroState` and need to request their data explicitly. This
+`StatePropagatorData` and need to request their data explicitly. This
 will later simplify the understanding of data dependencies
 between elements.
 
-Note that the `MicroState` can be converted to and from the
+Note that the `StatePropagatorData` can be converted to and from the
 legacy `t_state` object. This is useful when dealing with
 functionality which has not yet been adapted to use the new
 data approach - of the elements currently implemented, only

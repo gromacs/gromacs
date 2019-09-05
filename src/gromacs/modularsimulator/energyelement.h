@@ -58,7 +58,7 @@ namespace gmx
 class Constraints;
 class EnergyOutput;
 class MDAtoms;
-class MicroState;
+class StatePropagatorData;
 
 //! \addtogroup module_modularsimulator
 //! \{
@@ -93,7 +93,7 @@ class EnergyElement final :
     public:
         //! Constructor
         EnergyElement(
-            MicroState        *microState,
+            StatePropagatorData *statePropagatorData,
             const gmx_mtop_t  *globalTopology,
             const t_inputrec  *inputrec,
             const MDAtoms     *mdAtoms,
@@ -273,7 +273,7 @@ class EnergyElement final :
          * Pointers to Simulator data
          */
         //! The microstate
-        MicroState            * microState_;
+        StatePropagatorData   * statePropagatorData_;
         //! Contains user input mdp options.
         const t_inputrec       *inputrec_;
         //! Full system topology.

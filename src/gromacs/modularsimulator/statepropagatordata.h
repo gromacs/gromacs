@@ -33,14 +33,14 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \libinternal
- * \brief Declares the microstate for the modular simulator
+ * \brief Declares the state for the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
  * \ingroup module_modularsimulator
  */
 
-#ifndef GMX_MODULARSIMULATOR_MICROSTATE_H
-#define GMX_MODULARSIMULATOR_MICROSTATE_H
+#ifndef GMX_MODULARSIMULATOR_STATEPROPAGATORDATA_H
+#define GMX_MODULARSIMULATOR_STATEPROPAGATORDATA_H
 
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/paddedvector.h"
@@ -62,9 +62,9 @@ enum class ConstraintVariable;
 //! \{
 
 /*! \libinternal
- * \brief MicroState and associated data
+ * \brief StatePropagatorData and associated data
  *
- * The `MicroState` contains a little more than the pure
+ * The `StatePropagatorData` contains a little more than the pure
  * statistical-physical micro state, namely the positions,
  * velocities, forces, and box matrix, as well as a backup of
  * the positions and box of the last time step. While it takes
@@ -72,40 +72,40 @@ enum class ConstraintVariable;
  * boxes and save the current state if needed, it's main purpose
  * is to offer access to its data via getter methods. All elements
  * reading or writing to this data need a pointer to the
- * `MicroState` and need to request their data explicitly. This
+ * `StatePropagatorData` and need to request their data explicitly. This
  * will later simplify the understanding of data dependencies
  * between elements.
  *
- * The `MicroState` takes part in the simulator run, as it might
+ * The `StatePropagatorData` takes part in the simulator run, as it might
  * have to save a valid state at the right moment during the
- * integration. Placing the MicroState correctly is for now the
+ * integration. Placing the StatePropagatorData correctly is for now the
  * duty of the simulator builder - this might be automatized later
  * if we have enough meta-data of the variables (i.e., if
- * `MicroState` knows at which time the variables currently are,
+ * `StatePropagatorData` knows at which time the variables currently are,
  * and can decide when a valid state (full-time step of all
- * variables) is reached. The `MicroState` is also a client of
+ * variables) is reached. The `StatePropagatorData` is also a client of
  * both the trajectory signaller and writer - it will save a
  * state for later writeout during the simulator step if it
  * knows that trajectory writing will occur later in the step,
  * and it knows how to write to file given a file pointer by
  * the `TrajectoryElement`.
  *
- * Note that the `MicroState` can be converted to and from the
+ * Note that the `StatePropagatorData` can be converted to and from the
  * legacy `t_state` object. This is useful when dealing with
  * functionality which has not yet been adapted to use the new
  * data approach - of the elements currently implemented, only
  * domain decomposition, PME load balancing, and the initial
  * constraining are using this.
  */
-class MicroState final :
-    public       ISimulatorElement,
-    public       ITrajectoryWriterClient,
-    public       ITrajectorySignallerClient
+class StatePropagatorData final :
+    public                ISimulatorElement,
+    public                ITrajectoryWriterClient,
+    public                ITrajectorySignallerClient
 {
     public:
         //! Constructor
-        MicroState(
-            int               natoms,
+        StatePropagatorData(
+            int               numAtoms,
             FILE             *fplog,
             const t_commrec  *cr,
             t_state          *globalState,
@@ -119,21 +119,21 @@ class MicroState final :
 
         // Allow access to state
         //! Get write access to position vector
-        ArrayRefWithPadding<RVec> writePosition();
+        ArrayRefWithPadding<RVec> positionsView();
         //! Get read access to position vector
-        ArrayRefWithPadding<const RVec> readPosition() const;
+        ArrayRefWithPadding<const RVec> constPositionsView() const;
         //! Get write access to previous position vector
-        ArrayRefWithPadding<RVec> writePreviousPosition();
+        ArrayRefWithPadding<RVec> previousPositionsView();
         //! Get read access to previous position vector
-        ArrayRefWithPadding<const RVec> readPreviousPosition() const;
+        ArrayRefWithPadding<const RVec> constPreviousPositionsView() const;
         //! Get write access to velocity vector
-        ArrayRefWithPadding<RVec> writeVelocity();
+        ArrayRefWithPadding<RVec> velocitiesView();
         //! Get read access to velocity vector
-        ArrayRefWithPadding<const RVec> readVelocity() const;
+        ArrayRefWithPadding<const RVec> constVelocitiesView() const;
         //! Get write access to force vector
-        ArrayRefWithPadding<RVec> writeForce();
+        ArrayRefWithPadding<RVec> forcesView();
         //! Get read access to force vector
-        ArrayRefWithPadding<const RVec> readForce() const;
+        ArrayRefWithPadding<const RVec> constForcesView() const;
         //! Get pointer to box
         rvec *box();
         //! Get pointer to previous box
@@ -147,7 +147,7 @@ class MicroState final :
          * at the moment at which the state is at a full time step. Positioning
          * this element is the responsibility of the programmer writing the
          * integration algorithm! If the current step is a trajectory writing
-         * step, MicroState will save a backup for later writeout.
+         * step, StatePropagatorData will save a backup for later writeout.
          *
          * This is also the place at which the current state becomes the previous
          * state.
@@ -177,13 +177,11 @@ class MicroState final :
         // Classes which need access to legacy state
         friend class DomDecHelper;
         friend class PmeLoadBalanceHelper;
-        template <ConstraintVariable variable>
-        friend class ConstraintsElement;
         //! @endcond
 
     private:
         //! The total number of atoms in the system
-        int totalNAtoms_;
+        int totalNumAtoms_;
         //! The position writeout frequency
         int nstxout_;
         //! The velocity writeout frequency
@@ -269,4 +267,4 @@ class MicroState final :
 //! /}
 }      // namespace gmx
 
-#endif // GMX_MODULARSIMULATOR_MICROSTATE_H
+#endif // GMX_MODULARSIMULATOR_STATEPROPAGATORDATA_H

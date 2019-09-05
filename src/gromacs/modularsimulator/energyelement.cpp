@@ -54,7 +54,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "microstate.h"
+#include "statepropagatordata.h"
 
 struct pull_t;
 class t_state;
@@ -64,16 +64,16 @@ namespace gmx
 class Awh;
 
 EnergyElement::EnergyElement(
-        MicroState        *microState,
-        const gmx_mtop_t  *globalTopology,
-        const t_inputrec  *inputrec,
-        const MDAtoms     *mdAtoms,
-        gmx_enerdata_t    *enerd,
-        gmx_ekindata_t    *ekind,
-        const Constraints *constr,
-        FILE              *fplog,
-        t_fcdata          *fcd,
-        bool               isMaster) :
+        StatePropagatorData *statePropagatorData,
+        const gmx_mtop_t    *globalTopology,
+        const t_inputrec    *inputrec,
+        const MDAtoms       *mdAtoms,
+        gmx_enerdata_t      *enerd,
+        gmx_ekindata_t      *ekind,
+        const Constraints   *constr,
+        FILE                *fplog,
+        t_fcdata            *fcd,
+        bool                 isMaster) :
     isMaster_(isMaster),
     energyWritingStep_(-1),
     energyCalculationStep_(-1),
@@ -85,7 +85,7 @@ EnergyElement::EnergyElement(
     totalVirialStep_(-1),
     pressureStep_(-1),
 #endif
-    microState_(microState),
+    statePropagatorData_(statePropagatorData),
     inputrec_(inputrec),
     top_global_(globalTopology),
     mdAtoms_(mdAtoms),
@@ -231,7 +231,7 @@ void EnergyElement::doStep(
             isFreeEnergyCalculationStep, isEnergyCalculationStep,
             time, mdAtoms_->mdatoms()->tmass, enerd_, localState,
             inputrec_->fepvals, inputrec_->expandedvals,
-            microState_->previousBox(),
+            statePropagatorData_->previousBox(),
             shakeVirial_, forceVirial_, totalVirial_, pressure_,
             ekind_, muTot_, constr_);
 }

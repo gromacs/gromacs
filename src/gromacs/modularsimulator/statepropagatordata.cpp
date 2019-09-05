@@ -33,7 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \libinternal
- * \brief Defines the microstate for the modular simulator
+ * \brief Defines the state for the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
  * \ingroup module_modularsimulator
@@ -41,7 +41,7 @@
 
 #include "gmxpre.h"
 
-#include "microstate.h"
+#include "statepropagatordata.h"
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/math/vec.h"
@@ -57,8 +57,8 @@
 
 namespace gmx
 {
-MicroState::MicroState(
-        int               natoms,
+StatePropagatorData::StatePropagatorData(
+        int               numAtoms,
         FILE             *fplog,
         const t_commrec  *cr,
         t_state          *globalState,
@@ -69,7 +69,7 @@ MicroState::MicroState(
         bool              useGPU,
         const t_inputrec *inputrec,
         const t_mdatoms  *mdatoms) :
-    totalNAtoms_(natoms),
+    totalNumAtoms_(numAtoms),
     nstxout_(nstxout),
     nstvout_(nstvout),
     nstfout_(nstfout),
@@ -117,7 +117,7 @@ MicroState::MicroState(
     {
         if (flags_ & (1u << estV))
         {
-            auto v = writeVelocity().paddedArrayRef();
+            auto v = velocitiesView().paddedArrayRef();
             /* Set the velocities of vsites, shells and frozen atoms to zero */
             for (int i = 0; i < mdatoms->homenr; i++)
             {
@@ -146,62 +146,62 @@ MicroState::MicroState(
     }
 }
 
-ArrayRefWithPadding<RVec> MicroState::writePosition()
+ArrayRefWithPadding<RVec> StatePropagatorData::positionsView()
 {
     return x_.arrayRefWithPadding();
 }
 
-ArrayRefWithPadding<const RVec> MicroState::readPosition() const
+ArrayRefWithPadding<const RVec> StatePropagatorData::constPositionsView() const
 {
     return x_.constArrayRefWithPadding();
 }
 
-ArrayRefWithPadding<RVec> MicroState::writePreviousPosition()
+ArrayRefWithPadding<RVec> StatePropagatorData::previousPositionsView()
 {
     return previousX_.arrayRefWithPadding();
 }
 
-ArrayRefWithPadding<const RVec> MicroState::readPreviousPosition() const
+ArrayRefWithPadding<const RVec> StatePropagatorData::constPreviousPositionsView() const
 {
     return previousX_.constArrayRefWithPadding();
 }
 
-ArrayRefWithPadding<RVec> MicroState::writeVelocity()
+ArrayRefWithPadding<RVec> StatePropagatorData::velocitiesView()
 {
     return v_.arrayRefWithPadding();
 }
 
-ArrayRefWithPadding<const RVec> MicroState::readVelocity() const
+ArrayRefWithPadding<const RVec> StatePropagatorData::constVelocitiesView() const
 {
     return v_.constArrayRefWithPadding();
 }
 
-ArrayRefWithPadding<RVec> MicroState::writeForce()
+ArrayRefWithPadding<RVec> StatePropagatorData::forcesView()
 {
     return f_.arrayRefWithPadding();
 }
 
-ArrayRefWithPadding<const RVec> MicroState::readForce() const
+ArrayRefWithPadding<const RVec> StatePropagatorData::constForcesView() const
 {
     return f_.constArrayRefWithPadding();
 }
 
-rvec* MicroState::box()
+rvec* StatePropagatorData::box()
 {
     return box_;
 }
 
-rvec* MicroState::previousBox()
+rvec* StatePropagatorData::previousBox()
 {
     return previousBox_;
 }
 
-int MicroState::localNumAtoms()
+int StatePropagatorData::localNumAtoms()
 {
     return localNAtoms_;
 }
 
-std::unique_ptr<t_state> MicroState::localState()
+std::unique_ptr<t_state> StatePropagatorData::localState()
 {
     auto state = std::make_unique<t_state>();
     state_change_natoms(state.get(), localNAtoms_);
@@ -213,7 +213,7 @@ std::unique_ptr<t_state> MicroState::localState()
     return state;
 }
 
-void MicroState::setLocalState(std::unique_ptr<t_state> state)
+void StatePropagatorData::setLocalState(std::unique_ptr<t_state> state)
 {
     localNAtoms_ = state->natoms;
     x_.resizeWithPadding(localNAtoms_);
@@ -227,17 +227,17 @@ void MicroState::setLocalState(std::unique_ptr<t_state> state)
     ddpCount_ = state->ddp_count;
 }
 
-t_state* MicroState::globalState()
+t_state* StatePropagatorData::globalState()
 {
     return globalState_;
 }
 
-PaddedVector<RVec>* MicroState::forcePointer()
+PaddedVector<RVec>* StatePropagatorData::forcePointer()
 {
     return &f_;
 }
 
-void MicroState::copyPosition()
+void StatePropagatorData::copyPosition()
 {
     int nth = gmx_omp_nthreads_get(emntUpdate);
 
@@ -257,7 +257,7 @@ void MicroState::copyPosition()
     copy_mat(box_, previousBox_);
 }
 
-void MicroState::copyPosition(int start, int end)
+void StatePropagatorData::copyPosition(int start, int end)
 {
     for (int i = start; i < end; ++i)
     {
@@ -265,7 +265,7 @@ void MicroState::copyPosition(int start, int end)
     }
 }
 
-void MicroState::scheduleTask(
+void StatePropagatorData::scheduleTask(
         Step step, Time gmx_unused time,
         const RegisterRunFunctionPtr &registerRunFunction)
 {
@@ -289,7 +289,7 @@ void MicroState::scheduleTask(
     }
 }
 
-void MicroState::saveState()
+void StatePropagatorData::saveState()
 {
     GMX_ASSERT(
             !localStateBackup_,
@@ -298,7 +298,7 @@ void MicroState::saveState()
 }
 
 SignallerCallbackPtr
-MicroState::registerTrajectorySignallerCallback(TrajectoryEvent event)
+StatePropagatorData::registerTrajectorySignallerCallback(TrajectoryEvent event)
 {
     if (event == TrajectoryEvent::stateWritingStep)
     {
@@ -309,7 +309,7 @@ MicroState::registerTrajectorySignallerCallback(TrajectoryEvent event)
 }
 
 ITrajectoryWriterCallbackPtr
-MicroState::registerTrajectoryWriterCallback(TrajectoryEvent event)
+StatePropagatorData::registerTrajectoryWriterCallback(TrajectoryEvent event)
 {
     if (event == TrajectoryEvent::stateWritingStep)
     {
@@ -320,7 +320,7 @@ MicroState::registerTrajectoryWriterCallback(TrajectoryEvent event)
     return nullptr;
 }
 
-void MicroState::write(gmx_mdoutf_t outf, Step currentStep, Time currentTime)
+void StatePropagatorData::write(gmx_mdoutf_t outf, Step currentStep, Time currentTime)
 {
     unsigned int mdof_flags = 0;
     if (do_per_step(currentStep, nstxout_))
@@ -366,13 +366,13 @@ void MicroState::write(gmx_mdoutf_t outf, Step currentStep, Time currentTime)
     ObservablesHistory *observablesHistory = nullptr;
 
     mdoutf_write_to_trajectory_files(
-            fplog_, cr_, outf, static_cast<int>(mdof_flags), totalNAtoms_,
+            fplog_, cr_, outf, static_cast<int>(mdof_flags), totalNumAtoms_,
             currentStep, currentTime, localStateBackup_.get(), globalState_, observablesHistory, f_);
 
     localStateBackup_.reset();
 }
 
-void MicroState::elementSetup()
+void StatePropagatorData::elementSetup()
 {
     if (vvResetVelocities_)
     {
@@ -380,7 +380,7 @@ void MicroState::elementSetup()
     }
 }
 
-void MicroState::resetVelocities()
+void StatePropagatorData::resetVelocities()
 {
     v_ = velocityBackup_;
 }
