@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="relative-entropy-gradient">
+    <Int Name="Length">27</Int>
+    <Real>-0.037037037</Real>
+    <Real>0</Real>
+    <Real>0.037037037</Real>
+    <Real>0.074074075</Real>
+    <Real>0.11111111</Real>
+    <Real>0.14814815</Real>
+    <Real>0.18518518</Real>
+    <Real>0.22222222</Real>
+    <Real>0.25925925</Real>
+    <Real>0.2962963</Real>
+    <Real>0.33333334</Real>
+    <Real>0.37037036</Real>
+    <Real>0.4074074</Real>
+    <Real>0.44444445</Real>
+    <Real>0.48148149</Real>
+    <Real>0.51851851</Real>
+    <Real>0.55555558</Real>
+    <Real>0.5925926</Real>
+    <Real>0.62962961</Real>
+    <Real>0.66666669</Real>
+    <Real>0.7037037</Real>
+    <Real>0.74074072</Real>
+    <Real>0.77777779</Real>
+    <Real>0.81481481</Real>
+    <Real>0.85185188</Real>
+    <Real>0.8888889</Real>
+    <Real>0.92592591</Real>
+  </Sequence>
+</ReferenceData>

@@ -49,6 +49,7 @@
 
 #include "gromacs/math/multidimarray.h"
 
+#include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"
 
@@ -95,10 +96,9 @@ TEST(DensitySimilarityTest, InnerProductGradientIsCorrect)
 
     // Need this conversion to vector of float, because Pointwise requires size()
     // member function not provided by basic_mdspan
-    const auto         gradient = measure.gradient(comparedDensity.asConstView());
-    std::vector<float> gradientAsVector;
-    gradientAsVector.assign(gradient.data(), gradient.data() + gradient.mapping().required_span_size());
-    EXPECT_THAT(expectedSimilarityGradient, Pointwise(FloatEq(tolerance), gradientAsVector));
+    const basic_mdspan<const float, dynamicExtents3D> gradient = measure.gradient(comparedDensity.asConstView());
+    ArrayRef<const float> gradientView(gradient.data(), gradient.data() + gradient.mapping().required_span_size());
+    EXPECT_THAT(expectedSimilarityGradient, Pointwise(FloatEq(tolerance), gradientView));
 }
 
 TEST(DensitySimilarityTest, GradientThrowsIfDensitiesDontMatch)
@@ -134,6 +134,56 @@ TEST(DensitySimilarityTest, CopiedMeasureInnerProductIsCorrect)
     EXPECT_FLOAT_EQ(expectedSimilarity, copiedMeasure.similarity(comparedDensity.asConstView()));
 }
 
+TEST(DensitySimilarityTest, RelativeEntropyOfSameDensityIsZero)
+{
+    MultiDimArray<std::vector<float>, dynamicExtents3D> referenceDensity(3, 3, 3);
+    std::iota(begin(referenceDensity), end(referenceDensity), -2);
+
+    DensitySimilarityMeasure measure(DensitySimilarityMeasureMethod::relativeEntropy,
+                                     referenceDensity.asConstView());
+
+    MultiDimArray<std::vector<float>, dynamicExtents3D> comparedDensity(3, 3, 3);
+    std::iota(begin(comparedDensity), end(comparedDensity), -2);
+
+    const float expectedSimilarity = 0;
+    EXPECT_REAL_EQ(expectedSimilarity, measure.similarity(comparedDensity.asConstView()));
+}
+
+
+TEST(DensitySimilarityTest, RelativeEntropyIsCorrect)
+{
+    MultiDimArray<std::vector<float>, dynamicExtents3D> referenceDensity(3, 3, 3);
+    std::iota(begin(referenceDensity), end(referenceDensity), -2);
+
+    DensitySimilarityMeasure measure(DensitySimilarityMeasureMethod::relativeEntropy, referenceDensity.asConstView());
+
+    MultiDimArray<std::vector<float>, dynamicExtents3D> comparedDensity(3, 3, 3);
+    std::iota(begin(comparedDensity), end(comparedDensity), -1);
+
+    const real expectedSimilarity = 22.468290398724498791;
+    EXPECT_REAL_EQ(expectedSimilarity, measure.similarity(comparedDensity.asConstView()));
+}
+
+TEST(DensitySimilarityTest, RelativeEntropyGradientIsCorrect)
+{
+    MultiDimArray<std::vector<float>, dynamicExtents3D> referenceDensity(3, 3, 3);
+    std::iota(begin(referenceDensity), end(referenceDensity), -1);
+
+    DensitySimilarityMeasure measure(DensitySimilarityMeasureMethod::innerProduct, referenceDensity.asConstView());
+
+    MultiDimArray<std::vector<float>, dynamicExtents3D> comparedDensity(3, 3, 3);
+    std::iota(begin(comparedDensity), end(comparedDensity), -2);
+
+    // Need this conversion to ArrayRef, because Pointwise requires size()
+    // member function not provided by basic_mdspan
+    const basic_mdspan<const float, dynamicExtents3D> gradient = measure.gradient(comparedDensity.asConstView());
+    ArrayRef<const float> gradientView(gradient.data(), gradient.data() + gradient.mapping().required_span_size());
+
+    TestReferenceData     refData;
+    TestReferenceChecker  checker(refData.rootChecker());
+    checker.setDefaultTolerance(defaultFloatTolerance());
+    checker.checkSequence(gradientView.begin(), gradientView.end(), "relative-entropy-gradient");
+}
 
 } // namespace test
 

@@ -61,8 +61,8 @@ class DensitySimilarityMeasureImpl
         using density = DensitySimilarityMeasure::density;
         //! \copydoc DensitySimilarityMeasure::gradient(DensitySimilarityMeasure::density comparedDensity)
         virtual density gradient(density comparedDensity) = 0;
-        //! \copydoc DensitySimilarityMeasure::gradient(density comparedDensity)
-        virtual float similarity(density comparedDensity) = 0;
+        //! \copydoc DensitySimilarityMeasure::similarity(density comparedDensity)
+        virtual real similarity(density comparedDensity) = 0;
         //! clone to allow copy operations
         virtual std::unique_ptr<DensitySimilarityMeasureImpl> clone() = 0;
 };
@@ -71,8 +71,11 @@ DensitySimilarityMeasureImpl::~DensitySimilarityMeasureImpl() = default;
 namespace
 {
 
-/*! \internal \brief
- * Implementation for DensitySimilarityInnerProduct.
+/****************** Inner Product *********************************************/
+
+/*! \internal
+ * \brief Implementation for DensitySimilarityInnerProduct.
+ *
  * The similarity measure itself is documented in DensitySimilarityMeasureMethod::innerProduct.
  */
 class DensitySimilarityInnerProduct final : public DensitySimilarityMeasureImpl
@@ -85,7 +88,7 @@ class DensitySimilarityInnerProduct final : public DensitySimilarityMeasureImpl
         //! Clone this
         std::unique_ptr<DensitySimilarityMeasureImpl> clone() override;
         //! The similarity between reference density and compared density
-        float similarity(density comparedDensity) override;
+        real similarity(density comparedDensity) override;
     private:
         //! A view on the reference density
         const density referenceDensity_;
@@ -106,7 +109,7 @@ gradient_ {
                    [numVoxels](float x){return x/numVoxels; });
 }
 
-float DensitySimilarityInnerProduct::similarity(density comparedDensity)
+real DensitySimilarityInnerProduct::similarity(density comparedDensity)
 {
     if (comparedDensity.extents() != referenceDensity_.extents())
     {
@@ -134,6 +137,83 @@ std::unique_ptr<DensitySimilarityMeasureImpl> DensitySimilarityInnerProduct::clo
     return std::make_unique<DensitySimilarityInnerProduct>(referenceDensity_);
 }
 
+/****************** Relative Entropy *****************************************/
+
+//! Calculate a single summand in the relative entropy sum.
+real relativeEntropyAtVoxel(real reference, real comparison)
+{
+    if ((reference > 0) && (comparison > 0))
+    {
+        return reference * (std::log(comparison/reference));
+    }
+    return 0.;
+}
+
+//! Calculate a single relative entropy gradient entry at a voxel.
+real relativeEntropyGradientAtVoxel(real reference, real comparison)
+{
+    if ((reference > 0) && (comparison > 0))
+    {
+        return reference/comparison;
+    }
+    return 0.;
+}
+
+/*! \internal
+ * \brief Implementation for DensitySimilarityRelativeEntropy.
+ *
+ * The similarity measure itself is documented in DensitySimilarityMeasureMethod::RelativeEntropy.
+ */
+class DensitySimilarityRelativeEntropy final : public DensitySimilarityMeasureImpl
+{
+    public:
+        //! Construct similarity measure by setting the reference density
+        DensitySimilarityRelativeEntropy(density referenceDensity);
+        //! The gradient for the relative entropy similarity measure
+        density gradient(density comparedDensity) override;
+        //! Clone this
+        std::unique_ptr<DensitySimilarityMeasureImpl> clone() override;
+        //! The similarity between reference density and compared density
+        real similarity(density comparedDensity) override;
+    private:
+        //! A view on the reference density
+        const density referenceDensity_;
+        //! Stores the gradient of the similarity measure in memory
+        MultiDimArray<std::vector<float>, dynamicExtents3D> gradient_;
+};
+
+DensitySimilarityRelativeEntropy::DensitySimilarityRelativeEntropy(density referenceDensity) :
+    referenceDensity_ {referenceDensity },
+gradient_(referenceDensity.extents())
+{
+}
+
+real DensitySimilarityRelativeEntropy::similarity(density comparedDensity)
+{
+    if (comparedDensity.extents() != referenceDensity_.extents())
+    {
+        GMX_THROW(RangeError("Reference density and compared density need to have same extents."));
+    }
+    return std::inner_product(begin(referenceDensity_), end(referenceDensity_),
+                              begin(comparedDensity), 0., std::plus<>(), relativeEntropyAtVoxel);
+}
+
+DensitySimilarityMeasure::density DensitySimilarityRelativeEntropy::gradient(density comparedDensity)
+{
+    if (comparedDensity.extents() != referenceDensity_.extents())
+    {
+        GMX_THROW(RangeError("Reference density and compared density need to have same extents."));
+    }
+    std::transform(begin(referenceDensity_), end(referenceDensity_), begin(comparedDensity),
+                   begin(gradient_), relativeEntropyGradientAtVoxel);
+    return gradient_.asConstView();
+}
+
+std::unique_ptr<DensitySimilarityMeasureImpl> DensitySimilarityRelativeEntropy::clone()
+{
+    return std::make_unique<DensitySimilarityRelativeEntropy>(referenceDensity_);
+}
+
 }   // namespace
 
 
@@ -145,7 +225,9 @@ DensitySimilarityMeasure::DensitySimilarityMeasure(DensitySimilarityMeasureMetho
         case DensitySimilarityMeasureMethod::innerProduct:
             impl_ = std::make_unique<DensitySimilarityInnerProduct>(referenceDensity);
             break;
-
+        case DensitySimilarityMeasureMethod::relativeEntropy:
+            impl_ = std::make_unique<DensitySimilarityRelativeEntropy>(referenceDensity);
+            break;
         default:
             break;
     }
@@ -156,7 +238,7 @@ DensitySimilarityMeasure::density DensitySimilarityMeasure::gradient(density com
     return impl_->gradient(comparedDensity);
 }
 
-float DensitySimilarityMeasure::similarity(density comparedDensity)
+real DensitySimilarityMeasure::similarity(density comparedDensity)
 {
     return impl_->similarity(comparedDensity);
 }

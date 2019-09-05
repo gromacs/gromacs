@@ -32,11 +32,12 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \inlibraryapi \file
+/*! \libinternal \file
  * \brief
  * Declares density similarity measures and their derivatives.
  *
  * \author Christian Blau <blau@kth.se>
+ * \inlibraryapi
  * \ingroup module_math
  */
 #ifndef GMX_MATH_DENSITYFIT_H
@@ -45,6 +46,7 @@
 #include "gromacs/mdspan/extensions.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {
@@ -62,12 +64,22 @@ enum class DensitySimilarityMeasureMethod
      * \f]
      */
     innerProduct,
+    /*! \brief Measure similarity between densities, using the relative entropy between them.
+     * \note Voxels with negative values are ignored.
+     *
+     * \f[
+     *      \mathrm{Similarity}(\rho_{\mathrm{r}},\rho_{\mathrm{c}}) =
+     *           \sum_{v=1}^{N_\mathrm{voxel}}
+     *              \rho^v_{\mathrm{r}} (\log(\rho^v_{\mathrm{c}}) - \log(\rho^v_{\mathrm{r}}))
+     * \f]
+     */
+    relativeEntropy,
     Count,
 };
 
 //! Name the methods that may be used to evaluate similarity between densities
 const EnumerationArray<DensitySimilarityMeasureMethod, const char *const>
-c_densitySimilarityMeasureMethodNames = {{ "inner-product" }};
+c_densitySimilarityMeasureMethodNames = {{ "inner-product", "relative-entropy"}};
 
 /* Forward declaration of implementation class outside class to allow
  * choose implementation class during construction of the DensitySimilarityMeasure*/
@@ -105,7 +117,7 @@ class DensitySimilarityMeasure
          * \param[in] comparedDensity the variable density
          * \returns density similarity
          */
-        float similarity(density comparedDensity);
+        real similarity(density comparedDensity);
     private:
         std::unique_ptr<DensitySimilarityMeasureImpl> impl_;
 };
