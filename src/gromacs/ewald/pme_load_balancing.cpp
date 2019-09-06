@@ -535,18 +535,19 @@ static void switch_to_stage1(pme_load_balancing_t *pme_lb)
  * factors as well as DD load balancing.
  */
 static void
-pme_load_balance(pme_load_balancing_t      *pme_lb,
-                 t_commrec                 *cr,
-                 FILE                      *fp_err,
-                 FILE                      *fp_log,
-                 const gmx::MDLogger       &mdlog,
-                 const t_inputrec          &ir,
-                 const t_state             &state,
-                 double                     cycles,
-                 interaction_const_t       *ic,
-                 struct nonbonded_verlet_t *nbv,
-                 struct gmx_pme_t **        pmedata,
-                 int64_t                    step)
+pme_load_balance(pme_load_balancing_t          *pme_lb,
+                 t_commrec                     *cr,
+                 FILE                          *fp_err,
+                 FILE                          *fp_log,
+                 const gmx::MDLogger           &mdlog,
+                 const t_inputrec              &ir,
+                 const matrix                   box,
+                 gmx::ArrayRef<const gmx::RVec> x,
+                 double                         cycles,
+                 interaction_const_t           *ic,
+                 struct nonbonded_verlet_t     *nbv,
+                 struct gmx_pme_t     **        pmedata,
+                 int64_t                        step)
 {
     gmx_bool     OK;
     pme_setup_t *set;
@@ -668,7 +669,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
             if (OK && ir.ePBC != epbcNONE)
             {
                 OK = (gmx::square(pme_lb->setup[pme_lb->cur+1].rlistOuter)
-                      <= max_cutoff2(ir.ePBC, state.box));
+                      <= max_cutoff2(ir.ePBC, box));
                 if (!OK)
                 {
                     pme_lb->elimited = epmelblimBOX;
@@ -681,7 +682,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
                 if (DOMAINDECOMP(cr))
                 {
-                    OK = change_dd_cutoff(cr, state,
+                    OK = change_dd_cutoff(cr, box, x,
                                           pme_lb->setup[pme_lb->cur].rlistOuter);
                     if (!OK)
                     {
@@ -754,7 +755,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
     if (DOMAINDECOMP(cr) && pme_lb->stage > 0)
     {
-        OK = change_dd_cutoff(cr, state, pme_lb->setup[pme_lb->cur].rlistOuter);
+        OK = change_dd_cutoff(cr, box, x, pme_lb->setup[pme_lb->cur].rlistOuter);
         if (!OK)
         {
             /* For some reason the chosen cut-off is incompatible with DD.
@@ -881,18 +882,19 @@ static void continue_pme_loadbal(pme_load_balancing_t *pme_lb,
     pme_lb->start            = pme_lb->lower_limit;
 }
 
-void pme_loadbal_do(pme_load_balancing_t *pme_lb,
-                    t_commrec            *cr,
-                    FILE                 *fp_err,
-                    FILE                 *fp_log,
-                    const gmx::MDLogger  &mdlog,
-                    const t_inputrec     &ir,
-                    t_forcerec           *fr,
-                    const t_state        &state,
-                    gmx_wallcycle_t       wcycle,
-                    int64_t               step,
-                    int64_t               step_rel,
-                    gmx_bool             *bPrinting)
+void pme_loadbal_do(pme_load_balancing_t          *pme_lb,
+                    t_commrec                     *cr,
+                    FILE                          *fp_err,
+                    FILE                          *fp_log,
+                    const gmx::MDLogger           &mdlog,
+                    const t_inputrec              &ir,
+                    t_forcerec                    *fr,
+                    const matrix                   box,
+                    gmx::ArrayRef<const gmx::RVec> x,
+                    gmx_wallcycle_t                wcycle,
+                    int64_t                        step,
+                    int64_t                        step_rel,
+                    gmx_bool                      *bPrinting)
 {
     int    n_prev;
     double cycles_prev;
@@ -1001,7 +1003,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
          */
         pme_load_balance(pme_lb, cr,
                          fp_err, fp_log, mdlog,
-                         ir, state, pme_lb->cycles_c - cycles_prev,
+                         ir, box, x, pme_lb->cycles_c - cycles_prev,
                          fr->ic, fr->nbv.get(), &fr->pmedata,
                          step);
 

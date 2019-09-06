@@ -3073,9 +3073,10 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
     return dd;
 }
 
-static gmx_bool test_dd_cutoff(t_commrec     *cr,
-                               const t_state &state,
-                               real           cutoffRequested)
+static gmx_bool test_dd_cutoff(t_commrec                     *cr,
+                               const matrix                   box,
+                               gmx::ArrayRef<const gmx::RVec> x,
+                               real                           cutoffRequested)
 {
     gmx_domdec_t *dd;
     gmx_ddbox_t   ddbox;
@@ -3085,7 +3086,7 @@ static gmx_bool test_dd_cutoff(t_commrec     *cr,
 
     dd = cr->dd;
 
-    set_ddbox(*dd, false, state.box, true, state.x, &ddbox);
+    set_ddbox(*dd, false, box, true, x, &ddbox);
 
     LocallyLimited = 0;
 
@@ -3142,13 +3143,14 @@ static gmx_bool test_dd_cutoff(t_commrec     *cr,
     return TRUE;
 }
 
-gmx_bool change_dd_cutoff(t_commrec     *cr,
-                          const t_state &state,
-                          real           cutoffRequested)
+gmx_bool change_dd_cutoff(t_commrec                     *cr,
+                          const matrix                   box,
+                          gmx::ArrayRef<const gmx::RVec> x,
+                          real                           cutoffRequested)
 {
     gmx_bool bCutoffAllowed;
 
-    bCutoffAllowed = test_dd_cutoff(cr, state, cutoffRequested);
+    bCutoffAllowed = test_dd_cutoff(cr, box, x, cutoffRequested);
 
     if (bCutoffAllowed)
     {

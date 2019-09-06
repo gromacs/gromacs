@@ -287,9 +287,7 @@ void increaseNstlist(FILE *fp, t_commrec *cr,
             {
                 gmx_incons("Changing nstlist with domain decomposition and unbounded dimensions is not implemented yet");
             }
-            t_state state_tmp;
-            copy_mat(box, state_tmp.box);
-            bDD = change_dd_cutoff(cr, state_tmp, rlist_new);
+            bDD = change_dd_cutoff(cr, box, gmx::ArrayRef<const gmx::RVec>(), rlist_new);
         }
 
         if (debug)

@@ -741,7 +741,7 @@ void gmx::LegacySimulator::do_md()
             pme_loadbal_do(pme_loadbal, cr,
                            (mdrunOptions.verbose && MASTER(cr)) ? stderr : nullptr,
                            fplog, mdlog,
-                           *ir, fr, *state,
+                           *ir, fr, state->box, state->x,
                            wcycle,
                            step, step_rel,
                            &bPMETunePrinting);
