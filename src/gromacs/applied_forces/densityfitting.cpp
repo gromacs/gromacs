@@ -44,6 +44,7 @@
 #include "densityfitting.h"
 
 #include <memory>
+#include <numeric>
 
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/checkpoint.h"
@@ -153,6 +154,21 @@ class DensityFittingSimulationParameterSetup
                     (reader.densityDataCopy());
             transformationToDensityLattice_
                 = std::make_unique<TranslateAndScale>(reader.transformationToDensityLattice());
+        }
+
+        //! Normalize the reference density so that the sum over all voxels is unity
+        void normalizeReferenceDensity()
+        {
+            if (referenceDensity_ == nullptr)
+            {
+                GMX_THROW(InternalError("Need to set reference density before normalizing it."));
+            }
+
+            const real sumOfDensityData = std::accumulate(begin(referenceDensity_->asView()), end(referenceDensity_->asView()), 0.);
+            for (float &referenceDensityVoxel : referenceDensity_->asView())
+            {
+                referenceDensityVoxel /= sumOfDensityData;
+            }
         }
         /*! \brief Set the periodic boundary condition via MdModuleNotifier.
          *
@@ -295,6 +311,10 @@ class DensityFitting final : public IMDModule
             {
                 const auto &parameters = densityFittingOptions_.buildParameters();
                 densityFittingSimulationParameters_.readReferenceDensityFromFile(densityFittingOptions_.referenceDensityFileName());
+                if (parameters.normalizeDensities_)
+                {
+                    densityFittingSimulationParameters_.normalizeReferenceDensity();
+                }
                 forceProvider_ = std::make_unique<DensityFittingForceProvider>(
                             parameters,
                             densityFittingSimulationParameters_.referenceDensity(),

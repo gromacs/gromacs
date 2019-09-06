@@ -198,6 +198,7 @@ TEST_F(DensityFittingOptionsTest, OutputDefaultValuesWhenActive)
         "density-guided-simulation-gaussian-transform-spreading-range-in-multiples-of-width = 4\n"
         "density-guided-simulation-reference-density-filename = reference.mrc\n"
         "density-guided-simulation-nst = 1\n"
+        "density-guided-simulation-normalize-densities = true\n"
         };
 
     EXPECT_EQ(expected, stream.toString());

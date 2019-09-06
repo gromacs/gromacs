@@ -75,6 +75,8 @@ struct DensityFittingParameters
     real                           gaussianTransformSpreadingRangeInMultiplesOfWidth_ = 4.0;
     //! Apply density fitting forces only every n-steps
     std::int64_t                   calculationIntervalInSteps_ = 1;
+    //! Normalize reference and simulated densities
+    bool                           normalizeDensities_ = true;
 };
 
 /*!\brief Check if two structs holding density fitting parameters are equal.

@@ -121,6 +121,7 @@ void DensityFittingOptions::initMdpTransform(IKeyValueTreeTransformRules * rules
     densityfittingMdpTransformFromString<real>(rules, &fromStdString<real>, c_gaussianTransformSpreadingRangeInMultiplesOfWidthTag_);
     densityfittingMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_referenceDensityFileNameTag_);
     densityfittingMdpTransformFromString<std::int64_t>(rules, &fromStdString<std::int64_t>, c_everyNStepsTag_);
+    densityfittingMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_normalizeDensitiesTag_);
 }
 
 void DensityFittingOptions::buildMdpOutput(KeyValueTreeObjectBuilder *builder) const
@@ -142,6 +143,7 @@ void DensityFittingOptions::buildMdpOutput(KeyValueTreeObjectBuilder *builder) c
         addDensityFittingMdpOutputValue(builder, parameters_.gaussianTransformSpreadingRangeInMultiplesOfWidth_, c_gaussianTransformSpreadingRangeInMultiplesOfWidthTag_);
         addDensityFittingMdpOutputValue(builder, referenceDensityFileName_, c_referenceDensityFileNameTag_);
         addDensityFittingMdpOutputValue(builder, parameters_.calculationIntervalInSteps_, c_everyNStepsTag_);
+        addDensityFittingMdpOutputValue(builder, parameters_.normalizeDensities_, c_normalizeDensitiesTag_);
     }
 }
 
@@ -165,6 +167,7 @@ void DensityFittingOptions::initMdpOptions(IOptionsContainerWithSections *option
     section.addOption(RealOption(c_gaussianTransformSpreadingRangeInMultiplesOfWidthTag_.c_str()).store(&parameters_.gaussianTransformSpreadingRangeInMultiplesOfWidth_));
     section.addOption(StringOption(c_referenceDensityFileNameTag_.c_str()).store(&referenceDensityFileName_));
     section.addOption(Int64Option(c_everyNStepsTag_.c_str()).store(&parameters_.calculationIntervalInSteps_));
+    section.addOption(BooleanOption(c_normalizeDensitiesTag_.c_str()).store(&parameters_.normalizeDensities_));
 }
 
 bool DensityFittingOptions::active() const

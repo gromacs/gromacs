@@ -125,6 +125,8 @@ class DensityFittingOptions final : public IMdpOptionProvider
 
         const std::string c_everyNStepsTag_ = "nst";
 
+        const std::string c_normalizeDensitiesTag_ = "normalize-densities";
+
 
         DensityFittingParameters parameters_;
 };

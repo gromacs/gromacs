@@ -43,6 +43,8 @@
 
 #include "densityfittingforceprovider.h"
 
+#include <numeric>
+
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/densityfit.h"
 #include "gromacs/math/densityfittingforce.h"
@@ -198,8 +200,23 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
     // spread atoms on grid
     gaussTransform_.setZero();
 
-    const std::vector<real> &amplitudes        = amplitudeLookup_(forceProviderInput.mdatoms_, localAtomSet_.localIndex());
-    auto                     amplitudeIterator = amplitudes.cbegin();
+    std::vector<real> amplitudes = amplitudeLookup_(forceProviderInput.mdatoms_, localAtomSet_.localIndex());
+
+    if (parameters_.normalizeDensities_)
+    {
+        real sum = std::accumulate(std::begin(amplitudes), std::end(amplitudes), 0.);
+        if (PAR(&forceProviderInput.cr_))
+        {
+            gmx_sum(1, &sum, &forceProviderInput.cr_);
+        }
+        for (real &amplitude : amplitudes)
+        {
+            amplitude /= sum;
+        }
+    }
+
+    auto amplitudeIterator = amplitudes.cbegin();
+
     for (const auto &r : transformedCoordinates_)
     {
         gaussTransform_.add({ r, *amplitudeIterator });
