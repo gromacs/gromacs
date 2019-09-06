@@ -1605,8 +1605,6 @@ int Mdrunner::mdrunner()
     {
         tMPI_Finalize();
     }
-    //TODO free commrec in MPI simulations
-    done_commrec(cr);
 #endif
     return rc;
 }
