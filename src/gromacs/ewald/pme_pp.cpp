@@ -60,8 +60,11 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forceoutput.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/state_propagator_data_gpu.h"
+#include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -89,14 +92,16 @@ static void gmx_pme_send_coeffs_coords_wait(gmx_domdec_t *dd)
 }
 
 /*! \brief Send data to PME ranks */
-static void gmx_pme_send_coeffs_coords(const t_commrec *cr, unsigned int flags,
+static void gmx_pme_send_coeffs_coords(t_forcerec *fr, const t_commrec *cr, unsigned int flags,
                                        real gmx_unused *chargeA, real gmx_unused *chargeB,
                                        real gmx_unused *c6A, real gmx_unused *c6B,
                                        real gmx_unused *sigmaA, real gmx_unused *sigmaB,
                                        const matrix box, const rvec gmx_unused *x,
                                        real lambda_q, real lambda_lj,
                                        int maxshift_x, int maxshift_y,
-                                       int64_t step, bool useGpuPmePpComms)
+                                       int64_t step, bool useGpuPmePpComms,
+                                       bool reinitGpuPmePpComms,
+                                       bool sendCoordinatesFromGpu)
 {
     gmx_domdec_t         *dd;
     gmx_pme_comm_n_box_t *cnb;
@@ -203,13 +208,29 @@ static void gmx_pme_send_coeffs_coords(const t_commrec *cr, unsigned int flags,
         }
         if (flags & PP_PME_COORD)
         {
+            if (reinitGpuPmePpComms)
+            {
+                fr->pmePpCommGpu->reinit(n);
+            }
+
+
             /* MPI_Isend does not accept a const buffer pointer */
             real *xRealPtr = const_cast<real *>(x[0]);
-            MPI_Isend(xRealPtr, n*sizeof(rvec), MPI_BYTE,
-                      dd->pme_nodeid, eCommType_COORD, cr->mpi_comm_mysim,
-                      &dd->req_pme[dd->nreq_pme++]);
+            if (useGpuPmePpComms && (fr != nullptr))
+            {
+                void *sendPtr = sendCoordinatesFromGpu ? static_cast<void*> (fr->stateGpu->getCoordinates()) :
+                    static_cast<void*> (xRealPtr);
+                fr->pmePpCommGpu->sendCoordinatesToPmeCudaDirect(sendPtr, n, sendCoordinatesFromGpu);
+            }
+            else
+            {
+                MPI_Isend(xRealPtr, n*sizeof(rvec), MPI_BYTE,
+                          dd->pme_nodeid, eCommType_COORD, cr->mpi_comm_mysim,
+                          &dd->req_pme[dd->nreq_pme++]);
+            }
         }
     }
+
 #endif
     if (!c_useDelayedWait)
     {
@@ -246,16 +267,18 @@ void gmx_pme_send_parameters(const t_commrec *cr,
         flags |= (flags << 1);
     }
 
-    gmx_pme_send_coeffs_coords(cr, flags,
+    gmx_pme_send_coeffs_coords(nullptr, cr, flags,
                                chargeA, chargeB,
                                sqrt_c6A, sqrt_c6B, sigmaA, sigmaB,
-                               nullptr, nullptr, 0, 0, maxshift_x, maxshift_y, -1, false);
+                               nullptr, nullptr, 0, 0, maxshift_x, maxshift_y, -1, false, false, false);
 }
 
-void gmx_pme_send_coordinates(const t_commrec *cr, const matrix box, const rvec *x,
+void gmx_pme_send_coordinates(t_forcerec *fr, const t_commrec *cr, const matrix box, const rvec *x,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir,
-                              int64_t step, bool useGpuPmePpComms, gmx_wallcycle *wcycle)
+                              int64_t step, bool useGpuPmePpComms,
+                              bool receiveCoordinateAddressFromPme,
+                              bool sendCoordinatesFromGpu, gmx_wallcycle *wcycle)
 {
     wallcycle_start(wcycle, ewcPP_PMESENDX);
 
@@ -264,8 +287,9 @@ void gmx_pme_send_coordinates(const t_commrec *cr, const matrix box, const rvec 
     {
         flags |= PP_PME_ENER_VIR;
     }
-    gmx_pme_send_coeffs_coords(cr, flags, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-                               box, x, lambda_q, lambda_lj, 0, 0, step, useGpuPmePpComms);
+    gmx_pme_send_coeffs_coords(fr, cr, flags, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+                               box, x, lambda_q, lambda_lj, 0, 0, step, useGpuPmePpComms, receiveCoordinateAddressFromPme,
+                               sendCoordinatesFromGpu);
 
     wallcycle_stop(wcycle, ewcPP_PMESENDX);
 }
@@ -274,7 +298,7 @@ void gmx_pme_send_finish(const t_commrec *cr)
 {
     unsigned int flags = PP_PME_FINISH;
 
-    gmx_pme_send_coeffs_coords(cr, flags, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, -1, false);
+    gmx_pme_send_coeffs_coords(nullptr, cr, flags, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, -1, false, false, false);
 }
 
 void gmx_pme_send_switchgrid(const t_commrec *cr,

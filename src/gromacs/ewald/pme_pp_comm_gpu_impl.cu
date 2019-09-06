@@ -55,9 +55,10 @@
 namespace gmx
 {
 
-PmePpCommGpu::Impl::Impl(MPI_Comm comm, int pmeRank)
+PmePpCommGpu::Impl::Impl(MPI_Comm comm, int pmeRank, void* coordinatesOnDeviceEvent)
     : comm_(comm),
-      pmeRank_(pmeRank)
+      pmeRank_(pmeRank),
+      coordinatesOnDeviceEvent_(static_cast<GpuEventSynchronizer*> (coordinatesOnDeviceEvent))
 {
     GMX_RELEASE_ASSERT(GMX_THREAD_MPI, "PME-PP GPU Communication is currently only supported with thread-MPI enabled");
     cudaStreamCreate(&pmePpCommStream_);
@@ -67,7 +68,9 @@ PmePpCommGpu::Impl::~Impl() = default;
 
 void PmePpCommGpu::Impl::reinit(int size)
 {
-    // This rank will pull data from the PME rank, so needs to recieve the remote PME buffer address.
+    // This rank will access PME rank memory directly, so needs to receive the remote PME buffer addresses.
+    MPI_Recv(&remotePmeXBuffer_, sizeof(void**), MPI_BYTE, pmeRank_,
+             0, comm_, MPI_STATUS_IGNORE);
     MPI_Recv(&remotePmeFBuffer_, sizeof(void**), MPI_BYTE, pmeRank_,
              0, comm_, MPI_STATUS_IGNORE);
 
@@ -93,7 +96,7 @@ void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(void *recvPtr, int recvSi
     // Pull force data from remote GPU
     void      * pmeForcePtr = receivePmeForceToGpu ? static_cast<void*> (d_pmeForces_) : recvPtr;
     cudaError_t stat        = cudaMemcpyAsync(pmeForcePtr, remotePmeFBuffer_,
-                                              recvSize*3*sizeof(float), cudaMemcpyDefault,
+                                              recvSize*DIM*sizeof(float), cudaMemcpyDefault,
                                               pmePpCommStream_);
     CU_RET_ERR(stat, "cudaMemcpyAsync on Recv from PME CUDA direct data transfer failed");
 
@@ -112,6 +115,25 @@ void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(void *recvPtr, int recvSi
     }
 }
 
+void PmePpCommGpu::Impl::sendCoordinatesToPmeCudaDirect(void *sendPtr, int sendSize, bool gmx_unused sendPmeCoordinatesFromGpu)
+{
+
+    //ensure stream waits until coordinate data is available on device
+    coordinatesOnDeviceEvent_->enqueueWaitEvent(pmePpCommStream_);
+
+    cudaError_t stat        = cudaMemcpyAsync(remotePmeXBuffer_, sendPtr,
+                                              sendSize*DIM*sizeof(float), cudaMemcpyDefault,
+                                              pmePpCommStream_);
+    CU_RET_ERR(stat, "cudaMemcpyAsync on Send to PME CUDA direct data transfer failed");
+
+    // Record and send event to allow PME task to sync to above transfer before commencing force calculations
+    pmeCoordinatesSynchronizer_.markEvent(pmePpCommStream_);
+    GpuEventSynchronizer *pmeSync = &pmeCoordinatesSynchronizer_;
+    MPI_Send(&pmeSync, sizeof(GpuEventSynchronizer*),
+             MPI_BYTE, pmeRank_, 0,
+             comm_);
+
+}
 void* PmePpCommGpu::Impl::getGpuForceStagingPtr()
 {
     return static_cast<void*> (d_pmeForces_);
@@ -122,8 +144,8 @@ void* PmePpCommGpu::Impl::getForcesReadySynchronizer()
     return static_cast<void*> (&forcesReadySynchronizer_);
 }
 
-PmePpCommGpu::PmePpCommGpu(MPI_Comm comm, int pmeRank)
-    : impl_(new Impl(comm,  pmeRank))
+PmePpCommGpu::PmePpCommGpu(MPI_Comm comm, int pmeRank, void* coordinatesOnDeviceEvent)
+    : impl_(new Impl(comm,  pmeRank, coordinatesOnDeviceEvent))
 {
 }
 
@@ -137,6 +159,11 @@ void PmePpCommGpu::reinit(int size)
 void PmePpCommGpu::receiveForceFromPmeCudaDirect(void *recvPtr, int recvSize, bool receivePmeForceToGpu)
 {
     impl_->receiveForceFromPmeCudaDirect(recvPtr, recvSize, receivePmeForceToGpu);
+}
+
+void PmePpCommGpu::sendCoordinatesToPmeCudaDirect(void *sendPtr, int sendSize, bool sendPmeCoordinatesFromGpu)
+{
+    impl_->sendCoordinatesToPmeCudaDirect(sendPtr, sendSize, sendPmeCoordinatesFromGpu);
 }
 
 void* PmePpCommGpu::getGpuForceStagingPtr()

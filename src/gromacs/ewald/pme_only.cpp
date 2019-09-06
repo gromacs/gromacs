@@ -73,6 +73,7 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
 #include "gromacs/ewald/pme_force_sender_gpu.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/fileio/pdbio.h"
@@ -124,8 +125,10 @@ struct gmx_pme_pp {
     std::vector<MPI_Status>  stat;
     //@}
 
+    /*! \brief object for receiving coordinates using communications operating on GPU memory space */
+    std::unique_ptr<gmx::PmeCoordinateReceiverGpu> pmeCoordinateReceiverGpu;
     /*! \brief object for sending PME force using communications operating on GPU memory space */
-    std::unique_ptr<gmx::PmeForceSenderGpu> pmeForceSenderGpu;
+    std::unique_ptr<gmx::PmeForceSenderGpu>        pmeForceSenderGpu;
 
     /*! \brief whether GPU direct communications are active for PME-PP transfers */
     bool useGpuDirectComm = false;
@@ -211,6 +214,7 @@ static gmx_pme_t *gmx_pmeonly_switch(std::vector<gmx_pme_t *> *pmedata,
 
 /*! \brief Called by PME-only ranks to receive coefficients and coordinates
  *
+ * \param[in] pme           PME data structure.
  * \param[in,out] pme_pp    PME-PP communication structure.
  * \param[out] natoms       Number of received atoms.
  * \param[out] box        System box, if received.
@@ -223,34 +227,39 @@ static gmx_pme_t *gmx_pmeonly_switch(std::vector<gmx_pme_t *> *pmedata,
  * \param[out] grid_size         PME grid size, if received.
  * \param[out] ewaldcoeff_q         Ewald cut-off parameter for electrostatics, if received.
  * \param[out] ewaldcoeff_lj         Ewald cut-off parameter for Lennard-Jones, if received.
- * \param[out] atomSetChanged    Set to true only if the local domain atom data (charges/coefficients)
- *                               has been received (after DD) and should be reinitialized. Otherwise not changed.
+ * \param[in] useGpuForPme      flag on whether PME is on GPU
+ * \param[in] stateGpu          GPU state propagator object
+ * \param[in] runMode           PME run mode
  *
  * \retval pmerecvqxX             All parameters were set, chargeA and chargeB can be NULL.
  * \retval pmerecvqxFINISH        No parameters were set.
  * \retval pmerecvqxSWITCHGRID    Only grid_size and *ewaldcoeff were set.
  * \retval pmerecvqxRESETCOUNTERS *step was set.
  */
-static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
-                                      int               *natoms,
-                                      matrix             box,
-                                      int               *maxshift_x,
-                                      int               *maxshift_y,
-                                      real              *lambda_q,
-                                      real              *lambda_lj,
-                                      gmx_bool          *bEnerVir,
-                                      int64_t           *step,
-                                      ivec              *grid_size,
-                                      real              *ewaldcoeff_q,
-                                      real              *ewaldcoeff_lj,
-                                      bool              *atomSetChanged)
+static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t            *pme,
+                                      gmx_pme_pp                  *pme_pp,
+                                      int                         *natoms,
+                                      matrix                       box,
+                                      int                         *maxshift_x,
+                                      int                         *maxshift_y,
+                                      real                        *lambda_q,
+                                      real                        *lambda_lj,
+                                      gmx_bool                    *bEnerVir,
+                                      int64_t                     *step,
+                                      ivec                        *grid_size,
+                                      real                        *ewaldcoeff_q,
+                                      real                        *ewaldcoeff_lj,
+                                      bool                         useGpuForPme,
+                                      gmx::StatePropagatorDataGpu *stateGpu,
+                                      PmeRunMode gmx_unused        runMode)
 {
     int status = -1;
     int nat    = 0;
 
 #if GMX_MPI
-    unsigned int flags    = 0;
-    int          messages = 0;
+    unsigned int flags          = 0;
+    int          messages       = 0;
+    bool         atomSetChanged = false;
 
     do
     {
@@ -305,7 +314,7 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
 
         if (cnb.flags & (PP_PME_CHARGE | PP_PME_SQRTC6 | PP_PME_SIGMA))
         {
-            *atomSetChanged = true;
+            atomSetChanged = true;
 
             /* Receive the send counts from the other PP nodes */
             for (auto &sender : pme_pp->ppRanks)
@@ -407,6 +416,32 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
 
         if (cnb.flags & PP_PME_COORD)
         {
+            if (atomSetChanged)
+            {
+                gmx_pme_reinit_atoms(pme, nat, pme_pp->chargeA.data());
+                if (useGpuForPme)
+                {
+                    stateGpu->reinit(nat, nat);
+                    pme_gpu_set_device_x(pme, stateGpu->getCoordinates());
+                }
+                if (pme_pp->useGpuDirectComm)
+                {
+                    GMX_ASSERT(runMode == PmeRunMode::GPU, "GPU Direct PME-PP communication has been enabled, "
+                               "but PME run mode is not PmeRunMode::GPU\n");
+
+                    // This rank will have its data accessed directly by PP rank, so needs to send the remote addresses.
+                    rvec* d_x = nullptr;
+                    rvec* d_f = nullptr;
+#if (GMX_GPU == GMX_GPU_CUDA) //avoid invalid cast for OpenCL
+                    d_x = reinterpret_cast<rvec*> (pme_gpu_get_device_x(pme));
+                    d_f = reinterpret_cast<rvec*> (pme_gpu_get_device_f(pme));
+#endif
+                    pme_pp->pmeCoordinateReceiverGpu->sendCoordinateBufferAddressToPpRanks(d_x);
+                    pme_pp->pmeForceSenderGpu->sendForceBufferAddressToPpRanks(d_f);
+                }
+            }
+
+
             /* The box, FE flag and lambda are sent along with the coordinates
              *  */
             copy_mat(cnb.box, box);
@@ -421,11 +456,18 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
             {
                 if (sender.numAtoms > 0)
                 {
-                    MPI_Irecv(pme_pp->x[nat],
-                              sender.numAtoms*sizeof(rvec),
-                              MPI_BYTE,
-                              sender.rankId, eCommType_COORD,
-                              pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
+                    if (pme_pp->useGpuDirectComm)
+                    {
+                        pme_pp->pmeCoordinateReceiverGpu->receiveCoordinatesFromPpCudaDirect(sender.rankId);
+                    }
+                    else
+                    {
+                        MPI_Irecv(pme_pp->x[nat],
+                                  sender.numAtoms*sizeof(rvec),
+                                  MPI_BYTE,
+                                  sender.rankId, eCommType_COORD,
+                                  pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
+                    }
                     nat += sender.numAtoms;
                     if (debug)
                     {
@@ -456,7 +498,6 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
     GMX_UNUSED_VALUE(grid_size);
     GMX_UNUSED_VALUE(ewaldcoeff_q);
     GMX_UNUSED_VALUE(ewaldcoeff_lj);
-    GMX_UNUSED_VALUE(atomSetChanged);
 
     status = pmerecvqxX;
 #endif
@@ -589,6 +630,10 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         changePinningPolicy(&pme_pp->x, pme_get_pinning_policy());
         if (c_enableGpuPmePpComms)
         {
+            pme_pp->pmeCoordinateReceiverGpu =
+                std::make_unique<gmx::PmeCoordinateReceiverGpu>(pme_gpu_get_device_stream(pme),
+                                                                pme_pp->mpi_comm_mysim,
+                                                                pme_pp->ppRanks);
             pme_pp->pmeForceSenderGpu =
                 std::make_unique<gmx::PmeForceSenderGpu>(pme_gpu_get_device_stream(pme),
                                                          pme_pp->mpi_comm_mysim,
@@ -615,9 +660,9 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         {
             /* Domain decomposition */
             ivec newGridSize;
-            bool atomSetChanged = false;
             real ewaldcoeff_q   = 0, ewaldcoeff_lj = 0;
-            ret = gmx_pme_recv_coeffs_coords(pme_pp.get(),
+            ret = gmx_pme_recv_coeffs_coords(pme,
+                                             pme_pp.get(),
                                              &natoms,
                                              box,
                                              &maxshift_x, &maxshift_y,
@@ -627,32 +672,14 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
                                              &newGridSize,
                                              &ewaldcoeff_q,
                                              &ewaldcoeff_lj,
-                                             &atomSetChanged);
+                                             useGpuForPme,
+                                             stateGpu.get(),
+                                             runMode);
 
             if (ret == pmerecvqxSWITCHGRID)
             {
                 /* Switch the PME grid to newGridSize */
                 pme = gmx_pmeonly_switch(&pmedata, newGridSize, ewaldcoeff_q, ewaldcoeff_lj, cr, ir);
-            }
-
-            if (atomSetChanged)
-            {
-                gmx_pme_reinit_atoms(pme, natoms, pme_pp->chargeA.data());
-                if (useGpuForPme)
-                {
-                    stateGpu->reinit(natoms, natoms);
-                    pme_gpu_set_device_x(pme, stateGpu->getCoordinates());
-                }
-
-                if (pme_pp->useGpuDirectComm)
-                {
-                    GMX_ASSERT(runMode == PmeRunMode::GPU, "GPU Direct PME-PP communication has been enabled, "
-                               "but PME run mode is not PmeRunMode::GPU\n");
-
-                    // This rank will have data pulled from PP rank, so needs to send the remote receive address.
-                    rvec* d_f = reinterpret_cast<rvec*> (pme_gpu_get_device_f(pme));
-                    pme_pp->pmeForceSenderGpu->sendForceBufferAddressToPpRanks(d_f);
-                }
             }
 
             if (ret == pmerecvqxRESETCOUNTERS)
@@ -693,8 +720,12 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             //TODO this should be set properly by gmx_pme_recv_coeffs_coords,
             // or maybe use inputrecDynamicBox(ir), at the very least - change this when this codepath is tested!
             pme_gpu_prepare_computation(pme, boxChanged, box, wcycle, pmeFlags, useGpuPmeForceReduction);
-            stateGpu->copyCoordinatesToGpu(gmx::ArrayRef<gmx::RVec>(pme_pp->x), gmx::StatePropagatorDataGpu::AtomLocality::All);
+            if (!pme_pp->useGpuDirectComm)
+            {
+                stateGpu->copyCoordinatesToGpu(gmx::ArrayRef<gmx::RVec>(pme_pp->x), gmx::StatePropagatorDataGpu::AtomLocality::All);
+            }
             // On the separate PME rank we do not need a synchronizer as we schedule everything in a single stream
+            // TODO: with pme on GPU the receive should make a list of synchronizers and pass it here #3157
             auto xReadyOnDevice = nullptr;
 
             pme_gpu_launch_spread(pme, xReadyOnDevice, wcycle);

@@ -1003,27 +1003,6 @@ void do_force(FILE                                     *fplog,
     nbnxn_atomdata_copy_shiftvec(stepWork.haveDynamicBox,
                                  fr->shift_vec, nbv->nbat.get());
 
-#if GMX_MPI
-    if (!thisRankHasDuty(cr, DUTY_PME))
-    {
-        /* Send particle coordinates to the pme nodes.
-         * Since this is only implemented for domain decomposition
-         * and domain decomposition does not use the graph,
-         * we do not need to worry about shifting.
-         */
-        gmx_pme_send_coordinates(cr, box, as_rvec_array(x.unpaddedArrayRef().data()),
-                                 lambda[efptCOUL], lambda[efptVDW],
-                                 (stepWork.computeVirial || stepWork.computeEnergy),
-                                 step, simulationWork.useGpuPmePPCommunication, wcycle);
-
-        if (stepWork.doNeighborSearch && simulationWork.useGpuPmePPCommunication)
-        {
-            fr->pmePpCommGpu->reinit(x.unpaddedArrayRef().size());
-        }
-
-    }
-#endif /* GMX_MPI */
-
     // Coordinates on the device are needed if PME or BufferOps are offloaded.
     // The local coordinates can be copied right away.
     // NOTE: Consider moving this copy to right after they are updated and constrained,
@@ -1047,6 +1026,24 @@ void do_force(FILE                                     *fplog,
             stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), gmx::StatePropagatorDataGpu::AtomLocality::Local);
         }
     }
+
+#if GMX_MPI
+    if (!thisRankHasDuty(cr, DUTY_PME))
+    {
+        /* Send particle coordinates to the pme nodes.
+         * Since this is only implemented for domain decomposition
+         * and domain decomposition does not use the graph,
+         * we do not need to worry about shifting.
+         */
+        bool reinitGpuPmePpComms    = simulationWork.useGpuPmePPCommunication && (stepWork.doNeighborSearch);
+        bool sendCoordinatesFromGpu = simulationWork.useGpuPmePPCommunication && !(stepWork.doNeighborSearch);
+        gmx_pme_send_coordinates(fr, cr, box, as_rvec_array(x.unpaddedArrayRef().data()),
+                                 lambda[efptCOUL], lambda[efptVDW],
+                                 (stepWork.computeVirial || stepWork.computeEnergy),
+                                 step, simulationWork.useGpuPmePPCommunication, reinitGpuPmePpComms,
+                                 sendCoordinatesFromGpu, wcycle);
+    }
+#endif /* GMX_MPI */
 
     const auto localXReadyOnDevice = (stateGpu != nullptr) ? stateGpu->getCoordinatesReadyOnDeviceEvent(gmx::StatePropagatorDataGpu::AtomLocality::Local,
                                                                                                         simulationWork, stepWork) : nullptr;

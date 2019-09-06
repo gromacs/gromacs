@@ -47,9 +47,7 @@
 
 #include "config.h"
 
-#include "gromacs/ewald/pme_pp_comm_gpu.h"
-#include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
 
 #if GMX_GPU != GMX_GPU_CUDA
 
@@ -57,45 +55,28 @@ namespace gmx
 {
 
 /*!\brief Impl class stub. */
-class PmePpCommGpu::Impl
+class PmeCoordinateReceiverGpu::Impl
 {
 };
 
 /*!\brief Constructor stub. */
-PmePpCommGpu::PmePpCommGpu(MPI_Comm gmx_unused comm, int gmx_unused pmeRank, void gmx_unused *coordinatesOnDeviceEvent)
+PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(void gmx_unused *pmeStream, MPI_Comm gmx_unused comm, gmx::ArrayRef<PpRanks> gmx_unused ppRanks)
     : impl_(nullptr)
 {
     GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
 }
 
-PmePpCommGpu::~PmePpCommGpu() = default;
+PmeCoordinateReceiverGpu::~PmeCoordinateReceiverGpu() = default;
 
 /*!\brief init PME-PP GPU communication stub */
-void PmePpCommGpu::reinit(int gmx_unused size)
+void PmeCoordinateReceiverGpu::sendCoordinateBufferAddressToPpRanks(rvec gmx_unused *d_x)
 {
     GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication initialization was called instead of the correct implementation.");
 }
 
-void PmePpCommGpu::receiveForceFromPmeCudaDirect(void gmx_unused *recvPtr, int gmx_unused recvSize, bool gmx_unused receivePmeForceToGpu)
+void PmeCoordinateReceiverGpu::receiveCoordinatesFromPpCudaDirect(int gmx_unused ppRank)
 {
     GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
-}
-
-void PmePpCommGpu::sendCoordinatesToPmeCudaDirect(void gmx_unused *sendPtr, int gmx_unused sendSize, bool gmx_unused sendPmeCoordinatesFromGpu)
-{
-    GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
-}
-
-void* PmePpCommGpu::getGpuForceStagingPtr()
-{
-    GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
-    return nullptr;
-}
-
-void* PmePpCommGpu::getForcesReadySynchronizer()
-{
-    GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
-    return nullptr;
 }
 
 }      // namespace gmx

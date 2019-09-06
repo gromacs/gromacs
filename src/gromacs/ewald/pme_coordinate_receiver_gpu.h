@@ -33,66 +33,47 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \libinternal \file
- * \brief Declaration of GPU PME-PP Communication.
+ * \brief Declaration of class which receives coordinates to GPU memory on PME task
  *
  * \author Alan Gray <alang@nvidia.com>
  * \inlibraryapi
  * \ingroup module_ewald
  */
-#ifndef GMX_PME_PP_COMM_GPU_H
-#define GMX_PME_PP_COMM_GPU_H
+#ifndef GMX_PMECOORDINATERECEIVERGPU_H
+#define GMX_PMECOORDINATERECEIVERGPU_H
 
+#include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme_force_sender_gpu.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxmpi.h"
 
 namespace gmx
 {
 
-/*! \libinternal
-
- * \brief Manages communication related to GPU buffers between this
- * PME rank and its PP rank. */
-class PmePpCommGpu
+class PmeCoordinateReceiverGpu
 {
 
     public:
-        /*! \brief Creates PME-PP GPU communication object
+        /*! \brief Creates PME GPU coordinate receiver object
+         * \param[in] pmeStream       CUDA stream used for PME computations
          * \param[in] comm            Communicator used for simulation
-         * \param[in] pmeRank         Rank of PME task
-         * \param[in] coordinatesOnDeviceEvent Event recorded when coordinates are available on device
+         * \param[in] ppRanks         List of PP ranks
          */
-        PmePpCommGpu(MPI_Comm comm, int pmeRank, void* coordinatesOnDeviceEvent);
-        ~PmePpCommGpu();
-
-        /*! \brief Perform steps required when buffer size changes
-         * \param[in]  size   Number of elements in buffer
-         */
-        void reinit(int size);
+        PmeCoordinateReceiverGpu(void *pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
+        ~PmeCoordinateReceiverGpu();
 
         /*! \brief
-         * Pull data from PME GPU directly using CUDA Memory copy.
-         * \param[out] recvPtr  Buffer to receive PME force data
-         * \param[in]  recvSize Number of elements to receive
-         * \param[in] recvPmeForceToGpu Whether receive is to GPU, otherwise CPU
+         * send coordinates buffer address to PP rank
+         * \param[in] d_x   coordinates buffer in GPU memory
          */
-        void receiveForceFromPmeCudaDirect(void *recvPtr, int recvSize, bool recvPmeForceToGpu);
+        void sendCoordinateBufferAddressToPpRanks(rvec *d_x);
 
-        /*! \brief Push coordinates buffer directly to GPU memory on PME task
-         * \param[in] sendPtr Buffer with coordinate data
-         * \param[in] sendSize Number of elements to send
-         * \param[in] sendPmeCoordinatesFromGpu Whether send is from GPU, otherwise CPU
-         */
-        void sendCoordinatesToPmeCudaDirect(void *sendPtr, int sendSize, bool sendPmeCoordinatesFromGpu);
 
         /*! \brief
-         * Return pointer to buffer used for staging PME force on GPU
+         * receive coordinate data from PP rank
+         * \param[in] ppRank  PP rank to send data
          */
-        void* getGpuForceStagingPtr();
-
-        /*! \brief
-         * Return pointer to event recorded when forces are ready
-         */
-        void* getForcesReadySynchronizer();
+        void receiveCoordinatesFromPpCudaDirect(int ppRank);
 
     private:
         class Impl;

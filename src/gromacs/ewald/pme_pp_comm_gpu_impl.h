@@ -59,8 +59,9 @@ class PmePpCommGpu::Impl
         /*! \brief Creates PME-PP GPU communication object.
          * \param[in] comm            Communicator used for simulation
          * \param[in] pmeRank         Rank of PME task
+         * \param[in] coordinatesOnDeviceEvent Event recorded when coordinates are available on device
          */
-        Impl(MPI_Comm comm, int pmeRank);
+        Impl(MPI_Comm comm, int pmeRank, void* coordinatesOnDeviceEvent);
         ~Impl();
 
         /*! \brief Perform steps required when buffer size changes
@@ -86,6 +87,20 @@ class PmePpCommGpu::Impl
          */
         void receiveForceFromPmeCudaDirect(void *recvPtr, int recvSize, bool receivePmeForceToGpu);
 
+
+        /*! \brief Push coordinates buffer directly to GPU memory on PME
+         * task, from either GPU or CPU memory on PP task using CUDA
+         * Memory copy. sendPtr should be in GPU or CPU memory if
+         * sendPmeCoordinatesFromGpu is true or false respectively. If
+         * sending from GPU, this method should be called after the
+         * local GPU coordinate buffer operations. The remote PME task will
+         * automatically wait for data to be copied before commencing PME force calculations.
+         * \param[in] sendPtr Buffer with coordinate data
+         * \param[in] sendSize Number of elements to send
+         * \param[in] sendPmeCoordinatesFromGpu Whether send is from GPU, otherwise CPU
+         */
+        void sendCoordinatesToPmeCudaDirect(void *sendPtr, int sendSize, bool sendPmeCoordinatesFromGpu);
+
         /*! \brief
          * Return pointer to buffer used for staging PME force on GPU
          */
@@ -98,21 +113,27 @@ class PmePpCommGpu::Impl
 
     private:
         //! CUDA stream used for the communication operations in this class
-        cudaStream_t           pmePpCommStream_ = nullptr;
+        cudaStream_t            pmePpCommStream_ = nullptr;
+        //! Remote location of PME coordinate data buffer
+        void                   *remotePmeXBuffer_ = nullptr;
         //! Remote location of PME force data buffer
-        void                  *remotePmeFBuffer_ = nullptr;
+        void                   *remotePmeFBuffer_ = nullptr;
         //! communicator for simulation
-        MPI_Comm               comm_;
+        MPI_Comm                comm_;
         //! Rank of PME task
-        int                    pmeRank_ = -1;
+        int                     pmeRank_ = -1;
         //! Buffer for staging PME force on GPU
-        rvec                  *d_pmeForces_ = nullptr;
+        rvec                   *d_pmeForces_ = nullptr;
         //! number of atoms in PME force staging array
-        int                    d_pmeForcesSize_ = -1;
+        int                     d_pmeForcesSize_ = -1;
         //! number of atoms allocated in recvbuf array
-        int                    d_pmeForcesSizeAlloc_ = -1;
-        //
-        GpuEventSynchronizer   forcesReadySynchronizer_;
+        int                     d_pmeForcesSizeAlloc_ = -1;
+        //! Event recorded when PME forces are ready on PME task
+        GpuEventSynchronizer    forcesReadySynchronizer_;
+        //! Event recorded when coordinates have been transferred to PME task
+        GpuEventSynchronizer    pmeCoordinatesSynchronizer_;
+        //! Event recorded when coordinates have been copied to GPU on this PP task.
+        GpuEventSynchronizer   *coordinatesOnDeviceEvent_;
 };
 
 } // namespace gmx
