@@ -44,6 +44,8 @@
 
 #include "gmxpre.h"
 
+#include "domdec_setup.h"
+
 #include <cassert>
 #include <cinttypes>
 #include <cmath>
@@ -712,7 +714,7 @@ static real optimize_ncells(const gmx::MDLogger &mdlog,
     return limit;
 }
 
-DDSetup
+DDGridSetup
 dd_choose_grid(const gmx::MDLogger &mdlog,
                const t_commrec *cr,
                const t_inputrec *ir,
@@ -722,7 +724,7 @@ dd_choose_grid(const gmx::MDLogger &mdlog,
                const gmx_bool bDynLoadBal, const real dlb_scale,
                const DDSystemInfo &systemInfo)
 {
-    DDSetup ddSetup;
+    DDGridSetup ddGridSetup;
 
     if (MASTER(cr))
     {
@@ -746,7 +748,7 @@ dd_choose_grid(const gmx::MDLogger &mdlog,
         }
         else
         {
-            ddSetup.numPmeOnlyRanks = 0;
+            ddGridSetup.numPmeOnlyRanks = 0;
         }
 
         if (nnodes_div > 12)
@@ -767,50 +769,50 @@ dd_choose_grid(const gmx::MDLogger &mdlog,
                 /* Use PME nodes when the number of nodes is more than 16 */
                 if (cr->nnodes <= 18)
                 {
-                    ddSetup.numPmeOnlyRanks = 0;
+                    ddGridSetup.numPmeOnlyRanks = 0;
                     GMX_LOG(mdlog.info).appendTextFormatted(
                             "Using %d separate PME ranks, as there are too few total\n"
                             " ranks for efficient splitting",
-                            ddSetup.numPmeOnlyRanks);
+                            ddGridSetup.numPmeOnlyRanks);
                 }
                 else
                 {
-                    ddSetup.numPmeOnlyRanks = guess_npme(mdlog, mtop, ir, box, cr->nnodes);
+                    ddGridSetup.numPmeOnlyRanks = guess_npme(mdlog, mtop, ir, box, cr->nnodes);
                     GMX_LOG(mdlog.info).appendTextFormatted(
                             "Using %d separate PME ranks, as guessed by mdrun",
-                            ddSetup.numPmeOnlyRanks);
+                            ddGridSetup.numPmeOnlyRanks);
                 }
             }
             else
             {
                 /* We checked above that nPmeRanks is a valid number */
-                ddSetup.numPmeOnlyRanks = numPmeRanksRequested;
+                ddGridSetup.numPmeOnlyRanks = numPmeRanksRequested;
                 GMX_LOG(mdlog.info).appendTextFormatted(
-                        "Using %d separate PME ranks", ddSetup.numPmeOnlyRanks);
+                        "Using %d separate PME ranks", ddGridSetup.numPmeOnlyRanks);
                 // TODO: there was a ", per user request" note here, but it's not correct anymore,
                 // as with GPUs decision about nPmeRanks can be made in runner() as well.
                 // Consider a single spot for setting nPmeRanks.
             }
         }
 
-        ddSetup.cellsizeLimit =
-            optimize_ncells(mdlog, cr->nnodes, ddSetup.numPmeOnlyRanks,
+        ddGridSetup.cellsizeLimit =
+            optimize_ncells(mdlog, cr->nnodes, ddGridSetup.numPmeOnlyRanks,
                             bDynLoadBal, dlb_scale,
                             mtop, box, ddbox, ir,
                             systemInfo,
-                            ddSetup.numDomains);
+                            ddGridSetup.numDomains);
     }
 
     /* Communicate the information set by the master to all nodes */
-    gmx_bcast(sizeof(ddSetup.numDomains), ddSetup.numDomains, cr);
+    gmx_bcast(sizeof(ddGridSetup.numDomains), ddGridSetup.numDomains, cr);
     if (EEL_PME(ir->coulombtype))
     {
-        gmx_bcast(sizeof(ddSetup.numPmeOnlyRanks), &ddSetup.numPmeOnlyRanks, cr);
+        gmx_bcast(sizeof(ddGridSetup.numPmeOnlyRanks), &ddGridSetup.numPmeOnlyRanks, cr);
     }
     else
     {
-        ddSetup.numPmeOnlyRanks = 0;
+        ddGridSetup.numPmeOnlyRanks = 0;
     }
 
-    return ddSetup;
+    return ddGridSetup;
 }

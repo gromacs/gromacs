@@ -104,6 +104,7 @@
 #include "distribute.h"
 #include "domdec_constraints.h"
 #include "domdec_internal.h"
+#include "domdec_setup.h"
 #include "domdec_vsite.h"
 #include "redistribute.h"
 #include "utility.h"
@@ -2309,28 +2310,28 @@ getSystemInfo(const gmx::MDLogger           &mdlog,
  *
  * Also computes the initial ddbox.
  */
-static DDSetup
-getDDSetup(const gmx::MDLogger           &mdlog,
-           t_commrec                     *cr,
-           const DomdecOptions           &options,
-           const DDSettings              &ddSettings,
-           const DDSystemInfo            &systemInfo,
-           const gmx_mtop_t              *mtop,
-           const t_inputrec              *ir,
-           const matrix                   box,
-           gmx::ArrayRef<const gmx::RVec> xGlobal,
-           gmx_ddbox_t                   *ddbox)
+static DDGridSetup
+getDDGridSetup(const gmx::MDLogger           &mdlog,
+               t_commrec                     *cr,
+               const DomdecOptions           &options,
+               const DDSettings              &ddSettings,
+               const DDSystemInfo            &systemInfo,
+               const gmx_mtop_t              *mtop,
+               const t_inputrec              *ir,
+               const matrix                   box,
+               gmx::ArrayRef<const gmx::RVec> xGlobal,
+               gmx_ddbox_t                   *ddbox)
 {
-    DDSetup     ddSetup;
+    DDGridSetup ddGridSetup;
 
     if (options.numCells[XX] > 0)
     {
-        copy_ivec(options.numCells, ddSetup.numDomains);
-        set_ddbox_cr(*cr, &ddSetup.numDomains, *ir, box, xGlobal, ddbox);
+        copy_ivec(options.numCells, ddGridSetup.numDomains);
+        set_ddbox_cr(*cr, &ddGridSetup.numDomains, *ir, box, xGlobal, ddbox);
 
         if (options.numPmeRanks >= 0)
         {
-            ddSetup.numPmeOnlyRanks = options.numPmeRanks;
+            ddGridSetup.numPmeOnlyRanks = options.numPmeRanks;
         }
         else
         {
@@ -2338,7 +2339,7 @@ getDDSetup(const gmx::MDLogger           &mdlog,
              * don't use PME ranks. We check later if the DD grid is
              * compatible with the total number of ranks.
              */
-            ddSetup.numPmeOnlyRanks = 0;
+            ddGridSetup.numPmeOnlyRanks = 0;
         }
     }
     else
@@ -2346,14 +2347,14 @@ getDDSetup(const gmx::MDLogger           &mdlog,
         set_ddbox_cr(*cr, nullptr, *ir, box, xGlobal, ddbox);
 
         /* We need to choose the optimal DD grid and possibly PME nodes */
-        ddSetup =
+        ddGridSetup =
             dd_choose_grid(mdlog, cr, ir, mtop, box, ddbox,
                            options.numPmeRanks,
                            !isDlbDisabled(ddSettings.initialDlbState),
                            options.dlbScaling,
                            systemInfo);
 
-        if (ddSetup.numDomains[XX] == 0)
+        if (ddGridSetup.numDomains[XX] == 0)
         {
             char     buf[STRLEN];
             gmx_bool bC = (systemInfo.haveSplitConstraints &&
@@ -2367,13 +2368,13 @@ getDDSetup(const gmx::MDLogger           &mdlog,
                                  "There is no domain decomposition for %d ranks that is compatible with the given box and a minimum cell size of %g nm\n"
                                  "%s\n"
                                  "Look in the log file for details on the domain decomposition",
-                                 cr->nnodes - ddSetup.numPmeOnlyRanks,
-                                 ddSetup.cellsizeLimit,
+                                 cr->nnodes - ddGridSetup.numPmeOnlyRanks,
+                                 ddGridSetup.cellsizeLimit,
                                  buf);
         }
     }
 
-    const real acs = average_cellsize_min(*ddbox, ddSetup.numDomains);
+    const real acs = average_cellsize_min(*ddbox, ddGridSetup.numDomains);
     if (acs < systemInfo.cellsizeLimit)
     {
         if (options.numCells[XX] <= 0)
@@ -2388,50 +2389,50 @@ getDDSetup(const gmx::MDLogger           &mdlog,
         }
     }
 
-    const int numPPRanks = ddSetup.numDomains[XX]*ddSetup.numDomains[YY]*ddSetup.numDomains[ZZ];
-    if (cr->nnodes - numPPRanks != ddSetup.numPmeOnlyRanks)
+    const int numPPRanks = ddGridSetup.numDomains[XX]*ddGridSetup.numDomains[YY]*ddGridSetup.numDomains[ZZ];
+    if (cr->nnodes - numPPRanks != ddGridSetup.numPmeOnlyRanks)
     {
         gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
                              "The size of the domain decomposition grid (%d) does not match the number of ranks (%d). The total number of ranks is %d",
-                             numPPRanks, cr->nnodes - ddSetup.numPmeOnlyRanks, cr->nnodes);
+                             numPPRanks, cr->nnodes - ddGridSetup.numPmeOnlyRanks, cr->nnodes);
     }
-    if (ddSetup.numPmeOnlyRanks > numPPRanks)
+    if (ddGridSetup.numPmeOnlyRanks > numPPRanks)
     {
         gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
-                             "The number of separate PME ranks (%d) is larger than the number of PP ranks (%d), this is not supported.", ddSetup.numPmeOnlyRanks, numPPRanks);
+                             "The number of separate PME ranks (%d) is larger than the number of PP ranks (%d), this is not supported.", ddGridSetup.numPmeOnlyRanks, numPPRanks);
     }
 
-    ddSetup.numDDDimensions = set_dd_dim(ddSetup.numDomains, ddSettings,
-                                         ddSetup.ddDimensions);
+    ddGridSetup.numDDDimensions = set_dd_dim(ddGridSetup.numDomains, ddSettings,
+                                             ddGridSetup.ddDimensions);
 
-    return ddSetup;
+    return ddGridSetup;
 }
 
 /*! \brief Set the cell size and interaction limits, as well as the DD grid */
 static DDRankSetup
 getDDRankSetup(const gmx::MDLogger &mdlog,
                t_commrec           *cr,
-               const DDSetup       &ddSetup,
+               const DDGridSetup   &ddGridSetup,
                const t_inputrec    &ir)
 {
     GMX_LOG(mdlog.info).appendTextFormatted(
             "Domain decomposition grid %d x %d x %d, separate PME ranks %d",
-            ddSetup.numDomains[XX], ddSetup.numDomains[YY], ddSetup.numDomains[ZZ],
-            ddSetup.numPmeOnlyRanks);
+            ddGridSetup.numDomains[XX], ddGridSetup.numDomains[YY], ddGridSetup.numDomains[ZZ],
+            ddGridSetup.numPmeOnlyRanks);
 
     DDRankSetup ddRankSetup;
 
-    ddRankSetup.numPPRanks = cr->nnodes - ddSetup.numPmeOnlyRanks;
-    copy_ivec(ddSetup.numDomains, ddRankSetup.numPPCells);
+    ddRankSetup.numPPRanks = cr->nnodes - ddGridSetup.numPmeOnlyRanks;
+    copy_ivec(ddGridSetup.numDomains, ddRankSetup.numPPCells);
 
-    ddRankSetup.usePmeOnlyRanks = (ddSetup.numPmeOnlyRanks > 0);
+    ddRankSetup.usePmeOnlyRanks = (ddGridSetup.numPmeOnlyRanks > 0);
     if (ddRankSetup.usePmeOnlyRanks)
     {
-        ddRankSetup.numRanksDoingPme = ddSetup.numPmeOnlyRanks;
+        ddRankSetup.numRanksDoingPme = ddGridSetup.numPmeOnlyRanks;
     }
     else
     {
-        ddRankSetup.numRanksDoingPme = ddSetup.numDomains[XX]*ddSetup.numDomains[YY]*ddSetup.numDomains[ZZ];
+        ddRankSetup.numRanksDoingPme = ddGridSetup.numDomains[XX]*ddGridSetup.numDomains[YY]*ddGridSetup.numDomains[ZZ];
     }
 
     if (EEL_PME(ir.coulombtype) || EVDW_PME(ir.vdwtype))
@@ -2444,15 +2445,15 @@ getDDRankSetup(const gmx::MDLogger &mdlog,
          * in which case they will not match those in comm_cost_est,
          * but since that is mainly for testing purposes that's fine.
          */
-        if (ddSetup.numDDDimensions >= 2 &&
-            ddSetup.ddDimensions[0] == XX &&
-            ddSetup.ddDimensions[1] == YY &&
-            ddRankSetup.numRanksDoingPme > ddSetup.numDomains[XX] &&
-            ddRankSetup.numRanksDoingPme % ddSetup.numDomains[XX] == 0 &&
+        if (ddGridSetup.numDDDimensions >= 2 &&
+            ddGridSetup.ddDimensions[0] == XX &&
+            ddGridSetup.ddDimensions[1] == YY &&
+            ddRankSetup.numRanksDoingPme > ddGridSetup.numDomains[XX] &&
+            ddRankSetup.numRanksDoingPme % ddGridSetup.numDomains[XX] == 0 &&
             getenv("GMX_PMEONEDD") == nullptr)
         {
             ddRankSetup.npmedecompdim = 2;
-            ddRankSetup.npmenodes_x   = ddSetup.numDomains[XX];
+            ddRankSetup.npmenodes_x   = ddGridSetup.numDomains[XX];
             ddRankSetup.npmenodes_y   = ddRankSetup.numRanksDoingPme/ddRankSetup.npmenodes_x;
         }
         else
@@ -2461,7 +2462,7 @@ getDDRankSetup(const gmx::MDLogger &mdlog,
              * decompose pme in y instead of x, but we use x for simplicity.
              */
             ddRankSetup.npmedecompdim = 1;
-            if (ddSetup.ddDimensions[0] == YY)
+            if (ddGridSetup.ddDimensions[0] == YY)
             {
                 ddRankSetup.npmenodes_x = 1;
                 ddRankSetup.npmenodes_y = ddRankSetup.numRanksDoingPme;
@@ -2492,7 +2493,7 @@ static void set_dd_limits(const gmx::MDLogger &mdlog,
                           const DomdecOptions &options,
                           const DDSettings &ddSettings,
                           const DDSystemInfo &systemInfo,
-                          const DDSetup &ddSetup,
+                          const DDGridSetup &ddGridSetup,
                           const gmx_mtop_t *mtop,
                           const t_inputrec *ir,
                           const gmx_ddbox_t &ddbox)
@@ -2533,10 +2534,10 @@ static void set_dd_limits(const gmx::MDLogger &mdlog,
 
     comm->cgs_gl = gmx_mtop_global_cgs(mtop);
 
-    /* Set the DD setup given by ddSetup */
-    copy_ivec(ddSetup.numDomains, dd->nc);
-    dd->ndim = ddSetup.numDDDimensions;
-    copy_ivec(ddSetup.ddDimensions, dd->dim);
+    /* Set the DD setup given by ddGridSetup */
+    copy_ivec(ddGridSetup.numDomains, dd->nc);
+    dd->ndim = ddGridSetup.numDDDimensions;
+    copy_ivec(ddGridSetup.ddDimensions, dd->dim);
 
     dd->nnodes = dd->nc[XX]*dd->nc[YY]*dd->nc[ZZ];
 
@@ -3046,13 +3047,13 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
 
     DDSystemInfo systemInfo = getSystemInfo(mdlog, cr, options, mtop, ir, box, xGlobal);
 
-    gmx_ddbox_t  ddbox      = {0};
-    DDSetup      ddSetup    = getDDSetup(mdlog, cr, options, ddSettings, systemInfo,
-                                         mtop, ir, box, xGlobal, &ddbox);
+    gmx_ddbox_t  ddbox       = {0};
+    DDGridSetup  ddGridSetup = getDDGridSetup(mdlog, cr, options, ddSettings, systemInfo,
+                                              mtop, ir, box, xGlobal, &ddbox);
 
-    cr->npmenodes = ddSetup.numPmeOnlyRanks;
+    cr->npmenodes = ddGridSetup.numPmeOnlyRanks;
 
-    DDRankSetup ddRankSetup = getDDRankSetup(mdlog, cr, ddSetup, *ir);
+    DDRankSetup ddRankSetup = getDDRankSetup(mdlog, cr, ddGridSetup, *ir);
 
     ivec        ddCellIndex = { 0, 0, 0 };
     makeGroupCommunicators(mdlog, ddSettings, options.rankOrder,
@@ -3067,7 +3068,7 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
     dd->comm->ddRankSetup = ddRankSetup;
 
     set_dd_limits(mdlog, cr, dd, options,
-                  ddSettings, systemInfo, ddSetup,
+                  ddSettings, systemInfo, ddGridSetup,
                   mtop, ir,
                   ddbox);
 

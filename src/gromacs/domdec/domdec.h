@@ -320,32 +320,4 @@ void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
                            gmx_bool bBCheck,
                            real *r_2b, real *r_mb);
 
-
-/* In domdec_setup.c */
-
-/*! \brief Returns the volume fraction of the system that is communicated */
-real comm_box_frac(const ivec dd_nc, real cutoff, const gmx_ddbox_t *ddbox);
-
-struct DDSetup
-{
-    int  numPmeOnlyRanks = 0;
-    ivec numDomains      = { 0, 0, 0 };
-    real cellsizeLimit   = 0;
-    int  numDDDimensions = 0;
-    ivec ddDimensions    = { -1, -1, -1 };
-};
-
-/*! \brief Determines the optimal DD cell setup dd->nc and possibly npmenodes
- * for the system.
- */
-DDSetup
-dd_choose_grid(const gmx::MDLogger &mdlog,
-               const t_commrec *cr,
-               const t_inputrec *ir,
-               const gmx_mtop_t *mtop,
-               const matrix box, const gmx_ddbox_t *ddbox,
-               int numPmeRanksRequested,
-               gmx_bool bDynLoadBal, real dlb_scale,
-               const DDSystemInfo &systemInfo);
-
 #endif
