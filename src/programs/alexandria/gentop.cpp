@@ -239,7 +239,7 @@ int alex_gentop(int argc, char *argv[])
     if (opt2parg_bSet("-ff", asize(pa), pa) && nullptr == gentop_fnm)
     {
         iModel = name2eemtype(ff[0]);
-        gentop_fnm = gmx::formatString("%s_2020.dat", ff[0]).c_str();
+        gentop_fnm = gmx::formatString("%s_2019.dat", ff[0]).c_str();
     }
     if (nullptr == gentop_fnm)
     {
