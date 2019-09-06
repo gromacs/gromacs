@@ -13,9 +13,9 @@
 
 # Test an older version of CUDA
 # Test MPI with CUDA
-# Test MPMD PME with library MPI
+# Test MPMD PME with thread-MPI (library MPI not supported initially)
 # Test GPU comm features in the above combination
-gcc-5 gpuhw=nvidia cuda-9.0 mpi npme=1 nranks=2 openmp gpucomm
+gcc-5 gpuhw=nvidia cuda-9.0 mpi npme=1 nranks=2 thread-mpi openmp gpucomm
 
 # Test newest gcc supported by newest CUDA at time of release
 # Test thread-MPI with CUDA
