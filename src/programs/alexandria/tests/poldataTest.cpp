@@ -185,16 +185,16 @@ TEST_F (PoldataTest, chi)
 }
 
 TEST_F (PoldataTest, row){
-    std::vector<double>      rows;
-    int numAtoms = 3;
-    int numModels = 3;
+    std::vector<int> rows;
+    std::string atoms[] = { "ha", "s", "br" };
+    std::string models[] = { "ESP-ps", "ACM-g", "Rappe" };
 
-    for (int atomNr = 0; atomNr < numAtoms; atomNr++)
+    for (auto &atom : atoms)
     {
-        for (int model = 0; model <  numModels; model++)
+        for (auto &model : models)
         {
-            auto pd       = getPoldata(static_cast<ChargeModel>(model));
-            auto atomName = pd->findAtype("ha")->getType();
+            auto pd       = getPoldata(model);
+            auto atomName = pd->findAtype(atom)->getType();
             rows.push_back(pd->getRow(atomName, 0));
         }
     }
@@ -218,7 +218,7 @@ TEST_F (PoldataTest, zeta)
     checker_.checkSequence(zetas.begin(), zetas.end(), "zeta");
 }
 
-TEST_F (PoldataTest, forceField)
+TEST_F (PoldataTest, chargeModel)
 {
     std::vector<ChargeModel> eqd = { eqdESP_pp, eqdESP_pg, eqdESP_ps };
 
@@ -226,9 +226,9 @@ TEST_F (PoldataTest, forceField)
     for (auto model : eqd)
     {        
         auto mypd = getPoldata(model);
-        forces.push_back(mypd->getForceField());
+        forces.push_back(getEemtypeName(mypd->getChargeModel()));
     }
-    checker_.checkSequence(forces.begin(), forces.end(), "forceField");
+    checker_.checkSequence(forces.begin(), forces.end(), "chargeModel");
 }
 
 

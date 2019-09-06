@@ -439,7 +439,7 @@ void OptACM::polData2TuneACM()
                 else
                 {
                     gmx_fatal(FARGS, "Zeta is zero for atom %s in model %s\n",
-                              ai->name().c_str(), getEemtypeName(poldata()->getEqdModel()));
+                              ai->name().c_str(), getEemtypeName(poldata()->getChargeModel()));
                 }
             }
             if (bFitAlpha_)
@@ -504,7 +504,7 @@ void OptACM::TuneACM2PolData()
                 z_sig[0]           = '\0';
                 std::string qstr   = ei->getQstr();
                 std::string rowstr = ei->getRowstr();
-                auto iModel = poldata()->getEqdModel();
+                auto iModel = poldata()->getChargeModel();
                 auto nZeta  = ei->getNzeta();
                 if (getEemtypeDistributed(iModel))
                 {
@@ -1007,7 +1007,7 @@ int alex_tune_eem(int argc, char *argv[])
     {
         if (bMinimum || bForceOutput)
         {
-            auto iModel = opt.poldata()->getEqdModel();
+            auto iModel = opt.poldata()->getChargeModel();
             gmx_bool bPolar = getEemtypePolarizable(iModel);
             
             auto *ic = opt.indexCount();

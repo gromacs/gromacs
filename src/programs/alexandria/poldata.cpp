@@ -773,7 +773,6 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &filename_);
         gmx_send_str(cr, dest, &alexandriaPolarUnit_);
         gmx_send_str(cr, dest, &alexandriaPolarRef_);
-        gmx_send_str(cr, dest, &alexandriaForcefield_);
         gmx_send_int(cr, dest, nexcl_);
         gmx_send_str(cr, dest, &gtVdwFunction_);
         gmx_send_str(cr, dest, &gtCombinationRule_);
@@ -794,7 +793,7 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
         gmx_send_int(cr, dest, miller_.size());
         gmx_send_int(cr, dest, bosque_.size());
         gmx_send_int(cr, dest, symcharges_.size());
-        gmx_send_int(cr, dest, static_cast<int>(eqdModel_));
+        gmx_send_int(cr, dest, static_cast<int>(ChargeModel_));
         gmx_send_str(cr, dest, &eepReference_);
         gmx_send_int(cr, dest, eep_.size());
 
@@ -866,7 +865,6 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         gmx_recv_str(cr, src, &filename_);
         gmx_recv_str(cr, src, &alexandriaPolarUnit_);
         gmx_recv_str(cr, src, &alexandriaPolarRef_);
-        gmx_recv_str(cr, src, &alexandriaForcefield_);
         nexcl_                = gmx_recv_int(cr, src);
         gmx_recv_str(cr, src, &gtVdwFunction_);
         gmx_recv_str(cr, src, &gtCombinationRule_);
@@ -887,7 +885,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         nmiller               = gmx_recv_int(cr, src);
         nbosque               = gmx_recv_int(cr, src);
         nsymcharges           = gmx_recv_int(cr, src);
-        eqdModel_             = static_cast<ChargeModel>(gmx_recv_int(cr, src));
+        ChargeModel_          = static_cast<ChargeModel>(gmx_recv_int(cr, src));
         gmx_recv_str(cr, src, &eepReference_);
         neep                  = gmx_recv_int(cr, src);
 
@@ -1071,7 +1069,7 @@ EempropsConstIterator Poldata::findEem(const std::string &atype) const
     auto        fa = findAtype(atype);
     if (fa != getAtypeEnd())
     {
-        auto eqdModel = getEqdModel();
+        auto eqdModel = getChargeModel();
         if (eqdModel == eqdRappe || eqdModel == eqdBultinck ||
             eqdModel == eqdYang)
         {
@@ -1099,7 +1097,7 @@ EempropsIterator Poldata::findEem(const std::string &atype)
     auto        fa = findAtype(atype);
     if (fa != getAtypeEnd())
     {
-        auto eqdModel = getEqdModel();
+        auto eqdModel = getChargeModel();
         if (eqdModel == eqdRappe || eqdModel == eqdBultinck ||
             eqdModel == eqdYang)
         {

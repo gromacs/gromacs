@@ -180,7 +180,7 @@ void OptZeta::polData2TuneZeta()
             else
             {
                 gmx_fatal(FARGS, "Zeta is zero for atom %s in model %s\n",
-                          ai->name().c_str(), getEemtypeName(poldata()->getEqdModel()));
+                          ai->name().c_str(), getEemtypeName(poldata()->getChargeModel()));
             }
 
             if (bFitAlpha_)
@@ -229,7 +229,7 @@ void OptZeta::tuneZeta2PolData()
             z_sig[0] = '\0';
 
             // Begin to add  optimized zeta to poldata
-            auto iModel = poldata()->getEqdModel();
+            auto iModel = poldata()->getChargeModel();
             auto nZeta  = ei->getNzeta();
             if (getEemtypeDistributed(iModel))
             {
@@ -731,7 +731,7 @@ int alex_tune_zeta(int argc, char *argv[])
 
     if (MASTER(opt.commrec()))
     {
-        auto iModel = opt.poldata()->getEqdModel();
+        auto iModel = opt.poldata()->getChargeModel();
         bool bPolar = getEemtypePolarizable(iModel);
 
         auto *ic = opt.indexCount();

@@ -186,7 +186,7 @@ static void gen_alexandria_rho(Poldata                 &pd,
     nmax = 1+(int)(rcut/spacing);
     for (auto eep = pd.getEemprops().begin(); eep != pd.getEemprops().end(); eep++)
     {
-        if (pd.getEqdModel() == iDistributionModel)
+        if (pd.getChargeModel() == iDistributionModel)
         {
             name  = eep->getName();        
             nzeta = pd.getNzeta(name);
@@ -213,7 +213,7 @@ static void gen_alexandria_rho(Poldata                 &pd,
                         break;
                     default:
                         gmx_fatal(FARGS, "Don't know how to handle model %s",
-                                  getEemtypeName(pd.getEqdModel()));
+                                  getEemtypeName(pd.getChargeModel()));
                 }
             }
             if (q[nzeta-1] == 0)
@@ -264,7 +264,7 @@ static void gen_alexandria_tables(Poldata                 &pd,
                                   const gmx_output_env_t  *oenv,
                                   char                    *atypes)
 {
-    ChargeModel  iDistributionModel = pd.getEqdModel();
+    ChargeModel  iDistributionModel = pd.getChargeModel();
                                   
     double       cv = 0;
     double       cf = 0;

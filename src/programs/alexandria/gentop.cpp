@@ -254,7 +254,7 @@ int alex_gentop(int argc, char *argv[])
         alexandria::readPoldata(gentop_fnm, pd, aps);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    iModel = pd.getEqdModel();
+    iModel = pd.getChargeModel();
     printf("Using force field file %s and charge distribution model %s\n",
            gentop_fnm, getEemtypeName(iModel));
     

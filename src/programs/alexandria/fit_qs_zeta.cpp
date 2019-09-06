@@ -238,7 +238,7 @@ int alex_fit_qs_zeta(int argc, char *argv[])
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         for(auto ai = pd.getAtypeBegin(); ai < pd.getAtypeEnd(); ++ai)
         {
-            auto cdm = pd.getEqdModel();
+            auto cdm = pd.getChargeModel();
             auto eem = pd.findEem(ai->getType());
             if (pd.EndEemprops() != eem)
             {

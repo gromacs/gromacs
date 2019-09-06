@@ -61,19 +61,19 @@ void QgenAcm::setInfo(const Poldata            *pd,
     bool         bSupport = true;
     std::string  atp;
 
-    iChargeModel_  = pd->getEqdModel();
-    bWarned_                   = false;
-    bAllocSave_                = false;
-    bHaveShell_                = haveShell;
-    eQGEN_                     = eQGEN_OK;
-    hardnessFactor_            = 1;
-    chieq_                     = 0;
-    Jcs_                       = 0;
-    Jss_                       = 0;
-    rms_                       = 0;
-    natom_                     = 0;
-    hfac_                      = hfac;
-    qtotal_                    = qtotal;
+    iChargeModel_   = pd->getChargeModel();
+    bWarned_        = false;
+    bAllocSave_     = false;
+    bHaveShell_     = haveShell;
+    eQGEN_          = eQGEN_OK;
+    hardnessFactor_ = 1;
+    chieq_          = 0;
+    Jcs_            = 0;
+    Jss_            = 0;
+    rms_            = 0;
+    natom_          = 0;
+    hfac_           = hfac;
+    qtotal_         = qtotal;
     for (i = 0; i < atoms->nr; i++)
     {
         if (atoms->atom[i].ptype == eptAtom)
@@ -608,7 +608,7 @@ void QgenAcm::checkSupport(const Poldata *pd)
         if (!pd->haveEemSupport(elem_[i].c_str(), true))
         {
             fprintf(stderr, "No charge generation support for atom %s, model %s\n",
-                    elem_[i].c_str(), getEemtypeName(pd->getEqdModel()));
+                    elem_[i].c_str(), getEemtypeName(pd->getChargeModel()));
             bSupport = false;
         }
     }
@@ -685,7 +685,7 @@ int QgenAcm::generateCharges(FILE                      *fp,
     if (fp)
     {
         fprintf(fp, "Generating charges for %s using %s algorithm\n",
-                molname.c_str(), getEemtypeName(pd->getEqdModel()));
+                molname.c_str(), getEemtypeName(pd->getChargeModel()));
     }
     checkSupport(pd);
     if (eQGEN_OK == eQGEN_)

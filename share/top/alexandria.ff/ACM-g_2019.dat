@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <atomtypes forcefield="alexandria-AXg_2019" function="BHAM" combination_rule="Geometric" nexclusions="2">
+  <atomtypes chargemodel="ACM-g" version="2019" function="BHAM" combination_rule="Geometric" nexclusions="2">
     <atomtype elem="H" description="hydrogen on aliphatic C with 1 electron-withdrawal group" atype="h1" ptype="p_ha" btype="b_ha" ztype="z_h1" vdwparams="2.471350e-01 6.568880e-02 1.300000e+01" ref_enthalpy="222.2325"/>
     <atomtype elem="H" description="hydrogen on aliphatic C with 2 electron-withdrawal groups" atype="h2" ptype="p_ha" btype="b_ha" ztype="z_h1" vdwparams="2.293170e-01 6.568880e-02 1.300000e+01" ref_enthalpy="222.2325"/>
     <atomtype elem="H" description="hydrogen on aliphatic C with 3 electron-withdrawal groups" atype="h3" ptype="p_ha" btype="b_ha" ztype="z_h1" vdwparams="2.114990e-01 6.568880e-02 1.300000e+01" ref_enthalpy="222.2325"/>
@@ -2833,7 +2833,7 @@
     <sym_charge central="C" attached="I" numattach="3"/>
     <sym_charge central="Si" attached="H" numattach="3"/>
   </symmetric_charges>
-  <eemprops qdist="AXg" ref="Ghahremanpour2019a">
+  <eemprops reference="Ghahremanpour2019a">
   <!-- row equals zero means that point charge will be used instead of Slater -->
     <eemprop name="z_h1" jaa="9.84618" jaa_sigma="0.0286813" chi="2.61635" chi_sigma="0.0124402" zeta="20.0978 " zeta_sigma="0.0725822 " charge="0" row="1"/>
     <eemprop name="z_h4" jaa="6.19609" jaa_sigma="0.0363446" chi="3.00629" chi_sigma="0.0214289" zeta="14.9583 " zeta_sigma="0.175256 " charge="0" row="1"/>

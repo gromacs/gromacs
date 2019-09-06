@@ -3,14 +3,14 @@
 <ReferenceData>
   <Sequence Name="row">
     <Int Name="Length">9</Int>
-    <Real>1</Real>
-    <Real>1</Real>
-    <Real>1</Real>
-    <Real>1</Real>
-    <Real>1</Real>
-    <Real>1</Real>
-    <Real>1</Real>
-    <Real>1</Real>
-    <Real>1</Real>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>3</Int>
+    <Int>3</Int>
+    <Int>1</Int>
+    <Int>3</Int>
+    <Int>3</Int>
   </Sequence>
 </ReferenceData>

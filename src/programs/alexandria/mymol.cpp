@@ -703,7 +703,7 @@ immStatus MyMol::zeta2atoms(const Poldata *pd)
        take care of the zeta for the shells later. */
     auto zeta = 0.0;
     auto row  = 0;
-    auto eqdModel = pd->getEqdModel();
+    auto eqdModel = pd->getChargeModel();
     for (auto i = 0; i < topology_->atoms.nr; i++)
     {
         zeta = pd->getZeta(*topology_->atoms.atomtype[i], 0);
@@ -732,7 +732,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t  ap,
     t_param     b;
     immStatus   imm = immOK;
     std::string btype1, btype2;
-    ChargeModel iChargeModel = pd->getEqdModel();
+    ChargeModel iChargeModel = pd->getChargeModel();
                                   
     if (nullptr != debug)
     {
@@ -1241,7 +1241,7 @@ void MyMol::initQgresp(const Poldata             *pd,
                        real                       watoms,
                        int                        maxESP)
 {
-    auto iChargeModel = pd->getEqdModel();
+    auto iChargeModel = pd->getChargeModel();
                        
     Qgresp_.setChargeModel(iChargeModel);
     Qgresp_.setAtomWeight(watoms);
@@ -1306,7 +1306,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
     immStatus           imm         = immOK;
     bool                converged   = false;
     int                 iter        = 0;
-    auto                iChargeModel = pd->getEqdModel();
+    auto                iChargeModel = pd->getChargeModel();
                                  
     GenerateGromacs(mdlog, cr, tabfn, hwinfo, iChargeModel);
     if (bSymmetricCharges)
@@ -1326,7 +1326,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             symmetric_charges_.push_back(i);
         }
     }
-    switch (chargeGenerationAlgorithm(pd->getEqdModel()))
+    switch (chargeGenerationAlgorithm(pd->getChargeModel()))
     {
         case eqgNONE:
             if (debug)
@@ -1719,7 +1719,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     tensor                   myQ;
     double                   value = 0, error = 0, T = -1;
     std::string              myref, mylot;
-    auto                     iChargeModel = pd->getEqdModel();
+    auto                     iChargeModel = pd->getChargeModel();
                           
     if (fp == nullptr)
     {
@@ -1886,7 +1886,7 @@ void MyMol::GenerateCube(const Poldata          *pd,
                          const char             *diffhistfn,
                          const gmx_output_env_t *oenv)
 {
-    ChargeModel iChargeModel = pd->getEqdModel();
+    ChargeModel iChargeModel = pd->getChargeModel();
                          
     if ((nullptr  != potfn) || (nullptr != hisfn) || (nullptr != rhofn) ||
         ((nullptr != difffn) && (nullptr != reffn)))

@@ -651,7 +651,7 @@ static void alexandria_molprop_atomtype_dip_table(FILE          *fp,
             gt_type[cur] = aType->getType();
             if (((0 == gt_type[prev].size()) || (gt_type[cur] != gt_type[prev])))
             {
-                longbuf = gmx::formatString("%s & %s", getEemtypeName(ipd.getEqdModel()), 
+                longbuf = gmx::formatString("%s & %s", getEemtypeName(ipd.getChargeModel()), 
                                             gt_type[cur].c_str());
                 if (ipd.haveEemSupport(gt_type[cur], false))
                 {

@@ -669,8 +669,8 @@ int alex_bastat(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     // This a hack to prevent that no bonds will be found to shells.
-    iModel = pd.getEqdModel();
-    pd.setEqdModel(eqdESP_p);
+    iModel = pd.getChargeModel();
+    pd.setChargeModel(eqdESP_p);
 
     /* Read Molprops */
     auto nwarn = merge_xml(opt2fns("-f", NFILE, fnm), mp, nullptr, nullptr, nullptr, aps, pd, true);
@@ -867,7 +867,7 @@ int alex_bastat(int argc, char *argv[])
     update_pd(fp, bonds, &pd,
               Dm, beta, kt, klin, kp, kimp, kub, 
               bond_tol, angle_tol);
-    pd.setEqdModel(iModel);
+    pd.setChargeModel(iModel);
     writePoldata(opt2fn("-o", NFILE, fnm), &pd, compress);
     printf("Extracted %zu bondtypes, %zu angletypes, %zu linear-angletypes, %zu dihedraltypes and %zu impropertypes.\n",
            bonds->bond.size(), bonds->angle.size(), bonds->linangle.size(),

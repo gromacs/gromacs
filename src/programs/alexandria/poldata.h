@@ -62,11 +62,21 @@ class Poldata
         void  setFilename(const std::string &fn2);
 
         /*! \brief
-         * Set the force field
+         * Set the force field version
+         * \param[in] version Force field version
          */
-        void setForceField(const std::string &forcefield)
+        void setVersion(const std::string &version)
         {
-            alexandriaForcefield_ = forcefield;
+            alexandriaVersion_ = version;
+        }
+
+        /*! \brief
+         * Get the force field version
+         * \return Force field version
+         */
+        const std::string &getVersion() const
+        {
+            return alexandriaVersion_;
         }
 
         /*! \brief
@@ -178,8 +188,6 @@ class Poldata
         }
 
         std::vector<Vsite> &getVsite() {return vsite_; }
-
-        const std::string &getForceField() const { return alexandriaForcefield_; }
 
         int getVdwFtype() const { return gtVdwFtype_; }
 
@@ -620,10 +628,16 @@ class Poldata
         EempropsIterator ztype2Eem(const std::string &ztype);
                                    
         //! Return the charge distribution model used
-        ChargeModel getEqdModel() const { return eqdModel_; }
+        ChargeModel getChargeModel() const { return ChargeModel_; }
         
         //! Set the charge distribution model used
-        void setEqdModel(ChargeModel eqdModel) { eqdModel_ = eqdModel; }
+        void setChargeModel(ChargeModel eqdModel) { ChargeModel_ = eqdModel; }
+        
+        //! Set the charge distribution model used
+        void setChargeModel(const std::string eqdModel)
+        { 
+            ChargeModel_ = name2eemtype(eqdModel);
+        }
         
         //! Return the array of eemprops
         std::vector<Eemprops> &getEemprops() {return eep_; }
@@ -649,7 +663,7 @@ class Poldata
         std::vector<std::string>              btype_;
         std::string                           alexandriaPolarUnit_;
         std::string                           alexandriaPolarRef_;
-        std::string                           alexandriaForcefield_;
+        std::string                           alexandriaVersion_;
         std::string                           vsite_angle_unit_;
         std::string                           vsite_length_unit_;
         int                                   nexcl_;
@@ -665,7 +679,7 @@ class Poldata
         std::vector<Symcharges>               symcharges_;
         std::vector<Eemprops>                 eep_;
         std::string                           eepReference_;
-        ChargeModel               eqdModel_ = eqdACM_g;
+        ChargeModel                           ChargeModel_ = eqdACM_g;
 
         void addBtype(const std::string &btype);
 

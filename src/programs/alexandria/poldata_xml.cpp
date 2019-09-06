@@ -82,10 +82,11 @@ enum {
     exmlREFERENCE          = 1,
     exmlATOMTYPES          = 2,
     exmlATOMTYPE           = 3,
-    exmlGT_FORCEFIELD      = 4,
+    exmlCHARGEMODEL        = 4,
     exmlPOLAR_UNIT         = 5,
     exmlCOMB_RULE          = 6,
     exmlNEXCL              = 7,
+    exmlVERSION            = 8,
     exmlPOLTYPES           = 10,
     exmlPOLTYPE            = 11,
     exmlPTYPE              = 12,
@@ -172,7 +173,8 @@ std::map<const std::string, int> xmlxxx =
     { "reference",              exmlREFERENCE        },
     { "atomtypes",              exmlATOMTYPES        },
     { "atomtype",               exmlATOMTYPE         },
-    { "forcefield",             exmlGT_FORCEFIELD    },
+    { "chargemodel",            exmlCHARGEMODEL      },
+    { "version",                exmlVERSION          },
     { "polarizability_unit",    exmlPOLAR_UNIT       },
     { "combination_rule",       exmlCOMB_RULE        },
     { "nexclusions",            exmlNEXCL            },
@@ -371,9 +373,13 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             }
             break;
         case exmlATOMTYPES:
-            if (NN(xbuf[exmlGT_FORCEFIELD]))
+            if (NN(xbuf[exmlCHARGEMODEL]))
             {
-                pd.setForceField(xbuf[exmlGT_FORCEFIELD]);
+                pd.setChargeModel(xbuf[exmlCHARGEMODEL]);
+            }
+            if (NN(xbuf[exmlVERSION]))
+            {
+                pd.setVersion(xbuf[exmlVERSION]);
             }
             if (NN(xbuf[exmlFUNCTION]))
             {
@@ -578,9 +584,8 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             }
             break;
         case exmlEEMPROPS:
-            if (NN(xbuf[exmlMODEL]) && NN(xbuf[exmlREFERENCE]))
+            if (NN(xbuf[exmlREFERENCE]))
             {
-                pd.setEqdModel(name2eemtype(xbuf[exmlMODEL]));
                 pd.setEpref(xbuf[exmlREFERENCE]);
             }
             break;
@@ -729,10 +734,12 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
     std::string  tmp, func, blu;
 
     child = add_xml_child(parent, exml_names(exmlATOMTYPES));
-    tmp   = pd->getForceField();
+    add_xml_char(child, exml_names(exmlCHARGEMODEL),
+                 getEemtypeName(pd->getChargeModel()));
+    tmp   = pd->getVersion();
     if (0 != tmp.size())
     {
-        add_xml_char(child, exml_names(exmlGT_FORCEFIELD), tmp.c_str());
+        add_xml_char(child, exml_names(exmlVERSION), tmp.c_str());
     }
     tmp = pd->getVdwFunction();
     if (0 != tmp.size())
@@ -961,13 +968,10 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
     }
 
     child = add_xml_child(parent, exml_names(exmlEEMPROPS));
-    ChargeModel model = pd->getEqdModel();
-    add_xml_char(child, exml_names(exmlMODEL), getEemtypeName(model));
     add_xml_char(child, exml_names(exmlREFERENCE), pd->getEpref().c_str());
     for (auto eep = pd->BeginEemprops();
          eep != pd->EndEemprops(); eep++)
     {
-
         grandchild = add_xml_child(child, exml_names(exmlEEMPROP));
         add_xml_char(grandchild, exml_names(exmlNAME), eep->getName());
         add_xml_double(grandchild, exml_names(exmlJ0), eep->getJ0());

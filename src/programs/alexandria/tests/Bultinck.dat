@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <atomtypes forcefield="Bultinck" function="LJ_SR" combination_rule="Geometric" nexclusions="2">
+  <atomtypes chargemodel="Bultinck" version="2002" function="LJ_SR" combination_rule="Geometric" nexclusions="2">
     <atomtype elem="H" description="hydrogen on aliphatic C with 1 electron-withdrawal group" atype="h1" ptype="p_ha" btype="b_h1" ztype="z_h1" vdwparams="2.471350e-01 6.568880e-02" ref_enthalpy="222.2325"/>
-    <atomtype elem="H" description="hydrogen on aliphatic C with 2 electron-withdrawal groups" atype="h2" ptype="p_ha" btype="b_h1" ztype="z_h1" vdwparams="2.293170e-01 6.568880e-02" ref_enthalpy="222.2325"/>
-    <atomtype elem="H" description="hydrogen on aliphatic C with 3 electron-withdrawal groups" atype="h3" ptype="p_ha" btype="b_h1" ztype="z_h1" vdwparams="2.114990e-01 6.568880e-02" ref_enthalpy="222.2325"/>
-    <atomtype elem="H" description="hydrogen on aromatic C with 1 electron-withdrawal group" atype="h4" ptype="p_ha" btype="b_h2" ztype="z_h4" vdwparams="2.510550e-01 6.276000e-02" ref_enthalpy="222.2325"/>
-    <atomtype elem="H" description="hydrogen on aromatic C with 2 electron-withdrawal groups" atype="h5" ptype="p_ha" btype="b_h2" ztype="z_h4" vdwparams="2.421460e-01 6.276000e-02" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on aliphatic C with 2 electron-withdrawal groups" atype="h2" ptype="p_ha" btype="b_ha" ztype="z_h1" vdwparams="2.293170e-01 6.568880e-02" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on aliphatic C with 3 electron-withdrawal groups" atype="h3" ptype="p_ha" btype="b_ha" ztype="z_h1" vdwparams="2.114990e-01 6.568880e-02" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on aromatic C with 1 electron-withdrawal group" atype="h4" ptype="p_ha" btype="b_ha" ztype="z_h4" vdwparams="2.510550e-01 6.276000e-02" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on aromatic C with 2 electron-withdrawal groups" atype="h5" ptype="p_ha" btype="b_ha" ztype="z_h4" vdwparams="2.421460e-01 6.276000e-02" ref_enthalpy="222.2325"/>
     <atomtype elem="H" description="hydrogen on aromatic or sp2 aliphatic C" atype="ha" ptype="p_ha" btype="b_ha" ztype="z_ha" vdwparams="2.599640e-01 6.276000e-02" ref_enthalpy="222.2325"/>
     <atomtype elem="H" description="hydrogen on sp3 aliphatic C" atype="hc" ptype="p_ha" btype="b_ha" ztype="z_hc" vdwparams="2.649530e-01 6.568880e-02" ref_enthalpy="222.2325"/>
     <atomtype elem="H" description="hydrogen on nitrogen" atype="hn" ptype="p_hp" btype="b_hp" ztype="z_hp" vdwparams="1.069080e-01 6.568880e-02" ref_enthalpy="222.2325"/>
@@ -66,8 +66,8 @@
     <atomtype elem="S" description="sp3 sulphur in S-R and S-S" atype="ss" ptype="p_s" btype="b_s" ztype="z_s" vdwparams="3.563590e-01 1.046000e+00" ref_enthalpy="281.392"/>
     <atomtype elem="S" description="conjugated S, 3 subst." atype="sx" ptype="p_s" btype="b_s" ztype="z_s" vdwparams="3.563590e-01 1.046000e+00" ref_enthalpy="281.392"/>
     <atomtype elem="S" description="conjugated S, 4 subst." atype="sy" ptype="p_s" btype="b_s" ztype="z_s" vdwparams="3.563590e-01 1.046000e+00" ref_enthalpy="281.392"/>
-    <atomtype elem="Cl" description="general chlorine" atype="cl" ptype="p_cl" btype="b_cl" ztype="z_cl" vdwparams="3.470940e-01 1.108760e+00" ref_enthalpy="125.89250000000001"/>
-    <atomtype elem="Br" description="general bromine" atype="br" ptype="p_br" btype="b_br" ztype="z_br" vdwparams="3.599230e-01 1.757280e+00" ref_enthalpy="124.11449999999999"/>
+    <atomtype elem="Cl" description="general chlorine" atype="cl" ptype="p_cl" btype="b_cl" ztype="z_cl" vdwparams="3.470940e-01 1.108760e+00" ref_enthalpy="125.8925"/>
+    <atomtype elem="Br" description="general bromine" atype="br" ptype="p_br" btype="b_br" ztype="z_br" vdwparams="3.599230e-01 1.757280e+00" ref_enthalpy="124.1145"/>
     <atomtype elem="I" description="general iodine" atype="i" ptype="p_i" btype="b_i" ztype="z_i" vdwparams="3.830860e-01 2.092000e+00" ref_enthalpy="113.361"/>
   </atomtypes>
   <poltypes polarizability_unit="Angstrom3" reference="Molina2011a,Ghahremanpour2018b">
@@ -1108,12 +1108,12 @@
     <sym_charge central="C" attached="I" numattach="3"/>
     <sym_charge central="Si" attached="H" numattach="3"/>
   </symmetric_charges>
-  <eemprops model="Bultinck" reference="Bultinck2002a">
+  <eemprops reference="Bultinck2002a">
   <!-- row equals zero means that point charge will be used instead of Slater -->
-    <eemprop name="C" jaa="9" jaa_sigma="0" chi="5.25" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop name="H" jaa="17.95" jaa_sigma="0" chi="1" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop name="O" jaa="14.34" jaa_sigma="0" chi="14.72" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop name="F" jaa="19.97" jaa_sigma="0" chi="15" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop name="N" jaa="9.39" jaa_sigma="0" chi="8.8" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" row="1"/>
+    <eemprop name="H" jaa="17.95" jaa_sigma="0" chi="1" chi_sigma="0" zeta="0" zeta_sigma="0 0" charge="0" row="1"/>
+    <eemprop name="C" jaa="9" jaa_sigma="0" chi="5.25" chi_sigma="0" zeta="0" zeta_sigma="0 0" charge="0" row="1"/>
+    <eemprop name="F" jaa="19.97" jaa_sigma="0" chi="15" chi_sigma="0" zeta="0" zeta_sigma="0 0" charge="0" row="1"/>
+    <eemprop name="O" jaa="14.34" jaa_sigma="0" chi="14.72" chi_sigma="0" zeta="0" zeta_sigma="0 0" charge="0" row="1"/>
+    <eemprop name="N" jaa="9.39" jaa_sigma="0" chi="8.8" chi_sigma="0" zeta="0" zeta_sigma="0 0" charge="0" row="1"/>
   </eemprops>
 </gentop>

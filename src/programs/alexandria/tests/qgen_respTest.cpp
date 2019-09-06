@@ -102,9 +102,17 @@ class RespTest : public gmx::test::CommandLineTestBase
             t_inputrec    inputrec;
             fill_inputrec(&inputrec);
             mp_.SetForceField("gaff");
-            mp_.GenerateTopology(aps_, getPoldata(qdist), lot,
-                                 false, false, false,  false, nullptr);
-            
+            auto imm = mp_.GenerateTopology(aps_, getPoldata(qdist), lot,
+                                            false, false, false,  false,
+                                            nullptr);
+            if (immOK != imm)
+            {
+                fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
+                return;
+            }
+            fprintf(stderr, "Generated topology for %s\n",
+                    mp_.molProp()->getMolname().c_str());
+
             //Needed for GenerateCharges
             real           hfac        = 0;
             real           watoms      = 0;
