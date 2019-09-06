@@ -528,24 +528,27 @@ struct DDRankSetup
     int         npmenodes_x = 0;
     /**< The number of PME ranks/domains along y */
     int         npmenodes_y = 0;
-    /**< Use Cartesian communication between PP and PME ranks */
-    gmx_bool    bCartesianPP_PME = false;
-    /**< Cartesian grid for combinted PP+PME ranks */
-    ivec        ntot = { };
-    /**< The number of dimensions for the PME setup that are Cartesian */
-    int         cartpmedim = 0;
-    /**< The PME ranks, size npmenodes */
-    int        *pmenodes = nullptr;
-    /**< The Cartesian index to sim rank conversion, used with bCartesianPP_PME */
-    int        *ddindex2simnodeid = nullptr;
     /**< The 1D or 2D PME domain decomposition setup */
     gmx_ddpme_t ddpme[2];
+};
+
+/*! \brief Information on Cartesian MPI setup of the DD ranks */
+struct CartesianRankSetup
+{
+    /**< Use Cartesian communication between PP and PME ranks */
+    bool             bCartesianPP_PME = false;
+    /**< Cartesian grid for combinted PP+PME ranks */
+    ivec             ntot = { };
+    /**< The number of dimensions for the PME setup that are Cartesian */
+    int              cartpmedim = 0;
+    /**< The Cartesian index to sim rank conversion, used with bCartesianPP_PME */
+    std::vector<int> ddindex2simnodeid;
 
     /* The DD particle-particle nodes only */
     /**< Use a Cartesian communicator for PP */
-    gmx_bool bCartesianPP = false;
+    bool             bCartesianPP = false;
     /**< The Cartesian index to DD rank conversion, used with bCartesianPP */
-    int     *ddindex2ddnodeid = nullptr;
+    std::vector<int> ddindex2ddnodeid;
 };
 
 /*! \brief Struct for domain decomposition communication
@@ -564,7 +567,9 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     DDSettings ddSettings;
 
     /**< Information on how the DD ranks are set up */
-    DDRankSetup ddRankSetup;
+    DDRankSetup        ddRankSetup;
+    /**< Information on the Cartesian part of the DD rank setup */
+    CartesianRankSetup cartesianRankSetup;
 
     /* The DLB state, used for reloading old states, during e.g. EM */
     /**< The global charge groups, this defined the DD state (except for the DLB state) */
