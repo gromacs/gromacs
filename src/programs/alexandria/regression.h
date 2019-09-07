@@ -63,7 +63,10 @@ class MatrixWrapper
          * \param[in] row    The row
          * \param[in] value  The value
          */
-        void set(int col, int row, double value);
+        void set(int col, int row, double value)
+        {
+            a_[col][row] = value;
+        }
 
         /*! \brief Set a row of values in the matrix
          *
@@ -78,7 +81,10 @@ class MatrixWrapper
          * \param[in] row    The row
          * \returns The value
          */
-        double get(int col, int row) const;
+        double get(int col, int row) const
+        {
+            return a_[col][row];
+        }
 
         /*! \brief Solve a matrix equation A solution = rhs
          *

@@ -246,12 +246,12 @@ int merge_xml(gmx::ArrayRef<const std::string> filens,
     if (outf)
     {
         printf("There are %d entries to store in output file %s\n", npout, outf);
-        //MolPropWrite(outf, mpout, false);
+        MolPropWrite(outf, mpout, false);
     }
     if (sorted)
     {
         MolPropSort(mpout, MPSA_FORMULA, nullptr, gms);
-        //MolPropWrite(sorted, mpout, false);
+        MolPropWrite(sorted, mpout, false);
         dump_mp(mpout);
     }
     return nwarn;

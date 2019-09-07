@@ -1050,7 +1050,7 @@ void Eemprops::setRowZetaQ(const std::string &rowstr,
 }
 
 typedef struct {
-    ChargeModel    eqd;
+    ChargeModel                eqd;
     const char                *name;
     bool                       polarizable;
     ChargeGenerationAlgorithm  eqg;

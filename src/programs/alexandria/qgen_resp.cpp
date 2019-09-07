@@ -922,7 +922,6 @@ void QgenResp::calcPot()
         ep.setVCalc(0);
     }
     auto nthreads = gmx_omp_get_max_threads();
-#pragma omp parallel
     {
         auto thread_id = gmx_omp_get_thread_num();
         auto i0        = thread_id*nEsp()/nthreads;
