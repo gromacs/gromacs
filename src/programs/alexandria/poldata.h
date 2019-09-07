@@ -39,6 +39,7 @@
 
 #include "gromacs/utility/stringutil.h"
 
+#include "chargemodel.h"
 #include "poldata_low.h"
 #include "stringutil.h"
 

@@ -50,38 +50,6 @@
 namespace alexandria
 {
 
-/*! \brief
- * Enumerated type holding the charge models used in PolData
- *
- * \inpublicapi
- * \ingroup module_alexandria
- */
-enum ChargeModel {
-    eqdESP_p    = 0,
-    eqdESP_pg   = 1,
-    eqdESP_ps   = 2,
-    eqdESP_pp   = 3,
-    eqdACM_g    = 4,
-    eqdACM_pg   = 5,
-    eqdACM_ps   = 6,
-    eqdYang     = 7,
-    eqdBultinck = 8,
-    eqdRappe    = 9,
-    eqdNR       = 10
-};
-
-/*! \brief
- * Enumerated type holding the charge generation algorithms
- *
- * \inpublicapi
- * \ingroup module_alexandria
- */
-enum ChargeGenerationAlgorithm {
-    eqgNONE, 
-    eqgACM, 
-    eqgESP
-};
-
 enum VsiteType
 {
     evtLINEAR       = 0,
@@ -1116,21 +1084,6 @@ class Eemprops
 
 using EempropsIterator      = typename std::vector<Eemprops>::iterator;
 using EempropsConstIterator = typename std::vector<Eemprops>::const_iterator;
-
-const char *getEemtypeName(ChargeModel eem);
-
-bool getEemtypePolarizable(ChargeModel eem);
-
-bool getEemtypeDistributed(ChargeModel eem);
-
-bool getEemtypeSlater(ChargeModel eem);
-
-bool getEemtypeGaussian(ChargeModel eem);
-
-ChargeModel name2eemtype(const std::string name);
-
-/* Return the charge generation algorithm */
-ChargeGenerationAlgorithm chargeGenerationAlgorithm(ChargeModel eem);
 
 } // namespace aleaxndria
 #endif
