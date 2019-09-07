@@ -135,9 +135,13 @@ class StatePropagatorData final :
         //! Get read access to force vector
         ArrayRefWithPadding<const RVec> constForcesView() const;
         //! Get pointer to box
-        rvec *box();
+        rvec* box();
+        //! Get const pointer to box
+        const rvec* constBox();
         //! Get pointer to previous box
-        rvec *previousBox();
+        rvec* previousBox();
+        //! Get const pointer to previous box
+        const rvec* constPreviousBox();
         //! Get the local number of atoms
         int localNumAtoms();
 
@@ -205,8 +209,6 @@ class StatePropagatorData final :
         matrix                 box_;
         //! The box matrix of the previous step
         matrix                 previousBox_;
-        //! Bit-flags for legacy t_state compatibility
-        unsigned int           flags_;
         //! The DD partitioning count for legacy t_state compatibility
         int                    ddpCount_;
 

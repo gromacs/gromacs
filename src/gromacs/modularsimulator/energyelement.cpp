@@ -234,7 +234,7 @@ void EnergyElement::doStep(
             isFreeEnergyCalculationStep, isEnergyCalculationStep,
             time, mdAtoms_->mdatoms()->tmass, enerd_, localState,
             inputrec_->fepvals, inputrec_->expandedvals,
-            statePropagatorData_->previousBox(),
+            statePropagatorData_->constPreviousBox(),
             shakeVirial_, forceVirial_, totalVirial_, pressure_,
             ekind_, muTot_, constr_);
 }

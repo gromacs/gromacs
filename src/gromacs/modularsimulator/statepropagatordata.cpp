@@ -75,7 +75,6 @@ StatePropagatorData::StatePropagatorData(
     nstfout_(nstfout),
     nstxout_compressed_(nstxout_compressed),
     localNAtoms_(0),
-    flags_(0),
     ddpCount_(0),
     writeOutStep_(-1),
     vvResetVelocities_(false),
@@ -88,16 +87,17 @@ StatePropagatorData::StatePropagatorData(
     clear_mat(box_);
     clear_mat(previousBox_);
 
+    bool stateHasVelocities;
     // Local state only becomes valid now.
     if (DOMAINDECOMP(cr))
     {
         auto localState = std::make_unique<t_state>();
         if (useGPU)
         {
-            // TODO: Check this - I'm not sure what I'm doing here :)
             changePinningPolicy(&x_, gmx::PinningPolicy::PinnedIfSupported);
         }
         dd_init_local_state(cr->dd, globalState, localState.get());
+        stateHasVelocities = static_cast<unsigned int>(localState->flags) & (1u << estV);
         setLocalState(std::move(localState));
     }
     else
@@ -108,17 +108,17 @@ StatePropagatorData::StatePropagatorData(
         x_           = globalState->x;
         v_           = globalState->v;
         copy_mat(globalState->box, box_);
-        flags_ = globalState->flags;
+        stateHasVelocities = static_cast<unsigned int>(globalState->flags) & (1u << estV);
         previousX_.resizeWithPadding(localNAtoms_);
         copyPosition();
     }
 
     if (!inputrec->bContinuation)
     {
-        if (flags_ & (1u << estV))
+        if (stateHasVelocities)
         {
             auto v = velocitiesView().paddedArrayRef();
-            /* Set the velocities of vsites, shells and frozen atoms to zero */
+            // Set the velocities of vsites, shells and frozen atoms to zero
             for (int i = 0; i < mdatoms->homenr; i++)
             {
                 if (mdatoms->ptype[i] == eptVSite ||
@@ -191,7 +191,17 @@ rvec* StatePropagatorData::box()
     return box_;
 }
 
+const rvec* StatePropagatorData::constBox()
+{
+    return box_;
+}
+
 rvec* StatePropagatorData::previousBox()
+{
+    return previousBox_;
+}
+
+const rvec* StatePropagatorData::constPreviousBox()
 {
     return previousBox_;
 }
@@ -204,11 +214,11 @@ int StatePropagatorData::localNumAtoms()
 std::unique_ptr<t_state> StatePropagatorData::localState()
 {
     auto state = std::make_unique<t_state>();
+    state->flags = estX | estV | estBOX;
     state_change_natoms(state.get(), localNAtoms_);
     state->x = x_;
     state->v = v_;
     copy_mat(box_, state->box);
-    state->flags     = static_cast<int>(flags_);
     state->ddp_count = ddpCount_;
     return state;
 }
@@ -223,7 +233,6 @@ void StatePropagatorData::setLocalState(std::unique_ptr<t_state> state)
     v_ = state->v;
     copy_mat(state->box, box_);
     copyPosition();
-    flags_    = state->flags;
     ddpCount_ = state->ddp_count;
 }
 

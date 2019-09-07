@@ -139,7 +139,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
      */
     auto       x      = statePropagatorData_->positionsView();
     auto       forces = statePropagatorData_->forcesView();
-    auto       box    = statePropagatorData_->box();
+    auto       box    = statePropagatorData_->constBox();
     auto       lambda = ArrayRef<real>(); // disabled
     history_t *hist   = nullptr;          // disabled
 

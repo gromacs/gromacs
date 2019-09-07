@@ -284,8 +284,8 @@ void ComputeGlobalsElement<algorithm>::compute(
 {
     auto x       = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
     auto v       = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    auto box     = statePropagatorData_->box();
-    auto lastbox = useLastBox ? statePropagatorData_->previousBox() : statePropagatorData_->box();
+    auto box     = statePropagatorData_->constBox();
+    auto lastbox = useLastBox ? statePropagatorData_->constPreviousBox() : statePropagatorData_->constBox();
     real lambda  = 0;
 
     compute_globals(gstat_, cr_, inputrec_, fr_,

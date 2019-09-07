@@ -88,7 +88,7 @@ PmeLoadBalanceHelper::PmeLoadBalanceHelper(
 
 void PmeLoadBalanceHelper::setup()
 {
-    pme_loadbal_init(&pme_loadbal_, cr_, mdlog_, *inputrec_, statePropagatorData_->box(),
+    pme_loadbal_init(&pme_loadbal_, cr_, mdlog_, *inputrec_, statePropagatorData_->constBox(),
                      *fr_->ic, *fr_->nbv, fr_->pmedata, fr_->nbv->useGpu(),
                      &bPMETunePrinting_);
 }
@@ -105,7 +105,8 @@ void PmeLoadBalanceHelper::run(gmx::Step step, gmx::Time gmx_unused time)
                    (isVerbose_ && MASTER(cr_)) ? stderr : nullptr,
                    fplog_, mdlog_,
                    *inputrec_, fr_,
-                   statePropagatorData_->box(), statePropagatorData_->constPositionsView().paddedArrayRef(),
+                   statePropagatorData_->constBox(),
+                   statePropagatorData_->constPositionsView().paddedArrayRef(),
                    wcycle_,
                    step, step - inputrec_->init_step,
                    &bPMETunePrinting_);
