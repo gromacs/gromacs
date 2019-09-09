@@ -86,9 +86,9 @@ void densityfittingMdpTransformFromString(IKeyValueTreeTransformRules * rules,
 }
 /*! \brief Helper to declare mdp output.
  *
- * Enforces uniform mdp options output sting that are always prepended with the
- * correct string for the densityfitting mdp options and is consistent with the
- * options name and transformation.
+ * Enforces uniform mdp options output strings that are always prepended with the
+ * correct string for the densityfitting mdp options and are consistent with the
+ * options name and transformation type.
  *
  * \tparam OptionType the type of the mdp option
  * \param[in] builder the KVT builder to generate the output
@@ -103,6 +103,23 @@ void addDensityFittingMdpOutputValue(KeyValueTreeObjectBuilder *builder,
 {
     builder->addValue<OptionType>(DensityFittingModuleInfo::name_ + "-" + optionTag,
                                   option);
+}
+
+/*! \brief Helper to declare mdp output comments.
+ *
+ * Enforces uniform mdp options comment output strings that are always prepended
+ * with the correct string for the densityfitting mdp options and are consistent
+ * with the options name and transformation type.
+ *
+ * \param[in] builder the KVT builder to generate the output
+ * \param[in] comment on the mdp option
+ * \param[in] optionTag string tag that describes the mdp option
+ */
+void addDensityFittingMdpOutputValueComment(KeyValueTreeObjectBuilder *builder,
+                                            const std::string         &comment,
+                                            const std::string         &optionTag)
+{
+    builder->addValue<std::string>("comment-" + DensityFittingModuleInfo::name_ + "-" + optionTag, comment);
 }
 
 }   // namespace
@@ -126,14 +143,21 @@ void DensityFittingOptions::initMdpTransform(IKeyValueTreeTransformRules * rules
 
 void DensityFittingOptions::buildMdpOutput(KeyValueTreeObjectBuilder *builder) const
 {
+
+    addDensityFittingMdpOutputValueComment(builder, "", "empty-line");
+    addDensityFittingMdpOutputValueComment(builder, "; Density guided simulation", "module");
+
     addDensityFittingMdpOutputValue(builder, parameters_.active_, c_activeTag_);
     if (parameters_.active_)
     {
         addDensityFittingMdpOutputValue(builder, groupString_, c_groupTag_);
+
+        addDensityFittingMdpOutputValueComment(builder, "; Similarity measure between densities: inner-product, or relative-entropy", c_similarityMeasureTag_);
         addDensityFittingMdpOutputValue<std::string>(builder,
                                                      c_densitySimilarityMeasureMethodNames[parameters_.similarityMeasureMethod_],
                                                      c_similarityMeasureTag_);
 
+        addDensityFittingMdpOutputValueComment(builder, "; Atom amplitude for spreading onto grid: unity, mass, or charges", c_amplitudeMethodTag_);
         addDensityFittingMdpOutputValue<std::string>(builder,
                                                      c_densityFittingAmplitudeMethodNames[parameters_.amplitudeLookupMethod_],
                                                      c_amplitudeMethodTag_);
@@ -141,8 +165,10 @@ void DensityFittingOptions::buildMdpOutput(KeyValueTreeObjectBuilder *builder) c
         addDensityFittingMdpOutputValue(builder, parameters_.forceConstant_, c_forceConstantTag_);
         addDensityFittingMdpOutputValue(builder, parameters_.gaussianTransformSpreadingWidth_, c_gaussianTransformSpreadingWidthTag_);
         addDensityFittingMdpOutputValue(builder, parameters_.gaussianTransformSpreadingRangeInMultiplesOfWidth_, c_gaussianTransformSpreadingRangeInMultiplesOfWidthTag_);
+        addDensityFittingMdpOutputValueComment(builder, "; Reference density file location as absolute path or relative to the gmx mdrun calling location", c_referenceDensityFileNameTag_);
         addDensityFittingMdpOutputValue(builder, referenceDensityFileName_, c_referenceDensityFileNameTag_);
         addDensityFittingMdpOutputValue(builder, parameters_.calculationIntervalInSteps_, c_everyNStepsTag_);
+        addDensityFittingMdpOutputValueComment(builder, "; Normalize the sum of density voxel values to one", c_normalizeDensitiesTag_);
         addDensityFittingMdpOutputValue(builder, parameters_.normalizeDensities_, c_normalizeDensitiesTag_);
     }
 }

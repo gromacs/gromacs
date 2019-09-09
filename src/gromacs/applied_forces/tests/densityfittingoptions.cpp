@@ -169,7 +169,9 @@ TEST_F(DensityFittingOptionsTest, OutputNoDefaultValuesWhenInactive)
     }
     stream.close();
 
-    EXPECT_EQ(stream.toString(), std::string("density-guided-simulation-active = false\n"));
+    EXPECT_EQ(stream.toString(),
+              std::string(
+                      "\n; Density guided simulation\ndensity-guided-simulation-active = false\n"));
 }
 
 TEST_F(DensityFittingOptionsTest, OutputDefaultValuesWhenActive)
@@ -189,15 +191,21 @@ TEST_F(DensityFittingOptionsTest, OutputDefaultValuesWhenActive)
     stream.close();
     std::string expected
         = {
+        "\n"
+        "; Density guided simulation\n"
         "density-guided-simulation-active = true\n"
         "density-guided-simulation-group = protein\n"
+        "; Similarity measure between densities: inner-product, or relative-entropy\n"
         "density-guided-simulation-similarity-measure = inner-product\n"
+        "; Atom amplitude for spreading onto grid: unity, mass, or charges\n"
         "density-guided-simulation-amplitude-method = unity\n"
         "density-guided-simulation-force-constant = 1e+09\n"
         "density-guided-simulation-gaussian-transform-spreading-width = 0.2\n"
         "density-guided-simulation-gaussian-transform-spreading-range-in-multiples-of-width = 4\n"
+        "; Reference density file location as absolute path or relative to the gmx mdrun calling location\n"
         "density-guided-simulation-reference-density-filename = reference.mrc\n"
         "density-guided-simulation-nst = 1\n"
+        "; Normalize the sum of density voxel values to one\n"
         "density-guided-simulation-normalize-densities = true\n"
         };
 
