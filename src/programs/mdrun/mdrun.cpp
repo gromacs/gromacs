@@ -55,7 +55,6 @@
 #include <memory>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/compat/pointers.h"
 #include "gromacs/domdec/options.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/network.h"
@@ -207,10 +206,6 @@ int gmx_mdrun(int argc, char *argv[])
 
     LegacyMdrunOptions       options;
 
-    // pointer-to-t_commrec is the de facto handle type for communications record.
-    // \todo Define the ownership and lifetime management semantics for a communication record, handle or value type.
-    options.cr = init_commrec();
-
     if (options.updateFromCommandLine(argc, argv, desc) == 0)
     {
         return 0;
@@ -219,7 +214,7 @@ int gmx_mdrun(int argc, char *argv[])
     StartingBehavior startingBehavior = StartingBehavior::NewSimulation;
     LogFilePtr       logFileGuard     = nullptr;
     std::tie(startingBehavior,
-             logFileGuard) = handleRestart(options.cr,
+             logFileGuard) = handleRestart(options.cr.get(),
                                            options.ms,
                                            options.mdrunOptions.appendingBehavior,
                                            ssize(options.filenames),
@@ -231,10 +226,8 @@ int gmx_mdrun(int argc, char *argv[])
      * to the current simulation and to scheduled tasks within the simulation.
      *
      * \todo Clarify Context lifetime-management requirements and reconcile with scoped ownership.
-     *
-     * \todo Take ownership of and responsibility for communications record (cr).
      */
-    auto simulationContext = createSimulationContext(options.cr);
+    auto simulationContext = createSimulationContext(std::move(options.cr));
 
     /* The named components for the builder exposed here are descriptive of the
      * state of mdrun at implementation and are not intended to be prescriptive
@@ -247,8 +240,7 @@ int gmx_mdrun(int argc, char *argv[])
      * We would prefer to rebuild resources only as necessary, but we defer such
      * details to future optimizations.
      */
-    auto builder = MdrunnerBuilder(std::move(mdModules),
-                                   compat::not_null<decltype( &simulationContext)>(&simulationContext));
+    auto builder = MdrunnerBuilder(std::move(mdModules));
     builder.addSimulationMethod(options.mdrunOptions, options.pforce, startingBehavior);
     builder.addDomainDecomposition(options.domdecOptions);
     // \todo pass by value
@@ -260,6 +252,7 @@ int gmx_mdrun(int argc, char *argv[])
     builder.addReplicaExchange(options.replExParams);
     // \todo take ownership of multisim resources (ms)
     builder.addMultiSim(options.ms);
+    builder.addCommunicationRecord(simulationContext.communicationRecord_.get());
     // \todo Provide parallelism resources through SimulationContext.
     // Need to establish run-time values from various inputs to provide a resource handle to Mdrunner
     builder.addHardwareOptions(options.hw_opt);

@@ -52,6 +52,7 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/domdec/options.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 
@@ -266,7 +267,7 @@ class LegacyMdrunOptions
         /*! \} */
 
         //! Handle to communication object.
-        t_commrec        *cr = nullptr;
+        CommrecHandle     cr = init_commrec();
         //! Multi-simulation object.
         gmx_multisim_t   *ms = nullptr;
 

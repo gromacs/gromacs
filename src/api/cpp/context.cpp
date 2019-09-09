@@ -171,15 +171,14 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
         StartingBehavior startingBehavior = StartingBehavior::NewSimulation;
         LogFilePtr       logFileGuard     = nullptr;
         std::tie(startingBehavior,
-                 logFileGuard) = handleRestart(options_.cr,
+                 logFileGuard) = handleRestart(options_.cr.get(),
                                                options_.ms,
                                                options_.mdrunOptions.appendingBehavior,
                                                ssize(options_.filenames),
                                                options_.filenames.data());
-        auto simulationContext = createSimulationContext(options_.cr);
+        auto simulationContext = createSimulationContext(std::move(options_.cr));
 
-        auto builder = MdrunnerBuilder(std::move(mdModules),
-                                       compat::not_null<decltype( &simulationContext)>(&simulationContext));
+        auto builder = MdrunnerBuilder(std::move(mdModules));
         builder.addSimulationMethod(options_.mdrunOptions, options_.pforce, startingBehavior);
         builder.addDomainDecomposition(options_.domdecOptions);
         // \todo pass by value
@@ -205,7 +204,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
         // Note, creation is not mature enough to be exposed in the external API yet.
         launchedSession = createSession(shared_from_this(),
                                         std::move(builder),
-                                        simulationContext,
+                                        std::move(simulationContext),
                                         std::move(logFileGuard),
                                         options_.ms);
 

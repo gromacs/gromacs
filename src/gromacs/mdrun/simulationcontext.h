@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,11 +49,7 @@
 
 #include <memory>
 
-#include "gromacs/hardware/hw_info.h"
-
-struct t_filenm;
-struct t_commrec;
-struct gmx_output_env_t;
+#include "gromacs/gmxlib/network.h"
 
 namespace gmx
 {
@@ -110,17 +106,12 @@ class SimulationContext final
          * details are subject to change as ownership semantics are clarified in future
          * development.
          */
-        explicit SimulationContext(t_commrec* communicationRecord);
+        explicit SimulationContext(CommrecHandle communicationRecord);
+        //! Move constructor
+        SimulationContext(SimulationContext && source) noexcept;
 
-        /*!
-         * \brief Non-owning communicator handle.
-         *
-         * Communication record is allocated, initialized, and finalized by
-         * client code without clearly transferring ownership.
-         *
-         * \todo Context should own communicator.
-         */
-        t_commrec*           communicationRecord_;
+        /*! \brief Communicator handle. */
+        CommrecHandle communicationRecord_;
 };
 //! \endcond
 
@@ -147,7 +138,7 @@ class SimulationContext final
  *
  * \ingroup module_mdrun
  */
-SimulationContext createSimulationContext(t_commrec* simulationCommunicator);
+SimulationContext createSimulationContext(CommrecHandle simulationCommunicator);
 //! \endcond
 
 }      // end namespace gmx

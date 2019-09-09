@@ -122,7 +122,7 @@ class SessionImpl
          */
         static std::unique_ptr<SessionImpl> create(std::shared_ptr<ContextImpl>  context,
                                                    gmx::MdrunnerBuilder        &&runnerBuilder,
-                                                   const gmx::SimulationContext &simulationContext,
+                                                   gmx::SimulationContext      &&simulationContext,
                                                    gmx::LogFilePtr               logFilehandle,
                                                    gmx_multisim_t              * multiSim);
 
@@ -189,7 +189,7 @@ class SessionImpl
          */
         SessionImpl(std::shared_ptr<ContextImpl>  context,
                     gmx::MdrunnerBuilder        &&runnerBuilder,
-                    const gmx::SimulationContext &simulationContext,
+                    gmx::SimulationContext      &&simulationContext,
                     gmx::LogFilePtr               logFilehandle,
                     gmx_multisim_t              * multiSim);
 

@@ -115,7 +115,7 @@ class ElectricFieldTest : public ::testing::Test
             std::vector<real> chargeA { 1 };
             md.homenr  = ssize(chargeA);
             md.chargeA = chargeA.data();
-            t_commrec           *cr       = init_commrec();
+            CommrecHandle        cr       = init_commrec();
             matrix               boxDummy = { {0, 0, 0}, {0, 0, 0}, {0, 0, 0} };
             ForceProviderInput   forceProviderInput({}, md, 0.0, boxDummy, *cr);
 
@@ -129,9 +129,6 @@ class ElectricFieldTest : public ::testing::Test
             ForceProviders forceProviders;
             module->initForceProviders(&forceProviders);
             forceProviders.calculateForces(forceProviderInput, &forceProviderOutput);
-
-            // Clean up
-            done_commrec(cr);
 
             FloatingPointTolerance tolerance(relativeToleranceAsFloatingPoint(1.0, 0.005));
             EXPECT_REAL_EQ_TOL(f[0][dim], expectedValue, tolerance);

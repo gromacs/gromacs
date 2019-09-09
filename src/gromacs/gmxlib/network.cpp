@@ -78,11 +78,13 @@ void gmx_fill_commrec_from_mpi(t_commrec *cr)
 #endif
 }
 
-t_commrec *init_commrec()
+CommrecHandle init_commrec()
 {
+    CommrecHandle handle;
     t_commrec    *cr;
 
     snew(cr, 1);
+    handle.reset(cr);
 
 #if GMX_LIB_MPI
     gmx_fill_commrec_from_mpi(cr);
@@ -110,7 +112,7 @@ t_commrec *init_commrec()
     cr->mpb->dbuf_alloc  = 0;
 #endif
 
-    return cr;
+    return handle;
 }
 
 void done_commrec(t_commrec *cr)

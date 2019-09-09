@@ -1084,7 +1084,6 @@ int gmx_pme_error(int argc, char *argv[])
     t_state         state;        /* The state from the tpr input file */
     gmx_mtop_t      mtop;         /* The topology from the tpr input file */
     FILE           *fp = nullptr;
-    t_commrec      *cr;
     unsigned long   PCA_Flags;
     gmx_bool        bTUNE    = FALSE;
     gmx_bool        bVerbose = FALSE;
@@ -1115,14 +1114,14 @@ int gmx_pme_error(int argc, char *argv[])
 
 #define NFILE asize(fnm)
 
-    cr         = init_commrec();
+    CommrecHandle commrecHandle = init_commrec();
+    t_commrec    *cr            = commrecHandle.get();
     PCA_Flags  = PCA_NOEXIT_ON_ARGS;
 
     if (!parse_common_args(&argc, argv, PCA_Flags,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc,
                            0, nullptr, &oenv))
     {
-        sfree(cr);
         return 0;
     }
 

@@ -187,7 +187,7 @@ Status SessionImpl::run() noexcept
 
 std::unique_ptr<SessionImpl> SessionImpl::create(std::shared_ptr<ContextImpl>  context,
                                                  gmx::MdrunnerBuilder        &&runnerBuilder,
-                                                 const gmx::SimulationContext &simulationContext,
+                                                 gmx::SimulationContext      &&simulationContext,
                                                  gmx::LogFilePtr               logFilehandle,
                                                  gmx_multisim_t              * multiSim)
 {
@@ -195,19 +195,19 @@ std::unique_ptr<SessionImpl> SessionImpl::create(std::shared_ptr<ContextImpl>  c
     // Context.
     return std::make_unique<SessionImpl>(std::move(context),
                                          std::move(runnerBuilder),
-                                         simulationContext,
+                                         std::move(simulationContext),
                                          std::move(logFilehandle),
                                          multiSim);
 }
 
 SessionImpl::SessionImpl(std::shared_ptr<ContextImpl>  context,
                          gmx::MdrunnerBuilder        &&runnerBuilder,
-                         const gmx::SimulationContext &simulationContext,
+                         gmx::SimulationContext      &&simulationContext,
                          gmx::LogFilePtr               fplog,
                          gmx_multisim_t              * multiSim) :
     context_(std::move(context)),
     mpiContextManager_(std::make_unique<MpiContextManager>()),
-    simulationContext_(simulationContext),
+    simulationContext_(std::move(simulationContext)),
     logFilePtr_(std::move(fplog)),
     multiSim_(multiSim)
 {
@@ -215,7 +215,6 @@ SessionImpl::SessionImpl(std::shared_ptr<ContextImpl>  context,
     GMX_ASSERT(mpiContextManager_, "SessionImpl invariant implies valid MpiContextManager guard.");
     GMX_ASSERT(simulationContext_.communicationRecord_, "SessionImpl invariant implies valid commrec.");
     GMX_UNUSED_VALUE(multiSim_);
-    GMX_UNUSED_VALUE(simulationContext_);
 
     // \todo Session objects can have logic specialized for the runtime environment.
 
@@ -223,6 +222,7 @@ SessionImpl::SessionImpl(std::shared_ptr<ContextImpl>  context,
     signalManager_ = std::make_unique<SignalManager>(stopHandlerBuilder.get());
     GMX_ASSERT(signalManager_, "SessionImpl invariant includes a valid SignalManager.");
 
+    runnerBuilder.addCommunicationRecord(simulationContext_.communicationRecord_.get());
     runnerBuilder.addStopHandlerBuilder(std::move(stopHandlerBuilder));
     runner_ = std::make_unique<gmx::Mdrunner>(runnerBuilder.build());
     GMX_ASSERT(runner_, "SessionImpl invariant implies valid Mdrunner handle.");
@@ -234,13 +234,13 @@ SessionImpl::SessionImpl(std::shared_ptr<ContextImpl>  context,
 
 std::shared_ptr<Session> createSession(std::shared_ptr<ContextImpl>  context,
                                        gmx::MdrunnerBuilder        &&runnerBuilder,
-                                       const gmx::SimulationContext &simulationContext,
+                                       gmx::SimulationContext      &&simulationContext,
                                        gmx::LogFilePtr               logFilehandle,
                                        gmx_multisim_t              * multiSim)
 {
     auto newSession = SessionImpl::create(std::move(context),
                                           std::move(runnerBuilder),
-                                          simulationContext,
+                                          std::move(simulationContext),
                                           std::move(logFilehandle),
                                           multiSim);
     auto launchedSession = std::make_shared<Session>(std::move(newSession));

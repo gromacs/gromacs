@@ -48,7 +48,6 @@
 #include <memory>
 
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/compat/pointers.h"
 #include "gromacs/domdec/options.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
@@ -333,21 +332,13 @@ class MdrunnerBuilder final
          * \brief Constructor requires a handle to a SimulationContext to share.
          *
          * \param mdModules  The handle to the set of modules active in mdrun
-         * \param context    The handle to run-time resources and execution environment details.
          *
          * The calling code must guarantee that the
          * pointer remains valid for the lifetime of the builder, and that the
          * resources retrieved from the context remain valid for the lifetime of
          * the runner produced.
-         *
-         * \internal
-         * \todo Find and implement appropriate abstraction layers for SimulationContext.
-         * At some point this parameter should become a constant reference or value
-         * instead of a pointer.
-         * Ref e.g. https://redmine.gromacs.org/issues/2587
          */
-        explicit MdrunnerBuilder(std::unique_ptr<MDModules>           mdModules,
-                                 compat::not_null<SimulationContext*> context);
+        explicit MdrunnerBuilder(std::unique_ptr<MDModules> mdModules);
 
         //! \cond
         MdrunnerBuilder() = delete;
@@ -456,6 +447,13 @@ class MdrunnerBuilder final
          * \todo Clarify ownership and management of multisim resources.
          */
         MdrunnerBuilder &addMultiSim(gmx_multisim_t* multisim);
+
+        /*!
+         * \brief Provide a commrec for mdrun to use.
+         *
+         * This will come from the simulation context, but differently
+         * for command-line gmx and a gmxapi Context. */
+        MdrunnerBuilder &addCommunicationRecord(t_commrec *cr);
 
         /*!
          * \brief Set MD options not owned by some other module.

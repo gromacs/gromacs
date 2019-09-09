@@ -191,7 +191,6 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char **argv, ArrayRef<co
 
 LegacyMdrunOptions::~LegacyMdrunOptions()
 {
-    done_commrec(cr);
     output_env_done(oenv);
     done_multisim(ms);
 }

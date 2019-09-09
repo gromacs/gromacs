@@ -45,6 +45,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/hardware/hw_info.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "runner.h"
@@ -52,8 +53,8 @@
 namespace gmx
 {
 //! \cond libapi
-SimulationContext::SimulationContext(t_commrec* communicationRecord) :
-    communicationRecord_(communicationRecord)
+SimulationContext::SimulationContext(CommrecHandle communicationRecord) :
+    communicationRecord_(std::move(communicationRecord))
 {
     // SimulationContext receives a valid, initialized communications record.
     // \todo Initialization of the communications record is an implementation detail
@@ -62,10 +63,15 @@ SimulationContext::SimulationContext(t_commrec* communicationRecord) :
     GMX_RELEASE_ASSERT(communicationRecord_, "SimulationContext constructor needs initialized communicationRecord");
 }
 
-SimulationContext
-createSimulationContext(t_commrec* simulationCommunicator)
+SimulationContext::SimulationContext(SimulationContext &&source) noexcept
+    : communicationRecord_(std::move(source.communicationRecord_))
 {
-    auto context = SimulationContext(simulationCommunicator);
+}
+
+SimulationContext
+createSimulationContext(CommrecHandle simulationCommunicator)
+{
+    auto context = SimulationContext(std::move(simulationCommunicator));
     return context;
 }
 //! \endcond

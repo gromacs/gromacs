@@ -72,7 +72,7 @@ namespace gmxapi
  */
 std::shared_ptr<Session> createSession(std::shared_ptr<ContextImpl>  context,
                                        gmx::MdrunnerBuilder        &&runnerBuilder,
-                                       const gmx::SimulationContext &simulationContext,
+                                       gmx::SimulationContext      &&simulationContext,
                                        gmx::LogFilePtr               logFilehandle,
                                        gmx_multisim_t              * multiSim);
 
