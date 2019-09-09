@@ -1709,12 +1709,8 @@ void init_forcerec(FILE                             *fp,
             break;
 
         case eelRF:
-            fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_REACTIONFIELD;
-            break;
-
         case eelRF_ZERO:
             fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_REACTIONFIELD;
-            GMX_RELEASE_ASSERT(ic->coulomb_modifier == eintmodEXACTCUTOFF, "With the group scheme RF-zero needs the exact cut-off modifier");
             break;
 
         case eelSWITCH:
