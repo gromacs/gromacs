@@ -272,6 +272,41 @@ def _get_mpi_ensemble_communicator(session_communicator, ensemble_size):
     return ensemble_communicator
 
 
+class _DummyCommunicator(object):
+    """Placeholder class for trivial communication resources.
+
+    Simplifies logic in this module until communications infrastructure is more robust.
+    """
+
+    def __init__(self):
+        import numpy
+        self._numpy = numpy
+
+    def Dup(self):
+        return self
+
+    def Free(self):
+        return
+
+    def Allreduce(self, send, recv):
+        logger.debug("Faking an Allreduce for ensemble of size 1.")
+        send_buffer = self._numpy.array(send, copy=False)
+        recv_buffer = self._numpy.array(recv, copy=False)
+        recv_buffer[:] = send_buffer[:]
+
+    def Get_size(self):
+        return 1
+
+    def Get_rank(self):
+        return 0
+
+    def __str__(self):
+        return '_DummyCommunicator'
+
+    def __repr__(self):
+        return '_DummyCommunicator()'
+
+
 def _acquire_communicator(communicator=None):
     """Get a workflow level communicator for the session.
 
@@ -298,32 +333,13 @@ def _acquire_communicator(communicator=None):
     gmx behavior is undefined if launched with mpiexec and without mpi4py
     """
 
-    class MockSessionCommunicator(object):
-        def Dup(self):
-            return self
-
-        def Free(self):
-            return
-
-        def Get_size(self):
-            return 1
-
-        def Get_rank(self):
-            return 0
-
-        def __str__(self):
-            return 'Basic'
-
-        def __repr__(self):
-            return 'MockSessionCommunicator()'
-
     if communicator is None:
         try:
             import mpi4py.MPI as MPI
             communicator = MPI.COMM_WORLD
         except ImportError:
             logger.info("mpi4py is not available for default session communication.")
-            communicator = MockSessionCommunicator()
+            communicator = _DummyCommunicator()
     else:
         communicator = communicator
 
@@ -362,38 +378,18 @@ def _get_ensemble_communicator(communicator, ensemble_size):
     """
     ensemble_communicator = None
 
-    class TrivialEnsembleCommunicator(object):
-        def __init__(self):
-            import numpy
-            self._numpy = numpy
-
-        def Free(self):
-            return
-
-        def Allreduce(self, send, recv):
-            logger.debug("Faking an Allreduce for ensemble of size 1.")
-            send_buffer = self._numpy.array(send, copy=False)
-            recv_buffer = self._numpy.array(recv, copy=False)
-            recv_buffer[:] = send_buffer[:]
-
-        def Get_size(self):
-            return 1
-
-        def Get_rank(self):
-            return 0
-
     # For trivial cases, don't bother trying to use MPI
     # Note: all ranks in communicator must agree on the size of the work!
-    # Note: If running with a Mock session communicator in an MPI session (user error)
+    # Note: If running with a dummy session communicator in an MPI session (user error)
     # every rank will think it is the only rank and will try to perform the
     # same work.
     if communicator.Get_size() <= 1 or ensemble_size <= 1:
-        message = "Getting TrivialEnsembleCommunicator for ensemble of size {}".format((ensemble_size))
+        message = "Getting trivial ensemble communicator for ensemble of size {}".format((ensemble_size))
         message += " for session rank {} in session communicator of size {}".format(
             communicator.Get_rank(),
             communicator.Get_size())
         logger.debug(message)
-        ensemble_communicator = TrivialEnsembleCommunicator()
+        ensemble_communicator = _DummyCommunicator()
     else:
         message = "Getting an MPI subcommunicator for ensemble of size {}".format(ensemble_size)
         message += " for session rank {} in session communicator of size {}".format(
