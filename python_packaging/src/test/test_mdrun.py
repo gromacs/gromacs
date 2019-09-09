@@ -49,18 +49,26 @@ import pytest
 import gmxapi as gmx
 from gmxapi.testsupport import withmpi_only
 
-gmx.logger.setLevel(logging.WARNING)
+# Configure the `logging` module before proceeding any further.
+gmx.logger.setLevel(logging.DEBUG)
 
-# Configure the `logging` module before and non-built-in packages start to use it.
-logging.getLogger().setLevel(logging.WARNING)
-# create console handler
-ch = logging.StreamHandler()
-ch.setLevel(logging.WARNING)
-# create formatter and add it to the handler
-formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s: %(message)s')
-ch.setFormatter(formatter)
-# add the handlers to the logger
-logging.getLogger().addHandler(ch)
+try:
+    from mpi4py import MPI
+    rank_number = MPI.COMM_WORLD.Get_rank()
+except ImportError:
+    rank_tag = ''
+    MPI = None
+else:
+    rank_tag = 'rank{}:'.format(rank_number)
+
+# Use this formatter to improve the caplog log records.
+formatter = logging.Formatter(rank_tag + '%(name)s:%(levelname)s: %(message)s')
+
+# For additional console logging, create and attach a stream handler.
+# For example:
+#    ch = logging.StreamHandler()
+#    ch.setFormatter(formatter)
+#    logging.getLogger().addHandler(ch)
 
 
 @pytest.mark.usefixtures('cleandir')
@@ -69,3 +77,33 @@ def test_run_from_tpr(spc_water_box):
 
     md = gmx.mdrun(spc_water_box)
     md.run()
+    # TODO: better handling of output on unused MPI ranks.
+
+
+@withmpi_only
+@pytest.mark.usefixtures('cleandir')
+def test_run_trivial_ensemble(spc_water_box, caplog):
+    from mpi4py import MPI
+    current_rank = MPI.COMM_WORLD.Get_rank()
+    with caplog.at_level(logging.DEBUG):
+        caplog.handler.setFormatter(formatter)
+        with caplog.at_level(logging.WARNING, 'gmxapi'), \
+                caplog.at_level(logging.DEBUG, 'gmxapi.mdrun'), \
+                caplog.at_level(logging.DEBUG, 'gmxapi.modify_input'), \
+                caplog.at_level(logging.DEBUG, 'gmxapi.read_tpr'), \
+                caplog.at_level(logging.DEBUG, 'gmxapi.simulation'):
+
+            tpr_filename = spc_water_box
+            ensemble_width = 2
+            md = gmx.mdrun([tpr_filename] * ensemble_width)
+            assert md.output.ensemble_width == ensemble_width
+            md.run()
+
+            output_directory = md.output._work_dir.result()
+            logging.info('output_directory result: {}'.format(str(output_directory)))
+            assert len(output_directory) == 2
+
+            # Note that the 'cleandir' test fixture will clean up the output directory on
+            # other ranks, so only check the current rank.
+            assert output_directory[0] != output_directory[1]
+            assert os.path.exists(output_directory[current_rank])
