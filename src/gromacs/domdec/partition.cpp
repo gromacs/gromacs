@@ -1880,7 +1880,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                                    matrix box, gmx_ddbox_t *ddbox,
                                    t_forcerec *fr,
                                    t_state *state,
-                                   PaddedVector<gmx::RVec> *f)
+                                   PaddedHostVector<gmx::RVec> *f)
 {
     int                    dim_ind, dim, dim0, dim1, dim2, dimd, nat_tot;
     int                    nzone, nzone_send, zone, zonei, cg0, cg1;
@@ -2721,28 +2721,28 @@ void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
     }
 }
 
-// TODO Remove fplog when group scheme and charge groups are gone
-void dd_partition_system(FILE                    *fplog,
-                         const gmx::MDLogger     &mdlog,
-                         int64_t                  step,
-                         const t_commrec         *cr,
-                         gmx_bool                 bMasterState,
-                         int                      nstglobalcomm,
-                         t_state                 *state_global,
-                         const gmx_mtop_t        &top_global,
-                         const t_inputrec        *ir,
-                         gmx::ImdSession         *imdSession,
-                         pull_t                  *pull_work,
-                         t_state                 *state_local,
-                         PaddedVector<gmx::RVec> *f,
-                         gmx::MDAtoms            *mdAtoms,
-                         gmx_localtop_t          *top_local,
-                         t_forcerec              *fr,
-                         gmx_vsite_t             *vsite,
-                         gmx::Constraints        *constr,
-                         t_nrnb                  *nrnb,
-                         gmx_wallcycle           *wcycle,
-                         gmx_bool                 bVerbose)
+//!\brief TODO Remove fplog when group scheme and charge groups are gone
+void dd_partition_system(FILE                        *fplog,
+                         const gmx::MDLogger         &mdlog,
+                         int64_t                      step,
+                         const t_commrec             *cr,
+                         gmx_bool                     bMasterState,
+                         int                          nstglobalcomm,
+                         t_state                     *state_global,
+                         const gmx_mtop_t            &top_global,
+                         const t_inputrec            *ir,
+                         gmx::ImdSession             *imdSession,
+                         pull_t                      *pull_work,
+                         t_state                     *state_local,
+                         PaddedHostVector<gmx::RVec> *f,
+                         gmx::MDAtoms                *mdAtoms,
+                         gmx_localtop_t              *top_local,
+                         t_forcerec                  *fr,
+                         gmx_vsite_t                 *vsite,
+                         gmx::Constraints            *constr,
+                         t_nrnb                      *nrnb,
+                         gmx_wallcycle               *wcycle,
+                         gmx_bool                     bVerbose)
 {
     gmx_domdec_t      *dd;
     gmx_domdec_comm_t *comm;

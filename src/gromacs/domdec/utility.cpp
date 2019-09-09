@@ -101,10 +101,10 @@ void check_screw_box(const matrix box)
         gmx_fatal(FARGS, "pbc=screw with non-zero box_zy is not supported");
     }
 }
-
-void dd_resize_state(t_state                 *state,
-                     PaddedVector<gmx::RVec> *f,
-                     int                      natoms)
+/*! \brief Resize the state and f*/
+void dd_resize_state(t_state                     *state,
+                     PaddedHostVector<gmx::RVec> *f,
+                     int                          natoms)
 {
     if (debug)
     {
@@ -122,10 +122,13 @@ void dd_resize_state(t_state                 *state,
     }
 }
 
-void dd_check_alloc_ncg(t_forcerec              *fr,
-                        t_state                 *state,
-                        PaddedVector<gmx::RVec> *f,
-                        int                      numChargeGroups)
+/*! \brief Enrsure fr, state and f, if != nullptr, can hold numChargeGroups
+ *         atoms for the Verlet scheme and charge groups for the group scheme.
+ */
+void dd_check_alloc_ncg(t_forcerec                  *fr,
+                        t_state                     *state,
+                        PaddedHostVector<gmx::RVec> *f,
+                        int                          numChargeGroups)
 {
     fr->cginfo.resize(numChargeGroups);
 

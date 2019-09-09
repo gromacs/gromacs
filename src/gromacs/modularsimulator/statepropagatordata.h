@@ -196,21 +196,21 @@ class StatePropagatorData final :
         int nstxout_compressed_;
 
         //! The local number of atoms
-        int                    localNAtoms_;
+        int                        localNAtoms_;
         //! The position vector
-        PaddedHostVector<RVec> x_;
+        PaddedHostVector<RVec>     x_;
         //! The position vector of the previous step
-        PaddedVector<RVec>     previousX_;
+        PaddedHostVector<RVec>     previousX_;
         //! The velocity vector
-        PaddedVector<RVec>     v_;
+        PaddedHostVector<RVec>     v_;
         //! The force vector
-        PaddedVector<RVec>     f_;
+        PaddedHostVector<RVec>     f_;
         //! The box matrix
-        matrix                 box_;
+        matrix                     box_;
         //! The box matrix of the previous step
-        matrix                 previousBox_;
+        matrix                     previousBox_;
         //! The DD partitioning count for legacy t_state compatibility
-        int                    ddpCount_;
+        int                        ddpCount_;
 
         //! Move x_ to previousX_
         void copyPosition();
@@ -225,7 +225,7 @@ class StatePropagatorData final :
         //! Get a pointer to the global state
         t_state *globalState();
         //! Get a force pointer
-        PaddedVector<gmx::RVec> *forcePointer();
+        PaddedHostVector<gmx::RVec> *forcePointer();
 
         //! Pointer to keep a backup of the state for later writeout
         std::unique_ptr<t_state> localStateBackup_;
@@ -246,9 +246,9 @@ class StatePropagatorData final :
         void write(gmx_mdoutf *outf, Step step, Time time);
 
         //! Whether we're doing VV and need to reset velocities after the first half step
-        bool               vvResetVelocities_;
+        bool                   vvResetVelocities_;
         //! Velocities backup for VV
-        PaddedVector<RVec> velocityBackup_;
+        PaddedHostVector<RVec> velocityBackup_;
         //! Function resetting the velocities
         void resetVelocities();
 

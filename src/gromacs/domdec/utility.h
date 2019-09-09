@@ -42,7 +42,7 @@
 #ifndef GMX_DOMDEC_DOMDEC_UTILITY_H
 #define GMX_DOMDEC_DOMDEC_UTILITY_H
 
-#include "gromacs/math/paddedvector.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdtypes/forcerec.h"
 
 #include "domdec_internal.h"
@@ -96,16 +96,27 @@ static inline int dd_load_count(const gmx_domdec_comm_t *comm)
     return (comm->ddSettings.eFlop ? comm->flop_n : comm->cycl_n[ddCyclF]);
 }
 
-/*! \brief Resize the state and f, if !=nullptr, to natoms */
-void dd_resize_state(t_state                 *state,
-                     PaddedVector<gmx::RVec> *f,
-                     int                      natoms);
+/*! \brief Resize the state and f, if !=nullptr, to natoms
+ *
+ * \param[in]  state   Current state
+ * \param[in]  f       The vector of forces to be resized
+ * \param[out] natoms  New number of atoms to accommodate
+ */
+void dd_resize_state(t_state                          *state,
+                     gmx::PaddedHostVector<gmx::RVec> *f,
+                     int                               natoms);
 
-/*! \brief Enrsure fr, state and f, if != nullptr, can hold numChargeGroups atoms for the Verlet scheme and charge groups for the group scheme */
-void dd_check_alloc_ncg(t_forcerec              *fr,
-                        t_state                 *state,
-                        PaddedVector<gmx::RVec> *f,
-                        int                      numChargeGroups);
+/*! \brief Enrsure fr, state and f, if != nullptr, can hold numChargeGroups atoms for the Verlet scheme and charge groups for the group scheme
+ *
+ * \param[in]  fr               Force record
+ * \param[in]  state            Current state
+ * \param[in]  f                The force buffer
+ * \param[out] numChargeGroups  Number of charged groups
+ */
+void dd_check_alloc_ncg(t_forcerec                       *fr,
+                        t_state                          *state,
+                        gmx::PaddedHostVector<gmx::RVec> *f,
+                        int                               numChargeGroups);
 
 /*! \brief Returns a domain-to-domain cutoff distance given an atom-to-atom cutoff */
 static inline real

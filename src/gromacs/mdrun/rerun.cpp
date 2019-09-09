@@ -194,23 +194,23 @@ void gmx::LegacySimulator::do_rerun()
     // alias to avoid a large ripple of nearly useless changes.
     // t_inputrec is being replaced by IMdpOptionsProvider, so this
     // will go away eventually.
-    t_inputrec             *ir   = inputrec;
-    int64_t                 step, step_rel;
-    double                  t, lam0[efptNR];
-    bool                    isLastStep               = false;
-    bool                    doFreeEnergyPerturbation = false;
-    unsigned int            force_flags;
-    tensor                  force_vir, shake_vir, total_vir, pres;
-    t_trxstatus            *status = nullptr;
-    rvec                    mu_tot;
-    t_trxframe              rerun_fr;
-    gmx_localtop_t          top;
-    PaddedVector<gmx::RVec> f {};
-    gmx_global_stat_t       gstat;
-    t_graph                *graph = nullptr;
-    gmx_shellfc_t          *shellfc;
+    t_inputrec                 *ir   = inputrec;
+    int64_t                     step, step_rel;
+    double                      t, lam0[efptNR];
+    bool                        isLastStep               = false;
+    bool                        doFreeEnergyPerturbation = false;
+    unsigned int                force_flags;
+    tensor                      force_vir, shake_vir, total_vir, pres;
+    t_trxstatus                *status = nullptr;
+    rvec                        mu_tot;
+    t_trxframe                  rerun_fr;
+    gmx_localtop_t              top;
+    PaddedHostVector<gmx::RVec> f {};
+    gmx_global_stat_t           gstat;
+    t_graph                    *graph = nullptr;
+    gmx_shellfc_t              *shellfc;
 
-    double                  cycles;
+    double                      cycles;
 
     /* Domain decomposition could incorrectly miss a bonded
        interaction, but checking for that requires a global

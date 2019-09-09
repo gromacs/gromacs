@@ -110,17 +110,17 @@
 //! Utility structure for manipulating states during EM
 typedef struct {
     //! Copy of the global state
-    t_state                 s;
+    t_state                     s;
     //! Force array
-    PaddedVector<gmx::RVec> f;
+    PaddedHostVector<gmx::RVec> f;
     //! Potential energy
-    real                    epot;
+    real                        epot;
     //! Norm of the force
-    real                    fnorm;
+    real                        fnorm;
     //! Maximum force
-    real                    fmax;
+    real                        fmax;
     //! Direction
-    int                     a_fmax;
+    int                         a_fmax;
 } em_state_t;
 
 //! Print the EM starting conditions
@@ -570,7 +570,7 @@ static void write_em_traj(FILE *fplog, const t_commrec *cr,
 // \returns true when the step succeeded, false when a constraint error occurred
 static bool do_em_step(const t_commrec *cr,
                        t_inputrec *ir, t_mdatoms *md,
-                       em_state_t *ems1, real a, const PaddedVector<gmx::RVec> *force,
+                       em_state_t *ems1, real a, const PaddedHostVector<gmx::RVec> *force,
                        em_state_t *ems2,
                        gmx::Constraints *constr,
                        int64_t count)

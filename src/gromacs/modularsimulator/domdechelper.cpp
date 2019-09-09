@@ -99,7 +99,7 @@ void DomDecHelper::setup()
 {
     std::unique_ptr<t_state> localState   = statePropagatorData_->localState();
     t_state                 *globalState  = statePropagatorData_->globalState();
-    PaddedVector<RVec>      *forcePointer = statePropagatorData_->forcePointer();
+    PaddedHostVector<RVec>  *forcePointer = statePropagatorData_->forcePointer();
 
     // constant choices for this call to dd_partition_system
     const bool     verbose       = false;
@@ -127,7 +127,7 @@ void DomDecHelper::run(Step step, Time gmx_unused time)
     }
     std::unique_ptr<t_state> localState   = statePropagatorData_->localState();
     t_state                 *globalState  = statePropagatorData_->globalState();
-    PaddedVector<RVec>      *forcePointer = statePropagatorData_->forcePointer();
+    PaddedHostVector<RVec>  *forcePointer = statePropagatorData_->forcePointer();
 
     // constant choices for this call to dd_partition_system
     const bool verbose       =

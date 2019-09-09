@@ -241,7 +241,7 @@ t_state* StatePropagatorData::globalState()
     return globalState_;
 }
 
-PaddedVector<RVec>* StatePropagatorData::forcePointer()
+PaddedHostVector<RVec>* StatePropagatorData::forcePointer()
 {
     return &f_;
 }

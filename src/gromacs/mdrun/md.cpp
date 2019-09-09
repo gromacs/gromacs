@@ -158,40 +158,40 @@ void gmx::LegacySimulator::do_md()
     // alias to avoid a large ripple of nearly useless changes.
     // t_inputrec is being replaced by IMdpOptionsProvider, so this
     // will go away eventually.
-    t_inputrec             *ir   = inputrec;
-    int64_t                 step, step_rel;
-    double                  t, t0 = ir->init_t, lam0[efptNR];
-    gmx_bool                bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
-    gmx_bool                bNS, bNStList, bStopCM,
-                            bFirstStep, bInitStep, bLastStep = FALSE;
-    gmx_bool                bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
-    gmx_bool                do_ene, do_log, do_verbose;
-    gmx_bool                bMasterState;
-    unsigned int            force_flags;
-    tensor                  force_vir = {{0}}, shake_vir = {{0}}, total_vir = {{0}},
-                            tmp_vir   = {{0}}, pres = {{0}};
-    int                     i, m;
-    rvec                    mu_tot;
-    matrix                  parrinellorahmanMu, M;
-    gmx_repl_ex_t           repl_ex = nullptr;
-    gmx_localtop_t          top;
-    PaddedVector<gmx::RVec> f {};
-    gmx_global_stat_t       gstat;
-    t_graph                *graph = nullptr;
-    gmx_shellfc_t          *shellfc;
-    gmx_bool                bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
-    gmx_bool                bTemp, bPres, bTrotter;
-    real                    dvdl_constr;
-    std::vector<RVec>       cbuf;
-    matrix                  lastbox;
-    int                     lamnew  = 0;
+    t_inputrec                 *ir   = inputrec;
+    int64_t                     step, step_rel;
+    double                      t, t0 = ir->init_t, lam0[efptNR];
+    gmx_bool                    bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
+    gmx_bool                    bNS, bNStList, bStopCM,
+                                bFirstStep, bInitStep, bLastStep = FALSE;
+    gmx_bool                    bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
+    gmx_bool                    do_ene, do_log, do_verbose;
+    gmx_bool                    bMasterState;
+    unsigned int                force_flags;
+    tensor                      force_vir     = {{0}}, shake_vir = {{0}}, total_vir = {{0}},
+                                tmp_vir       = {{0}}, pres = {{0}};
+    int                         i, m;
+    rvec                        mu_tot;
+    matrix                      parrinellorahmanMu, M;
+    gmx_repl_ex_t               repl_ex = nullptr;
+    gmx_localtop_t              top;
+    PaddedHostVector<gmx::RVec> f {};
+    gmx_global_stat_t           gstat;
+    t_graph                    *graph = nullptr;
+    gmx_shellfc_t              *shellfc;
+    gmx_bool                    bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
+    gmx_bool                    bTemp, bPres, bTrotter;
+    real                        dvdl_constr;
+    std::vector<RVec>           cbuf;
+    matrix                      lastbox;
+    int                         lamnew  = 0;
     /* for FEP */
-    int                     nstfep = 0;
-    double                  cycles;
-    real                    saved_conserved_quantity = 0;
-    real                    last_ekin                = 0;
-    t_extmass               MassQ;
-    char                    sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
+    int                         nstfep = 0;
+    double                      cycles;
+    real                        saved_conserved_quantity = 0;
+    real                        last_ekin                = 0;
+    t_extmass                   MassQ;
+    char                        sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
 
     /* PME load balancing data for GPU kernels */
     gmx_bool              bPMETune         = FALSE;

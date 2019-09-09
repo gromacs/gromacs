@@ -548,7 +548,7 @@ applyPbcAndSetMoveFlags(const gmx::UpdateGroupsCog      &updateGroupsCog,
 void dd_redistribute_cg(FILE *fplog, int64_t step,
                         gmx_domdec_t *dd, ivec tric_dir,
                         t_state *state,
-                        PaddedVector<gmx::RVec> *f,
+                        PaddedHostVector<gmx::RVec> *f,
                         t_forcerec *fr,
                         t_nrnb *nrnb,
                         int *ncg_moved)

@@ -107,8 +107,8 @@ struct gmx_shellfc_t {
     int          nflexcon;               /* The number of flexible constraints        */
 
     /* Temporary arrays, should be fixed size 2 when fully converted to C++ */
-    PaddedVector<gmx::RVec> *x;          /* Array for iterative minimization          */
-    PaddedVector<gmx::RVec> *f;          /* Array for iterative minimization          */
+    PaddedHostVector<gmx::RVec>     *x;  /* Array for iterative minimization          */
+    PaddedHostVector<gmx::RVec>     *f;  /* Array for iterative minimization          */
 
     /* Flexible constraint working data */
     rvec        *acc_dir;                /* Acceleration direction for flexcon        */
@@ -329,8 +329,8 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     }
 
     snew(shfc, 1);
-    shfc->x        = new PaddedVector<gmx::RVec>[2] {};
-    shfc->f        = new PaddedVector<gmx::RVec>[2] {};
+    shfc->x        = new PaddedHostVector<gmx::RVec>[2] {};
+    shfc->f        = new PaddedHostVector<gmx::RVec>[2] {};
     shfc->nflexcon = nflexcon;
 
     if (nshell == 0)
