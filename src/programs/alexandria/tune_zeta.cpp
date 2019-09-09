@@ -67,7 +67,7 @@
 namespace alexandria
 {
 
-class OptZeta : public MolGen
+class OptZeta : public MolGen, Bayes
 {
     using param_type = std::vector<double>;
 
@@ -78,10 +78,6 @@ class OptZeta : public MolGen
         gmx_bool       bCharge_;
         gmx_bool       bFitAlpha_;
         gmx_bool       bSameZeta_;
-
-        Bayes <double> TuneZeta_;
-        param_type     param_, lower_, upper_, best_;
-        param_type     orig_, psigma_, pmean_;
 
     public:
 
@@ -127,12 +123,12 @@ class OptZeta : public MolGen
                 pargs->push_back(pa[i]);
             }
             addOptions(pargs, etuneZETA);
-            TuneZeta_.add_pargs(pargs);
+            Bayes::add_pargs(pargs);
         }
         void optionsFinished()
         {
             MolGen::optionsFinished();
-            TuneZeta_.setBounds(weight(ermsBOUNDS) > 0);
+            Bayes::setBounds(weight(ermsBOUNDS) > 0);
         }
 
         double l2_regularizer (double x,
@@ -144,13 +140,11 @@ class OptZeta : public MolGen
 
         void polData2TuneZeta();
 
-        void tuneZeta2PolData();
+        void toPolData(const std::vector<bool> gmx_unused &changed);
 
         void InitOpt(real factor);
 
-        void calcDeviation();
-
-        double objFunction(const double v[]);
+        virtual double calcDeviation();
 
         void optRun(FILE                   *fp,
                     FILE                   *fplog,
@@ -162,7 +156,6 @@ class OptZeta : public MolGen
 
 void OptZeta::polData2TuneZeta()
 {
-    param_.clear();
     auto *ic = indexCount();
     auto  pd = poldata();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
@@ -175,7 +168,7 @@ void OptZeta::polData2TuneZeta()
             auto zeta  = ei->getZeta(nzeta-1); // only optimize zeta for the shell of the polarizable model
             if (0 != zeta)
             {
-                param_.push_back(std::move(zeta));
+                Bayes::addParam(zeta);
             }
             else
             {
@@ -191,7 +184,7 @@ void OptZeta::polData2TuneZeta()
                 {
                     if (0 != alpha)
                     {
-                        param_.push_back(std::move(alpha));
+                        Bayes::addParam(alpha);
                     }
                     else
                     {
@@ -204,7 +197,7 @@ void OptZeta::polData2TuneZeta()
     }
 }
 
-void OptZeta::tuneZeta2PolData()
+void OptZeta::toPolData(const std::vector<bool> gmx_unused &changed)
 {
     int      n = 0;
     char     zstr[STRLEN];
@@ -323,13 +316,23 @@ void OptZeta::InitOpt(real  factor)
     }
 }
 
-void OptZeta::calcDeviation()
+double OptZeta::calcDeviation()
 {
-    int    j;
-    double qtot = 0;
-    real   rrms = 0;
-    real   wtot = 0;
+    int    j, n   = 0;
+    double qtot   = 0;
+    real   rrms   = 0;
+    real   wtot   = 0;
+    double bounds = 0;
+    auto *ic = indexCount();
+    for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
+    {
+        if (!ai->isConst())
+        {
+            auto zeta = param_[n++];
+            bounds   += l2_regularizer(zeta, zetaMin(), zetaMax());
 
+        }
+    }
     if (PAR(commrec()))
     {
         bool bFinal = final();
@@ -427,32 +430,6 @@ void OptZeta::calcDeviation()
     sumEnergies();
     normalizeEnergies();
     printEnergies(debug);
-}
-
-double OptZeta::objFunction(const double v[])
-{
-    double bounds  = 0;
-    int    n       = 0;
-
-    auto   np = param_.size();
-    for (size_t i = 0; i < np; i++)
-    {
-        param_[i] = v[i];
-    }
-    tuneZeta2PolData();
-    auto *ic = indexCount();
-    for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
-    {
-        if (!ai->isConst())
-        {
-            auto zeta = param_[n++];
-            bounds   += l2_regularizer(zeta, zetaMin(), zetaMax());
-
-        }
-    }
-    calcDeviation();
-    increaseEnergy(ermsBOUNDS, bounds);
-    increaseEnergy(ermsTOT, bounds);
     return energy(ermsTOT);
 }
 
@@ -468,7 +445,7 @@ void OptZeta::optRun(FILE                   *fp,
     gmx_bool            bMinimum = false;
 
     auto                func = [&] (const double v[]) {
-            return objFunction(v);
+                                   return Bayes::objFunction(v);
         };
     if (MASTER(commrec()))
     {
@@ -476,12 +453,12 @@ void OptZeta::optRun(FILE                   *fp,
         {
             for (int dest = 1; dest < commrec()->nnodes; dest++)
             {
-                gmx_send_int(commrec(), dest, (nrun*TuneZeta_.maxIter()*param_.size()));
+                gmx_send_int(commrec(), dest, (nrun*Bayes::maxIter()*param_.size()));
             }
         }
         chi2 = chi2_min = GMX_REAL_MAX;
-        TuneZeta_.setFunc(func, param_, lower_, upper_, &chi2);
-        TuneZeta_.Init(xvgconv, xvgepot, oenv);
+        Bayes::setFunc(func, &chi2);
+        Bayes::Init(xvgconv, xvgepot, oenv);
 
         for (auto n = 0; n < nrun; n++)
         {
@@ -489,27 +466,19 @@ void OptZeta::optRun(FILE                   *fp,
             {
                 fprintf(fp, "\nStarting run %d out of %d\n", n, nrun);
             }
-            TuneZeta_.MCMC();
-            TuneZeta_.getBestParam(optb);
-            TuneZeta_.getPsigma(opts);
-            TuneZeta_.getPmean(optm);
+            Bayes::MCMC();
             if (chi2 < chi2_min)
             {
                 bMinimum = true;
-                for (size_t k = 0; k < param_.size(); k++)
-                {
-                    best_[k]   = optb[k];
-                    pmean_[k]  = optm[k];
-                    psigma_[k] = opts[k];
-                }
                 chi2_min = chi2;
             }
-            TuneZeta_.setParam(best_);
         }
         if (bMinimum)
         {
-            param_    = best_;
-            auto emin = objFunction(best_.data());
+            auto best   = Bayes::getBestParam();
+            auto psigma = Bayes::getPsigma();
+            auto pmean  = Bayes::getPmean();
+            auto emin   = Bayes::objFunction(best.data());
             if (fplog)
             {
                 fprintf(fplog, "\nMinimum rmsd value during optimization: %.3f.\n", sqrt(emin));
@@ -517,7 +486,7 @@ void OptZeta::optRun(FILE                   *fp,
                 for (size_t k = 0; k < param_.size(); k++)
                 {
                     fprintf(fplog, "Parameter %3zu  Best value:%10g  Mean value:%10g  Sigma:%10g\n",
-                            k, best_[k], pmean_[k], psigma_[k]);
+                            k, best[k], pmean[k], psigma[k]);
                 }
             }
         }
@@ -534,7 +503,7 @@ void OptZeta::optRun(FILE                   *fp,
     setFinal();
     if (MASTER(commrec()))
     {
-        chi2 = objFunction(best_.data());
+        chi2 = Bayes::objFunction(best_.data());
         printEnergies(fp);
         printEnergies(fplog);
     }
@@ -708,12 +677,6 @@ int alex_tune_zeta(int argc, char *argv[])
              true,
              tabfn);
 
-    if (nullptr != fp)
-    {
-        fprintf(fp, "In the total data set of %zu molecules we have:\n",
-                opt.mymols().size());
-    }
-
     if (bOptimize)
     {
         if (MASTER(opt.commrec()))
@@ -740,7 +703,6 @@ int alex_tune_zeta(int argc, char *argv[])
                              opt.poldata(),
                              opt.mdlog(),
                              opt.atomprop(),
-                             eqgESP,
                              opt.watoms(),
                              opt.hfac(),
                              opt.lot(),

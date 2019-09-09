@@ -179,14 +179,13 @@ void MolEnergy::setTerms(real term[F_NRE])
     }
 }
 
-class Optimization : public MolGen
+class Optimization : public MolGen, Bayes
 {
     using param_type = std::vector<double>;
 
     private:
         std::vector<ForceConstants> ForceConstants_;
         std::vector<NonBondParams>  NonBondParams_;
-        param_type                  param_;
         std::vector<int>            iOpt_;
         bool                        optimizeGeometry_;
         std::vector<PoldataUpdate>  poldataUpdates_;
@@ -194,7 +193,7 @@ class Optimization : public MolGen
         bool                        bDissoc_    = true;
         real                        w_dhf_      = 1;
         const char                 *lot_        = nullptr;
-        Bayes <double>              TuneFc_;
+        bool                        calcAll_    = false;
         // Map from molid to MolEnergy
         std::map<int, MolEnergy>    MolEnergyMap_;
     public:
@@ -229,8 +228,10 @@ class Optimization : public MolGen
         void optionsFinished()
         {
             MolGen::optionsFinished();
-            TuneFc_.setBounds(weight(ermsBOUNDS) > 0);
+            setBounds(weight(ermsBOUNDS) > 0);
         }
+
+        void setCalcAll(bool calcAll) { calcAll_ = calcAll; }
 
         //! \brief Return the level of theory used as reference
         const char *lot() const { return lot_; }
@@ -258,7 +259,7 @@ class Optimization : public MolGen
          *
          * \param[in] changed Boolean list stating whether a parameter has changed
          */
-        void tuneFc2PolData(const std::vector<bool> &changed);
+        void toPolData(const std::vector<bool> &changed);
 
         /*! \brief
          * Broadcast changes in Poldata to the
@@ -326,19 +327,8 @@ class Optimization : public MolGen
                             bool  bMtop);
         /*! \brief
          * Compute the deviation from the reference energies etc.
-         * \param[in] calcAll Calculate deviation for all compounds
          */
-        void calcDeviation(bool calcAll);
-
-        /*! \brief
-         * Objective function for parameter optimization
-         * \param[in] v Array of parameters.
-         * \return Total value (chi2) corresponding to deviation
-         */
-        double objFunction(const double v[]);
-
-        //! \brief Return number of parameters
-        size_t nParams() const { return param_.size(); }
+        virtual double calcDeviation();
 
         /*! \brief
          * Send the information from this processor to destination
@@ -441,7 +431,7 @@ void Optimization::add_pargs(std::vector<t_pargs> *pargs)
         pargs->push_back(pa[i]);
     }
     addOptions(pargs, etuneFC);
-    TuneFc_.add_pargs(pargs);
+    Bayes::add_pargs(pargs);
 }
 
 void Optimization::broadcastPoldataUpdate()
@@ -678,18 +668,17 @@ void Optimization::checkSupport(FILE *fp)
 
 void Optimization::polData2TuneFc()
 {
-    param_.clear();
     for (auto &fc : ForceConstants_)
     {
         for (auto b = fc.beginBN(); b  < fc.endBN(); ++b)
         {
             if (optimizeGeometry_)
             {
-                param_.push_back(b->geometry());
+                Bayes::addParam(b->geometry());
             }
             for (const auto &p : b->paramValues())
             {
-                param_.push_back(p);
+                Bayes::addParam(p);
             }
         }
     }
@@ -699,21 +688,22 @@ void Optimization::polData2TuneFc()
         {
             for (const auto &p : at->paramValues())
             {
-                param_.push_back(p);
+                Bayes::addParam(p);
             }
         }
     }
     if (debug)
     {
         fprintf(debug, "poldata2TuneFc: Copied %zu parameters.\n",
-                param_.size());
+                Bayes::nParam());
     }
 }
 
-void Optimization::tuneFc2PolData(const std::vector<bool> &changed)
+void Optimization::toPolData(const std::vector<bool> &changed)
 {
     size_t n   = 0;
     poldataUpdates_.clear();
+    auto param = Bayes::getParam();
     for (auto &fc : ForceConstants_)
     {
         const auto iType = fc.interactionType();
@@ -726,12 +716,12 @@ void Optimization::tuneFc2PolData(const std::vector<bool> &changed)
             if (optimizeGeometry_)
             {
                 bondChanged = changed[n];
-                geometry    = param_[n++]; 
+                geometry    = param[n++]; 
             }
             for (size_t p = 0; p < b->nParams(); p++)
             {
                 bondChanged = bondChanged || changed[n];
-                paramString.append(gmx::formatString(" %g", param_[n++]));
+                paramString.append(gmx::formatString(" %g", param[n++]));
             }
             if (bondChanged)
             {
@@ -753,7 +743,7 @@ void Optimization::tuneFc2PolData(const std::vector<bool> &changed)
             for (size_t p = 0; p < at->nParams(); p++)
             {
                 bondChanged = bondChanged || changed[n];
-                paramString.append(gmx::formatString(" %g", param_[n++]));
+                paramString.append(gmx::formatString(" %g", param[n++]));
             }
             if (bondChanged)
             {
@@ -765,7 +755,7 @@ void Optimization::tuneFc2PolData(const std::vector<bool> &changed)
             }
         }
     }
-    GMX_RELEASE_ASSERT(n == param_.size(), "Number of parameters set should be equal to the length of the parameter array");
+    GMX_RELEASE_ASSERT(n == param.size(), "Number of parameters set should be equal to the length of the parameter array");
 }
 
 void Optimization::getDissociationEnergy(FILE *fplog)
@@ -925,16 +915,12 @@ void Optimization::InitOpt(FILE *fplog)
     NonBondParams_.push_back(std::move(nbp));
 
     polData2TuneFc();
-
-    if (factor_ < 1)
-    {
-        factor_ = 1/factor_;
-    }
+    Bayes::setParamBounds(factor_);
 }
 
-void Optimization::calcDeviation(bool calcAll)
+double Optimization::calcDeviation()
 {
-    if (!calcAll)
+    if (!calcAll_)
     {
         if (PAR(commrec()))
         {
@@ -946,14 +932,9 @@ void Optimization::calcDeviation(bool calcAll)
         pUpd.execute(poldata());
     }
     poldataUpdates_.clear();
-    if (calcAll && debug)
+    if (calcAll_)
     {
-        fprintf(debug, "params: ");
-        for (size_t k = 0; k < param_.size(); k++)
-        {
-            fprintf(debug, " %g", param_[k]);
-        }
-        fprintf(debug, "\n");
+        Bayes::dumpParam(debug);
     }
     for (auto &mem : MolEnergyMap_)
     {
@@ -963,7 +944,7 @@ void Optimization::calcDeviation(bool calcAll)
     for (auto &mymol : mymols())
     {
         if ((mymol.eSupp_ == eSupportLocal) ||
-            (calcAll && (mymol.eSupp_ == eSupportRemote)))
+            (calcAll_ && (mymol.eSupp_ == eSupportRemote)))
         {
             int      nSP    = 0, nOpt = 0;
             int      natoms = mymol.topology_->atoms.nr;
@@ -1096,7 +1077,7 @@ void Optimization::calcDeviation(bool calcAll)
     for (auto &mymol : mymols())
     {
         if ((mymol.eSupp_ == eSupportLocal) ||
-            (calcAll && (mymol.eSupp_ == eSupportRemote)))
+            (calcAll_ && (mymol.eSupp_ == eSupportRemote)))
         {
             int  molid          = mymol.molProp()->getIndex();
             auto molEnergyEntry = MolEnergyMap_.find(molid);
@@ -1124,7 +1105,7 @@ void Optimization::calcDeviation(bool calcAll)
         fprintf(debug, "%d: ePot2 = %g nCalc = %g\n",
                 commrec()->nodeid, ePot2, nCalc);
     }
-    if (!calcAll && PAR(commrec()))
+    if (!calcAll_ && PAR(commrec()))
     {
         gmx_sumd(1, &ePot2, commrec());
         gmx_sumd(1, &nCalc, commrec());
@@ -1138,22 +1119,7 @@ void Optimization::calcDeviation(bool calcAll)
     //setEnergy(ermsEPOT, chi2);
     setEnergy(ermsTOT, chi2);
     printEnergies(debug);
-}
-
-double Optimization::objFunction(const double v[])
-{
-    size_t            np = param_.size();
-    std::vector<bool> changed(np, false);
-    for (size_t i = 0; i < np; i++)
-    {
-        if (param_[i] != v[i])
-        {
-            param_[i]  = v[i];
-            changed[i] = true;
-        }
-    }
-    tuneFc2PolData(changed);
-    calcDeviation(final());
+    
     return energy(ermsTOT);
 }
 
@@ -1169,57 +1135,47 @@ bool Optimization::optRun(FILE                   *fplog,
         {
             // Tell the slave nodes how many times they have
             // to run calcDeviation.
-            int niter = 2+TuneFc_.maxIter()*param_.size();
+            int niter = 2+Bayes::maxIter()*Bayes::nParam();
             for (int dest = 1; dest < commrec()->nnodes; dest++)
             {
                 gmx_send_int(commrec(), dest, niter);
             }
         }
-        std::vector<double> pmean, psigma, best;
-        pmean.resize(param_.size(), 0.0);
-        psigma.resize(param_.size(), 0.0);
-        best.resize(param_.size(), 0.0);
-
-        double   chi2_min = objFunction(param_.data());
+        auto     param    = Bayes::getParam();
+        double   chi2_min = Bayes::objFunction(param.data());
         double   chi2     = chi2_min;
 
         {
             std::vector<double> lower, upper;
             auto                func = [&] (const double v[]) {
-                    return objFunction(v);
+                                           return Bayes::objFunction(v);
                 };
-            lower.resize(param_.size(), 0);
-            upper.resize(param_.size(), 0);
-            for (size_t i = 0; (i < param_.size()); i++)
-            {
-                lower[i] = param_[i]/factor_;
-                upper[i] = param_[i]*factor_;
-            }
-            TuneFc_.setFunc(func, param_, lower, upper, &chi2);
-            TuneFc_.Init(xvgconv, xvgepot, oenv);
+            Bayes::setFunc(func, &chi2);
+            Bayes::setOutputFiles(xvgconv, xvgepot, oenv);
         }
-        TuneFc_.MCMC();
+        Bayes::MCMC();
         if (chi2 < chi2_min)
         {
             chi2_min = chi2;
             bMinimum = true;
-            TuneFc_.getBestParam(best);
-            TuneFc_.getPsigma(psigma);
-            TuneFc_.getPmean(pmean);
-            // For next run of optimization we start from the best.
-            //TuneFc_.setParam(best);
+            auto best   = Bayes::getBestParam();
+            auto psigma = Bayes::getPsigma();
+            auto pmean  = Bayes::getPmean();
 
             // This call copies data to poldata as well.
             setFinal();
-            double chi2 = objFunction(best.data());
+            double chi2 = Bayes::objFunction(best.data());
             if (fplog)
             {
+                auto pmean  = Bayes::getPmean();
+                auto psigma = Bayes::getPsigma();
+                auto best   = Bayes::getBestParam();
                 fprintf(fplog, "\nLowest RMSD value during optimization: %g.\n",
                         std::sqrt(chi2));
                 fprintf(fplog, "Parameters after the optimization:\n");
                 fprintf(fplog, "%-5s  %10s  %10s  %10s\n", "Index",
                         "Average", "Std. Dev.", "Optimum");
-                for (size_t k = 0; k < param_.size(); k++)
+                for (size_t k = 0; k < Bayes::nParam(); k++)
                 {
                     fprintf(fplog, "%5zu  %10g  %10g  %10g\n",
                             k, pmean[k], psigma[k], best[k]);
@@ -1234,7 +1190,8 @@ bool Optimization::optRun(FILE                   *fplog,
         int niter = gmx_recv_int(commrec(), 0);
         for (int n = 0; n < niter; n++)
         {
-            calcDeviation(false);
+            calcAll_ = false;
+            (void) calcDeviation();
         }
     }
     return bMinimum;
@@ -1549,13 +1506,7 @@ int alex_tune_fc(int argc, char *argv[])
              false,
              tabfn);
 
-
     opt.checkSupport(fplog);
-
-    if (nullptr != fplog)
-    {
-        fprintf(fplog, "In the total data set of %zu molecules we have:\n", opt.mymols().size());
-    }
 
     if (MASTER(opt.commrec()))
     {
@@ -1567,18 +1518,20 @@ int alex_tune_fc(int argc, char *argv[])
 
     if (bTestPar)
     {
-        opt.calcDeviation(false);
+        opt.setCalcAll(false);
+        auto chi2 = opt.calcDeviation();
         if (MASTER(opt.commrec()))
         {
-            fprintf(fplog, "chi2 = %g\n", opt.energy(ermsTOT));
+            fprintf(fplog, "chi2 = %g\n", chi2);
             opt.printResults(fplog, (char *)"Before optimization - parallel test",
                              nullptr, nullptr, oenv);
         }
     }
     if (MASTER(opt.commrec()))
     {
-        opt.calcDeviation(true);
-        fprintf(fplog, "chi2 = %g\n", opt.energy(ermsTOT));
+        opt.setCalcAll(true);
+        auto chi2 = opt.calcDeviation();
+        fprintf(fplog, "chi2 = %g\n", chi2);
         opt.printResults(fplog, (char *)"Before optimization",
                          nullptr, nullptr, oenv);
     }

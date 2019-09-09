@@ -54,8 +54,7 @@ namespace alexandria
 void QgenAcm::setInfo(const Poldata            *pd,
                       t_atoms                  *atoms,
                       double                    hfac,
-                      int                       qtotal,
-                      bool                      haveShell)
+                      int                       qtotal)
 {
     int          i, j, k, atm, nz;
     bool         bSupport = true;
@@ -64,7 +63,7 @@ void QgenAcm::setInfo(const Poldata            *pd,
     iChargeModel_   = pd->getChargeModel();
     bWarned_        = false;
     bAllocSave_     = false;
-    bHaveShell_     = haveShell;
+    bHaveShell_     = getEemtypePolarizable(iChargeModel_);
     eQGEN_          = eQGEN_OK;
     hardnessFactor_ = 1;
     chieq_          = 0;
@@ -143,7 +142,7 @@ void QgenAcm::setInfo(const Poldata            *pd,
                     snprintf(buf, sizeof(buf), "Row should be at least 1. Here: atype = %s q = %g zeta = %g row = %d model = %s",
                              atp.c_str(), q_[j][k], zeta_[j][k], row_[j][k],
                              getEemtypeName(iChargeModel_));
-                    #if HAVE_LIBCLN
+#if HAVE_LIBCLN
                     if (row_[j][k] > SLATER_MAX_CLN)
                     {
                         if (debug)
@@ -155,7 +154,7 @@ void QgenAcm::setInfo(const Poldata            *pd,
                         }
                         row_[j][k] = SLATER_MAX_CLN;
                     }
-                    #else
+#else
                     if (row_[j][k] > SLATER_MAX)
                     {
                         if (debug)
@@ -167,7 +166,7 @@ void QgenAcm::setInfo(const Poldata            *pd,
                         }
                         row_[j][k] = SLATER_MAX;
                     }
-                    #endif
+#endif
                 }
                 j++;
             }

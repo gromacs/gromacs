@@ -72,8 +72,8 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Optimize parameters of the EEM algorithm");
     registerModule(manager, &alex_tune_pol, "tune_pol",
                    "Optimize atomic polarizabilities");
-    registerModule(manager, &alex_tune_zeta, "tune_zeta",
-                   "Optimize the distribution of Gaussian and Slater charges");
+    //    registerModule(manager, &alex_tune_zeta, "tune_zeta",
+    //             "Optimize the distribution of Gaussian and Slater charges");
     registerModule(manager, &alex_bastat, "bastat",
                    "Deduce bond/angle/dihedral distributions from a set of strucures");
     registerModule(manager, &alex_analyze, "analyze",
@@ -104,7 +104,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
             manager->addModuleGroup("Alexandria core tools");
         group.addModule("bastat");
         group.addModule("tune_pol");
-        group.addModule("tune_zeta");
+        //group.addModule("tune_zeta");
         group.addModule("tune_eem");
         group.addModule("tune_fc");
         group.addModule("gauss2molprop");

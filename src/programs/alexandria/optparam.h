@@ -93,9 +93,15 @@ class OptParam
          */
         void add_pargs(std::vector<t_pargs> *pargs);
 
-        void Init(const char             *xvgconv,
-                  const char             *xvgepot,
-                  const gmx_output_env_t *oenv);
+        /*! \brief
+         * Set the output file names
+         * \param[in] xvgconv The parameter convergence
+         * \param[in] xvgepot The chi2 value
+         * \param[in] oenv    GROMACS utility structure
+         */
+        void setOutputFiles(const char             *xvgconv,
+                            const char             *xvgepot,
+                            const gmx_output_env_t *oenv);
 
         /*! \brief Compute and return the Boltzmann factor
          *
@@ -139,10 +145,10 @@ class OptParam
         const gmx_output_env_t *oenv() const { return oenv_; }
 };
 
-template <class T> class Bayes : public OptParam
+class Bayes : public OptParam
 {
-    using func_t = std::function<T(T v[])>;
-    using parm_t = std::vector<T>;
+    using func_t = std::function<double (double v[])>;
+    using parm_t = std::vector<double>;
 
     private:
         func_t  func_;
@@ -152,19 +158,28 @@ template <class T> class Bayes : public OptParam
         parm_t  lowerBound_;
         parm_t  upperBound_;
         parm_t  bestParam_;
-        T      *minEval_;
+        double *minEval_;
 
     public:
 
         Bayes() {}
 
-        void setFunc(func_t func_, parm_t param_, parm_t lowerBound_, parm_t upperBound_, T *minEval_);
+        void setFunc(func_t func_, 
+                     double *minEval_);
 
+        /*! \brief 
+         * Finalizes the parameter setup, that means this should be
+         * called after the last "addParam" call.
+         * Routine will copy the current parameters to the
+         * best parameters.
+         * Set the bounds for the optimization between 
+         * 1/factor and factor times the starting value.
+         * Will fail an assertion when factor <= 0
+         * \param[in] factor The scaling factor
+         */
+        void setParamBounds(real factor);
+        
         void setParam(parm_t param);
-
-        void setLowerBound(parm_t lowerBound);
-
-        void setUpperBound(parm_t upperBound);
 
         /*! \brief
          * Change parameter j based on a random unmber
@@ -172,20 +187,53 @@ template <class T> class Bayes : public OptParam
          */
         void changeParam(int j, real rand);
 
-        /*! \brief
-         * Returns the vecor of best found value for each parameter.
-         */
-        void getBestParam(parm_t &bestParam);
+        //! \brief Return the number of parameters
+        size_t nParam() const { return param_.size(); }
 
         /*! \brief
-         * Returns the vecor of mean value calculated for each parameter.
+         * Dump the current parameters to a FILE if not nullptr
+         * \param[in] fp The file pointer
          */
-        void getPmean(parm_t &pmean);
+        void dumpParam(FILE *fp);        
+        /*! \brief
+         * Append parameter and set it to value
+         * \param[val] The value
+         */
+        void addParam(real val)
+        {
+            param_.push_back(val);
+        }
 
         /*! \brief
-         * Returns the vecor of standard deviation calculated for each parameter.
+         * Set parameter j to a new value
+         * \param[j]   Index
+         * \param[val] The new value
          */
-        void getPsigma(parm_t &psigma);
+        void setParam(size_t j, real val)
+        {
+            GMX_RELEASE_ASSERT(j < param_.size(), "Parameter out of range");
+            param_[j] = val;
+        }
+
+        /*! \brief
+         * Returns the current vector of parameters.
+         */
+        const parm_t &getParam() const { return param_; }
+
+        /*! \brief
+         * Returns the vector of best found value for each parameter.
+         */
+        const parm_t &getBestParam() const { return bestParam_; }
+
+        /*! \brief
+         * Returns the vector of mean value calculated for each parameter.
+         */
+        const parm_t &getPmean() const { return pmean_; }
+
+        /*! \brief
+         * Returns the vector of standard deviation calculated for each parameter.
+         */
+        const parm_t &getPsigma() const { return psigma_; };
 
         /*! \brief
          * Run the Markov chain Monte carlo (MCMC) simulation
@@ -199,307 +247,22 @@ template <class T> class Bayes : public OptParam
          */
         void DRAM();
 
-        ~Bayes() {};
+        /*! \brief
+         * Copy the optimization parameters to the poldata structure
+         * \param[in] List over the parameters that have changed.
+         */
+        virtual void toPolData(const std::vector<bool> &changed) = 0;
+
+        //! Compute the chi2 from the target function
+        virtual double calcDeviation() = 0;
+
+        /*! \brief
+         * Objective function for parameter optimization
+         * \param[in] v Array of parameters.
+         * \return Total value (chi2) corresponding to deviation
+         */
+        double objFunction(const double v[]);
 };
-
-template <class T>
-void Bayes<T>::setFunc(func_t func,
-                       parm_t param,
-                       parm_t lowerBound,
-                       parm_t upperBound,
-                       T     *minEval)
-{
-    func_       = func;
-    param_      = param;
-    lowerBound_ = lowerBound;
-    upperBound_ = upperBound;
-    bestParam_  = param;
-    minEval_    = minEval;
-}
-
-template <class T>
-void Bayes<T>::setParam(parm_t param)
-{
-    param_ = param;
-}
-
-template <class T>
-void Bayes<T>::setLowerBound(parm_t lowerBound)
-{
-    lowerBound_ = lowerBound;
-}
-
-template <class T>
-void Bayes<T>::setUpperBound(parm_t upperBound)
-{
-    upperBound_ = upperBound;
-}
-
-template <class T>
-void Bayes<T>::getBestParam(parm_t &bestParam)
-{
-    bestParam = bestParam_;
-}
-    
-template <class T>
-void Bayes<T>::getPmean(parm_t &pmean)
-{
-    pmean = pmean_;
-}
-
-template <class T>
-void Bayes<T>::getPsigma(parm_t &psigma)
-{
-    psigma = psigma_;
-}
-
-template <class T>
-void Bayes<T>::changeParam(int j, real rand)
-{
-    real delta = (2*rand-1)*step()*fabs(param_[j]);
-    param_[j] += delta;
-    if (bounds())
-    {
-        if (param_[j] < lowerBound_[j])
-        {
-            param_[j] = lowerBound_[j];
-        }
-        else if (param_[j] > upperBound_[j])
-        {
-            param_[j] = upperBound_[j];
-        }
-    }
-}
-
-template <class T>
-void Bayes<T>::MCMC()
-{
-    T                                storeParam;
-    int                              nsum            = 0;
-    int                              nParam          = 0; 
-    double                           currEval        = 0;
-    double                           prevEval        = 0;
-    double                           deltaEval       = 0;
-    double                           randProbability = 0;
-    double                           mcProbability   = 0; 
-    double                           halfIter        = maxIter()/2;   
-    parm_t                           sum, sum_of_sq;
-    
-    FILE                            *fpc             = nullptr;
-    FILE                            *fpe             = nullptr;
-    
-    std::random_device               rd;
-    std::mt19937                     gen(rd());
-    std::uniform_real_distribution<> uniform(0, 1);
-
-    if (nullptr != xvgConv())
-    {
-        fpc = xvgropen(xvgConv(), "Parameter convergence", "iteration", "", oenv());
-    }
-    if (nullptr != xvgEpot())
-    {
-        fpe = xvgropen(xvgEpot(), "Parameter energy", "iteration", "\\f{12}c\\S2\\f{4}", oenv());
-    }
-
-    nParam = param_.size();
-    sum.resize(nParam, 0);
-    sum_of_sq.resize(nParam, 0);
-    pmean_.resize(nParam, 0);
-    psigma_.resize(nParam, 0);
-    
-    prevEval  = func_(param_.data());
-    *minEval_ = prevEval;
-    if (debug)
-    {
-        fprintf(debug, "Initial chi2 value = %g\n", prevEval);
-    }
-    for (int iter = 0; iter < nParam*maxIter(); iter++)
-    {
-        double beta = computeBeta(iter/nParam);
-        int       j = static_cast<int>(std::round((1+uniform(gen))*nParam)) % nParam; // Pick random parameter to change
-        
-        storeParam = param_[j];
-        changeParam(j, uniform(gen));
-        currEval        = func_(param_.data());
-        deltaEval       = currEval-prevEval;
-        randProbability = uniform(gen);
-        mcProbability   = exp(-beta*deltaEval);
-        
-        if ((deltaEval < 0) || (mcProbability > randProbability))
-        {
-            if (currEval < *minEval_)
-            {
-                bestParam_ = param_;
-                *minEval_  = currEval;
-                if (debug)
-                {
-                    fprintf(debug, "New minimum at %g", currEval);
-                    for(int k = 0; k < nParam; k++)
-                    {
-                        fprintf(debug, " %g", bestParam_[k]);
-                    }
-                    fprintf(debug, "\n");
-                }
-            }
-            prevEval = currEval;
-        }
-        else
-        {
-            param_[j] = storeParam;
-        }
-        double xiter = (1.0*iter)/nParam;
-        if (nullptr != fpc)
-        {
-            fprintf(fpc, "%8f", xiter);
-            for (auto value : param_)
-            {
-                fprintf(fpc, "  %10g", value);
-            }
-            fprintf(fpc, "\n");
-            fflush(fpc);
-        }
-        if (nullptr != fpe)
-        {
-            fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
-            fflush(fpe);
-        }
-        if (iter >= halfIter)
-        {
-            for (auto k = 0; k < nParam; k++)
-            {
-                sum[k]       += param_[k];
-                sum_of_sq[k] += gmx::square(param_[k]);
-            }
-            nsum++;
-        }
-    }
-    if (nsum > 0)
-    {
-        for (auto k = 0; k < nParam; k++)
-        {
-            pmean_[k]     = (sum[k]/nsum);
-            sum_of_sq[k] /= nsum;
-            psigma_[k]    = sqrt(sum_of_sq[k]-gmx::square(pmean_[k]));
-        }
-    }
-    if (nullptr != fpc)
-    {
-        xvgrclose(fpc);
-    }
-    if (nullptr != fpe)
-    {
-        xvgrclose(fpe);
-    }
-}
-
-template <class T>
-void Bayes<T>::DRAM()
-{
-    T                                storeParam;
-    int                              nsum            = 0;
-    int                              nParam          = 0; 
-    double                           currEval        = 0;
-    double                           prevEval        = 0;
-    double                           deltaEval       = 0;
-    double                           randProbability = 0;
-    double                           mcProbability   = 0; 
-    double                           halfIter        = maxIter()/2;   
-    parm_t                           sum, sum_of_sq;
-    
-    FILE                            *fpc             = nullptr;
-    FILE                            *fpe             = nullptr;
-    
-    std::random_device               rd;
-    std::mt19937                     gen(rd());
-    std::uniform_real_distribution<> uniform(0, 1);
-
-    if (nullptr != xvgConv())
-    {
-        fpc = xvgropen(xvgConv(), "Parameter convergence", "iteration", "", oenv());
-    }
-    if (nullptr != xvgEpot())
-    {
-        fpe = xvgropen(xvgEpot(), "Parameter energy", "iteration", "\\f{12}c\\S2\\f{4}", oenv());
-    }
-
-    nParam = param_.size();
-    sum.resize(nParam, 0);
-    sum_of_sq.resize(nParam, 0);
-    pmean_.resize(nParam, 0);
-    psigma_.resize(nParam, 0);
-    
-    prevEval  = func_(param_.data());
-    *minEval_ = prevEval;
-    for (int iter = 0; iter < nParam*maxIter(); iter++)
-    {
-        double beta = computeBeta(iter/nParam);
-        // Pick random parameter to change
-        int       j = static_cast<int>(std::round((1+uniform(gen))*nParam)) % nParam; 
-        
-        storeParam = param_[j];
-        changeParam(j, uniform(gen));
-        currEval        = func_(param_.data());
-        deltaEval       = currEval-prevEval;
-        randProbability = uniform(gen);
-        mcProbability   = exp(-beta*deltaEval);
-        
-        if ((deltaEval < 0) || (mcProbability > randProbability))
-        {
-            if (currEval < *minEval_)
-            {
-                bestParam_ = param_;
-                *minEval_  = currEval;
-            }
-            prevEval = currEval;
-        }
-        else
-        {
-            param_[j] = storeParam;
-        }
-        double xiter = (1.0*iter)/nParam;
-        if (nullptr != fpc)
-        {
-            fprintf(fpc, "%8f", xiter);
-            for (auto value : param_)
-            {
-                fprintf(fpc, "  %10g", value);
-            }
-            fprintf(fpc, "\n");
-            fflush(fpc);
-        }
-        if (nullptr != fpe)
-        {
-            fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
-            fflush(fpe);
-        }
-        if (iter >= halfIter)
-        {
-            for (auto k = 0; k < nParam; k++)
-            {
-                sum[k]       += param_[k];
-                sum_of_sq[k] += gmx::square(param_[k]);
-            }
-            nsum++;
-        }
-    }
-    if (nsum > 0)
-    {
-        for (auto k = 0; k < nParam; k++)
-        {
-            pmean_[k]     = (sum[k]/nsum);
-            sum_of_sq[k] /= nsum;
-            psigma_[k]    = sqrt(sum_of_sq[k]-gmx::square(pmean_[k]));
-        }
-    }
-    if (nullptr != fpc)
-    {
-        xvgrclose(fpc);
-    }
-    if (nullptr != fpe)
-    {
-        xvgrclose(fpe);
-    }
-}
 
 }
 

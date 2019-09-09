@@ -54,16 +54,17 @@ typedef struct {
 extern char *opt_index_count(t_index_count *ic);
 
 enum eRMS {
-    ermsBOUNDS = 0,
-    ermsMU     = 1,
-    ermsQUAD   = 2,
-    ermsCHARGE = 3,
-    ermsESP    = 4,
-    ermsEPOT   = 5,
-    ermsForce2 = 6,
-    ermsPolar  = 7,
-    ermsTOT    = 8,
-    ermsNR     = 9
+    ermsBOUNDS  = 0,
+    ermsMU      = 1,
+    ermsQUAD    = 2,
+    ermsCHARGE  = 3,
+    ermsESP     = 4,
+    ermsEPOT    = 5,
+    ermsForce2  = 6,
+    ermsPolar   = 7,
+    ermsPENALTY = 8,
+    ermsTOT     = 9,
+    ermsNR      = 10
 };
 
 //! \brief Return string corresponding to eRMS
@@ -82,18 +83,24 @@ enum eTune {
 class AtomIndex
 {
     private:
-        std::string name_;
-        int         count_;
-        bool        const_;
+        std::string      name_;
+        int              count_;
+        bool             const_;
+        EempropsIterator eem_;
     public:
-        AtomIndex(const std::string name, bool bConst) : name_(name), count_(0), const_(bConst) {};
+        AtomIndex(const std::string name, bool bConst) :
+            name_(name), count_(0), const_(bConst) {}
 
         const std::string name() const { return name_; }
 
         int count() const { return count_; }
 
         bool isConst() const { return const_; }
-
+        
+        void setEemProps(EempropsIterator eem) { eem_ = eem; }
+    
+        EempropsIterator eemProps() const { return eem_; }
+        
         void increment() { count_++; }
 
         void decrement()
@@ -200,7 +207,6 @@ class MolGen
         IndexCount                      indexCount_;
         gmx_hw_info_t                  *hwinfo_;
         gmx_atomprop_t                  atomprop_;
-        ChargeGenerationAlgorithm       iChargeGenerationAlgorithm_;
         gmx::MDModules                  mdModules_;
         std::vector<alexandria::MyMol>  mymol_;
         const char                     *lot_;
@@ -245,9 +251,6 @@ class MolGen
 
         //! \brief Return the mutable vector of molecules
         std::vector<MyMol> &mymols() { return mymol_; }
-
-        //! \brief Return the ChargeGenerationAlgorithm
-        ChargeGenerationAlgorithm iChargeGenerationAlgorithm() const { return iChargeGenerationAlgorithm_; }
 
         //! \brief Return whether to optimize the H factor
         bool optHfac() const { return bOptHfac_; }
@@ -405,7 +408,7 @@ class MolGen
                     auto eee = energy(j);
                     if (eee > 0)
                     {
-                        fprintf(fp, "%-8s  %8.3f\n", rmsName(j), eee);
+                        fprintf(fp, "%-8s  %10.3f\n", rmsName(j), eee);
                     }
                 }
             }

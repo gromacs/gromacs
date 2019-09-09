@@ -237,7 +237,6 @@ void print_electric_props(FILE                           *fp,
                           const Poldata                  *pd,
                           const gmx::MDLogger            &fplog,
                           gmx_atomprop_t                  ap,
-                          ChargeGenerationAlgorithm       qgen,
                           real                            watoms,
                           real                            hfac,
                           const char                     *lot,
@@ -326,13 +325,10 @@ void print_electric_props(FILE                           *fp,
                                 maxESP, qtol, nullptr, nullptr);
             
             // Electrostatic potentials
-            if (qgen != eqgESP)
-            {
-                mol.Qgresp_.updateZeta(&mol.topology_->atoms, pd);                                                
-                mol.Qgresp_.updateAtomCharges(&mol.topology_->atoms);
-                mol.Qgresp_.updateAtomCoords(mol.x());                
-                mol.Qgresp_.calcPot();
-            }
+            mol.Qgresp_.updateZeta(&mol.topology_->atoms, pd);
+            mol.Qgresp_.updateAtomCharges(&mol.topology_->atoms);
+            mol.Qgresp_.updateAtomCoords(mol.x());                
+            mol.Qgresp_.calcPot();
             real rrms = 0, wtot = 0, cosangle = 0;
             auto rms  = mol.Qgresp_.getRms(&wtot, &rrms, &cosangle);
             auto espRms = convert2gmx(rms, eg2cHartree_e);         
@@ -414,29 +410,29 @@ void print_electric_props(FILE                           *fp,
                                            {
                                                return atlsq.ztype.compare(ztp) == 0;
                                            });
+                    qCalc = mol.topology_->atoms.atom[j].q;
+                    if (nullptr != mol.shellfc_)
+                    {
+                        qCalc += mol.topology_->atoms.atom[j+1].q;
+                    }                        
                     if (k != lsqt.end())
                     {
-                        qCalc = mol.topology_->atoms.atom[j].q;
-                        if (nullptr != mol.shellfc_)
-                        {
-                            qCalc += mol.topology_->atoms.atom[j+1].q;
-                        }                        
-                        gmx_stats_add_point(k->lsq, qcm5[i], qCalc, 0, 0);                           
-                        gmx_stats_add_point(lsq_charge, qcm5[i], qCalc, 0, 0);
-                        qrmsd += gmx::square(qcm5[i]-qCalc);
-                        fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
-                                mol.topology_->atoms.atom[j].atomnumber,
-                                j+1,
-                                *(mol.topology_->atoms.atomtype[j]),
-                                qCalc,
-                                mol.chargeQM(qtESP)[i],
-                                mol.chargeQM(qtCM5)[i],
-                                mol.chargeQM(qtHirshfeld)[i],
-                                mol.chargeQM(qtMulliken)[i],
-                                x[j][XX],
-                                x[j][YY],
-                                x[j][ZZ]);
-                    }
+                        gmx_stats_add_point(k->lsq, qcm5[i], qCalc, 0, 0);                          } 
+                    gmx_stats_add_point(lsq_charge, qcm5[i], qCalc, 0, 0);
+                    qrmsd += gmx::square(qcm5[i]-qCalc);
+                    fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
+                            mol.topology_->atoms.atom[j].atomnumber,
+                            j+1,
+                            *(mol.topology_->atoms.atomtype[j]),
+                            qCalc,
+                            mol.chargeQM(qtESP)[i],
+                            mol.chargeQM(qtCM5)[i],
+                            mol.chargeQM(qtHirshfeld)[i],
+                            mol.chargeQM(qtMulliken)[i],
+                            x[j][XX],
+                            x[j][YY],
+                            x[j][ZZ]);
+                    
                     i++;
                 }
             }

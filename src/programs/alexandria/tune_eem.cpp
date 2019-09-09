@@ -69,22 +69,17 @@
 namespace alexandria
 {
 
-class OptACM : public MolGen
+class OptACM : public MolGen, Bayes
 {
     using param_type = std::vector<double>;
 
     private:
-        gmx_bool       bFullTensor_;
-        gmx_bool       bFitAlpha_;
-        gmx_bool       bFitZeta_;
-        gmx_bool       bSameZeta_;
-        gmx_bool       bFitChi_;
-        gmx_bool       bUseCM5_;
-
-        Bayes <double> TuneACM_;
-        param_type     param_, lower_, upper_, best_;
-        param_type     orig_, psigma_, pmean_;
-
+        bool       bFullTensor_;
+        bool       bFitAlpha_;
+        bool       bFitZeta_;
+        bool       bSameZeta_;
+        bool       bFitChi_;
+        bool       bUseCM5_;
         real           penalty_;
 
     public:
@@ -102,23 +97,23 @@ class OptACM : public MolGen
 
         ~OptACM() {}
 
-        gmx_bool bESP() const { return weight(ermsESP); }
+        bool bESP() const { return weight(ermsESP); }
 
-        gmx_bool dipole() const { return weight(ermsMU); }
+        bool dipole() const { return weight(ermsMU); }
 
-        gmx_bool quadrupole() const { return weight(ermsQUAD); }
+        bool quadrupole() const { return weight(ermsQUAD); }
 
-        gmx_bool fullTensor() const { return bFullTensor_; }
+        bool fullTensor() const { return bFullTensor_; }
 
-        gmx_bool fitZeta() const { return bFitZeta_; }
+        bool fitZeta() const { return bFitZeta_; }
        
-        gmx_bool sameZeta() const { return bSameZeta_; }
+        bool sameZeta() const { return bSameZeta_; }
         
-        gmx_bool fitChi() const { return bFitChi_; }
+        bool fitChi() const { return bFitChi_; }
 
-        gmx_bool useCM5() const {return bUseCM5_; }
+        bool useCM5() const {return bUseCM5_; }
 
-        gmx_bool penalize() const {return true ? (penalty_ > 0) : false; }
+        bool penalize() const {return penalty_ > 0; }
         
         void add_pargs(std::vector<t_pargs> *pargs)
         {
@@ -144,34 +139,46 @@ class OptACM : public MolGen
                 pargs->push_back(pa[i]);
             }
             addOptions(pargs, etuneEEM);
-            TuneACM_.add_pargs(pargs);
+            Bayes::add_pargs(pargs);
         }
+        
         void optionsFinished()
         {
             MolGen::optionsFinished();
-            TuneACM_.setBounds(weight(ermsBOUNDS) > 0);
+            setBounds(weight(ermsBOUNDS) > 0);
         }
 
         double l2_regularizer (double x,
                                double min,
                                double max)
         {
-            return (x < min) ? (0.5 * gmx::square(x-min)) : ((x > max) ? (0.5 * gmx::square(x-max)) : 0);
+            if (x < min)
+            {
+                return (0.5 * gmx::square(x-min));
+            }
+            else if (x > max)
+            { 
+                return (0.5 * gmx::square(x-max));
+            }
+            else
+            { 
+                return 0;
+            }
         }
 
-        void initQgresp();
-
-        void initQgacm();
+        void initChargeGeneration();
 
         void polData2TuneACM();
 
-        void TuneACM2PolData();
+        /*! \brief
+         * Copy the optimization parameters to the poldata structure
+         * \param[in] List over the parameters that have changed.
+         */
+        virtual void toPolData(const std::vector<bool> &changed);
 
         void InitOpt(real factor);
 
-        void calcDeviation();
-
-        double objFunction(const double v[]);
+        virtual double calcDeviation();
 
         double calcPenalty(AtomIndexIterator ai);
 
@@ -192,50 +199,76 @@ class OptACM : public MolGen
                     const char             *xvgepot);
 };
 
-void OptACM::initQgresp()
+void OptACM::initChargeGeneration()
 {
     for (auto &mymol : mymols())
     {
         if (mymol.eSupp_ != eSupportNo)
         {
+            // If using ESP for fitting we need to be able to compute the
+            // electrostatic potential, however we always want to report it
+            // so have to initialize the data anyway.
             mymol.initQgresp(poldata(), 
                              lot(),
                              watoms(), 
                              maxPot());
-        }
-    }
-}
-
-void OptACM::initQgacm()
-{
-    bool bHaveShells = false;
-    for (auto &mymol : mymols())
-    {
-        if (mymol.eSupp_ != eSupportNo)
-        {
-            bHaveShells = false;
-            if (nullptr != mymol.shellfc_)
-            {
-                bHaveShells = true;
-            }
+            // ACM is needed always as well in this program
             mymol.Qgacm_.setInfo(poldata(), 
                                  &(mymol.topology_->atoms),
                                  hfac(),
-                                 mymol.molProp()->getCharge(),
-                                 bHaveShells);
+                                 mymol.molProp()->getCharge());
         }
     }
 }
 
-void OptACM::calcDeviation()
+double OptACM::calcDeviation()
 {
-    int                 i         = 0;
-    int                 j         = 0;
-    int                 iter      = 0;
-    double              qtot      = 0;
-    double              EemRms    = 0;
-    bool                converged = false;
-    std::vector<double> qq;
+    int                  n         = 0;
+    double               EemRms    = 0;
+    double               bound     = 0;
+    double               penalty   = 0;
+    std::vector<double>  qq;
+    const param_type    &param     = Bayes::getParam();
+    if (MASTER(commrec()))
+    {
+        auto *ic = indexCount();
+        for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
+        {
+            if (!ai->isConst())
+            {
+                auto name = ai->name();
+                
+                if (bFitChi_)
+                {
+                    auto J00  = param[n++];
+                    bound    += l2_regularizer(J00, J0Min(), J0Max());
+                    if (strcasecmp(name.c_str(), fixchi()) != 0)
+                    {
+                        auto Chi0 = param[n++];
+                        bound    += l2_regularizer(Chi0, chi0Min(), chi0Max());
+                    }
+                    if (penalize())
+                    {
+                        penalty += calcPenalty(ai);
+                    }
+                }
+                if (bFitZeta_)
+                {
+                    auto nzeta = poldata()->getNzeta(ai->name());
+                    for (auto zz = 0; zz < (nzeta-1); zz++)
+                    {
+                        auto zeta = param[n++];
+                        bound += l2_regularizer(zeta, zetaMin(), zetaMax());
+                    }
+                }
+            }
+        }
+        if (optHfac())
+        {
+            setHfac(param[n++]);
+            bound += 100*gmx::square(hfacDiff());
+        }
+    }
 
     if (PAR(commrec()))
     {
@@ -248,6 +281,7 @@ void OptACM::calcDeviation()
     }
     if (PAR(commrec()) && !final())
     {
+        // TODO: just broadcast the eemprops
         poldata()->broadcast(commrec());
     }
     resetEnergies();
@@ -259,16 +293,24 @@ void OptACM::calcDeviation()
             auto q     = mymol.Qgacm_.q();
             auto natom = mymol.Qgacm_.natom();
 
-            qq.resize(natom + 1);
+            qq.resize(natom + 1, 0);
             for (auto i = 0; i < natom + 1; i++)
             {
                 qq[i] = q[i][0];
             }
 
-            converged = false;
-            iter      = 0;
+            bool converged = false;
+            int  iter      = 0;
             do
             {
+                // Update charges in mtop before doing
+                // shell optimization.
+                for (int i = 0; i < mymol.mtop_->natoms; i++)
+                {
+                    mymol.mtop_->moltype[0].atoms.atom[i].q =
+                        mymol.mtop_->moltype[0].atoms.atom[i].qB =
+                        mymol.topology_->atoms.atom[i].q;
+                }
 
                 if (nullptr != mymol.shellfc_)
                 {
@@ -279,21 +321,21 @@ void OptACM::calcDeviation()
                     mymol.computeForces(nullptr, commrec());
                 }
 
-                for (auto i = 0; i < mymol.mtop_->natoms; i++)
+                auto qgen =
+                    mymol.Qgacm_.generateCharges(debug,
+                                                 mymol.molProp()->getMolname().c_str(),
+                                                 poldata(),
+                                                 &(mymol.topology_->atoms),
+                                                 mymol.x());
+                if (qgen != eQGEN_OK)
                 {
-                    mymol.mtop_->moltype[0].atoms.atom[i].q      =
-                        mymol.mtop_->moltype[0].atoms.atom[i].qB = mymol.topology_->atoms.atom[i].q;
+                    gmx_fatal(FARGS, "Could not generate charges for %s: %s",
+                              mymol.molProp()->getMolname().c_str(),
+                              mymol.Qgacm_.message());
                 }
-
-                mymol.Qgacm_.generateCharges(debug,
-                                             mymol.molProp()->getMolname().c_str(),
-                                             poldata(),
-                                             &(mymol.topology_->atoms),
-                                             mymol.x());
-
                 q       = mymol.Qgacm_.q();
                 EemRms  = 0;
-                for (auto i = 0; i < natom + 1; i++)
+                for (int i = 0; i < natom + 1; i++)
                 {
                     EemRms   += gmx::square(qq[i] - q[i][0]);
                     qq[i]     = q[i][0];
@@ -303,10 +345,11 @@ void OptACM::calcDeviation()
                 iter++;
             }
             while ((!converged) && (iter < qcycle()));
-            for (auto i = 0; i < mymol.mtop_->natoms; i++)
+            for (int i = 0; i < mymol.mtop_->natoms; i++)
             {
                 mymol.mtop_->moltype[0].atoms.atom[i].q      =
-                    mymol.mtop_->moltype[0].atoms.atom[i].qB = mymol.topology_->atoms.atom[i].q;
+                    mymol.mtop_->moltype[0].atoms.atom[i].qB =
+                    mymol.topology_->atoms.atom[i].q;
             }
 
             if (weight(ermsCHARGE))
@@ -314,7 +357,8 @@ void OptACM::calcDeviation()
                 int    nChargeResidual = 0; // number of charge residuals added per molecule
                 double ChargeResidual  = 0;
                 bool   isPolarizable   = (nullptr != mymol.shellfc_);
-                qtot = 0;
+                double qtot = 0;
+                int    i, j;
                 for (j = i = 0; j < mymol.topology_->atoms.nr; j++)
                 {
                     auto atomnr = mymol.topology_->atoms.atom[j].atomnumber;
@@ -388,9 +432,9 @@ void OptACM::calcDeviation()
             if (weight(ermsQUAD))
             {
                 mymol.CalcQuadrupole();
-                for (auto mm = 0; mm < DIM; mm++)
+                for (int mm = 0; mm < DIM; mm++)
                 {
-                    for (auto nn = 0; nn < DIM; nn++)
+                    for (int nn = 0; nn < DIM; nn++)
                     {
                         if (bFullTensor_ || mm == nn)
                         {
@@ -401,14 +445,19 @@ void OptACM::calcDeviation()
             }
         }
     }
+    increaseEnergy(ermsBOUNDS, bound);
+    if (penalize())
+    {
+        increaseEnergy(ermsPENALTY, penalty);
+    }
     sumEnergies();
     normalizeEnergies();
     printEnergies(debug);
+    return energy(ermsTOT);
 }
 
 void OptACM::polData2TuneACM()
 {
-    param_.clear();
     auto *ic = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
@@ -416,16 +465,16 @@ void OptACM::polData2TuneACM()
         {
             auto ei   = poldata()->findEem(ai->name());
             GMX_RELEASE_ASSERT(ei != poldata()->EndEemprops(), "Cannot find eemprops");
-            
+            ai->setEemProps(ei);
             if (bFitChi_)
             {
                 auto J00  = ei->getJ0();
-                param_.push_back(std::move(J00));
+                Bayes::addParam(J00);
                 
                 if (ai->name().compare(fixchi()) != 0)
                 {
                     auto Chi0 = ei->getChi0();
-                    param_.push_back(std::move(Chi0));
+                    Bayes::addParam(Chi0);
                 }
             }
             if (bFitZeta_)
@@ -434,7 +483,7 @@ void OptACM::polData2TuneACM()
                 auto zeta  = ei->getZeta(nzeta-1); // We only optimize zeta for shell.
                 if (0 != zeta)
                 {
-                    param_.push_back(std::move(zeta));
+                    Bayes::addParam(zeta);
                 }
                 else
                 {
@@ -450,7 +499,7 @@ void OptACM::polData2TuneACM()
                 {
                     if (0 != alpha)
                     {
-                        param_.push_back(std::move(alpha));
+                        Bayes::addParam(alpha);
                     }
                     else
                     {
@@ -462,91 +511,64 @@ void OptACM::polData2TuneACM()
     }
     if (optHfac())
     {
-        param_.push_back(hfac());
+        Bayes::addParam(hfac());
     }
+    
 }
 
-void OptACM::TuneACM2PolData()
+void OptACM::toPolData(const std::vector<bool> &changed)
 {
-    char     zstr[STRLEN];
-    char     z_sig[STRLEN];
-    char     buf[STRLEN];
-    char     buf_sig[STRLEN];
-
-    int      n     = 0;
-    double   zeta  = 0;
-    double   sigma = 0;
-
-    auto     pd    = poldata();
-    auto    *ic    = indexCount();
-
+    size_t   n           = 0;
+    auto     pd          = poldata();
+    bool     distributed = getEemtypeDistributed(pd->getChargeModel());
+    auto    *ic          = indexCount();
+    auto     param       = Bayes::getParam();
+    auto     psigma      = Bayes::getParam();
+    
+    Bayes::dumpParam(debug);
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
         if (!ai->isConst())
         {
-            auto ei = pd->findEem(ai->name());
-            GMX_RELEASE_ASSERT(ei != pd->EndEemprops(), "Cannot find eemprops");
-
+            auto ei = ai->eemProps();
             if (bFitChi_)
             {
-                ei->setJ0(param_[n]);
-                ei->setJ0_sigma(psigma_[n++]);
+                ei->setJ0(param[n]);
+                ei->setJ0_sigma(psigma[n++]);
                 
                 if (ai->name().compare(fixchi()) != 0)
                 {
-                    ei->setChi0(param_[n]);
-                    ei->setChi0_sigma(psigma_[n++]);
+                    ei->setChi0(param[n]);
+                    ei->setChi0_sigma(psigma[n++]);
                 }
             }
             if (bFitZeta_)
             {
-                zstr[0]            = '\0';
-                z_sig[0]           = '\0';
+                std::string zstr, z_sig;
                 std::string qstr   = ei->getQstr();
                 std::string rowstr = ei->getRowstr();
-                auto iModel = poldata()->getChargeModel();
                 auto nZeta  = ei->getNzeta();
-                if (getEemtypeDistributed(iModel))
+                if (distributed)
                 {
                     if (bSameZeta_ && nZeta == 2)
                     {
-                        zeta   = param_[n]; // Same zeta will be used for both core and shell
-                        sigma  = psigma_[n++];
-
-                        sprintf(buf, "%g %g ", zeta, zeta);
-                        sprintf(buf_sig, "%g %g ", sigma, sigma);
-                        strcat(zstr, buf);
-                        strcat(z_sig, buf_sig);
+                        // Same zeta will be used for both core and shell
+                        double zeta   = param[n];
+                        double sigma  = psigma[n++];
+                        zstr.assign(gmx::formatString("%g %g ",
+                                                      zeta, zeta));
+                        z_sig.assign(gmx::formatString("%g %g ",
+                                                       sigma, sigma));
                     }
                     else
                     {
                         for (auto i = 0; i < nZeta; i++)
-                        {   
-                            zeta  = ei->getZeta(i); //zeta for core read from poladata
-                            sigma = 0;
-                            if (i > 0)
-                            {
-                                zeta   = param_[n]; //zeta for shell taken from param_ vector
-                                sigma  = psigma_[n++];
-                            }
-                            sprintf(buf, "%g ", zeta);
-                            sprintf(buf_sig, "%g ", sigma);
-                            strcat(zstr, buf);
-                            strcat(z_sig, buf_sig);
+                        {
+                            double zeta   = param[n];
+                            double sigma  = psigma[n++];
+                            zstr.assign(gmx::formatString("%g ", zeta));
+                            z_sig.assign(gmx::formatString("%g ", sigma));
                         }
-                    }
-                }
-                else
-                {
-                    for (auto i = 0; i < nZeta; i++)
-                    {
-                        zeta   = param_[n];
-                        sigma  = psigma_[n++];
-                        
-                        sprintf(buf, "%g ", zeta);
-                        sprintf(buf_sig, "%g ", sigma);
-                        strcat(zstr, buf);
-                        strcat(z_sig, buf_sig);
                     }
                 }
                 ei->setRowZetaQ(rowstr, zstr, qstr);
@@ -558,7 +580,7 @@ void OptACM::TuneACM2PolData()
                 std::string ptype;
                 if (pd->atypeToPtype(ai->name(), ptype))
                 {
-                    pd->setPtypePolarizability(ptype, param_[n], psigma_[n]);
+                    pd->setPtypePolarizability(ptype, param[n], psigma[n]);
                     n++;
                 }
                 else
@@ -570,31 +592,17 @@ void OptACM::TuneACM2PolData()
     }
     if (optHfac())
     {
-        setHfac(param_[n++]);
+        setHfac(param[n++]);
     }
+    GMX_RELEASE_ASSERT(n == changed.size(),
+                       gmx::formatString("n = %zu changed.size() = %zu",
+                                         n, changed.size()).c_str());
 }
 
-void OptACM::InitOpt(real  factor)
+void OptACM::InitOpt(real factor)
 {
     polData2TuneACM();
-
-    orig_.resize(param_.size(), 0);
-    best_.resize(param_.size(), 0);
-    lower_.resize(param_.size(), 0);
-    upper_.resize(param_.size(), 0);
-    psigma_.resize(param_.size(), 0);
-    pmean_.resize(param_.size(), 0);
-
-    if (factor < 1)
-    {
-        factor = 1/factor;
-    }
-    for (size_t i = 0; i < param_.size(); i++)
-    {
-        best_[i]  = orig_[i] = param_[i];
-        lower_[i] = orig_[i]/factor;
-        upper_[i] = orig_[i]*factor;
-    }
+    Bayes::setParamBounds(factor);
 }
 
 double OptACM::calcPenalty(AtomIndexIterator ai)
@@ -602,7 +610,7 @@ double OptACM::calcPenalty(AtomIndexIterator ai)
     double         penalty = 0;
     const auto     pd      = poldata();
 
-    auto           ei      = pd->findEem(ai->name());
+    auto           ei      = ai->eemProps();
     auto           ai_elem = pd->ztype2elem(ei->getName());
     auto           ai_chi  = ei->getChi0();
     auto           ai_J0   = ei->getJ0();
@@ -632,7 +640,7 @@ double OptACM::calcPenalty(AtomIndexIterator ai)
     {
         if (!aj->isConst())
         {
-            const auto ej      = pd->findEem(aj->name());
+            const auto ej      = aj->eemProps();
             const auto aj_elem = pd->ztype2elem(ej->getName());
             auto       aj_atn  = gmx_atomprop_atomnumber(atomprop(), aj_elem.c_str());
 
@@ -652,66 +660,6 @@ double OptACM::calcPenalty(AtomIndexIterator ai)
     return penalty;
 }
 
-double OptACM::objFunction(const double v[])
-{
-    double bound   = 0;
-    double penalty = 0;
-    int    n       = 0;
-
-    auto   np = param_.size();
-    for (size_t i = 0; i < np; i++)
-    {
-        param_[i] = v[i];
-    }
-
-    TuneACM2PolData();
-    auto *ic = indexCount();
-    for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
-    {
-        if (!ai->isConst())
-        {
-            auto name = ai->name();
-            
-            if (bFitChi_)
-            {
-                auto J00  = param_[n++];
-                bound    += l2_regularizer(J00, J0Min(), J0Max());
-                if (strcasecmp(name.c_str(), fixchi()) != 0)
-                {
-                    auto Chi0 = param_[n++];
-                    bound    += l2_regularizer(Chi0, chi0Min(), chi0Max());
-                }
-                if (penalize())
-                {
-                    penalty += calcPenalty(ai);
-                }
-            }
-            if (bFitZeta_)
-            {
-                auto nzeta = poldata()->getNzeta(ai->name());
-                for (auto zz = 0; zz < (nzeta-1); zz++)
-                {
-                    auto zeta = param_[n++];
-                    bound += l2_regularizer(zeta, zetaMin(), zetaMax());
-                }
-            }
-        }
-    }
-    if (optHfac())
-    {
-        setHfac(param_[n++]);
-        bound += 100*gmx::square(hfacDiff());
-    }
-    calcDeviation();
-    increaseEnergy(ermsBOUNDS, bound);
-    increaseEnergy(ermsTOT, bound);
-    if (penalize())
-    {
-        increaseEnergy(ermsTOT, penalty);
-    }
-    return energy(ermsTOT);
-}
-
 bool OptACM::optRun(FILE                   *fp,
                     FILE                   *fplog,
                     int                     nrun,
@@ -719,12 +667,10 @@ bool OptACM::optRun(FILE                   *fp,
                     const char             *xvgconv,
                     const char             *xvgepot)
 {
-    std::vector<double> optb, opts, optm;
-    double              chi2, chi2_min;
-    bool                bMinimum = false;
+    bool bMinimum = false;
 
-    auto                func = [&] (const double v[]) {
-            return objFunction(v);
+    auto func = [&] (const double v[]) {
+                    return Bayes::objFunction(v);
         };
 
     if (MASTER(commrec()))
@@ -733,12 +679,15 @@ bool OptACM::optRun(FILE                   *fp,
         {
             for (int dest = 1; dest < commrec()->nnodes; dest++)
             {
-                gmx_send_int(commrec(), dest, (nrun*TuneACM_.maxIter()*param_.size()));
+                gmx_send_int(commrec(), dest, (nrun*Bayes::maxIter()*Bayes::nParam()));
             }
         }
-        chi2 = chi2_min = GMX_REAL_MAX;
-        TuneACM_.setFunc(func, param_, lower_, upper_, &chi2);
-        TuneACM_.Init(xvgconv, xvgepot, oenv);
+        double chi2;
+        Bayes::setFunc(func, &chi2);
+        Bayes::setOutputFiles(xvgconv, xvgepot, oenv);
+        param_type param = Bayes::getParam();
+        double chi2_min  = Bayes::objFunction(param.data());
+        chi2             = chi2_min;
 
         for (auto n = 0; n < nrun; n++)
         {
@@ -746,35 +695,27 @@ bool OptACM::optRun(FILE                   *fp,
             {
                 fprintf(fp, "\nStarting run %d out of %d\n", n, nrun);
             }
-            TuneACM_.MCMC();
-            TuneACM_.getBestParam(optb);
-            TuneACM_.getPsigma(opts);
-            TuneACM_.getPmean(optm);
+            Bayes::MCMC();
             if (chi2 < chi2_min)
             {
                 bMinimum = true;
-                for (size_t k = 0; k < param_.size(); k++)
-                {
-                    best_[k]   = optb[k];
-                    pmean_[k]  = optm[k];
-                    psigma_[k] = opts[k];
-                }
                 chi2_min = chi2;
             }
-            TuneACM_.setParam(best_);
         }
         if (bMinimum)
         {
-            param_    = best_;
-            auto emin = objFunction(best_.data());
+            auto best   = Bayes::getBestParam();
+            auto pmean  = Bayes::getPmean();
+            auto psigma = Bayes::getPsigma();
+            auto emin   = Bayes::objFunction(best.data());
             if (fplog)
             {
-                fprintf(fplog, "\nMinimum rmsd value during optimization: %.3f.\n", sqrt(emin));
+                fprintf(fplog, "\nMinimum RMSD value during optimization: %.3f.\n", sqrt(emin));
                 fprintf(fplog, "Statistics of parameters after optimization\n");
-                for (size_t k = 0; k < param_.size(); k++)
+                for (size_t k = 0; k < Bayes::nParam(); k++)
                 {
                     fprintf(fplog, "Parameter %3zu  Best value:%10g  Mean value:%10g  Sigma:%10g\n",
-                            k, best_[k], pmean_[k], psigma_[k]);
+                            k, best[k], pmean[k], psigma[k]);
                 }
             }
         }
@@ -785,13 +726,14 @@ bool OptACM::optRun(FILE                   *fp,
         auto niter = gmx_recv_int(commrec(), 0);
         for (auto n = 0; n < niter + 2; n++)
         {
-            calcDeviation();
+            (void) calcDeviation();
         }
     }
     setFinal();
     if (MASTER(commrec()))
     {
-        chi2 = objFunction(best_.data());
+        param_type best = Bayes::getBestParam();
+        (void) Bayes::objFunction(best.data());
         printEnergies(fp);
         printEnergies(fplog);
     }
@@ -860,25 +802,25 @@ int alex_tune_eem(int argc, char *argv[])
         { efTEX, "-latex",     "eemprop",       ffWRITE }
     };
 
-    const int                   NFILE         = asize(fnm);
+    const int NFILE         = asize(fnm);
 
-    int                         nrun          = 1;
-    int                         reinit        = 0;
-    real                        th_toler      = 170;
-    real                        ph_toler      = 5;
-    real                        dip_toler     = 0.5;
-    real                        quad_toler    = 5;
-    real                        alpha_toler   = 3;
-    real                        isopol_toler  = 2;
-    real                        factor        = 0.8;
-    real                        efield        = 10;
-    char                       *opt_elem      = nullptr;
-    gmx_bool                    bRandom       = false;
-    gmx_bool                    bcompress     = false;
-    gmx_bool                    bPrintTable   = false;
-    gmx_bool                    bZero         = true;
-    gmx_bool                    bOptimize     = true;
-    gmx_bool                    bForceOutput  = true;
+    int       nrun          = 1;
+    int       reinit        = 0;
+    real      th_toler      = 170;
+    real      ph_toler      = 5;
+    real      dip_toler     = 0.5;
+    real      quad_toler    = 5;
+    real      alpha_toler   = 3;
+    real      isopol_toler  = 2;
+    real      factor        = 0.8;
+    real      efield        = 10;
+    char     *opt_elem      = nullptr;
+    bool      bRandom       = false;
+    bool      bcompress     = false;
+    bool      bPrintTable   = false;
+    bool      bZero         = true;
+    bool      bOptimize     = true;
+    bool      bForceOutput  = true;
 
     t_pargs                     pa[]         = {
         { "-reinit", FALSE, etINT, {&reinit},
@@ -938,7 +880,6 @@ int alex_tune_eem(int argc, char *argv[])
         return 0;
     }
     opt.optionsFinished();
-
     if (MASTER(opt.commrec()))
     {
         fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
@@ -972,20 +913,7 @@ int alex_tune_eem(int argc, char *argv[])
              opt.fitZeta(),
              tabfn);
 
-    if (nullptr != fp)
-    {
-        fprintf(fp, "In the total data set of %zu molecules we have:\n",
-                opt.mymols().size());
-    }
-    
-    if (opt.iChargeGenerationAlgorithm() != eqgESP)
-    {
-        opt.initQgresp();
-    }
-    if (opt.iChargeGenerationAlgorithm() != eqgACM)
-    {
-        opt.initQgacm();
-    }
+    opt.initChargeGeneration();
 
     bool bMinimum = false;
     if (bOptimize)
@@ -1008,7 +936,7 @@ int alex_tune_eem(int argc, char *argv[])
         if (bMinimum || bForceOutput)
         {
             auto iModel = opt.poldata()->getChargeModel();
-            gmx_bool bPolar = getEemtypePolarizable(iModel);
+            bool bPolar = getEemtypePolarizable(iModel);
             
             auto *ic = opt.indexCount();
             print_electric_props(fp,
@@ -1016,7 +944,6 @@ int alex_tune_eem(int argc, char *argv[])
                                  opt.poldata(),
                                  opt.mdlog(),
                                  opt.atomprop(),
-                                 eqgACM,
                                  opt.watoms(),
                                  opt.hfac(),
                                  opt.lot(),

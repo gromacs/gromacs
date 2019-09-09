@@ -63,8 +63,7 @@ class QgenAcm
         void setInfo(const Poldata *pd,
                      t_atoms       *atoms,
                      double         hfac, 
-                     int            qtotal, 
-                     bool           haveShell);
+                     int            qtotal);
                      
         void updateInfo(const Poldata *pd);
 
