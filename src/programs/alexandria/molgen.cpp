@@ -64,7 +64,7 @@ const char *rmsName(int e)
     static const char *rms[ermsNR] =
     {
         "BOUNDS", "MU", "QUAD", "CHARGE", "ESP",
-        "EPOT", "Force2", "Polar", "TOT"
+        "EPOT", "Force2", "Polar", "Penalty", "TOT"
     };
     if (e >= 0 && e < ermsNR)
     {
@@ -78,8 +78,6 @@ const char *rmsName(int e)
 
 namespace alexandria
 {
-
-static const char *cqgen[]  = {nullptr, "None", "ACM", "ESP", "RESP", nullptr};
 
 static void dump_index_count(const IndexCount       *ic,
                              FILE                   *fp,
@@ -320,8 +318,6 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
     {
         { "-mindata", FALSE, etINT, {&mindata_},
           "Minimum number of data points to optimize force field parameters" },
-        { "-qgen",   FALSE, etENUM, {cqgen},
-          "Algorithm used for charge generation" },
         { "-lot",    FALSE, etSTR,  {&lot_},
           "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
         { "-fc_bound",    FALSE, etREAL, {&fc_[ermsBOUNDS]},
@@ -404,7 +400,6 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
 
 void MolGen::optionsFinished()
 {
-    iChargeGenerationAlgorithm_ = (ChargeGenerationAlgorithm) get_option(cqgen);
     hfac0_                      = hfac_;
     cr_                         = init_commrec();
     mdlog_                      = gmx::MDLogger {};
@@ -415,7 +410,8 @@ void MolGen::optionsFinished()
     {
         printf("There are %d threads/processes.\n", cr_->nnodes);
     }
-
+    // Make sure all the nodes know about the fitting options
+    gmx_sum(ermsNR, fc_, cr_);
 }
 
 immStatus MolGen::check_data_sufficiency(alexandria::MyMol mymol,
@@ -423,12 +419,12 @@ immStatus MolGen::check_data_sufficiency(alexandria::MyMol mymol,
 {
     immStatus imm = immOK;
 
-    for (int i = 0; i < mymol.topology_->atoms.nr; i++)
+    for (int i = 0; i < mymol.atoms_->nr; i++)
     {
-        if ((mymol.topology_->atoms.atom[i].atomnumber > 0) &&
-            (mymol.topology_->atoms.atom[i].ptype == eptAtom))
+        if ((mymol.atoms_->atom[i].atomnumber > 0) &&
+            (mymol.atoms_->atom[i].ptype == eptAtom))
         {
-            auto fa = pd_.findAtype(*(mymol.topology_->atoms.atomtype[i]));
+            auto fa = pd_.findAtype(*(mymol.atoms_->atomtype[i]));
             if (pd_.getAtypeEnd() != fa)
             {
                 const std::string &ztype = fa->getZtype();
@@ -452,12 +448,12 @@ immStatus MolGen::check_data_sufficiency(alexandria::MyMol mymol,
     }
     if (imm == immOK)
     {
-        for (int i = 0; i < mymol.topology_->atoms.nr; i++)
+        for (int i = 0; i < mymol.atoms_->nr; i++)
         {
-            if ((mymol.topology_->atoms.atom[i].atomnumber > 0) &&
-                (mymol.topology_->atoms.atom[i].ptype == eptAtom))
+            if ((mymol.atoms_->atom[i].atomnumber > 0) &&
+                (mymol.atoms_->atom[i].ptype == eptAtom))
             {
-                auto fa = pd_.findAtype(*(mymol.topology_->atoms.atomtype[i]));
+                auto fa = pd_.findAtype(*(mymol.atoms_->atomtype[i]));
                 ic->incrementName(fa->getZtype());
             }
         }

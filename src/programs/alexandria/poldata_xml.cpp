@@ -50,8 +50,6 @@ extern int xmlDoValidityCheckingDefaultValue;
 namespace alexandria
 {
 
-#define NN(x) (0 != (x.size()))
-
 const char *xmltypes[] = {
     nullptr,
     "XML_ELEMENT_NODE",
@@ -276,6 +274,20 @@ static const char *exml_names(int xml)
     return nullptr;
 }
 
+static bool NN(const std::string &x)
+{
+    return (0 != x.size());
+}
+
+static bool NNobligatory(const std::string xbuf[], int xml)
+{
+    if (0 == xbuf[xml].size())
+    {
+        gmx_fatal(FARGS, "Missing required variable '%s'", exml_names(xml));
+    }
+    return true;
+}
+
 static void sp(int n, char buf[], int maxindent)
 {
     int i;
@@ -373,23 +385,23 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             }
             break;
         case exmlATOMTYPES:
-            if (NN(xbuf[exmlCHARGEMODEL]))
+            if (NNobligatory(xbuf, exmlCHARGEMODEL))
             {
                 pd.setChargeModel(xbuf[exmlCHARGEMODEL]);
             }
-            if (NN(xbuf[exmlVERSION]))
+            if (NNobligatory(xbuf, exmlVERSION))
             {
                 pd.setVersion(xbuf[exmlVERSION]);
             }
-            if (NN(xbuf[exmlFUNCTION]))
+            if (NNobligatory(xbuf, exmlFUNCTION))
             {
                 pd.setVdwFunction(xbuf[exmlFUNCTION]);
             }
-            if (NN(xbuf[exmlCOMB_RULE]))
+            if (NNobligatory(xbuf, exmlCOMB_RULE))
             {
                 pd.setCombinationRule(xbuf[exmlCOMB_RULE]);
             }
-            if (NN(xbuf[exmlNEXCL]))
+            if (NNobligatory(xbuf, exmlNEXCL))
             {
                 pd.setNexcl(atoi(xbuf[exmlNEXCL].c_str()));
             }

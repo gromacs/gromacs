@@ -237,7 +237,6 @@ void print_electric_props(FILE                           *fp,
                           const Poldata                  *pd,
                           const gmx::MDLogger            &fplog,
                           gmx_atomprop_t                  ap,
-                          ChargeGenerationAlgorithm       qgen,
                           real                            watoms,
                           real                            hfac,
                           const char                     *lot,
@@ -326,20 +325,30 @@ void print_electric_props(FILE                           *fp,
                                 maxESP, qtol, nullptr, nullptr);
             
             // Electrostatic potentials
-            if (qgen != eqgESP)
-            {
-                mol.Qgresp_.updateZeta(&mol.topology_->atoms, pd);                                                
-                mol.Qgresp_.updateAtomCharges(&mol.topology_->atoms);
-                mol.Qgresp_.updateAtomCoords(mol.x());                
-                mol.Qgresp_.calcPot();
-            }
+            mol.Qgresp_.updateZeta(mol.atoms_, pd);
+            mol.Qgresp_.updateAtomCharges(mol.atoms_);
+            mol.Qgresp_.updateAtomCoords(mol.x());                
+            mol.Qgresp_.calcPot();
             real rrms = 0, wtot = 0, cosangle = 0;
+            bool espZero = false;
+            for (size_t i = 0; i < mol.Qgresp_.nEsp(); i++)
+            {
+                auto vqm   = mol.Qgresp_.espPoint()[i].v();
+                auto valex = mol.Qgresp_.espPoint()[i].vCalc();
+                if (std::abs(vqm) > 100 && std::abs(valex) < 10)
+                {
+                    espZero = true;
+                }
+            }
             auto rms  = mol.Qgresp_.getRms(&wtot, &rrms, &cosangle);
             auto espRms = convert2gmx(rms, eg2cHartree_e);         
             fprintf(fp, "ESP rms: %g (kJ/mol e) %s\n", espRms, (espRms > 11) ? "XXX" : "");
             fprintf(fp, "ESP cosangle: %.3f%s\n", cosangle,
                     (cosangle < 0.5) ? " WWW" : "");
-            
+            if (espZero)
+            {
+                fprintf(fp, "Orthogonal ESP\n");
+            }
             for (size_t i = 0; i < mol.Qgresp_.nEsp(); i++)
             {
                 gmx_stats_add_point(lsq_esp, mol.Qgresp_.espPoint()[i].v(), mol.Qgresp_.espPoint()[i].vCalc(), 0, 0);
@@ -402,46 +411,46 @@ void print_electric_props(FILE                           *fp,
             auto qcm5  = mol.chargeQM(qtCM5);
             auto x     = mol.x();
             auto qrmsd = 0.0;
-            for (j = i = 0; j < mol.topology_->atoms.nr; j++)
+            for (j = i = 0; j < mol.atoms_->nr; j++)
             {
-                if (mol.topology_->atoms.atom[j].ptype == eptAtom ||
-                    mol.topology_->atoms.atom[j].ptype == eptNucleus)
+                if (mol.atoms_->atom[j].ptype == eptAtom ||
+                    mol.atoms_->atom[j].ptype == eptNucleus)
                 {
-                    auto atp = pd->findAtype(*(mol.topology_->atoms.atomtype[j]));
+                    auto atp = pd->findAtype(*(mol.atoms_->atomtype[j]));
                     auto ztp = atp->getZtype();
                     auto  k  = std::find_if(lsqt.begin(), lsqt.end(),
                                            [ztp](const ZetaTypeLsq &atlsq)
                                            {
                                                return atlsq.ztype.compare(ztp) == 0;
                                            });
+                    qCalc = mol.atoms_->atom[j].q;
+                    if (nullptr != mol.shellfc_)
+                    {
+                        qCalc += mol.atoms_->atom[j+1].q;
+                    }                        
                     if (k != lsqt.end())
                     {
-                        qCalc = mol.topology_->atoms.atom[j].q;
-                        if (nullptr != mol.shellfc_)
-                        {
-                            qCalc += mol.topology_->atoms.atom[j+1].q;
-                        }                        
-                        gmx_stats_add_point(k->lsq, qcm5[i], qCalc, 0, 0);                           
-                        gmx_stats_add_point(lsq_charge, qcm5[i], qCalc, 0, 0);
-                        qrmsd += gmx::square(qcm5[i]-qCalc);
-                        fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
-                                mol.topology_->atoms.atom[j].atomnumber,
-                                j+1,
-                                *(mol.topology_->atoms.atomtype[j]),
-                                qCalc,
-                                mol.chargeQM(qtESP)[i],
-                                mol.chargeQM(qtCM5)[i],
-                                mol.chargeQM(qtHirshfeld)[i],
-                                mol.chargeQM(qtMulliken)[i],
-                                x[j][XX],
-                                x[j][YY],
-                                x[j][ZZ]);
-                    }
+                        gmx_stats_add_point(k->lsq, qcm5[i], qCalc, 0, 0);                          } 
+                    gmx_stats_add_point(lsq_charge, qcm5[i], qCalc, 0, 0);
+                    qrmsd += gmx::square(qcm5[i]-qCalc);
+                    fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
+                            mol.atoms_->atom[j].atomnumber,
+                            j+1,
+                            *(mol.atoms_->atomtype[j]),
+                            qCalc,
+                            mol.chargeQM(qtESP)[i],
+                            mol.chargeQM(qtCM5)[i],
+                            mol.chargeQM(qtHirshfeld)[i],
+                            mol.chargeQM(qtMulliken)[i],
+                            x[j][XX],
+                            x[j][YY],
+                            x[j][ZZ]);
+                    
                     i++;
                 }
             }
             fprintf(fp, "\n");
-            qrmsd = sqrt(qrmsd/mol.topology_->atoms.nr);
+            qrmsd = sqrt(qrmsd/mol.atoms_->nr);
             fprintf(fp, "q rmsd: %g (e) %s\n", qrmsd, (qrmsd > 5e-2) ? "XXX" : "");
             n++;
         }

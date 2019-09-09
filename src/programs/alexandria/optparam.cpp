@@ -74,9 +74,9 @@ void OptParam::add_pargs(std::vector<t_pargs> *pargs)
     }
 }
 
-void OptParam::Init(const char             *xvgconv,
-                    const char             *xvgepot,
-                    const gmx_output_env_t *oenv)
+void OptParam::setOutputFiles(const char             *xvgconv,
+                              const char             *xvgepot,
+                              const gmx_output_env_t *oenv)
 {
     xvgconv_     = xvgconv;
     xvgepot_     = xvgepot;
@@ -117,4 +117,306 @@ double OptParam::computeBeta(int maxiter, int iter, int ncycle)
     return 1/(BOLTZ*temp);
 }
 
+void Bayes::setFunc(func_t  func,
+                    double *minEval)
+{
+    func_       = func;
+    minEval_    = minEval;
+}
+
+void Bayes::setParamBounds(real factor)
+{
+    GMX_RELEASE_ASSERT(factor > 0, "Scaling factor for bounds should be larger than zero");
+    if (factor < 1)
+    {
+        factor = 1/factor;
+    }
+    for (size_t i = 0; i < param_.size(); i++)
+    {
+        lowerBound_.push_back(param_[i]/factor);
+        upperBound_.push_back(param_[i]*factor);
+    }
+    bestParam_  = param_;
+}
+
+void Bayes::setParam(parm_t param)
+{
+    param_ = param;
+}
+
+void Bayes::changeParam(int j, real rand)
+{
+    real delta = (2*rand-1)*step()*fabs(param_[j]);
+    param_[j] += delta;
+    if (bounds())
+    {
+        if (param_[j] < lowerBound_[j])
+        {
+            param_[j] = lowerBound_[j];
+        }
+        else if (param_[j] > upperBound_[j])
+        {
+            param_[j] = upperBound_[j];
+        }
+    }
+}
+
+double Bayes::objFunction(const double v[])
+{
+    auto              np = param_.size();
+    std::vector<bool> changed(np, false);
+    for (size_t i = 0; i < np; i++)
+    {
+        if (param_[i] != v[i])
+        {
+            param_[i]  = v[i];
+            changed[i] = true;
+        }
+    }
+    toPolData(changed);
+    return calcDeviation();
+}
+
+
+void Bayes::MCMC()
+{
+    double                           storeParam;
+    int                              nsum            = 0;
+    int                              nParam          = 0; 
+    double                           currEval        = 0;
+    double                           prevEval        = 0;
+    double                           deltaEval       = 0;
+    double                           randProbability = 0;
+    double                           mcProbability   = 0; 
+    double                           halfIter        = maxIter()/2;   
+    parm_t                           sum, sum_of_sq;
+    
+    FILE                            *fpc             = nullptr;
+    FILE                            *fpe             = nullptr;
+    
+    std::random_device               rd;
+    std::mt19937                     gen(rd());
+    std::uniform_real_distribution<> uniform(0, 1);
+
+    if (nullptr != xvgConv())
+    {
+        fpc = xvgropen(xvgConv(), "Parameter convergence", "iteration", "", oenv());
+    }
+    if (nullptr != xvgEpot())
+    {
+        fpe = xvgropen(xvgEpot(), "Parameter energy", "iteration", "\\f{12}c\\S2\\f{4}", oenv());
+    }
+
+    nParam = param_.size();
+    sum.resize(nParam, 0);
+    sum_of_sq.resize(nParam, 0);
+    pmean_.resize(nParam, 0);
+    psigma_.resize(nParam, 0);
+    
+    prevEval  = func_(param_.data());
+    *minEval_ = prevEval;
+    if (debug)
+    {
+        fprintf(debug, "Initial chi2 value = %g\n", prevEval);
+    }
+    for (int iter = 0; iter < nParam*maxIter(); iter++)
+    {
+        double beta = computeBeta(iter/nParam);
+        int       j = static_cast<int>(std::round((1+uniform(gen))*nParam)) % nParam; // Pick random parameter to change
+        
+        storeParam = param_[j];
+        changeParam(j, uniform(gen));
+        currEval        = func_(param_.data());
+        deltaEval       = currEval-prevEval;
+        randProbability = uniform(gen);
+        mcProbability   = exp(-beta*deltaEval);
+        
+        if ((deltaEval < 0) || (mcProbability > randProbability))
+        {
+            if (currEval < *minEval_)
+            {
+                bestParam_ = param_;
+                *minEval_  = currEval;
+                if (debug)
+                {
+                    fprintf(debug, "New minimum at %g", currEval);
+                    for(int k = 0; k < nParam; k++)
+                    {
+                        fprintf(debug, " %g", bestParam_[k]);
+                    }
+                    fprintf(debug, "\n");
+                }
+            }
+            prevEval = currEval;
+        }
+        else
+        {
+            param_[j] = storeParam;
+        }
+        double xiter = (1.0*iter)/nParam;
+        if (nullptr != fpc)
+        {
+            fprintf(fpc, "%8f", xiter);
+            for (auto value : param_)
+            {
+                fprintf(fpc, "  %10g", value);
+            }
+            fprintf(fpc, "\n");
+            fflush(fpc);
+        }
+        if (nullptr != fpe)
+        {
+            fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
+            fflush(fpe);
+        }
+        if (iter >= halfIter)
+        {
+            for (auto k = 0; k < nParam; k++)
+            {
+                sum[k]       += param_[k];
+                sum_of_sq[k] += gmx::square(param_[k]);
+            }
+            nsum++;
+        }
+    }
+    if (nsum > 0)
+    {
+        for (auto k = 0; k < nParam; k++)
+        {
+            pmean_[k]     = (sum[k]/nsum);
+            sum_of_sq[k] /= nsum;
+            psigma_[k]    = sqrt(sum_of_sq[k]-gmx::square(pmean_[k]));
+        }
+    }
+    if (nullptr != fpc)
+    {
+        xvgrclose(fpc);
+    }
+    if (nullptr != fpe)
+    {
+        xvgrclose(fpe);
+    }
+}
+
+void Bayes::DRAM()
+{
+    double                           storeParam;
+    int                              nsum            = 0;
+    int                              nParam          = 0; 
+    double                           currEval        = 0;
+    double                           prevEval        = 0;
+    double                           deltaEval       = 0;
+    double                           randProbability = 0;
+    double                           mcProbability   = 0; 
+    double                           halfIter        = maxIter()/2;   
+    parm_t                           sum, sum_of_sq;
+    
+    FILE                            *fpc             = nullptr;
+    FILE                            *fpe             = nullptr;
+    
+    std::random_device               rd;
+    std::mt19937                     gen(rd());
+    std::uniform_real_distribution<> uniform(0, 1);
+
+    if (nullptr != xvgConv())
+    {
+        fpc = xvgropen(xvgConv(), "Parameter convergence", "iteration", "", oenv());
+    }
+    if (nullptr != xvgEpot())
+    {
+        fpe = xvgropen(xvgEpot(), "Parameter energy", "iteration", "\\f{12}c\\S2\\f{4}", oenv());
+    }
+
+    nParam = param_.size();
+    sum.resize(nParam, 0);
+    sum_of_sq.resize(nParam, 0);
+    pmean_.resize(nParam, 0);
+    psigma_.resize(nParam, 0);
+    
+    prevEval  = func_(param_.data());
+    *minEval_ = prevEval;
+    for (int iter = 0; iter < nParam*maxIter(); iter++)
+    {
+        double beta = computeBeta(iter/nParam);
+        // Pick random parameter to change
+        int       j = static_cast<int>(std::round((1+uniform(gen))*nParam)) % nParam; 
+        
+        storeParam = param_[j];
+        changeParam(j, uniform(gen));
+        currEval        = func_(param_.data());
+        deltaEval       = currEval-prevEval;
+        randProbability = uniform(gen);
+        mcProbability   = exp(-beta*deltaEval);
+        
+        if ((deltaEval < 0) || (mcProbability > randProbability))
+        {
+            if (currEval < *minEval_)
+            {
+                bestParam_ = param_;
+                *minEval_  = currEval;
+            }
+            prevEval = currEval;
+        }
+        else
+        {
+            param_[j] = storeParam;
+        }
+        double xiter = (1.0*iter)/nParam;
+        if (nullptr != fpc)
+        {
+            fprintf(fpc, "%8f", xiter);
+            for (auto value : param_)
+            {
+                fprintf(fpc, "  %10g", value);
+            }
+            fprintf(fpc, "\n");
+            fflush(fpc);
+        }
+        if (nullptr != fpe)
+        {
+            fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
+            fflush(fpe);
+        }
+        if (iter >= halfIter)
+        {
+            for (auto k = 0; k < nParam; k++)
+            {
+                sum[k]       += param_[k];
+                sum_of_sq[k] += gmx::square(param_[k]);
+            }
+            nsum++;
+        }
+    }
+    if (nsum > 0)
+    {
+        for (auto k = 0; k < nParam; k++)
+        {
+            pmean_[k]     = (sum[k]/nsum);
+            sum_of_sq[k] /= nsum;
+            psigma_[k]    = sqrt(sum_of_sq[k]-gmx::square(pmean_[k]));
+        }
+    }
+    if (nullptr != fpc)
+    {
+        xvgrclose(fpc);
+    }
+    if (nullptr != fpe)
+    {
+        xvgrclose(fpe);
+    }
+}
+
+void Bayes::dumpParam(FILE *fp)
+{
+    if (nullptr != fp)
+    {
+        fprintf(fp, "Parameters:");
+        for (auto &p : param_)
+        {
+            fprintf(fp, " %.3f", p);
+        }
+        fprintf(fp, "\n");
+    }
+}
+    
 }

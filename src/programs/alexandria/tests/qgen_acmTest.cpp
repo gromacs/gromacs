@@ -165,9 +165,9 @@ class AcmTest : public gmx::test::CommandLineTestBase
             fprintf(stderr, "Generated charges for %s\n", dataName.c_str());
             
             std::vector<double> qtotValues;
-            for (int atom = 0; atom < mp_.topology_->atoms.nr; atom++)
+            for (int atom = 0; atom < mp_.atoms_->nr; atom++)
             {
-                qtotValues.push_back(mp_.topology_->atoms.atom[atom].q);
+                qtotValues.push_back(mp_.atoms_->atom[atom].q);
             }
             char buf[256];
             snprintf(buf, sizeof(buf), "qtotValuesEqdAlgorithm_%d", static_cast<int>(ChargeGenerationAlgorithm()));

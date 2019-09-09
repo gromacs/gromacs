@@ -116,7 +116,7 @@ real calc_relposition(const Poldata     *pd,
 
 immStatus updatePlist(const Poldata             *pd,
                       std::vector<PlistWrapper> &plist,
-                      t_topology                *top,
+                      t_atoms                   *atoms,
                       bool                       bBASTAT,
                       std::string                molname);
 
