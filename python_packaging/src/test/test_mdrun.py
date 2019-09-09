@@ -95,7 +95,10 @@ def test_run_trivial_ensemble(spc_water_box, caplog):
 
             tpr_filename = spc_water_box
             ensemble_width = 2
-            md = gmx.mdrun([tpr_filename] * ensemble_width)
+            simulation_input = gmx.read_tpr([tpr_filename] * ensemble_width)
+            assert simulation_input.output.ensemble_width == ensemble_width
+            assert len(simulation_input.output._simulation_input.result()) == ensemble_width
+            md = gmx.mdrun(simulation_input)
             assert md.output.ensemble_width == ensemble_width
             md.run()
 
@@ -107,3 +110,11 @@ def test_run_trivial_ensemble(spc_water_box, caplog):
             # other ranks, so only check the current rank.
             assert output_directory[0] != output_directory[1]
             assert os.path.exists(output_directory[current_rank])
+
+
+@pytest.mark.usefixtures('cleandir')
+def test_run_from_read_tpr_op(spc_water_box):
+    simulation_input = gmx.read_tpr(spc_water_box)
+    md = gmx.mdrun(input=simulation_input)
+
+    md.run()

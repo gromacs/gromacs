@@ -60,6 +60,19 @@ def test_tprfile_read_old(spc_water_box):
 
 
 @pytest.mark.usefixtures('cleandir')
+def test_read_tpr(spc_water_box):
+    tpr_filename = spc_water_box
+    tpr_source = gmxapi.read_tpr(tpr_filename)
+    assert 'parameters' in tpr_source.output
+    assert hasattr(tpr_source.output, 'parameters')
+    parameters = tpr_source.output.parameters.result()
+    assert 'nsteps' in parameters
+    assert 'foo' not in parameters
+    assert parameters['nsteps'] == 2
+    assert tpr_source.output.parameters['nsteps'].result() == 2
+
+
+@pytest.mark.usefixtures('cleandir')
 def test_core_tprcopy_alt(spc_water_box):
     """Test gmx.core.copy_tprfile() for update of end_time.
 

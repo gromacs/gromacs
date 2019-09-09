@@ -36,6 +36,8 @@
 Provides operations for configuring and running molecular simulations.
 """
 
-__all__ = ['mdrun']
+__all__ = ['mdrun',
+           'read_tpr']
 
 from .mdrun import mdrun
+from .read_tpr import read_tpr
