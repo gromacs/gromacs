@@ -26,6 +26,7 @@
 #
 
 set(ALEXANDRIA_SOURCES
+           chargemodel.cpp
 	   gentop_core.cpp
 	   gentop_vsite.cpp
            qgen_acm.cpp
