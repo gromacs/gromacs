@@ -64,7 +64,7 @@ namespace gmx
 namespace
 {
 
-/*! \internal \brief Generate the spread kernal from Gaussian parameters.
+/*! \internal \brief Generate the spread kernel from Gaussian parameters.
  *
  * \param[in] sigma the width of the Gaussian to be spread
  * \param[in] nSigma the range of the Gaussian in multiples of sigma
@@ -156,6 +156,13 @@ DensityFittingForceProvider::Impl::Impl(const DensityFittingParameters &paramete
     };
     transformationToDensityLattice_.scaleOperationOnly().inverseIgnoringZeroScale(
             { &referenceDensityCenter_, &referenceDensityCenter_ + 1 });
+    // correct the reference density center for a shift
+    // if the reference density does not have its origin at (0,0,0)
+    RVec referenceDensityOriginShift(0, 0, 0);
+    transformationToDensityLattice_({ &referenceDensityOriginShift, &referenceDensityOriginShift + 1 });
+    transformationToDensityLattice_.scaleOperationOnly().inverseIgnoringZeroScale(
+            { &referenceDensityOriginShift, &referenceDensityOriginShift + 1 });
+    referenceDensityCenter_ -= referenceDensityOriginShift;
 }
 
 void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput &forceProviderInput,
