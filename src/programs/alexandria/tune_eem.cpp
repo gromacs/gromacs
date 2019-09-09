@@ -221,6 +221,20 @@ void OptACM::initChargeGeneration()
     }
 }
 
+static void dumpQ(FILE *fp, const std::string &molname,
+                  t_atoms *atoms)
+{
+    if (fp)
+    {
+        fprintf(fp, "%s q:", molname.c_str());
+        for(int i = 0; i < atoms->nr; i++)
+        {
+            fprintf(fp, " %.3f", atoms->atom[i].q);
+        }
+        fprintf(fp, "\n");
+    }
+}
+
 double OptACM::calcDeviation()
 {
     int                  n         = 0;
@@ -351,7 +365,7 @@ double OptACM::calcDeviation()
                     mymol.mtop_->moltype[0].atoms.atom[i].qB =
                     mymol.atoms_->atom[i].q;
             }
-
+            dumpQ(debug, mymol.molProp()->getMolname(), mymol.atoms_);
             if (weight(ermsCHARGE))
             {
                 int    nChargeResidual = 0; // number of charge residuals added per molecule
@@ -412,7 +426,16 @@ double OptACM::calcDeviation()
                 }
                 mymol.Qgresp_.updateAtomCharges(mymol.atoms_);
                 mymol.Qgresp_.calcPot();
-                increaseEnergy(ermsESP, convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms, &cosangle), eg2cHartree_e));
+                auto myRms = 
+                    convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms, &cosangle), 
+                                eg2cHartree_e);
+                increaseEnergy(ermsESP, myRms);
+                if (debug)
+                {
+                    fprintf(debug, "%s ESPrms = %g cosangle = %g\n",
+                            mymol.molProp()->getMolname().c_str(), 
+                            myRms, cosangle);
+                }
             }
             if (weight(ermsMU))
             {

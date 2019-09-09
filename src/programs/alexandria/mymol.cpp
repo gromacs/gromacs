@@ -1940,7 +1940,7 @@ void MyMol::GenerateCube(const Poldata          *pd,
 
 void MyMol::rotateDipole(rvec mu, rvec muReference)
 {
-    if (norm(mu) == 0 or norm(muReference) == 0)
+    if (norm(mu) < 0.04 or norm(muReference) < 0.04)
     {
         return;
     }

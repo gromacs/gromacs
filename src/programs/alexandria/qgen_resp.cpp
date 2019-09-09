@@ -940,11 +940,11 @@ void QgenResp::calcPot()
                     auto  rax   = ra.x();
                     for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
                     {
-                        auto q = k->q();
-                        if (q == 0)
-                        {
-                            q = ra.q();
-                        }
+                        //auto q = k->q();
+                        //if (q == 0)
+                        //{
+                        auto q = ra.q();
+                        //}
                         auto epot = calcJ(iDistributionModel_, espx, rax, k->zeta(), watoms_, k->row());
                         vv += (q*epot);
                     }

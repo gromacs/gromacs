@@ -330,12 +330,25 @@ void print_electric_props(FILE                           *fp,
             mol.Qgresp_.updateAtomCoords(mol.x());                
             mol.Qgresp_.calcPot();
             real rrms = 0, wtot = 0, cosangle = 0;
+            bool espZero = false;
+            for (size_t i = 0; i < mol.Qgresp_.nEsp(); i++)
+            {
+                auto vqm   = mol.Qgresp_.espPoint()[i].v();
+                auto valex = mol.Qgresp_.espPoint()[i].vCalc();
+                if (std::abs(vqm) > 100 && std::abs(valex) < 10)
+                {
+                    espZero = true;
+                }
+            }
             auto rms  = mol.Qgresp_.getRms(&wtot, &rrms, &cosangle);
             auto espRms = convert2gmx(rms, eg2cHartree_e);         
             fprintf(fp, "ESP rms: %g (kJ/mol e) %s\n", espRms, (espRms > 11) ? "XXX" : "");
             fprintf(fp, "ESP cosangle: %.3f%s\n", cosangle,
                     (cosangle < 0.5) ? " WWW" : "");
-            
+            if (espZero)
+            {
+                fprintf(fp, "Orthogonal ESP\n");
+            }
             for (size_t i = 0; i < mol.Qgresp_.nEsp(); i++)
             {
                 gmx_stats_add_point(lsq_esp, mol.Qgresp_.espPoint()[i].v(), mol.Qgresp_.espPoint()[i].vCalc(), 0, 0);
