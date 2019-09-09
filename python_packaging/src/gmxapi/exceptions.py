@@ -47,8 +47,12 @@ as a gmxapi.exceptions.Error, please report the bug.
 """
 
 __all__ = ['ApiError',
+           'DataShapeError',
            'Error',
+           'FeatureNotAvailableError',
+           'NotImplementedError',
            'ProtocolError',
+           'TypeError',
            'UsageError',
            'ValueError',
            'Warning'

@@ -43,6 +43,6 @@ from logging import getLogger, DEBUG, NullHandler
 getLogger().addHandler(NullHandler(level=DEBUG))
 getLogger().setLevel(DEBUG)
 getLogger().info("Setting up logging for gmxapi package.")
-logger = getLogger(__name__)
+logger = getLogger('gmxapi')
 logger.setLevel(DEBUG)
 logger.info("Importing gmxapi.")

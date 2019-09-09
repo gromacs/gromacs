@@ -52,7 +52,7 @@ from gmxapi import logger as root_logger
 import gmxapi._gmxapi as _gmxapi
 
 # Module-level logger
-logger = root_logger.getChild('context')
+logger = root_logger.getChild('simulation.context')
 logger.info('Importing {}'.format(__name__))
 
 

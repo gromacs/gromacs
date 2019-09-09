@@ -39,10 +39,11 @@ __all__ = ['ndarray', 'NDArray']
 
 import collections
 
+import gmxapi.abc
 from gmxapi import exceptions
 
 
-class NDArray(collections.abc.Sequence):
+class NDArray(gmxapi.abc.NDArray):
     """N-Dimensional array type.
     """
 
@@ -78,7 +79,6 @@ class NDArray(collections.abc.Sequence):
 
     def __len__(self) -> int:
         return len(self._values)
-
 
 
 def ndarray(data=None, shape=None, dtype=None):

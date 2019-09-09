@@ -53,7 +53,7 @@ import gmxapi as gmx
 from gmxapi import exceptions
 
 # Module-level logger
-logger = gmx.logger.getChild(__name__)
+logger = gmx.logger.getChild('simulation.workflow')
 logger.info('Importing gmx.workflow')
 
 # Work specification version string.

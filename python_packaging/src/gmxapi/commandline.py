@@ -44,7 +44,7 @@ import gmxapi as gmx
 from gmxapi import exceptions
 from gmxapi import logger as root_logger
 from gmxapi.datamodel import NDArray
-from gmxapi.operation import Future, OutputCollectionDescription
+from gmxapi.operation import OutputCollectionDescription
 
 # Module-level logger
 logger = root_logger.getChild('commandline')
@@ -282,9 +282,9 @@ def commandline_operation(executable=None,
     if isinstance(arguments, (str, bytes)):
         arguments = [arguments]
     command = gmx.concatenate_lists([[executable],
-                                 arguments,
-                                 filemap_to_flag_list(input_files),
-                                 filemap_to_flag_list(output_files)])
+                                     arguments,
+                                     filemap_to_flag_list(input_files),
+                                     filemap_to_flag_list(output_files)])
     shell = gmx.make_constant(False)
     cli_args = {'command': command,
                 'shell': shell}
