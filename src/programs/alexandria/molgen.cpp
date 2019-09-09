@@ -419,12 +419,12 @@ immStatus MolGen::check_data_sufficiency(alexandria::MyMol mymol,
 {
     immStatus imm = immOK;
 
-    for (int i = 0; i < mymol.topology_->atoms.nr; i++)
+    for (int i = 0; i < mymol.atoms_->nr; i++)
     {
-        if ((mymol.topology_->atoms.atom[i].atomnumber > 0) &&
-            (mymol.topology_->atoms.atom[i].ptype == eptAtom))
+        if ((mymol.atoms_->atom[i].atomnumber > 0) &&
+            (mymol.atoms_->atom[i].ptype == eptAtom))
         {
-            auto fa = pd_.findAtype(*(mymol.topology_->atoms.atomtype[i]));
+            auto fa = pd_.findAtype(*(mymol.atoms_->atomtype[i]));
             if (pd_.getAtypeEnd() != fa)
             {
                 const std::string &ztype = fa->getZtype();
@@ -448,12 +448,12 @@ immStatus MolGen::check_data_sufficiency(alexandria::MyMol mymol,
     }
     if (imm == immOK)
     {
-        for (int i = 0; i < mymol.topology_->atoms.nr; i++)
+        for (int i = 0; i < mymol.atoms_->nr; i++)
         {
-            if ((mymol.topology_->atoms.atom[i].atomnumber > 0) &&
-                (mymol.topology_->atoms.atom[i].ptype == eptAtom))
+            if ((mymol.atoms_->atom[i].atomnumber > 0) &&
+                (mymol.atoms_->atom[i].ptype == eptAtom))
             {
-                auto fa = pd_.findAtype(*(mymol.topology_->atoms.atomtype[i]));
+                auto fa = pd_.findAtype(*(mymol.atoms_->atomtype[i]));
                 ic->incrementName(fa->getZtype());
             }
         }

@@ -303,12 +303,12 @@ real calc_relposition(const Poldata     *pd,
 
 immStatus updatePlist(const Poldata             *pd,
                       std::vector<PlistWrapper> &plist,
-                      t_topology                *top,
+                      t_atoms                   *atoms,
                       bool                       bBASTAT,
                       std::string                molname)
 {
     std::string              aai, aaj, aak, aal, params;
-    std::vector<std::string> atoms, ptr;
+    std::vector<std::string> atomNames, ptr;
     int                      lu, n;
     size_t                   ntrain;
     double                   value, sigma, r13 = 0;
@@ -328,14 +328,14 @@ immStatus updatePlist(const Poldata             *pd,
                 lu = string2unit(fs->unit().c_str());
                 for (auto pwi = pw.beginParam(); pwi < pw.endParam(); ++pwi)
                 {
-                    if (pd->atypeToBtype(*top->atoms.atomtype[pwi->a[0]], aai) &&
-                        pd->atypeToBtype(*top->atoms.atomtype[pwi->a[1]], aaj))
+                    if (pd->atypeToBtype(*atoms->atomtype[pwi->a[0]], aai) &&
+                        pd->atypeToBtype(*atoms->atomtype[pwi->a[1]], aaj))
                     {
-                        atoms = {aai, aaj};
+                        atomNames = {aai, aaj};
                         auto  bondOrder = pw.bondOrder(bondOrder_index);
                         n     = 0;
                         value = 0;
-                        if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain, bondOrder)) != 0)
+                        if ((fs->searchForce(atomNames, params, &value, &sigma, &ntrain, bondOrder)) != 0)
                         {
                             pwi->c[n++] = convert2gmx(value, lu);
                             ptr         = gmx::splitString(params);
@@ -365,14 +365,14 @@ immStatus updatePlist(const Poldata             *pd,
             {
                 for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
                 {
-                    if (pd->atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
-                        pd->atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
-                        pd->atypeToBtype(*top->atoms.atomtype[b->a[2]], aak))
+                    if (pd->atypeToBtype(*atoms->atomtype[b->a[0]], aai) &&
+                        pd->atypeToBtype(*atoms->atomtype[b->a[1]], aaj) &&
+                        pd->atypeToBtype(*atoms->atomtype[b->a[2]], aak))
                     {
-                        atoms = {aai, aaj, aak};
+                        atomNames = {aai, aaj, aak};
                         n     = 0;
                         value = 0;
-                        if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
+                        if ((fs->searchForce(atomNames, params, &value, &sigma, &ntrain)) != 0)
                         {
                             r13 = calc_r13(pd, aai, aaj, aak, value);
 
@@ -408,15 +408,15 @@ immStatus updatePlist(const Poldata             *pd,
             {
                 for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
                 {
-                    if (pd->atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
-                        pd->atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
-                        pd->atypeToBtype(*top->atoms.atomtype[b->a[2]], aak) &&
-                        pd->atypeToBtype(*top->atoms.atomtype[b->a[3]], aal))
+                    if (pd->atypeToBtype(*atoms->atomtype[b->a[0]], aai) &&
+                        pd->atypeToBtype(*atoms->atomtype[b->a[1]], aaj) &&
+                        pd->atypeToBtype(*atoms->atomtype[b->a[2]], aak) &&
+                        pd->atypeToBtype(*atoms->atomtype[b->a[3]], aal))
                     {
-                        atoms = {aai, aaj, aak, aal};
+                        atomNames = {aai, aaj, aak, aal};
                         n     = 0;
                         value = 0;
-                        if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
+                        if ((fs->searchForce(atomNames, params, &value, &sigma, &ntrain)) != 0)
                         {
                             b->c[n++] = value;
                             ptr       = gmx::splitString(params);

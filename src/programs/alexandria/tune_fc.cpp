@@ -532,8 +532,8 @@ void Optimization::checkSupport(FILE *fp)
 
                     ai  = mymol->ltop_->idef.il[ft].iatoms[i+1];
                     aj  = mymol->ltop_->idef.il[ft].iatoms[i+2];
-                    if (!(poldata()->atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
-                          poldata()->atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj)))
+                    if (!(poldata()->atypeToBtype(*mymol->atoms_->atomtype[ai], aai) &&
+                          poldata()->atypeToBtype(*mymol->atoms_->atomtype[aj], aaj)))
                     {
                         bSupport = false;
                         if (debug)
@@ -566,7 +566,7 @@ void Optimization::checkSupport(FILE *fp)
                         case eitLINEAR_ANGLES:
                         {
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
-                            if (!poldata()->atypeToBtype( *mymol->topology_->atoms.atomtype[ak], aak))
+                            if (!poldata()->atypeToBtype( *mymol->atoms_->atomtype[ak], aak))
                             {
                                 bSupport = false;
                                 if (debug)
@@ -600,8 +600,8 @@ void Optimization::checkSupport(FILE *fp)
                         {
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
                             al  = mymol->ltop_->idef.il[ft].iatoms[i+4];
-                            if (!(poldata()->atypeToBtype( *mymol->topology_->atoms.atomtype[ak], aak) &&
-                                  poldata()->atypeToBtype( *mymol->topology_->atoms.atomtype[al], aal)))
+                            if (!(poldata()->atypeToBtype( *mymol->atoms_->atomtype[ak], aak) &&
+                                  poldata()->atypeToBtype( *mymol->atoms_->atomtype[al], aal)))
                             {
                                 bSupport = false;
                                 if (debug)
@@ -794,8 +794,8 @@ void Optimization::getDissociationEnergy(FILE *fplog)
             auto                     aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
             std::string              aai, aaj;
             std::vector<std::string> atoms;
-            if (poldata()->atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
-                poldata()->atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj))
+            if (poldata()->atypeToBtype(*mymol->atoms_->atomtype[ai], aai) &&
+                poldata()->atypeToBtype(*mymol->atoms_->atomtype[aj], aaj))
             {
                 atoms  = {aai, aaj};
                 auto f = fs->findForce(atoms);
@@ -818,8 +818,8 @@ void Optimization::getDissociationEnergy(FILE *fplog)
             {
                 gmx_fatal(FARGS, "No parameters for bond %s-%s in the force field, atoms %s-%s mol %s",
                           aai.c_str(), aaj.c_str(),
-                          *mymol->topology_->atoms.atomtype[ai],
-                          *mymol->topology_->atoms.atomtype[aj],
+                          *mymol->atoms_->atomtype[ai],
+                          *mymol->atoms_->atomtype[aj],
                           mymol->molProp()->getIupac().c_str());
             }
         }
@@ -947,7 +947,7 @@ double Optimization::calcDeviation()
             (calcAll_ && (mymol.eSupp_ == eSupportRemote)))
         {
             int      nSP    = 0, nOpt = 0;
-            int      natoms = mymol.topology_->atoms.nr;
+            int      natoms = mymol.atoms_->nr;
             gmx_bool bpolar = (mymol.shellfc_ != nullptr);
             double   optHF;
             if (mymol.molProp()->getOptHF(&optHF))
@@ -1223,15 +1223,15 @@ void Optimization::printMolecules(FILE *fp,
         }
         fprintf(fp, "%s natoms: %d Opt conformations: %d SP conformations: %d\n",
                 mi.molProp()->getMolname().c_str(),
-                mi.topology_->atoms.nr,
+                mi.atoms_->nr,
                 nOpt,
                 nSP);
-        for (j = 0; j < mi.topology_->atoms.nr; j++)
+        for (j = 0; j < mi.atoms_->nr; j++)
         {
             fprintf(fp, "  %-5s  %-5s  q = %10g",
-                    *(mi.topology_->atoms.atomname[j]),
-                    *(mi.topology_->atoms.atomtype[j]),
-                    mi.topology_->atoms.atom[j].q);
+                    *(mi.atoms_->atomname[j]),
+                    *(mi.atoms_->atomtype[j]),
+                    mi.atoms_->atom[j].q);
             if (bForce)
             {
                 fprintf(fp, "   f = %8.3f  %8.3f  %8.3f",

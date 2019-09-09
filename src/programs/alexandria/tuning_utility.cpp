@@ -325,8 +325,8 @@ void print_electric_props(FILE                           *fp,
                                 maxESP, qtol, nullptr, nullptr);
             
             // Electrostatic potentials
-            mol.Qgresp_.updateZeta(&mol.topology_->atoms, pd);
-            mol.Qgresp_.updateAtomCharges(&mol.topology_->atoms);
+            mol.Qgresp_.updateZeta(mol.atoms_, pd);
+            mol.Qgresp_.updateAtomCharges(mol.atoms_);
             mol.Qgresp_.updateAtomCoords(mol.x());                
             mol.Qgresp_.calcPot();
             real rrms = 0, wtot = 0, cosangle = 0;
@@ -398,22 +398,22 @@ void print_electric_props(FILE                           *fp,
             auto qcm5  = mol.chargeQM(qtCM5);
             auto x     = mol.x();
             auto qrmsd = 0.0;
-            for (j = i = 0; j < mol.topology_->atoms.nr; j++)
+            for (j = i = 0; j < mol.atoms_->nr; j++)
             {
-                if (mol.topology_->atoms.atom[j].ptype == eptAtom ||
-                    mol.topology_->atoms.atom[j].ptype == eptNucleus)
+                if (mol.atoms_->atom[j].ptype == eptAtom ||
+                    mol.atoms_->atom[j].ptype == eptNucleus)
                 {
-                    auto atp = pd->findAtype(*(mol.topology_->atoms.atomtype[j]));
+                    auto atp = pd->findAtype(*(mol.atoms_->atomtype[j]));
                     auto ztp = atp->getZtype();
                     auto  k  = std::find_if(lsqt.begin(), lsqt.end(),
                                            [ztp](const ZetaTypeLsq &atlsq)
                                            {
                                                return atlsq.ztype.compare(ztp) == 0;
                                            });
-                    qCalc = mol.topology_->atoms.atom[j].q;
+                    qCalc = mol.atoms_->atom[j].q;
                     if (nullptr != mol.shellfc_)
                     {
-                        qCalc += mol.topology_->atoms.atom[j+1].q;
+                        qCalc += mol.atoms_->atom[j+1].q;
                     }                        
                     if (k != lsqt.end())
                     {
@@ -421,9 +421,9 @@ void print_electric_props(FILE                           *fp,
                     gmx_stats_add_point(lsq_charge, qcm5[i], qCalc, 0, 0);
                     qrmsd += gmx::square(qcm5[i]-qCalc);
                     fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
-                            mol.topology_->atoms.atom[j].atomnumber,
+                            mol.atoms_->atom[j].atomnumber,
                             j+1,
-                            *(mol.topology_->atoms.atomtype[j]),
+                            *(mol.atoms_->atomtype[j]),
                             qCalc,
                             mol.chargeQM(qtESP)[i],
                             mol.chargeQM(qtCM5)[i],
@@ -437,7 +437,7 @@ void print_electric_props(FILE                           *fp,
                 }
             }
             fprintf(fp, "\n");
-            qrmsd = sqrt(qrmsd/mol.topology_->atoms.nr);
+            qrmsd = sqrt(qrmsd/mol.atoms_->nr);
             fprintf(fp, "q rmsd: %g (e) %s\n", qrmsd, (qrmsd > 5e-2) ? "XXX" : "");
             n++;
         }

@@ -352,7 +352,7 @@ double OptZeta::calcDeviation()
         if ((mymol.eSupp_ == eSupportLocal) ||
             (final() && (mymol.eSupp_ == eSupportRemote)))
         {
-            mymol.Qgresp_.updateZeta(&mymol.topology_->atoms, poldata());
+            mymol.Qgresp_.updateZeta(&mymol.atoms_-> poldata());
             mymol.Qgresp_.optimizeCharges();
             if (nullptr != mymol.shellfc_)
             {
@@ -366,17 +366,17 @@ double OptZeta::calcDeviation()
             if (bCharge_)
             {
                 qtot = 0;
-                for (j = 0; j < mymol.topology_->atoms.nr; j++)
+                for (j = 0; j < mymol.atoms_->nr; j++)
                 {
-                    auto atomnr = mymol.topology_->atoms.atom[j].atomnumber;
+                    auto atomnr = mymol.atoms_->atom[j].atomnumber;
                     auto qq     = mymol.Qgresp_.getAtomCharge(j);
                     qtot       += qq;
                     mymol.mtop_->moltype[0].atoms.atom[j].q              =
                         mymol.mtop_->moltype[0].atoms.atom[j].qB         =
-                            mymol.topology_->atoms.atom[j].q             =
-                                mymol.topology_->atoms.atom[j].qB        = qq;
-                    if (mymol.topology_->atoms.atom[j].ptype == eptAtom ||
-                        mymol.topology_->atoms.atom[j].ptype == eptNucleus)
+                            mymol.atoms_->atom[j].q             =
+                                mymol.atoms_->atom[j].qB        = qq;
+                    if (mymol.atoms_->atom[j].ptype == eptAtom ||
+                        mymol.atoms_->atom[j].ptype == eptNucleus)
                     {
                         auto q_H        = 0 ? (nullptr != mymol.shellfc_) : 1;
                         auto q_OFSClBrI = 0 ? (nullptr != mymol.shellfc_) : 2;

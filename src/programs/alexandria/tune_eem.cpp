@@ -214,7 +214,7 @@ void OptACM::initChargeGeneration()
                              maxPot());
             // ACM is needed always as well in this program
             mymol.Qgacm_.setInfo(poldata(), 
-                                 &(mymol.topology_->atoms),
+                                 mymol.atoms_,
                                  hfac(),
                                  mymol.molProp()->getCharge());
         }
@@ -309,7 +309,7 @@ double OptACM::calcDeviation()
                 {
                     mymol.mtop_->moltype[0].atoms.atom[i].q =
                         mymol.mtop_->moltype[0].atoms.atom[i].qB =
-                        mymol.topology_->atoms.atom[i].q;
+                        mymol.atoms_->atom[i].q;
                 }
 
                 if (nullptr != mymol.shellfc_)
@@ -325,7 +325,7 @@ double OptACM::calcDeviation()
                     mymol.Qgacm_.generateCharges(debug,
                                                  mymol.molProp()->getMolname().c_str(),
                                                  poldata(),
-                                                 &(mymol.topology_->atoms),
+                                                 mymol.atoms_,
                                                  mymol.x());
                 if (qgen != eQGEN_OK)
                 {
@@ -349,7 +349,7 @@ double OptACM::calcDeviation()
             {
                 mymol.mtop_->moltype[0].atoms.atom[i].q      =
                     mymol.mtop_->moltype[0].atoms.atom[i].qB =
-                    mymol.topology_->atoms.atom[i].q;
+                    mymol.atoms_->atom[i].q;
             }
 
             if (weight(ermsCHARGE))
@@ -359,15 +359,15 @@ double OptACM::calcDeviation()
                 bool   isPolarizable   = (nullptr != mymol.shellfc_);
                 double qtot = 0;
                 int    i, j;
-                for (j = i = 0; j < mymol.topology_->atoms.nr; j++)
+                for (j = i = 0; j < mymol.atoms_->nr; j++)
                 {
-                    auto atomnr = mymol.topology_->atoms.atom[j].atomnumber;
-                    auto qq     = mymol.topology_->atoms.atom[j].q;
+                    auto atomnr = mymol.atoms_->atom[j].atomnumber;
+                    auto qq     = mymol.atoms_->atom[j].q;
                     qtot       += qq;
-                    if (mymol.topology_->atoms.atom[j].ptype == eptAtom ||
-                        mymol.topology_->atoms.atom[j].ptype == eptNucleus)
+                    if (mymol.atoms_->atom[j].ptype == eptAtom ||
+                        mymol.atoms_->atom[j].ptype == eptNucleus)
                     {
-                        double qref = (isPolarizable ? mymol.topology_->atoms.atom[j+1].q : 0);
+                        double qref = (isPolarizable ? mymol.atoms_->atom[j+1].q : 0);
                         double dq   = 0;
                         if (atomnr == 1)
                         {
@@ -408,9 +408,9 @@ double OptACM::calcDeviation()
                 }
                 if (bFitZeta_)
                 {
-                    mymol.Qgresp_.updateZeta(&mymol.topology_->atoms, poldata());
+                    mymol.Qgresp_.updateZeta(mymol.atoms_, poldata());
                 }
-                mymol.Qgresp_.updateAtomCharges(&mymol.topology_->atoms);
+                mymol.Qgresp_.updateAtomCharges(mymol.atoms_);
                 mymol.Qgresp_.calcPot();
                 increaseEnergy(ermsESP, convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms, &cosangle), eg2cHartree_e));
             }

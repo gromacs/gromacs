@@ -66,7 +66,6 @@ struct gmx_shellfc_t;
 struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
-struct t_topology;
 struct gmx_hw_info_t;
 
 enum eDih {
@@ -285,7 +284,7 @@ class MyMol
         t_symtab                      *symtab_;
         t_inputrec                    *inputrec_;
         gmx_enerdata_t                *enerd_;
-        t_topology                    *topology_;
+        t_atoms                       *atoms_;
         t_fcdata                      *fcd_;
         t_nrnb                         nrnb_;
         gmx_wallcycle_t                wcycle_;
@@ -364,7 +363,7 @@ class MyMol
         t_state *molState() const { return state_; }
 
         /*! \brief
-         * It generates the topology structure which will be used to print the topology file.
+         * It generates the atoms structure which will be used to print the topology file.
          *
          * \param[in] ap          Gromacs atom properties
          * \param[in] pd          Data structure containing atomic properties
