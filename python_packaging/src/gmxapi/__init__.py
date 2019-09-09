@@ -49,6 +49,7 @@ __all__ = ['commandline_operation',
            'logical_not',
            'make_constant',
            'mdrun',
+           'modify_input',
            'ndarray',
            'read_tpr',
            'subgraph',
@@ -67,7 +68,7 @@ from .datamodel import NDArray
 from .datamodel import ndarray
 from .operation import concatenate_lists, join_arrays, logical_not, make_constant
 from .commandline import commandline_operation
-from .simulation import mdrun, read_tpr
+from .simulation import mdrun, modify_input, read_tpr
 # TODO: decide where this lives
 from .operation import subgraph
 # TODO: decide where this lives

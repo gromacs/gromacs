@@ -31,13 +31,33 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
+
 """GROMACS simulation subpackage for gmxapi.
 
 Provides operations for configuring and running molecular simulations.
+
+The initial version of this module is a port of the gmxapi 0.0.7 facilities from
+https://github.com/kassonlab/gmxapi and is not completely integrated with the
+gmxapi 0.1 specification. Operation execution is dispatched to the old execution
+manager for effective ensemble handling and C++ MD module binding. This should
+be an implementation detail that is not apparent to the typical user, but it is
+worth noting that chains of gmxapi.simulation module operations will be
+automatically bundled for execution as gmxapi 0.0.7 style API sessions. Run time
+options and file handling will necessarily change as gmxapi data flow handling
+evolves.
+
+In other words, if you rely on behavior not specified explicitly in the user
+documentation, please keep an eye on the module documentation when updating
+gmxapi and please participate in the ongoing discussions for design and
+implementation.
 """
 
-__all__ = ['mdrun',
+__all__ = ['abc',
+           'mdrun',
+           'modify_input',
            'read_tpr']
 
+from gmxapi.simulation import abc
 from .mdrun import mdrun
 from .read_tpr import read_tpr
+from .modify_input import modify_input

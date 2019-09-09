@@ -118,3 +118,13 @@ def test_run_from_read_tpr_op(spc_water_box):
     md = gmx.mdrun(input=simulation_input)
 
     md.run()
+
+@pytest.mark.usefixtures('cleandir')
+def test_run_from_modify_input_op(spc_water_box, caplog):
+    with caplog.at_level(logging.DEBUG):
+
+        simulation_input = gmx.read_tpr(spc_water_box)
+        modified_input = gmx.modify_input(input=simulation_input, parameters={'nsteps': 4})
+        md = gmx.mdrun(input=modified_input)
+
+        md.run()
