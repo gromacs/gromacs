@@ -241,6 +241,15 @@ void prepareGpuKernelArgument(cl_kernel                 kernel,
     cl_int gmx_used_in_debug clError = clSetKernelArg(kernel, argIndex, sizeof(CurrentArg), argPtr);
     GMX_ASSERT(CL_SUCCESS == clError, ocl_get_error_string(clError).c_str());
 
+    // Assert on types not allowed to be passed to a kernel
+    // (as per section 6.9 of the OpenCL spec).
+    static_assert(!std::is_same<CurrentArg, bool>::value &&
+                  !std::is_same<CurrentArg, size_t>::value &&
+                  !std::is_same<CurrentArg, ptrdiff_t>::value &&
+                  !std::is_same<CurrentArg, intptr_t>::value &&
+                  !std::is_same<CurrentArg, uintptr_t>::value,
+                  "Invalid type passed to OpenCL kernel functions (see OpenCL spec section 6.9).");
+
     prepareGpuKernelArgument(kernel, config, argIndex + 1, otherArgsPtrs ...);
 }
 
