@@ -48,7 +48,71 @@
 # package from the directory containing setup.py, which may clutter that
 # directory with some artifacts.
 
+import os
+
 from skbuild import setup
+import cmake
+
+gmx_toolchain = os.getenv('GROMACS_TOOLCHAIN')
+gmxapi_DIR = os.getenv('gmxapi_DIR')
+
+def _find_first_gromacs_suffix(directory):
+    dir_contents = os.listdir(directory)
+    for entry in dir_contents:
+        if entry.startswith('gromacs'):
+            return entry.strip('gromacs')
+
+if gmx_toolchain is None:
+    # Try to guess from standard GMXRC environment variables.
+    if gmxapi_DIR is None:
+        gmxapi_DIR = os.getenv('GROMACS_DIR')
+    if gmxapi_DIR is not None:
+        if os.path.exists(gmxapi_DIR) and os.path.isdir(gmxapi_DIR):
+            share_cmake = os.path.join(gmxapi_DIR, 'share', 'cmake')
+            suffix = _find_first_gromacs_suffix(share_cmake)
+            if suffix is not None:
+                gmx_toolchain = os.path.join(share_cmake,
+                                             'gromacs' + suffix,
+                                             'gromacs-toolchain' + suffix + '.cmake')
+
+class GmxapiInstallError(Exception):
+    """Error processing setup.py for gmxapi Python package."""
+
+if gmx_toolchain is None:
+    raise GmxapiInstallError('Could not configure for GROMACS installation. Provide GROMACS_TOOLCHAIN.')
+else:
+    gmx_toolchain = os.path.abspath(gmx_toolchain)
+
+if gmxapi_DIR is None:
+    # Example: given /usr/local/gromacs/share/cmake/gromacs/gromacs-toolchain.cmake,
+    # we would want /usr/local/gromacs.
+    # Note that we could point more directly to the gmxapi-config.cmake but,
+    # so far, we have relied on CMake automatically looking into
+    # <package>_DIR/share/cmake/<package>/ for such a file.
+    # We would need a slightly different behavior for packages that link against
+    # libgromacs directly, as sample_restraint currently does.
+    gmxapi_DIR = os.path.abspath(
+        os.path.join(os.path.dirname(gmx_toolchain), '..', '..', '..'))
+
+if gmxapi_DIR != os.path.commonpath([gmxapi_DIR, gmx_toolchain]):
+    raise GmxapiInstallError('GROMACS toolchain file {} is not in gmxapi_DIR {}'.format(
+        gmx_toolchain,
+        gmxapi_DIR
+    ))
+
+# TODO: Use package-specific hinting variable.
+# We want to be sure that we find a <package>-config.cmake associated with the
+# toolchains file, but we want to preempt most of the normal CMake
+# [search procedure](https://cmake.org/cmake/help/latest/command/find_package.html#id5),
+# which could lead to hard-to-diagnose build problems.
+# Note that <package>_ROOT is not standard until CMake 3.12
+# Reference https://cmake.org/cmake/help/latest/policy/CMP0074.html#policy:CMP0074
+_cmake_major, _cmake_minor = cmake.__version__.split('.')[0:2]
+if int(_cmake_major) >= 3 and int(_cmake_minor) >= 12:
+    cmake_gmxapi_hint = '-Dgmxapi_ROOT={}'
+else:
+    cmake_gmxapi_hint = '-DCMAKE_PREFIX_PATH={}'
+cmake_gmxapi_hint = cmake_gmxapi_hint.format(gmxapi_DIR)
 
 setup(
     name='gmxapi',
@@ -56,11 +120,18 @@ setup(
     # TODO: (pending infrastructure and further discussion) Replace with CMake variables from GMXAPI version.
     version='0.1.0.dev3',
     python_requires='>=3.5, <4',
-    setup_requires=['setuptools>=28'],
+    setup_requires=['cmake>=3.9.6',
+                    'setuptools>=28',
+                    'scikit-build>=0.7'],
 
     packages=['gmxapi', 'gmxapi.simulation'],
+
+    # TODO: It may be necessary to put these or other OSX directives in the toolchain file.
     cmake_args=['-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=10.9',
-                '-DCMAKE_OSX_ARCHITECTURES:STRING=x86_64'],
+                '-DCMAKE_OSX_ARCHITECTURES:STRING=x86_64',
+                '-DCMAKE_TOOLCHAIN_FILE={}'.format(gmx_toolchain),
+                cmake_gmxapi_hint
+                ],
 
     author='M. Eric Irrgang',
     author_email='info@gmxapi.org',

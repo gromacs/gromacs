@@ -68,6 +68,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 cmake_policy(SET CMP0054 NEW)
 # honor the language standard settings for try_compile()
 cmake_policy(SET CMP0067 NEW)
+# Allow gmxapi_ROOT hint.
+cmake_policy(SET CMP0074 NEW)
 
 if(GMXAPI_MASTER_PROJECT)
     find_package(gmxapi 0.0.8 REQUIRED
@@ -86,6 +88,15 @@ if(gmxapi_FOUND)
     endif()
     message(STATUS "Found gmxapi version ${gmxapi_VERSION}${_suffix}")
 endif()
+
+# TODO: Provide user hints for mpi4py installation.
+# Note that neither the Python package nor the Gromacs::gmxapi CMake target are
+# built with MPI in any case, but they _should_ be built with a C++ compiler
+# that is compatible with the available MPI compiler wrappers, and technically
+# _that_ is what we want to help the user identify when installing mpi4py, even
+# if libgromacs is not built with MPI support either.
+# For convenience, it is fine if libgmxapi and _gmxapi are built with the mpi
+# compiler wrapper.
 
 option(GMXAPI_USE_BUNDLED_PYBIND
        "Use pybind11 headers bundled with this repository. If OFF, CMake does `find_package(pybind11)`."
