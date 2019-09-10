@@ -386,12 +386,15 @@ PmeOutput pme_gpu_wait_finish_task(gmx_pme_t     *pme,
 
     wallcycle_start(wcycle, ewcWAIT_GPU_PME_GATHER);
 
-    // Synchronize the whole PME stream at once, including D2H result transfers.
-    //
-    // TODO: make this sync conditional to wait only for virial/energies
-    pme_gpu_synchronize(pme->gpu);
+    // Synchronize the whole PME stream at once, including D2H result transfers
+    // if there are outputs we need to wait for at this step; we still call getOutputs
+    // for uniformity and because it sets the PmeOutput.haveForceOutput_.
+    const bool haveComputedEnergyAndVirial = (flags & GMX_PME_CALC_ENER_VIR) != 0;
+    if (!pme->gpu->settings.useGpuForceReduction || haveComputedEnergyAndVirial)
+    {
+        pme_gpu_synchronize(pme->gpu);
+    }
 
-    pme_gpu_update_timings(pme->gpu);
     PmeOutput output = pme_gpu_getOutput(*pme, flags);
     wallcycle_stop(wcycle, ewcWAIT_GPU_PME_GATHER);
     return output;
@@ -416,6 +419,8 @@ void pme_gpu_reinit_computation(const gmx_pme_t *pme,
 
     wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
     wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
+
+    pme_gpu_update_timings(pme->gpu);
 
     pme_gpu_clear_grids(pme->gpu);
     pme_gpu_clear_energy_virial(pme->gpu);
