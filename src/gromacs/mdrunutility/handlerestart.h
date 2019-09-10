@@ -71,14 +71,16 @@ namespace gmx
 enum class AppendingBehavior;
 
 //! Enumeration for describing how mdrun is (re)starting
-enum class StartingBehavior
+enum class StartingBehavior : int
 {
     //! Restarting with appending, if a checkpoint is supplied and other conditions are met.
     RestartWithAppending,
     //! Restarting without appending, when a checkpoint is supplied.
     RestartWithoutAppending,
     //! Not restarting
-    NewSimulation
+    NewSimulation,
+    //! Mark the end of the enumeration
+    Count
 };
 
 /*! \brief Handle startup of mdrun, particularly regarding -cpi and -append

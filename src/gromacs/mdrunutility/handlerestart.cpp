@@ -74,6 +74,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/path.h"
@@ -167,10 +168,16 @@ const char *precisionToString(bool isDoublePrecision)
     return isDoublePrecision ? "double" : "mixed";
 }
 
-/*! \brief Choose the starting behaviour
+/*! \brief Choose the starting behaviour for this simulation
  *
  * This routine cannot print tons of data, since it is called before
- * the log file is opened. */
+ * the log file is opened.
+ *
+ * Note that different simulations in a multi-simulation can return
+ * values that depend on whether the respective checkpoint files are
+ * found (and other files found, when appending), and so can differ
+ * between multi-simulations. It is the caller's responsibility to
+ * detect this and react accordingly. */
 std::tuple < StartingBehavior,
 CheckpointHeaderContents,
 std::vector < gmx_file_position_t>>
@@ -464,6 +471,101 @@ prepareForAppending(const ArrayRef<const gmx_file_position_t> outputFiles,
     }
 }
 
+/*! \brief Throw unless all simulations in a multi-sim restart the same way.
+ *
+ * The restart could differ if checkpoint or other output files are
+ * not found in a consistent way across the set of multi-simulations,
+ * or are from different simulation parts.
+ *
+ * \param[in]  ms                Multi-sim handler.
+ * \param[in]  startingBehavior  Behavior of the current simulation
+ * \param[in]  simulationPart    The number of the part of the simulation described by
+ *                               the checkpoint file, when doing a restart. Otherwise
+ *                               unused and may contain any value.
+ *
+ * May only be called from the master rank of each simulation.
+ *
+ * \throws InconsistentInputError if either simulations restart
+ * differently, or from checkpoints from different simulation parts.
+ */
+void ensureMultiSimBehaviorsMatch(const gmx_multisim_t  *ms,
+                                  const StartingBehavior startingBehavior,
+                                  const int              simulationPart)
+{
+    if (!isMultiSim(ms))
+    {
+        // Trivially, the multi-sim behaviors match
+        return;
+    }
+
+    auto startingBehaviors          = gatherIntFromMultiSimulation(ms, static_cast<int>(startingBehavior));
+    bool identicalStartingBehaviors = (std::adjacent_find(std::begin(startingBehaviors),
+                                                          std::end(startingBehaviors),
+                                                          std::not_equal_to<>()) == std::end(startingBehaviors));
+
+    const EnumerationArray<StartingBehavior, std::string> behaviorStrings =
+    { { "restart with appending", "restart without appending", "new simulation" } };
+    if (!identicalStartingBehaviors)
+    {
+        std::string message = formatString(R"(
+Multi-simulations must all start in the same way, either a new
+simulation, a restart with appending, or a restart without appending.
+However, the contents of the multi-simulation directories you specified
+were inconsistent with each other. Either remove the checkpoint file
+from each directory, or ensure each directory has a checkpoint file from
+the same simulation part (and, if you want to append to output files,
+ensure the old output files are present and named as they were when the
+checkpoint file was written).
+
+To help you identify which directories need attention, the %d
+simulations wanted the following respective behaviors:
+)", ms->nsim);
+        for (index simIndex = 0; simIndex != ssize(startingBehaviors); ++simIndex)
+        {
+            auto behavior = static_cast<StartingBehavior>(startingBehaviors[simIndex]);
+            message += formatString("  Simulation %6zd: %s\n", simIndex, behaviorStrings[behavior].c_str());
+        }
+        GMX_THROW(InconsistentInputError(message));
+    }
+
+    if (startingBehavior == StartingBehavior::NewSimulation)
+    {
+        // When not restarting, the behaviors are now known to match
+        return;
+    }
+
+    // Multi-simulation restarts require that each checkpoint
+    // describes the same simulation part. If those don't match, then
+    // the simulation cannot proceed.
+    auto simulationParts          = gatherIntFromMultiSimulation(ms, simulationPart);
+    bool identicalSimulationParts = (std::adjacent_find(std::begin(simulationParts),
+                                                        std::end(simulationParts),
+                                                        std::not_equal_to<>()) == std::end(simulationParts));
+
+    if (!identicalSimulationParts)
+    {
+        std::string message = formatString(R"(
+Multi-simulations must all start in the same way, either a new
+simulation, a restart with appending, or a restart without appending.
+However, the checkpoint files you specified were from different
+simulation parts. Either remove the checkpoint file from each directory,
+or ensure each directory has a checkpoint file from the same simulation
+part (and, if you want to append to output files, ensure the old output
+files are present and named as they were when the checkpoint file was
+written).
+
+To help you identify which directories need attention, the %d
+simulation checkpoint files were from the following respective
+simulation parts:
+)", ms->nsim);
+        for (index partIndex = 0; partIndex != ssize(simulationParts); ++partIndex)
+        {
+            message += formatString("  Simulation %6zd: %d\n", partIndex, simulationParts[partIndex]);
+        }
+        GMX_THROW(InconsistentInputError(message));
+    }
+}
+
 }   // namespace
 
 std::tuple<StartingBehavior, LogFilePtr>
@@ -493,16 +595,7 @@ handleRestart(t_commrec              *cr,
 
             std::tie(startingBehavior, headerContents, outputFiles) = chooseStartingBehavior(appendingBehavior, nfile, fnm);
 
-            if (isMultiSim(ms))
-            {
-                // Multi-simulation restarts require that each
-                // checkpoint describes the same simulation part. If
-                // those don't match, then the simulation cannot
-                // proceed, and can only report a diagnostic to
-                // stderr. Only one simulation should do that.
-                FILE *fpmulti = isMasterSim(ms) ? stderr : nullptr;
-                check_multi_int(fpmulti, ms, headerContents.simulation_part, "simulation part", TRUE);
-            }
+            ensureMultiSimBehaviorsMatch(ms, startingBehavior, headerContents.simulation_part);
 
             if (startingBehavior == StartingBehavior::RestartWithAppending)
             {

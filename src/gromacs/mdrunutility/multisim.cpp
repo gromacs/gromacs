@@ -274,6 +274,23 @@ void gmx_sumli_sim(int gmx_unused nr, int64_t gmx_unused r[], const gmx_multisim
 #endif
 }
 
+std::vector<int> gatherIntFromMultiSimulation(const gmx_multisim_t *ms,
+                                              const int             localValue)
+{
+    std::vector<int> valuesFromAllRanks;
+    if (GMX_MPI && ms != nullptr)
+    {
+        valuesFromAllRanks.resize(ms->nsim);
+        valuesFromAllRanks[ms->sim] = localValue;
+        gmx_sumi_sim(ms->nsim, valuesFromAllRanks.data(), ms);
+    }
+    else
+    {
+        valuesFromAllRanks.emplace_back(localValue);
+    }
+    return valuesFromAllRanks;
+}
+
 void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
                      const char *name,
                      gmx_bool bQuiet)

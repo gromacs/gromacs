@@ -84,6 +84,11 @@ void gmx_sumf_sim(int nr, float r[], const gmx_multisim_t *ms);
 //! Calculate the sum over the simulations of an array of doubles
 void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t *ms);
 
+/*! \brief Return a vector containing the gathered values of \c
+ * localValue found on the master rank of each simulation. */
+std::vector<int> gatherIntFromMultiSimulation(const gmx_multisim_t *ms,
+                                              int                   localValue);
+
 /*! \brief Check if val is the same on all simulations for a mdrun
  * -multidir run
  *
