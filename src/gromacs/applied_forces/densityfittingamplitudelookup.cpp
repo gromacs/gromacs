@@ -159,7 +159,7 @@ const std::vector<real> &MassesAsAmplitudes::operator()(const t_mdatoms    &atom
     }
 
     std::transform(std::begin(localIndex), std::end(localIndex), std::begin(amplitude_),
-                   [&atoms](gmx::index index) { return atoms.massA[index]; });
+                   [&atoms](gmx::index index) { return atoms.massT[index]; });
     return amplitude_;
 }
 

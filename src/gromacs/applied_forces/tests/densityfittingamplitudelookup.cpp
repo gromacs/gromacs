@@ -58,7 +58,7 @@ class DensityFittingAmplitudeLookupTest : public ::testing::Test
         DensityFittingAmplitudeLookupTest()
         {
             atoms_.nr      = numberOfAtoms_;
-            atoms_.massA   = masses_.data();
+            atoms_.massT   = masses_.data();
             atoms_.chargeA = charges_.data();
         }
     protected:
