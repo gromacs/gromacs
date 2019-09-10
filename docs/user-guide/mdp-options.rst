@@ -563,10 +563,12 @@ Neighbor searching
 .. mdp:: rlist
 
    (1) [nm]
-   Cut-off distance for the short-range neighbor list. With the
-   :mdp-value:`cutoff-scheme=Verlet` :mdp:`cutoff-scheme`, this is by default set by the
-   :mdp:`verlet-buffer-tolerance` option and the value of
-   :mdp:`rlist` is ignored.
+   Cut-off distance for the short-range neighbor list. With dynamics,
+   this is by default set by the :mdp:`verlet-buffer-tolerance` option
+   and the value of :mdp:`rlist` is ignored. Without dynamics, this
+   is by default set to the maximum cut-off plus 5% buffer, except
+   for test particle insertion, where the buffer is managed exactly
+   and automatically.
 
 
 Electrostatics

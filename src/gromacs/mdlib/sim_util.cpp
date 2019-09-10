@@ -1118,7 +1118,7 @@ void do_force(FILE                                     *fplog,
             nbv->atomdata_init_add_nbat_f_to_f_gpu();
         }
     }
-    else
+    else if (!EI_TPI(inputrec->eI))
     {
         if (useGpuXBufOps == BufferOpsUseGpu::True)
         {
@@ -1376,13 +1376,16 @@ void do_force(FILE                                     *fplog,
                          step, nrnb, wcycle);
         }
 
-        /* Add all the non-bonded force to the normal force array.
-         * This can be split into a local and a non-local part when overlapping
-         * communication with calculation with domain decomposition.
-         */
-        wallcycle_stop(wcycle, ewcFORCE);
-        nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::All, forceOut.forceWithShiftForces().force());
-        wallcycle_start_nocount(wcycle, ewcFORCE);
+        if (forceFlags.computeForces)
+        {
+            /* Add all the non-bonded force to the normal force array.
+             * This can be split into a local and a non-local part when overlapping
+             * communication with calculation with domain decomposition.
+             */
+            wallcycle_stop(wcycle, ewcFORCE);
+            nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::All, forceOut.forceWithShiftForces().force());
+            wallcycle_start_nocount(wcycle, ewcFORCE);
+        }
 
         /* If there are multiple fshift output buffers we need to reduce them */
         if (forceFlags.computeVirial)

@@ -104,13 +104,32 @@ static real gridAtomDensity(int        numAtoms,
 
 void Grid::setDimensions(const int            ddZone,
                          const int            numAtoms,
-                         const rvec           lowerCorner,
-                         const rvec           upperCorner,
+                         gmx::RVec            lowerCorner,
+                         gmx::RVec            upperCorner,
                          real                 atomDensity,
                          const real           maxAtomGroupRadius,
                          const bool           haveFep,
                          gmx::PinningPolicy   pinningPolicy)
 {
+    /* We allow passing lowerCorner=upperCorner, in which case we need to
+     * create a finite sized bounding box to avoid division by zero.
+     * We use a minimum size such that the volume fits in float with some
+     * margin for computing and using the atom number density.
+     */
+    constexpr real c_minimumGridSize = 1e-10;
+    for (int d = 0; d < DIM; d++)
+    {
+        GMX_ASSERT(upperCorner[d] >= lowerCorner[d], "Upper corner should be larger than the lower corner");
+        if (upperCorner[d] - lowerCorner[d] < c_minimumGridSize)
+        {
+            /* Ensure we apply a correction to the bounding box */
+            real correction = std::max(std::abs(lowerCorner[d])*GMX_REAL_EPS,
+                                       0.5_real*c_minimumGridSize);
+            lowerCorner[d] -= correction;
+            upperCorner[d] += correction;
+        }
+    }
+
     /* For the home zone we compute the density when not set (=-1) or when =0 */
     if (ddZone == 0 && atomDensity <= 0)
     {
@@ -151,7 +170,7 @@ void Grid::setDimensions(const int            ddZone,
             tlen_y    = tlen*c_gpuNumClusterPerCellY;
         }
         /* We round ncx and ncy down, because we get less cell pairs
-         * in the nbsist when the fixed cell dimensions (x,y) are
+         * in the pairlist when the fixed cell dimensions (x,y) are
          * larger than the variable one (z) than the other way around.
          */
         dimensions_.numCells[XX] = std::max(1, static_cast<int>(size[XX]/tlen_x));
@@ -1409,12 +1428,9 @@ void Grid::setCellIndices(int                             ddZone,
         /* Set the cell indices for the moved particles */
         int n0 = numCellsTotal_*numAtomsPerCell;
         int n1 = numCellsTotal_*numAtomsPerCell + cxy_na_[numColumns()];
-        if (ddZone == 0)
+        for (int i = n0; i < n1; i++)
         {
-            for (int i = n0; i < n1; i++)
-            {
-                cells[atomIndices[i]] = i;
-            }
+            cells[atomIndices[i]] = i;
         }
     }
 

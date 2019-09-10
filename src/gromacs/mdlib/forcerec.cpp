@@ -1475,7 +1475,6 @@ void init_forcerec(FILE                             *fp,
     real           rtab;
     char          *env;
     double         dbl;
-    const t_block *cgs;
     gmx_bool       bGenericKernelOnly;
     gmx_bool       bFEP_NonBonded;
 
@@ -1491,16 +1490,8 @@ void init_forcerec(FILE                             *fp,
     if (EI_TPI(ir->eI))
     {
         /* Set to the size of the molecule to be inserted (the last one) */
-        /* Because of old style topologies, we have to use the last cg
-         * instead of the last molecule type.
-         */
-        cgs       = &mtop->moltype[mtop->molblock.back().type].cgs;
-        fr->n_tpi = cgs->index[cgs->nr] - cgs->index[cgs->nr-1];
         gmx::RangePartitioning molecules = gmx_mtop_molecules(*mtop);
-        if (fr->n_tpi != molecules.block(molecules.numBlocks() - 1).size())
-        {
-            gmx_fatal(FARGS, "The molecule to insert can not consist of multiple charge groups.\nMake it a single charge group.");
-        }
+        fr->n_tpi = molecules.block(molecules.numBlocks() - 1).size();
     }
     else
     {

@@ -472,6 +472,7 @@ init_nb_verlet(const gmx::MDLogger     &mdlog,
 
     auto pairSearch =
         std::make_unique<PairSearch>(ir->ePBC,
+                                     EI_TPI(ir->eI),
                                      DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
                                      DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
                                      pairlistParams.pairlistType,

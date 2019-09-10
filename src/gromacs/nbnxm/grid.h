@@ -403,8 +403,8 @@ class Grid
         //! Sets the grid dimensions
         void setDimensions(int                   ddZone,
                            int                   numAtoms,
-                           const rvec            lowerCorner,
-                           const rvec            upperCorner,
+                           gmx::RVec             lowerCorner,
+                           gmx::RVec             upperCorner,
                            real                  atomDensity,
                            real                  maxAtomGroupRadius,
                            bool                  haveFep,

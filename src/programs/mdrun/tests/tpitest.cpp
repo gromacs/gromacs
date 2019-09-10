@@ -127,6 +127,7 @@ TEST_P(TpiTest, ReproducesOutput)
         epsilon-r                = 1
         epsilon-rf               = 0
         vdw-type                 = cut-off
+        vdw-modifier             = none
         rvdw                     = 0.9
         Tcoupl                   = no
         tc-grps                  = System
@@ -139,8 +140,7 @@ TEST_P(TpiTest, ReproducesOutput)
     runTest();
 }
 
-// Should be re-enabled when TPI supports the Verlet scheme
-INSTANTIATE_TEST_CASE_P(DISABLED_Simple, TpiTest, ::testing::Values(1993, 2994));
+INSTANTIATE_TEST_CASE_P(Simple, TpiTest, ::testing::Values(1993, 2994));
 
 }  // namespace
 }  // namespace test

@@ -54,25 +54,35 @@
 namespace Nbnxm
 {
 
-//! Returns the number of DD zones
-static int numDDZones(const std::array<bool, DIM> &haveMultipleDomainsPerDim)
+//! Returns the number of search grids
+static int numGrids(const GridSet::DomainSetup &domainSetup)
 {
-    int  numDDZones = 1;
-    for (auto haveDD : haveMultipleDomainsPerDim)
+    int numGrids;
+    if (domainSetup.doTestParticleInsertion)
     {
-        if (haveDD)
+        numGrids = 2;
+    }
+    else
+    {
+        numGrids = 1;
+        for (auto haveDD : domainSetup.haveMultipleDomainsPerDim)
         {
-            numDDZones *= 2;
+            if (haveDD)
+            {
+                numGrids *= 2;
+            }
         }
     }
 
-    return numDDZones;
+    return numGrids;
 }
 
 GridSet::DomainSetup::DomainSetup(const int                 ePBC,
+                                  const bool                doTestParticleInsertion,
                                   const ivec               *numDDCells,
                                   const gmx_domdec_zones_t *ddZones) :
     ePBC(ePBC),
+    doTestParticleInsertion(doTestParticleInsertion),
     haveMultipleDomains(numDDCells != nullptr),
     zones(ddZones)
 {
@@ -83,14 +93,15 @@ GridSet::DomainSetup::DomainSetup(const int                 ePBC,
 }
 
 GridSet::GridSet(const int                 ePBC,
+                 const bool                doTestParticleInsertion,
                  const ivec               *numDDCells,
                  const gmx_domdec_zones_t *ddZones,
                  const PairlistType        pairlistType,
                  const bool                haveFep,
                  const int                 numThreads,
                  gmx::PinningPolicy        pinningPolicy) :
-    domainSetup_(ePBC, numDDCells, ddZones),
-    grids_(numDDZones(domainSetup_.haveMultipleDomainsPerDim), Grid(pairlistType, haveFep_)),
+    domainSetup_(ePBC, doTestParticleInsertion, numDDCells, ddZones),
+    grids_(numGrids(domainSetup_), Grid(pairlistType, haveFep_)),
     haveFep_(haveFep),
     numRealAtomsLocal_(0),
     numRealAtomsTotal_(0),
@@ -123,7 +134,7 @@ void GridSet::setLocalAtomOrder()
 
 // TODO: Move to gridset.cpp
 void GridSet::putOnGrid(const matrix                    box,
-                        const int                       ddZone,
+                        const int                       gridIndex,
                         const rvec                      lowerCorner,
                         const rvec                      upperCorner,
                         const gmx::UpdateGroupsCog     *updateGroupsCog,
@@ -136,29 +147,29 @@ void GridSet::putOnGrid(const matrix                    box,
                         const int                      *move,
                         nbnxn_atomdata_t               *nbat)
 {
-    Nbnxm::Grid  &grid = grids_[ddZone];
+    Nbnxm::Grid  &grid = grids_[gridIndex];
 
     int           cellOffset;
-    if (ddZone == 0)
+    if (gridIndex == 0)
     {
         cellOffset = 0;
     }
     else
     {
-        const Nbnxm::Grid &previousGrid = grids_[ddZone - 1];
+        const Nbnxm::Grid &previousGrid = grids_[gridIndex - 1];
         cellOffset = previousGrid.atomIndexEnd()/previousGrid.geometry().numAtomsPerCell;
     }
 
     const int n = atomEnd - atomStart;
 
     real      maxAtomGroupRadius;
-    if (ddZone == 0)
+    if (gridIndex == 0)
     {
         copy_mat(box, box_);
 
         numRealAtomsLocal_ = atomEnd - numAtomsMoved;
         /* We assume that nbnxn_put_on_grid is called first
-         * for the local atoms (ddZone=0).
+         * for the local atoms (gridIndex=0).
          */
         numRealAtomsTotal_ = atomEnd - numAtomsMoved;
 
@@ -182,8 +193,9 @@ void GridSet::putOnGrid(const matrix                    box,
     /* We always use the home zone (grid[0]) for setting the cell size,
      * since determining densities for non-local zones is difficult.
      */
-    // grid data used in GPU transfers inherits the gridset pinnin policy
-    auto pinPolicy = gridSetData_.cells.get_allocator().pinningPolicy();
+    const int ddZone = (domainSetup_.doTestParticleInsertion ? 0 : gridIndex);
+    // grid data used in GPU transfers inherits the gridset pinning policy
+    auto      pinPolicy = gridSetData_.cells.get_allocator().pinningPolicy();
     grid.setDimensions(ddZone, n - numAtomsMoved,
                        lowerCorner, upperCorner,
                        atomDensity,
@@ -220,11 +232,11 @@ void GridSet::putOnGrid(const matrix                    box,
     grid.setCellIndices(ddZone, cellOffset, &gridSetData_, gridWork_,
                         atomStart, atomEnd, atomInfo.data(), x, numAtomsMoved, nbat);
 
-    if (ddZone == 0)
+    if (gridIndex == 0)
     {
         nbat->natoms_local = nbat->numAtoms();
     }
-    if (ddZone == gmx::ssize(grids_) - 1)
+    if (gridIndex == gmx::ssize(grids_) - 1)
     {
         /* We are done setting up all grids, we can resize the force buffers */
         nbat->resizeForceBuffers();

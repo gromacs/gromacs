@@ -4041,6 +4041,11 @@ PairlistSet::constructPairlists(const Nbnxm::GridSet          &gridSet,
 
     for (int zi = 0; zi < nzi; zi++)
     {
+        /* With TPI we do grid 1, the inserted molecule, versus grid 0, the rest */
+        if (gridSet.domainSetup().doTestParticleInsertion)
+        {
+            zi = 1;
+        }
         const Grid &iGrid = gridSet.grids()[zi];
 
         int                 zj0;

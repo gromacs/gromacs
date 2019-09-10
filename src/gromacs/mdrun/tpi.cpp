@@ -70,6 +70,7 @@
 #include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/update.h"
@@ -82,6 +83,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformrealdistribution.h"
@@ -129,6 +131,31 @@ static void realloc_bins(double **bin, int *nbin, int nbin_new)
     }
 }
 
+//! Computes and returns the RF exclusion energy for the last molecule starting at \p beginAtom
+static real
+reactionFieldExclusionCorrection(gmx::ArrayRef<const gmx::RVec> x,
+                                 const t_mdatoms               &mdatoms,
+                                 const interaction_const_t     &ic,
+                                 const int                      beginAtom)
+{
+    real energy = 0;
+
+    for (int i = beginAtom; i < mdatoms.homenr; i++)
+    {
+        const real qi = mdatoms.chargeA[i];
+        energy -= 0.5*qi*qi*ic.c_rf;
+
+        for (int j = i + 1; j < mdatoms.homenr; j++)
+        {
+            const real qj  = mdatoms.chargeA[j];
+            const real rsq = distance2(x[i], x[j]);
+            energy += qi*qj*(ic.k_rf*rsq - ic.c_rf);
+        }
+    }
+
+    return ic.epsfac*energy;
+}
+
 namespace gmx
 {
 
@@ -136,6 +163,8 @@ namespace gmx
 void
 LegacySimulator::do_tpi()
 {
+    GMX_RELEASE_ASSERT(gmx_omp_nthreads_get(emntDefault) == 1, "TPI does not support OpenMP");
+
     gmx_localtop_t          top;
     PaddedVector<gmx::RVec> f {};
     real                    lambda, t, temp, beta, drmax, epot;
@@ -146,7 +175,7 @@ LegacySimulator::do_tpi()
     tensor                  force_vir, shake_vir, vir, pres;
     int                     a_tp0, a_tp1, ngid, gid_tp, nener, e;
     rvec                   *x_mol;
-    rvec                    mu_tot, x_init, dx, x_tp;
+    rvec                    mu_tot, x_init, dx;
     int                     nnodes, frame;
     int64_t                 frame_step_prev, frame_step;
     int64_t                 nsteps, stepblocksize = 0, step;
@@ -176,11 +205,6 @@ LegacySimulator::do_tpi()
      */
     real bU_bin_limit      = 50;
     real bU_logV_bin_limit = bU_bin_limit + 10;
-
-    if (inputrec->cutoff_scheme == ecutsVERLET)
-    {
-        gmx_fatal(FARGS, "TPI does not work (yet) with the Verlet cut-off scheme");
-    }
 
     nnodes = cr->nnodes;
 
@@ -279,13 +303,31 @@ LegacySimulator::do_tpi()
         fprintf(debug, "TPI atoms %d-%d\n", a_tp0, a_tp1);
     }
 
-    GMX_RELEASE_ASSERT(inputrec->rcoulomb <= inputrec->rlist && inputrec->rvdw <= inputrec->rlist, "Twin-range interactions are not supported with TPI");
+    auto x = makeArrayRef(state_global->x);
+
+    if (EEL_PME(fr->ic->eeltype))
+    {
+        gmx_pme_reinit_atoms(fr->pmedata, a_tp0, nullptr);
+    }
+
+    /* With reacion-field we have distance dependent potentials
+     * between excluded atoms, we need to add these separately
+     * for the inserted molecule.
+     */
+    real rfExclusionEnergy = 0;
+    if (EEL_RF(fr->ic->eeltype))
+    {
+        rfExclusionEnergy = reactionFieldExclusionCorrection(x, *mdatoms, *fr->ic, a_tp0);
+        if (debug)
+        {
+            fprintf(debug, "RF exclusion correction for inserted molecule: %f kJ/mol\n", rfExclusionEnergy);
+        }
+    }
 
     snew(x_mol, a_tp1-a_tp0);
 
     bDispCorr = (inputrec->eDispCorr != edispcNO);
     bCharge   = FALSE;
-    auto x = makeArrayRef(state_global->x);
     for (i = a_tp0; i < a_tp1; i++)
     {
         /* Copy the coordinates of the molecule to be insterted */
@@ -296,12 +338,24 @@ LegacySimulator::do_tpi()
     }
     bRFExcl = (bCharge && EEL_RF(fr->ic->eeltype));
 
-    // TODO: Calculate the center of geometry of the molecule to insert
-#if 0
-    calc_cgcm(fplog, cg_tp, cg_tp+1, &(top.cgs), state_global->x.rvec_array(), fr->cg_cm);
+    // Calculate the center of geometry of the molecule to insert
+    rvec cog = { 0, 0, 0 };
+    for (int a = a_tp0; a < a_tp1; a++)
+    {
+        rvec_inc(cog, x[a]);
+    }
+    svmul(1.0_real/(a_tp1 - a_tp0), cog, cog);
+    real molRadius = 0;
+    for (int a = a_tp0; a < a_tp1; a++)
+    {
+        molRadius = std::max(molRadius, distance2(x[a], cog));
+    }
+    molRadius = std::sqrt(molRadius);
+
+    const real maxCutoff =  std::max(inputrec->rvdw, inputrec->rcoulomb);
     if (bCavity)
     {
-        if (norm(fr->cg_cm[cg_tp]) > 0.5*inputrec->rlist && fplog)
+        if (norm(cog) > 0.5*maxCutoff && fplog)
         {
             fprintf(fplog, "WARNING: Your TPI molecule is not centered at 0,0,0\n");
             fprintf(stderr, "WARNING: Your TPI molecule is not centered at 0,0,0\n");
@@ -312,10 +366,9 @@ LegacySimulator::do_tpi()
         /* Center the molecule to be inserted at zero */
         for (i = 0; i < a_tp1-a_tp0; i++)
         {
-            rvec_dec(x_mol[i], fr->cg_cm[cg_tp]);
+            rvec_dec(x_mol[i], cog);
         }
     }
-#endif
 
     if (fplog)
     {
@@ -330,6 +383,8 @@ LegacySimulator::do_tpi()
     {
         if (inputrec->nstlist > 1)
         {
+
+            /* With the same pair list we insert in a sphere of radius rtpi  in different orientations */
             if (drmax == 0 && a_tp1-a_tp0 == 1)
             {
                 gmx_fatal(FARGS, "Re-using the neighborlist %d times for insertions of a single atom in a sphere of radius %f does not make sense", inputrec->nstlist, drmax);
@@ -348,12 +403,27 @@ LegacySimulator::do_tpi()
         }
     }
 
+    /* With the same pair list we insert in a sphere of radius rtpi
+     * in different orientations. We generate the pairlist with all
+     * inserted atoms located in the center of the sphere, so we need
+     * a buffer of size of the sphere and molecule radius.
+     */
+    inputrec->rlist = maxCutoff + 2*inputrec->rtpi + 2*molRadius;
+    fr->rlist       = inputrec->rlist;
+    fr->nbv->changePairlistRadii(inputrec->rlist, inputrec->rlist);
+
     ngid   = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
-    // TODO: Figure out which energy group to use
-#if 0
-    gid_tp = GET_CGINFO_GID(fr->cginfo[cg_tp]);
-#endif
-    gid_tp = 0;
+    gid_tp = GET_CGINFO_GID(fr->cginfo[a_tp0]);
+    for (int a = a_tp0 + 1; a < a_tp1; a++)
+    {
+        if (GET_CGINFO_GID(fr->cginfo[a]) != gid_tp)
+        {
+            fprintf(fplog,
+                    "NOTE: Atoms in the molecule to insert belong to different energy groups.\n"
+                    "      Only contributions to the group of the first atom will be reported.\n");
+            break;
+        }
+    }
     nener  = 1 + ngid;
     if (bDispCorr)
     {
@@ -503,12 +573,24 @@ LegacySimulator::do_tpi()
             copy_rvec(rerun_fr.x[i], x[i]);
         }
         copy_mat(rerun_fr.box, state_global->box);
+        const matrix &box = state_global->box;
 
-        V    = det(state_global->box);
+        V    = det(box);
         logV = log(V);
 
         bStateChanged = TRUE;
         bNS           = TRUE;
+
+        put_atoms_in_box(fr->ePBC, box, x);
+
+        /* Put all atoms except for the inserted ones on the grid */
+        rvec vzero       = { 0, 0, 0 };
+        rvec boxDiagonal = { box[XX][XX], box[YY][YY], box[ZZ][ZZ] };
+        nbnxn_put_on_grid(fr->nbv.get(), box,
+                          0, vzero, boxDiagonal,
+                          nullptr, 0, a_tp0, -1,
+                          fr->cginfo, x,
+                          0, nullptr);
 
         step = cr->nodeid*stepblocksize;
         while (step < nsteps)
@@ -535,24 +617,6 @@ LegacySimulator::do_tpi()
                     {
                         x_init[d] = dist(rng)*state_global->box[d][d];
                     }
-                }
-
-                if (inputrec->nstlist == 1)
-                {
-                    copy_rvec(x_init, x_tp);
-                }
-                else
-                {
-                    /* Generate coordinates within |dx|=drmax of x_init */
-                    do
-                    {
-                        for (d = 0; d < DIM; d++)
-                        {
-                            dx[d] = (2*dist(rng) - 1)*drmax;
-                        }
-                    }
-                    while (norm2(dx) > drmax*drmax);
-                    rvec_add(x_init, dx, x_tp);
                 }
             }
             else
@@ -587,6 +651,38 @@ LegacySimulator::do_tpi()
                         }
                     }
                 }
+            }
+
+            if (bNS)
+            {
+                for (int a = a_tp0; a < a_tp1; a++)
+                {
+                    x[a] = x_init;
+                }
+
+                /* Put the inserted molecule on it's own search grid */
+                nbnxn_put_on_grid(fr->nbv.get(), box,
+                                  1, x_init, x_init,
+                                  nullptr, a_tp0, a_tp1, -1,
+                                  fr->cginfo, x,
+                                  0, nullptr);
+
+                /* TODO: Avoid updating all atoms at every bNS step */
+                fr->nbv->setAtomProperties(*mdatoms, fr->cginfo);
+
+                fr->nbv->constructPairlist(Nbnxm::InteractionLocality::Local,
+                                           &top.excls, step, nrnb);
+
+                bNS = FALSE;
+            }
+
+            /* Add random displacement uniformly distributed in a sphere
+             * of radius rtpi. We don't need to do this is we generate
+             * a new center location every step.
+             */
+            rvec x_tp;
+            if (bCavity || inputrec->nstlist > 1)
+            {
                 /* Generate coordinates within |dx|=drmax of x_init */
                 do
                 {
@@ -597,6 +693,10 @@ LegacySimulator::do_tpi()
                 }
                 while (norm2(dx) > drmax*drmax);
                 rvec_add(x_init, dx, x_tp);
+            }
+            else
+            {
+                copy_rvec(x_init, x_tp);
             }
 
             if (a_tp1 - a_tp0 == 1)
@@ -624,17 +724,15 @@ LegacySimulator::do_tpi()
                 }
             }
 
+            /* Note: NonLocal refers to the inserted molecule */
+            fr->nbv->setCoordinates(Nbnxm::AtomLocality::NonLocal, false,
+                                    x, BufferOpsUseGpu::False, nullptr);
+
             /* Clear some matrix variables  */
             clear_mat(force_vir);
             clear_mat(shake_vir);
             clear_mat(vir);
             clear_mat(pres);
-
-            /* Set the center of geometry mass of the test molecule */
-            // TODO: Compute and set the COG
-#if 0
-            copy_rvec(x_init, fr->cg_cm[top.cgs.nr-1]);
-#endif
 
             /* Calc energy (no forces) on new positions.
              * Since we only need the intermolecular energy
@@ -659,7 +757,6 @@ LegacySimulator::do_tpi()
                      state_global->lambda,
                      nullptr, fr, mdScheduleWork, nullptr, mu_tot, t, nullptr,
                      GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |
-                     (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS : 0) |
                      (bStateChanged ? GMX_FORCE_STATECHANGED : 0),
                      DDBalanceRegionHandler(nullptr));
             std::feclearexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
@@ -667,7 +764,6 @@ LegacySimulator::do_tpi()
 
             cr->nnodes    = nnodes;
             bStateChanged = FALSE;
-            bNS           = FALSE;
 
             if (fr->dispersionCorrection)
             {
@@ -683,6 +779,10 @@ LegacySimulator::do_tpi()
             else
             {
                 enerd->term[F_DISPCORR]  = 0;
+            }
+            if (EEL_RF(fr->ic->eeltype))
+            {
+                enerd->term[F_EPOT]    += rfExclusionEnergy;
             }
 
             epot               = enerd->term[F_EPOT];
@@ -750,7 +850,7 @@ LegacySimulator::do_tpi()
                     }
                     if (bRFExcl)
                     {
-                        sum_UgembU[e++] += enerd->term[F_RF_EXCL]*embU;
+                        sum_UgembU[e++] += rfExclusionEnergy*embU;
                     }
                     if (EEL_FULL(fr->ic->eeltype))
                     {

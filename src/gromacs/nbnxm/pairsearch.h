@@ -207,6 +207,7 @@ class PairSearch
          * \param[in] maxNumThreads   The maximum number of threads used in the search
          */
         PairSearch(int                       ePBC,
+                   bool                      doTestParticleInsertion,
                    const ivec               *numDDCells,
                    const gmx_domdec_zones_t *zones,
                    PairlistType              pairlistType,

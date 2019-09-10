@@ -104,11 +104,13 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
  *  \param[in, out] hw_opt                    Hardware-related and threading options
  *  \param[in]      isSimulationMasterRank
  *  \param[in]      nPmeRanks                 Number of PME ranks
+ *  \param[in]      inputrec                  The input record, should point to a valid object when \p isSimulationMasterRank = true
  *  */
 void checkAndUpdateHardwareOptions(const gmx::MDLogger &mdlog,
                                    gmx_hw_opt_t        *hw_opt,
                                    bool                 isSimulationMasterRank,
-                                   int                  nPmeRanks);
+                                   int                  nPmeRanks,
+                                   const t_inputrec    *inputrec);
 
 /*! \brief Check, and if necessary update, the number of OpenMP threads requested
  *
@@ -120,7 +122,8 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t         *hw_opt,
                                              const gmx_multisim_t *ms,
                                              int                   numRanksOnThisNode,
                                              PmeRunMode            pmeRunMode,
-                                             const gmx_mtop_t     &mtop);
+                                             const gmx_mtop_t     &mtop,
+                                             const t_inputrec     &inputrec);
 
 namespace gmx
 {

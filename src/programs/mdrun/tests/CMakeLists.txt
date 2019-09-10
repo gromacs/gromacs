@@ -83,12 +83,25 @@ gmx_add_gtest_executable(
     normalmodes.cpp
     rerun.cpp
     simple_mdrun.cpp
-    tpitest.cpp
     # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
     )
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
 gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST)
+
+# TPI does not support OpenMP, so we need a separate test binary
+set(testname "MdrunTpiTests")
+set(exename "mdrun-tpi-test")
+
+gmx_add_gtest_executable(
+    ${exename}
+    # files with code for tests
+    tpitest.cpp
+    # pseudo-library for code for mdrun
+    $<TARGET_OBJECTS:mdrun_objlib>
+    )
+target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
+gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
 
 # Tests that only make sense to run with multiple ranks and/or real
 # MPI are implemented here.

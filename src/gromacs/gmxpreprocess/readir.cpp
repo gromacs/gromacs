@@ -368,7 +368,13 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
         rc_max = std::max(ir->rvdw, ir->rcoulomb);
 
-        if (ir->verletbuf_tol <= 0)
+        if (EI_TPI(ir->eI))
+        {
+            /* With TPI we set the pairlist cut-off later using the radius of the insterted molecule */
+            ir->verletbuf_tol = 0;
+            ir->rlist         = rc_max;
+        }
+        else if (ir->verletbuf_tol <= 0)
         {
             if (ir->verletbuf_tol == 0)
             {
@@ -546,8 +552,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         CHECK(ir->nstlist <= 0);
         sprintf(err_buf, "TPI does not work with full electrostatics other than PME");
         CHECK(EEL_FULL(ir->coulombtype) && !EEL_PME(ir->coulombtype));
-        sprintf(err_buf, "TPI does not work (yet) with the Verlet cut-off scheme");
-        CHECK(ir->cutoff_scheme == ecutsVERLET);
     }
 
     /* SHAKE / LINCS */

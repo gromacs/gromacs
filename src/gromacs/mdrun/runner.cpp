@@ -394,24 +394,36 @@ namespace gmx
  * falling back to CPU code. With thread-MPI, only the first
  * call to this function should have \c issueWarning true. */
 static bool gpuAccelerationOfNonbondedIsUseful(const MDLogger   &mdlog,
-                                               const t_inputrec *ir,
+                                               const t_inputrec &ir,
                                                bool              issueWarning)
 {
-    if (ir->opts.ngener - ir->nwall > 1)
+    bool        gpuIsUseful = true;
+    std::string warning;
+
+    if (ir.opts.ngener - ir.nwall > 1)
     {
         /* The GPU code does not support more than one energy group.
          * If the user requested GPUs explicitly, a fatal error is given later.
          */
-        if (issueWarning)
-        {
-            GMX_LOG(mdlog.warning).asParagraph()
-                .appendText("Multiple energy groups is not implemented for GPUs, falling back to the CPU. "
-                            "For better performance, run on the GPU without energy groups and then do "
-                            "gmx mdrun -rerun option on the trajectory with an energy group .tpr file.");
-        }
-        return false;
+        gpuIsUseful = false;
+        warning     =
+            "Multiple energy groups is not implemented for GPUs, falling back to the CPU. "
+            "For better performance, run on the GPU without energy groups and then do "
+            "gmx mdrun -rerun option on the trajectory with an energy group .tpr file.";
     }
-    return true;
+
+    if (EI_TPI(ir.eI))
+    {
+        gpuIsUseful = false;
+        warning     = "TPI is not implemented for GPUs.";
+    }
+
+    if (!gpuIsUseful && issueWarning)
+    {
+        GMX_LOG(mdlog.warning).asParagraph().appendText(warning);
+    }
+
+    return gpuIsUseful;
 }
 
 //! Initializes the logger for mdrun.
@@ -605,8 +617,6 @@ int Mdrunner::mdrunner()
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
-    t_inputrec                      inputrecInstance;
-    t_inputrec                     *inputrec = &inputrecInstance;
     gmx_mtop_t                      mtop;
 
     bool doMembed = opt2bSet("-membed", filenames.size(), filenames.data());
@@ -659,6 +669,9 @@ int Mdrunner::mdrunner()
     // Print citation requests after all software/hardware printing
     pleaseCiteGromacs(fplog);
 
+    // TODO Replace this by unique_ptr once t_inputrec is C++
+    t_inputrec               inputrecInstance;
+    t_inputrec              *inputrec = nullptr;
     std::unique_ptr<t_state> globalState;
 
     if (SIMMASTER(cr))
@@ -667,11 +680,13 @@ int Mdrunner::mdrunner()
         globalState = std::make_unique<t_state>();
 
         /* Read (nearly) all data required for the simulation */
-        read_tpx_state(ftp2fn(efTPR, filenames.size(), filenames.data()), inputrec, globalState.get(), &mtop);
+        read_tpx_state(ftp2fn(efTPR, filenames.size(), filenames.data()),
+                       &inputrecInstance, globalState.get(), &mtop);
+        inputrec = &inputrecInstance;
     }
 
     /* Check and update the hardware options for internal consistency */
-    checkAndUpdateHardwareOptions(mdlog, &hw_opt, SIMMASTER(cr), domdecOptions.numPmeRanks);
+    checkAndUpdateHardwareOptions(mdlog, &hw_opt, SIMMASTER(cr), domdecOptions.numPmeRanks, inputrec);
 
     if (GMX_THREAD_MPI && SIMMASTER(cr))
     {
@@ -679,6 +694,8 @@ int Mdrunner::mdrunner()
         bool useGpuForPme       = false;
         try
         {
+            GMX_RELEASE_ASSERT(inputrec != nullptr, "Keep the compiler happy");
+
             // If the user specified the number of ranks, then we must
             // respect that, but in default mode, we need to allow for
             // the number of GPUs to choose the number of ranks.
@@ -686,7 +703,7 @@ int Mdrunner::mdrunner()
             useGpuForNonbonded = decideWhetherToUseGpusForNonbondedWithThreadMpi
                     (nonbondedTarget, gpuIdsToUse, userGpuTaskAssignment, emulateGpuNonbonded,
                     canUseGpuForNonbonded,
-                    gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, GMX_THREAD_MPI),
+                    gpuAccelerationOfNonbondedIsUseful(mdlog, *inputrec, GMX_THREAD_MPI),
                     hw_opt.nthreads_tmpi);
             useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi
                     (useGpuForNonbonded, pmeTarget, gpuIdsToUse, userGpuTaskAssignment,
@@ -723,8 +740,13 @@ int Mdrunner::mdrunner()
     if (PAR(cr))
     {
         /* now broadcast everything to the non-master nodes/threads: */
+        if (!SIMMASTER(cr))
+        {
+            inputrec = &inputrecInstance;
+        }
         init_parallel(cr, inputrec, &mtop);
     }
+    GMX_RELEASE_ASSERT(inputrec != nullptr, "All range should have a valid inputrec now");
 
     // Now each rank knows the inputrec that SIMMASTER read and used,
     // and (if applicable) cr->nnodes has been assigned the number of
@@ -754,7 +776,7 @@ int Mdrunner::mdrunner()
         useGpuForNonbonded = decideWhetherToUseGpusForNonbonded(nonbondedTarget, userGpuTaskAssignment,
                                                                 emulateGpuNonbonded,
                                                                 canUseGpuForNonbonded,
-                                                                gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, !GMX_THREAD_MPI),
+                                                                gpuAccelerationOfNonbondedIsUseful(mdlog, *inputrec, !GMX_THREAD_MPI),
                                                                 gpusWereDetected);
         useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuTaskAssignment,
                                                     *hwinfo, *inputrec, mtop,
@@ -1044,7 +1066,7 @@ int Mdrunner::mdrunner()
                                   &hw_opt, hwinfo->nthreads_hw_avail, FALSE);
     /* Check and update the number of OpenMP threads requested */
     checkAndUpdateRequestedNumOpenmpThreads(&hw_opt, *hwinfo, cr, ms, physicalNodeComm.size_,
-                                            pmeRunMode, mtop);
+                                            pmeRunMode, mtop, *inputrec);
 
     gmx_omp_nthreads_init(mdlog, cr,
                           hwinfo->nthreads_hw_avail,
