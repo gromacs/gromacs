@@ -542,6 +542,7 @@ class GmxMdParamsImpl final
 
         // Hold the settable parameters and whether or not they have been set.
         // TODO: update to gmxapi named types?
+        // TODO: update to gmx::compat::optional now that this file is in the GROMACS source.
         std::map < std::string, std::pair < int64_t, bool>> int64Params_;
         std::map < std::string, std::pair < int, bool>> intParams_;
         std::map < std::string, std::pair < float, bool>> floatParams_;
@@ -570,7 +571,7 @@ void setParam(gmxapicompat::GmxMdParams *params, const std::string &name, int64_
 }
 
 template<typename ParamsContainerT, typename Mapping>
-static void setParam(ParamsContainerT* params, const TprContents &source, const Mapping &map)
+static void updateParamsContainer(ParamsContainerT* params, const TprContents &source, const Mapping &map)
 {
     for (const auto &definition : map)
     {
@@ -592,10 +593,10 @@ GmxMdParamsImpl::GmxMdParamsImpl(std::shared_ptr<gmxapicompat::TprContents> tprC
 {
     if (source_)
     {
-        setParam(&int64Params_, *source_, int64Params());
-        setParam(&intParams_, *source_, int32Params());
-        setParam(&float64Params_, *source_, float32Params());
-        setParam(&float64Params_, *source_, float64Params());
+        updateParamsContainer(&int64Params_, *source_, int64Params());
+        updateParamsContainer(&intParams_, *source_, int32Params());
+        updateParamsContainer(&floatParams_, *source_, float32Params());
+        updateParamsContainer(&float64Params_, *source_, float64Params());
     }
 }
 
