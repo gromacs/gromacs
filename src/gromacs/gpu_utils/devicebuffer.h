@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 
 #include "config.h"
 
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h" // TODO: this is only for over_alloc_large
 
@@ -69,7 +70,7 @@
  *
  *  \tparam        ValueType            Raw value type of the \p buffer.
  *  \param[in,out] buffer               Pointer to the device-side buffer
- *  \param[in]     numValues            Number of values to accomodate.
+ *  \param[in]     numValues            Number of values to accommodate.
  *  \param[in,out] currentNumValues     The pointer to the buffer's number of values.
  *  \param[in,out] currentMaxNumValues  The pointer to the buffer's capacity.
  *  \param[in]     context              The buffer's context.
