@@ -1634,6 +1634,8 @@ split_communicator(const gmx::MDLogger    &mdlog,
                        getThisRankDuties(cr),
                        dd_index(cartSetup.ntot, ddCellIndex),
                        &cr->mpi_comm_mygroup);
+#else
+        GMX_UNUSED_VALUE(ddCellIndex);
 #endif
     }
     else
