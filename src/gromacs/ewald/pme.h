@@ -476,7 +476,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_reinit_computation(const gmx_pme_t *GPU_FUNC_ARG
  * \param[in] pme            The PME data structure.
  * \returns                  Pointer to coordinate data
  */
-GPU_FUNC_QUALIFIER void *pme_gpu_get_device_x(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(nullptr);
+GPU_FUNC_QUALIFIER DeviceBuffer<float> pme_gpu_get_device_x(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(DeviceBuffer<float> {});
 
 /*! \brief Get pointer to device copy of force data.
  * \param[in] pme            The PME data structure.

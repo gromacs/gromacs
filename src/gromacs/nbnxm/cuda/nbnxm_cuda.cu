@@ -744,20 +744,18 @@ void cuda_set_cacheconfig()
     }
 }
 
-/* X buffer operations on GPU: performs conversion from rvec to nb format. */
-void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
-                           bool                             setFillerCoords,
-                           gmx_nbnxn_gpu_t                 *nb,
-                           void                            *xPmeDevicePtr,
-                           const Nbnxm::AtomLocality        locality,
-                           const rvec                      *x,
-                           int                              gridId,
-                           int                              numColumnsMax)
+/* X buffer operations on GPU: copies coordinates to the GPU in rvec format. */
+void nbnxn_gpu_copy_x_to_gpu(const Nbnxm::Grid               &grid,
+                             bool                             setFillerCoords,
+                             gmx_nbnxn_gpu_t                 *nb,
+                             const Nbnxm::AtomLocality        locality,
+                             const rvec                      *coordinatesHost,
+                             int                              gridId,
+                             int                              numColumnsMax)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
-    GMX_ASSERT(x,  "Need a valid x pointer");
+    GMX_ASSERT(coordinatesHost,  "Need a valid host pointer");
 
-    cu_atomdata_t             *adat    = nb->atdat;
     bool                       bDoTime = nb->bDoTime;
 
     const int                  numColumns                = grid.numColumns();
@@ -780,38 +778,51 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
         return;
     }
 
-    const rvec *d_x;
-
-    // copy of coordinates will be required if null pointer has been
-    // passed to function
-    // TODO improve this mechanism
-    bool        copyCoord = (xPmeDevicePtr == nullptr);
-
-    // copy X-coordinate data to device
-    if (copyCoord)
+    if (bDoTime)
     {
-        if (bDoTime)
-        {
-            nb->timers->xf[locality].nb_h2d.openTimingRegion(stream);
-        }
-
-        rvec       *devicePtrDest = reinterpret_cast<rvec *> (nb->xrvec[copyAtomStart]);
-        const rvec *devicePtrSrc  = reinterpret_cast<const rvec *> (x[copyAtomStart]);
-        copyToDeviceBuffer(&devicePtrDest, devicePtrSrc, 0, nCopyAtoms,
-                           stream, GpuApiCallBehavior::Async, nullptr);
-
-        if (bDoTime)
-        {
-            nb->timers->xf[locality].nb_h2d.closeTimingRegion(stream);
-        }
-
-        d_x = nb->xrvec;
+        nb->timers->xf[locality].nb_h2d.openTimingRegion(stream);
     }
-    else //coordinates have already been copied by PME stream
+
+    rvec       *devicePtrDest = reinterpret_cast<rvec *> (nb->xrvec[copyAtomStart]);
+    const rvec *devicePtrSrc  = reinterpret_cast<const rvec *> (coordinatesHost[copyAtomStart]);
+    copyToDeviceBuffer(&devicePtrDest, devicePtrSrc, 0, nCopyAtoms,
+                       stream, GpuApiCallBehavior::Async, nullptr);
+
+    if (bDoTime)
     {
-        d_x = (rvec*) xPmeDevicePtr;
+        nb->timers->xf[locality].nb_h2d.closeTimingRegion(stream);
     }
-    GMX_ASSERT(d_x,  "Need a valid d_x pointer");
+}
+
+DeviceBuffer<float> nbnxn_gpu_get_x_gpu(gmx_nbnxn_gpu_t *nb)
+{
+    return reinterpret_cast< DeviceBuffer<float> >(nb->xrvec);
+}
+
+/* X buffer operations on GPU: performs conversion from rvec to nb format. */
+void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
+                           bool                             setFillerCoords,
+                           gmx_nbnxn_gpu_t                 *nb,
+                           DeviceBuffer<float>              coordinatesDevice,
+                           const Nbnxm::AtomLocality        locality,
+                           int                              gridId,
+                           int                              numColumnsMax)
+{
+    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+
+    cu_atomdata_t             *adat    = nb->atdat;
+
+    const int                  numColumns                = grid.numColumns();
+    const int                  cellOffset                = grid.cellOffset();
+    const int                  numAtomsPerCell           = grid.numAtomsPerCell();
+    Nbnxm::InteractionLocality interactionLoc            = gpuAtomToInteractionLocality(locality);
+    int                        nCopyAtoms                = grid.srcAtomEnd() - grid.srcAtomBegin();
+    int                        copyAtomStart             = grid.srcAtomBegin();
+
+    cudaStream_t               stream  = nb->stream[interactionLoc];
+
+    // TODO: This will only work with CUDA
+    GMX_ASSERT(coordinatesDevice,  "Need a valid device pointer");
 
     /* launch kernel on GPU */
 
@@ -835,7 +846,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
                                                                &numColumns,
                                                                &xqPtr,
                                                                &setFillerCoords,
-                                                               &d_x,
+                                                               &coordinatesDevice,
                                                                &d_atomIndices,
                                                                &d_cxy_na,
                                                                &d_cxy_ind,

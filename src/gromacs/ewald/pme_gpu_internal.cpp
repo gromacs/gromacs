@@ -1289,16 +1289,11 @@ void pme_gpu_gather(PmeGpu                *pmeGpu,
     }
 }
 
-void * pme_gpu_get_kernelparam_coordinates(const PmeGpu *pmeGpu)
+DeviceBuffer<float> pme_gpu_get_kernelparam_coordinates(const PmeGpu *pmeGpu)
 {
-    if (pmeGpu && pmeGpu->kernelParams)
-    {
-        return pmeGpu->kernelParams->atoms.d_coordinates;
-    }
-    else
-    {
-        return nullptr;
-    }
+    GMX_ASSERT(pmeGpu && pmeGpu->kernelParams, "PME GPU device buffer was requested in non-GPU build or before the GPU PME was initialized.");
+
+    return pmeGpu->kernelParams->atoms.d_coordinates;
 }
 
 void * pme_gpu_get_kernelparam_forces(const PmeGpu *pmeGpu)

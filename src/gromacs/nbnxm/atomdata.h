@@ -38,6 +38,7 @@
 
 #include <cstdio>
 
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -309,34 +310,62 @@ void nbnxn_atomdata_copy_shiftvec(gmx_bool          dynamic_box,
                                   rvec             *shift_vec,
                                   nbnxn_atomdata_t *nbat);
 
-/* Copy x to nbat->x.
- * FillLocal tells if the local filler particle coordinates should be zeroed.
+/*! \brief Transform coordinates to xbat layout
+ *
+ * Creates a copy of the coordinates buffer using short-range ordering.
+ *
+ * \param[in] gridSet      The grids data.
+ * \param[in] locality     If the transformation should be applied to local or non local coordinates.
+ * \param[in] fillLocal    Tells if the local filler particle coordinates should be zeroed.
+ * \param[in] coordinates  Coordinates in plain rvec format.
+ * \param[in,out] nbat     Data in NBNXM format, used for mapping formats and to locate the output buffer.
  */
-template <bool useGpu>
 void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet       &gridSet,
                                      Nbnxm::AtomLocality         locality,
-                                     gmx_bool                    FillLocal,
-                                     const rvec                 *x,
-                                     nbnxn_atomdata_t           *nbat,
-                                     gmx_nbnxn_gpu_t            *gpu_nbv,
-                                     void                       *xPmeDevicePtr);
+                                     bool                        fillLocal,
+                                     const rvec                 *coordinates,
+                                     nbnxn_atomdata_t           *nbat);
 
-extern template
-void nbnxn_atomdata_copy_x_to_nbat_x<true>(const Nbnxm::GridSet &,
-                                           const Nbnxm::AtomLocality,
-                                           gmx_bool,
-                                           const rvec*,
-                                           nbnxn_atomdata_t *,
-                                           gmx_nbnxn_gpu_t*,
-                                           void *);
-extern template
-void nbnxn_atomdata_copy_x_to_nbat_x<false>(const Nbnxm::GridSet &,
-                                            const Nbnxm::AtomLocality,
-                                            gmx_bool,
-                                            const rvec*,
-                                            nbnxn_atomdata_t *,
-                                            gmx_nbnxn_gpu_t*,
-                                            void *);
+/*! \brief Copies the coordinates to the GPU (in plain rvec format)
+ *
+ *  This function copied data to the gpu so that the transformation to the NBNXM format can be done on the GPU.
+ *
+ * \param[in] gridSet          The grids data.
+ * \param[in] locality         If local or non local coordinates should be copied.
+ * \param[in] fillLocal        If the local filler particle coordinates should be zeroed.
+ * \param[in] nbat             Data in NBNXM format, used to zero coordinates of filler particles.
+ * \param[in] gpu_nbv          The NBNXM GPU data structure.
+ * \param[in] coordinatesHost  Coordinates to be copied (in plain rvec format).
+ */
+void nbnxn_atomdata_copy_x_to_gpu(const Nbnxm::GridSet     &gridSet,
+                                  Nbnxm::AtomLocality       locality,
+                                  bool                      fillLocal,
+                                  nbnxn_atomdata_t         *nbat,
+                                  gmx_nbnxn_gpu_t          *gpu_nbv,
+                                  const rvec               *coordinatesHost);
+
+/*!\brief Getter for the GPU coordinates buffer
+ *
+ * \param[in] gpu_nbv  The NBNXM GPU data structure.
+ */
+DeviceBuffer<float> nbnxn_atomdata_get_x_gpu(gmx_nbnxn_gpu_t *gpu_nbv);
+
+/*! \brief Transform coordinates to xbat layout on GPU
+ *
+ * Creates a GPU copy of the coordinates buffer using short-range ordering.
+ * As input, uses coordinates in plain rvec format in GPU memory.
+ *
+ * \param[in]     gridSet            The grids data.
+ * \param[in]     locality           If the transformation should be applied to local or non local coordinates.
+ * \param[in]     fillLocal          Tells if the local filler particle coordinates should be zeroed.
+ * \param[in,out] gpu_nbv            The NBNXM GPU data structure.
+ * \param[in]     coordinatesDevice  Coordinates to be copied (in plain rvec format).
+ */
+void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet     &gridSet,
+                                    Nbnxm::AtomLocality       locality,
+                                    bool                      fillLocal,
+                                    gmx_nbnxn_gpu_t          *gpu_nbv,
+                                    DeviceBuffer<float>       coordinatesDevice);
 
 //! Add the computed forces to \p f, an internal reduction might be performed as well
 template <bool  useGpu>

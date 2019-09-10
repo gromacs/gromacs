@@ -132,22 +132,52 @@ void nonbonded_verlet_t::setAtomProperties(const t_mdatoms          &mdatoms,
     nbnxn_atomdata_set(nbat.get(), pairSearch_->gridSet(), &mdatoms, atomInfo.data());
 }
 
-void nonbonded_verlet_t::setCoordinates(const Nbnxm::AtomLocality       locality,
-                                        const bool                      fillLocal,
-                                        gmx::ArrayRef<const gmx::RVec>  x,
-                                        BufferOpsUseGpu                 useGpu,
-                                        void                           *xPmeDevicePtr)
+void nonbonded_verlet_t::convertCoordinates(const Nbnxm::AtomLocality       locality,
+                                            const bool                      fillLocal,
+                                            gmx::ArrayRef<const gmx::RVec>  coordinates)
 {
     wallcycle_start(wcycle_, ewcNB_XF_BUF_OPS);
     wallcycle_sub_start(wcycle_, ewcsNB_X_BUF_OPS);
 
-    auto fnPtr = (useGpu == BufferOpsUseGpu::True) ?
-        nbnxn_atomdata_copy_x_to_nbat_x<true> :
-        nbnxn_atomdata_copy_x_to_nbat_x<false>;
+    nbnxn_atomdata_copy_x_to_nbat_x(pairSearch_->gridSet(), locality, fillLocal,
+                                    as_rvec_array(coordinates.data()),
+                                    nbat.get());
 
-    fnPtr(pairSearch_->gridSet(), locality, fillLocal,
-          as_rvec_array(x.data()),
-          nbat.get(), gpu_nbv, xPmeDevicePtr);
+    wallcycle_sub_stop(wcycle_, ewcsNB_X_BUF_OPS);
+    wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);
+}
+
+
+void nonbonded_verlet_t::copyCoordinatesToGpu(const Nbnxm::AtomLocality       locality,
+                                              const bool                      fillLocal,
+                                              gmx::ArrayRef<const gmx::RVec>  coordinatesHost)
+{
+    wallcycle_start(wcycle_, ewcNB_XF_BUF_OPS);
+    wallcycle_sub_start(wcycle_, ewcsNB_X_BUF_OPS);
+
+    nbnxn_atomdata_copy_x_to_gpu(pairSearch_->gridSet(), locality, fillLocal,
+                                 nbat.get(), gpu_nbv,
+                                 as_rvec_array(coordinatesHost.data()));
+
+    wallcycle_sub_stop(wcycle_, ewcsNB_X_BUF_OPS);
+    wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);
+}
+
+DeviceBuffer<float> nonbonded_verlet_t::getDeviceCoordinates()
+{
+    return nbnxn_atomdata_get_x_gpu(gpu_nbv);
+}
+
+void nonbonded_verlet_t::convertCoordinatesGpu(const Nbnxm::AtomLocality       locality,
+                                               const bool                      fillLocal,
+                                               DeviceBuffer<float>             coordinatesDevice)
+{
+    wallcycle_start(wcycle_, ewcNB_XF_BUF_OPS);
+    wallcycle_sub_start(wcycle_, ewcsNB_X_BUF_OPS);
+
+    nbnxn_atomdata_x_to_nbat_x_gpu(pairSearch_->gridSet(), locality, fillLocal,
+                                   gpu_nbv,
+                                   coordinatesDevice);
 
     wallcycle_sub_stop(wcycle_, ewcsNB_X_BUF_OPS);
     wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);

@@ -100,6 +100,7 @@
 
 #include <memory>
 
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
@@ -251,12 +252,54 @@ struct nonbonded_verlet_t
         void setAtomProperties(const t_mdatoms          &mdatoms,
                                gmx::ArrayRef<const int>  atomInfo);
 
-        //! Updates the coordinates in Nbnxm for the given locality
-        void setCoordinates(Nbnxm::AtomLocality             locality,
-                            bool                            fillLocal,
-                            gmx::ArrayRef<const gmx::RVec>  x,
-                            BufferOpsUseGpu                 useGpu,
-                            void                           *xPmeDevicePtr);
+        /*!\brief Convert the coordinates to NBNXM format for the given locality.
+         *
+         * The API function for the transformation of the coordinates from one layout to another.
+         *
+         * \param[in] locality     Whether coordinates for local or non-local atoms should be transformed.
+         * \param[in] fillLocal    If the coordinates for filler particles should be zeroed.
+         * \param[in] coordinates  Coordinates in plain rvec format to be transformed.
+         */
+        void convertCoordinates(Nbnxm::AtomLocality             locality,
+                                bool                            fillLocal,
+                                gmx::ArrayRef<const gmx::RVec>  coordinates);
+
+        /*!\brief Copy coordinates to the GPU memory.
+         *
+         * This function uses the internal NBNXM GPU pointer to copy coordinates in the plain rvec format
+         * into the GPU memory.
+         *
+         * \todo This function will be removed in future patches as the management of the device buffers
+         *       is moved to a separate object.
+         *
+         * \param[in] locality         Whether coordinates for local or non-local atoms should be transformed.
+         * \param[in] fillLocal        If the coordinates for filler particles should be zeroed.
+         * \param[in] coordinatesHost  Coordinates in plain rvec format to be transformed.
+         */
+        void copyCoordinatesToGpu(Nbnxm::AtomLocality             locality,
+                                  bool                            fillLocal,
+                                  gmx::ArrayRef<const gmx::RVec>  coordinatesHost);
+
+        /*!\brief Getter for the GPU coordinates buffer.
+         *
+         * \todo This function will be removed in future patches as the management of the device buffers
+         *       is moved to a separate object.
+         *
+         * \returns The coordinates buffer in plain rvec format.
+         */
+        DeviceBuffer<float> getDeviceCoordinates();
+
+        /*!\brief Convert the coordinates to NBNXM format on the GPU for the given locality
+         *
+         * The API function for the transformation of the coordinates from one layout to another in the GPU memory.
+         *
+         * \param[in] locality           Whether coordinates for local or non-local atoms should be transformed.
+         * \param[in] fillLocal          If the coordinates for filler particles should be zeroed.
+         * \param[in] coordinatesDevice  GPU coordinates buffer in plain rvec format to be transformed.
+         */
+        void convertCoordinatesGpu(Nbnxm::AtomLocality             locality,
+                                   bool                            fillLocal,
+                                   DeviceBuffer<float>             coordinatesDevice);
 
         //! Init for GPU version of setup coordinates in Nbnxm
         void atomdata_init_copy_x_to_nbat_x_gpu();

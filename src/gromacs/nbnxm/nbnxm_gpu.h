@@ -228,17 +228,57 @@ CUDA_FUNC_QUALIFIER
 void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet gmx_unused &gridSet,
                                 gmx_nbnxn_gpu_t    gmx_unused *gpu_nbv) CUDA_FUNC_TERM;
 
-/*! \brief X buffer operations on GPU: performs conversion from rvec to nb format.
+/*! \brief Copy coordinates from host to device memory.
+ *
+ * \todo This will be removed as the management of the buffers is taken out of the NBNXM module.
+ *
+ * \param[in]     grid             Grid to be copied.
+ * \param[in]     setFillerCoords  If the filler coordinates are used.
+ * \param[in,out] gpu_nbv          The nonbonded data GPU structure.
+ * \param[in]     locality         Copy coordinates for local or non-local atoms.
+ * \param[in]     coordinatesHost  Host-side coordinates in plain rvec format.
+ * \param[in]     gridId           Index of the grid being copied.
+ * \param[in]     numColumnsMax    Maximum number of columns in the grid.
  */
 CUDA_FUNC_QUALIFIER
-void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid  gmx_unused &grid,
-                           bool               gmx_unused  setFillerCoords,
-                           gmx_nbnxn_gpu_t    gmx_unused *gpu_nbv,
-                           void               gmx_unused *xPmeDevicePtr,
-                           Nbnxm::AtomLocality gmx_unused locality,
-                           const rvec         gmx_unused *x,
-                           int                gmx_unused  gridId,
-                           int                gmx_unused  numColumnsMax) CUDA_FUNC_TERM;
+void nbnxn_gpu_copy_x_to_gpu(const Nbnxm::Grid   gmx_unused &grid,
+                             bool                gmx_unused  setFillerCoords,
+                             gmx_nbnxn_gpu_t     gmx_unused *gpu_nbv,
+                             Nbnxm::AtomLocality gmx_unused  locality,
+                             const rvec          gmx_unused *coordinatesHost,
+                             int                 gmx_unused  gridId,
+                             int                 gmx_unused  numColumnsMax) CUDA_FUNC_TERM;
+
+/*! \brief Getter for the device coordinates buffer.
+ *
+ * \todo This will be removed as the management of the buffers is taken out of the NBNXM module.
+ *
+ * \param[in]  gpu_nbv  The nonbonded data GPU structure.
+ *
+ * \returns Device coordinates buffer in plain rvec format.
+ */
+CUDA_FUNC_QUALIFIER
+DeviceBuffer<float> nbnxn_gpu_get_x_gpu(gmx_nbnxn_gpu_t gmx_unused *gpu_nbv) CUDA_FUNC_TERM_WITH_RETURN(DeviceBuffer<float> {});
+
+
+/*! \brief X buffer operations on GPU: performs conversion from rvec to nb format.
+ *
+ * \param[in]     grid               Grid to be converted.
+ * \param[in]     setFillerCoords    If the filler coordinates are used.
+ * \param[in,out] gpu_nbv            The nonbonded data GPU structure.
+ * \param[in]     coordinatesDevice  Device-side coordinates in plain rvec format.
+ * \param[in]     locality           Copy coordinates for local or non-local atoms.
+ * \param[in]     gridId             Index of the grid being converted.
+ * \param[in]     numColumnsMax      Maximum number of columns in the grid.
+ */
+CUDA_FUNC_QUALIFIER
+void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid   gmx_unused &grid,
+                           bool                gmx_unused  setFillerCoords,
+                           gmx_nbnxn_gpu_t     gmx_unused *gpu_nbv,
+                           DeviceBuffer<float> gmx_unused  coordinatesDevice,
+                           Nbnxm::AtomLocality gmx_unused  locality,
+                           int                 gmx_unused  gridId,
+                           int                 gmx_unused  numColumnsMax) CUDA_FUNC_TERM;
 
 /*! \brief Sync the nonlocal stream with dependent tasks in the local queue.
  * \param[in] nb                   The nonbonded data GPU structure

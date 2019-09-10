@@ -420,12 +420,9 @@ void pme_gpu_reinit_computation(const gmx_pme_t *pme,
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 }
 
-void *pme_gpu_get_device_x(const gmx_pme_t *pme)
+DeviceBuffer<float> pme_gpu_get_device_x(const gmx_pme_t *pme)
 {
-    if (!pme || !pme_gpu_active(pme))
-    {
-        return nullptr;
-    }
+    GMX_ASSERT((pme && pme_gpu_active(pme)), "PME GPU coordinates buffer was requested from uninitialized PME module");
     return pme_gpu_get_kernelparam_coordinates(pme->gpu);
 }
 
