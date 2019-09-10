@@ -355,12 +355,14 @@ GPU_FUNC_QUALIFIER void pme_gpu_get_timings(const gmx_pme_t         *GPU_FUNC_AR
  * \param[in] wcycle            The wallclock counter.
  * \param[in] flags             The combination of flags to affect this PME computation.
  *                              The flags are the GMX_PME_ flags from pme.h.
+ * \param[in]  useGpuForceReduction Whether PME forces are reduced on GPU this step or should be downloaded for CPU reduction
  */
 GPU_FUNC_QUALIFIER void pme_gpu_prepare_computation(gmx_pme_t      *GPU_FUNC_ARGUMENT(pme),
                                                     bool            GPU_FUNC_ARGUMENT(needToUpdateBox),
                                                     const matrix    GPU_FUNC_ARGUMENT(box),
                                                     gmx_wallcycle  *GPU_FUNC_ARGUMENT(wcycle),
-                                                    int             GPU_FUNC_ARGUMENT(flags)) GPU_FUNC_TERM;
+                                                    int             GPU_FUNC_ARGUMENT(flags),
+                                                    bool            GPU_FUNC_ARGUMENT(useGpuForceReduction)) GPU_FUNC_TERM;
 
 /*! \brief
  * Launches H2D input transfers for PME on GPU.
@@ -399,12 +401,10 @@ GPU_FUNC_QUALIFIER void pme_gpu_launch_complex_transforms(gmx_pme_t       *GPU_F
  * \param[in]  forceTreatment    Tells how data should be treated. The gathering kernel either stores
  *                               the output reciprocal forces into the host array, or copies its contents to the GPU first
  *                               and accumulates. The reduction is non-atomic.
- * \param[in]  useGpuFPmeReduction  Whether PME forces are reduced on GPU
  */
 GPU_FUNC_QUALIFIER void pme_gpu_launch_gather(const gmx_pme_t        *GPU_FUNC_ARGUMENT(pme),
                                               gmx_wallcycle          *GPU_FUNC_ARGUMENT(wcycle),
-                                              PmeForceOutputHandling  GPU_FUNC_ARGUMENT(forceTreatment),
-                                              bool                    GPU_FUNC_ARGUMENT(useGpuFPmeReduction)) GPU_FUNC_TERM;
+                                              PmeForceOutputHandling  GPU_FUNC_ARGUMENT(forceTreatment)) GPU_FUNC_TERM;
 
 /*! \brief
  * Attempts to complete PME GPU tasks.
@@ -445,15 +445,13 @@ GPU_FUNC_QUALIFIER bool
  * \param[in]  wcycle          The wallclock counter.
  * \param[out] forceWithVirial The output force and virial
  * \param[out] enerd           The output energies
- * \param[in]  useGpuFPmeReduction  Whether PME forces are reduced on GPU
  */
 GPU_FUNC_QUALIFIER void
     pme_gpu_wait_and_reduce(gmx_pme_t            *GPU_FUNC_ARGUMENT(pme),
                             int                   GPU_FUNC_ARGUMENT(flags),
                             gmx_wallcycle        *GPU_FUNC_ARGUMENT(wcycle),
                             gmx::ForceWithVirial *GPU_FUNC_ARGUMENT(forceWithVirial),
-                            gmx_enerdata_t       *GPU_FUNC_ARGUMENT(enerd),
-                            bool                  GPU_FUNC_ARGUMENT(useGpuFPmeReduction)) GPU_FUNC_TERM;
+                            gmx_enerdata_t       *GPU_FUNC_ARGUMENT(enerd)) GPU_FUNC_TERM;
 
 /*! \brief
  * The PME GPU reinitialization function that is called both at the end of any PME computation and on any load balancing.

@@ -437,12 +437,10 @@ GPU_FUNC_QUALIFIER void pme_gpu_solve(const PmeGpu    *GPU_FUNC_ARGUMENT(pmeGpu)
  * \param[in]     forceTreatment   Tells how data in h_forces should be treated.
  *                                 TODO: determine efficiency/balance of host/device-side reductions.
  * \param[in]     h_grid           The host-side grid buffer (used only in testing mode)
- * \param[in]     useGpuFPmeReduction Whether forces are reduced on GPU
  */
 GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu                *GPU_FUNC_ARGUMENT(pmeGpu),
                                        PmeForceOutputHandling GPU_FUNC_ARGUMENT(forceTreatment),
-                                       const float           *GPU_FUNC_ARGUMENT(h_grid),
-                                       bool                   GPU_FUNC_ARGUMENT(useGpuFPmeReduction)) GPU_FUNC_TERM;
+                                       const float           *GPU_FUNC_ARGUMENT(h_grid)) GPU_FUNC_TERM;
 
 /*! \brief Return pointer to device copy of coordinate data.
  * \param[in] pmeGpu         The PME GPU structure.
@@ -562,10 +560,11 @@ inline bool pme_gpu_is_testing(const PmeGpu *pmeGpu)
  * handled the solve stage.
  *
  * \param[in] pme                The PME structure.
- * \returns                      The output object.
+ * \param[out] output            Pointer to output where energy and virial should be stored.
  */
-GPU_FUNC_QUALIFIER PmeOutput
-pme_gpu_getEnergyAndVirial(const gmx_pme_t &GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(PmeOutput {});
+GPU_FUNC_QUALIFIER void
+    pme_gpu_getEnergyAndVirial(const gmx_pme_t &GPU_FUNC_ARGUMENT(pme),
+                               PmeOutput       *GPU_FUNC_ARGUMENT(output)) GPU_FUNC_TERM;
 
 /*! \libinternal \brief
  * Returns the GPU outputs (forces, energy and virial)

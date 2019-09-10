@@ -96,6 +96,13 @@ struct PmeGpuSettings
     bool performGPUFFT;
     /*! \brief A convenience boolean which tells if PME decomposition is used. */
     bool useDecomposition;
+    /*! \brief True if PME forces are reduced on-GPU, false if reduction is done on the CPU;
+     *  in the former case transfer does not need to happen.
+     *
+     *  Note that this flag may change per-step.
+     */
+    bool useGpuForceReduction;
+
     /*! \brief A boolean which tells if any PME GPU stage should copy all of its outputs to the host.
      * Only intended to be used by the test framework.
      */
@@ -112,11 +119,13 @@ struct PmeGpuSettings
 // possible. Use mdspan?
 struct PmeOutput
 {
-    gmx::ArrayRef<gmx::RVec> forces_;
-    real                     coulombEnergy_;
-    matrix                   coulombVirial_;
-    real                     lennardJonesEnergy_;
-    matrix                   lennardJonesVirial_;
+    gmx::ArrayRef<gmx::RVec> forces_;               //!< Host staging area for PME forces
+    bool                     haveForceOutput_;      //!< True if forces have been staged other false (when forces are reduced on the GPU).
+    real                     coulombEnergy_;        //!< Host staging area for PME coulomb energy
+    matrix                   coulombVirial_;        //!< Host staging area for PME coulomb virial contributions
+    real                     lennardJonesEnergy_;   //!< Host staging area for PME LJ energy
+    matrix                   lennardJonesVirial_;   //!< Host staging area for PME LJ virial contributions
+
 };
 
 /*! \internal \brief

@@ -639,10 +639,9 @@ int getSplineParamFullIndex(int order, int splineIndex, int dimIndex, int atomIn
     return result;
 }
 
-PmeOutput pme_gpu_getEnergyAndVirial(const gmx_pme_t &pme)
+void pme_gpu_getEnergyAndVirial(const gmx_pme_t &pme,
+                                PmeOutput       *output)
 {
-    PmeOutput     output;
-
     const PmeGpu *pmeGpu = pme.gpu;
     for (int j = 0; j < c_virialAndEnergyCount; j++)
     {
@@ -650,15 +649,28 @@ PmeOutput pme_gpu_getEnergyAndVirial(const gmx_pme_t &pme)
     }
 
     unsigned int j = 0;
-    output.coulombVirial_[XX][XX] = 0.25F * pmeGpu->staging.h_virialAndEnergy[j++];
-    output.coulombVirial_[YY][YY] = 0.25F * pmeGpu->staging.h_virialAndEnergy[j++];
-    output.coulombVirial_[ZZ][ZZ] = 0.25F * pmeGpu->staging.h_virialAndEnergy[j++];
-    output.coulombVirial_[XX][YY] = output.coulombVirial_[YY][XX] = 0.25F * pmeGpu->staging.h_virialAndEnergy[j++];
-    output.coulombVirial_[XX][ZZ] = output.coulombVirial_[ZZ][XX] = 0.25F * pmeGpu->staging.h_virialAndEnergy[j++];
-    output.coulombVirial_[YY][ZZ] = output.coulombVirial_[ZZ][YY] = 0.25F * pmeGpu->staging.h_virialAndEnergy[j++];
-    output.coulombEnergy_         = 0.5F * pmeGpu->staging.h_virialAndEnergy[j++];
+    output->coulombVirial_[XX][XX] = 0.25F * pmeGpu->staging.h_virialAndEnergy[j++];
+    output->coulombVirial_[YY][YY] = 0.25F * pmeGpu->staging.h_virialAndEnergy[j++];
+    output->coulombVirial_[ZZ][ZZ] = 0.25F * pmeGpu->staging.h_virialAndEnergy[j++];
+    output->coulombVirial_[XX][YY] = output->coulombVirial_[YY][XX] = 0.25F * pmeGpu->staging.h_virialAndEnergy[j++];
+    output->coulombVirial_[XX][ZZ] = output->coulombVirial_[ZZ][XX] = 0.25F * pmeGpu->staging.h_virialAndEnergy[j++];
+    output->coulombVirial_[YY][ZZ] = output->coulombVirial_[ZZ][YY] = 0.25F * pmeGpu->staging.h_virialAndEnergy[j++];
+    output->coulombEnergy_         = 0.5F * pmeGpu->staging.h_virialAndEnergy[j++];
+}
 
-    return output;
+/*! \brief Sets the force-related members in \p output
+ *
+ * \param[in]   pmeGpu      PME GPU data structure
+ * \param[out]  output      Pointer to PME output data structure
+ */
+static void pme_gpu_getForceOutput(PmeGpu    &pmeGpu,
+                                   PmeOutput *output)
+{
+    output->haveForceOutput_ = !pmeGpu.settings.useGpuForceReduction;
+    if (output->haveForceOutput_)
+    {
+        output->forces_      =  pmeGpu.staging.h_forces;
+    }
 }
 
 PmeOutput pme_gpu_getOutput(const gmx_pme_t &pme,
@@ -666,28 +678,25 @@ PmeOutput pme_gpu_getOutput(const gmx_pme_t &pme,
 {
     PmeGpu    *pmeGpu = pme.gpu;
     const bool haveComputedEnergyAndVirial = (flags & GMX_PME_CALC_ENER_VIR) != 0;
-    if (!haveComputedEnergyAndVirial)
-    {
-        // The caller knows from the flags that the energy and the virial are not usable
-        PmeOutput output;
-        output.forces_ = pmeGpu->staging.h_forces;
-        return output;
-    }
 
-    if (pme_gpu_performs_solve(pmeGpu))
-    {
-        PmeOutput output = pme_gpu_getEnergyAndVirial(pme);
-        output.forces_ = pmeGpu->staging.h_forces;
-        return output;
-    }
-    else
-    {
-        PmeOutput output;
-        get_pme_ener_vir_q(pme.solve_work, pme.nthread, &output);
-        output.forces_ = pmeGpu->staging.h_forces;
-        return output;
-    }
+    PmeOutput  output;
 
+    pme_gpu_getForceOutput(*pmeGpu, &output);
+
+    // The caller knows from the flags that the energy and the virial are not usable
+    // on the else branch
+    if (haveComputedEnergyAndVirial)
+    {
+        if (pme_gpu_performs_solve(pmeGpu))
+        {
+            pme_gpu_getEnergyAndVirial(pme, &output);
+        }
+        else
+        {
+            get_pme_ener_vir_q(pme.solve_work, pme.nthread, &output);
+        }
+    }
+    return output;
 }
 
 void pme_gpu_update_input_box(PmeGpu gmx_unused       *pmeGpu,
@@ -824,6 +833,8 @@ static void pme_gpu_init(gmx_pme_t               *pme,
     pmeGpu->settings.useDecomposition = (pme->nnodes == 1);
     /* TODO: CPU gather with GPU spread is broken due to different theta/dtheta layout. */
     pmeGpu->settings.performGPUGather = true;
+    // By default GPU-side reduction is off (explicitly set here for tests, otherwise reset per-step)
+    pmeGpu->settings.useGpuForceReduction = false;
 
     pme_gpu_set_testing(pmeGpu, false);
 
@@ -1216,9 +1227,7 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
 
 void pme_gpu_gather(PmeGpu                *pmeGpu,
                     PmeForceOutputHandling forceTreatment,
-                    const float           *h_grid,
-                    bool                   useGpuFPmeReduction
-                    )
+                    const float           *h_grid)
 {
     /* Copying the input CPU forces for reduction */
     if (forceTreatment != PmeForceOutputHandling::Set)
@@ -1279,7 +1288,7 @@ void pme_gpu_gather(PmeGpu                *pmeGpu,
     launchGpuKernel(kernelPtr, config, timingEvent, "PME gather", kernelArgs);
     pme_gpu_stop_timing(pmeGpu, timingId);
 
-    if (useGpuFPmeReduction)
+    if (pmeGpu->settings.useGpuForceReduction)
     {
         pmeGpu->archSpecific->pmeForcesReady.markEvent(pmeGpu->archSpecific->pmeStream);
     }

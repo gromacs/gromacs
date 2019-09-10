@@ -418,7 +418,7 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
             {
                 std::copy(std::begin(forces), std::end(forces), std::begin(output.forces_));
             }
-            pme_gpu_gather(pme->gpu, inputTreatment, reinterpret_cast<float *>(fftgrid), false);
+            pme_gpu_gather(pme->gpu, inputTreatment, reinterpret_cast<float *>(fftgrid));
             std::copy(std::begin(output.forces_), std::end(output.forces_), std::begin(forces));
         }
         break;
@@ -702,7 +702,7 @@ PmeOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mode,
             switch (method)
             {
                 case PmeSolveAlgorithm::Coulomb:
-                    output = pme_gpu_getEnergyAndVirial(*pme);
+                    pme_gpu_getEnergyAndVirial(*pme, &output);
                     break;
 
                 default:

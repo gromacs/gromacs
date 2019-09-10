@@ -597,21 +597,23 @@ computeSpecialForces(FILE                          *fplog,
 
 /*! \brief Launch the prepare_step and spread stages of PME GPU.
  *
- * \param[in]  pmedata       The PME structure
- * \param[in]  box           The box matrix
- * \param[in]  x             Coordinate array
- * \param[in]  forceFlags    Force schedule flags
- * \param[in]  pmeFlags      PME flags
- * \param[in]  wcycle        The wallcycle structure
+ * \param[in]  pmedata              The PME structure
+ * \param[in]  box                  The box matrix
+ * \param[in]  x                    Coordinate array
+ * \param[in]  forceFlags           Force schedule flags
+ * \param[in]  pmeFlags             PME flags
+ * \param[in]  useGpuForceReduction True if GPU-based force reduction is active this step
+ * \param[in]  wcycle               The wallcycle structure
  */
 static inline void launchPmeGpuSpread(gmx_pme_t             *pmedata,
                                       const matrix           box,
                                       const rvec             x[],
                                       const gmx::ForceFlags &forceFlags,
                                       int                    pmeFlags,
+                                      bool                   useGpuForceReduction,
                                       gmx_wallcycle_t        wcycle)
 {
-    pme_gpu_prepare_computation(pmedata, forceFlags.haveDynamicBox, box, wcycle, pmeFlags);
+    pme_gpu_prepare_computation(pmedata, forceFlags.haveDynamicBox, box, wcycle, pmeFlags, useGpuForceReduction);
     pme_gpu_copy_coordinates_to_gpu(pmedata, x, wcycle);
     pme_gpu_launch_spread(pmedata, wcycle);
 }
@@ -622,14 +624,12 @@ static inline void launchPmeGpuSpread(gmx_pme_t             *pmedata,
  *
  * \param[in]  pmedata        The PME structure
  * \param[in]  wcycle         The wallcycle structure
- * \param[in]  useGpuFPmeReduction Whether forces will be reduced on GPU
  */
 static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
-                                     gmx_wallcycle_t   wcycle,
-                                     bool              useGpuFPmeReduction)
+                                     gmx_wallcycle_t   wcycle)
 {
     pme_gpu_launch_complex_transforms(pmedata, wcycle);
-    pme_gpu_launch_gather(pmedata, wcycle, PmeForceOutputHandling::Set, useGpuFPmeReduction);
+    pme_gpu_launch_gather(pmedata, wcycle, PmeForceOutputHandling::Set);
 }
 
 /*! \brief
@@ -930,7 +930,7 @@ void do_force(FILE                                     *fplog,
         && !(forceFlags.computeVirial || forceFlags.computeEnergy) ?
         BufferOpsUseGpu::True : BufferOpsUseGpu::False;
     // TODO: move / add this flag to the internal PME GPU data structures
-    const bool useGpuFPmeReduction = (useGpuFBufOps == BufferOpsUseGpu::True) &&
+    const bool useGpuPmeFReduction = (useGpuFBufOps == BufferOpsUseGpu::True) &&
         thisRankHasDuty(cr, DUTY_PME) && useGpuPme; // only supported if this rank is perfoming PME on the GPU
 
     /* At a search step we need to start the first balancing region
@@ -1001,7 +1001,7 @@ void do_force(FILE                                     *fplog,
 
     if (useGpuPme)
     {
-        launchPmeGpuSpread(fr->pmedata, box, as_rvec_array(x.unpaddedArrayRef().data()), forceFlags, pmeFlags, wcycle);
+        launchPmeGpuSpread(fr->pmedata, box, as_rvec_array(x.unpaddedArrayRef().data()), forceFlags, pmeFlags, useGpuPmeFReduction, wcycle);
     }
 
     /* do gridding for pair search */
@@ -1177,7 +1177,7 @@ void do_force(FILE                                     *fplog,
         // X copy/transform to allow overlap as well as after the GPU NB
         // launch to avoid FFT launch overhead hijacking the CPU and delaying
         // the nonbonded kernel.
-        launchPmeGpuFftAndGather(fr->pmedata, wcycle, useGpuFPmeReduction);
+        launchPmeGpuFftAndGather(fr->pmedata, wcycle);
     }
 
     /* Communicate coordinates and sum dipole if necessary +
@@ -1419,7 +1419,7 @@ void do_force(FILE                                     *fplog,
                          forceFlags, &forceOut.forceWithVirial(), enerd,
                          ed, forceFlags.doNeighborSearch);
 
-    bool                   useCpuFPmeReduction = thisRankHasDuty(cr, DUTY_PME) && !useGpuFPmeReduction;
+    bool                   useCpuFPmeReduction = thisRankHasDuty(cr, DUTY_PME) && !useGpuPmeFReduction;
     bool                   haveCpuForces       = (forceWork.haveSpecialForces || forceWork.haveCpuListedForceWork || useCpuFPmeReduction);
 
     // Will store the amount of cycles spent waiting for the GPU that
@@ -1458,14 +1458,13 @@ void do_force(FILE                                     *fplog,
             // flag to specify if forces should be accumulated in force buffer
             // ops. For non-local part, this just depends on whether CPU forces are present.
             bool accumulateForce = (useGpuFBufOps == BufferOpsUseGpu::True) && haveCpuForces;
-
             if (useGpuFBufOps == BufferOpsUseGpu::True)
             {
                 nbv->atomdata_add_nbat_f_to_f_gpu(Nbnxm::AtomLocality::NonLocal,
                                                   nbv->getDeviceForces(),
                                                   pme_gpu_get_device_f(fr->pmedata),
                                                   pme_gpu_get_f_ready_synchronizer(fr->pmedata),
-                                                  useGpuFPmeReduction, accumulateForce);
+                                                  useGpuPmeFReduction, accumulateForce);
                 nbv->launch_copy_f_from_gpu(f, Nbnxm::AtomLocality::NonLocal);
             }
             else
@@ -1514,7 +1513,7 @@ void do_force(FILE                                     *fplog,
 
     if (!alternateGpuWait && useGpuPme)
     {
-        pme_gpu_wait_and_reduce(fr->pmedata, pmeFlags, wcycle, &forceOut.forceWithVirial(), enerd, useGpuFPmeReduction);
+        pme_gpu_wait_and_reduce(fr->pmedata, pmeFlags, wcycle, &forceOut.forceWithVirial(), enerd);
     }
 
     /* Wait for local GPU NB outputs on the non-alternating wait path */
@@ -1592,7 +1591,7 @@ void do_force(FILE                                     *fplog,
                                               nbv->getDeviceForces(),
                                               pme_gpu_get_device_f(fr->pmedata),
                                               pme_gpu_get_f_ready_synchronizer(fr->pmedata),
-                                              useGpuFPmeReduction, accumulateForce);
+                                              useGpuPmeFReduction, accumulateForce);
             nbv->launch_copy_f_from_gpu(f, Nbnxm::AtomLocality::Local);
             nbv->wait_for_gpu_force_reduction(Nbnxm::AtomLocality::Local);
         }

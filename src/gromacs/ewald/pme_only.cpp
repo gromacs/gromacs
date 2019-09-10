@@ -617,17 +617,18 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         // from mdatoms for the other call to gmx_pme_do), so we have
         // fewer lines of code and less parameter passing.
         const int pmeFlags = GMX_PME_DO_ALL_F | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0);
-        PmeOutput output   = {{}, 0, {{0}}, 0, {{0}}};
+        PmeOutput output   = {{}, false, 0, {{0}}, 0, {{0}}};
         if (useGpuForPme)
         {
-            const bool boxChanged = false;
+            const bool boxChanged              = false;
+            const bool useGpuPmeForceReduction = false;
             //TODO this should be set properly by gmx_pme_recv_coeffs_coords,
             // or maybe use inputrecDynamicBox(ir), at the very least - change this when this codepath is tested!
-            pme_gpu_prepare_computation(pme, boxChanged, box, wcycle, pmeFlags);
+            pme_gpu_prepare_computation(pme, boxChanged, box, wcycle, pmeFlags, useGpuPmeForceReduction);
             pme_gpu_copy_coordinates_to_gpu(pme, as_rvec_array(pme_pp->x.data()), wcycle);
             pme_gpu_launch_spread(pme, wcycle);
             pme_gpu_launch_complex_transforms(pme, wcycle);
-            pme_gpu_launch_gather(pme, wcycle, PmeForceOutputHandling::Set, false);
+            pme_gpu_launch_gather(pme, wcycle, PmeForceOutputHandling::Set);
             output = pme_gpu_wait_finish_task(pme, pmeFlags, wcycle);
             pme_gpu_reinit_computation(pme, wcycle);
         }
