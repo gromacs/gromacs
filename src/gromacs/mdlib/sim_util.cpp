@@ -612,7 +612,8 @@ static inline void launchPmeGpuSpread(gmx_pme_t             *pmedata,
                                       gmx_wallcycle_t        wcycle)
 {
     pme_gpu_prepare_computation(pmedata, forceFlags.haveDynamicBox, box, wcycle, pmeFlags);
-    pme_gpu_launch_spread(pmedata, x, wcycle);
+    pme_gpu_copy_coordinates_to_gpu(pmedata, x, wcycle);
+    pme_gpu_launch_spread(pmedata, wcycle);
 }
 
 /*! \brief Launch the FFT and gather stages of PME GPU

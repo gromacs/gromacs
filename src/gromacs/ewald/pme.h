@@ -50,6 +50,7 @@
 
 #include <string>
 
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/walltime_accounting.h"
@@ -319,6 +320,12 @@ inline bool pme_gpu_task_enabled(const gmx_pme_t *pme)
     return (pme != nullptr) && (pme_run_mode(pme) != PmeRunMode::CPU);
 }
 
+/*! \brief Returns the size of the padding needed by GPU version of PME in the coordinates array.
+ *
+ * \param[in]  pme  The PME data structure.
+ */
+GPU_FUNC_QUALIFIER int pme_gpu_get_padding_size(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(0);
+
 // The following functions are all the PME GPU entry points,
 // currently inlining to nothing on non-CUDA builds.
 
@@ -356,15 +363,24 @@ GPU_FUNC_QUALIFIER void pme_gpu_prepare_computation(gmx_pme_t      *GPU_FUNC_ARG
                                                     int             GPU_FUNC_ARGUMENT(flags)) GPU_FUNC_TERM;
 
 /*! \brief
- * Launches first stage of PME on GPU - H2D input transfers, spreading kernel, and D2H grid transfer if needed.
+ * Launches H2D input transfers for PME on GPU.
  *
  * \param[in] pme               The PME data structure.
- * \param[in] x                 The array of local atoms' coordinates.
+ * \param[in] coordinatesHost   The array of local atoms' coordinates.
  * \param[in] wcycle            The wallclock counter.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t      *GPU_FUNC_ARGUMENT(pme),
-                                              const rvec     *GPU_FUNC_ARGUMENT(x),
-                                              gmx_wallcycle  *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
+GPU_FUNC_QUALIFIER void pme_gpu_copy_coordinates_to_gpu(gmx_pme_t            *GPU_FUNC_ARGUMENT(pme),
+                                                        const rvec           *GPU_FUNC_ARGUMENT(coordinatesHost),
+                                                        gmx_wallcycle        *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
+
+/*! \brief
+ * Launches first stage of PME on GPU - spreading kernel, and D2H grid transfer if needed.
+ *
+ * \param[in] pme                The PME data structure.
+ * \param[in] wcycle             The wallclock counter.
+ */
+GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t           *GPU_FUNC_ARGUMENT(pme),
+                                              gmx_wallcycle       *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
 
 /*! \brief
  * Launches middle stages of PME (FFT R2C, solving, FFT C2R) either on GPU or on CPU, depending on the run mode.
@@ -467,6 +483,12 @@ GPU_FUNC_QUALIFIER void *pme_gpu_get_device_x(const gmx_pme_t *GPU_FUNC_ARGUMENT
  * \returns                  Pointer to force data
  */
 GPU_FUNC_QUALIFIER void *pme_gpu_get_device_f(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(nullptr);
+
+/*! \brief Returns the pointer to the GPU stream.
+ *  \param[in] pme            The PME data structure.
+ *  \returns                  Pointer to GPU stream object.
+ */
+GPU_FUNC_QUALIFIER void *pme_gpu_get_device_stream(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /*! \brief Get pointer to the device synchronizer object that allows syncing on PME force calculation completion
  * \param[in] pme            The PME data structure.

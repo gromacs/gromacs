@@ -80,6 +80,19 @@ void pme_gpu_get_timings(const gmx_pme_t *pme, gmx_wallclock_gpu_pme_t *timings)
     }
 }
 
+int pme_gpu_get_padding_size(const gmx_pme_t *pme)
+{
+
+    if (!pme || !pme_gpu_active(pme))
+    {
+        return 0;
+    }
+    else
+    {
+        return pme_gpu_get_atom_data_alignment(pme->gpu);
+    }
+}
+
 /*! \brief
  * A convenience wrapper for launching either the GPU or CPU FFT.
  *
@@ -159,10 +172,9 @@ void pme_gpu_prepare_computation(gmx_pme_t            *pme,
     }
 }
 
-
-void pme_gpu_launch_spread(gmx_pme_t            *pme,
-                           const rvec           *x,
-                           gmx_wallcycle        *wcycle)
+void pme_gpu_copy_coordinates_to_gpu(gmx_pme_t            *pme,
+                                     const rvec           *coordinatesHost,
+                                     gmx_wallcycle        *wcycle)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
@@ -172,9 +184,17 @@ void pme_gpu_launch_spread(gmx_pme_t            *pme,
     wallcycle_start(wcycle, ewcLAUNCH_GPU);
     // The only spot of PME GPU where ewcsLAUNCH_GPU_PME subcounter increases call-count
     wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_PME);
-    pme_gpu_copy_input_coordinates(pmeGpu, x);
+    pme_gpu_copy_input_coordinates(pmeGpu, coordinatesHost);
     wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+}
+
+void pme_gpu_launch_spread(gmx_pme_t            *pme,
+                           gmx_wallcycle        *wcycle)
+{
+    GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
+
+    PmeGpu            *pmeGpu = pme->gpu;
 
     const unsigned int gridIndex  = 0;
     real              *fftgrid    = pme->fftgrid[gridIndex];
@@ -416,6 +436,15 @@ void *pme_gpu_get_device_f(const gmx_pme_t *pme)
         return nullptr;
     }
     return pme_gpu_get_kernelparam_forces(pme->gpu);
+}
+
+void *pme_gpu_get_device_stream(const gmx_pme_t *pme)
+{
+    if (!pme || !pme_gpu_active(pme))
+    {
+        return nullptr;
+    }
+    return pme_gpu_get_stream(pme->gpu);
 }
 
 GpuEventSynchronizer * pme_gpu_get_f_ready_synchronizer(const gmx_pme_t *pme)

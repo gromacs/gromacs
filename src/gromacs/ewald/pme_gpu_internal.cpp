@@ -104,7 +104,15 @@ static PmeGpuKernelParamsBase *pme_gpu_get_kernel_params_base_ptr(const PmeGpu *
 int pme_gpu_get_atom_data_alignment(const PmeGpu * /*unused*/)
 {
     //TODO: this can be simplified, as c_pmeAtomDataAlignment is now constant
-    return c_pmeAtomDataAlignment;
+    if (c_usePadding)
+    {
+        return c_pmeAtomDataAlignment;
+    }
+    else
+    {
+        return 0;
+    }
+
 }
 
 int pme_gpu_get_atoms_per_warp(const PmeGpu *pmeGpu)
@@ -1298,6 +1306,18 @@ void * pme_gpu_get_kernelparam_forces(const PmeGpu *pmeGpu)
     if (pmeGpu && pmeGpu->kernelParams)
     {
         return pmeGpu->kernelParams->atoms.d_forces;
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
+void * pme_gpu_get_stream(const PmeGpu *pmeGpu)
+{
+    if (pmeGpu)
+    {
+        return static_cast<void *>(&pmeGpu->archSpecific->pmeStream);
     }
     else
     {

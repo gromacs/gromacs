@@ -624,7 +624,8 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             //TODO this should be set properly by gmx_pme_recv_coeffs_coords,
             // or maybe use inputrecDynamicBox(ir), at the very least - change this when this codepath is tested!
             pme_gpu_prepare_computation(pme, boxChanged, box, wcycle, pmeFlags);
-            pme_gpu_launch_spread(pme, as_rvec_array(pme_pp->x.data()), wcycle);
+            pme_gpu_copy_coordinates_to_gpu(pme, as_rvec_array(pme_pp->x.data()), wcycle);
+            pme_gpu_launch_spread(pme, wcycle);
             pme_gpu_launch_complex_transforms(pme, wcycle);
             pme_gpu_launch_gather(pme, wcycle, PmeForceOutputHandling::Set, false);
             output = pme_gpu_wait_finish_task(pme, pmeFlags, wcycle);
