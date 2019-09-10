@@ -546,8 +546,11 @@ void OptACM::toPolData(const std::vector<bool> &changed)
     bool     distributed = getEemtypeDistributed(pd->getChargeModel());
     auto    *ic          = indexCount();
     auto     param       = Bayes::getParam();
-    auto     psigma      = Bayes::getParam();
-    
+    auto     psigma      = Bayes::getPsigma();
+    if (psigma.empty())
+    {
+        psigma.resize(param.size(), 0);
+    }
     Bayes::dumpParam(debug);
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
@@ -558,7 +561,6 @@ void OptACM::toPolData(const std::vector<bool> &changed)
             {
                 ei->setJ0(param[n]);
                 ei->setJ0_sigma(psigma[n++]);
-                
                 if (ai->name().compare(fixchi()) != 0)
                 {
                     ei->setChi0(param[n]);
