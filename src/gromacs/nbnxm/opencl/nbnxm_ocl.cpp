@@ -552,7 +552,7 @@ void gpu_launch_kernel(gmx_nbnxn_ocl_t                  *nb,
 
     // The OpenCL kernel takes int as second to last argument because bool is
     // not supported as a kernel argument type (sizeof(bool) is implementation defined).
-    const int computeFshift = forceFlags.computeVirial;
+    const int computeFshift = static_cast<int>(forceFlags.computeVirial);
     if (useLjCombRule(nb->nbparam->vdwtype))
     {
         const auto kernelArgs = prepareGpuKernelArguments(kernel, config,

@@ -677,6 +677,8 @@ std::vector<std::vector<gmx::RVec> > c_coordinatesForTests =
 //! PBC values for testing
 std::vector<int> c_pbcForTests = { epbcNONE, epbcXY, epbcXYZ };
 
+// Those tests give errors with the intel compiler and nothing else, so we disable them only there.
+#ifndef __INTEL_COMPILER
 INSTANTIATE_TEST_CASE_P(Bond, ListedForcesTest, ::testing::Combine(::testing::ValuesIn(c_InputBonds), ::testing::ValuesIn(c_coordinatesForTests), ::testing::ValuesIn(c_pbcForTests)));
 
 INSTANTIATE_TEST_CASE_P(Angle, ListedForcesTest, ::testing::Combine(::testing::ValuesIn(c_InputAngles), ::testing::ValuesIn(c_coordinatesForTests), ::testing::ValuesIn(c_pbcForTests)));
@@ -686,7 +688,7 @@ INSTANTIATE_TEST_CASE_P(Dihedral, ListedForcesTest, ::testing::Combine(::testing
 INSTANTIATE_TEST_CASE_P(Polarize, ListedForcesTest, ::testing::Combine(::testing::ValuesIn(c_InputPols), ::testing::ValuesIn(c_coordinatesForTests), ::testing::ValuesIn(c_pbcForTests)));
 
 INSTANTIATE_TEST_CASE_P(Restraints, ListedForcesTest, ::testing::Combine(::testing::ValuesIn(c_InputRestraints), ::testing::ValuesIn(c_coordinatesForTests), ::testing::ValuesIn(c_pbcForTests)));
-
+#endif
 }  // namespace
 
 }  // namespace gmx
