@@ -243,6 +243,7 @@ double OptACM::calcDeviation()
     double               penalty   = 0;
     std::vector<double>  qq;
     const param_type    &param     = Bayes::getParam();
+
     if (MASTER(commrec()))
     {
         auto *ic = indexCount();
@@ -293,6 +294,7 @@ double OptACM::calcDeviation()
             setFinal();
         }
     }
+
     if (PAR(commrec()) && !final())
     {
         // TODO: just broadcast the eemprops
@@ -702,9 +704,10 @@ bool OptACM::optRun(FILE                   *fp,
     {
         if (PAR(commrec()))
         {
+            int niter = 3 + nrun*Bayes::maxIter()*Bayes::nParam();
             for (int dest = 1; dest < commrec()->nnodes; dest++)
             {
-                gmx_send_int(commrec(), dest, (nrun*Bayes::maxIter()*Bayes::nParam()));
+                gmx_send_int(commrec(), dest, niter);
             }
         }
         double chi2;
@@ -749,7 +752,7 @@ bool OptACM::optRun(FILE                   *fp,
     {
         /* S L A V E   N O D E S */
         auto niter = gmx_recv_int(commrec(), 0);
-        for (auto n = 0; n < niter + 2; n++)
+        for (auto n = 0; n < niter; n++)
         {
             (void) calcDeviation();
         }

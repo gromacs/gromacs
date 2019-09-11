@@ -91,8 +91,8 @@ static void print_stats(bool verbose, int iter,
     }
 }
 
-static double zeta0(alexandria::ChargeModel iChargeModel,
-                    double alpha)
+static double gmx_unused zeta0(alexandria::ChargeModel iChargeModel,
+                               double alpha)
 {
     double zeta = 0;
     if (alpha > 0)
