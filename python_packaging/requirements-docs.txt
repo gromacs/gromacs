@@ -1,5 +1,4 @@
 # The following packages are not strictly necessary, but allow documentation builds.
 Pygments>=2.2.0
 Sphinx>=1.6.3
-sphinx-rtd-theme>=0.2.4
 sphinxcontrib-plantuml>=0.14

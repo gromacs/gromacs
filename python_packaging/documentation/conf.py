@@ -68,8 +68,8 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-# Read the Docs looks pretty good.
-html_theme = 'sphinx_rtd_theme'
+# GROMACS uses the 'classic' theme.
+html_theme = 'classic'
 
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.

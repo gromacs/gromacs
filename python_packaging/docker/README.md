@@ -125,7 +125,7 @@ image, build the image from docs .dockerfile.
 The resulting image is a small web server image (without GROMACS or gmxapi installed) 
 with html content built in and copied from a temporary container.
 
-    docker run --rm -ti -p 8080:80 gmxapi/docs
+    docker run --rm -p 8080:80 gmxapi/docs
 
 Then browse to http://localhost:8080/
 
