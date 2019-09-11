@@ -435,7 +435,7 @@ class MdrunnerBuilder final
          *
          * \param multisim borrowed handle to multisim record.
          *
-         * Required. Client should get a `gmx_multisim_t*` value from init_multisystem().
+         * Required. Client should create a `gmx_multisim_t` and pass its address.
          * Client is responsible for calling done_multisim() on the handle after
          * simulation.
          *

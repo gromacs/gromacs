@@ -172,7 +172,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
         LogFilePtr       logFileGuard     = nullptr;
         std::tie(startingBehavior,
                  logFileGuard) = handleRestart(options_.cr.get(),
-                                               options_.ms,
+                                               options_.ms.get(),
                                                options_.mdrunOptions.appendingBehavior,
                                                ssize(options_.filenames),
                                                options_.filenames.data());
@@ -189,7 +189,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
         builder.addNeighborList(options_.nstlist_cmdline);
         builder.addReplicaExchange(options_.replExParams);
         // \todo take ownership of multisim resources (ms)
-        builder.addMultiSim(options_.ms);
+        builder.addMultiSim(options_.ms.get());
         // \todo Provide parallelism resources through SimulationContext.
         // Need to establish run-time values from various inputs to provide a resource handle to Mdrunner
         builder.addHardwareOptions(options_.hw_opt);
@@ -206,7 +206,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
                                         std::move(builder),
                                         std::move(simulationContext),
                                         std::move(logFileGuard),
-                                        options_.ms);
+                                        options_.ms.get());
 
         // Clean up argv once builder is no longer in use
         for (auto && string : argv)

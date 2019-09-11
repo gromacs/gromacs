@@ -49,21 +49,16 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/mpiinplacebuffers.h"
 #include "gromacs/utility/smalloc.h"
 
-gmx_multisim_t *init_multisystem(MPI_Comm                         comm,
-                                 gmx::ArrayRef<const std::string> multidirs)
-{
-    gmx_multisim_t *ms;
-#if GMX_MPI
-    MPI_Group       mpi_group_world;
-    int            *rank;
-#endif
+gmx_multisim_t::gmx_multisim_t() = default;
 
+gmx_multisim_t::gmx_multisim_t(MPI_Comm                         comm,
+                               gmx::ArrayRef<const std::string> multidirs)
+{
     if (multidirs.empty())
     {
-        return nullptr;
+        return;
     }
 
     if (!GMX_LIB_MPI && !multidirs.empty())
@@ -96,66 +91,57 @@ gmx_multisim_t *init_multisystem(MPI_Comm                         comm,
         fprintf(debug, "We have %td simulations, %d ranks per simulation, local simulation is %d\n", multidirs.ssize(), numRanksPerSim, rankWithinComm/numRanksPerSim);
     }
 
-    ms       = new gmx_multisim_t;
-    ms->nsim = multidirs.size();
-    ms->sim  = rankWithinComm/numRanksPerSim;
+    nsim = multidirs.size();
+    sim  = rankWithinComm/numRanksPerSim;
     /* Create a communicator for the master nodes */
-    snew(rank, ms->nsim);
-    for (int i = 0; i < ms->nsim; i++)
+    std::vector<int> rank(nsim);
+    for (int i = 0; i < nsim; i++)
     {
         rank[i] = i*numRanksPerSim;
     }
+    MPI_Group mpi_group_world;
     MPI_Comm_group(comm, &mpi_group_world);
-    MPI_Group_incl(mpi_group_world, ms->nsim, rank, &ms->mpi_group_masters);
-    sfree(rank);
-    MPI_Comm_create(MPI_COMM_WORLD, ms->mpi_group_masters,
-                    &ms->mpi_comm_masters);
+    MPI_Group_incl(mpi_group_world, nsim, rank.data(), &mpi_group_masters);
+    MPI_Comm_create(MPI_COMM_WORLD, mpi_group_masters,
+                    &mpi_comm_masters);
 
 #if !MPI_IN_PLACE_EXISTS
     /* initialize the MPI_IN_PLACE replacement buffers */
-    snew(ms->mpb, 1);
-    ms->mpb->ibuf        = nullptr;
-    ms->mpb->libuf       = nullptr;
-    ms->mpb->fbuf        = nullptr;
-    ms->mpb->dbuf        = nullptr;
-    ms->mpb->ibuf_alloc  = 0;
-    ms->mpb->libuf_alloc = 0;
-    ms->mpb->fbuf_alloc  = 0;
-    ms->mpb->dbuf_alloc  = 0;
+    snew(mpb, 1);
+    mpb->ibuf        = nullptr;
+    mpb->libuf       = nullptr;
+    mpb->fbuf        = nullptr;
+    mpb->dbuf        = nullptr;
+    mpb->ibuf_alloc  = 0;
+    mpb->libuf_alloc = 0;
+    mpb->fbuf_alloc  = 0;
+    mpb->dbuf_alloc  = 0;
 #endif
 
     // TODO This should throw upon error
-    gmx_chdir(multidirs[ms->sim].c_str());
+    gmx_chdir(multidirs[sim].c_str());
 #else
     GMX_UNUSED_VALUE(comm);
-    ms = nullptr;
 #endif
-
-    return ms;
 }
 
-void done_multisim(gmx_multisim_t *ms)
+gmx_multisim_t::~gmx_multisim_t()
 {
-    if (ms == nullptr)
-    {
-        return;
-    }
-    done_mpi_in_place_buf(ms->mpb);
+    done_mpi_in_place_buf(mpb);
 
 #if GMX_MPI
     // TODO This would work better if the result of MPI_Comm_split was
     // put into an RAII-style guard, such as gmx::unique_cptr.
-    if (ms->mpi_comm_masters != MPI_COMM_NULL &&
-        ms->mpi_comm_masters != MPI_COMM_WORLD)
+    if (mpi_comm_masters != MPI_COMM_NULL &&
+        mpi_comm_masters != MPI_COMM_WORLD)
     {
-        MPI_Comm_free(&ms->mpi_comm_masters);
+        MPI_Comm_free(&mpi_comm_masters);
     }
-    if (ms->mpi_group_masters != MPI_GROUP_NULL)
+    if (mpi_group_masters != MPI_GROUP_NULL)
     {
-        MPI_Group_free(&ms->mpi_group_masters);
+        MPI_Group_free(&mpi_group_masters);
     }
 #endif
-    delete ms;
 }
 
 #if GMX_MPI

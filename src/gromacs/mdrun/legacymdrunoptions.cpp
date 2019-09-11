@@ -142,22 +142,24 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char **argv, ArrayRef<co
     ArrayRef<const std::string> multidir = opt2fnsIfOptionSet("-multidir",
                                                               ssize(filenames),
                                                               filenames.data());
-
-    ms = init_multisystem(MPI_COMM_WORLD, multidir);
+    if (!multidir.empty())
+    {
+        ms = std::make_unique<gmx_multisim_t>(MPI_COMM_WORLD, multidir);
+    }
 
     /* Prepare the intra-simulation communication */
     // TODO consolidate this with init_commrec, after changing the
-    // relative ordering of init_commrec and init_multisystem
-#if GMX_MPI
+    // relative ordering of init_commrec and ms initialization.
     if (ms != nullptr)
     {
+#if GMX_MPI
         cr->nnodes = cr->nnodes / ms->nsim;
         MPI_Comm_split(MPI_COMM_WORLD, ms->sim, cr->sim_nodeid, &cr->mpi_comm_mysim);
         cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
         MPI_Comm_rank(cr->mpi_comm_mysim, &cr->sim_nodeid);
         MPI_Comm_rank(cr->mpi_comm_mygroup, &cr->nodeid);
-    }
 #endif
+    }
 
     if (!opt2parg_bSet("-append", asize(pa), pa))
     {
@@ -192,7 +194,6 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char **argv, ArrayRef<co
 LegacyMdrunOptions::~LegacyMdrunOptions()
 {
     output_env_done(oenv);
-    done_multisim(ms);
 }
 
 } // namespace gmx

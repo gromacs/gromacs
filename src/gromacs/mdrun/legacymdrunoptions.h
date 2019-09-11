@@ -54,6 +54,7 @@
 #include "gromacs/domdec/options.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/hardware/hw_info.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 
 #include "replicaexchange.h"
@@ -267,9 +268,9 @@ class LegacyMdrunOptions
         /*! \} */
 
         //! Handle to communication object.
-        CommrecHandle     cr = init_commrec();
+        CommrecHandle                   cr = init_commrec();
         //! Multi-simulation object.
-        gmx_multisim_t   *ms = nullptr;
+        std::unique_ptr<gmx_multisim_t> ms;
 
         //! Parses the command-line input and prepares to start mdrun.
         int updateFromCommandLine(int argc, char **argv, ArrayRef<const char *> desc);
