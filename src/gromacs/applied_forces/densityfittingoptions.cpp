@@ -197,7 +197,7 @@ void DensityFittingOptions::setFitGroupIndices(const IndexGroupsAndNames &indexG
 
 void DensityFittingOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBuilder)
 {
-    auto groupIndexAdder = treeBuilder.addUniformArray<index>(DensityFittingModuleInfo::name_ + "-" + c_groupTag_);
+    auto groupIndexAdder = treeBuilder.addUniformArray<std::int64_t>(DensityFittingModuleInfo::name_ + "-" + c_groupTag_);
     for (const auto &indexValue : parameters_.indices_)
     {
         groupIndexAdder.addValue(indexValue);
@@ -219,7 +219,7 @@ void DensityFittingOptions::readInternalParametersFromKvt(const KeyValueTreeObje
     auto kvtIndexArray = tree[DensityFittingModuleInfo::name_ + "-" + c_groupTag_].asArray().values();
     parameters_.indices_.resize(kvtIndexArray.size());
     std::transform(std::begin(kvtIndexArray), std::end(kvtIndexArray), std::begin(parameters_.indices_),
-                   [](const KeyValueTreeValue &val) { return val.cast<index>(); });
+                   [](const KeyValueTreeValue &val) { return val.cast<std::int64_t>(); });
 }
 
 const std::string &DensityFittingOptions::referenceDensityFileName() const

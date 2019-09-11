@@ -235,7 +235,7 @@ TEST_F(DensityFittingOptionsTest, KvtToInternal)
     setFromMdpValues(densityFittingSetActiveAsMdpValues());
 
     KeyValueTreeBuilder builder;
-    auto                addedArray = builder.rootObject().addUniformArray<index>("density-guided-simulation-group");
+    auto                addedArray = builder.rootObject().addUniformArray<std::int64_t>("density-guided-simulation-group");
     addedArray.addValue(1);
     addedArray.addValue(15);
     const auto tree = builder.build();
