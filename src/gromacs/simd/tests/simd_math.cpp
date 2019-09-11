@@ -651,6 +651,41 @@ TEST_F(SimdMathTest, maskzInv)
     GMX_EXPECT_SIMD_REAL_NEAR(ref, maskzInv(x, m));
 }
 
+TEST_F(SimdMathTest, cbrt)
+{
+    const real      low  = -std::numeric_limits<real>::max();
+    const real      high =  std::numeric_limits<real>::max();
+
+    CompareSettings settings {
+        Range(low, high), ulpTol_, absTol_, MatchRule::Normal
+    };
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::cbrt, cbrt, settings);
+}
+
+/*! \brief Function wrapper to evaluate reference 1/cbrt(x) */
+real refInvCbrt(real x)
+{
+    return 1.0/std::cbrt(x);
+}
+
+TEST_F(SimdMathTest, invcbrt)
+{
+    // Negative values first
+    real            low  = -std::numeric_limits<real>::max();
+    real            high = -std::numeric_limits<real>::min();
+
+    CompareSettings settings {
+        Range(low, high), ulpTol_, absTol_, MatchRule::Normal
+    };
+    GMX_EXPECT_SIMD_FUNC_NEAR(refInvCbrt, invcbrt, settings);
+
+    // Positive values
+    low      = std::numeric_limits<real>::min();
+    high     = std::numeric_limits<real>::max();
+    settings = { Range(low, high), ulpTol_, absTol_, MatchRule::Normal };
+    GMX_EXPECT_SIMD_FUNC_NEAR(refInvCbrt, invcbrt, settings);
+}
+
 TEST_F(SimdMathTest, log2)
 {
     const real      low  = std::numeric_limits<real>::min();
@@ -1083,6 +1118,41 @@ TEST_F(SimdMathTest, invSingleAccuracy)
     // Danger zone where intermediates might be flushed to zero and produce 1/x==0.0
     settings = { Range(maxSafeFloat, maxFloat), ulpTol_, absTol_, MatchRule::ReferenceOrZero };
     GMX_EXPECT_SIMD_FUNC_NEAR(refInv, inv, settings);
+}
+
+TEST_F(SimdMathTest, cbrtSingleAccuracy)
+{
+    const real      low  = -std::numeric_limits<real>::max();
+    const real      high = std::numeric_limits<real>::max();
+
+    // Increase the allowed error by the difference between the actual precision and single
+    setUlpTolSingleAccuracy(ulpTol_);
+
+    CompareSettings settings {
+        Range(low, high), ulpTol_, absTol_, MatchRule::Normal
+    };
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::cbrt, cbrt, settings);
+}
+
+TEST_F(SimdMathTest, invcbrtSingleAccuracy)
+{
+    // Increase the allowed error by the difference between the actual precision and single
+    setUlpTolSingleAccuracy(ulpTol_);
+
+    // Negative values first
+    real            low  = -std::numeric_limits<real>::max();
+    real            high = -std::numeric_limits<real>::min();
+
+    CompareSettings settings {
+        Range(low, high), ulpTol_, absTol_, MatchRule::Normal
+    };
+    GMX_EXPECT_SIMD_FUNC_NEAR(refInvCbrt, invcbrt, settings);
+
+    // Positive values
+    low      = std::numeric_limits<real>::min();
+    high     = std::numeric_limits<real>::max();
+    settings = { Range(low, high), ulpTol_, absTol_, MatchRule::Normal };
+    GMX_EXPECT_SIMD_FUNC_NEAR(refInvCbrt, invcbrt, settings);
 }
 
 TEST_F(SimdMathTest, log2SingleAccuracy)
