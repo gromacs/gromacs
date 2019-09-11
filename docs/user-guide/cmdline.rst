@@ -146,6 +146,26 @@ options or bug fixes are not typically included.
 For more information about changed features, please check out the
 :ref:`release notes <release-notes>`.
 
+Version 2020
+^^^^^^^^^^^^
+
+gmx convert-trj
+...............
+
+**new**
+
+:ref:`gmx convert-trj` has been introduced as a selection-enabled alternative
+for exchanging trajectory file format (previously done in :ref:`gmx trjconv`).
+
+gmx extract-cluster
+...................
+
+**new**
+
+:ref:`gmx extract-cluster` has been introduced as a selection-enabled way to
+write sub-trajectories based on the output from a cluster analysis. The 
+corresponding option **-sub** in :ref:`gmx trjconv` has been removed.
+
 Version 2018
 ^^^^^^^^^^^^
 

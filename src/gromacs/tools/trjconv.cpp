@@ -232,14 +232,12 @@ int gmx_trjconv(int argc, char *argv[])
         "* fit atoms to reference structure",
         "* reduce the number of frames",
         "* change the timestamps of the frames ([TT]-t0[tt] and [TT]-timestep[tt])",
-        "* cut the trajectory in small subtrajectories according",
-        "  to information in an index file. This allows subsequent analysis of",
-        "  the subtrajectories that could, for example, be the result of a",
-        "  cluster analysis. Use option [TT]-sub[tt].",
-        "  This assumes that the entries in the index file are frame numbers and",
-        "  dumps each group in the index file to a separate trajectory file.",
         "* select frames within a certain range of a quantity given",
         "  in an [REF].xvg[ref] file.",
+        "",
+        "The option to write subtrajectories (-sub) based on the information obtained from",
+        "cluster analysis has been removed from [THISMODULE] and is now part of",
+        "[gmx extract-cluster]",
         "",
         "[gmx-trjcat] is better suited for concatenating multiple trajectory files.",
         "[PAR]",
@@ -509,14 +507,9 @@ int gmx_trjconv(int argc, char *argv[])
     char             *grpnm = nullptr;
     int              *frindex, nrfri;
     char             *frname;
-    int               ifit, my_clust = -1;
+    int               ifit;
     int              *ind_fit;
     char             *gn_fit;
-    t_cluster_ndx    *clust           = nullptr;
-    t_trxstatus     **clust_status    = nullptr;
-    int              *clust_status_id = nullptr;
-    int               ntrxopen        = 0;
-    int              *nfwritten       = nullptr;
     int               ndrop           = 0, ncol, drop0 = 0, drop1 = 0, dropuse = 0;
     double          **dropval;
     real              tshift = 0, dt = -1, prec;
@@ -527,7 +520,7 @@ int gmx_trjconv(int argc, char *argv[])
     gmx_bool          bCopy, bDoIt, bIndex, bTDump, bSetTime, bTPS = FALSE, bDTset = FALSE;
     gmx_bool          bExec, bTimeStep = FALSE, bDumpFrame = FALSE, bSetXtcPrec, bNeedPrec;
     gmx_bool          bHaveFirstFrame, bHaveNextFrame, bSetBox, bSetUR, bSplit = FALSE;
-    gmx_bool          bSubTraj = FALSE, bDropUnder = FALSE, bDropOver = FALSE, bTrans = FALSE;
+    gmx_bool          bDropUnder = FALSE, bDropOver = FALSE, bTrans = FALSE;
     gmx_bool          bWriteFrame, bSplitHere;
     const char       *top_file, *in_file, *out_file = nullptr;
     char              out_file2[256], *charpt;
@@ -669,45 +662,13 @@ int gmx_trjconv(int argc, char *argv[])
             outf_base[outf_ext - out_file] = '\0';
         }
 
-        bSubTraj = opt2bSet("-sub", NFILE, fnm);
+        bool bSubTraj = opt2bSet("-sub", NFILE, fnm);
         if (bSubTraj)
         {
-            if ((ftp != efXTC) && (ftp != efTRR))
-            {
-                /* It seems likely that other trajectory file types
-                 * could work here. */
-                gmx_fatal(FARGS, "Can only use the sub option with output file types "
-                          "xtc and trr");
-            }
-            clust = cluster_index(nullptr, opt2fn("-sub", NFILE, fnm));
-
-            /* Check for number of files disabled, as FOPEN_MAX is not the correct
-             * number to check for. In my linux box it is only 16.
-             */
-            if (/* DISABLES CODE */ (false))
-            //if (clust->clust->nr > FOPEN_MAX-4)
-            {
-                gmx_fatal(FARGS, "Can not open enough (%d) files to write all the"
-                          " trajectories.\ntry splitting the index file in %d parts.\n"
-                          "FOPEN_MAX = %d",
-                          clust->clust->nr, 1+clust->clust->nr/FOPEN_MAX, FOPEN_MAX);
-            }
-            gmx_warning("The -sub option could require as many open output files as there are\n"
-                        "index groups in the file (%d). If you get I/O errors opening new files,\n"
-                        "try reducing the number of index groups in the file, and perhaps\n"
-                        "using trjconv -sub several times on different chunks of your index file.\n",
-                        clust->clust->nr);
-
-            snew(clust_status, clust->clust->nr);
-            snew(clust_status_id, clust->clust->nr);
-            snew(nfwritten, clust->clust->nr);
-            for (i = 0; (i < clust->clust->nr); i++)
-            {
-                clust_status[i]    = nullptr;
-                clust_status_id[i] = -1;
-            }
-            bSeparate = bSplit = FALSE;
+            gmx_fatal(FARGS, "The -sub option has been removed from gmx trjconv and is now part\n"
+                      "of gmx extract-cluster and does nothing here\n");
         }
+
         /* skipping */
         if (skip_nr <= 0)
         {
@@ -1006,7 +967,7 @@ int gmx_trjconv(int argc, char *argv[])
                 case efXTC:
                 case efTRR:
                     out = nullptr;
-                    if (!bSplit && !bSubTraj)
+                    if (!bSplit)
                     {
                         trxout = open_trx(out_file, filemode);
                     }
@@ -1014,7 +975,7 @@ int gmx_trjconv(int argc, char *argv[])
                 case efGRO:
                 case efG96:
                 case efPDB:
-                    if (( !bSeparate && !bSplit ) && !bSubTraj)
+                    if (!bSeparate && !bSplit)
                     {
                         out = gmx_ffopen(out_file, filemode);
                     }
@@ -1050,24 +1011,6 @@ int gmx_trjconv(int argc, char *argv[])
                     /* set the step */
                     fr.step = newstep;
                     newstep++;
-                }
-                if (bSubTraj)
-                {
-                    /*if (frame >= clust->clust->nra)
-                       gmx_fatal(FARGS,"There are more frames in the trajectory than in the cluster index file\n");*/
-                    if (frame > clust->maxframe)
-                    {
-                        my_clust = -1;
-                    }
-                    else
-                    {
-                        my_clust = clust->inv_clust[frame];
-                    }
-                    if ((my_clust < 0) || (my_clust >= clust->clust->nr) ||
-                        (my_clust == -1))
-                    {
-                        my_clust = -1;
-                    }
                 }
 
                 if (bSetBox)
@@ -1424,45 +1367,7 @@ int gmx_trjconv(int argc, char *argv[])
                                     }
                                     trxout = open_trx(out_file2, filemode);
                                 }
-                                if (bSubTraj)
-                                {
-                                    if (my_clust != -1)
-                                    {
-                                        char buf[STRLEN];
-                                        if (clust_status_id[my_clust] == -1)
-                                        {
-                                            sprintf(buf, "%s.%s", clust->grpname[my_clust], ftp2ext(ftp));
-                                            clust_status[my_clust]    = open_trx(buf, "w");
-                                            clust_status_id[my_clust] = 1;
-                                            ntrxopen++;
-                                        }
-                                        else if (clust_status_id[my_clust] == -2)
-                                        {
-                                            gmx_fatal(FARGS, "File %s.xtc should still be open (%d open .xtc files)\n" "in order to write frame %d. my_clust = %d",
-                                                      clust->grpname[my_clust], ntrxopen, frame,
-                                                      my_clust);
-                                        }
-                                        write_trxframe(clust_status[my_clust], &frout, gc);
-                                        nfwritten[my_clust]++;
-                                        if (nfwritten[my_clust] ==
-                                            (clust->clust->index[my_clust+1]-
-                                             clust->clust->index[my_clust]))
-                                        {
-                                            close_trx(clust_status[my_clust]);
-                                            clust_status[my_clust]    = nullptr;
-                                            clust_status_id[my_clust] = -2;
-                                            ntrxopen--;
-                                            if (ntrxopen < 0)
-                                            {
-                                                gmx_fatal(FARGS, "Less than zero open .xtc files!");
-                                            }
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    write_trxframe(trxout, &frout, gc);
-                                }
+                                write_trxframe(trxout, &frout, gc);
                                 break;
                             case efGRO:
                             case efG96:
@@ -1597,16 +1502,6 @@ int gmx_trjconv(int argc, char *argv[])
         else if (out != nullptr)
         {
             gmx_ffclose(out);
-        }
-        if (bSubTraj)
-        {
-            for (i = 0; (i < clust->clust->nr); i++)
-            {
-                if (clust_status_id[i] >= 0)
-                {
-                    close_trx(clust_status[i]);
-                }
-            }
         }
     }
 

@@ -42,3 +42,4 @@ Added extract-cluster
 Added a dedicated tool to extract trajectory frames corresponding to different clusters obtained
 from :ref:`gmx cluster`. The new :ref:`extract-cluster <gmx extract-cluster>` tool
 generates new trajectories that contain only those frames that correspond to the correct cluster.
+The corresponding option **-sub** in :ref:`gmx trjconv` has been removed.
