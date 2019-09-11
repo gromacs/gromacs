@@ -1455,14 +1455,22 @@ void do_force(FILE                                     *fplog,
             // flag to specify if forces should be accumulated in force buffer
             // ops. For non-local part, this just depends on whether CPU forces are present.
             bool accumulateForce = (useGpuFBufOps == BufferOpsUseGpu::True) && haveCpuForces;
-            nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::NonLocal,
-                                          forceWithShiftForces.force(), pme_gpu_get_device_f(fr->pmedata),
-                                          pme_gpu_get_f_ready_synchronizer(fr->pmedata),
-                                          useGpuFBufOps, useGpuFPmeReduction, accumulateForce);
+
             if (useGpuFBufOps == BufferOpsUseGpu::True)
             {
+                nbv->atomdata_add_nbat_f_to_f_gpu(Nbnxm::AtomLocality::NonLocal,
+                                                  nbv->getDeviceForces(),
+                                                  pme_gpu_get_device_f(fr->pmedata),
+                                                  pme_gpu_get_f_ready_synchronizer(fr->pmedata),
+                                                  useGpuFPmeReduction, accumulateForce);
                 nbv->launch_copy_f_from_gpu(f, Nbnxm::AtomLocality::NonLocal);
             }
+            else
+            {
+                nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::NonLocal,
+                                              forceWithShiftForces.force());
+            }
+
 
             if (fr->nbv->emulateGpu() && forceFlags.computeVirial)
             {
@@ -1574,15 +1582,22 @@ void do_force(FILE                                     *fplog,
         // non-local part).
         bool accumulateForce = (useGpuFBufOps == BufferOpsUseGpu::True) &&
             (haveCpuForces || DOMAINDECOMP(cr));
-        nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
-                                      force, pme_gpu_get_device_f(fr->pmedata),
-                                      pme_gpu_get_f_ready_synchronizer(fr->pmedata),
-                                      useGpuFBufOps, useGpuFPmeReduction, accumulateForce);
+
         if (useGpuFBufOps == BufferOpsUseGpu::True)
         {
+            nbv->atomdata_add_nbat_f_to_f_gpu(Nbnxm::AtomLocality::Local,
+                                              nbv->getDeviceForces(),
+                                              pme_gpu_get_device_f(fr->pmedata),
+                                              pme_gpu_get_f_ready_synchronizer(fr->pmedata),
+                                              useGpuFPmeReduction, accumulateForce);
             nbv->launch_copy_f_from_gpu(f, Nbnxm::AtomLocality::Local);
             nbv->wait_for_gpu_force_reduction(Nbnxm::AtomLocality::Local);
         }
+        else
+        {
+            nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local, force);
+        }
+
     }
 
     launchGpuEndOfStepTasks(nbv, fr->gpuBonded, fr->pmedata, enerd,

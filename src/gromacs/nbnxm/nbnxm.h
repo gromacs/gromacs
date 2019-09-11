@@ -354,22 +354,30 @@ struct nonbonded_verlet_t
         void atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality                 locality,
                                       gmx::ArrayRef<gmx::RVec>            force);
 
-        /*! \brief Add the forces stored in nbat to f, allowing for possibility that GPU buffer ops are active
-         * \param [in] locality         Local or non-local
-         * \param [inout] force         Force to be added to
-         * \param [in] fPme             Force from PME calculation
-         * \param [in] pmeForcesReady   Event triggered when PME force calculation has completed
-         * \param [in] useGpu           Whether GPU buffer ops are active
-         * \param [in] useGpuFPmeReduction   Whether PME force reduction is on GPU
-         * \param [in] accumulateForce  Whether force should be accumulated or stored
+        /*! \brief Add the forces stored in nbat to total force using GPU buffer opse
+         *
+         * \param [in]     locality             Local or non-local
+         * \param [in,out] totalForcesDevice    Force to be added to
+         * \param [in]     forcesPmeDevice      Device buffer with PME forces
+         * \param [in]     pmeForcesReady       Event triggered when PME force calculation has completed
+         * \param [in]     useGpuFPmeReduction  Whether PME forces should be added
+         * \param [in]     accumulateForce      If the total force buffer already contains data
          */
-        void atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality                 locality,
-                                      gmx::ArrayRef<gmx::RVec>            force,
-                                      void                               *fPme,
-                                      GpuEventSynchronizer               *pmeForcesReady,
-                                      BufferOpsUseGpu                     useGpu,
-                                      bool                                useGpuFPmeReduction,
-                                      bool                                accumulateForce);
+        void atomdata_add_nbat_f_to_f_gpu(Nbnxm::AtomLocality                 locality,
+                                          DeviceBuffer<float>                 totalForcesDevice,
+                                          void                               *forcesPmeDevice,
+                                          GpuEventSynchronizer               *pmeForcesReady,
+                                          bool                                useGpuFPmeReduction,
+                                          bool                                accumulateForce);
+
+        /*!\brief Getter for the GPU force buffer.
+         *
+         * \todo This function will be removed in future patches as the management of the device buffers
+         *       is moved to a separate object.
+         *
+         * \returns The force buffer in plain rvec format.
+         */
+        DeviceBuffer<float> getDeviceForces();
 
         /*! \brief Outer body of function to perform initialization for F buffer operations on GPU. */
         void atomdata_init_add_nbat_f_to_f_gpu();

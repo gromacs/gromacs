@@ -1472,16 +1472,10 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbnxn_atomdata_t *nbat,
 
 
 /* Add the force array(s) from nbnxn_atomdata_t to f */
-template <bool  useGpu>
 void reduceForces(nbnxn_atomdata_t                *nbat,
                   const Nbnxm::AtomLocality        locality,
                   const Nbnxm::GridSet            &gridSet,
-                  rvec                            *f,
-                  void                            *pmeFDeviceBuffer,
-                  GpuEventSynchronizer            *pmeForcesReady,
-                  gmx_nbnxn_gpu_t                 *gpu_nbv,
-                  bool                             useGpuFPmeReduction,
-                  bool                             accumulateForce)
+                  rvec                            *f)
 {
     int a0 = 0;
     int na = 0;
@@ -1494,75 +1488,77 @@ void reduceForces(nbnxn_atomdata_t                *nbat,
         return;
     }
 
-    if (useGpu)
+    int nth = gmx_omp_nthreads_get(emntNonbonded);
+
+    if (nbat->out.size() > 1)
     {
-        Nbnxm::nbnxn_gpu_add_nbat_f_to_f(locality,
-                                         gpu_nbv,
-                                         pmeFDeviceBuffer,
-                                         pmeForcesReady,
-                                         a0, na,
-                                         useGpuFPmeReduction,
-                                         accumulateForce);
+        if (locality != Nbnxm::AtomLocality::All)
+        {
+            gmx_incons("add_f_to_f called with nout>1 and locality!=eatAll");
+        }
+
+        /* Reduce the force thread output buffers into buffer 0, before adding
+         * them to the, differently ordered, "real" force buffer.
+         */
+        if (nbat->bUseTreeReduce)
+        {
+            nbnxn_atomdata_add_nbat_f_to_f_treereduce(nbat, nth);
+        }
+        else
+        {
+            nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbat, nth);
+        }
     }
-    else
-    {
-        int nth = gmx_omp_nthreads_get(emntNonbonded);
-
-        if (nbat->out.size() > 1)
-        {
-            if (locality != Nbnxm::AtomLocality::All)
-            {
-                gmx_incons("add_f_to_f called with nout>1 and locality!=eatAll");
-            }
-
-            /* Reduce the force thread output buffers into buffer 0, before adding
-             * them to the, differently ordered, "real" force buffer.
-             */
-            if (nbat->bUseTreeReduce)
-            {
-                nbnxn_atomdata_add_nbat_f_to_f_treereduce(nbat, nth);
-            }
-            else
-            {
-                nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbat, nth);
-            }
-        }
 #pragma omp parallel for num_threads(nth) schedule(static)
-        for (int th = 0; th < nth; th++)
+    for (int th = 0; th < nth; th++)
+    {
+        try
         {
-            try
-            {
-                nbnxn_atomdata_add_nbat_f_to_f_part(gridSet, *nbat,
-                                                    nbat->out[0],
-                                                    a0 + ((th + 0)*na)/nth,
-                                                    a0 + ((th + 1)*na)/nth,
-                                                    f);
-            }
-            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+            nbnxn_atomdata_add_nbat_f_to_f_part(gridSet, *nbat,
+                                                nbat->out[0],
+                                                a0 + ((th + 0)*na)/nth,
+                                                a0 + ((th + 1)*na)/nth,
+                                                f);
         }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 }
-template
-void reduceForces<true>(nbnxn_atomdata_t             *nbat,
-                        const Nbnxm::AtomLocality     locality,
-                        const Nbnxm::GridSet         &gridSet,
-                        rvec                         *f,
-                        void                         *fpme,
-                        GpuEventSynchronizer         *pmeForcesReady,
-                        gmx_nbnxn_gpu_t              *gpu_nbv,
-                        bool                          useGpuFPmeReduction,
-                        bool                          accumulateForce);
 
-template
-void reduceForces<false>(nbnxn_atomdata_t             *nbat,
-                         const Nbnxm::AtomLocality     locality,
-                         const Nbnxm::GridSet         &gridSet,
-                         rvec                         *f,
-                         void                         *fpme,
-                         GpuEventSynchronizer         *pmeForcesReady,
-                         gmx_nbnxn_gpu_t              *gpu_nbv,
-                         bool                          useGpuFPmeReduction,
-                         bool                          accumulateForce);
+/* Add the force array(s) from nbnxn_atomdata_t to f */
+void reduceForcesGpu(const Nbnxm::AtomLocality        locality,
+                     DeviceBuffer<float>              totalForcesDevice,
+                     const Nbnxm::GridSet            &gridSet,
+                     void                            *pmeForcesDevice,
+                     GpuEventSynchronizer            *pmeForcesReady,
+                     gmx_nbnxn_gpu_t                 *gpu_nbv,
+                     bool                             useGpuFPmeReduction,
+                     bool                             accumulateForce)
+{
+    int atomsStart = 0;
+    int numAtoms   = 0;
+
+    nbnxn_get_atom_range(locality, gridSet, &atomsStart, &numAtoms);
+
+    if (numAtoms == 0)
+    {
+        /* The are no atoms for this reduction, avoid some overhead */
+        return;
+    }
+
+    Nbnxm::nbnxn_gpu_add_nbat_f_to_f(locality,
+                                     totalForcesDevice,
+                                     gpu_nbv,
+                                     pmeForcesDevice,
+                                     pmeForcesReady,
+                                     atomsStart, numAtoms,
+                                     useGpuFPmeReduction,
+                                     accumulateForce);
+}
+
+DeviceBuffer<float> nbnxn_atomdata_get_f_gpu(gmx_nbnxn_gpu_t *gpu_nbv)
+{
+    return Nbnxm::nbnxn_gpu_get_f_gpu(gpu_nbv);
+}
 
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t   &nbat,
                                               gmx::ArrayRef<gmx::RVec>  fshift)

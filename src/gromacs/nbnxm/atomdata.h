@@ -367,40 +367,47 @@ void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet     &gridSet,
                                     gmx_nbnxn_gpu_t          *gpu_nbv,
                                     DeviceBuffer<float>       coordinatesDevice);
 
-//! Add the computed forces to \p f, an internal reduction might be performed as well
-template <bool  useGpu>
+/*! \brief Add the computed forces to \p f, an internal reduction might be performed as well
+ *
+ * \param[in]  nbat        Atom data in NBNXM format.
+ * \param[in]  locality    If the reduction should be performed on local or non-local atoms.
+ * \param[in]  gridSet     The grids data.
+ * \param[out] totalForce  Buffer to accumulate resulting force
+ */
 void reduceForces(nbnxn_atomdata_t                   *nbat,
                   Nbnxm::AtomLocality                 locality,
                   const Nbnxm::GridSet               &gridSet,
-                  rvec                               *f,
-                  void                               *pmeFDeviceBuffer,
-                  GpuEventSynchronizer               *pmeForcesReady,
-                  gmx_nbnxn_gpu_t                    *gpu_nbv,
-                  bool                                useGpuFPmeReduction,
-                  bool                                accumulateForce);
+                  rvec                               *totalForce);
 
+/*! \brief Reduce forces on the GPU
+ *
+ * \param[in]  locality             If the reduction should be performed on local or non-local atoms.
+ * \param[out] totalForcesDevice    Device buffer to accumulate resulting force.
+ * \param[in]  gridSet              The grids data.
+ * \param[in]  pmeForcesDevice      Device buffer with PME forces.
+ * \param[in]  pmeForcesReady       Event that signals when the PME forces are ready for the reduction.
+ * \param[in]  gpu_nbv              The NBNXM GPU data structure.
+ * \param[in]  useGpuFPmeReduction  Whether PME forces should be added.
+ * \param[in]  accumulateForce      Whether there are usefull data already in the total force buffer.
+ */
+void reduceForcesGpu(Nbnxm::AtomLocality                 locality,
+                     DeviceBuffer<float>                 totalForcesDevice,
+                     const Nbnxm::GridSet               &gridSet,
+                     void                               *pmeForcesDevice,
+                     GpuEventSynchronizer               *pmeForcesReady,
+                     gmx_nbnxn_gpu_t                    *gpu_nbv,
+                     bool                                useGpuFPmeReduction,
+                     bool                                accumulateForce);
 
-extern template
-void reduceForces<true>(nbnxn_atomdata_t             *nbat,
-                        const Nbnxm::AtomLocality     locality,
-                        const Nbnxm::GridSet         &gridSet,
-                        rvec                         *f,
-                        void                         *pmeFDeviceBuffer,
-                        GpuEventSynchronizer         *pmeForcesReady,
-                        gmx_nbnxn_gpu_t              *gpu_nbv,
-                        bool                          useGpuFPmeReduction,
-                        bool                          accumulateForce);
-
-extern template
-void reduceForces<false>(nbnxn_atomdata_t             *nbat,
-                         const Nbnxm::AtomLocality     locality,
-                         const Nbnxm::GridSet         &gridSet,
-                         rvec                         *f,
-                         void                         *pmeFDeviceBuffer,
-                         GpuEventSynchronizer         *pmeForcesReady,
-                         gmx_nbnxn_gpu_t              *gpu_nbv,
-                         bool                          useGpuFPmeReduction,
-                         bool                          accumulateForce);
+/*!\brief Getter for the GPU forces buffer
+ *
+ * \todo Will be removed when the buffer management is lifted out of the NBNXM
+ *
+ * \param[in] gpu_nbv  The NBNXM GPU data structure.
+ *
+ * \returns Device forces buffer
+ */
+DeviceBuffer<float> nbnxn_atomdata_get_f_gpu(gmx_nbnxn_gpu_t *gpu_nbv);
 
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t   &nbat,

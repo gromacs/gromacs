@@ -859,22 +859,22 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
 
 /* F buffer operations on GPU: performs force summations and conversion from nb to rvec format. */
 void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality               atomLocality,
+                               DeviceBuffer<float>              totalForcesDevice,
                                gmx_nbnxn_gpu_t                 *nb,
-                               void                            *fPmeDevicePtr,
+                               void                            *pmeForcesDevice,
                                GpuEventSynchronizer            *pmeForcesReady,
                                int                              atomStart,
-                               int                              nAtoms,
+                               int                              numAtoms,
                                bool                             useGpuFPmeReduction,
                                bool                             accumulateForce)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
-    const InteractionLocality iLocality = gpuAtomToInteractionLocality(atomLocality);
-    cudaStream_t              stream    = nb->stream[iLocality];
-    cu_atomdata_t            *adat      = nb->atdat;
-    bool                      addPmeF   = useGpuFPmeReduction;
+    const InteractionLocality iLocality     = gpuAtomToInteractionLocality(atomLocality);
+    cudaStream_t              stream        = nb->stream[iLocality];
+    cu_atomdata_t            *adat          = nb->atdat;
 
-    if (addPmeF)
+    if (useGpuFPmeReduction)
     {
         //Stream must wait for PME force completion
         pmeForcesReady->enqueueWaitEvent(stream);
@@ -886,7 +886,7 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality               atomLocality,
     config.blockSize[0]     = c_bufOpsThreadsPerBlock;
     config.blockSize[1]     = 1;
     config.blockSize[2]     = 1;
-    config.gridSize[0]      = ((nAtoms+1)+c_bufOpsThreadsPerBlock-1)/c_bufOpsThreadsPerBlock;
+    config.gridSize[0]      = ((numAtoms+1)+c_bufOpsThreadsPerBlock-1)/c_bufOpsThreadsPerBlock;
     config.gridSize[1]      = 1;
     config.gridSize[2]      = 1;
     config.sharedMemorySize = 0;
@@ -896,28 +896,33 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality               atomLocality,
         nbnxn_gpu_add_nbat_f_to_f_kernel<true, false> :
         nbnxn_gpu_add_nbat_f_to_f_kernel<false, false>;
 
-    if (addPmeF)
+    if (useGpuFPmeReduction)
     {
         kernelFn = accumulateForce ?
             nbnxn_gpu_add_nbat_f_to_f_kernel<true, true> :
             nbnxn_gpu_add_nbat_f_to_f_kernel<false, true>;
     }
 
-    const float3     *d_f     = adat->f;
-    float3           *d_fNB   = (float3*) nb->frvec;
-    const float3     *d_fPme  = (float3*) fPmeDevicePtr;
-    const int        *d_cell  = nb->cell;
+    const float3     *d_fNB    = adat->f;
+    const float3     *d_fPme   = (float3*) pmeForcesDevice;
+    float3           *d_fTotal = (float3*) totalForcesDevice;
+    const int        *d_cell   = nb->cell;
 
     const auto        kernelArgs   = prepareGpuKernelArguments(kernelFn, config,
-                                                               &d_f,
-                                                               &d_fPme,
                                                                &d_fNB,
+                                                               &d_fPme,
+                                                               &d_fTotal,
                                                                &d_cell,
                                                                &atomStart,
-                                                               &nAtoms);
+                                                               &numAtoms);
 
     launchGpuKernel(kernelFn, config, nullptr, "FbufferOps", kernelArgs);
 
+}
+
+DeviceBuffer<float> nbnxn_gpu_get_f_gpu(gmx_nbnxn_gpu_t *nb)
+{
+    return reinterpret_cast< DeviceBuffer<float> >(nb->frvec);
 }
 
 void nbnxn_launch_copy_f_to_gpu(const AtomLocality               atomLocality,

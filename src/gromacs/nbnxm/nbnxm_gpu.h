@@ -324,16 +324,43 @@ void nbnxn_gpu_init_add_nbat_f_to_f(const int               gmx_unused *cell,
                                     gmx_nbnxn_gpu_t         gmx_unused *gpu_nbv,
                                     int                     gmx_unused  natoms_total) CUDA_FUNC_TERM;
 
-/*! \brief F buffer operations on GPU: adds nb format force to rvec format. */
+/*! \brief Force buffer operations on GPU.
+ *
+ * Transforms non-bonded forces into plain rvec format and add all the force components to the total
+ * force buffer
+ *
+ * \param[in]   atomLocality         If the reduction should be performed on local or non-local atoms.
+ * \param[in]   totalForcesDevice    Device buffer to accumulate resulting force.
+ * \param[in]   gpu_nbv              The NBNXM GPU data structure.
+ * \param[in]   pmeForcesDevice      Device buffer with PME forces.
+ * \param[in]   pmeForcesReady       Event that signals when the PME forces are ready for the reduction.
+ * \param[in]   atomStart            Index of the first atom to reduce forces for.
+ * \param[in]   numAtoms             Number of atoms to reduce forces for.
+ * \param[in]   useGpuFPmeReduction  Whether PME forces should be added.
+ * \param[in]   accumulateForce      Whether there are usefull data already in the total force buffer.
+ *
+ */
 CUDA_FUNC_QUALIFIER
 void nbnxn_gpu_add_nbat_f_to_f(AtomLocality                 gmx_unused  atomLocality,
+                               DeviceBuffer<float>          gmx_unused  totalForcesDevice,
                                gmx_nbnxn_gpu_t              gmx_unused *gpu_nbv,
-                               void                         gmx_unused *fPmeDevicePtr,
+                               void                         gmx_unused *pmeForcesDevice,
                                GpuEventSynchronizer         gmx_unused *pmeForcesReady,
                                int                          gmx_unused  atomStart,
-                               int                          gmx_unused  nAtoms,
+                               int                          gmx_unused  numAtoms,
                                bool                         gmx_unused  useGpuFPmeReduction,
                                bool                         gmx_unused  accumulateForce) CUDA_FUNC_TERM;
+
+/*! \brief Getter for the device coordinates buffer.
+ *
+ * \todo This will be removed as the management of the buffers is taken out of the NBNXM module.
+ *
+ * \param[in]  gpu_nbv  The nonbonded data GPU structure.
+ *
+ * \returns Device coordinates buffer in plain rvec format.
+ */
+CUDA_FUNC_QUALIFIER
+DeviceBuffer<float> nbnxn_gpu_get_f_gpu(gmx_nbnxn_gpu_t gmx_unused *gpu_nbv) CUDA_FUNC_TERM_WITH_RETURN(DeviceBuffer<float> {});
 
 /*! \brief Copy force buffer from CPU to GPU */
 CUDA_FUNC_QUALIFIER
