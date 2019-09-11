@@ -86,9 +86,12 @@ static int faculty(int n)
 /*
   ref: Hogervorst, Physica, Volume: 51, Page: 77, Year: 1971.
 */
-static void hogervorstCombination(double  si,  double  ei,  double  gi,
-                                  double  sj,  double  ej,  double  gj,
-                                  double *sij, double *eij, double *gij)
+static void gmx_unused hogervorstCombination(double  si,  double  ei,  
+                                             double  gi,
+                                             double  sj,  double  ej,  
+                                             double  gj,
+                                             double *sij, double *eij, 
+                                             double *gij)
 {
     auto si6 = pow(si, 6);
     auto sj6 = pow(sj, 6);
@@ -138,9 +141,9 @@ static void lj(double r,
     *fr   = 12.0*(*vr)/r;     /* -h'(x)               */
 }
 
-static void wbk(double r,   double eps, double sig,
-                double gam, double *vd, double *fd,
-                double *vr, double *fr)
+static void gmx_unused wbk(double r,   double eps, double sig,
+                           double gam, double *vd, double *fd,
+                           double *vr, double *fr)
 {
     auto r2    = r*r;
     auto r5    = r2*r2*r;
@@ -160,12 +163,12 @@ static void wbk(double r,   double eps, double sig,
 }
 
 
-static void gen_alexandria_rho(Poldata                 &pd,
-                               const char             *fn,
-                               ChargeModel iDistributionModel,
-                               real                    rcut,
-                               real                    spacing,
-                               const gmx_output_env_t *oenv)
+static void gmx_unused gen_alexandria_rho(Poldata                 &pd,
+                                          const char             *fn,
+                                          ChargeModel iDistributionModel,
+                                          real                    rcut,
+                                          real                    spacing,
+                                          const gmx_output_env_t *oenv)
 {
     FILE                         *fp;
     int                           j     = 0;

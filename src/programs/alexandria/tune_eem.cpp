@@ -243,6 +243,7 @@ double OptACM::calcDeviation()
     double               penalty   = 0;
     std::vector<double>  qq;
     const param_type    &param     = Bayes::getParam();
+
     if (MASTER(commrec()))
     {
         auto *ic = indexCount();
@@ -293,6 +294,7 @@ double OptACM::calcDeviation()
             setFinal();
         }
     }
+
     if (PAR(commrec()) && !final())
     {
         // TODO: just broadcast the eemprops
@@ -546,8 +548,11 @@ void OptACM::toPolData(const std::vector<bool> &changed)
     bool     distributed = getEemtypeDistributed(pd->getChargeModel());
     auto    *ic          = indexCount();
     auto     param       = Bayes::getParam();
-    auto     psigma      = Bayes::getParam();
-    
+    auto     psigma      = Bayes::getPsigma();
+    if (psigma.empty())
+    {
+        psigma.resize(param.size(), 0);
+    }
     Bayes::dumpParam(debug);
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
@@ -558,7 +563,6 @@ void OptACM::toPolData(const std::vector<bool> &changed)
             {
                 ei->setJ0(param[n]);
                 ei->setJ0_sigma(psigma[n++]);
-                
                 if (ai->name().compare(fixchi()) != 0)
                 {
                     ei->setChi0(param[n]);
@@ -700,9 +704,10 @@ bool OptACM::optRun(FILE                   *fp,
     {
         if (PAR(commrec()))
         {
+            int niter = 3 + nrun*Bayes::maxIter()*Bayes::nParam();
             for (int dest = 1; dest < commrec()->nnodes; dest++)
             {
-                gmx_send_int(commrec(), dest, (nrun*Bayes::maxIter()*Bayes::nParam()));
+                gmx_send_int(commrec(), dest, niter);
             }
         }
         double chi2;
@@ -747,7 +752,7 @@ bool OptACM::optRun(FILE                   *fp,
     {
         /* S L A V E   N O D E S */
         auto niter = gmx_recv_int(commrec(), 0);
-        for (auto n = 0; n < niter + 2; n++)
+        for (auto n = 0; n < niter; n++)
         {
             (void) calcDeviation();
         }
