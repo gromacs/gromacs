@@ -1458,18 +1458,12 @@ void do_force(FILE                                     *fplog,
                          forceFlags, &forceOut.forceWithVirial(), enerd,
                          ed, forceFlags.doNeighborSearch);
 
-    const bool useCpuFPmeReduction = thisRankHasDuty(cr, DUTY_PME) && !useGpuPmeFReduction;
-    // TODO Force flags should include haveFreeEnergyWork for this domain
-    const bool haveCpuForces       = (forceWork.haveSpecialForces || forceWork.haveCpuListedForceWork ||
-                                      useCpuFPmeReduction || (fr->efep != efepNO));
-
     // Will store the amount of cycles spent waiting for the GPU that
     // will be later used in the DLB accounting.
     float cycles_wait_gpu = 0;
     if (bUseOrEmulGPU)
     {
         auto &forceWithShiftForces = forceOut.forceWithShiftForces();
-        rvec *f                    = as_rvec_array(forceWithShiftForces.force().data());
 
         /* wait for non-local forces (or calculate in emulation mode) */
         if (havePPDomainDecomposition(cr))
@@ -1491,21 +1485,23 @@ void do_force(FILE                                     *fplog,
                 wallcycle_stop(wcycle, ewcFORCE);
             }
 
-            if (useGpuFBufOps == BufferOpsUseGpu::True && haveCpuForces)
-            {
-                nbv->launch_copy_f_to_gpu(f, Nbnxm::AtomLocality::NonLocal);
-            }
-
-            // flag to specify if forces should be accumulated in force buffer
-            // ops. For non-local part, this just depends on whether CPU forces are present.
-            bool accumulateForce = (useGpuFBufOps == BufferOpsUseGpu::True) && haveCpuForces;
             if (useGpuFBufOps == BufferOpsUseGpu::True)
             {
+                // TODO: move this into DomainLifetimeWorkload, including the second part of the condition
+                // The bonded and free energy CPU tasks can have non-local force contributions
+                // which are a dependency for the GPU force reduction.
+                bool  haveNonLocalForceContribInCpuBuffer = forceWork.haveCpuBondedWork || (fr->efep != efepNO);
+
+                rvec *f = as_rvec_array(forceWithShiftForces.force().data());
+                if (haveNonLocalForceContribInCpuBuffer)
+                {
+                    nbv->launch_copy_f_to_gpu(f, Nbnxm::AtomLocality::NonLocal);
+                }
                 nbv->atomdata_add_nbat_f_to_f_gpu(Nbnxm::AtomLocality::NonLocal,
                                                   nbv->getDeviceForces(),
                                                   pme_gpu_get_device_f(fr->pmedata),
                                                   pme_gpu_get_f_ready_synchronizer(fr->pmedata),
-                                                  useGpuPmeFReduction, accumulateForce);
+                                                  useGpuPmeFReduction, haveNonLocalForceContribInCpuBuffer);
                 nbv->launch_copy_f_from_gpu(f, Nbnxm::AtomLocality::NonLocal);
             }
             else
@@ -1606,39 +1602,43 @@ void do_force(FILE                                     *fplog,
      * on the non-alternating path. */
     if (bUseOrEmulGPU && !alternateGpuWait)
     {
-        gmx::ArrayRef<gmx::RVec>  force = forceOut.forceWithShiftForces().force();
-        rvec                     *f     = as_rvec_array(force.data());
+        gmx::ArrayRef<gmx::RVec>  forceWithShift = forceOut.forceWithShiftForces().force();
 
-        // TODO: move these steps as early as possible:
-        // - CPU f H2D should be as soon as all CPU-side forces are done
-        // - wait for force reduction does not need to block host (at least not here, it's sufficient to wait
-        //   before the next CPU task that consumes the forces: vsite spread or update)
-        //
-        if (useGpuFBufOps == BufferOpsUseGpu::True && (haveCpuForces || DOMAINDECOMP(cr)))
-        {
-            nbv->launch_copy_f_to_gpu(f, Nbnxm::AtomLocality::Local);
-        }
-        // flag to specify if forces should be accumulated in force
-        // buffer ops. For local part, this depends on whether CPU
-        // forces are present, or if DD is active (in which case the
-        // halo exchange has resulted in contributions from the
-        // non-local part).
-        bool accumulateForce = (useGpuFBufOps == BufferOpsUseGpu::True) &&
-            (haveCpuForces || DOMAINDECOMP(cr));
+
+        const bool useCpuPmeFReduction    = thisRankHasDuty(cr, DUTY_PME) && !useGpuPmeFReduction;
+        // TODO: move this into DomainLifetimeWorkload, including the second part of the condition
+        const bool haveCpuLocalForces     = (forceWork.haveSpecialForces || forceWork.haveCpuListedForceWork || useCpuPmeFReduction ||
+                                             (fr->efep != efepNO));
 
         if (useGpuFBufOps == BufferOpsUseGpu::True)
         {
+            // Flag to specify whether the CPU force buffer has contributions to
+            // local atoms. This depends on whether there are CPU-based force tasks
+            // or when DD is active the halo exchange has resulted in contributions
+            // from the non-local part.
+            const bool haveLocalForceContribInCpuBuffer = (haveCpuLocalForces || havePPDomainDecomposition(cr));
+
+            // TODO: move these steps as early as possible:
+            // - CPU f H2D should be as soon as all CPU-side forces are done
+            // - wait for force reduction does not need to block host (at least not here, it's sufficient to wait
+            //   before the next CPU task that consumes the forces: vsite spread or update)
+            //
+            rvec *f = as_rvec_array(forceWithShift.data());
+            if (haveLocalForceContribInCpuBuffer)
+            {
+                nbv->launch_copy_f_to_gpu(f, Nbnxm::AtomLocality::Local);
+            }
             nbv->atomdata_add_nbat_f_to_f_gpu(Nbnxm::AtomLocality::Local,
                                               nbv->getDeviceForces(),
                                               pme_gpu_get_device_f(fr->pmedata),
                                               pme_gpu_get_f_ready_synchronizer(fr->pmedata),
-                                              useGpuPmeFReduction, accumulateForce);
+                                              useGpuPmeFReduction, haveLocalForceContribInCpuBuffer);
             nbv->launch_copy_f_from_gpu(f, Nbnxm::AtomLocality::Local);
             nbv->wait_for_gpu_force_reduction(Nbnxm::AtomLocality::Local);
         }
         else
         {
-            nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local, force);
+            nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local, forceWithShift);
         }
 
     }
