@@ -431,7 +431,7 @@ double OptACM::calcDeviation()
                 auto myRms = 
                     convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms, &cosangle), 
                                 eg2cHartree_e);
-                increaseEnergy(ermsESP, myRms);
+                increaseEnergy(ermsESP, gmx::square(myRms));
                 if (debug)
                 {
                     fprintf(debug, "%s ESPrms = %g cosangle = %g\n",
@@ -476,7 +476,6 @@ double OptACM::calcDeviation()
         increaseEnergy(ermsPENALTY, penalty);
     }
     sumEnergies();
-    normalizeEnergies();
     printEnergies(debug);
     return energy(ermsTOT);
 }
