@@ -51,6 +51,7 @@ gmx_add_gtest_executable(
     ${exename}
     # files with code for tests
     compressed_x_output.cpp
+    densityfittingmodule.cpp
     exactcontinuation.cpp
     grompp.cpp
     helpwriting.cpp
