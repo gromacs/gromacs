@@ -22,6 +22,7 @@ Welcome to the |Gromacs| documentation!
            user-guide/index
            how-to/index
            reference-manual/index
+           gmxapi/index
            dev-manual/index
         
         ==================
@@ -42,6 +43,7 @@ Welcome to the |Gromacs| documentation!
             user-guide/index
             how-to/index
             reference-manual/index
+            gmxapi/index
             dev-manual/index
 
 

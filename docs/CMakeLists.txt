@@ -469,6 +469,15 @@ if (SPHINX_FOUND)
     endif()
 
     set(SPHINX_CONFIG_VARS_FILE ${SPHINX_INPUT_DIR}/conf-vars.py)
+    if (GMX_PYTHON_PACKAGE)
+        set(GMXAPI_PYTHON_STAGING_DIR ${CMAKE_BINARY_DIR}/python_packaging/src/gmxapi_staging)
+        # TODO: Resolve circular reference. We would like to get the CMake build-time directory for
+        # the gmxapi Python package from the _gmxapi target, as we do when building sample_restraint.
+        # Instead of the above hard-coded path, how can we do
+        # get_target_property(GMXAPI_PYTHON_STAGING_DIR _gmxapi staging_dir)
+        # in this context?
+    endif ()
+
     gmx_configure_version_file(conf-vars.py.cmakein ${SPHINX_CONFIG_VARS_FILE}
         EXTRA_VARS
             SPHINX_EXTENSION_PATH RELENG_PATH
@@ -483,6 +492,7 @@ if (SPHINX_FOUND)
             GMX_LMFIT_REQUIRED_VERSION
             GMX_MANUAL_DOI_STRING
             GMX_SOURCE_DOI_STRING
+            GMXAPI_PYTHON_STAGING_DIR
         COMMENT "Configuring Sphinx configuration file")
     gmx_add_sphinx_input_file(${SPHINX_CONFIG_VARS_FILE})
     gmx_add_sphinx_source_files(FILES ${SPHINX_SOURCE_FILES})
@@ -498,6 +508,35 @@ if (SPHINX_FOUND)
             dev-manual/releng/jenkins-ui.rst
             )
     endif()
+
+    gmx_add_sphinx_source_files(
+            FILES
+            gmxapi/changelog.rst
+            gmxapi/index.rst
+            gmxapi/userguide/install.rst
+            gmxapi/userguide/usage.rst
+            gmxapi/userguide/userguide.rst
+            gmxapi/reference/contributing.rst
+            gmxapi/reference/datamodel.rst
+            gmxapi/reference/executionmodel.rst
+            gmxapi/reference/extending.rst
+            gmxapi/reference/projectstructure.rst
+            gmxapi/reference/reference.rst
+    )
+
+    if (GMX_PYTHON_PACKAGE)
+        gmx_add_sphinx_source_files(
+            FILES
+            gmxapi/userguide/pythonreference.rst
+            )
+    else()
+        gmx_add_sphinx_source_files(
+            FROM ${CMAKE_CURRENT_SOURCE_DIR}/gmxapi/userguide-stub
+            TO gmxapi/userguide/ 
+            FILES pythonreference.rst 
+            )
+    endif ()
+
     gmx_add_sphinx_source_files(
         FILES
         ${REFERENCEMANUAL_SPHINX_FILES_GENERAL})
@@ -580,6 +619,9 @@ if (SPHINX_FOUND)
         COMMENT "Building HTML documentation with Sphinx"
         VERBATIM
         )
+    if (GMX_PYTHON_PACKAGE)
+        add_dependencies(webpage-sphinx _gmxapi)
+    endif ()
 
     add_custom_target(man
         COMMAND

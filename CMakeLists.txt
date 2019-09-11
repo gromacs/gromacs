@@ -872,6 +872,7 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     find_package(ImageMagick QUIET COMPONENTS convert)
     include(gmxTestImageMagick)
     GMX_TEST_IMAGEMAGICK(IMAGE_CONVERT_POSSIBLE)
+    # TODO: Resolve circular dependency between docs, gromacs, and python_packaging
     add_subdirectory(docs)
     add_subdirectory(share)
     add_subdirectory(scripts)

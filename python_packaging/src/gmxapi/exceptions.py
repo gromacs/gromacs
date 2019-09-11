@@ -33,8 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 """
-Exceptions and Warnings raised by gmxapi module operations
-==========================================================
+Exceptions and Warnings raised by gmxapi module operations.
 
 Errors, warnings, and other exceptions used in the GROMACS
 Python package are defined in the `exceptions` submodule.

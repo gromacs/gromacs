@@ -371,11 +371,15 @@ Other optional build components
   ``-DGMX_USE_LMFIT=none``.
 * zlib is used by TNG for compressing some kinds of trajectory data
 * Building the |Gromacs| documentation is optional, and requires
-  ImageMagick, pdflatex, bibtex, doxygen, python 2.7, sphinx
+  ImageMagick, pdflatex, bibtex, doxygen, python 3.5, sphinx
   |EXPECTED_SPHINX_VERSION|, and pygments.
 * The |Gromacs| utility programs often write data files in formats
   suitable for the Grace plotting tool, but it is straightforward to
   use these files in other plotting programs, too.
+* Set ``-DGMX_PYTHON_PACKAGE=ON`` when configuring |Gromacs| with CMake to
+  enable additional CMake targets for the gmxapi Python package and
+  sample_restraint package from the main |Gromacs| CMake build. This supports
+  additional testing and documentation generation.
 
 Doing a build of |Gromacs|
 --------------------------
@@ -771,8 +775,8 @@ simulation using MPI libraries (e.g. Cray).
   default to static linking, the required flags have to be specified. On
   Linux, this is usually ``CFLAGS=-static CXXFLAGS=-static``.
 
-gmxapi external API
-~~~~~~~~~~~~~~~~~~~
+gmxapi C++ API
+~~~~~~~~~~~~~~
 
 For dynamic linking builds and on non-Windows platforms, an extra library and
 headers are installed by setting ``-DGMXAPI=ON`` (default).
@@ -860,6 +864,8 @@ non-standard location. Building QM/MM-capable version requires
 double-precision version of |Gromacs| compiled with MPI support:
 
 * ``-DGMX_DOUBLE=ON -DGMX_MPI -DGMX_MIMIC=ON``
+
+.. _suffixes:
 
 Changing the names of |Gromacs| binaries and libraries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -998,6 +1004,12 @@ path based on their own location.  This usually works well unless you
 change the names of directories inside the install tree. If you still
 need to do that, you might want to recompile with the new install
 location properly set, or edit the ``GMXRC`` script.
+
+|Gromacs| also installs a CMake toolchains file to help with building client
+software. For an installation at ``/your/installation/prefix/here``, toolchain
+files will be installed at
+``/your/installation/prefix/here/share/cmake/gromacs${GMX_LIBS_SUFFIX}/gromacs-toolchain${GMX_LIBS_SUFFIX}.cmake``
+where ``${GMX_LIBS_SUFFIX}`` is :ref:`as documented above <suffixes>`.
 
 Testing |Gromacs| for correctness
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

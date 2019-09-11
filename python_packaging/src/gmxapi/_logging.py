@@ -32,7 +32,18 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-"""Configure the Python logging facilities."""
+"""Python logging facilities use the built-in logging module.
+
+Upon import, the gmxapi package configures the root Python logger with a
+placeholder "NullHandler" to reduce default output. If logging has already been
+imported when gmxapi is imported, this has no effect. However, we set the root
+log level to DEBUG, which could increase the output from other modules.
+
+Each module in the gmxapi package uses its own hierarchical logger to allow
+granular control of log handling (e.g. `logging.getLogger('gmxapi.operation')`).
+Refer to the Python :py:mod:`logging` module for information on connecting to and handling
+logger output.
+"""
 
 __all__ = ['logger']
 

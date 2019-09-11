@@ -17,7 +17,7 @@ use a variety of Python distributions,
 so gmxapi extension code is most useful when built from source code for a specific
 GROMACS installation and Python environment.
 
-Read this document if the :doc:`/quickstart` instructions are not sufficient for you.
+This document has a lot of detail.
 If you don't need a lot of reference material, you may just jump ahead to the :ref:`installation`.
 
 Command line examples assume the `bash <https://www.gnu.org/software/bash/>`_ shell.
@@ -47,12 +47,20 @@ Command line examples assume the `bash <https://www.gnu.org/software/bash/>`_ sh
     this documentation. If you need the ``--user`` flag, you should modify the
     example commands to look something like ``pip install --upgrade somepackage --user``
 
+.. note::
+
+    These instructions use the executable names ``python`` and ``pip``
+    instead of ``python3`` or ``pip3``. Some Python installations require the ``3``
+    suffix, but it is usually not necessary if you have already activated a Python
+    virtual environment (recommended).
+
+
 Requirements
 ============
 
 ``gmxapi`` comes in three parts:
 
-* GROMACS gmxapi library for C++
+* GROMACS gmxapi library for C++.
 * This Python package, supporting Python 3.5 and higher
 * MD restraint plugins and sample gmxapi client code
 
@@ -130,6 +138,14 @@ Install or upgrade required components::
 
     python -m pip install --upgrade pip
     pip install --upgrade setuptools
+
+"requirements" files in GROMACS source tree
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you are building from source code in a local copy of the GROMACS source
+repository, some helpful files allow you to preinstall the Python requirements
+before installing the ``gmxapi`` package.
+
     pip install -r python_packaging/src/requirements.txt
 
 If building documentation or running tests,
@@ -137,20 +153,10 @@ If building documentation or running tests,
 ``pip install -r python_packaging/requirements-test.txt``,
 respectively, or see below.
 
-.. _build_docs:
-
 Documentation build requirements
 --------------------------------
 
-Documentation is built with `Sphinx <http://www.sphinx-doc.org/>`_
-from a combination of static content in ``rst``
-files and from embedded documentation in the Python package. To build documentation
-locally, you will need a reasonably current copy of Sphinx and the RTD theme.
-::
-
-    pip install --upgrade Sphinx Pygments sphinx-rtd-theme
-
-.. seealso:: :ref:`documentation`
+See :ref:`gmxapi_package_documentation`
 
 .. _testing_requirements:
 
@@ -221,6 +227,15 @@ For example: ``-DPYTHON_EXECUTABLE=\`which python\```
 Recommended installation
 ------------------------
 
+We recommend using Python's `pip <https://pip.pypa.io/en/stable/>`_
+package installer to automatically download, build, and install the latest
+version of the gmxapi package into a Python
+`virtual environment <https://docs.python.org/3/tutorial/venv.html>`_.
+gmxapi requires an existing GROMACS installation.
+
+The instructions in this section assume that *pip* is able to download files
+from the internet.
+
 Locate or install GROMACS
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -231,51 +246,9 @@ you can just source the GMXRC
 (so that the Python package knows where to find GROMACS)
 and skip to the next section.
 
-Otherwise, install a supported version of GROMACS. For instance, clone one of
-the two following ``git`` repositories.
-
-..  rubric:: Official GROMACS release branch
-
-::
-
-    git clone https://github.com/gromacs/gromacs.git gromacs
-    cd gromacs
-
-..  rubric:: The Kasson Lab GROMACS fork...
-
-... may have experimental features that have not yet appeared in an official GROMACS
-release.
-
-::
-
-    git clone https://github.com/kassonlab/gromacs-gmxapi.git gromacs
-    cd gromacs
-    # for that absolute latest code, check out the "development branch" (optional)
-    git checkout devel
-
-..  todo:: Update w.r.t. https://github.com/kassonlab/gmxapi/issues/188
-
-Configure and build GROMACS. Install into a ``gromacs-gmxapi`` directory in your
-home directory (or wherever you prefer, using ``CMAKE_INSTALL_PREFIX``).  
-Complete instructions are provided in the GROMACS installation documentation; 
-a brief example is provided below with the GMXAPI=ON flag.
-
-::
-
-    mkdir build
-    cd build
-    cmake ../gromacs -DCMAKE_CXX_COMPILER=`which g++` \
-                     -DCMAKE_C_COMPILER=`which gcc` \
-                     -DCMAKE_INSTALL_PREFIX=$HOME/gromacs-gmxapi \
-                     -DGMX_THREAD_MPI=ON \
-                     -DGMXAPI=ON
-    make -j && make install
-
-.. note::
-
-    ``make -j`` uses multiple CPU threads to build in parallel
-    (using more CPU *and memory*).
-    Adjust according to your computing resources.
+Otherwise, install a supported version of GROMACS.
+When building GROMACS from source, be sure to configure cmake with the flag
+``-DGMXAPI=ON`` (default).
 
 Set the environment variables for the GROMACS installation so that the gmxapi
 headers and library can be found when building the Python package.
@@ -322,7 +295,22 @@ environment is active. The prompt is omitted from the remainging examples, but
 the remaining examples assume the virtualenv is still active.
 (Don't do it now, but you can deactivate the environment by running ``deactivate``.)
 
-Install some dependencies. For MPI, we use mpi4py.
+Install dependencies
+^^^^^^^^^^^^^^^^^^^^
+
+It is always a good idea to update ``pip`` and ``setuptools`` before installing
+new Python packages::
+
+    pip install --upgrade pip setuptools
+
+The gmxapi installer requires a few additional packages. It is best to make sure
+they are installed and up to date before proceeding.
+
+::
+
+    pip install --upgrade cmake scikit-build
+
+For MPI, we use mpi4py.
 Make sure it is using the same MPI installation that we are building
 GROMACS against and building with compatible compilers.
 
@@ -331,17 +319,50 @@ GROMACS against and building with compatible compilers.
     python -m pip install --upgrade pip setuptools
     MPICC=`which mpicc` pip install --upgrade mpi4py
 
-Build and install
-^^^^^^^^^^^^^^^^^
+Install the latest version of gmxapi
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Get a copy of `the source code <https://github.com/gromacs/gromacs>`_,
-if you haven't already.
-The python package source code is in the GROMACS repository under
-``python_packaging/src``
+Fetch and install the latest version of gmxapi from the Python Packaging Index::
 
+    pip install gmxapi
 
-You will need to install some additional dependencies.
-The :file:`requirements.txt` file is provided for convenience.
+If ``pip`` does not find your GROMACS installation, use one of the following
+environment variables to provide a hint.
+
+gmxapi_DIR
+~~~~~~~~~~
+
+If you have a single GROMACS installation at ``/path/to/gromacs``, it is usually
+sufficient to provide this location to ``pip`` through the ``gmxapi_DIR``
+environment variable.
+
+Example::
+
+    gmxapi_DIR=/path/to/gromacs pip install gmxapi
+
+GMXTOOLCHAINDIR
+~~~~~~~~~~~~~~~
+
+If you have multiple builds of GROMACS distinguished by suffixes
+(e.g. *_d*, *_mpi*, etcetera), or if you need to provide extra hints to ``pip``
+about the software tools that were used to build GROMACS, you can specify a
+directory in which the installer can find a CMake "tool chain".
+
+In the following example, ``${SUFFIX}`` is the suffix that distinguishes the
+particular build of GROMACS you want to target (refer to GROMACS installation
+instructions for more information.) ``${SUFFIX}`` may simply be empty, or ``''``.
+
+::
+
+    GMXTOOLCHAINDIR=/path/to/gromacs/share/cmake/gromacs${SUFFIX} pip install gmxapi
+
+Install from source
+-------------------
+
+You can also install the ``gmxapi`` Python package from within a local copy of
+the GROMACS source repository. Assuming you have already obtained the GROMACS
+source code and you are in the root directory of the source tree, you will find
+the ``gmxapi`` Python package sources in the ``python_packaging/src`` directory.
 
 ::
 
@@ -349,45 +370,107 @@ The :file:`requirements.txt` file is provided for convenience.
     pip install -r requirements.txt
     pip install .
 
-.. _documentation:
+Offline install
+---------------
 
-Documentation
-=============
+If the required dependencies are already installed, you can do a quick installation
+without internet access, either from the source directory or from a source archive.
+
+For example, the last line of the previous example could be replaced with::
+
+    pip install --no-cache-dir --no-deps --no-index --no-build-isolation .
+
+Refer to ``pip`` documentation for descriptions of these options.
+
+If you have built or downloaded a source distribution archive, you can provide
+the archive file to ``pip`` instead of the ``.`` argument::
+
+    pip install gmxapi-0.1.0.tar.gz
+
+In this example, the archive file name is as was downloaded from
+`PyPI <https://pypi.org/project/gmxapi/#history>`_ or as built locally,
+according to the following instructions.
+
+Building a source archive
+-------------------------
+
+A source archive for the gmxapi python package can be built from the GROMACS
+source repository using Python ``setuptools`` and ``scikit-build``.
+
+Example::
+
+    pip install --upgrade setuptools scikit-build
+    cd python_packaging/src
+    python setup.py sdist
+
+This command will create a ``dist`` directory containing a source distribution
+archive file. The file name has the form *gmxapi-<version>.<suffix>*, where
+*<version>* is the version from the ``setup.py`` file, and *<suffix>* is
+determined by the local environment or by additional arguments to ``setup.py``.
+
+.. seealso::
+
+    Python documentation for
+    `creating a source distribution
+    <https://docs.python.org/3/distutils/sourcedist.html#creating-a-source-distribution>`_
+
+Package maintainers may update the the online respository by uploading a freshly
+built ``sdist`` with ``python -n twine upload dist/*``
+
+.. _gmxapi_package_documentation:
+
+Accessing gmxapi documentation
+==============================
 
 Documentation for the Python classes and functions in the gmx module can
 be accessed in the usual ways, using ``pydoc`` from the command line or
 ``help()`` in an interactive Python session.
 
-Additional documentation can be browsed on
-`readthedocs.org <http://gmxapi.readthedocs.io/en/readthedocs/>`__ or
-built with Sphinx after installation.
+The complete documentation (which you are currently reading)
+can be browsed `online <http://manual.gromacs.org/current/gmxapi/>`__
+or built from a copy of the GROMACS source repository.
 
-.. seealso:: :ref:`build_docs`
+Documentation is built from a combination of Python module documentation and
+static content, and requires a local copy of the GROMACS source repository.
 
-Install the ``gmxapi`` package so that its built-in documentation can be extracted
-for the API reference. Then build all of the documentation with Sphinx using
-sphinx-build::
+Build with GROMACS
+------------------
 
-        cd python_packaging
-        pip install -r requirements-docs.txt
-        sphinx-build -b html documentation docs
+To build the full gmxapi documentation with GROMACS, configure GROMACS with
+``-DGMX_PYTHON_PACKAGE=ON`` and build the GROMACS documentation normally.
 
-Then open :file:`docs/index.html`
+Separate gmxapi docs
+--------------------
 
-.. note:: The ``docs`` build target puts the built documentation in your build directory.
+Developers wishing to build just the ``gmxapi`` Python package documentation
+may do so from the ``python_packaging`` subdirectory in the GROMACS repo::
+
+    cd python_packaging
+    pip install -r requirements-docs.txt
+    sphinx-build -b html documentation docs
+
+Docker web server
+-----------------
 
 Alternatively, build the ``docs`` Docker image from ``python_packaging/docker/docs.dockerfile``.
+
+.. todo::
+
+    Document sample_restraint package. Reference issue
+    `2893 <https://redmine.gromacs.org/issues/2893>`_ and change
+    `11483 <https://gerrit.gromacs.org/c/gromacs/+/11483>`_
 
 Troubleshooting
 ===============
 
-Couldn't find ``gmxapi``? If you don't want to "source" your ``GMXRC`` file, you
+Couldn't find the ``gmxapi`` support library?
+If you don't want to "source" your ``GMXRC`` file, you
 can tell the package where to find a gmxapi compatible GROMACS installation with
 ``gmxapi_DIR``. E.g. ``gmxapi_DIR=/path/to/gromacs pip install .``
 
 Before updating the ``gmxapi`` package it is generally a good idea to remove the
 previous installation and to start with a fresh build directory. You should be
-able to just ``pip uninstall gmx``.
+able to just ``pip uninstall gmxapi``.
 
 Do you see something like the following?
 
@@ -440,7 +523,7 @@ installation. For instance,
 
 Pip and related Python package management tools can be a little too
 flexible and ambiguous sometimes. If things get really messed up, try
-explicitly uninstalling the ``gmx`` module and its dependencies, then do
+explicitly uninstalling the ``gmxapi`` module and its dependencies, then do
 it again and repeat until ``pip`` can no longer find any version of any
 of the packages.
 

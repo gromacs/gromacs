@@ -1,3 +1,5 @@
+.. _gmxapi:
+
 =====================
 gmxapi Python package
 =====================
@@ -6,16 +8,15 @@ gmxapi Python package
 and analysis library. It consists of a C++ API, a Python package, and a set of
 sample code for extending MD simulation functionality.
 
+.. todo::
 
-External gmxapi docs can be found at `the following site <https://gmxapi.org/>`_
-and
-`GitHub <https://www.github.com/kassonlab/gmxapi>`_
+    Link to online documentation once it has a URL.
+    Presumably, this would be http://manual.gromacs.org/current/gmxapi/
 
 ..  toctree::
     :maxdepth: 2
     :caption: Documentation sections
 
-    quickstart
     userguide/userguide.rst
     reference/reference.rst
     changelog
@@ -27,9 +28,10 @@ and
     *Bioinformatics* 2018.
     DOI: `10.1093/bioinformatics/bty484 <https://doi.org/10.1093/bioinformatics/bty484>`_
 
+    Other releases can also be found at `GitHub <https://www.github.com/kassonlab/gmxapi>`_.
+
 Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`

@@ -28,9 +28,9 @@ This is use useful for e.g. halogens in the CHARMM force field.
 gmxapi Python support
 """""""""""""""""""""
 
-Data flow driven simulation and analysis from Python. Initial support includes
-simulation trajectory ensembles, looping, simulation parameter modification, and
-wrapping for command line tools or custom Python functions.
+Data flow driven simulation and analysis from Python is now available in a
+default |Gromacs| installation when users install the *gmxapi* Python package.
+See :ref:`gmxapi`.
 
 New modular simulator
 """""""""""""""""""""
