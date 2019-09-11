@@ -342,7 +342,7 @@ class MolGen
         //! \brief Return the energy of the corresponding rms. 
         double energy(int rms) const 
         { 
-            return fc_[rms]*ener_[rms]; 
+            return ener_[rms]; 
         }
         
         //! \brief Return the weighting factor of the energy.
@@ -374,6 +374,11 @@ class MolGen
             {
                 gmx_sum(ermsNR, ener_, commrec());
             }
+            ener_[ermsTOT] = 0;
+            for (auto e = 0; e < ermsTOT; e++)
+            {
+                ener_[ermsTOT] += ener_[e];
+            }
         }
 
         //! \brief Normalize the energy by the number of molecules.
@@ -392,7 +397,7 @@ class MolGen
                 }
                 for (int rms = 0; rms < ermsTOT; rms++)
                 {
-                    ener_[ermsTOT] += ((fc_[rms]*ener_[rms])/normFactor);
+                    ener_[ermsTOT] += (ener_[rms]/normFactor);
                 }
             }           
         }
