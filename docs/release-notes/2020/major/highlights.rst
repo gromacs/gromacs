@@ -13,6 +13,9 @@ simulations and hardware. They are:
 
 * Density-guided simulations allow "fitting" atoms into three-dimensional
   density maps. 
+* Inclusion of gmxapi 0.1, an API and user interface for managing
+  complex simulations, data flow, and pluggable molecular dynamics extension code.
+
 
 .. Note to developers!
    Please use """"""" to underline the individual entries for fixed issues in the subfolders,

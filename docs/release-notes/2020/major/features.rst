@@ -24,3 +24,11 @@ Virtual site on the line through two atoms at fixed distance
 This is use useful for e.g. halogens in the CHARMM force field.
 
 :issue:`2451`
+
+gmxapi Python support
+"""""""""""""""""""""
+
+Data flow driven simulation and analysis from Python. Initial support includes
+simulation trajectory ensembles, looping, simulation parameter modification, and
+wrapping for command line tools or custom Python functions.
+
