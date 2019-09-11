@@ -163,10 +163,15 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
 // out. Once that compilation is cached for the whole process, these
 // tests can run in such configurations.
 #if GMX_GPU != GMX_GPU_OPENCL
-INSTANTIATE_TEST_CASE_P(SimulatorsAreEquivalent, SimulatorComparisonTest,
+INSTANTIATE_TEST_CASE_P(SimulatorsAreEquivalentDefaultModular, SimulatorComparisonTest,
                             ::testing::Combine(
                                     ::testing::Combine(::testing::Values("argon12", "tip3p5"),
-                                                           ::testing::Values("md", "md-vv")),
+                                                           ::testing::Values("md-vv")),
+                                    ::testing::Values("GMX_DISABLE_MODULAR_SIMULATOR")));
+INSTANTIATE_TEST_CASE_P(SimulatorsAreEquivalentDefaultLegacy, SimulatorComparisonTest,
+                            ::testing::Combine(
+                                    ::testing::Combine(::testing::Values("argon12", "tip3p5"),
+                                                           ::testing::Values("md")),
                                     ::testing::Values("GMX_USE_MODULAR_SIMULATOR")));
 #else
 INSTANTIATE_TEST_CASE_P(DISABLED_SimulatorsAreEquivalent, SimulatorComparisonTest,

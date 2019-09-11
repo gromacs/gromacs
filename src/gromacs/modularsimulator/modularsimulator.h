@@ -83,6 +83,20 @@ class ModularSimulator final :
         //! Run the simulator
         void run() override;
 
+        //! Check for disabled functionality
+        static bool isInputCompatible(
+            bool                             exitOnFailure,
+            const t_inputrec                *inputrec,
+            bool                             doRerun,
+            const gmx_vsite_t               *vsite,
+            const gmx_multisim_t            *ms,
+            const ReplicaExchangeParameters &replExParams,
+            const t_fcdata                  *fcd,
+            int                              nfile,
+            const t_filenm                  *fnm,
+            ObservablesHistory              *observablesHistory,
+            const gmx_membed_t              *membed);
+
         // Only builder can construct
         friend class SimulatorBuilder;
 

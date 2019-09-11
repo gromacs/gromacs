@@ -1548,7 +1548,13 @@ int Mdrunner::mdrunner()
         SimulatorBuilder simulatorBuilder;
 
         // build and run simulator object based on user-input
+        const bool inputIsCompatibleWithModularSimulator = ModularSimulator::isInputCompatible(
+                    false,
+                    inputrec, doRerun, vsite.get(), ms, replExParams,
+                    fcd, static_cast<int>(filenames.size()), filenames.data(),
+                    &observablesHistory, membed);
         auto simulator = simulatorBuilder.build(
+                    inputIsCompatibleWithModularSimulator,
                     fplog, cr, ms, mdlog, static_cast<int>(filenames.size()), filenames.data(),
                     oenv,
                     mdrunOptions,

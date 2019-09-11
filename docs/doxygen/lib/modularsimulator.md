@@ -8,6 +8,18 @@ outside of the scope of this new approach, and will hence not be further
 described. The simulator object provides access to some generally used
 data, most of which is owned by the runner object.
 
+## Using the modular simulator
+GROMACS will automatically use the modular simulator for the velocity
+verlet integrator (`integrator = md-vv`), if the functionality chosen
+in the other input parameters is implemented in the new framework.
+Currently, this includes NVE simulations only.
+
+To disable the modular simulator for cases defaulting to the new framework,
+the environment variable `GMX_DISABLE_MODULAR_SIMULATOR=ON` can be set. To
+use the new framework also for `integrator=md` (where the functionality is
+implemented), the environment variable `GMX_USE_MODULAR_SIMULATOR=ON` can 
+be set to override legacy default.
+
 ## Legacy implementation
 
 In the legacy implementation, the simulator consisted of a number of

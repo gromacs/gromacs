@@ -103,30 +103,32 @@ class SimulatorBuilder
          * @return  Unique pointer to a Simulator object
          */
         template<typename ... Args>
-        std::unique_ptr<ISimulator> build(Args && ... args);
+        std::unique_ptr<ISimulator> build(
+            bool        inputIsCompatibleWithModularSimulator,
+            Args && ... args);
 };
 
 
 //! Build a Simulator object
 template<typename ... Args>
-std::unique_ptr<ISimulator> SimulatorBuilder::build(Args && ... args)
+std::unique_ptr<ISimulator> SimulatorBuilder::build(
+        bool        inputIsCompatibleWithModularSimulator,
+        Args && ... args)
 {
-    // The feature flag
-    const auto useModularSimulator = (getenv("GMX_USE_MODULAR_SIMULATOR") != nullptr);
-    if (!useModularSimulator)
-    {
-        // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
-        return std::unique_ptr<LegacySimulator>(
-                new LegacySimulator(
-                        std::forward<Args>(args) ...));
-    }
-    else
+    // GMX_DISABLE_MODULAR_SIMULATOR allows to disable modular simulator for all uses
+    const auto disableModularSimulator = (getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
+
+    if (!disableModularSimulator && inputIsCompatibleWithModularSimulator)
     {
         // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
         return std::unique_ptr<ModularSimulator>(
                 new ModularSimulator(
                         std::forward<Args>(args) ...));
     }
+    // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
+    return std::unique_ptr<LegacySimulator>(
+            new LegacySimulator(
+                    std::forward<Args>(args) ...));
 }
 
 }      // namespace gmx

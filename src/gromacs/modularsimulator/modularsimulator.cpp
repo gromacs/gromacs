@@ -694,74 +694,115 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
     return std::move(integrator);
 }
 
-void ModularSimulator::checkInputForDisabledFunctionality()
+bool ModularSimulator::isInputCompatible(
+        bool                             exitOnFailure,
+        const t_inputrec                *inputrec,
+        bool                             doRerun,
+        const gmx_vsite_t               *vsite,
+        const gmx_multisim_t            *ms,
+        const ReplicaExchangeParameters &replExParams,
+        const t_fcdata                  *fcd,
+        int                              nfile,
+        const t_filenm                  *fnm,
+        ObservablesHistory              *observablesHistory,
+        const gmx_membed_t              *membed)
 {
-    GMX_RELEASE_ASSERT(
-            inputrec->eI == eiMD || inputrec->eI == eiVV,
-            "Only integrators md and md-vv are supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            !doRerun,
-            "Rerun is not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            inputrec->etc == etcNO,
-            "Temperature coupling is not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            inputrec->epc == epcNO,
-            "Pressure coupling is not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            !(inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec) || inputrecNvtTrotter(inputrec)),
-            "Legacy Trotter decomposition is not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            inputrec->efep == efepNO,
-            "Free energy calculation is not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            vsite == nullptr,
-            "Virtual sites are not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            !inputrec->bDoAwh,
-            "AWH is not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            ms == nullptr,
-            "Multi-sim are not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            replExParams.exchangeInterval == 0,
-            "Replica exchange is not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            fcd->disres.nsystems <= 1,
-            "Ensemble restraints are not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            !doSimulatedAnnealing(inputrec),
-            "Simulated annealing is not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            !inputrec->bSimTemp,
-            "Simulated tempering is not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            !inputrec->bExpanded,
-            "Expanded ensemble simulations are not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            !(opt2bSet("-ei", nfile, fnm) || observablesHistory->edsamHistory != nullptr),
-            "Essential dynamics is not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            inputrec->eSwapCoords == eswapNO,
-            "Ion / water position swapping is not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            !inputrec->bIMD,
-            "Interactive MD is not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            membed == nullptr,
-            "Membrane embedding is not supported by the modular simulator.");
+    auto conditionalAssert =
+        [exitOnFailure](bool condition, const char* message)
+        {
+            if (exitOnFailure)
+            {
+                GMX_RELEASE_ASSERT(condition, message);
+            }
+            return condition;
+        };
+
+    bool isInputCompatible = true;
+
+    // GMX_USE_MODULAR_SIMULATOR allows to use modular simulator also for non-standard uses,
+    // such as the leap-frog integrator
+    const auto modularSimulatorExplicitlyTurnedOn =
+        (getenv("GMX_USE_MODULAR_SIMULATOR") != nullptr);
+
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                inputrec->eI == eiMD || inputrec->eI == eiVV,
+                "Only integrators md and md-vv are supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                inputrec->eI != eiMD || modularSimulatorExplicitlyTurnedOn,
+                "Set GMX_USE_MODULAR_SIMULATOR=ON to use the modular simulator with integrator md.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                !doRerun,
+                "Rerun is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                inputrec->etc == etcNO,
+                "Temperature coupling is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                inputrec->epc == epcNO,
+                "Pressure coupling is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                !(inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec) || inputrecNvtTrotter(inputrec)),
+                "Legacy Trotter decomposition is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                inputrec->efep == efepNO,
+                "Free energy calculation is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                vsite == nullptr,
+                "Virtual sites are not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                !inputrec->bDoAwh,
+                "AWH is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                ms == nullptr,
+                "Multi-sim are not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                replExParams.exchangeInterval == 0,
+                "Replica exchange is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                fcd->disres.nsystems <= 1,
+                "Ensemble restraints are not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                !doSimulatedAnnealing(inputrec),
+                "Simulated annealing is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                !inputrec->bSimTemp,
+                "Simulated tempering is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                !inputrec->bExpanded,
+                "Expanded ensemble simulations are not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                !(opt2bSet("-ei", nfile, fnm) || observablesHistory->edsamHistory != nullptr),
+                "Essential dynamics is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                inputrec->eSwapCoords == eswapNO,
+                "Ion / water position swapping is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                !inputrec->bIMD,
+                "Interactive MD is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                membed == nullptr,
+                "Membrane embedding is not supported by the modular simulator.");
     // TODO: Change this to the boolean passed when we merge the user interface change for the GPU update.
-    GMX_RELEASE_ASSERT(
-            getenv("GMX_UPDATE_CONSTRAIN_GPU") == nullptr,
-            "Integration on the GPU is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                getenv("GMX_UPDATE_CONSTRAIN_GPU") == nullptr,
+                "Integration on the GPU is not supported by the modular simulator.");
     // Modular simulator is centered around NS updates
     // TODO: think how to handle nstlist == 0
-    GMX_RELEASE_ASSERT(
-            inputrec->nstlist != 0,
-            "Simulations without neighbor list update are not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            !GMX_FAHCORE,
-            "GMX_FAHCORE not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                inputrec->nstlist != 0,
+                "Simulations without neighbor list update are not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                !GMX_FAHCORE,
+                "GMX_FAHCORE not supported by the modular simulator.");
+
+    return isInputCompatible;
+}
+
+void ModularSimulator::checkInputForDisabledFunctionality()
+{
+    isInputCompatible(
+            true,
+            inputrec, doRerun, vsite, ms, replExParams,
+            fcd, nfile, fnm, observablesHistory, membed);
 }
 
 SignallerCallbackPtr ModularSimulator::SignalHelper::registerLastStepCallback()
