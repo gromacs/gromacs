@@ -746,21 +746,15 @@ void cuda_set_cacheconfig()
 
 /* X buffer operations on GPU: copies coordinates to the GPU in rvec format. */
 void nbnxn_gpu_copy_x_to_gpu(const Nbnxm::Grid               &grid,
-                             bool                             setFillerCoords,
                              gmx_nbnxn_gpu_t                 *nb,
                              const Nbnxm::AtomLocality        locality,
-                             const rvec                      *coordinatesHost,
-                             int                              gridId,
-                             int                              numColumnsMax)
+                             const rvec                      *coordinatesHost)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
     GMX_ASSERT(coordinatesHost,  "Need a valid host pointer");
 
     bool                       bDoTime = nb->bDoTime;
 
-    const int                  numColumns                = grid.numColumns();
-    const int                  cellOffset                = grid.cellOffset();
-    const int                  numAtomsPerCell           = grid.numAtomsPerCell();
     Nbnxm::InteractionLocality interactionLoc            = gpuAtomToInteractionLocality(locality);
     int                        nCopyAtoms                = grid.srcAtomEnd() - grid.srcAtomBegin();
     int                        copyAtomStart             = grid.srcAtomBegin();
@@ -816,8 +810,6 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
     const int                  cellOffset                = grid.cellOffset();
     const int                  numAtomsPerCell           = grid.numAtomsPerCell();
     Nbnxm::InteractionLocality interactionLoc            = gpuAtomToInteractionLocality(locality);
-    int                        nCopyAtoms                = grid.srcAtomEnd() - grid.srcAtomBegin();
-    int                        copyAtomStart             = grid.srcAtomBegin();
 
     cudaStream_t               stream  = nb->stream[interactionLoc];
 

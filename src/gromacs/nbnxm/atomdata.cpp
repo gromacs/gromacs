@@ -1103,12 +1103,9 @@ void nbnxn_atomdata_copy_x_to_gpu(const Nbnxm::GridSet     &gridSet,
     for (int g = gridBegin; g < gridEnd; g++)
     {
         nbnxn_gpu_copy_x_to_gpu(gridSet.grids()[g],
-                                fillLocal && g == 0,
                                 gpu_nbv,
                                 locality,
-                                coordinatesHost,
-                                g,
-                                gridSet.numColumnsMax());
+                                coordinatesHost);
     }
 }
 
