@@ -82,7 +82,7 @@
 #define USE_SUBGROUP_PRELOAD HAVE_INTEL_SUBGROUP
 
 /* 1.0 / sqrt(M_PI) */
-#define M_FLOAT_1_SQRTPI 0.564189583547756f
+#define M_FLOAT_1_SQRTPI 0.564189583547756F
 
 //-------------------
 
@@ -102,8 +102,9 @@
 #    define CL_SIZE_SQ (CL_SIZE * CL_SIZE)
 #    define FBUF_STRIDE (CL_SIZE_SQ)
 
-#    define ONE_SIXTH_F 0.16666667f
-#    define ONE_TWELVETH_F 0.08333333f
+#    define ONE_SIXTH_F 0.16666667F
+#    define ONE_TWELVETH_F 0.08333333F
+#    define HALF_F 0.5F
 
 
 #    ifdef __GNUC__
@@ -321,7 +322,7 @@ gmx_opencl_inline void calculate_force_switch_F(const cl_nbparam_params_t* nbpar
 
     r        = r2 * inv_r;
     r_switch = r - nbparam->rvdw_switch;
-    r_switch = r_switch >= 0.0f ? r_switch : 0.0f;
+    r_switch = r_switch >= 0.0F ? r_switch : 0.0F;
 
     *F_invr += -c6 * (disp_shift_V2 + disp_shift_V3 * r_switch) * r_switch * r_switch * inv_r
                + c12 * (repu_shift_V2 + repu_shift_V3 * r_switch) * r_switch * r_switch * inv_r;
@@ -351,7 +352,7 @@ gmx_opencl_inline void calculate_force_switch_F_E(const cl_nbparam_params_t* nbp
 
     r        = r2 * inv_r;
     r_switch = r - nbparam->rvdw_switch;
-    r_switch = r_switch >= 0.0f ? r_switch : 0.0f;
+    r_switch = r_switch >= 0.0F ? r_switch : 0.0F;
 
     *F_invr += -c6 * (disp_shift_V2 + disp_shift_V3 * r_switch) * r_switch * r_switch * inv_r
                + c12 * (repu_shift_V2 + repu_shift_V3 * r_switch) * r_switch * r_switch * inv_r;
@@ -381,9 +382,9 @@ gmx_opencl_inline void calculate_potential_switch_F(const cl_nbparam_params_t* n
     r_switch = r - nbparam->rvdw_switch;
 
     /* Unlike in the F+E kernel, conditional is faster here */
-    if (r_switch > 0.0f)
+    if (r_switch > 0.0F)
     {
-        sw  = 1.0f + (switch_V3 + (switch_V4 + switch_V5 * r_switch) * r_switch) * r_switch * r_switch * r_switch;
+        sw  = 1.0F + (switch_V3 + (switch_V4 + switch_V5 * r_switch) * r_switch) * r_switch * r_switch * r_switch;
         dsw = (switch_F2 + (switch_F3 + switch_F4 * r_switch) * r_switch) * r_switch * r_switch;
 
         *F_invr = (*F_invr) * sw - inv_r * (*E_lj) * dsw;
@@ -410,10 +411,10 @@ gmx_opencl_inline void calculate_potential_switch_F_E(const cl_nbparam_params_t*
 
     r        = r2 * inv_r;
     r_switch = r - nbparam->rvdw_switch;
-    r_switch = r_switch >= 0.0f ? r_switch : 0.0f;
+    r_switch = r_switch >= 0.0F ? r_switch : 0.0F;
 
     /* Unlike in the F-only kernel, masking is faster here */
-    sw  = 1.0f + (switch_V3 + (switch_V4 + switch_V5 * r_switch) * r_switch) * r_switch * r_switch * r_switch;
+    sw  = 1.0F + (switch_V3 + (switch_V4 + switch_V5 * r_switch) * r_switch) * r_switch * r_switch * r_switch;
     dsw = (switch_F2 + (switch_F3 + switch_F4 * r_switch) * r_switch) * r_switch * r_switch;
 
     *F_invr = (*F_invr) * sw - inv_r * (*E_lj) * dsw;
@@ -440,7 +441,7 @@ gmx_opencl_inline void calculate_lj_ewald_comb_geom_F(__constant const float* nb
     inv_r6_nm = inv_r2 * inv_r2 * inv_r2;
     cr2       = lje_coeff2 * r2;
     expmcr2   = exp(-cr2);
-    poly      = 1.0f + cr2 + 0.5f * cr2 * cr2;
+    poly      = 1.0F + cr2 + HALF_F * cr2 * cr2;
 
     /* Subtract the grid force from the total LJ force */
     *F_invr += c6grid * (inv_r6_nm - expmcr2 * (inv_r6_nm * poly + lje_coeff6_6)) * inv_r2;
@@ -469,14 +470,14 @@ gmx_opencl_inline void calculate_lj_ewald_comb_geom_F_E(__constant const float* 
     inv_r6_nm = inv_r2 * inv_r2 * inv_r2;
     cr2       = lje_coeff2 * r2;
     expmcr2   = exp(-cr2);
-    poly      = 1.0f + cr2 + 0.5f * cr2 * cr2;
+    poly      = 1.0F + cr2 + HALF_F * cr2 * cr2;
 
     /* Subtract the grid force from the total LJ force */
     *F_invr += c6grid * (inv_r6_nm - expmcr2 * (inv_r6_nm * poly + lje_coeff6_6)) * inv_r2;
 
     /* Shift should be applied only to real LJ pairs */
     sh_mask = nbparam->sh_lj_ewald * int_bit;
-    *E_lj += ONE_SIXTH_F * c6grid * (inv_r6_nm * (1.0f - expmcr2 * poly) + sh_mask);
+    *E_lj += ONE_SIXTH_F * c6grid * (inv_r6_nm * (1.0F - expmcr2 * poly) + sh_mask);
 }
 
 /*! Calculate LJ-PME grid force + energy contribution (if E_lj != NULL) with
@@ -512,7 +513,7 @@ gmx_opencl_inline void calculate_lj_ewald_comb_LB_F_E(__constant const float*   
     inv_r6_nm = inv_r2 * inv_r2 * inv_r2;
     cr2       = lje_coeff2 * r2;
     expmcr2   = exp(-cr2);
-    poly      = 1.0f + cr2 + 0.5f * cr2 * cr2;
+    poly      = 1.0F + cr2 + HALF_F * cr2 * cr2;
 
     /* Subtract the grid force from the total LJ force */
     *F_invr += c6grid * (inv_r6_nm - expmcr2 * (inv_r6_nm * poly + lje_coeff6_6)) * inv_r2;
@@ -523,7 +524,7 @@ gmx_opencl_inline void calculate_lj_ewald_comb_LB_F_E(__constant const float*   
 
         /* Shift should be applied only to real LJ pairs */
         sh_mask = nbparam->sh_lj_ewald * int_bit;
-        *E_lj += ONE_SIXTH_F * c6grid * (inv_r6_nm * (1.0f - expmcr2 * poly) + sh_mask);
+        *E_lj += ONE_SIXTH_F * c6grid * (inv_r6_nm * (1.0F - expmcr2 * poly) + sh_mask);
     }
 }
 
@@ -536,8 +537,8 @@ gmx_opencl_inline float interpolate_coulomb_force_r(__constant const float* coul
 {
     float normalized = scale * r;
     int   index      = (int)normalized;
-    float fract2     = normalized - index;
-    float fract1     = 1.0f - fract2;
+    float fract2     = normalized - (float)index;
+    float fract1     = 1.0F - fract2;
 
     return fract1 * coulomb_tab_climg2d[index] + fract2 * coulomb_tab_climg2d[index + 1];
 }
@@ -545,19 +546,19 @@ gmx_opencl_inline float interpolate_coulomb_force_r(__constant const float* coul
 /*! Calculate analytical Ewald correction term. */
 gmx_opencl_inline float pmecorrF(float z2)
 {
-    const float FN6 = -1.7357322914161492954e-8f;
-    const float FN5 = 1.4703624142580877519e-6f;
-    const float FN4 = -0.000053401640219807709149f;
-    const float FN3 = 0.0010054721316683106153f;
-    const float FN2 = -0.019278317264888380590f;
-    const float FN1 = 0.069670166153766424023f;
-    const float FN0 = -0.75225204789749321333f;
+    const float FN6 = -1.7357322914161492954e-8F;
+    const float FN5 = 1.4703624142580877519e-6F;
+    const float FN4 = -0.000053401640219807709149F;
+    const float FN3 = 0.0010054721316683106153F;
+    const float FN2 = -0.019278317264888380590F;
+    const float FN1 = 0.069670166153766424023F;
+    const float FN0 = -0.75225204789749321333F;
 
-    const float FD4 = 0.0011193462567257629232f;
-    const float FD3 = 0.014866955030185295499f;
-    const float FD2 = 0.11583842382862377919f;
-    const float FD1 = 0.50736591960530292870f;
-    const float FD0 = 1.0f;
+    const float FD4 = 0.0011193462567257629232F;
+    const float FD3 = 0.014866955030185295499F;
+    const float FD2 = 0.11583842382862377919F;
+    const float FD1 = 0.50736591960530292870F;
+    const float FD0 = 1.0F;
 
     float z4;
     float polyFN0, polyFN1, polyFD0, polyFD1;
@@ -569,7 +570,7 @@ gmx_opencl_inline float pmecorrF(float z2)
     polyFD0 = polyFD0 * z4 + FD0;
     polyFD0 = polyFD1 * z2 + polyFD0;
 
-    polyFD0 = 1.0f / polyFD0;
+    polyFD0 = 1.0F / polyFD0;
 
     polyFN0 = FN6 * z4 + FN4;
     polyFN1 = FN5 * z4 + FN3;
@@ -622,7 +623,7 @@ reduce_force_j_generic(__local float* f_buf, float3 fcj_buf, __global float* fou
        The reduction is performed for each line tidxj of f_buf. */
     if (tidxi < 3)
     {
-        float f = 0.0f;
+        float f = 0.0F;
         for (int j = tidxj * CL_SIZE; j < (tidxj + 1) * CL_SIZE; j++)
         {
             f += f_buf[FBUF_STRIDE * tidxi + j];
@@ -727,13 +728,12 @@ gmx_opencl_inline void reduce_force_i_and_shift_pow2(volatile __local float* f_b
         f_buf[2 * FBUF_STRIDE + tidx] = fci_buf[ci_offset].z;
         barrier(CLK_LOCAL_MEM_FENCE);
 
-        int i, j;
         /* Reduce the initial CL_SIZE values for each i atom to half
          * every step by using CL_SIZE * i threads.
          * Can't just use i as loop variable because than nvcc refuses to unroll.
          */
-        i = CL_SIZE / 2;
-        for (j = CL_SIZE_LOG2 - 1; j > 0; j--)
+        int i = CL_SIZE / 2;
+        for (int j = CL_SIZE_LOG2 - 1; j > 0; j--)
         {
             if (tidxj < i)
             {
@@ -809,7 +809,7 @@ gmx_opencl_inline void reduce_energy_shfl(float                    E_lj,
                                           float                    E_el,
                                           volatile __global float* e_lj,
                                           volatile __global float* e_el,
-                                          unsigned int             tidx)
+                                          int                      tidx)
 {
     E_lj = sub_group_reduce_add(E_lj);
     E_el = sub_group_reduce_add(E_el);
@@ -832,11 +832,11 @@ gmx_opencl_inline void reduce_energy_shfl(float                    E_lj,
 gmx_opencl_inline void reduce_energy_pow2(volatile __local float*  buf,
                                           volatile __global float* e_lj,
                                           volatile __global float* e_el,
-                                          unsigned int             tidx)
+                                          int                      tidx)
 {
     int j;
 
-    unsigned int i = WARP_SIZE / 2;
+    int i = WARP_SIZE / 2;
 
     /* Can't just use i as loop variable because than nvcc refuses to unroll. */
     for (j = WARP_SIZE_LOG2 - 1; j > 0; j--)
@@ -865,7 +865,7 @@ gmx_opencl_inline void reduce_energy(volatile __local float gmx_unused* buf,
                                      float                              E_el,
                                      volatile __global float*           e_lj,
                                      volatile __global float*           e_el,
-                                     unsigned int                       tidx)
+                                     int                                tidx)
 {
 #    if REDUCE_SHUFFLE
     reduce_energy_shfl(E_lj, E_el, e_lj, e_el, tidx);
@@ -877,7 +877,7 @@ gmx_opencl_inline void reduce_energy(volatile __local float gmx_unused* buf,
 #    endif
 }
 
-gmx_opencl_inline bool gmx_sub_group_any_localmem(volatile __local uint* warp_any, int widx, bool pred)
+gmx_opencl_inline bool gmx_sub_group_any_localmem(volatile __local int* warp_any, int widx, bool pred)
 {
     if (pred)
     {
@@ -892,9 +892,7 @@ gmx_opencl_inline bool gmx_sub_group_any_localmem(volatile __local uint* warp_an
 }
 
 //! Returns a true if predicate is true for any work item in warp
-gmx_opencl_inline bool gmx_sub_group_any(volatile __local uint gmx_unused* warp_any,
-                                         int gmx_unused widx,
-                                         bool           pred)
+gmx_opencl_inline bool gmx_sub_group_any(volatile __local int gmx_unused* warp_any, int gmx_unused widx, bool pred)
 {
 #    if USE_SUBGROUP_ANY
     return sub_group_any(pred);

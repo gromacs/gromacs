@@ -40,12 +40,12 @@ __kernel void zero_e_fshift(__global float* fshift, __global float* e_lj, __glob
     unsigned int tidx = get_global_id(0);
     if (tidx < Nbuf)
     {
-        fshift[tidx] = 0.0f;
+        fshift[tidx] = 0.0F;
     }
     if (tidx == 0)
     {
-        *e_lj = 0.0f;
-        *e_el = 0.0f;
+        *e_lj = 0.0F;
+        *e_el = 0.0F;
     }
 }
 

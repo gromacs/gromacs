@@ -54,7 +54,8 @@ set(VDW_DEFS
     "-DLJ_EWALD_COMB_LB\;-DVDWNAME=_VdwLJEwCombLB")
 if(CLANG_TIDY_EXE)
    set(OCL_COMPILER "${CLANG_TIDY_EXE}")
-   set(CLANG_TIDY_ARGS "-quiet;-checks=*,-readability-implicit-bool-conversion,-llvm-header-guard,-hicpp-signed-bitwise,-clang-analyzer-deadcode.DeadStores,-google-readability-todo;--;${CMAKE_C_COMPILER}")
+   # TODO: remove readability-isolate-declaration when the nbnxm OpenCL kernels get modernized
+   set(CLANG_TIDY_ARGS "-quiet;-checks=*,-readability-isolate-declaration,-readability-implicit-bool-conversion,-llvm-header-guard,-hicpp-signed-bitwise,-clang-analyzer-deadcode.DeadStores,-google-readability-todo;--;${CMAKE_C_COMPILER}")
 else()
    set(OCL_COMPILER "${CMAKE_C_COMPILER}")
 endif()
