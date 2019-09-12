@@ -217,8 +217,7 @@ Process(-or) level parallelization via OpenMP
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 |Gromacs| :ref:`mdrun <gmx mdrun>` supports OpenMP multithreading for all parts
-of the code for the :doc:`Verlet cut-off scheme <cutoff-schemes>`, as well as for the PME
-code in case of the group scheme. OpenMP is enabled by default and
+of the code. OpenMP is enabled by default and
 can be turned on/off at configure time with the ``GMX_OPENMP`` CMake variable
 and at run-time with the ``-ntomp`` option (or the ``OMP_NUM_THREADS`` environment variable).
 The OpenMP implementation is quite efficient and scales well for up to 12-24 threads on
@@ -249,22 +248,20 @@ By default, the thread-MPI mdrun will use all available cores in the machine by 
 an appropriate number of ranks or OpenMP threads to occupy all of them. The number of
 ranks can be controlled using the
 ``-nt`` and ``-ntmpi`` options. ``-nt`` represents the total number of threads
-to be used (which can be a mix of thread-MPI and OpenMP threads with the
-:doc:`Verlet scheme <cutoff-schemes>`).
+to be used (which can be a mix of thread-MPI and OpenMP threads.
 
 Hybrid/heterogeneous acceleration
 .................................
 
 Hybrid acceleration means distributing compute work between available CPUs and GPUs
-to improve simulation performance.
-Along the :doc:`Verlet cut-off scheme <cutoff-schemes>` new non-bonded algorithms
+to improve simulation performance. New non-bonded algorithms
 have been developed with the aim of efficient acceleration both on CPUs and GPUs.
 
 The most compute-intensive parts of simulations, non-bonded force calculation, as well
 as possibly the PME and bonded force calculation can be
 offloaded to GPUs and carried out simultaneously with remaining CPU work.
-Native GPU acceleration is supported with the :doc:`Verlet cut-off scheme <cutoff-schemes>`
-(not with the group scheme) with PME, reaction-field, and plain cut-off electrostatics.
+Native GPU acceleration is supported for the most commonly used algorithms in
+|Gromacs|.
 For more information about the GPU kernels, please see the :ref:`Installation guide <gmx-gpu-support>`.
 
 The native GPU acceleration can be turned on or off, either at run-time using the
@@ -288,7 +285,7 @@ value provided using the :mdp:`rcoulomb` ``=rvdw`` :ref:`mdp` option represents 
 electrostatics cut-off the tuning starts with and therefore should be chosen as small as
 possible (but still reasonable for the physics simulated). The Lennard-Jones cut-off ``rvdw``
 is kept fixed. We don't allow scaling to shorter cut-off as we don't want to change ``rvdw``
-and there would be no performance gain in the Verlet cut-off scheme.
+and there would be no performance gain.
 
 While the automated CPU-GPU load balancing always attempts to find the optimal cut-off setting,
 it might not always be possible to balance CPU and GPU workload. This happens when the CPU threads
@@ -388,8 +385,8 @@ another. As PME requires all-to-all global communication, this is most of the ti
 factor to scaling on a large number of cores. By designating a subset of nodes for PME
 calculations only, performance of parallel runs can be greatly improved.
 
-OpenMP mutithreading in PME nodes is also possible and is supported with both group and
-Verlet cut-off schemes. Using multi-threading in PME can can improve performance at high
+OpenMP mutithreading in PME nodes is also possible.
+Using multi-threading in PME can can improve performance at high
 parallelization. The reason for this is that with N>1 threads the number of processes
 communicating, and therefore the number of messages, is reduced by a factor of N.
 But note that modern communication networks can process several messages simultaneously,
@@ -755,7 +752,7 @@ There are further command-line parameters that are relevant in these
 cases.
 
 ``-tunepme``
-    Defaults to "on." If "on," a Verlet-scheme simulation will
+    Defaults to "on." If "on," a simulation will
     optimize various aspects of the PME and DD algorithms, shifting
     load between ranks and/or GPUs to maximize throughput. Some
     :ref:`mdrun <gmx mdrun>` features are not compatible with this, and these ignore
@@ -1346,9 +1343,9 @@ Checking and improving performance
   imbalance, the automated PME-tuning might have reduced the initial imbalance.
   You could still gain performance by changing the mdp parameters or increasing
   the number of PME ranks.
-* If the neighbor searching takes a lot of time, increase nstlist (with the
-  Verlet cut-off scheme, this automatically adjusts the size of the neighbour
-  list to do more non-bonded computation to keep energy drift constant).
+* If the neighbor searching takes a lot of time, increase nstlist. If a Verlet
+  buffer tolerance is used, this is done automatically by :ref:`gmx mdrun`
+  and the pair-list buffer is increased to keep the energy drift constant.
 
   * If ``Comm. energies`` takes a lot of time (a note will be printed in the log
     file), increase nstcalcenergy.

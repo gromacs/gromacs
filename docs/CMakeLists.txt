@@ -416,7 +416,6 @@ if (SPHINX_FOUND)
         # if the documentation will be build with the full reference
         # manual or without.
         user-guide/cmdline.rst
-        user-guide/cutoff-schemes.rst
         user-guide/deprecation-policy.rst
         user-guide/environment-variables.rst
         user-guide/faq.rst

@@ -2552,6 +2552,20 @@ molecular dynamics simulations*, (2002).
 
    </div>
 
+.. raw:: html
+
+   <div id="ref-PallPairInteractions">
+
+.. _refPallPairInteractions:
+
+:sup:`182` Páll, S., Hess, B.,
+"A flexible algorithm for calculating pair interactions on SIMD architectures,"
+*Comput. Phys. Commun.*, **183**, 2641–2650 (2013).
+
+.. raw:: html
+
+   </div>
+
 
 .. raw:: html
 

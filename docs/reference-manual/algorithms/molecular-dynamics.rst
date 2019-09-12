@@ -145,71 +145,33 @@ The non-bonded pair forces need to be calculated only for those pairs
 the nearest image of :math:`j` is less than a given cut-off radius
 :math:`R_c`. Some of the particle pairs that fulfill this criterion are
 excluded, when their interaction is already fully accounted for by
-bonded interactions. |Gromacs| employs a *pair list* that contains those
+bonded interactions. But for most electrostatic treatments, correction
+forces also need to be computed for such excluded atom pairs.
+|Gromacs| employs a *pair list* that contains those
 particle pairs for which non-bonded forces must be calculated. The pair
 list contains particles :math:`i`, a displacement vector for particle
 :math:`i`, and all particles :math:`j` that are within ``rlist`` of this
 particular image of particle :math:`i`. The list is updated every
 ``nstlist`` steps.
 
-To make the neighbor list, all particles that are close (*i.e.* within
-the neighbor list cut-off) to a given particle must be found. This
+To make the pair list, all atom pairs that are within the pair list
+cut-off distance need to be found and stored in a list. Note that
+such a list generally does not store all neighbors for each atom,
+since each atom pair should appear only once in the list. This
 searching, usually called neighbor search (NS) or pair search, involves
 periodic boundary conditions and determining the *image* (see
-sec. :ref:`pbc`). The search algorithm is :math:`O(N)`, although a
-simpler :math:`O(N^2)` algorithm is still available under some
-conditions.
+sec. :ref:`pbc`). The search algorithm employed in |Gromacs| is :math:`O(N)`.
 
-Cut-off schemes: group versus Verlet
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-From version 4.6, |Gromacs| supports two different cut-off scheme setups:
-the original one based on particle groups and one using a Verlet buffer.
-There are some important differences that affect results, performance
-and feature support. The group scheme can be made to work (almost) like
-the Verlet scheme, but this will lead to a decrease in performance. The
-group scheme is especially fast for water molecules, which are abundant
-in many simulations, but on the most recent x86 processors, this
-advantage is negated by the better instruction-level parallelism
-available in the Verlet-scheme implementation. The group scheme is
-deprecated in version 5.0, and will be removed in a future version. For
-practical details of choosing and setting up cut-off schemes, please see
-the User Guide.
-
-In the group scheme, a neighbor list is generated consisting of pairs of
-groups of at least one particle. These groups were originally charge
-groups (see sec. :ref:`chargegroup`), but with a proper treatment of
-long-range electrostatics, performance in unbuffered simulations is
-their only advantage. A pair of groups is put into the neighbor list
-when their center of geometry is within the cut-off distance.
-Interactions between all particle pairs (one from each charge group) are
-calculated for a certain number of MD steps, until the neighbor list is
-updated. This setup is efficient, as the neighbor search only checks
-distance between charge-group pair, not particle pairs (saves a factor
-of :math:`3 \times 3 = 9` with a three-particle water model) and the
-non-bonded force kernels can be optimized for, say, a water molecule
-“group”. Without explicit buffering, this setup leads to energy drift as
-some particle pairs which are within the cut-off don’t interact and some
-outside the cut-off do interact. This can be caused by
-
--  particles moving across the cut-off between neighbor search steps,
-   and/or
-
--  for charge groups consisting of more than one particle, particle
-   pairs moving in/out of the cut-off when their charge group center of
-   geometry distance is outside/inside of the cut-off.
-
-Explicitly adding a buffer to the neighbor list will remove such
-artifacts, but this comes at a high computational cost. How severe the
-artifacts are depends on the system, the properties in which you are
-interested, and the cut-off setup.
-
-The Verlet cut-off scheme uses a buffered pair list by default. It also
-uses clusters of particles, but these are not static as in the group
+As pair searching is an expensive operation, a generated pair list
+is retained for a certain number of integration steps.
+A buffer is needed to account for relative displacements
+of atoms over the steps where a fixed pair list is retained.
+|Gromacs| uses a buffered pair list by default. It also
+uses clusters of particles, but these are not static as in the old charge group
 scheme. Rather, the clusters are defined spatially and consist of 4 or 8
 particles, which is convenient for stream computing, using e.g. SSE, AVX
 or CUDA on GPUs. At neighbor search steps, a pair list is created with a
-Verlet buffer, ie. the pair-list cut-off is larger than the interaction
+Verlet buffer, i.e. the pair-list cut-off is larger than the interaction
 cut-off. In the non-bonded kernels, interactions are only computed when
 a particle pair is within the cut-off distance at that particular time
 step. This ensures that as particles move between pair search steps,
@@ -221,9 +183,13 @@ fixed number of steps that its distance is now within the cut-off. This
 small chance results in a small energy drift, and the size of the chance
 depends on the temperature. When temperature coupling is used, the
 buffer size can be determined automatically, given a certain tolerance
-on the energy drift.
+on the energy drift. The default tolerance is 0.005 kJ/mol/ns per
+particle, but in practice the energy drift is usually an order of
+magnitude smaller. Note that in single precision for normal atomistic
+simulations constraints cause a drift somewhere around 0.0001 kJ/mol/ns
+per particle, so it doesn't make sense to go much lower than that.
 
-The Verlet cut-off scheme is implemented in a very efficient fashion
+The pair list is implemented in a very efficient fashion
 based on clusters of particles. The simplest example is a cluster size
 of 4 particles. The pair list is then constructed based on cluster
 pairs. The cluster-pair search is much faster searching based on
@@ -233,7 +199,10 @@ calculate many particle-pair interactions at once, which maps nicely to
 SIMD or SIMT units on modern hardware, which can perform multiple
 floating operations at once. These non-bonded kernels are much faster
 than the kernels used in the group scheme for most types of systems,
-particularly on newer hardware.
+particularly on newer hardware. For further information on algorithmic
+and implementation details of the Verlet cut-off scheme and the NxM
+kernels, as well as detailed performance analysis, please consult the
+following article: :ref:`182 <refPallPairInteractions>`.
 
 Additionally, when the list buffer is determined automatically as
 described below, we also apply dynamic pair list pruning. The pair list
@@ -429,10 +398,8 @@ is because the protons don’t move freely over 18 fs, but rather vibrate.
 Cut-off artifacts and switched interactions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-With the Verlet scheme, the pair potentials are shifted to be zero at
-the cut-off, which makes the potential the integral of the force. This
-is only possible in the group scheme if the shape of the potential is
-such that its value is zero at the cut-off distance. However, there can
+By default, the pair potentials are shifted to be zero at the cut-off,
+which makes the potential the integral of the force. However, there can
 still be energy drift when the forces are non-zero at the cut-off. This
 effect is extremely small and often not noticeable, as other integration
 errors (e.g. from constraints) may dominate. To completely avoid cut-off
@@ -500,39 +467,10 @@ Charge groups
 ^^^^^^^^^^^^^
 
 Charge groups were originally introduced to reduce cut-off artifacts of
-Coulomb interactions. When a plain cut-off is used, significant jumps in
-the potential and forces arise when atoms with (partial) charges move in
-and out of the cut-off radius. When all chemical moieties have a net
-charge of zero, these jumps can be reduced by moving groups of atoms
-with net charge zero, called charge groups, in and out of the neighbor
-list. This reduces the cut-off effects from the charge-charge level to
-the dipole-dipole level, which decay much faster. With the advent of
-full range electrostatics methods, such as particle-mesh Ewald
-(sec. :ref:`pme`), the use of charge groups is no longer required for
-accuracy. It might even have a slight negative effect on the accuracy or
-efficiency, depending on how the neighbor list is made and the
-interactions are calculated.
-
-But there is still an important reason for using *charge groups*:
-efficiency with the group cut-off scheme. Where applicable, neighbor
-searching is carried out on the basis of charge groups which are defined
-in the molecular topology. If the nearest image distance between the
-*geometrical centers* of the atoms of two charge groups is less than the
-cut-off radius, all atom pairs between the charge groups are included in
-the pair list. The neighbor searching for a water system, for instance,
-is :math:`3^2=9` times faster when each molecule is treated as a charge
-group. Also the highly optimized water force loops (see
-sec. :ref:`waterloops`) only work when all atoms in a water molecule form
-a single charge group. Currently the name *neighbor-search group* would
-be more appropriate, but the name charge group is retained for
-historical reasons. When developing a new force field, the advice is to
-use charge groups of 3 to 4 atoms for optimal performance. For all-atom
-force fields this is relatively easy, as one can simply put hydrogen
-atoms, and in some case oxygen atoms, in the same charge group as the
-heavy atom they are connected to; for example: CH\ :math:`_3`,
-CH\ :math:`_2`, CH, NH\ :math:`_2`, NH, OH, CO\ :math:`_2`, CO.
-
-With the Verlet cut-off scheme, charge groups are ignored.
+Coulomb interactions. This concept has been superseded by exact atomistic
+cut-off treatments. For historical reasons charge groups are still
+defined in the atoms section for each moleculetype in the topology,
+but they are no longer used.
 
 .. _forces:
 

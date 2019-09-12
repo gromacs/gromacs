@@ -548,7 +548,10 @@ Neighbor searching
    and the value of :mdp:`rlist` is ignored. Without dynamics, this
    is by default set to the maximum cut-off plus 5% buffer, except
    for test particle insertion, where the buffer is managed exactly
-   and automatically.
+   and automatically. For NVE simulations, where the automated
+   setting is not possible, the advised procedure is to run :ref:`gmx grompp`
+   with an NVT setup with the expected temperature and copy the resulting
+   value of :mdp:`rlist` to the NVE setup.
 
 
 Electrostatics
