@@ -7,3 +7,13 @@ New and improved features
    Also, please use the syntax :issue:`number` to reference issues on redmine, without the
    a space between the colon and number!
 
+Density-guided simulations
+""""""""""""""""""""""""""
+
+Users can now apply additional forces from three dimensional reference
+densities. These forces can be used to "fit" atoms into the densities by
+increasing the similarity of a simulated density to the reference density.
+
+Multiple protocols are available for how to calculate simulated densities
+as well as how the similarity between a reference and a simulated density is
+evaluated.

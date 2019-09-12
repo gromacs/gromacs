@@ -11,13 +11,11 @@ without GPUs, all enabled and automated by default. We are extremely
 interested in your feedback on how well this worked on your
 simulations and hardware. They are:
 
-* Cool quotes autogenerator 
-
+* Density-guided simulations allow "fitting" atoms into three-dimensional
+  density maps. 
 
 .. Note to developers!
    Please use """"""" to underline the individual entries for fixed issues in the subfolders,
    otherwise the formatting on the webpage is messed up.
    Also, please use the syntax :issue:`number` to reference issues on redmine, without the
    a space between the colon and number!
-
-
