@@ -107,7 +107,11 @@ def test_run_trivial_ensemble(spc_water_box, caplog):
             assert len(output_directory) == 2
 
             # Note that the 'cleandir' test fixture will clean up the output directory on
-            # other ranks, so only check the current rank.
+            # other ranks, so only check the current rank. Generally, our behavior
+            # is undefined if the client removes the working directory while the job
+            # is in progress. We can consider adding some sort of synchronization at
+            # the end of the job if running in temporary directories becomes an
+            # important use case outside of testing.
             assert output_directory[0] != output_directory[1]
             assert os.path.exists(output_directory[current_rank])
 
