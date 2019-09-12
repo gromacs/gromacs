@@ -49,12 +49,59 @@
 # directory with some artifacts.
 
 import os
+import sys
 
 from skbuild import setup
 import cmake
 
+usage = """
+The `gmxapi` package requires an existing GROMACS installation, version 2020 or higher.
+To specify the GROMACS installation to use, provide a GROMACS_TOOLCHAIN
+environment variable when running setup.py or `pip`.
+
+Example:
+
+    GROMACS_TOOLCHAIN=/path/to/gromacs/share/cmake/gromacs/gromacs-toolchain.cmake pip install gmxapi
+
+In the example, `gmxapi` is downloaded automatically from pypi.org. You can
+replace `gmxapi` with a local directory or archive file to build from a source
+distribution.
+
+setup.py will use the location of the GROMACS_TOOLCHAIN file to locate the
+gmxapi library configured during GROMACS installation. Alternatively, if
+gmxapi_DIR is provided, or if GMXRC has been "sourced", the toolchain file
+location may be deduced. Note, though, that if multiple GROMACS installations
+exist in the same location (with different suffixes) only the first one will be
+used when guessing a toolchain because setup.py does not know which corresponds
+to the gmxapi support library.
+
+If specifying GROMACS_TOOLCHAIN and gmxapi_DIR, the tool chain file must be 
+located within a subdirectory of gmxapi_DIR.
+
+NOTE TO OS X USERS:
+Refer to https://redmine.gromacs.org/issues/3085 for the status of a bug with
+the toolchain file on OS X. Until the bug is resolved, OS X users are advised
+to manually specify (via the CXX environment variable) the C++ compiler used
+when building GROMACS, and to set gmxapi_DIR instead of GROMACS_TOOLCHAIN.
+
+Example:
+
+    gmxapi_DIR=/path/to/gromacs pip install gmxapi
+
+Refer to project web site for complete documentation.
+
+"""
+
+
+class GmxapiInstallError(Exception):
+    """Error processing setup.py for gmxapi Python package."""
+
+
 gmx_toolchain = os.getenv('GROMACS_TOOLCHAIN')
 gmxapi_DIR = os.getenv('gmxapi_DIR')
+if gmxapi_DIR is None:
+    # Infer from GMXRC exports, if available.
+    gmxapi_DIR = os.getenv('GROMACS_DIR')
 
 def _find_first_gromacs_suffix(directory):
     dir_contents = os.listdir(directory)
@@ -64,8 +111,6 @@ def _find_first_gromacs_suffix(directory):
 
 if gmx_toolchain is None:
     # Try to guess from standard GMXRC environment variables.
-    if gmxapi_DIR is None:
-        gmxapi_DIR = os.getenv('GROMACS_DIR')
     if gmxapi_DIR is not None:
         if os.path.exists(gmxapi_DIR) and os.path.isdir(gmxapi_DIR):
             share_cmake = os.path.join(gmxapi_DIR, 'share', 'cmake')
@@ -75,10 +120,8 @@ if gmx_toolchain is None:
                                              'gromacs' + suffix,
                                              'gromacs-toolchain' + suffix + '.cmake')
 
-class GmxapiInstallError(Exception):
-    """Error processing setup.py for gmxapi Python package."""
-
 if gmx_toolchain is None:
+    print(usage)
     raise GmxapiInstallError('Could not configure for GROMACS installation. Provide GROMACS_TOOLCHAIN.')
 else:
     gmx_toolchain = os.path.abspath(gmx_toolchain)
@@ -91,14 +134,28 @@ if gmxapi_DIR is None:
     # <package>_DIR/share/cmake/<package>/ for such a file.
     # We would need a slightly different behavior for packages that link against
     # libgromacs directly, as sample_restraint currently does.
-    gmxapi_DIR = os.path.abspath(
-        os.path.join(os.path.dirname(gmx_toolchain), '..', '..', '..'))
+    gmxapi_DIR = os.path.join(os.path.dirname(gmx_toolchain), '..', '..', '..')
+
+gmxapi_DIR = os.path.abspath(gmxapi_DIR)
+
+if not os.path.exists(gmxapi_DIR) or not os.path.isdir(gmxapi_DIR):
+    print(usage)
+    raise GmxapiInstallError('Please set a valid gmxapi_DIR.')
 
 if gmxapi_DIR != os.path.commonpath([gmxapi_DIR, gmx_toolchain]):
     raise GmxapiInstallError('GROMACS toolchain file {} is not in gmxapi_DIR {}'.format(
         gmx_toolchain,
         gmxapi_DIR
     ))
+
+cmake_platform_hints = ['-DCMAKE_TOOLCHAIN_FILE={}'.format(gmx_toolchain)]
+if sys.platform == 'darwin':
+    # TODO: Reconcile with cross-compilation CMake toolchain.
+    # In some cases, compatibility settings are more relevant to libpython, and
+    # in others libgmxapi. It is not completely clear where they can or should
+    # be determined and set.
+    cmake_platform_hints.extend(['-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=10.9',
+                                 '-DCMAKE_OSX_ARCHITECTURES:STRING=x86_64'])
 
 # TODO: Use package-specific hinting variable.
 # We want to be sure that we find a <package>-config.cmake associated with the
@@ -114,6 +171,9 @@ else:
     cmake_gmxapi_hint = '-DCMAKE_PREFIX_PATH={}'
 cmake_gmxapi_hint = cmake_gmxapi_hint.format(gmxapi_DIR)
 
+cmake_args = list(cmake_platform_hints)
+cmake_args.append(cmake_gmxapi_hint)
+
 setup(
     name='gmxapi',
 
@@ -126,12 +186,7 @@ setup(
 
     packages=['gmxapi', 'gmxapi.simulation'],
 
-    # TODO: It may be necessary to put these or other OSX directives in the toolchain file.
-    cmake_args=['-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=10.9',
-                '-DCMAKE_OSX_ARCHITECTURES:STRING=x86_64',
-                '-DCMAKE_TOOLCHAIN_FILE={}'.format(gmx_toolchain),
-                cmake_gmxapi_hint
-                ],
+    cmake_args=cmake_args,
 
     author='M. Eric Irrgang',
     author_email='info@gmxapi.org',
