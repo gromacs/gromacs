@@ -148,14 +148,16 @@ if gmxapi_DIR != os.path.commonpath([gmxapi_DIR, gmx_toolchain]):
         gmxapi_DIR
     ))
 
-cmake_platform_hints = ['-DCMAKE_TOOLCHAIN_FILE={}'.format(gmx_toolchain)]
 if sys.platform == 'darwin':
     # TODO: Reconcile with cross-compilation CMake toolchain.
     # In some cases, compatibility settings are more relevant to libpython, and
     # in others libgmxapi. It is not completely clear where they can or should
     # be determined and set.
-    cmake_platform_hints.extend(['-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=10.9',
-                                 '-DCMAKE_OSX_ARCHITECTURES:STRING=x86_64'])
+    cmake_platform_hints = ['-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=10.9',
+                            '-DCMAKE_OSX_ARCHITECTURES:STRING=x86_64']
+else:
+    # TODO: (Issue 3085) Can toolchain be used on OS X builds?
+    cmake_platform_hints = ['-DCMAKE_TOOLCHAIN_FILE={}'.format(gmx_toolchain)]
 
 # TODO: Use package-specific hinting variable.
 # We want to be sure that we find a <package>-config.cmake associated with the
