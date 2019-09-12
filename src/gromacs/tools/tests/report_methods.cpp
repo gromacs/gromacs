@@ -181,7 +181,9 @@ TEST(ReportMethodsTest, WritesCorrectInformation)
     }
 }
 
-TEST(ReportMethodsTest, ToolEndToEndTest)
+// This test sometimes fails for reasons that are not understood, see
+// Redmine #3804.
+TEST(ReportMethodsTest, DISABLED_ToolEndToEndTest)
 {
     TestFileManager   fileManager;
     std::string       tprName   = generateTprInput(&fileManager, "lysozyme");
