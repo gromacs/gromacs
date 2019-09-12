@@ -223,6 +223,7 @@ if (SPHINX_FOUND)
         reference-manual/special/vmd-imd.rst
         reference-manual/special/membrane-embedding.rst
         reference-manual/special/mimic-qmmm.rst
+        reference-manual/special/density-guided-simulation.rst
         # Analysis chapter
         reference-manual/analysis.rst
         reference-manual/analysis/using-groups.rst
