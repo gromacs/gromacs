@@ -56,33 +56,38 @@ import cmake
 
 usage = """
 The `gmxapi` package requires an existing GROMACS installation, version 2020 or higher.
-To specify the GROMACS installation to use, provide a GROMACS_TOOLCHAIN
+To specify the GROMACS installation to use, provide a GMXTOOLCHAINDIR
 environment variable when running setup.py or `pip`.
 
 Example:
+    GMXTOOLCHAINDIR=/path/to/gromacs/share/cmake/gromacs pip install gmxapi
 
-    GROMACS_TOOLCHAIN=/path/to/gromacs/share/cmake/gromacs/gromacs-toolchain.cmake pip install gmxapi
+If you have multiple builds of GROMACS, distinguished by a suffix `$SUFFIX`, the
+tool chain directory will use that suffix.
+
+Example:
+    GMXTOOLCHAINDIR=/path/to/gromacs/share/cmake/gromacs$SUFFIX pip install gmxapi
 
 In the example, `gmxapi` is downloaded automatically from pypi.org. You can
 replace `gmxapi` with a local directory or archive file to build from a source
 distribution.
 
-setup.py will use the location of the GROMACS_TOOLCHAIN file to locate the
+setup.py will use the location of GMXTOOLCHAINDIR to locate the
 gmxapi library configured during GROMACS installation. Alternatively, if
 gmxapi_DIR is provided, or if GMXRC has been "sourced", the toolchain file
 location may be deduced. Note, though, that if multiple GROMACS installations
 exist in the same location (with different suffixes) only the first one will be
-used when guessing a toolchain because setup.py does not know which corresponds
+used when guessing a toolchain, because setup.py does not know which corresponds
 to the gmxapi support library.
 
-If specifying GROMACS_TOOLCHAIN and gmxapi_DIR, the tool chain file must be 
+If specifying GMXTOOLCHAINDIR and gmxapi_DIR, the tool chain directory must be 
 located within a subdirectory of gmxapi_DIR.
 
 NOTE TO OS X USERS:
 Refer to https://redmine.gromacs.org/issues/3085 for the status of a bug with
 the toolchain file on OS X. Until the bug is resolved, OS X users are advised
 to manually specify (via the CXX environment variable) the C++ compiler used
-when building GROMACS, and to set gmxapi_DIR instead of GROMACS_TOOLCHAIN.
+when building GROMACS, and to set gmxapi_DIR instead of GMXTOOLCHAINDIR.
 
 Example:
 
@@ -97,7 +102,7 @@ class GmxapiInstallError(Exception):
     """Error processing setup.py for gmxapi Python package."""
 
 
-gmx_toolchain = os.getenv('GROMACS_TOOLCHAIN')
+gmx_toolchain_dir = os.getenv('GMXTOOLCHAINDIR')
 gmxapi_DIR = os.getenv('gmxapi_DIR')
 if gmxapi_DIR is None:
     # Infer from GMXRC exports, if available.
@@ -109,22 +114,21 @@ def _find_first_gromacs_suffix(directory):
         if entry.startswith('gromacs'):
             return entry.strip('gromacs')
 
-if gmx_toolchain is None:
+if gmx_toolchain_dir is None:
     # Try to guess from standard GMXRC environment variables.
     if gmxapi_DIR is not None:
         if os.path.exists(gmxapi_DIR) and os.path.isdir(gmxapi_DIR):
             share_cmake = os.path.join(gmxapi_DIR, 'share', 'cmake')
             suffix = _find_first_gromacs_suffix(share_cmake)
             if suffix is not None:
-                gmx_toolchain = os.path.join(share_cmake,
-                                             'gromacs' + suffix,
-                                             'gromacs-toolchain' + suffix + '.cmake')
+                gmx_toolchain_dir = os.path.join(share_cmake, 'gromacs' + suffix)
 
-if gmx_toolchain is None:
+if gmx_toolchain_dir is None:
     print(usage)
-    raise GmxapiInstallError('Could not configure for GROMACS installation. Provide GROMACS_TOOLCHAIN.')
-else:
-    gmx_toolchain = os.path.abspath(gmx_toolchain)
+    raise GmxapiInstallError('Could not configure for GROMACS installation. Provide GMXTOOLCHAINDIR.')
+
+suffix = os.path.basename(gmx_toolchain_dir).strip('gromacs')
+gmx_toolchain = os.path.abspath(os.path.join(gmx_toolchain_dir, 'gromacs-toolchain' + suffix + '.cmake'))
 
 if gmxapi_DIR is None:
     # Example: given /usr/local/gromacs/share/cmake/gromacs/gromacs-toolchain.cmake,

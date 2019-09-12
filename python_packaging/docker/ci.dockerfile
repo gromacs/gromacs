@@ -68,7 +68,7 @@ ADD --chown=testing:testing src/gmxapi /home/testing/gmxapi/src/gmxapi
 # have installed the dependencies.
 RUN . $VENV/bin/activate && \
     (cd $HOME/gmxapi/src && \
-     GROMACS_TOOLCHAIN=/usr/local/gromacs/share/cmake/gromacs/gromacs-toolchain.cmake \
+     GMXTOOLCHAINDIR=/usr/local/gromacs/share/cmake/gromacs \
       pip install --no-cache-dir --no-deps --no-index --no-build-isolation . \
     )
 
