@@ -428,29 +428,13 @@ Neighbor searching
       Generate a pair list with buffering. The buffer size is
       automatically set based on :mdp:`verlet-buffer-tolerance`,
       unless this is set to -1, in which case :mdp:`rlist` will be
-      used. This option has an explicit, exact cut-off at :mdp:`rvdw`
-      equal to :mdp:`rcoulomb`, unless PME or Ewald is used, in which
-      case :mdp:`rcoulomb` > :mdp:`rvdw` is allowed. Currently only
-      cut-off, reaction-field, PME or Ewald electrostatics and plain
-      LJ are supported. Some :ref:`gmx mdrun` functionality is not yet
-      supported with the :mdp-value:`cutoff-scheme=Verlet` scheme, but :ref:`gmx grompp`
-      checks for this. Native GPU acceleration is only supported with
-      :mdp-value:`cutoff-scheme=Verlet`. With GPU-accelerated PME or with separate PME
-      ranks, :ref:`gmx mdrun` will automatically tune the CPU/GPU load
-      balance by scaling :mdp:`rcoulomb` and the grid spacing. This
-      can be turned off with ``mdrun -notunepme``. :mdp-value:`cutoff-scheme=Verlet` is
-      faster than :mdp-value:`cutoff-scheme=group` when there is no water, or if
-      :mdp-value:`cutoff-scheme=group` would use a pair-list buffer to conserve energy.
+      used.
 
    .. mdp-value:: group
 
-      Generate a pair list for groups of atoms. These groups
-      correspond to the charge groups in the topology. This was the
-      only cut-off treatment scheme before version 4.6, and is
-      **deprecated since 5.1**. There is no explicit buffering of
-      the pair list. This enables efficient force calculations for
-      water, but energy is only conserved when a buffer is explicitly
-      added.
+      Generate a pair list for groups of atoms, corresponding
+      to the charge groups in the topology. This option is no longer
+      supported.
 
 .. mdp:: nstlist
 
@@ -458,23 +442,19 @@ Neighbor searching
 
    .. mdp-value:: >0
 
-      Frequency to update the neighbor list. When this is 0, the
-      neighbor list is made only once. With energy minimization the
-      pair list will be updated for every energy evaluation when
-      :mdp:`nstlist` is greater than 0. With :mdp-value:`cutoff-scheme=Verlet` and
+      Frequency to update the neighbor list. When dynamics and
       :mdp:`verlet-buffer-tolerance` set, :mdp:`nstlist` is actually
       a minimum value and :ref:`gmx mdrun` might increase it, unless
       it is set to 1. With parallel simulations and/or non-bonded
       force calculation on the GPU, a value of 20 or 40 often gives
-      the best performance. With :mdp-value:`cutoff-scheme=group` and non-exact
-      cut-off's, :mdp:`nstlist` will affect the accuracy of your
-      simulation and it can not be chosen freely.
+      the best performance.
 
    .. mdp-value:: 0
 
       The neighbor list is only constructed once and never
       updated. This is mainly useful for vacuum simulations in which
-      all particles see each other.
+      all particles see each other. But vacuum simulations are
+      (temporarily) not supported.
 
    .. mdp-value:: <0
 
@@ -533,7 +513,7 @@ Neighbor searching
 
    (0.005) [kJ mol\ :sup:`-1` ps\ :sup:`-1`]
 
-   Useful only with the :mdp-value:`cutoff-scheme=Verlet` :mdp:`cutoff-scheme`. This sets
+   Used when performing a simulation with dynamics. This sets
    the maximum allowed error for pair interactions per particle caused
    by the Verlet buffer, which indirectly sets :mdp:`rlist`. As both
    :mdp:`nstlist` and the Verlet buffer size are fixed (for
@@ -624,42 +604,9 @@ Electrostatics
       :mdp:`epsilon-rf`. The dielectric constant can be set to
       infinity by setting :mdp:`epsilon-rf` =0.
 
-   .. mdp-value:: Reaction-Field-zero
-
-      In |Gromacs|, normal reaction-field electrostatics with
-      :mdp-value:`cutoff-scheme=group` leads to bad energy
-      conservation. :mdp-value:`coulombtype=Reaction-Field-zero` solves this by making
-      the potential zero beyond the cut-off. It can only be used with
-      an infinite dielectric constant (:mdp:`epsilon-rf` =0), because
-      only for that value the force vanishes at the
-      cut-off. :mdp:`rlist` should be 0.1 to 0.3 nm larger than
-      :mdp:`rcoulomb` to accommodate the size of charge groups
-      and diffusion between neighbor list updates. This, and the fact
-      that table lookups are used instead of analytical functions make
-      reaction-field-zero computationally more expensive than
-      normal reaction-field.
-
-   .. mdp-value:: Shift
-
-      Analogous to :mdp-value:`vdwtype=Shift` for :mdp:`vdwtype`. You
-      might want to use :mdp-value:`coulombtype=Reaction-Field-zero` instead, which has
-      a similar potential shape, but has a physical interpretation and
-      has better energies due to the exclusion correction terms.
-
-   .. mdp-value:: Encad-Shift
-
-      The Coulomb potential is decreased over the whole range, using
-      the definition from the Encad simulation package.
-
-   .. mdp-value:: Switch
-
-      Analogous to :mdp-value:`vdwtype=Switch` for
-      :mdp:`vdwtype`. Switching the Coulomb potential can lead to
-      serious artifacts, advice: use :mdp-value:`coulombtype=Reaction-Field-zero`
-      instead.
-
    .. mdp-value:: User
 
+      Currently unsupported.
       :ref:`gmx mdrun` will now expect to find a file ``table.xvg``
       with user-defined potential functions for repulsion, dispersion
       and Coulomb. When pair interactions are present, :ref:`gmx
@@ -683,14 +630,14 @@ Electrostatics
 
    .. mdp-value:: PME-Switch
 
+      Currently unsupported.
       A combination of PME and a switch function for the direct-space
       part (see above). :mdp:`rcoulomb` is allowed to be smaller than
-      :mdp:`rlist`. This is mainly useful constant energy simulations
-      (note that using PME with :mdp-value:`cutoff-scheme=Verlet`
-      will be more efficient).
+      :mdp:`rlist`.
 
    .. mdp-value:: PME-User
 
+      Currently unsupported.
       A combination of PME and user tables (see
       above). :mdp:`rcoulomb` is allowed to be smaller than
       :mdp:`rlist`. The PME mesh contribution is subtracted from the
@@ -699,6 +646,7 @@ Electrostatics
 
    .. mdp-value:: PME-User-Switch
 
+      Currently unsupported.
       A combination of PME-User and a switching function (see
       above). The switching function is applied to final
       particle-particle interaction, *i.e.* both to the user supplied
@@ -770,10 +718,7 @@ Van der Waals
       :mdp-value:`vdwtype=Cut-off` with :mdp-value:`vdw-modifier=Force-switch`.
       The LJ (not Buckingham) potential is decreased over the whole range and
       the forces decay smoothly to zero between :mdp:`rvdw-switch` and
-      :mdp:`rvdw`. The neighbor search cut-off :mdp:`rlist` should
-      be 0.1 to 0.3 nm larger than :mdp:`rvdw` to accommodate the
-      size of charge groups and diffusion between neighbor list
-      updates.
+      :mdp:`rvdw`.
 
    .. mdp-value:: Switch
 
@@ -784,18 +729,11 @@ Van der Waals
       potential and force functions are continuously smooth, but be
       aware that all switch functions will give rise to a bulge
       (increase) in the force (since we are switching the
-      potential). The neighbor search cut-off :mdp:`rlist` should be
-      0.1 to 0.3 nm larger than :mdp:`rvdw` to accommodate the
-      size of charge groups and diffusion between neighbor list
-      updates.
-
-   .. mdp-value:: Encad-Shift
-
-      The LJ (not Buckingham) potential is decreased over the whole
-      range, using the definition from the Encad simulation package.
+      potential).
 
    .. mdp-value:: User
 
+      Currently unsupported.
       See user for :mdp:`coulombtype`. The function value at zero is
       not important. When you want to use LJ correction, make sure
       that :mdp:`rvdw` corresponds to the cut-off in the user-defined
@@ -866,17 +804,15 @@ Tables
 
    (1) [nm]
    Extension of the non-bonded potential lookup tables beyond the
-   largest cut-off distance. The value should be large enough to
-   account for charge group sizes and the diffusion between
-   neighbor-list updates. Without user defined potential the same
-   table length is used for the lookup tables for the 1-4
-   interactions, which are always tabulated irrespective of the use of
-   tables for the non-bonded interactions. The value of
-   :mdp:`table-extension` in no way affects the values of
-   :mdp:`rlist`, :mdp:`rcoulomb`, or :mdp:`rvdw`.
+   largest cut-off distance. With actual non-bonded interactions
+   the tables are never accessed beyond the cut-off. But a longer
+   table length might be needed for the 1-4 interactions, which
+   are always tabulated irrespective of the use of tables for
+   the non-bonded interactions.
 
 .. mdp:: energygrp-table
 
+   Currently unsupported.
    When user tables are used for electrostatics and/or VdW, here one
    can give pairs of energy groups for which seperate user tables
    should be used. The two energy groups will be appended to the table
@@ -1384,10 +1320,11 @@ Bonds
       SHAKE is slightly slower and less stable than LINCS, but does
       work with angle constraints. The relative tolerance is set with
       :mdp:`shake-tol`, 0.0001 is a good value for "normal" MD. SHAKE
-      does not support constraints between atoms on different nodes,
-      thus it can not be used with domain decompositon when inter
-      charge-group constraints are present. SHAKE can not be used with
-      energy minimization.
+      does not support constraints between atoms on different
+      decomposition domains, so it can only be used with domain
+      decomposition when so-called update-groups are used, which is
+      usally the case when only bonds involving hydrogens are
+      constrained. SHAKE can not be used with energy minimization.
 
 .. mdp:: continuation
 
