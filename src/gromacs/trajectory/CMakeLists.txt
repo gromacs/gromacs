@@ -36,3 +36,8 @@ gmx_add_libgromacs_sources(
     energyframe.cpp
     trajectoryframe.cpp
     )
+
+if(GMX_INSTALL_LEGACY_API)
+  install(FILES trajectoryframe.h
+          DESTINATION include/gromacs/trajectory)
+endif()

@@ -181,6 +181,8 @@ gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 
 option(GMX_USE_OPENCL "Enable OpenCL acceleration" OFF)
 
+option(GMX_INSTALL_LEGACY_API "Install legacy headers" OFF)
+
 # The earliest version of the CUDA toolkit that supports c++14 is 9.0
 set(REQUIRED_CUDA_VERSION 9.0)
 set(REQUIRED_CUDA_COMPUTE_CAPABILITY 3.0)

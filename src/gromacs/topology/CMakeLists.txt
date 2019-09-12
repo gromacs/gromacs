@@ -38,3 +38,15 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TOPOLOGY_SOURCES} PARENT_SCOPE)
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()
+
+if(GMX_INSTALL_LEGACY_API)
+  install(FILES
+          atoms.h
+          block.h
+          forcefieldparameters.h
+          idef.h
+          ifunc.h
+          symtab.h
+          topology.h
+          DESTINATION include/gromacs/topology)
+endif()

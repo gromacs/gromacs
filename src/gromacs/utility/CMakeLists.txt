@@ -46,6 +46,17 @@ install(FILES
         real.h
         DESTINATION include/gromacs/utility)
 
+if(GMX_INSTALL_LEGACY_API)
+  install(FILES
+          arrayref.h
+          baseversion.h
+          enumerationhelpers.h
+          programcontext.h
+          smalloc.h
+          unique_cptr.h
+          DESTINATION include/gromacs/utility)
+endif()
+
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

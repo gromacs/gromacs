@@ -46,6 +46,15 @@ if(GMX_USE_PLUGINS)
     set(libgromacs_object_library_dependencies ${libgromacs_object_library_dependencies} PARENT_SCOPE)
 endif()
 
+if(GMX_INSTALL_LEGACY_API)
+  install(FILES
+          oenv.h
+          pdbio.h
+          tpxio.h
+          trxio.h
+          DESTINATION include/gromacs/fileio)
+endif()
+
 if (BUILD_TESTING)
      add_subdirectory(tests)
 endif()

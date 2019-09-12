@@ -137,6 +137,11 @@ endif()
 list(APPEND libgromacs_object_library_dependencies thread_mpi)
 
 configure_file(version.h.cmakein version.h)
+if(GMX_INSTALL_LEGACY_API)
+  install(FILES
+          ${CMAKE_CURRENT_BINARY_DIR}/version.h
+          DESTINATION include/gromacs)
+endif()
 
 # This code is here instead of utility/CMakeLists.txt, because CMake
 # custom commands and source file properties can only be set in the directory
