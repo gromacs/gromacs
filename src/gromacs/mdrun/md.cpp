@@ -117,6 +117,7 @@
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/modularsimulator/energyelement.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -358,44 +359,8 @@ void gmx::LegacySimulator::do_md()
 
     if (MASTER(cr))
     {
-        if (startingBehavior != StartingBehavior::NewSimulation)
-        {
-            /* Restore from energy history if appending to output files */
-            if (startingBehavior == StartingBehavior::RestartWithAppending)
-            {
-                /* If no history is available (because a checkpoint is from before
-                 * it was written) make a new one later, otherwise restore it.
-                 */
-                if (observablesHistory->energyHistory)
-                {
-                    energyOutput.restoreFromEnergyHistory(*observablesHistory->energyHistory);
-                }
-            }
-            else if (observablesHistory->energyHistory)
-            {
-                /* We might have read an energy history from checkpoint.
-                 * As we are not appending, we want to restart the statistics.
-                 * Free the allocated memory and reset the counts.
-                 */
-                observablesHistory->energyHistory = {};
-                /* We might have read a pull history from checkpoint.
-                 * We will still want to keep the statistics, so that the files
-                 * can be joined and still be meaningful.
-                 * This means that observablesHistory->pullHistory
-                 * should not be reset.
-                 */
-            }
-        }
-        if (!observablesHistory->energyHistory)
-        {
-            observablesHistory->energyHistory = std::make_unique<energyhistory_t>();
-        }
-        if (!observablesHistory->pullHistory)
-        {
-            observablesHistory->pullHistory = std::make_unique<PullHistory>();
-        }
-        /* Set the initial energy history */
-        energyOutput.fillEnergyHistory(observablesHistory->energyHistory.get());
+        EnergyElement::initializeEnergyHistory(
+                startingBehavior, observablesHistory, &energyOutput);
     }
 
     preparePrevStepPullCom(ir, pull_work, mdatoms, state, state_global, cr,

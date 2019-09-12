@@ -73,7 +73,8 @@ NeighborSearchSignaller::NeighborSearchSignaller(
 
 void NeighborSearchSignaller::signal(Step step, Time time)
 {
-    if (do_per_step(step, nstlist_))
+    // Neighbor search happens at regular intervals, and always on first step of simulation
+    if (do_per_step(step, nstlist_) || step == initStep_)
     {
         runAllCallbacks(callbacks_, step, time);
     }

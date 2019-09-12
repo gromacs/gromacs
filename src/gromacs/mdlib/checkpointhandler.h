@@ -118,6 +118,8 @@ class CheckpointHandler final
          *     step, or
          *   * the current step is the last step and a the simulation is writing
          *     configurations.
+         *
+         * \todo Change these bools to enums to make calls more self-explanatory
          */
         void decideIfCheckpointingThisStep(bool bNS, bool bFirstStep, bool bLastStep)
         {

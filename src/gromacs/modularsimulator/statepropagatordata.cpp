@@ -110,6 +110,7 @@ StatePropagatorData::StatePropagatorData(
         copy_mat(globalState->box, box_);
         stateHasVelocities = static_cast<unsigned int>(globalState->flags) & (1u << estV);
         previousX_.resizeWithPadding(localNAtoms_);
+        ddpCount_ = globalState->ddp_count;
         copyPosition();
     }
 
@@ -138,11 +139,10 @@ StatePropagatorData::StatePropagatorData(
                 }
             }
         }
-    }
-
-    if (inputrec->eI == eiVV)
-    {
-        vvResetVelocities_ = true;
+        if (inputrec->eI == eiVV)
+        {
+            vvResetVelocities_ = true;
+        }
     }
 }
 
@@ -392,6 +392,15 @@ void StatePropagatorData::elementSetup()
 void StatePropagatorData::resetVelocities()
 {
     v_ = velocityBackup_;
+}
+
+void StatePropagatorData::writeCheckpoint(t_state *localState, t_state gmx_unused *globalState)
+{
+    state_change_natoms(localState, localNAtoms_);
+    localState->x = x_;
+    localState->v = v_;
+    copy_mat(box_, localState->box);
+    localState->ddp_count = ddpCount_;
 }
 
 }  // namespace gmx

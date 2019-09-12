@@ -117,7 +117,8 @@ class ComputeGlobalsElement final :
             gmx_wallcycle       *wcycle,
             t_forcerec          *fr,
             const gmx_mtop_t    *global_top,
-            Constraints         *constr);
+            Constraints         *constr,
+            bool                 hasReadEkinState);
 
         //! Destructor
         ~ComputeGlobalsElement() override;
@@ -173,6 +174,8 @@ class ComputeGlobalsElement final :
         const Step                           initStep_;
         //! A dummy signaller (used for setup and VV)
         std::unique_ptr<SimulationSignaller> nullSignaller_;
+        //! Whether we read kinetic energy from checkpoint
+        const bool                           hasReadEkinState_;
 
         /*! \brief Check that DD doesn't miss bonded interactions
          *
@@ -200,9 +203,6 @@ class ComputeGlobalsElement final :
          * which is not yet implemented. So for now, we're leaving this here.
          */
         void needToCheckNumberOfBondedInteractions();
-
-        //! Whether we need to sum ekinh_old at a later run
-        bool needToSumEkinhOld_;
 
         //! Global reduction struct
         gmx_global_stat *gstat_;

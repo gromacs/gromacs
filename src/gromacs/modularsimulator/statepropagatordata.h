@@ -100,7 +100,8 @@ enum class ConstraintVariable;
 class StatePropagatorData final :
     public                ISimulatorElement,
     public                ITrajectoryWriterClient,
-    public                ITrajectorySignallerClient
+    public                ITrajectorySignallerClient,
+    public                ICheckpointHelperClient
 {
     public:
         //! Constructor
@@ -180,7 +181,6 @@ class StatePropagatorData final :
         // (doxygen doesn't like these)
         // Classes which need access to legacy state
         friend class DomDecHelper;
-        friend class PmeLoadBalanceHelper;
         //! @endcond
 
     private:
@@ -241,6 +241,9 @@ class StatePropagatorData final :
         //! ITrajectoryWriterClient implementation
         ITrajectoryWriterCallbackPtr
         registerTrajectoryWriterCallback(TrajectoryEvent event) override;
+
+        //! ICheckpointHelperClient implementation
+        void writeCheckpoint(t_state *localState, t_state *globalState) override;
 
         //! Callback writing the state to file
         void write(gmx_mdoutf *outf, Step step, Time time);

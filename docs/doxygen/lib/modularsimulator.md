@@ -497,3 +497,30 @@ The elements do not implement the ISimulatorElement interface, as
 the Simulator is calling them explicitly between task queue population
 steps. This allows elements to receive the new topology / state before
 deciding what functionality they need to run.
+
+### `Checkpointing`
+The `CheckpointHelper` is responsible to write checkpoints. In the
+longer term, it will also be responsible to read checkpoints, but this
+is not yet implemented.
+
+Writing checkpoints is done just before neighbor-searching (NS) steps,
+or before the last step. Checkpointing occurs periodically (by default,
+every 15 minutes), and needs two NS steps to take effect - on the first
+NS step, the checkpoint helper on master rank signals to all other ranks
+that checkpointing is about to occur. At the next NS step, the checkpoint
+is written. On the last step, checkpointing happens immediately before the
+step (no signalling). To be able to react to last step being signalled,
+the CheckpointHelper does also implement the `ISimulatorElement` interface,
+but does only register a function if the last step has been called.
+
+Checkpointing happens at the top of a simulation step, which gives a
+straightforward re-entry point at the top of the simulator loop.
+
+In the current implementation, the clients of CheckpointHelper fill a
+legacy t_state object (passed via pointer) with whatever data they need
+to store. The CheckpointHelper then writes the t_state object to file.
+This is an intermediate state of the code, as the long-term plan is for
+modules to read and write from a checkpoint file directly, without the
+need for a central object. The current implementation allows, however,
+to define clearly which modules take part in checkpointing, while using
+the current infrastructure for reading and writing to checkpoint.

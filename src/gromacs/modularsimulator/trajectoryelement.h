@@ -140,6 +140,12 @@ class TrajectoryElement final :
          */
         void elementTeardown() override;
 
+        //! @cond
+        // (doxygen doesn't like these...)
+        //! Allow CheckpointHelper to use outf_ (TODO: Can we improve this?)
+        friend class CheckpointHelper;
+        //! @endcond
+
     private:
         //! Constructor
         TrajectoryElement(

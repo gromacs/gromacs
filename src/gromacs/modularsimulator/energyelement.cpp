@@ -49,10 +49,15 @@
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/stat.h"
+#include "gromacs/mdlib/update.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/mdtypes/pullhistory.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/topology/topology.h"
-#include "gromacs/utility/fatalerror.h"
 
 #include "statepropagatordata.h"
 
@@ -74,7 +79,9 @@ EnergyElement::EnergyElement(
         FILE                    *fplog,
         t_fcdata                *fcd,
         const MdModulesNotifier &mdModulesNotifier,
-        bool                     isMaster) :
+        bool                     isMaster,
+        ObservablesHistory      *observablesHistory,
+        StartingBehavior         startingBehavior) :
     isMaster_(isMaster),
     energyWritingStep_(-1),
     energyCalculationStep_(-1),
@@ -86,6 +93,8 @@ EnergyElement::EnergyElement(
     totalVirialStep_(-1),
     pressureStep_(-1),
 #endif
+    needToSumEkinhOld_(false),
+    startingBehavior_(startingBehavior),
     statePropagatorData_(statePropagatorData),
     inputrec_(inputrec),
     top_global_(globalTopology),
@@ -96,15 +105,14 @@ EnergyElement::EnergyElement(
     fplog_(fplog),
     fcd_(fcd),
     mdModulesNotifier_(mdModulesNotifier),
-    groups_(&globalTopology->groups)
+    groups_(&globalTopology->groups),
+    observablesHistory_(observablesHistory)
 {
     clear_mat(forceVirial_);
     clear_mat(shakeVirial_);
     clear_mat(totalVirial_);
     clear_mat(pressure_);
     clear_rvec(muTot_);
-
-    // TODO: If energy history is re-introduced, it should probably be initialized here.
 }
 
 void EnergyElement::scheduleTask(
@@ -153,6 +161,9 @@ void EnergyElement::trajectoryWriterSetup(gmx_mdoutf *outf)
     {
         return;
     }
+
+    initializeEnergyHistory(
+            startingBehavior_, observablesHistory_, energyOutput_.get());
 
     // TODO: This probably doesn't really belong here...
     //       but we have all we need in this element,
@@ -323,6 +334,73 @@ gmx_enerdata_t* EnergyElement::enerdata()
 gmx_ekindata_t* EnergyElement::ekindata()
 {
     return ekind_;
+}
+
+bool* EnergyElement::needToSumEkinhOld()
+{
+    return &needToSumEkinhOld_;
+}
+
+void EnergyElement::writeCheckpoint(t_state gmx_unused *localState, t_state *globalState)
+{
+    if (isMaster_)
+    {
+        if (needToSumEkinhOld_)
+        {
+            globalState->ekinstate.bUpToDate = false;
+        }
+        else
+        {
+            update_ekinstate(&globalState->ekinstate, ekind_);
+            globalState->ekinstate.bUpToDate = true;
+        }
+        energyOutput_->fillEnergyHistory(observablesHistory_->energyHistory.get());
+    }
+}
+
+void EnergyElement::initializeEnergyHistory(
+        StartingBehavior    startingBehavior,
+        ObservablesHistory *observablesHistory,
+        EnergyOutput       *energyOutput)
+{
+    if (startingBehavior != StartingBehavior::NewSimulation)
+    {
+        /* Restore from energy history if appending to output files */
+        if (startingBehavior == StartingBehavior::RestartWithAppending)
+        {
+            /* If no history is available (because a checkpoint is from before
+             * it was written) make a new one later, otherwise restore it.
+             */
+            if (observablesHistory->energyHistory)
+            {
+                energyOutput->restoreFromEnergyHistory(*observablesHistory->energyHistory);
+            }
+        }
+        else if (observablesHistory->energyHistory)
+        {
+            /* We might have read an energy history from checkpoint.
+             * As we are not appending, we want to restart the statistics.
+             * Free the allocated memory and reset the counts.
+             */
+            observablesHistory->energyHistory = {};
+            /* We might have read a pull history from checkpoint.
+             * We will still want to keep the statistics, so that the files
+             * can be joined and still be meaningful.
+             * This means that observablesHistory_->pullHistory
+             * should not be reset.
+             */
+        }
+    }
+    if (!observablesHistory->energyHistory)
+    {
+        observablesHistory->energyHistory = std::make_unique<energyhistory_t>();
+    }
+    if (!observablesHistory->pullHistory)
+    {
+        observablesHistory->pullHistory = std::make_unique<PullHistory>();
+    }
+    /* Set the initial energy history */
+    energyOutput->fillEnergyHistory(observablesHistory->energyHistory.get());
 }
 
 } // namespace gmx

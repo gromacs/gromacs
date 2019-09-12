@@ -61,6 +61,7 @@
 
 struct gmx_localtop_t;
 struct gmx_mdoutf;
+class t_state;
 
 namespace gmx
 {
@@ -327,7 +328,7 @@ class ITopologyHolderClient
     public:
         //! @cond
         // (doxygen doesn't like these...)
-        //! Allow Topology to set new topology
+        //! Allow TopologyHolder to set new topology
         friend class TopologyHolder;
         //! @endcond
         //! Standard virtual destructor
@@ -338,6 +339,32 @@ class ITopologyHolderClient
         virtual void setTopology(const gmx_localtop_t*) = 0;
 };
 
+/*! \libinternal
+ * \brief Client that needs to store data during checkpointing
+ *
+ * The current checkpointing helper uses the legacy t_state object to collect
+ * the data to be checkpointed. Clients get queried for their contributions
+ * using pointers to t_state objects.
+ * \todo Add checkpoint reading
+ * \todo Evolve this to a model in which the checkpoint helper passes a file
+ *       pointer rather than a t_state object, and the clients are responsible
+ *       to read / write.
+ */
+class ICheckpointHelperClient
+{
+    public:
+        //! @cond
+        // (doxygen doesn't like these...)
+        //! Allow CheckpointHelper to interact
+        friend class CheckpointHelper;
+        //! @endcond
+        //! Standard virtual destructor
+        virtual ~ICheckpointHelperClient() = default;
+
+    protected:
+        //! Write checkpoint
+        virtual void writeCheckpoint(t_state* localState, t_state* globalState) = 0;
+};
 //! /}
 }      // namespace gmx
 

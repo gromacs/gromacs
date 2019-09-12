@@ -70,7 +70,8 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(
         gmx_wallcycle       *wcycle,
         t_forcerec          *fr,
         const gmx_mtop_t    *global_top,
-        Constraints         *constr) :
+        Constraints         *constr,
+        bool                 hasReadEkinState) :
     energyReductionStep_(-1),
     virialReductionStep_(-1),
     doStopCM_(inputrec->comm_mode != ecmNO),
@@ -78,9 +79,9 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(
     nstglobalcomm_(nstglobalcomm),
     initStep_(inputrec->init_step),
     nullSignaller_(std::make_unique<SimulationSignaller>(nullptr, nullptr, nullptr, false, false)),
+    hasReadEkinState_(hasReadEkinState),
     totalNumberOfBondedInteractions_(0),
     shouldCheckNumberOfBondedInteractions_(false),
-    needToSumEkinhOld_(false),
     statePropagatorData_(statePropagatorData),
     energyElement_(energyElement),
     localTopology_(nullptr),
@@ -116,23 +117,23 @@ void ComputeGlobalsElement<algorithm>::elementSetup()
     if (algorithm == ComputeGlobalsAlgorithm::LeapFrog ||
         algorithm == ComputeGlobalsAlgorithm::VelocityVerletAtFullTimeStep)
     {
-        // TODO: When reintroducing checkpointing:
-        //      * add CGLO_READEKIN if we read ekin
-        //      * don't remove com motion if we read from checkpoint
         unsigned int        cglo_flags =
             (CGLO_TEMPERATURE | CGLO_GSTAT
-             | (shouldCheckNumberOfBondedInteractions_ ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
+             | (shouldCheckNumberOfBondedInteractions_ ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
+             | (hasReadEkinState_ ? CGLO_READEKIN : 0));
 
         if (algorithm == ComputeGlobalsAlgorithm::VelocityVerletAtFullTimeStep)
         {
             cglo_flags |= CGLO_PRESSURE | CGLO_CONSTRAINT;
         }
 
+        const bool stopCM = doStopCM_ && !inputrec_->bContinuation;
+
         // To minimize communication, compute_globals computes the COM velocity
         // and the kinetic energy for the velocities without COM motion removed.
         // Thus to get the kinetic energy without the COM contribution, we need
         // to call compute_globals twice.
-        for (int cgloIteration = 0; cgloIteration < (doStopCM_ ? 2 : 1); cgloIteration++)
+        for (int cgloIteration = 0; cgloIteration < (stopCM ? 2 : 1); cgloIteration++)
         {
             unsigned int cglo_flags_iteration = cglo_flags;
             if (doStopCM_ && cgloIteration == 0)
@@ -300,7 +301,7 @@ void ComputeGlobalsElement<algorithm>::compute(
                     energyElement_->pressure(step),
                     energyElement_->muTot(),
                     constr_, signaller, lastbox,
-                    &totalNumberOfBondedInteractions_, &needToSumEkinhOld_, flags);
+                    &totalNumberOfBondedInteractions_, energyElement_->needToSumEkinhOld(), flags);
     checkNumberOfBondedInteractions(mdlog_, cr_, totalNumberOfBondedInteractions_,
                                     top_global_, localTopology_, x, box,
                                     &shouldCheckNumberOfBondedInteractions_);

@@ -49,12 +49,14 @@
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_mtop_t;
+struct ObservablesHistory;
 struct t_fcdata;
 struct t_inputrec;
 struct SimulationGroups;
 
 namespace gmx
 {
+enum class StartingBehavior;
 class Constraints;
 class EnergyOutput;
 class MDAtoms;
@@ -89,22 +91,25 @@ class EnergyElement final :
     public          ITrajectoryWriterClient,
     public          ITrajectorySignallerClient,
     public          IEnergySignallerClient,
-    public          ILoggingSignallerClient
+    public          ILoggingSignallerClient,
+    public          ICheckpointHelperClient
 {
     public:
         //! Constructor
         EnergyElement(
-            StatePropagatorData *statePropagatorData,
-            const gmx_mtop_t  *globalTopology,
-            const t_inputrec  *inputrec,
-            const MDAtoms     *mdAtoms,
-            gmx_enerdata_t    *enerd,
-            gmx_ekindata_t    *ekind,
-            const Constraints *constr,
-            FILE              *fplog,
-            t_fcdata          *fcd,
+            StatePropagatorData     *statePropagatorData,
+            const gmx_mtop_t        *globalTopology,
+            const t_inputrec        *inputrec,
+            const MDAtoms           *mdAtoms,
+            gmx_enerdata_t          *enerd,
+            gmx_ekindata_t          *ekind,
+            const Constraints       *constr,
+            FILE                    *fplog,
+            t_fcdata                *fcd,
             const MdModulesNotifier &mdModulesNotifier,
-            bool               isMaster);
+            bool                     isMaster,
+            ObservablesHistory      *observablesHistory,
+            StartingBehavior         startingBehavior);
 
         /*! \brief Register run function for step / time
          *
@@ -189,6 +194,21 @@ class EnergyElement final :
          */
         gmx_ekindata_t* ekindata();
 
+        /*! \brief Get pointer to needToSumEkinhOld
+         *
+         */
+        bool* needToSumEkinhOld();
+
+        /*! \brief Initialize energy history
+         *
+         * Kept as a static function to allow usage from legacy code
+         * \todo Make member function once legacy use is not needed anymore
+         */
+        static void initializeEnergyHistory(
+            StartingBehavior    startingBehavior,
+            ObservablesHistory *observablesHistory,
+            EnergyOutput       *energyOutput);
+
     private:
         /*! \brief Setup (needs file pointer)
          *
@@ -232,6 +252,9 @@ class EnergyElement final :
             gmx_mdoutf *outf,
             Step step, Time time);
 
+        //! ICheckpointHelperClient implementation
+        void writeCheckpoint(t_state *localState, t_state *globalState) override;
+
         /*
          * Data owned by EnergyElement
          */
@@ -271,6 +294,12 @@ class EnergyElement final :
         Step pressureStep_;
 #endif
 
+        //! Whether ekinh_old needs to be summed up (set by compute globals)
+        bool needToSumEkinhOld_;
+
+        //! Describes how the simulation (re)starts
+        const StartingBehavior startingBehavior_;
+
         /*
          * Pointers to Simulator data
          */
@@ -296,6 +325,8 @@ class EnergyElement final :
         const MdModulesNotifier &mdModulesNotifier_;
         //! Global topology groups
         const SimulationGroups  *groups_;
+        //! History of simulation observables.
+        ObservablesHistory      *observablesHistory_;
 };
 
 //! /}

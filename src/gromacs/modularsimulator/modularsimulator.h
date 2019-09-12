@@ -47,6 +47,7 @@
 #include "gromacs/mdlib/resethandler.h"
 #include "gromacs/mdrun/isimulator.h"
 
+#include "checkpointhelper.h"
 #include "domdechelper.h"
 #include "modularsimulatorinterfaces.h"
 #include "pmeloadbalancehelper.h"
@@ -142,7 +143,8 @@ class ModularSimulator final :
             TrajectoryElementBuilder                  *trajectoryElementBuilder,
             CheckBondedInteractionsCallbackPtr        *checkBondedInteractionsCallback,
             compat::not_null<StatePropagatorData*>     statePropagatorDataPtr,
-            compat::not_null<EnergyElement*>           energyElementPtr);
+            compat::not_null<EnergyElement*>           energyElementPtr,
+            bool                                       hasReadEkinState);
 
         //! Build the force element - can be normal forces or shell / flex constraints
         std::unique_ptr<ISimulatorElement> buildForces(
@@ -228,6 +230,8 @@ class ModularSimulator final :
         std::unique_ptr<DomDecHelper>         domDecHelper_;
         //! The PME load balancing element
         std::unique_ptr<PmeLoadBalanceHelper> pmeLoadBalanceHelper_;
+        //! The checkpoint helper
+        std::unique_ptr<CheckpointHelper>     checkpointHelper_;
         //! The stop handler
         std::unique_ptr<StopHandler>          stopHandler_;
         //! The reset handler

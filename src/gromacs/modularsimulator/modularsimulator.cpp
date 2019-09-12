@@ -47,7 +47,9 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_load_balancing.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/mdlib/checkpointhandler.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/mdatoms.h"
@@ -282,6 +284,11 @@ void ModularSimulator::populateTaskQueue()
         signaller->signal(step_, time);
     }
 
+    if (checkpointHelper_)
+    {
+        checkpointHelper_->run(step_, time);
+    }
+
     if (pmeLoadBalanceHelper_)
     {
         pmeLoadBalanceHelper_->run(step_, time);
@@ -324,6 +331,33 @@ void ModularSimulator::populateTaskQueue()
 
 void ModularSimulator::constructElementsAndSignallers()
 {
+    /* When restarting from a checkpoint, it can be appropriate to
+     * initialize ekind from quantities in the checkpoint. Otherwise,
+     * compute_globals must initialize ekind before the simulation
+     * starts/restarts. However, only the master rank knows what was
+     * found in the checkpoint file, so we have to communicate in
+     * order to coordinate the restart.
+     *
+     * TODO (modular) This should become obsolete when checkpoint reading
+     *      happens within the modular simulator framework: The energy
+     *      element should read its data from the checkpoint file pointer,
+     *      and signal to the compute globals element if it needs anything
+     *      reduced.
+     *
+     * TODO (legacy) Consider removing this communication if/when checkpoint
+     *      reading directly follows .tpr reading, because all ranks can
+     *      agree on hasReadEkinState at that time.
+     */
+    bool hasReadEkinState = MASTER(cr) ? state_global->ekinstate.hasReadEkinState : false;
+    if (PAR(cr))
+    {
+        gmx_bcast(sizeof(hasReadEkinState), &hasReadEkinState, cr);
+    }
+    if (hasReadEkinState)
+    {
+        restore_ekinstate_from_state(cr, ekind, &state_global->ekinstate);
+    }
+
     /*
      * Build data structures
      */
@@ -336,7 +370,7 @@ void ModularSimulator::constructElementsAndSignallers()
 
     auto energyElement = std::make_unique<EnergyElement>(
                 statePropagatorDataPtr, top_global, inputrec, mdAtoms, enerd, ekind,
-                constr, fplog, fcd, mdModulesNotifier, MASTER(cr));
+                constr, fplog, fcd, mdModulesNotifier, MASTER(cr), observablesHistory, startingBehavior);
     auto energyElementPtr = compat::make_not_null(energyElement.get());
 
     topologyHolder_ = std::make_unique<TopologyHolder>(
@@ -390,7 +424,8 @@ void ModularSimulator::constructElementsAndSignallers()
                 &trajectoryElementBuilder,
                 &checkBondedInteractionsCallback,
                 statePropagatorDataPtr,
-                energyElementPtr);
+                energyElementPtr,
+                hasReadEkinState);
 
     /*
      * Build infrastructure elements
@@ -438,6 +473,23 @@ void ModularSimulator::constructElementsAndSignallers()
     auto trajectoryElement = trajectoryElementBuilder.build(
                 fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier,
                 inputrec, top_global, oenv, wcycle, startingBehavior);
+
+    // Add checkpoint helper here since we need a pointer to the trajectory element and
+    // need to register it with the lastStepSignallerBuilder
+    auto checkpointHandler = std::make_unique<CheckpointHandler>(
+                compat::make_not_null<SimulationSignal*>(&signals_[eglsCHKPT]),
+                simulationsShareState, inputrec->nstlist == 0, MASTER(cr),
+                mdrunOptions.writeConfout, mdrunOptions.checkpointOptions.period);
+    std::vector<ICheckpointHelperClient*> checkpointClients = {statePropagatorDataPtr, energyElementPtr};
+    checkpointHelper_ = std::make_unique<CheckpointHelper>(
+                std::move(checkpointClients),
+                std::move(checkpointHandler),
+                inputrec->init_step, trajectoryElement.get(),
+                state_global->natoms, fplog, cr,
+                observablesHistory, walltime_accounting, state_global,
+                mdrunOptions.writeConfout);
+    lastStepSignallerBuilder.registerSignallerClient(compat::make_not_null(checkpointHelper_.get()));
+
     lastStepSignallerBuilder.registerSignallerClient(compat::make_not_null(trajectoryElement.get()));
     auto loggingSignaller = loggingSignallerBuilder.build(
                 inputrec->nstlog,
@@ -464,9 +516,12 @@ void ModularSimulator::constructElementsAndSignallers()
      * Build the element list
      *
      * This is the actual sequence of (non-infrastructure) elements to be run.
-     * For NVE, only the trajectory element is used outside of the integrator
-     * (composite) element.
+     * For NVE, the trajectory element is used outside of the integrator
+     * (composite) element, as well as the checkpoint helper. The checkpoint
+     * helper should be on top of the loop, and is only part of the simulator
+     * call list to be able to react to the last step being signalled.
      */
+    addToCallList(checkpointHelper_, elementCallList_);
     addToCallListAndMove(std::move(integrator), elementCallList_, elementsOwnershipList_);
     addToCallListAndMove(std::move(trajectoryElement), elementCallList_, elementsOwnershipList_);
     // for vv, we need to setup statePropagatorData after the compute
@@ -521,7 +576,8 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
         TrajectoryElementBuilder                  *trajectoryElementBuilder,
         CheckBondedInteractionsCallbackPtr        *checkBondedInteractionsCallback,
         compat::not_null<StatePropagatorData*>     statePropagatorDataPtr,
-        compat::not_null<EnergyElement*>           energyElementPtr)
+        compat::not_null<EnergyElement*>           energyElementPtr,
+        bool                                       hasReadEkinState)
 {
     auto forceElement = buildForces(
                 neighborSearchSignallerBuilder,
@@ -541,7 +597,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
             std::make_unique< ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog> >(
                     statePropagatorDataPtr, energyElementPtr, nstglobalcomm_, fplog, mdlog, cr,
                     inputrec, mdAtoms, nrnb, wcycle, fr,
-                    &topologyHolder_->globalTopology(), constr);
+                    &topologyHolder_->globalTopology(), constr, hasReadEkinState);
         topologyHolder_->registerClient(computeGlobalsElement.get());
         energySignallerBuilder->registerSignallerClient(compat::make_not_null(computeGlobalsElement.get()));
         trajectoryElementBuilder->registerSignallerClient(compat::make_not_null(computeGlobalsElement.get()));
@@ -576,7 +632,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
             std::make_unique< ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerletAtFullTimeStep> >(
                     statePropagatorDataPtr, energyElementPtr, nstglobalcomm_, fplog, mdlog, cr,
                     inputrec, mdAtoms, nrnb, wcycle, fr,
-                    &topologyHolder_->globalTopology(), constr);
+                    &topologyHolder_->globalTopology(), constr, hasReadEkinState);
         topologyHolder_->registerClient(computeGlobalsElementAtFullTimeStep.get());
         energySignallerBuilder->registerSignallerClient(compat::make_not_null(computeGlobalsElementAtFullTimeStep.get()));
         trajectoryElementBuilder->registerSignallerClient(compat::make_not_null(computeGlobalsElementAtFullTimeStep.get()));
@@ -585,7 +641,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
             std::make_unique<ComputeGlobalsElement <ComputeGlobalsAlgorithm::VelocityVerletAfterCoordinateUpdate> >(
                     statePropagatorDataPtr, energyElementPtr, nstglobalcomm_, fplog, mdlog, cr,
                     inputrec, mdAtoms, nrnb, wcycle, fr,
-                    &topologyHolder_->globalTopology(), constr);
+                    &topologyHolder_->globalTopology(), constr, hasReadEkinState);
         topologyHolder_->registerClient(computeGlobalsElementAfterCoordinateUpdate.get());
         energySignallerBuilder->registerSignallerClient(compat::make_not_null(computeGlobalsElementAfterCoordinateUpdate.get()));
         trajectoryElementBuilder->registerSignallerClient(compat::make_not_null(computeGlobalsElementAfterCoordinateUpdate.get()));
@@ -646,9 +702,6 @@ void ModularSimulator::checkInputForDisabledFunctionality()
     GMX_RELEASE_ASSERT(
             !doRerun,
             "Rerun is not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            startingBehavior == StartingBehavior::NewSimulation,
-            "Checkpointing is not supported by the modular simulator.");
     GMX_RELEASE_ASSERT(
             inputrec->etc == etcNO,
             "Temperature coupling is not supported by the modular simulator.");
