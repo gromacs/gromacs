@@ -13,7 +13,11 @@ Group cut-off scheme
 The group cut-off scheme has been removed. Several kinds of simulation
 that depend on it no longer work.
 
-.. TODO list those (Mark has other work incoming that does so)
+   * Simulations under vacuum conditions are not supported.
+   * User supplied tables for short-range nonbonded interactions are not supported.
+   * Switched short-range nonbonded interactions with PME are not supported. 
+   * Membrane embedding is deactivated.
+   * QMMM is not supported.
 
 :issue:`1852`
 
