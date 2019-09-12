@@ -45,15 +45,17 @@
 namespace gmx
 {
 CompositeSimulatorElement::CompositeSimulatorElement(
+        std::vector< compat::not_null<ISimulatorElement*> >    elementCallList,
         std::vector< std::unique_ptr<gmx::ISimulatorElement> > elements) :
-    elements_(std::move(elements))
+    elementCallList_(std::move(elementCallList)),
+    elementOwnershipList_(std::move(elements))
 {}
 
 void CompositeSimulatorElement::scheduleTask(
         Step step, Time time,
         const RegisterRunFunctionPtr &registerRunFunction)
 {
-    for (auto &element : elements_)
+    for (auto &element : elementCallList_)
     {
         element->scheduleTask(step, time, registerRunFunction);
     }
@@ -61,7 +63,7 @@ void CompositeSimulatorElement::scheduleTask(
 
 void CompositeSimulatorElement::elementSetup()
 {
-    for (auto &element : elements_)
+    for (auto &element : elementOwnershipList_)
     {
         element->elementSetup();
     }
@@ -69,7 +71,7 @@ void CompositeSimulatorElement::elementSetup()
 
 void CompositeSimulatorElement::elementTeardown()
 {
-    for (auto &element : elements_)
+    for (auto &element : elementOwnershipList_)
     {
         element->elementTeardown();
     }

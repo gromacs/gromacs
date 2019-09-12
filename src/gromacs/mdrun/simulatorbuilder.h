@@ -43,6 +43,8 @@
 
 #include <memory>
 
+#include "gromacs/modularsimulator/modularsimulator.h"
+
 #include "legacysimulator.h"
 
 class energyhistory_t;
@@ -109,10 +111,22 @@ class SimulatorBuilder
 template<typename ... Args>
 std::unique_ptr<ISimulator> SimulatorBuilder::build(Args && ... args)
 {
-    // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
-    return std::unique_ptr<LegacySimulator>(
-            new LegacySimulator(
-                    std::forward<Args>(args) ...));
+    // The feature flag
+    const auto useModularSimulator = (getenv("GMX_USE_MODULAR_SIMULATOR") != nullptr);
+    if (!useModularSimulator)
+    {
+        // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
+        return std::unique_ptr<LegacySimulator>(
+                new LegacySimulator(
+                        std::forward<Args>(args) ...));
+    }
+    else
+    {
+        // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
+        return std::unique_ptr<ModularSimulator>(
+                new ModularSimulator(
+                        std::forward<Args>(args) ...));
+    }
 }
 
 }      // namespace gmx

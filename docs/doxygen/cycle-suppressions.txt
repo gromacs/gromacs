@@ -23,3 +23,6 @@ simd -> hardware
 gpu_utils -> hardware
 listed_forces -> mdlib
 utility -> math
+
+# modular simulator uses shellfc from mdrun, but is later included in mdrun by simulator builder
+modularsimulator -> mdrun

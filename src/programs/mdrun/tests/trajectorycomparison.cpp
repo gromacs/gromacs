@@ -248,7 +248,7 @@ const TrajectoryTolerances TrajectoryComparison::s_defaultTrajectoryTolerances {
     defaultRealTolerance(),                                                       // box
     relativeToleranceAsFloatingPoint(1.0, 1.0e-3),                                // positions
     defaultRealTolerance(),                                                       // velocities
-    relativeToleranceAsFloatingPoint(100.0, GMX_DOUBLE ? 1.0e-7 : 1.0e-5)         // forces
+    relativeToleranceAsFloatingPoint(100.0, GMX_DOUBLE ? 1.0e-7 : 5.0e-5)         // forces
 };
 
 

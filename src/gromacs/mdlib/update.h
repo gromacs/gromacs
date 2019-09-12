@@ -265,6 +265,9 @@ void rescale_velocities(const gmx_ekindata_t *ekind, const t_mdatoms *mdatoms,
                         int start, int end, rvec v[]);
 /* Rescale the velocities with the scaling factor in ekind */
 
+//! Check whether we do simulated annealing.
+bool doSimulatedAnnealing(const t_inputrec *ir);
+
 //! Initialize simulated annealing.
 bool initSimulatedAnnealing(t_inputrec  *ir,
                             gmx::Update *upd);
