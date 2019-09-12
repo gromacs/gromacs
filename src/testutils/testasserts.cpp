@@ -328,11 +328,23 @@ std::string FloatingPointTolerance::toString(const FloatingPointDifference &diff
 FloatingPointTolerance
 relativeToleranceAsFloatingPoint(double magnitude, double tolerance)
 {
-    const double absoluteTolerance = std::abs(magnitude) * tolerance;
-    return FloatingPointTolerance(static_cast<float>(absoluteTolerance), absoluteTolerance,
-                                  static_cast<float>(tolerance), tolerance,
-                                  UINT64_MAX, UINT64_MAX,
-                                  false);
+    return relativeToleranceAsPrecisionDependentFloatingPoint(
+            magnitude, float(tolerance), tolerance);
+}
+
+FloatingPointTolerance
+relativeToleranceAsPrecisionDependentFloatingPoint(double magnitude,
+                                                   float  singleTolerance,
+                                                   double doubleTolerance)
+{
+    const float  absoluteSingleTolerance = std::abs(float(magnitude)) * singleTolerance;
+    const double absoluteDoubleTolerance = std::abs(magnitude) * doubleTolerance;
+    return {
+               absoluteSingleTolerance, absoluteDoubleTolerance,
+               singleTolerance, doubleTolerance,
+               UINT64_MAX, UINT64_MAX,
+               false
+    };
 }
 //! \endcond
 

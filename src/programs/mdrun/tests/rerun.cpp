@@ -88,6 +88,19 @@ class MdrunRerunTest : public MdrunTestFixture,
                        public ::testing::WithParamInterface <
                        std::tuple < std::string, std::string>>
 {
+    public:
+        //! Trajectory components to compare
+        static const TrajectoryFrameMatchSettings trajectoryMatchSettings;
+};
+
+// Compare box, positions and forces, but not velocities
+// (velocities are ignored in reruns)
+const TrajectoryFrameMatchSettings MdrunRerunTest::trajectoryMatchSettings =
+{
+    true, true, true,
+    ComparisonConditions::MustCompare,
+    ComparisonConditions::NoComparison,
+    ComparisonConditions::MustCompare
 };
 
 TEST_P(MdrunRerunTest, WithinTolerances)
@@ -113,10 +126,15 @@ TEST_P(MdrunRerunTest, WithinTolerances)
          },
      }};
 
+    // Specify how trajectory frame matching must work
+    TrajectoryComparison trajectoryComparison {
+        trajectoryMatchSettings, TrajectoryComparison::s_defaultTrajectoryTolerances
+    };
+
     int numWarningsToTolerate = 0;
     executeRerunTest(&fileManager_, &runner_,
                      simulationName, numWarningsToTolerate, mdpFieldValues,
-                     energyTermsToCompare);
+                     energyTermsToCompare, trajectoryComparison);
 }
 
 // TODO The time for OpenCL kernel compilation means these tests time
@@ -172,12 +190,17 @@ TEST_P(MdrunRerunFreeEnergyTest, WithinTolerances)
          }
      }};
 
+    // Specify how trajectory frame matching must work
+    TrajectoryComparison trajectoryComparison {
+        MdrunRerunTest::trajectoryMatchSettings, TrajectoryComparison::s_defaultTrajectoryTolerances
+    };
+
     // The md integrator triggers a warning for nearly decoupled
     // states, which we need to suppress. TODO sometimes?
     int numWarningsToTolerate = (integrator == "md") ? 1 : 0;
     executeRerunTest(&fileManager_, &runner_,
                      simulationName, numWarningsToTolerate, mdpFieldValues,
-                     energyTermsToCompare);
+                     energyTermsToCompare, trajectoryComparison);
 }
 
 // TODO The time for OpenCL kernel compilation means these tests time

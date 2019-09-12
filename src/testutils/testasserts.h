@@ -424,6 +424,32 @@ FloatingPointTolerance
     relativeToleranceAsFloatingPoint(double magnitude, double tolerance);
 
 /*! \brief
+ * Creates a tolerance that allows a precision-dependent difference in two
+ * compared values that is relative to the given magnitude.
+ *
+ * \param[in] magnitude        Magnitude of the numbers the computation
+ *     operates in.
+ * \param[in] singleTolerance  Relative tolerance permitted (e.g. 1e-4)
+ *     in single precision.
+ * \param[in] doubleTolerance  Relative tolerance permitted (e.g. 1e-4)
+ *     in double precision.
+ *
+ * In addition to setting an relative tolerance for both
+ * precisions, this sets the absolute tolerance such that values close to zero
+ * (in general, smaller than \p magnitude) do not fail the check if they
+ * differ by less than \p tolerance evaluated at \p magnitude.  This accounts
+ * for potential loss of precision for small values, and should be used when
+ * accuracy of values much less than \p magnitude do not matter for
+ * correctness.
+ *
+ * \related FloatingPointTolerance
+ */
+FloatingPointTolerance
+    relativeToleranceAsPrecisionDependentFloatingPoint(double magnitude,
+                                                       float singleTolerance,
+                                                       double doubleTolerance);
+
+/*! \brief
  * Creates a tolerance that allows a precision-dependent relative difference in
  * a complex computation.
  *

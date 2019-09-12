@@ -71,6 +71,7 @@ void executeSimulatorComparisonTestImpl(
         int                         maxWarningsTolerated,
         const MdpFieldValues       &mdpFieldValues,
         const EnergyTermsToCompare &energyTermsToCompare,
+        const TrajectoryComparison &trajectoryComparison,
         const std::string          &environmentVariable)
 {
     // TODO At some point we should also test PME-only ranks.
@@ -174,18 +175,6 @@ void executeSimulatorComparisonTestImpl(
     // Compare the energy frames.
     energyManager.compareAllFramePairs<EnergyFrame>(energyComparison);
 
-    // Specify how trajectory frame matching must work.
-    TrajectoryFrameMatchSettings trajectoryMatchSettings {
-        true, true, true, ComparisonConditions::MustCompare,
-        doRerun ? ComparisonConditions::NoComparison : ComparisonConditions::MustCompare,
-        ComparisonConditions::MustCompare
-    };
-
-    // Build the functor that will compare reference and test
-    // trajectory frames in the chosen way.
-    TrajectoryComparison trajectoryComparison {
-        trajectoryMatchSettings, TrajectoryComparison::s_defaultTrajectoryTolerances
-    };
     // Build the manager that will present matching pairs of frames to compare
     FramePairManager<TrajectoryFrameReader>
     trajectoryManager(std::make_unique<TrajectoryFrameReader>(simulator1TrajectoryFileName),

@@ -68,20 +68,6 @@ updateVelocities(int                       a,
     }
 }
 
-//! Update velocities - 2nd version. The parentheses allows to exactly replicate do_md results under VV
-static void inline
-updateVelocities2(int                       a,
-                  real                      dt,
-                  const rvec * gmx_restrict invMassPerDim,
-                  rvec       * gmx_restrict v,
-                  const rvec * gmx_restrict f)
-{
-    for (int d = 0; d < DIM; d++)
-    {
-        v[a][d] += f[a][d]*(invMassPerDim[a][d]*dt);
-    }
-}
-
 //! Update positions
 static void inline
 updatePositions(int                       a,
@@ -225,7 +211,7 @@ void Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>::run()
 
             for (int a = start_th; a < end_th; a++)
             {
-                updateVelocities2(a, timestep_*0.5, invMassPerDim, v, f);
+                updateVelocities(a, timestep_*0.5, invMassPerDim, v, f);
                 updatePositions(a, timestep_, x, xp, v);
             }
         }

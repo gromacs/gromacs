@@ -98,17 +98,56 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
     {{
          {
              interaction_function[F_EPOT].longname,
-             relativeToleranceAsPrecisionDependentUlp(10.0, 24, 40)
+             relativeToleranceAsPrecisionDependentUlp(10.0, 100, 40)
          },
          {
              interaction_function[F_EKIN].longname,
-             relativeToleranceAsPrecisionDependentUlp(10.0, 24, 40)
+             relativeToleranceAsPrecisionDependentUlp(10.0, 100, 40)
          },
          {
              interaction_function[F_PRES].longname,
-             relativeToleranceAsPrecisionDependentUlp(10.0, 24, 40)
+             relativeToleranceAsPrecisionDependentFloatingPoint(10.0, 0.01, 0.001)
          },
      }};
+
+    if (simulationName == "argon12")
+    {
+        // Without constraints, we can be more strict
+        energyTermsToCompare =
+        {{
+             {
+                 interaction_function[F_EPOT].longname,
+                 relativeToleranceAsPrecisionDependentUlp(10.0, 24, 40)
+             },
+             {
+                 interaction_function[F_EKIN].longname,
+                 relativeToleranceAsPrecisionDependentUlp(10.0, 24, 40)
+             },
+             {
+                 interaction_function[F_PRES].longname,
+                 relativeToleranceAsPrecisionDependentFloatingPoint(10.0, 0.001, 0.0001)
+             },
+         }};
+    }
+
+    // Specify how trajectory frame matching must work.
+    TrajectoryFrameMatchSettings trajectoryMatchSettings {
+        true, true, true,
+        ComparisonConditions::MustCompare,
+        ComparisonConditions::MustCompare,
+        ComparisonConditions::MustCompare
+    };
+    TrajectoryTolerances trajectoryTolerances = TrajectoryComparison::s_defaultTrajectoryTolerances;
+    if (simulationName != "argon12")
+    {
+        trajectoryTolerances.velocities = trajectoryTolerances.coordinates;
+    }
+
+    // Build the functor that will compare reference and test
+    // trajectory frames in the chosen way.
+    TrajectoryComparison trajectoryComparison {
+        trajectoryMatchSettings, trajectoryTolerances
+    };
 
     int numWarningsToTolerate = 0;
     executeSimulatorComparisonTest(
@@ -116,7 +155,8 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
             &fileManager_, &runner_,
             simulationName, numWarningsToTolerate,
             mdpFieldValues,
-            energyTermsToCompare);
+            energyTermsToCompare,
+            trajectoryComparison);
 }
 
 // TODO The time for OpenCL kernel compilation means these tests time
