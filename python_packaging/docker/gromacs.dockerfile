@@ -30,6 +30,7 @@ RUN cmake $SRC_DIR \
         -DGMX_SIMD=AVX_256 \
         -DGMX_USE_RDTSCP=OFF \
         -DGMX_HWLOC=OFF \
+        -DGMX_REQUIRE_VALID_TOOLCHAIN=TRUE \
         -DCMAKE_BUILD_TYPE=$TYPE
 RUN make -j$DOCKER_CORES
 RUN make -j$DOCKER_CORES tests

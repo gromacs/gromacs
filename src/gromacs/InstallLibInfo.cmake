@@ -80,6 +80,33 @@ function (do_cmake_config)
                    gromacs-config-version.cmake @ONLY)
     configure_file(gromacs-toolchain.cmake.cmakein
                    gromacs-toolchain.cmake @ONLY)
+    option(GMX_REQUIRE_VALID_TOOLCHAIN "Force CMake error if generated toolchain file is not usable." OFF)
+    mark_as_advanced(GMX_REQUIRE_VALID_TOOLCHAIN)
+    if (GMX_REQUIRE_VALID_TOOLCHAIN)
+        # Test the generated toolchain file.
+        set(TEMPDIR "${CMAKE_CURRENT_BINARY_DIR}/cmake-configure-test")
+        file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cmake-configure-test)
+        execute_process(COMMAND
+                            ${CMAKE_COMMAND}
+                            -G "${CMAKE_GENERATOR}"
+                            -DCMAKE_TOOLCHAIN_FILE=${CMAKE_CURRENT_BINARY_DIR}/gromacs-toolchain.cmake
+                            -DGMX_REQUIRE_VALID_TOOLCHAIN=FALSE
+                            ${CMAKE_SOURCE_DIR}
+                        RESULT_VARIABLE result
+                        OUTPUT_VARIABLE output
+                        OUTPUT_STRIP_TRAILING_WHITESPACE
+                        ERROR_VARIABLE output
+                        ERROR_STRIP_TRAILING_WHITESPACE
+                        WORKING_DIRECTORY ${TEMPDIR})
+        if (result)
+            message(FATAL_ERROR "Generated gromacs-toolchain.cmake does not produce a valid CMake environment: ${output}")
+        else()
+            message(STATUS "Verified gromacs-toolchain.cmake")
+            # We clean up after ourselves
+            FILE(REMOVE_RECURSE ${TEMPDIR})
+        endif ()
+    endif ()
+
     # The configuration files are also installed with the suffix, even though
     # the directory already contains the suffix. This allows simple
     # find_package(GROMACS NAMES gromacs_d) to find them, without also
