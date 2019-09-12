@@ -3972,7 +3972,27 @@ template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble gmx_simdcall
 powSingleAccuracy(SimdDouble x, SimdDouble y)
 {
-    return pow<opt>(x, y);
+    SimdDouble xcorr;
+
+    if (opt == MathOptimization::Safe)
+    {
+        xcorr = max(x, SimdDouble(std::numeric_limits<double>::min()));
+    }
+    else
+    {
+        xcorr = x;
+    }
+
+    SimdDouble result = exp2SingleAccuracy<opt>(y * log2SingleAccuracy(xcorr));
+
+    if (opt == MathOptimization::Safe)
+    {
+        // if x==0 and y>0 we explicitly set the result to 0.0
+        // For any x with y==0, the result will already be 1.0 since we multiply by y (0.0) and call exp().
+        result = blend(result, setZero(), x == setZero() && setZero() < y );
+    }
+
+    return result;
 }
 
 /*! \brief SIMD erf(x). Double precision SIMD data, single accuracy.

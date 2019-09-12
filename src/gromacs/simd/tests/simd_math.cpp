@@ -747,7 +747,10 @@ TEST_F(SimdMathTest, exp)
     // Relevant threshold points. See the exp2 test for more details about the values; these are simply
     // scaled by log(2) due to the difference between exp2 and exp.
     const real      lowestReal                       = -std::numeric_limits<real>::max();
-    const real      lowestRealThatProducesNormal     = (std::numeric_limits<real>::min_exponent - 1)*std::log(2.0);
+    // In theory the smallest value should be (min_exponent-1)*log(2), but rounding after the multiplication will cause this
+    // value to be a single ulp too low. This might cause failed tests on CPUs that use different DTZ modes for SIMD vs.
+    // non-SIMD arithmetics (ARM v7), so multiply by (1.0-eps) to increase it by a single ulp.
+    const real      lowestRealThatProducesNormal     = (std::numeric_limits<real>::min_exponent - 1)*std::log(2.0)*(1-std::numeric_limits<real>::epsilon());
     const real      lowestRealThatProducesDenormal   = lowestRealThatProducesNormal - std::numeric_limits<real>::digits*std::log(2.0);
     const real      highestRealThatProducesNormal    = (std::numeric_limits<real>::max_exponent - 1)*std::log(2.0);
     CompareSettings settings;
@@ -1131,7 +1134,7 @@ TEST_F(SimdMathTest, cbrtSingleAccuracy)
     CompareSettings settings {
         Range(low, high), ulpTol_, absTol_, MatchRule::Normal
     };
-    GMX_EXPECT_SIMD_FUNC_NEAR(std::cbrt, cbrt, settings);
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::cbrt, cbrtSingleAccuracy, settings);
 }
 
 TEST_F(SimdMathTest, invcbrtSingleAccuracy)
@@ -1146,13 +1149,13 @@ TEST_F(SimdMathTest, invcbrtSingleAccuracy)
     CompareSettings settings {
         Range(low, high), ulpTol_, absTol_, MatchRule::Normal
     };
-    GMX_EXPECT_SIMD_FUNC_NEAR(refInvCbrt, invcbrt, settings);
+    GMX_EXPECT_SIMD_FUNC_NEAR(refInvCbrt, invcbrtSingleAccuracy, settings);
 
     // Positive values
     low      = std::numeric_limits<real>::min();
     high     = std::numeric_limits<real>::max();
     settings = { Range(low, high), ulpTol_, absTol_, MatchRule::Normal };
-    GMX_EXPECT_SIMD_FUNC_NEAR(refInvCbrt, invcbrt, settings);
+    GMX_EXPECT_SIMD_FUNC_NEAR(refInvCbrt, invcbrtSingleAccuracy, settings);
 }
 
 TEST_F(SimdMathTest, log2SingleAccuracy)
@@ -1197,15 +1200,15 @@ TEST_F(SimdMathTest, exp2SingleAccuracy)
 
     // Below subnormal range all results should be zero
     settings = { Range(lowestReal, lowestRealThatProducesDenormal), ulpTol_, absTol_, MatchRule::Normal };
-    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2, settings);
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2SingleAccuracy, settings);
 
     // Subnormal range, require matching, but DTZ is fine
     settings = { Range(lowestRealThatProducesDenormal, lowestRealThatProducesNormal), ulpTol_, absTol_, MatchRule::Dtz };
-    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2, settings);
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2SingleAccuracy, settings);
 
     // Normal range, standard result expected
     settings = { Range(lowestRealThatProducesNormal, highestRealThatProducesNormal), ulpTol_, absTol_, MatchRule::Normal };
-    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2, settings);
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2SingleAccuracy, settings);
 }
 
 TEST_F(SimdMathTest, exp2SingleAccuracyUnsafe)
@@ -1227,22 +1230,28 @@ TEST_F(SimdMathTest, expSingleAccuracy)
 {
     // See threshold point comments in normal exp() test
     const real      lowestReal                       = -std::numeric_limits<real>::max();
-    const real      lowestRealThatProducesNormal     = (std::numeric_limits<real>::min_exponent - 1)*std::log(2.0);
+    // In theory the smallest value should be (min_exponent-1)*log(2), but rounding after the multiplication will cause this
+    // value to be a single ulp too low. This might cause failed tests on CPUs that use different DTZ modes for SIMD vs.
+    // non-SIMD arithmetics (ARM v7), so multiply by (1.0-eps) to increase it by a single ulp.
+    const real      lowestRealThatProducesNormal     =  (std::numeric_limits<real>::min_exponent - 1)*std::log(2.0)*(1.0-std::numeric_limits<real>::epsilon());
     const real      lowestRealThatProducesDenormal   = lowestRealThatProducesNormal - std::numeric_limits<real>::digits*std::log(2.0);
     const real      highestRealThatProducesNormal    = (std::numeric_limits<real>::max_exponent - 1)*std::log(2.0);
     CompareSettings settings;
 
+    // Increase the allowed error by the difference between the actual precision and single
+    setUlpTolSingleAccuracy(ulpTol_);
+
     // Below subnormal range all results should be zero (so, match the reference)
     settings = { Range(lowestReal, lowestRealThatProducesDenormal), ulpTol_, absTol_, MatchRule::Normal };
-    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, exp, settings);
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, expSingleAccuracy, settings);
 
     // Subnormal range, require matching, but DTZ is fine
     settings = { Range(lowestRealThatProducesDenormal, lowestRealThatProducesNormal), ulpTol_, absTol_, MatchRule::Dtz };
-    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, exp, settings);
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, expSingleAccuracy, settings);
 
     // Normal range, standard result expected
     settings = { Range(lowestRealThatProducesNormal, highestRealThatProducesNormal), ulpTol_, absTol_, MatchRule::Normal };
-    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, exp, settings);
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, expSingleAccuracy, settings);
 }
 
 TEST_F(SimdMathTest, expSingleAccuracyUnsafe)
@@ -1267,6 +1276,9 @@ TEST_F(SimdMathTest, powSingleAccuracy)
     // simple single-line function, so here we just test a handful of values to catch typos
     // and then some special values.
 
+    // Increase the allowed error by the difference between the actual precision and single
+    setUlpTolSingleAccuracy(ulpTol_);
+
     GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::pow(c0, c3), std::pow(c1, c4), std::pow(c2, c5)),
                               powSingleAccuracy(rSimd_c0c1c2, rSimd_c3c4c5));
 
@@ -1274,7 +1286,7 @@ TEST_F(SimdMathTest, powSingleAccuracy)
                               powSingleAccuracy(rSimd_c0c1c2, rSimd_m3m0m4));
 
     // 0^0 = 1 , 0^c1=0, -c1^0=1
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(1.0, 0.0, 1.0), pow(setSimdRealFrom3R(0, 0.0, -c1), setSimdRealFrom3R(0.0, c1, 0.0)));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(1.0, 0.0, 1.0), powSingleAccuracy(setSimdRealFrom3R(0, 0.0, -c1), setSimdRealFrom3R(0.0, c1, 0.0)));
 }
 
 TEST_F(SimdMathTest, powSingleAccuracyUnsafe)
@@ -1282,6 +1294,9 @@ TEST_F(SimdMathTest, powSingleAccuracyUnsafe)
     // We already test the log2/exp2 components of pow() extensively above, and it's a very
     // simple single-line function, so here we just test a handful of values to catch typos
     // and then some special values.
+
+    // Increase the allowed error by the difference between the actual precision and single
+    setUlpTolSingleAccuracy(ulpTol_);
 
     GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::pow(c0, c3), std::pow(c1, c4), std::pow(c2, c5)),
                               powSingleAccuracy<MathOptimization::Unsafe>(rSimd_c0c1c2, rSimd_c3c4c5));
