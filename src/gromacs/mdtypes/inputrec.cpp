@@ -879,7 +879,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         /* Neighborsearching parameters */
         PS("cutoff-scheme", ECUTSCHEME(ir->cutoff_scheme));
         PI("nstlist", ir->nstlist);
-        PS("ns-type", ENS(ir->ns_type));
         PS("pbc", epbc_names[ir->ePBC]);
         PS("periodic-molecules", EBOOL(ir->bPeriodicMols));
         PR("verlet-buffer-tolerance", ir->verletbuf_tol);
@@ -1273,7 +1272,6 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_int(fp, "inputrec->ePBC", -1, ir1->ePBC, ir2->ePBC);
     cmp_bool(fp, "inputrec->bPeriodicMols", -1, ir1->bPeriodicMols, ir2->bPeriodicMols);
     cmp_int(fp, "inputrec->cutoff_scheme", -1, ir1->cutoff_scheme, ir2->cutoff_scheme);
-    cmp_int(fp, "inputrec->ns_type", -1, ir1->ns_type, ir2->ns_type);
     cmp_int(fp, "inputrec->nstlist", -1, ir1->nstlist, ir2->nstlist);
     cmp_int(fp, "inputrec->nstcomm", -1, ir1->nstcomm, ir2->nstcomm);
     cmp_int(fp, "inputrec->comm_mode", -1, ir1->comm_mode, ir2->comm_mode);

@@ -1604,7 +1604,6 @@ void init_forcerec(FILE                             *fp,
 
     /* Neighbour searching stuff */
     fr->cutoff_scheme = ir->cutoff_scheme;
-    fr->bGrid         = (ir->ns_type == ensGRID);
     fr->ePBC          = ir->ePBC;
 
     /* Determine if we will do PBC for distances in bonded interactions */

@@ -1104,7 +1104,7 @@ static void do_inputrec(gmx::ISerializer         *serializer,
     {
         ir->cutoff_scheme = ecutsGROUP;
     }
-    serializer->doInt(&ir->ns_type);
+    serializer->doInt(&idum); /* used to be ns_type; not used anymore */
     serializer->doInt(&ir->nstlist);
     serializer->doInt(&idum); /* used to be ndelta; not used anymore */
 

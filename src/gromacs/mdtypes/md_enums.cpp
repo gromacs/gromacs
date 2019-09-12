@@ -56,11 +56,6 @@ const char *yesno_names[BOOL_NR+1] =
     "no", "yes", nullptr
 };
 
-const char *ens_names[ensNR+1] =
-{
-    "Grid", "Simple", nullptr
-};
-
 const char *ei_names[eiNR+1] =
 {
     "md", "steep", "cg", "bd", "sd2 - removed", "nm", "l-bfgs", "tpi", "tpic", "sd", "md-vv", "md-vv-avek", "mimic", nullptr

@@ -546,8 +546,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         sprintf(err_buf, "TPI only works with pbc = %s", epbc_names[epbcXYZ]);
         CHECK(ir->ePBC != epbcXYZ);
-        sprintf(err_buf, "TPI only works with ns = %s", ens_names[ensGRID]);
-        CHECK(ir->ns_type != ensGRID);
         sprintf(err_buf, "with TPI nstlist should be larger than zero");
         CHECK(ir->nstlist <= 0);
         sprintf(err_buf, "TPI does not work with full electrostatics other than PME");
@@ -1757,6 +1755,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     replace_inp_entry(inp, "gb-dielectric-offset", nullptr);
     replace_inp_entry(inp, "sa-algorithm", nullptr);
     replace_inp_entry(inp, "sa-surface-tension", nullptr);
+    replace_inp_entry(inp, "ns-type", nullptr);
 
     /* replace the following commands with the clearer new versions*/
     replace_inp_entry(inp, "unconstrained-start", "continuation");
@@ -1838,8 +1837,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     ir->cutoff_scheme = get_eeenum(&inp, "cutoff-scheme",    ecutscheme_names, wi);
     printStringNoNewline(&inp, "nblist update frequency");
     ir->nstlist = get_eint(&inp, "nstlist",    10, wi);
-    printStringNoNewline(&inp, "ns algorithm (simple or grid)");
-    ir->ns_type = get_eeenum(&inp, "ns-type",    ens_names, wi);
     printStringNoNewline(&inp, "Periodic boundary conditions: xyz, no, xy");
     ir->ePBC          = get_eeenum(&inp, "pbc",       epbc_names, wi);
     ir->bPeriodicMols = get_eeenum(&inp, "periodic-molecules", yesno_names, wi) != 0;
@@ -4163,7 +4160,6 @@ void double_check(t_inputrec *ir, matrix box,
                   bool bHasAnyConstraints,
                   warninp_t wi)
 {
-    real        min_size;
     char        warn_buf[STRLEN];
     const char *ptr;
 
@@ -4222,26 +4218,10 @@ void double_check(t_inputrec *ir, matrix box,
         {
             warning(wi, "With nstlist=0 atoms are only put into the box at step 0, therefore drifting atoms might cause the simulation to crash.");
         }
-        if (ir->ns_type == ensGRID)
+        if (gmx::square(ir->rlist) >= max_cutoff2(ir->ePBC, box))
         {
-            if (gmx::square(ir->rlist) >= max_cutoff2(ir->ePBC, box))
-            {
-                sprintf(warn_buf, "ERROR: The cut-off length is longer than half the shortest box vector or longer than the smallest box diagonal element. Increase the box size or decrease rlist.\n");
-                warning_error(wi, warn_buf);
-            }
-        }
-        else
-        {
-            min_size = std::min(box[XX][XX], std::min(box[YY][YY], box[ZZ][ZZ]));
-            if (2*ir->rlist >= min_size)
-            {
-                sprintf(warn_buf, "ERROR: One of the box lengths is smaller than twice the cut-off length. Increase the box size or decrease rlist.");
-                warning_error(wi, warn_buf);
-                if (TRICLINIC(box))
-                {
-                    fprintf(stderr, "Grid search might allow larger cut-off's than simple search with triclinic boxes.");
-                }
-            }
+            sprintf(warn_buf, "ERROR: The cut-off length is longer than half the shortest box vector or longer than the smallest box diagonal element. Increase the box size or decrease rlist.\n");
+            warning_error(wi, warn_buf);
         }
     }
 }

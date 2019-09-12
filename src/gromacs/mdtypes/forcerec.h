@@ -191,7 +191,6 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
      * It can be set to esolNO to disable all water optimization */
     int                 solvent_opt                  = 0;
     int                 nWatMol                      = 0;
-    gmx_bool            bGrid                        = FALSE;
     gmx_bool            bExcl_IntraCGAll_InterCGNone = FALSE;
     struct cginfo_mb_t *cginfo_mb                    = nullptr;
     std::vector<int>    cginfo;

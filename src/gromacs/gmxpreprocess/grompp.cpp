@@ -2248,14 +2248,7 @@ int gmx_grompp(int argc, char *argv[])
     /* make exclusions between QM atoms and remove charges if needed */
     if (ir->bQMMM)
     {
-        if (ir->QMMMscheme == eQMMMschemenormal && ir->ns_type == ensSIMPLE)
-        {
-            gmx_fatal(FARGS, "electrostatic embedding only works with grid neighboursearching, use ns-type=grid instead\n");
-        }
-        else
-        {
-            generate_qmexcl(&sys, ir, wi, GmxQmmmMode::GMX_QMMM_ORIGINAL);
-        }
+        generate_qmexcl(&sys, ir, wi, GmxQmmmMode::GMX_QMMM_ORIGINAL);
         if (ir->QMMMscheme != eQMMMschemeoniom)
         {
             std::vector<int> qmmmAtoms = qmmmAtomIndices(*ir, sys);

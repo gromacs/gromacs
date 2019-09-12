@@ -460,21 +460,6 @@ Neighbor searching
 
       Unused.
 
-.. mdp:: ns-type
-
-   .. mdp-value:: grid
-
-      Make a grid in the box and only check atoms in neighboring grid
-      cells when constructing a new neighbor list every
-      :mdp:`nstlist` steps. In large systems grid search is much
-      faster than simple search.
-
-   .. mdp-value:: simple
-
-      Check every atom in the box when constructing a new neighbor
-      list every :mdp:`nstlist` steps (only with :mdp-value:`cutoff-scheme=group`
-      cut-off scheme).
-
 .. mdp:: pbc
 
    .. mdp-value:: xyz

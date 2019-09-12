@@ -1867,11 +1867,6 @@ static void check_dd_restrictions(const gmx_domdec_t  *dd,
         gmx_fatal(FARGS, "With pbc=%s can only do domain decomposition in the x-direction", epbc_names[ir->ePBC]);
     }
 
-    if (ir->ns_type == ensSIMPLE)
-    {
-        gmx_fatal(FARGS, "Domain decomposition does not support simple neighbor searching, use grid searching or run with one MPI rank");
-    }
-
     if (ir->nstlist == 0)
     {
         gmx_fatal(FARGS, "Domain decomposition does not work with nstlist=0");

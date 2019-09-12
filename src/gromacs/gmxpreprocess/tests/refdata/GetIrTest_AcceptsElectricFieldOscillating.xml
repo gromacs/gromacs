@@ -71,8 +71,6 @@ energygrps               =
 cutoff-scheme            = Verlet
 ; nblist update frequency
 nstlist                  = 10
-; ns algorithm (simple or grid)
-ns-type                  = Grid
 ; Periodic boundary conditions: xyz, no, xy
 pbc                      = xyz
 periodic-molecules       = no

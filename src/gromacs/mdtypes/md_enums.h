@@ -211,15 +211,6 @@ extern const char *eljpme_names[eljpmeNR+1];
 //! Macro to tell us whether we use LJPME
 #define EVDW_PME(e) ((e) == evdwPME)
 
-//! Neighborsearching algorithm
-enum {
-    ensGRID, ensSIMPLE, ensNR
-};
-//! String corresponding to neighborsearching
-extern const char *ens_names[ensNR+1];
-//! Macro for correct NS algorithm
-#define ENS(e)         enum_name(e, ensNR, ens_names)
-
 /*! \brief Integrator algorithm
  *
  * eiSD2 has been removed, but we keep a renamed enum entry,
