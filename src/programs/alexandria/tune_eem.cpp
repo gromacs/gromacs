@@ -297,8 +297,7 @@ double OptACM::calcDeviation()
 
     if (PAR(commrec()) && !final())
     {
-        // TODO: just broadcast the eemprops
-        poldata()->broadcast(commrec());
+        poldata()->broadcast_eemprop(commrec());
     }
     resetEnergies();
     for (auto &mymol : mymols())
@@ -337,12 +336,11 @@ double OptACM::calcDeviation()
                     mymol.computeForces(nullptr, commrec());
                 }
 
-                auto qgen =
-                    mymol.Qgacm_.generateCharges(debug,
-                                                 mymol.molProp()->getMolname().c_str(),
-                                                 poldata(),
-                                                 mymol.atoms_,
-                                                 mymol.x());
+                auto qgen =  mymol.Qgacm_.generateCharges(debug,
+                                                          mymol.molProp()->getMolname().c_str(),
+                                                          poldata(),
+                                                          mymol.atoms_,
+                                                          mymol.x());
                 if (qgen != eQGEN_OK)
                 {
                     gmx_fatal(FARGS, "Could not generate charges for %s: %s",
@@ -367,7 +365,10 @@ double OptACM::calcDeviation()
                     mymol.mtop_->moltype[0].atoms.atom[i].qB =
                     mymol.atoms_->atom[i].q;
             }
-            dumpQ(debug, mymol.molProp()->getMolname(), mymol.atoms_);
+            if (debug)
+            {
+                dumpQ(debug, mymol.molProp()->getMolname(), mymol.atoms_);
+            }
             if (weight(ermsCHARGE))
             {
                 int    nChargeResidual = 0; // number of charge residuals added per molecule
