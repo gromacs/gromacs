@@ -189,13 +189,13 @@ TEST_F(DensityFittingOptionsTest, OutputDefaultValuesWhenActive)
         writeKeyValueTreeAsMdp(&writer, builder.build());
     }
     stream.close();
-    std::string expected
+    std::string expectedString
         = {
         "\n"
         "; Density guided simulation\n"
         "density-guided-simulation-active = true\n"
         "density-guided-simulation-group = protein\n"
-        "; Similarity measure between densities: inner-product, or relative-entropy\n"
+        "; Similarity measure between densities: inner-product, relative-entropy, or cross-correlation\n"
         "density-guided-simulation-similarity-measure = inner-product\n"
         "; Atom amplitude for spreading onto grid: unity, mass, or charge\n"
         "density-guided-simulation-atom-spreading-weight = unity\n"
@@ -209,7 +209,7 @@ TEST_F(DensityFittingOptionsTest, OutputDefaultValuesWhenActive)
         "density-guided-simulation-normalize-densities = true\n"
         };
 
-    EXPECT_EQ(expected, stream.toString());
+    EXPECT_EQ(expectedString, stream.toString());
 }
 
 

@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="cross-correlation-gradient">
+    <Int Name="Length">27</Int>
+    <Real>-0.00014969852</Real>
+    <Real>-0.00011995764</Real>
+    <Real>-9.2403832e-05</Real>
+    <Real>-6.7037101e-05</Real>
+    <Real>-4.3857435e-05</Real>
+    <Real>-2.2864861e-05</Real>
+    <Real>-4.0593445e-06</Real>
+    <Real>1.25591e-05</Real>
+    <Real>2.699047e-05</Real>
+    <Real>3.9234772e-05</Real>
+    <Real>4.9291986e-05</Real>
+    <Real>5.7162139e-05</Real>
+    <Real>6.2845218e-05</Real>
+    <Real>6.6341221e-05</Real>
+    <Real>6.7650144e-05</Real>
+    <Real>6.6772009e-05</Real>
+    <Real>6.3706793e-05</Real>
+    <Real>5.8454505e-05</Real>
+    <Real>5.101514e-05</Real>
+    <Real>4.138871e-05</Real>
+    <Real>2.9575202e-05</Real>
+    <Real>1.557462e-05</Real>
+    <Real>-6.130212e-07</Real>
+    <Real>-1.8987734e-05</Real>
+    <Real>-3.9549544e-05</Real>
+    <Real>-6.2298401e-05</Real>
+    <Real>-8.7234337e-05</Real>
+  </Sequence>
+</ReferenceData>

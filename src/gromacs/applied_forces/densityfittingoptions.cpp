@@ -152,7 +152,7 @@ void DensityFittingOptions::buildMdpOutput(KeyValueTreeObjectBuilder *builder) c
     {
         addDensityFittingMdpOutputValue(builder, groupString_, c_groupTag_);
 
-        addDensityFittingMdpOutputValueComment(builder, "; Similarity measure between densities: inner-product, or relative-entropy", c_similarityMeasureTag_);
+        addDensityFittingMdpOutputValueComment(builder, "; Similarity measure between densities: inner-product, relative-entropy, or cross-correlation", c_similarityMeasureTag_);
         addDensityFittingMdpOutputValue<std::string>(builder,
                                                      c_densitySimilarityMeasureMethodNames[parameters_.similarityMeasureMethod_],
                                                      c_similarityMeasureTag_);

@@ -60,11 +60,13 @@ enum class DensitySimilarityMeasureMethod
      *
      * \f[
      *      \mathrm{Similarity}(\rho_{\mathrm{r}},\rho_{\mathrm{c}}) =
-     *           \frac{1}{N_\mathrm{voxel}}/\sum_{v=1}^{N_\mathrm{voxel}} \rho^v_{\mathrm{r}} \rho^v_{\mathrm{c}}
+     *           \frac{1}{N_\mathrm{voxel}}/\sum_{v=1}^{N_\mathrm{voxel}} \rho^v_{\mathrm{r}}
+     * \rho^v_{\mathrm{c}}
      * \f]
      */
     innerProduct,
-    /*! \brief Measure similarity between densities, using the relative entropy between them.
+
+    /*! \brief Measure similarity between densities by negative relative entropy.
      * \note Voxels with negative values are ignored.
      *
      * \f[
@@ -74,12 +76,22 @@ enum class DensitySimilarityMeasureMethod
      * \f]
      */
     relativeEntropy,
+
+    /*! \brief Measure similarity between densities by cross correlation.
+     *
+     * \f[
+     *      \mathrm{Similarity}(\rho_{\mathrm{r}},\rho_{\mathrm{c}}) =
+     *           \frac{\sum_{v}\left((\rho_{\mathrm{r}} - \bar{\rho}_{\mathrm{r}})(\rho_{\mathrm{c}} - \bar{\rho}_{\mathrm{c}})\right)}
+     *           {\sqrt{\sum_v(\rho_{\mathrm{r}} - \bar{\rho}_{\mathrm{r}})^2 \sum_v (\rho_{\mathrm{c}} - \bar{\rho}_{\mathrm{c}})^2}}
+     * \f]
+     */
+    crossCorrelation,
     Count,
 };
 
 //! Name the methods that may be used to evaluate similarity between densities
 const EnumerationArray<DensitySimilarityMeasureMethod, const char *const>
-c_densitySimilarityMeasureMethodNames = {{ "inner-product", "relative-entropy"}};
+c_densitySimilarityMeasureMethodNames = {{ "inner-product", "relative-entropy", "cross-correlation"}};
 
 /* Forward declaration of implementation class outside class to allow
  * choose implementation class during construction of the DensitySimilarityMeasure*/
@@ -96,6 +108,7 @@ class DensitySimilarityMeasure
         /*! \brief Chose comparison method and set reference density.
          * \param[in] method defines how densities are compared to one another
          * \param[in] referenceDensity
+         * \throws NotImplementedError if method is not known
          */
         DensitySimilarityMeasure(DensitySimilarityMeasureMethod method, density referenceDensity);
         ~DensitySimilarityMeasure();

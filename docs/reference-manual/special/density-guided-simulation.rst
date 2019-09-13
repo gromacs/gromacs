@@ -85,16 +85,25 @@ The density similarity measure and its force contribution
 
 There are multiple valid similarity measures between the reference density and
 the simulated density, each motivated by the experimental source of the
-reference density data. For the density-guided simulations in gromacs, two
-measures are provided, the inner product of the simulated density,
+reference density data. For the density-guided simulations in |Gromacs|, the following
+measures are provided:
+
+The inner product of the simulated density,
 
 .. math:: S_{\mathrm{inner-product}}[\rho^{\mathrm{ref}},\rho^{\mathrm{sim}}] =
-                \frac{1}{N_\mathrm{voxel}}\sum_{v=1}^{N_\mathrm{voxel}} \rho^{\mathrm{ref}}_v \rho^{\mathrm{sim}}_v\,\mathrm{,}
+                \frac{1}{N_\mathrm{voxel}}\sum_{v=1}^{N_\mathrm{voxel}} \rho^{\mathrm{ref}}_v \rho^{\mathrm{sim}}_v\,\mathrm{.}
 
-as well as the negative relative entropy between two densities
+The negative relative entropy between two densities,
 
 .. math:: S_{\mathrm{relative-entropy}}[\rho^{\mathrm{ref}},\rho^{\mathrm{sim}}] =
            \sum_{v=1, \rho^{\mathrm{ref}}>0, \rho^{\mathrm{sim}}>0}^{N_\mathrm{voxel}} \rho^\mathrm{ref} [\log(\rho^\mathrm{sim}_v)-\log(\rho^\mathrm{ref}_v)]\,\mathrm{.}
+
+The cross correlation between two densities,
+
+.. math:: S_{\mathrm{cross-correlation}}[\rho^{\mathrm{ref}},\rho^{\mathrm{sim}}] =
+           \frac{\sum_{v}\left((\rho_v^{\mathrm{ref}} - \bar{\rho}^{\mathrm{ref}})(\rho_v^{\mathrm{sim}} - \bar{\rho}^{\mathrm{sim}})\right)}
+           {\sqrt{\sum_v(\rho_v^{\mathrm{ref}} - \bar{\rho}^{\mathrm{ref}})^2 \sum_v(\rho_v^{\mathrm{sim}} - \bar{\rho}^{\mathrm{sim}})^2}}\mathrm{.}
+
      
 
 Declaring regions to fit

@@ -169,7 +169,7 @@ TEST(DensitySimilarityTest, RelativeEntropyGradientIsCorrect)
     MultiDimArray<std::vector<float>, dynamicExtents3D> referenceDensity(3, 3, 3);
     std::iota(begin(referenceDensity), end(referenceDensity), -1);
 
-    DensitySimilarityMeasure measure(DensitySimilarityMeasureMethod::innerProduct, referenceDensity.asConstView());
+    DensitySimilarityMeasure measure(DensitySimilarityMeasureMethod::relativeEntropy, referenceDensity.asConstView());
 
     MultiDimArray<std::vector<float>, dynamicExtents3D> comparedDensity(3, 3, 3);
     std::iota(begin(comparedDensity), end(comparedDensity), -2);
@@ -183,6 +183,74 @@ TEST(DensitySimilarityTest, RelativeEntropyGradientIsCorrect)
     TestReferenceChecker  checker(refData.rootChecker());
     checker.setDefaultTolerance(defaultFloatTolerance());
     checker.checkSequence(gradientView.begin(), gradientView.end(), "relative-entropy-gradient");
+}
+
+TEST(DensitySimilarityTest, CrossCorrelationIsOne)
+{
+    MultiDimArray<std::vector<float>, dynamicExtents3D> referenceDensity(100, 100, 100);
+    std::iota(begin(referenceDensity), end(referenceDensity), 10000);
+
+    DensitySimilarityMeasure measure(DensitySimilarityMeasureMethod::crossCorrelation,
+                                     referenceDensity.asConstView());
+
+    MultiDimArray<std::vector<float>, dynamicExtents3D> comparedDensity(100, 100, 100);
+    std::iota(begin(comparedDensity), end(comparedDensity), -10000);
+
+    const real expectedSimilarity = 1;
+    EXPECT_REAL_EQ(expectedSimilarity, measure.similarity(comparedDensity.asConstView()));
+}
+
+TEST(DensitySimilarityTest, CrossCorrelationGradientIsZeroWhenCorrelated)
+{
+    MultiDimArray<std::vector<float>, dynamicExtents3D> referenceDensity(30, 30, 30);
+    std::iota(begin(referenceDensity), end(referenceDensity), -1);
+
+    DensitySimilarityMeasure measure(DensitySimilarityMeasureMethod::crossCorrelation,
+                                     referenceDensity.asConstView());
+
+    MultiDimArray<std::vector<float>, dynamicExtents3D> comparedDensity(30, 30, 30);
+    std::iota(begin(comparedDensity), end(comparedDensity), -2);
+
+    // Need this conversion to ArrayRef, because Pointwise requires size()
+    // member function not provided by basic_mdspan
+    const basic_mdspan<const float, dynamicExtents3D> gradient
+        = measure.gradient(comparedDensity.asConstView());
+    ArrayRef<const float> gradientView(gradient.data(),
+                                       gradient.data() + gradient.mapping().required_span_size());
+
+    std::array<float, 27000> expectedSimilarityGradient = {};
+
+    EXPECT_THAT(expectedSimilarityGradient, Pointwise(FloatEq(defaultFloatTolerance()), gradientView));
+}
+
+TEST(DensitySimilarityTest, CrossCorrelationGradientIsCorrect)
+{
+    MultiDimArray<std::vector<float>, dynamicExtents3D> referenceDensity(3, 3, 3);
+    std::iota(begin(referenceDensity), end(referenceDensity), -1);
+
+    DensitySimilarityMeasure measure(DensitySimilarityMeasureMethod::crossCorrelation,
+                                     referenceDensity.asConstView());
+
+    MultiDimArray<std::vector<float>, dynamicExtents3D> comparedDensity(3, 3, 3);
+    std::iota(begin(comparedDensity), end(comparedDensity), -2);
+
+    // some non-linear transformation, so that we break the correlation
+    for (float &valueToCompare : comparedDensity)
+    {
+        valueToCompare *= valueToCompare;
+    }
+
+    // Need this conversion to ArrayRef, because Pointwise requires size()
+    // member function not provided by basic_mdspan
+    const basic_mdspan<const float, dynamicExtents3D> gradient
+        = measure.gradient(comparedDensity.asConstView());
+    ArrayRef<const float> gradientView(gradient.data(),
+                                       gradient.data() + gradient.mapping().required_span_size());
+
+    TestReferenceData    refData;
+    TestReferenceChecker checker(refData.rootChecker());
+    checker.setDefaultTolerance(defaultFloatTolerance());
+    checker.checkSequence(gradientView.begin(), gradientView.end(), "cross-correlation-gradient");
 }
 
 } // namespace test
