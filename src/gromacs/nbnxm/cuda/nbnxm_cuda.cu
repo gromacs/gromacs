@@ -761,9 +761,8 @@ void nbnxn_gpu_copy_x_to_gpu(const Nbnxm::Grid               &grid,
 
     cudaStream_t               stream  = nb->stream[interactionLoc];
 
-    // FIXME: need to either let the local stream get to the
-    // insertNonlocalGpuDependency call or call it separately here
-    if (nCopyAtoms == 0) // empty domain
+    // empty domain avoid launching zero-byte copy
+    if (nCopyAtoms == 0)
     {
         if (interactionLoc == Nbnxm::InteractionLocality::Local)
         {
@@ -816,35 +815,38 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
     // TODO: This will only work with CUDA
     GMX_ASSERT(coordinatesDevice,  "Need a valid device pointer");
 
-    /* launch kernel on GPU */
+    int numAtoms = grid.srcAtomEnd() - grid.srcAtomBegin();
+    // avoid empty kernel launch, skip to inserting stream dependency
+    if (numAtoms != 0)
+    {
+        KernelLaunchConfig config;
+        config.blockSize[0]     = c_bufOpsThreadsPerBlock;
+        config.blockSize[1]     = 1;
+        config.blockSize[2]     = 1;
+        config.gridSize[0]      = (grid.numCellsColumnMax()*numAtomsPerCell + c_bufOpsThreadsPerBlock - 1)/c_bufOpsThreadsPerBlock;
+        config.gridSize[1]      = numColumns;
+        config.gridSize[2]      = 1;
+        GMX_ASSERT(config.gridSize[0] > 0, "Can not have empty grid, early return above avoids this");
+        config.sharedMemorySize = 0;
+        config.stream           = stream;
 
-    KernelLaunchConfig config;
-    config.blockSize[0]     = c_bufOpsThreadsPerBlock;
-    config.blockSize[1]     = 1;
-    config.blockSize[2]     = 1;
-    config.gridSize[0]      = (grid.numCellsColumnMax()*numAtomsPerCell + c_bufOpsThreadsPerBlock - 1)/c_bufOpsThreadsPerBlock;
-    config.gridSize[1]      = numColumns;
-    config.gridSize[2]      = 1;
-    GMX_ASSERT(config.gridSize[0] > 0, "Can not have empty grid, early return above avoids this");
-    config.sharedMemorySize = 0;
-    config.stream           = stream;
-
-    auto       kernelFn            = nbnxn_gpu_x_to_nbat_x_kernel;
-    float     *xqPtr               = &(adat->xq->x);
-    const int *d_atomIndices       = nb->atomIndices;
-    const int *d_cxy_na            = &nb->cxy_na[numColumnsMax*gridId];
-    const int *d_cxy_ind           = &nb->cxy_ind[numColumnsMax*gridId];
-    const auto kernelArgs          = prepareGpuKernelArguments(kernelFn, config,
-                                                               &numColumns,
-                                                               &xqPtr,
-                                                               &setFillerCoords,
-                                                               &coordinatesDevice,
-                                                               &d_atomIndices,
-                                                               &d_cxy_na,
-                                                               &d_cxy_ind,
-                                                               &cellOffset,
-                                                               &numAtomsPerCell);
-    launchGpuKernel(kernelFn, config, nullptr, "XbufferOps", kernelArgs);
+        auto       kernelFn       = nbnxn_gpu_x_to_nbat_x_kernel;
+        float     *xqPtr          = &(adat->xq->x);
+        const int *d_atomIndices  = nb->atomIndices;
+        const int *d_cxy_na       = &nb->cxy_na[numColumnsMax*gridId];
+        const int *d_cxy_ind      = &nb->cxy_ind[numColumnsMax*gridId];
+        const auto kernelArgs     = prepareGpuKernelArguments(kernelFn, config,
+                                                              &numColumns,
+                                                              &xqPtr,
+                                                              &setFillerCoords,
+                                                              &coordinatesDevice,
+                                                              &d_atomIndices,
+                                                              &d_cxy_na,
+                                                              &d_cxy_ind,
+                                                              &cellOffset,
+                                                              &numAtomsPerCell);
+        launchGpuKernel(kernelFn, config, nullptr, "XbufferOps", kernelArgs);
+    }
 
     nbnxnInsertNonlocalGpuDependency(nb, interactionLoc);
 }
