@@ -354,8 +354,9 @@ cbrt(SimdFloat x)
     const SimdFloat    minFloat(std::numeric_limits<float>::min());
     // Bias is 128-1 = 127, which is not divisible by 3. Since the largest-magnitude
     // negative exponent from frexp() is -126, we can subtract one more unit to get 126
-    // as offset, which is divisible by 3.
-    const std::int32_t offset(std::numeric_limits<float>::max_exponent - 2);
+    // as offset, which is divisible by 3 (result 42). To avoid clang warnings about fragile integer
+    // division mixed with FP, we let the divided value (42) be the original constant.
+    const std::int32_t offsetDiv3(42);
     const SimdFloat    c2(-0.191502161678719066F);
     const SimdFloat    c1(0.697570460207922770F);
     const SimdFloat    c0(0.492659620528969547F);
@@ -444,15 +445,13 @@ cbrt(SimdFloat x)
     // will work just A-OK on all SIMD implementations, which avoids diverging code paths.
 
     // The  0.1 here is the safety margin due to  truncation described in item 4 in the comments above.
-    SimdFloat offsetExp      = cvtI2R(exponent) + SimdFloat(static_cast<float>(offset) + 0.1);
+    SimdFloat  offsetExp      = cvtI2R(exponent) + SimdFloat(static_cast<float>(3*offsetDiv3) + 0.1);
 
-    SimdFloat offsetExpDiv3  = trunc(offsetExp * oneThird); // important to truncate here to mimic integer division
+    SimdFloat  offsetExpDiv3  = trunc(offsetExp * oneThird); // important to truncate here to mimic integer division
 
-    // Compile-time sanity check that our math is correct
-    static_assert( offset % 3 == 0, "Internal math algorithm/implementation inconsistency");
-    SimdFInt32 expDiv3       = cvtR2I(offsetExpDiv3 - SimdFloat(static_cast<float>(int(offset/3))));
+    SimdFInt32 expDiv3       = cvtR2I(offsetExpDiv3 - SimdFloat(static_cast<float>(offsetDiv3)));
 
-    SimdFloat  remainder      = offsetExp - offsetExpDiv3 * three;
+    SimdFloat  remainder     = offsetExp - offsetExpDiv3 * three;
 
     // If remainder is 0 we should just have the factor 1.0,
     // so first pick 1.0 if it is below 0.5, and 2^(1/3) if it's above 0.5 (i.e., 1 or 2)
@@ -483,8 +482,9 @@ invcbrt(SimdFloat x)
     const SimdFloat    minFloat(std::numeric_limits<float>::min());
     // Bias is 128-1 = 127, which is not divisible by 3. Since the largest-magnitude
     // negative exponent from frexp() is -126, we can subtract one more unit to get 126
-    // as offset, which is divisible by 3.
-    const std::int32_t offset(std::numeric_limits<float>::max_exponent - 2);
+    // as offset, which is divisible by 3 (result 42). To avoid clang warnings about fragile integer
+    // division mixed with FP, we let the divided value (42) be the original constant.
+    const std::int32_t offsetDiv3(42);
     const SimdFloat    c2(-0.191502161678719066F);
     const SimdFloat    c1(0.697570460207922770F);
     const SimdFloat    c0(0.492659620528969547F);
@@ -514,13 +514,11 @@ invcbrt(SimdFloat x)
     SimdFloat  invDenom  = inv(z * fma(two, y, w));
 
     // The  0.1 here is the safety margin due to  truncation described in item 4 in the comments above.
-    SimdFloat offsetExp      = cvtI2R(exponent) + SimdFloat(static_cast<float>(offset) + 0.1);
+    SimdFloat offsetExp      = cvtI2R(exponent) + SimdFloat(static_cast<float>(3*offsetDiv3) + 0.1);
     SimdFloat offsetExpDiv3  = trunc(offsetExp * oneThird); // important to truncate here to mimic integer division
 
-    // Compile-time sanity check that our math is correct
-    static_assert( offset % 3 == 0, "Internal math algorithm/implementation inconsistency");
     // We should swap the sign here, so we change order of the terms in the subtraction
-    SimdFInt32 expDiv3       = cvtR2I(SimdFloat(static_cast<float>(int(offset/3))) - offsetExpDiv3);
+    SimdFInt32 expDiv3       = cvtR2I(SimdFloat(static_cast<float>(offsetDiv3)) - offsetExpDiv3);
 
     // Swap sign here too, so remainder is either 0, -1 or -2
     SimdFloat remainder      = offsetExpDiv3 * three - offsetExp;
@@ -2052,7 +2050,9 @@ cbrt(SimdDouble x)
     const SimdDouble    signBit(GMX_DOUBLE_NEGZERO);
     const SimdDouble    minDouble(std::numeric_limits<double>::min());
     // Bias is 1024-1 = 1023, which is divisible by 3, so no need to change it more.
-    const std::int32_t  offset(std::numeric_limits<double>::max_exponent - 1);
+    // To avoid clang warnings about fragile integer division mixed with FP, we let
+    // the divided value (1023/3=341) be the original constant.
+    const std::int32_t  offsetDiv3(341);
     const SimdDouble    c6(-0.145263899385486377);
     const SimdDouble    c5(0.784932344976639262);
     const SimdDouble    c4(-1.83469277483613086);
@@ -2085,10 +2085,9 @@ cbrt(SimdDouble x)
     SimdDouble  nom           = z * fma(two, y, w);
     SimdDouble  invDenom      = inv(fma(two, w, y));
 
-    SimdDouble  offsetExp      = cvtI2R(exponent) + SimdDouble(static_cast<double>(offset) + 0.1);
+    SimdDouble  offsetExp      = cvtI2R(exponent) + SimdDouble(static_cast<double>(3*offsetDiv3) + 0.1);
     SimdDouble  offsetExpDiv3  = trunc(offsetExp * oneThird); // important to truncate here to mimic integer division
-    static_assert( offset % 3 == 0, "Internal math algorithm/implementation inconsistency");
-    SimdDInt32  expDiv3        = cvtR2I(offsetExpDiv3 - SimdDouble(static_cast<double>(int(offset/3))));
+    SimdDInt32  expDiv3        = cvtR2I(offsetExpDiv3 - SimdDouble(static_cast<double>(offsetDiv3)));
     SimdDouble  remainder      = offsetExp - offsetExpDiv3 * three;
     SimdDouble  factor         = blend(one, cbrt2, SimdDouble(0.5) < remainder);
     factor                    = blend(factor, sqrCbrt2, SimdDouble(1.5) < remainder);
@@ -2110,7 +2109,9 @@ invcbrt(SimdDouble x)
 {
     const SimdDouble    signBit(GMX_DOUBLE_NEGZERO);
     // Bias is 1024-1 = 1023, which is divisible by 3, so no need to change it more.
-    const std::int32_t  offset(std::numeric_limits<double>::max_exponent - 1);
+    // To avoid clang warnings about fragile integer division mixed with FP, we let
+    // the divided value (1023/3=341) be the original constant.
+    const std::int32_t  offsetDiv3(341);
     const SimdDouble    c6(-0.145263899385486377);
     const SimdDouble    c5(0.784932344976639262);
     const SimdDouble    c4(-1.83469277483613086);
@@ -2141,10 +2142,9 @@ invcbrt(SimdDouble x)
     SimdDouble  w              = z*z*z;
     SimdDouble  nom            = fma(two, w, y);
     SimdDouble  invDenom       = inv(z * fma(two, y, w));
-    SimdDouble  offsetExp      = cvtI2R(exponent) + SimdDouble(static_cast<double>(offset) + 0.1);
+    SimdDouble  offsetExp      = cvtI2R(exponent) + SimdDouble(static_cast<double>(3*offsetDiv3) + 0.1);
     SimdDouble  offsetExpDiv3  = trunc(offsetExp * oneThird); // important to truncate here to mimic integer division
-    static_assert( offset % 3 == 0, "Internal math algorithm/implementation inconsistency");
-    SimdDInt32  expDiv3        = cvtR2I(SimdDouble(static_cast<double>(int(offset/3))) - offsetExpDiv3);
+    SimdDInt32  expDiv3        = cvtR2I(SimdDouble(static_cast<double>(offsetDiv3)) - offsetExpDiv3);
     SimdDouble  remainder      = offsetExpDiv3 * three - offsetExp;
     SimdDouble  factor         = blend(one, invCbrt2, remainder < SimdDouble(-0.5) );
     factor                    = blend(factor, invSqrCbrt2, remainder < SimdDouble(-1.5));
@@ -3643,7 +3643,8 @@ cbrtSingleAccuracy(SimdDouble x)
     const SimdDouble    signBit(GMX_DOUBLE_NEGZERO);
     const SimdDouble    minDouble(std::numeric_limits<double>::min());
     // Bias is 1024-1 = 1023, which is divisible by 3, so no need to change it more.
-    const std::int32_t  offset(std::numeric_limits<double>::max_exponent - 1);
+    // Use the divided value as original constant to avoid division warnings.
+    const std::int32_t  offsetDiv3(341);
     const SimdDouble    c2(-0.191502161678719066);
     const SimdDouble    c1(0.697570460207922770);
     const SimdDouble    c0(0.492659620528969547);
@@ -3667,10 +3668,9 @@ cbrtSingleAccuracy(SimdDouble x)
     SimdDouble  nom           = z * fma(two, y, w);
     SimdDouble  invDenom      = inv(fma(two, w, y));
 
-    SimdDouble  offsetExp      = cvtI2R(exponent) + SimdDouble(static_cast<double>(offset) + 0.1);
+    SimdDouble  offsetExp      = cvtI2R(exponent) + SimdDouble(static_cast<double>(3*offsetDiv3) + 0.1);
     SimdDouble  offsetExpDiv3  = trunc(offsetExp * oneThird); // important to truncate here to mimic integer division
-    static_assert( offset % 3 == 0, "Internal math algorithm/implementation inconsistency");
-    SimdDInt32  expDiv3        = cvtR2I(offsetExpDiv3 - SimdDouble(static_cast<double>(int(offset/3))));
+    SimdDInt32  expDiv3        = cvtR2I(offsetExpDiv3 - SimdDouble(static_cast<double>(offsetDiv3)));
     SimdDouble  remainder      = offsetExp - offsetExpDiv3 * three;
     SimdDouble  factor         = blend(one, cbrt2, SimdDouble(0.5) < remainder);
     factor                    = blend(factor, sqrCbrt2, SimdDouble(1.5) < remainder);
@@ -3692,7 +3692,8 @@ invcbrtSingleAccuracy(SimdDouble x)
 {
     const SimdDouble    signBit(GMX_DOUBLE_NEGZERO);
     // Bias is 1024-1 = 1023, which is divisible by 3, so no need to change it more.
-    const std::int32_t  offset(std::numeric_limits<double>::max_exponent - 1);
+    // Use the divided value as original constant to avoid division warnings.
+    const std::int32_t  offsetDiv3(341);
     const SimdDouble    c2(-0.191502161678719066);
     const SimdDouble    c1(0.697570460207922770);
     const SimdDouble    c0(0.492659620528969547);
@@ -3714,13 +3715,12 @@ invcbrtSingleAccuracy(SimdDouble x)
     SimdDouble  w              = z*z*z;
     SimdDouble  nom            = fma(two, w, y);
     SimdDouble  invDenom       = inv(z * fma(two, y, w));
-    SimdDouble  offsetExp      = cvtI2R(exponent) + SimdDouble(static_cast<double>(offset) + 0.1);
+    SimdDouble  offsetExp      = cvtI2R(exponent) + SimdDouble(static_cast<double>(3*offsetDiv3) + 0.1);
     SimdDouble  offsetExpDiv3  = trunc(offsetExp * oneThird); // important to truncate here to mimic integer division
-    static_assert( offset % 3 == 0, "Internal math algorithm/implementation inconsistency");
-    SimdDInt32  expDiv3        = cvtR2I(SimdDouble(static_cast<double>(int(offset/3))) - offsetExpDiv3);
+    SimdDInt32  expDiv3        = cvtR2I(SimdDouble(static_cast<double>(offsetDiv3)) - offsetExpDiv3);
     SimdDouble  remainder      = offsetExpDiv3 * three - offsetExp;
     SimdDouble  factor         = blend(one, invCbrt2, remainder < SimdDouble(-0.5) );
-    factor                    = blend(factor, invSqrCbrt2, remainder < SimdDouble(-1.5));
+    factor                     = blend(factor, invSqrCbrt2, remainder < SimdDouble(-1.5));
     SimdDouble  fraction       = (nom * invDenom * factor) ^ xSignBit;
     SimdDouble  result         = ldexp(fraction, expDiv3);
     return result;

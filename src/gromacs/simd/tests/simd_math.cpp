@@ -772,11 +772,10 @@ TEST_F(SimdMathTest, expUnsafe)
 {
     // See test of exp() for comments about test ranges
     const real      lowestRealThatProducesNormal     = (std::numeric_limits<real>::min_exponent - 1)*std::log(2.0);
-    const real      lowestRealThatProducesCorrectExp = lowestRealThatProducesNormal + (GMX_SIMD_HAVE_FMA ? 0.0 : 0.5 * std::numeric_limits<real>::digits * std::log(2.0));
     const real      highestRealThatProducesNormal    = (std::numeric_limits<real>::max_exponent - 1)*std::log(2.0);
 
     CompareSettings settings {
-        Range(lowestRealThatProducesCorrectExp, highestRealThatProducesNormal), ulpTol_, absTol_, MatchRule::Normal
+        Range(lowestRealThatProducesNormal, highestRealThatProducesNormal), ulpTol_, absTol_, MatchRule::Normal
     };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, exp<MathOptimization::Unsafe>, settings);
 }
@@ -1258,14 +1257,13 @@ TEST_F(SimdMathTest, expSingleAccuracyUnsafe)
 {
     // See test of exp() for comments about test ranges
     const real lowestRealThatProducesNormal     = (std::numeric_limits<real>::min_exponent - 1)*std::log(2.0);
-    const real lowestRealThatProducesCorrectExp = lowestRealThatProducesNormal + (GMX_SIMD_HAVE_FMA ? 0.0 : 0.5 * std::numeric_limits<real>::digits * std::log(2.0));
     const real highestRealThatProducesNormal    = (std::numeric_limits<real>::max_exponent - 1)*std::log(2.0);
 
     // Increase the allowed error by the difference between the actual precision and single
     setUlpTolSingleAccuracy(ulpTol_);
 
     CompareSettings settings {
-        Range(lowestRealThatProducesCorrectExp, highestRealThatProducesNormal), ulpTol_, absTol_, MatchRule::Normal
+        Range(lowestRealThatProducesNormal, highestRealThatProducesNormal), ulpTol_, absTol_, MatchRule::Normal
     };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, expSingleAccuracy<MathOptimization::Unsafe>, settings);
 }
