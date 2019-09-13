@@ -104,7 +104,7 @@ class DensityFittingTest : public MdrunTestFixture
         //! Mdp values for steepest-decent energy minimization with density fitting values set to non-defaults.
         const std::string mdpDensiftAllDefaultsChanged_ = formatString(
                     "density-guided-simulation-similarity-measure = relative-entropy\n"
-                    "density-guided-simulation-amplitude-method = mass\n"
+                    "density-guided-simulation-atom-spreading-weight = mass\n"
                     "density-guided-simulation-force-constant = -1\n"
                     "density-guided-simulation-gaussian-transform-spreading-width = 0.8\n"
                     "density-guided-simulation-gaussian-transform-spreading-range-in-multiples-of-width = 6\n"

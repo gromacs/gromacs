@@ -67,7 +67,7 @@ enum class DensityFittingAmplitudeMethod
 
 //! The names of the methods to determine the amplitude of the atoms to be spread on a grid
 const EnumerationArray<DensityFittingAmplitudeMethod, const char * const>
-c_densityFittingAmplitudeMethodNames = {{"unity", "mass", "charges"}};
+c_densityFittingAmplitudeMethodNames = {{"unity", "mass", "charge"}};
 
 class DensityFittingAmplitudeLookupImpl;
 

@@ -112,7 +112,7 @@ class DensityFittingOptions final : public IMdpOptionProvider
 
         const std::string c_similarityMeasureTag_ = "similarity-measure";
 
-        const std::string c_amplitudeMethodTag_ = "amplitude-method";
+        const std::string c_amplitudeMethodTag_ = "atom-spreading-weight";
 
         const std::string c_forceConstantTag_ = "force-constant";
 

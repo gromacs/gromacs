@@ -3197,6 +3197,86 @@ Electrophysiology" simulation setups. (See the `reference manual`_ for details).
 
    (1.0) [nm] Lower extension of the split cylinder #1.
 
+Density-guided simulations
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+These options enable and control the calculation and application of additional
+forces that are derived from three-dimensional densities, e.g., from cryo
+electron-microscopy experiments. (See the `reference manual`_ for details)
+
+.. mdp:: density-guided-simulation-active
+
+   (no) Activate density-guided simulations.
+
+.. mdp:: density-guided-simulation-group
+
+   (protein) The atoms that are subject to the forces from the density-guided
+   simulation and contribute to the simulated density.
+
+.. mdp:: density-guided-simulation-similarity-measure
+
+   (inner-product) Similarity measure between the density that is calculated
+   from the atom positions and the reference density.
+
+   .. mdp-value:: inner-product
+
+      Takes the sum of the product of reference density and simulated density
+      voxel values.
+
+   .. mdp-value:: relative-entropy
+
+      Uses the negative relative entropy (or Kullback-Leibler divergence)
+      between reference density and simulated density as similarity measure.
+      Negative density values are ignored.
+
+.. mdp:: density-guided-simulation-atom-spreading-weight
+
+   (unity) Determines the multiplication factor for the Gaussian kernel when
+   spreading atoms on the grid.
+
+   .. mdp-value:: unity
+
+      Every atom in the density fitting group is assigned the same unit factor.
+
+   .. mdp-value:: mass
+
+      Atoms contribute to the simulated density proportional to their mass.
+
+   .. mdp-value:: charge
+
+      Atoms contribute to the simulated density proportional to their charge.
+
+.. mdp:: density-guided-simulation-force-constant
+
+   (1e+09) [kJ mol\ :sup:`-1`] The scaling factor for density-guided simulation
+   forces. May also be negative.
+
+.. mdp:: density-guided-simulation-gaussian-transform-spreading-width
+
+   (0.2) [nm] The Gaussian RMS width for the spread kernel for the simulated
+   density.
+
+.. mdp:: density-guided-simulation-gaussian-transform-spreading-range-in-multiples-of-width
+
+   (4) The range after which the gaussian is cut off in multiples of the Gaussian
+   RMS width described above.
+
+.. mdp:: density-guided-simulation-reference-density-filename
+
+   (reference.mrc) Reference density file name using an absolute path or a path
+   relative to the to the folder from which :ref:`gmx mdrun` is called.
+
+.. mdp:: density-guided-simulation-nst
+
+   (1) Interval in steps at which the density fitting forces are evaluated
+   and applied. The forces are scaled by this number when applied (See the
+   `reference manual`_ for details).
+
+.. mdp:: density-guided-simulation-normalize-densities
+
+   (true) Normalize the sum of density voxel values to one for the reference
+   density as well as the simulated density.
+
 
 User defined thingies
 ^^^^^^^^^^^^^^^^^^^^^

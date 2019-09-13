@@ -198,7 +198,7 @@ TEST_F(DensityFittingOptionsTest, OutputDefaultValuesWhenActive)
         "; Similarity measure between densities: inner-product, or relative-entropy\n"
         "density-guided-simulation-similarity-measure = inner-product\n"
         "; Atom amplitude for spreading onto grid: unity, mass, or charges\n"
-        "density-guided-simulation-amplitude-method = unity\n"
+        "density-guided-simulation-atom-spreading-weight = unity\n"
         "density-guided-simulation-force-constant = 1e+09\n"
         "density-guided-simulation-gaussian-transform-spreading-width = 0.2\n"
         "density-guided-simulation-gaussian-transform-spreading-range-in-multiples-of-width = 4\n"
