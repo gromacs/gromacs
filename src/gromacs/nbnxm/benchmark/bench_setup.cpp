@@ -51,6 +51,7 @@
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
+#include "gromacs/mdlib/ppforceworkload.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -182,11 +183,11 @@ setupNbnxmForBenchInstance(const KernelBenchOptions   &options,
 
     PairlistParams     pairlistParams(kernelSetup.kernelType, false, options.pairlistCutoff, false);
 
-    GridSet            gridSet(epbcXYZ, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
+    GridSet            gridSet(epbcXYZ, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
 
     auto               pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
 
-    auto               pairSearch   = std::make_unique<PairSearch>(epbcXYZ, nullptr, nullptr,
+    auto               pairSearch   = std::make_unique<PairSearch>(epbcXYZ, false, nullptr, nullptr,
                                                                    pairlistParams.pairlistType,
                                                                    false, numThreads, pinPolicy);
 
@@ -297,10 +298,12 @@ static void setupAndRunInstance(const gmx::BenchmarkSystem &system,
 
     gmx_enerdata_t        enerd(1, 0);
 
-    int                   forceFlags = GMX_FORCE_FORCES;
+    gmx::ForceFlags       forceFlags;
+    forceFlags.computeForces = true;
     if (options.computeVirialAndEnergy)
     {
-        forceFlags |= GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY;
+        forceFlags.computeVirial = true;
+        forceFlags.computeEnergy = true;
     }
 
     const gmx::EnumerationArray<BenchMarkKernels, std::string>  kernelNames = { "auto", "no", "4xM", "2xMM" };
