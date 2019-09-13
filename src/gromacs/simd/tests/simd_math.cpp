@@ -185,8 +185,8 @@ SimdMathTest::generateTestPoints(Range inputRange, std::size_t inputPoints)
 
     if (inputRange.first < 0 && inputRange.second > 0)
     {
-        testRanges.push_back({inputRange.first, -std::numeric_limits<real>::min()});
-        testRanges.push_back({0.0, inputRange.second});
+        testRanges.emplace_back(Range({inputRange.first, -std::numeric_limits<real>::min()}));
+        testRanges.emplace_back(Range({0.0, inputRange.second}));
     }
     else
     {
@@ -772,7 +772,7 @@ TEST_F(SimdMathTest, expUnsafe)
 {
     // See test of exp() for comments about test ranges
     const real      lowestRealThatProducesNormal     = (std::numeric_limits<real>::min_exponent - 1)*std::log(2.0);
-    const real      lowestRealThatProducesCorrectExp = lowestRealThatProducesNormal + GMX_SIMD_HAVE_FMA ? 0.0 : 0.5 * std::numeric_limits<real>::digits * std::log(2.0);
+    const real      lowestRealThatProducesCorrectExp = lowestRealThatProducesNormal + (GMX_SIMD_HAVE_FMA ? 0.0 : 0.5 * std::numeric_limits<real>::digits * std::log(2.0));
     const real      highestRealThatProducesNormal    = (std::numeric_limits<real>::max_exponent - 1)*std::log(2.0);
 
     CompareSettings settings {
@@ -1258,7 +1258,7 @@ TEST_F(SimdMathTest, expSingleAccuracyUnsafe)
 {
     // See test of exp() for comments about test ranges
     const real lowestRealThatProducesNormal     = (std::numeric_limits<real>::min_exponent - 1)*std::log(2.0);
-    const real lowestRealThatProducesCorrectExp = lowestRealThatProducesNormal + GMX_SIMD_HAVE_FMA ? 0.0 : 0.5 * std::numeric_limits<real>::digits * std::log(2.0);
+    const real lowestRealThatProducesCorrectExp = lowestRealThatProducesNormal + (GMX_SIMD_HAVE_FMA ? 0.0 : 0.5 * std::numeric_limits<real>::digits * std::log(2.0));
     const real highestRealThatProducesNormal    = (std::numeric_limits<real>::max_exponent - 1)*std::log(2.0);
 
     // Increase the allowed error by the difference between the actual precision and single

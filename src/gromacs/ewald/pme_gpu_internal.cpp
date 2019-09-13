@@ -663,13 +663,13 @@ void pme_gpu_getEnergyAndVirial(const gmx_pme_t &pme,
  * \param[in]   pmeGpu      PME GPU data structure
  * \param[out]  output      Pointer to PME output data structure
  */
-static void pme_gpu_getForceOutput(PmeGpu    &pmeGpu,
+static void pme_gpu_getForceOutput(PmeGpu    *pmeGpu,
                                    PmeOutput *output)
 {
-    output->haveForceOutput_ = !pmeGpu.settings.useGpuForceReduction;
+    output->haveForceOutput_ = !pmeGpu->settings.useGpuForceReduction;
     if (output->haveForceOutput_)
     {
-        output->forces_      =  pmeGpu.staging.h_forces;
+        output->forces_      =  pmeGpu->staging.h_forces;
     }
 }
 
@@ -681,7 +681,7 @@ PmeOutput pme_gpu_getOutput(const gmx_pme_t &pme,
 
     PmeOutput  output;
 
-    pme_gpu_getForceOutput(*pmeGpu, &output);
+    pme_gpu_getForceOutput(pmeGpu, &output);
 
     // The caller knows from the flags that the energy and the virial are not usable
     // on the else branch

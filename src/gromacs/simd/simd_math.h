@@ -450,7 +450,7 @@ cbrt(SimdFloat x)
 
     // Compile-time sanity check that our math is correct
     static_assert( offset % 3 == 0, "Internal math algorithm/implementation inconsistency");
-    SimdFInt32 expDiv3       = cvtR2I(offsetExpDiv3 - SimdFloat(static_cast<float>(offset/3)));
+    SimdFInt32 expDiv3       = cvtR2I(offsetExpDiv3 - SimdFloat(static_cast<float>(int(offset/3))));
 
     SimdFloat  remainder      = offsetExp - offsetExpDiv3 * three;
 
@@ -520,7 +520,7 @@ invcbrt(SimdFloat x)
     // Compile-time sanity check that our math is correct
     static_assert( offset % 3 == 0, "Internal math algorithm/implementation inconsistency");
     // We should swap the sign here, so we change order of the terms in the subtraction
-    SimdFInt32 expDiv3       = cvtR2I(SimdFloat(static_cast<float>(offset/3)) - offsetExpDiv3);
+    SimdFInt32 expDiv3       = cvtR2I(SimdFloat(static_cast<float>(int(offset/3))) - offsetExpDiv3);
 
     // Swap sign here too, so remainder is either 0, -1 or -2
     SimdFloat remainder      = offsetExpDiv3 * three - offsetExp;
@@ -2088,7 +2088,7 @@ cbrt(SimdDouble x)
     SimdDouble  offsetExp      = cvtI2R(exponent) + SimdDouble(static_cast<double>(offset) + 0.1);
     SimdDouble  offsetExpDiv3  = trunc(offsetExp * oneThird); // important to truncate here to mimic integer division
     static_assert( offset % 3 == 0, "Internal math algorithm/implementation inconsistency");
-    SimdDInt32  expDiv3        = cvtR2I(offsetExpDiv3 - SimdDouble(static_cast<double>(offset/3)));
+    SimdDInt32  expDiv3        = cvtR2I(offsetExpDiv3 - SimdDouble(static_cast<double>(int(offset/3))));
     SimdDouble  remainder      = offsetExp - offsetExpDiv3 * three;
     SimdDouble  factor         = blend(one, cbrt2, SimdDouble(0.5) < remainder);
     factor                    = blend(factor, sqrCbrt2, SimdDouble(1.5) < remainder);
@@ -2144,7 +2144,7 @@ invcbrt(SimdDouble x)
     SimdDouble  offsetExp      = cvtI2R(exponent) + SimdDouble(static_cast<double>(offset) + 0.1);
     SimdDouble  offsetExpDiv3  = trunc(offsetExp * oneThird); // important to truncate here to mimic integer division
     static_assert( offset % 3 == 0, "Internal math algorithm/implementation inconsistency");
-    SimdDInt32  expDiv3        = cvtR2I(SimdDouble(static_cast<double>(offset/3)) - offsetExpDiv3);
+    SimdDInt32  expDiv3        = cvtR2I(SimdDouble(static_cast<double>(int(offset/3))) - offsetExpDiv3);
     SimdDouble  remainder      = offsetExpDiv3 * three - offsetExp;
     SimdDouble  factor         = blend(one, invCbrt2, remainder < SimdDouble(-0.5) );
     factor                    = blend(factor, invSqrCbrt2, remainder < SimdDouble(-1.5));
@@ -3670,7 +3670,7 @@ cbrtSingleAccuracy(SimdDouble x)
     SimdDouble  offsetExp      = cvtI2R(exponent) + SimdDouble(static_cast<double>(offset) + 0.1);
     SimdDouble  offsetExpDiv3  = trunc(offsetExp * oneThird); // important to truncate here to mimic integer division
     static_assert( offset % 3 == 0, "Internal math algorithm/implementation inconsistency");
-    SimdDInt32  expDiv3        = cvtR2I(offsetExpDiv3 - SimdDouble(static_cast<double>(offset/3)));
+    SimdDInt32  expDiv3        = cvtR2I(offsetExpDiv3 - SimdDouble(static_cast<double>(int(offset/3))));
     SimdDouble  remainder      = offsetExp - offsetExpDiv3 * three;
     SimdDouble  factor         = blend(one, cbrt2, SimdDouble(0.5) < remainder);
     factor                    = blend(factor, sqrCbrt2, SimdDouble(1.5) < remainder);
@@ -3717,7 +3717,7 @@ invcbrtSingleAccuracy(SimdDouble x)
     SimdDouble  offsetExp      = cvtI2R(exponent) + SimdDouble(static_cast<double>(offset) + 0.1);
     SimdDouble  offsetExpDiv3  = trunc(offsetExp * oneThird); // important to truncate here to mimic integer division
     static_assert( offset % 3 == 0, "Internal math algorithm/implementation inconsistency");
-    SimdDInt32  expDiv3        = cvtR2I(SimdDouble(static_cast<double>(offset/3)) - offsetExpDiv3);
+    SimdDInt32  expDiv3        = cvtR2I(SimdDouble(static_cast<double>(int(offset/3))) - offsetExpDiv3);
     SimdDouble  remainder      = offsetExpDiv3 * three - offsetExp;
     SimdDouble  factor         = blend(one, invCbrt2, remainder < SimdDouble(-0.5) );
     factor                    = blend(factor, invSqrCbrt2, remainder < SimdDouble(-1.5));
