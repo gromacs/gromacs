@@ -886,7 +886,7 @@ void Optimization::InitOpt(FILE *fplog)
 
     for (size_t bt = 0; bt < fts.size(); bt++)
     {
-        ForceConstants fc(bt, fts[bt], static_cast<InteractionType>(bt), iOpt_[bt]);
+        ForceConstants fc(fts[bt], static_cast<InteractionType>(bt), iOpt_[bt]);
         fc.analyzeIdef(mymols(), poldata());
         fc.makeReverseIndex();
         fc.dump(fplog);
@@ -973,9 +973,11 @@ double Optimization::calcDeviation()
                 auto molEnergyEntry = MolEnergyMap_.find(molid);
                 if (molEnergyEntry == MolEnergyMap_.end())
                 {
+                    // Create new (empty) MolEnergy and insert it into the map
                     MolEnergy me;
-                    molEnergyEntry = MolEnergyMap_.insert(MolEnergyMap_.begin(),
-                                                          std::pair<int, MolEnergy>(molid, std::move(me)));
+                    molEnergyEntry = 
+                        MolEnergyMap_.insert(MolEnergyMap_.begin(),
+                                             std::pair<int, MolEnergy>(molid, std::move(me)));
                 }
                 molEnergyEntry->second.clear();
                 // Now loop over experiments!
@@ -1116,7 +1118,7 @@ double Optimization::calcDeviation()
         fprintf(debug, "%d: ePot2 = %g nCalc = %g chi2 = %g\n",
                 commrec()->nodeid, ePot2, nCalc, chi2);
     }
-    //setEnergy(ermsEPOT, chi2);
+    setEnergy(ermsEPOT, chi2);
     setEnergy(ermsTOT, chi2);
     printEnergies(debug);
     
@@ -1135,21 +1137,18 @@ bool Optimization::optRun(FILE                   *fplog,
         {
             // Tell the slave nodes how many times they have
             // to run calcDeviation.
-            int niter = 2+Bayes::maxIter()*Bayes::nParam();
+            int niter = 3+Bayes::maxIter()*Bayes::nParam();
             for (int dest = 1; dest < commrec()->nnodes; dest++)
             {
                 gmx_send_int(commrec(), dest, niter);
             }
         }
-        auto     param    = Bayes::getParam();
-        double   chi2_min = Bayes::objFunction(param.data());
+        double   chi2_min = Bayes::objFunction(Bayes::getParam().data());
         double   chi2     = chi2_min;
-
         {
-            std::vector<double> lower, upper;
-            auto                func = [&] (const double v[]) {
-                                           return Bayes::objFunction(v);
-                };
+            auto func = [&] (const double v[]) {
+                            return Bayes::objFunction(v);
+                        };
             Bayes::setFunc(func, &chi2);
             Bayes::setOutputFiles(xvgconv, xvgepot, oenv);
         }
@@ -1158,18 +1157,15 @@ bool Optimization::optRun(FILE                   *fplog,
         {
             chi2_min = chi2;
             bMinimum = true;
-            auto best   = Bayes::getBestParam();
-            auto psigma = Bayes::getPsigma();
-            auto pmean  = Bayes::getPmean();
 
             // This call copies data to poldata as well.
             setFinal();
-            double chi2 = Bayes::objFunction(best.data());
             if (fplog)
             {
                 auto pmean  = Bayes::getPmean();
                 auto psigma = Bayes::getPsigma();
                 auto best   = Bayes::getBestParam();
+                double chi2 = Bayes::objFunction(best.data());
                 fprintf(fplog, "\nLowest RMSD value during optimization: %g.\n",
                         std::sqrt(chi2));
                 fprintf(fplog, "Parameters after the optimization:\n");

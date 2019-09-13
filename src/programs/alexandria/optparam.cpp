@@ -137,6 +137,7 @@ void Bayes::setParamBounds(real factor)
         upperBound_.push_back(param_[i]*factor);
     }
     bestParam_  = param_;
+    prevParam_  = param_;
 }
 
 void Bayes::setParam(parm_t param)
@@ -167,9 +168,9 @@ double Bayes::objFunction(const double v[])
     std::vector<bool> changed(np, false);
     for (size_t i = 0; i < np; i++)
     {
-        if (param_[i] != v[i])
+        if (prevParam_[i] != v[i])
         {
-            param_[i]  = v[i];
+            //param_[i]  = v[i];
             changed[i] = true;
         }
     }
@@ -206,13 +207,12 @@ void Bayes::MCMC()
     {
         fpe = xvgropen(xvgEpot(), "Parameter energy", "iteration", "\\f{12}c\\S2\\f{4}", oenv());
     }
-
     nParam = param_.size();
     sum.resize(nParam, 0);
     sum_of_sq.resize(nParam, 0);
     pmean_.resize(nParam, 0);
     psigma_.resize(nParam, 0);
-    
+        
     prevEval  = func_(param_.data());
     *minEval_ = prevEval;
     if (debug)
@@ -223,7 +223,7 @@ void Bayes::MCMC()
     {
         double beta = computeBeta(iter/nParam);
         int       j = static_cast<int>(std::round((1+uniform(gen))*nParam)) % nParam; // Pick random parameter to change
-        
+        prevParam_ = param_;
         storeParam = param_[j];
         changeParam(j, uniform(gen));
         currEval        = func_(param_.data());

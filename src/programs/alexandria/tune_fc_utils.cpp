@@ -291,7 +291,7 @@ CommunicationStatus ForceConstants::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_int(cr, dest, bt_);
+        //        gmx_send_int(cr, dest, bt_);
         gmx_send_int(cr, dest, ftype_);
         itype.assign(iType2string(itype_));
         gmx_send_str(cr, dest, &itype);
@@ -324,7 +324,7 @@ CommunicationStatus ForceConstants::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        bt_           = gmx_recv_int(cr, src);
+        //bt_           = gmx_recv_int(cr, src);
         ftype_        = gmx_recv_int(cr, src);
         gmx_recv_str(cr, src, &itype);
         itype_        = string2iType(itype.c_str());
@@ -359,108 +359,85 @@ CommunicationStatus ForceConstants::Receive(t_commrec *cr, int src)
 void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
                                  const Poldata            *pd)
 {
-    std::string  aai, aaj, aak, aal;
-
     if (!bOpt_)
     {
         return;
     }
     for (auto &mymol : mm)
     {
-        for (int i = 0; (i < mymol.ltop_->idef.il[ftype_].nr);
+        bool bondsFound = true;
+        for (int i = 0; (i < mymol.ltop_->idef.il[ftype_].nr) && bondsFound;
              i += interaction_function[ftype_].nratoms+1)
         {
             std::vector<std::string> atoms;
             double                   geometry  = 0;
             std::string              params;
             bool                     found     = false;
-            int                      ai        = mymol.ltop_->idef.il[ftype_].iatoms[i+1];
-            int                      aj        = mymol.ltop_->idef.il[ftype_].iatoms[i+2];
-            if (pd->atypeToBtype( *mymol.atoms_->atomtype[ai], aai) &&
-                pd->atypeToBtype( *mymol.atoms_->atomtype[aj], aaj))
+            std::string              buf;
+            // Loop starts from 1 because the first value is the function type
+            for(int j = 1; j <= interaction_function[ftype_].nratoms && bondsFound; j++)
+            {
+                std::string aa;
+                int         ai = mymol.ltop_->idef.il[ftype_].iatoms[i+j];
+                if (!pd->atypeToBtype( *mymol.atoms_->atomtype[ai], aa))
+                {
+                    bondsFound = false;
+                }
+                else
+                {
+                    atoms.push_back(aa);
+                    buf.append(" ").append(aa);
+                }
+            }
+            auto fs = pd->findForces(itype_);
+            auto f  = fs->findForce(atoms);
+            if (bondsFound && (fs->forceEnd() != f && !f->fixed()))
             {
                 int         index = 0;
-                std::string buf;
                 std::string buf_reverse;
-                auto        iType = static_cast<InteractionType>(bt_);
-                switch (iType)
+                auto ss = gmx::splitString(buf);
+                for(int j = ss.size()-1; j >= 0; j--)
                 {
-                    case eitBONDS:
+                    buf_reverse.append(" ").append(ss[j]);
+                }
+                
+                switch (itype_)
+                {
+                case eitBONDS:
                     {
-                        atoms   = {aai, aaj};
-                        auto fs = pd->findForces(iType);
-                        auto f  = fs->findForce(atoms);
-
-                        if (fs->forceEnd() != f && !f->fixed())
-                        {
-                            buf         = gmx::formatString("%s %s", aai.c_str(), aaj.c_str());
-                            buf_reverse = gmx::formatString("%s %s", aaj.c_str(), aai.c_str());
-                            geometry    = f->refValue();
-                            params      = f->params();
-                            index       = f - fs->forceBegin();
-                            found       = true;
-                        }
+                        geometry    = f->refValue();
+                        params      = f->params();
+                        index       = f - fs->forceBegin();
+                        found       = true;
                     }
                     break;
-                    case eitANGLES:
-                    case eitLINEAR_ANGLES:
+                case eitANGLES:
+                case eitLINEAR_ANGLES:
                     {
-                        int ak  = mymol.ltop_->idef.il[ftype_].iatoms[i+3];
-                        if (pd->atypeToBtype( *mymol.atoms_->atomtype[ak], aak))
-                        {
-                            atoms   = {aai, aaj, aak};
-                            auto fs = pd->findForces(iType);
-                            auto f  = fs->findForce(atoms);
-
-                            if (fs->forceEnd() != f && !f->fixed())
-                            {
-                                buf         = gmx::formatString("%s %s %s", aai.c_str(),
-                                                                aaj.c_str(), aak.c_str());
-                                buf_reverse = gmx::formatString("%s %s %s", aak.c_str(),
-                                                                aaj.c_str(), aai.c_str());
-                                geometry    = f->refValue();
-                                params      = f->params();
-                                index       = f - fs->forceBegin();
-                                found       = true;
-                            }
-                        }
+                        geometry    = f->refValue();
+                        params      = f->params();
+                        index       = f - fs->forceBegin();
+                        found       = true;
                     }
                     break;
-                    case eitPROPER_DIHEDRALS:
-                    case eitIMPROPER_DIHEDRALS:
+                case eitPROPER_DIHEDRALS:
+                case eitIMPROPER_DIHEDRALS:
                     {
-                        int ak  = mymol.ltop_->idef.il[ftype_].iatoms[i+3];
-                        int al  = mymol.ltop_->idef.il[ftype_].iatoms[i+4];
-                        if (pd->atypeToBtype( *mymol.atoms_->atomtype[ak], aak) &&
-                            pd->atypeToBtype( *mymol.atoms_->atomtype[al], aal))
-                        {
-                            atoms   = {aai, aaj, aak, aal};
-                            auto fs = pd->findForces(iType);
-                            auto f  = fs->findForce(atoms);
-
-                            if (fs->forceEnd() != f && !f->fixed())
-                            {
-                                buf          = gmx::formatString("%s %s %s %s", aai.c_str(),
-                                                                 aaj.c_str(), aak.c_str(), aal.c_str());
-                                buf_reverse  = gmx::formatString("%s %s %s %s", aal.c_str(),
-                                                                 aaj.c_str(), aak.c_str(), aai.c_str());
-                                geometry     = f->refValue();
-                                params       = f->params();
-                                index        = f - fs->forceBegin();
-                                found        = true;
-                            }
-                        }
+                        geometry     = f->refValue();
+                        params       = f->params();
+                        index        = f - fs->forceBegin();
+                        found        = true;
                     }
                     break;
-                    case eitPOLARIZATION:
-                    case eitVDW:
-                    case eitLJ14:
-                    case eitVSITE2:
-                    case eitVSITE3FAD:
-                    case eitVSITE3OUT:
-                    case eitCONSTR:
-                    case eitNR:
-                        break;
+                case eitPOLARIZATION:
+                case eitVDW:
+                case eitLJ14:
+                case eitVSITE2:
+                case eitVSITE3FAD:
+                case eitVSITE3OUT:
+                case eitCONSTR:
+                case eitNR:
+                    break;
                 }
                 if (found)
                 {

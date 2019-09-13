@@ -242,12 +242,10 @@ class ForceConstants
 
         ForceConstants () {}
 
-    ForceConstants(int bt, 
-                   int ftype, 
+    ForceConstants(int ftype, 
                    InteractionType itype, 
                    bool bOpt)
             :
-              bt_(bt),
               ftype_(ftype),
               itype_(itype),
               bOpt_(bOpt)
@@ -275,8 +273,6 @@ class ForceConstants
             return reverseIndex_[poldataIndex];
         }
 
-        int bt2() const { return bt_; }
-
         int ftype() const { return ftype_; }
 
         InteractionType interactionType() const { return itype_; }
@@ -294,8 +290,6 @@ class ForceConstants
         CommunicationStatus Receive(t_commrec *cr, int src);
 
     private:
-
-        int                    bt_;
         int                    ftype_;
         InteractionType        itype_;
         bool                   bOpt_;
