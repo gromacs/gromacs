@@ -764,10 +764,6 @@ void nbnxn_gpu_copy_x_to_gpu(const Nbnxm::Grid               &grid,
     // empty domain avoid launching zero-byte copy
     if (nCopyAtoms == 0)
     {
-        if (interactionLoc == Nbnxm::InteractionLocality::Local)
-        {
-            nbnxnInsertNonlocalGpuDependency(nb, interactionLoc);
-        }
         return;
     }
 
@@ -848,6 +844,9 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
         launchGpuKernel(kernelFn, config, nullptr, "XbufferOps", kernelArgs);
     }
 
+    // TODO: note that this is not necessary when there are no local atoms, that is:
+    // (numAtoms == 0 && interactionLoc == InteractionLocality::Local)
+    // but for now we avoid that optimization
     nbnxnInsertNonlocalGpuDependency(nb, interactionLoc);
 }
 
