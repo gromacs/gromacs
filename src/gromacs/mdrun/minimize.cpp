@@ -107,6 +107,8 @@
 #include "legacysimulator.h"
 #include "shellfc.h"
 
+using gmx::MdrunScheduleWorkload;
+
 //! Utility structure for manipulating states during EM
 typedef struct {
     //! Copy of the global state
@@ -790,7 +792,7 @@ class EnergyEvaluator
         //! Handles how to calculate the forces.
         t_forcerec              *fr;
         //! Schedule of force-calculation work each step for this task.
-        gmx::MdScheduleWorkload *mdScheduleWork;
+        MdrunScheduleWorkload   *runScheduleWork;
         //! Stores the computed energies.
         gmx_enerdata_t          *enerd;
 };
@@ -849,7 +851,7 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
              count, nrnb, wcycle, top,
              ems->s.box, ems->s.x.arrayRefWithPadding(), &ems->s.hist,
              ems->f.arrayRefWithPadding(), force_vir, mdAtoms->mdatoms(), enerd, fcd,
-             ems->s.lambda, graph, fr, mdScheduleWork, vsite, mu_tot, t, nullptr,
+             ems->s.lambda, graph, fr, runScheduleWork, vsite, mu_tot, t, nullptr,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
              (bNS ? GMX_FORCE_NS : 0),
@@ -1137,7 +1139,7 @@ LegacySimulator::do_cg()
         top_global, &top,
         inputrec, imdSession, pull_work, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
-        mdAtoms, fr, mdScheduleWork, enerd
+        mdAtoms, fr, runScheduleWork, enerd
     };
     /* Call the force routine and some auxiliary (neighboursearching etc.) */
     /* do_force always puts the charge groups in the box and shifts again
@@ -1817,7 +1819,7 @@ LegacySimulator::do_lbfgs()
         top_global, &top,
         inputrec, imdSession, pull_work, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
-        mdAtoms, fr, mdScheduleWork, enerd
+        mdAtoms, fr, runScheduleWork, enerd
     };
     energyEvaluator.run(&ems, mu_tot, vir, pres, -1, TRUE);
 
@@ -2477,7 +2479,7 @@ LegacySimulator::do_steep()
         top_global, &top,
         inputrec, imdSession, pull_work, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
-        mdAtoms, fr, mdScheduleWork, enerd
+        mdAtoms, fr, runScheduleWork, enerd
     };
 
     /**** HERE STARTS THE LOOP ****
@@ -2782,7 +2784,7 @@ LegacySimulator::do_nm()
         top_global, &top,
         inputrec, imdSession, pull_work, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
-        mdAtoms, fr, mdScheduleWork, enerd
+        mdAtoms, fr, runScheduleWork, enerd
     };
     energyEvaluator.run(&state_work, mu_tot, vir, pres, -1, TRUE);
     cr->nnodes = nnodes;
@@ -2869,7 +2871,7 @@ LegacySimulator::do_nm()
                                         graph,
                                         shellfc,
                                         fr,
-                                        mdScheduleWork,
+                                        runScheduleWork,
                                         t,
                                         mu_tot,
                                         vsite,

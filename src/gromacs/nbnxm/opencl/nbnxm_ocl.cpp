@@ -72,7 +72,7 @@
 #include "gromacs/gpu_utils/gputraits_ocl.h"
 #include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/hardware/hw_info.h"
-#include "gromacs/mdlib/ppforceworkload.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_common.h"
 #include "gromacs/nbnxm/gpu_common_utils.h"
@@ -468,7 +468,7 @@ void gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
    are finished and synchronize with this event in the non-local stream.
  */
 void gpu_launch_kernel(gmx_nbnxn_ocl_t                  *nb,
-                       const gmx::ForceFlags            &forceFlags,
+                       const gmx::StepWorkload          &stepWork,
                        const Nbnxm::InteractionLocality  iloc)
 {
     cl_atomdata_t       *adat    = nb->atdat;
@@ -546,13 +546,13 @@ void gpu_launch_kernel(gmx_nbnxn_ocl_t                  *nb,
     const auto     kernel       = select_nbnxn_kernel(nb,
                                                       nbp->eeltype,
                                                       nbp->vdwtype,
-                                                      forceFlags.computeEnergy,
+                                                      stepWork.computeEnergy,
                                                       (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune));
 
 
     // The OpenCL kernel takes int as second to last argument because bool is
     // not supported as a kernel argument type (sizeof(bool) is implementation defined).
-    const int computeFshift = static_cast<int>(forceFlags.computeVirial);
+    const int computeFshift = static_cast<int>(stepWork.computeVirial);
     if (useLjCombRule(nb->nbparam->vdwtype))
     {
         const auto kernelArgs = prepareGpuKernelArguments(kernel, config,
@@ -734,7 +734,7 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t           *nb,
  */
 void gpu_launch_cpyback(gmx_nbnxn_ocl_t                          *nb,
                         struct nbnxn_atomdata_t                  *nbatom,
-                        const gmx::ForceFlags                    &forceFlags,
+                        const gmx::StepWorkload                  &stepWork,
                         const AtomLocality                        aloc,
                         const bool                     gmx_unused copyBackNbForce)
 {
@@ -804,14 +804,14 @@ void gpu_launch_cpyback(gmx_nbnxn_ocl_t                          *nb,
     if (iloc == InteractionLocality::Local)
     {
         /* DtoH fshift when virial is needed */
-        if (forceFlags.computeVirial)
+        if (stepWork.computeVirial)
         {
             ocl_copy_D2H_async(nb->nbst.fshift, adat->fshift, 0,
                                SHIFTS * adat->fshift_elem_size, stream, bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
         }
 
         /* DtoH energies */
-        if (forceFlags.computeEnergy)
+        if (stepWork.computeEnergy)
         {
             ocl_copy_D2H_async(nb->nbst.e_lj, adat->e_lj, 0,
                                sizeof(float), stream, bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);

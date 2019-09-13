@@ -94,7 +94,6 @@
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/membed.h"
-#include "gromacs/mdlib/ppforceworkload.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/stophandler.h"
@@ -113,6 +112,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
@@ -1546,7 +1546,7 @@ int Mdrunner::mdrunner()
         // TODO This is not the right place to manage the lifetime of
         // this data structure, but currently it's the easiest way to
         // make it work.
-        MdScheduleWorkload mdScheduleWork;
+        MdrunScheduleWorkload runScheduleWork;
 
         GMX_ASSERT(stopHandlerBuilder_, "Runner must provide StopHandlerBuilder to simulator.");
         SimulatorBuilder simulatorBuilder;
@@ -1575,7 +1575,7 @@ int Mdrunner::mdrunner()
                     mdAtoms.get(), &nrnb, wcycle, fr,
                     &enerd,
                     &ekind,
-                    &mdScheduleWork,
+                    &runScheduleWork,
                     replExParams,
                     membed,
                     walltime_accounting,

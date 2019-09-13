@@ -57,8 +57,8 @@
 #include "gromacs/listed_forces/gpubonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdlib/force_flags.h"
-#include "gromacs/mdlib/ppforceworkload.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
 #include "gromacs/utility/gmxassert.h"
@@ -862,17 +862,17 @@ GpuBonded::Impl::launchKernel(const t_forcerec *fr,
 }
 
 void
-GpuBonded::launchKernel(const t_forcerec      *fr,
-                        const gmx::ForceFlags &forceFlags,
-                        const matrix           box)
+GpuBonded::launchKernel(const t_forcerec        *fr,
+                        const gmx::StepWorkload &stepWork,
+                        const matrix             box)
 {
-    if (forceFlags.computeEnergy)
+    if (stepWork.computeEnergy)
     {
         // When we need the energy, we also need the virial
         impl_->launchKernel<true, true>
             (fr, box);
     }
-    else if (forceFlags.computeVirial)
+    else if (stepWork.computeVirial)
     {
         impl_->launchKernel<true, false>
             (fr, box);

@@ -71,7 +71,7 @@ namespace gmx
 enum class StartingBehavior;
 class BoxDeformation;
 class Constraints;
-class MdScheduleWorkload;
+class MdrunScheduleWorkload;
 class IMDOutputProvider;
 struct MdModulesNotifier;
 class ImdSession;
@@ -129,7 +129,7 @@ class ISimulator
             t_forcerec                         *fr,
             gmx_enerdata_t                     *enerd,
             gmx_ekindata_t                     *ekind,
-            MdScheduleWorkload                 *mdScheduleWork,
+            MdrunScheduleWorkload              *runScheduleWork,
             const ReplicaExchangeParameters    &replExParams,
             gmx_membed_t                       *membed,
             gmx_walltime_accounting            *walltime_accounting,
@@ -164,7 +164,7 @@ class ISimulator
             fr(fr),
             enerd(enerd),
             ekind(ekind),
-            mdScheduleWork(mdScheduleWork),
+            runScheduleWork(runScheduleWork),
             replExParams(replExParams),
             membed(membed),
             walltime_accounting(walltime_accounting),
@@ -232,7 +232,7 @@ class ISimulator
         //! Kinetic energy data.
         gmx_ekindata_t                     *ekind;
         //! Schedule of work for each MD step for this task.
-        MdScheduleWorkload                 *mdScheduleWork;
+        MdrunScheduleWorkload              *runScheduleWork;
         //! Parameters for replica exchange algorihtms.
         const ReplicaExchangeParameters    &replExParams;
         //! Parameters for membrane embedding.

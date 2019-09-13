@@ -59,7 +59,7 @@ class Awh;
 class EnergyElement;
 class ImdSession;
 class MDAtoms;
-class MdScheduleWorkload;
+class MdrunScheduleWorkload;
 class StatePropagatorData;
 
 //! \addtogroup module_modularsimulator
@@ -79,24 +79,24 @@ class ShellFCElement final :
     public:
         //! Constructor
         ShellFCElement(
-            StatePropagatorData *statePropagatorData,
-            EnergyElement       *energyElement,
-            bool                 isVerbose,
-            bool                 isDynamicBox,
-            FILE                *fplog,
-            const t_commrec     *cr,
-            const t_inputrec    *inputrec,
-            const MDAtoms       *mdAtoms,
-            t_nrnb              *nrnb,
-            t_forcerec          *fr,
-            t_fcdata            *fcd,
-            gmx_wallcycle       *wcycle,
-            MdScheduleWorkload  *mdScheduleWork,
-            gmx_vsite_t         *vsite,
-            ImdSession          *imdSession,
-            pull_t              *pull_work,
-            Constraints         *constr,
-            const gmx_mtop_t    *globalTopology);
+            StatePropagatorData   *statePropagatorData,
+            EnergyElement         *energyElement,
+            bool                   isVerbose,
+            bool                   isDynamicBox,
+            FILE                  *fplog,
+            const t_commrec       *cr,
+            const t_inputrec      *inputrec,
+            const MDAtoms         *mdAtoms,
+            t_nrnb                *nrnb,
+            t_forcerec            *fr,
+            t_fcdata              *fcd,
+            gmx_wallcycle         *wcycle,
+            MdrunScheduleWorkload *runScheduleWork,
+            gmx_vsite_t           *vsite,
+            ImdSession            *imdSession,
+            pull_t                *pull_work,
+            Constraints           *constr,
+            const gmx_mtop_t      *globalTopology);
 
         /*! \brief Register shell / flex constraint calculation for step / time
          *
@@ -158,31 +158,31 @@ class ShellFCElement final :
 
         // Access to ISimulator data
         //! Handles logging.
-        FILE               *fplog_;
+        FILE                  *fplog_;
         //! Handles communication.
-        const t_commrec    *cr_;
+        const t_commrec       *cr_;
         //! Contains user input mdp options.
-        const t_inputrec   *inputrec_;
+        const t_inputrec      *inputrec_;
         //! Atom parameters for this domain.
-        const MDAtoms      *mdAtoms_;
+        const MDAtoms         *mdAtoms_;
         //! Manages flop accounting.
-        t_nrnb             *nrnb_;
+        t_nrnb                *nrnb_;
         //! Manages wall cycle accounting.
-        gmx_wallcycle      *wcycle_;
+        gmx_wallcycle         *wcycle_;
         //! Parameters for force calculations.
-        t_forcerec         *fr_;
+        t_forcerec            *fr_;
         //! Handles virtual sites.
-        gmx_vsite_t        *vsite_;
+        gmx_vsite_t           *vsite_;
         //! The Interactive Molecular Dynamics session.
-        ImdSession         *imdSession_;
+        ImdSession            *imdSession_;
         //! The pull work object.
-        pull_t             *pull_work_;
+        pull_t                *pull_work_;
         //! Helper struct for force calculations.
-        t_fcdata           *fcd_;
+        t_fcdata              *fcd_;
         //! Schedule of work for each MD step for this task.
-        MdScheduleWorkload *mdScheduleWork_;
+        MdrunScheduleWorkload *runScheduleWork_;
         //! Handles constraints.
-        Constraints        *constr_;
+        Constraints           *constr_;
 };
 
 //! \}

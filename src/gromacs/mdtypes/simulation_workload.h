@@ -33,27 +33,30 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \libinternal \file
- * \brief Declares force calculation workload manager.
+ * \brief Declares step, domain-lifetime, and run workload managers.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Szilárd Páll <pall.szilard@gmail.com>
  * \ingroup module_mdlib
  * \inlibraryapi
  */
-#ifndef GMX_MDLIB_PPFORCEWORKLOAD_H
-#define GMX_MDLIB_PPFORCEWORKLOAD_H
+#ifndef GMX_MDTYPES_SIMULATION_WORKLOAD_H
+#define GMX_MDTYPES_SIMULATION_WORKLOAD_H
 
 namespace gmx
 {
 
 /*! \libinternal
- * \brief Data structure to map force flags to booleans that have the role of
- *  directing per-step tasks undertaken by a PP rank.
+ * \brief Data structure that describes work that can change per-step.
  *
- * Note that the contents of this class have a lifetime of a single step and
- * are expected to be set every step.
+ * Note that the contents of an object of this type has a lifetime
+ * of a single step and it is expected to be set at the beginning each step.
+ *
+ * The initial set of flags map the legacy force flags to boolean flags;
+ * these have the role of directing per-step compute tasks undertaken by a PP rank.
  *
  */
-class ForceFlags
+class StepWorkload
 {
     public:
         //! Whether the state has changed, always set unless TPI is used.
@@ -77,49 +80,60 @@ class ForceFlags
 };
 
 /*! \libinternal
- * \brief Manage what force calculation work is required each step.
+ * \brief Manage computational work that has the lifetime of decomposition.
  *
- * An object of this type is updated every neighbour search stage to
- * reflect what work is required during normal MD steps, e.g. whether
- * there are bonded interactions in this PP task.
+ * An object of this type is updated every decomposition step
+ * (i.e. domain decomposition / neighbour search)
+ * reflecting what work is required during the lifetime of a domain.
+ * e.g. whether there are bonded interactions in this PP task.
  *
  * This will remove the desire for inline getters from modules that
  * describe whether they have work to do, because that can be set up
  * once per simulation or neighborlist lifetime and not changed
  * thereafter.
- *
- * \todo Add more responsibilities, including whether GPUs are in use,
- * whether there is PME work, whether DD is active, whether NB
- * local/nonlocal regions have work, whether forces/virial/energy are
- * required.
- *
- * TODO rename
  */
-class PpForceWorkload
+class DomainLifetimeWorkload
 {
     public:
-        //! Whether this MD step has bonded work to run on a GPU.
+        //! Whether the current nstlist step-range has bonded work to run on a GPU.
         bool haveGpuBondedWork = false;
-        //! Whether this MD step has bonded work to run on he CPU.
+        //! Whether the current nstlist step-range has bonded work to run on he CPU.
         bool haveCpuBondedWork = false;
-        //! Whether this MD step has restraints work to run on he CPU.
+        //! Whether the current nstlist step-range has restraints work to run on he CPU.
         bool haveRestraintsWork = false;
-        //! Whether this MD step has listed forces work to run on he CPU.
+        //! Whether the current nstlist step-range has listed forces work to run on he CPU.
         //  Note: currently this is haveCpuBondedWork | haveRestraintsWork
         bool haveCpuListedForceWork = false;
-        //! Whether this MD step has special forces on the CPU.
+        //! Whether the current nstlist step-range has special forces on the CPU.
         bool haveSpecialForces = false;
 };
 
-class MdScheduleWorkload
+/*! \libinternal
+ * \brief Manage what computation is required during the simulation.
+ *
+ * Holds information on the type of workload constant for the entire
+ * simulation.
+ *
+ * An object of this type is constructed at the beginning of the
+ * simulation and is expected to not change.
+ */
+class SimulationWorkload
 {
-    public:
-        //! Force schedule workload descriptor constant for an nstlist range
-        gmx::PpForceWorkload forceWork;
-        //! Force flags changing per-step
-        gmx::ForceFlags      forceFlags;
 };
 
-} // namespace gmx
+class MdrunScheduleWorkload
+{
+    public:
+        //! Workload descriptor for information constant for an entire run
+        gmx::SimulationWorkload     simulationWork;
 
-#endif
+        //! Workload descriptor for information constant for an nstlist range of steps
+        gmx::DomainLifetimeWorkload domainWork;
+
+        //! Workload descriptor for information that may change per-step
+        gmx::StepWorkload           stepWork;
+};
+
+}      // namespace gmx
+
+#endif // GMX_MDTYPES_SIMULATION_WORKLOAD_H

@@ -545,7 +545,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildForces(
     {
         auto shellFCElement = std::make_unique<ShellFCElement>(
                     statePropagatorDataPtr, energyElementPtr, isVerbose, isDynamicBox, fplog,
-                    cr, inputrec, mdAtoms, nrnb, fr, fcd, wcycle, mdScheduleWork,
+                    cr, inputrec, mdAtoms, nrnb, fr, fcd, wcycle, runScheduleWork,
                     vsite, imdSession, pull_work, constr, &topologyHolder_->globalTopology());
         topologyHolder_->registerClient(shellFCElement.get());
         neighborSearchSignallerBuilder->registerSignallerClient(compat::make_not_null(shellFCElement.get()));
@@ -559,7 +559,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildForces(
         auto forceElement = std::make_unique<ForceElement>(
                     statePropagatorDataPtr, energyElementPtr, isDynamicBox, fplog,
                     cr, inputrec, mdAtoms, nrnb, fr, fcd, wcycle,
-                    mdScheduleWork, vsite, imdSession, pull_work);
+                    runScheduleWork, vsite, imdSession, pull_work);
         topologyHolder_->registerClient(forceElement.get());
         neighborSearchSignallerBuilder->registerSignallerClient(compat::make_not_null(forceElement.get()));
         energySignallerBuilder->registerSignallerClient(compat::make_not_null(forceElement.get()));

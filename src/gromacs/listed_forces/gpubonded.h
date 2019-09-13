@@ -65,7 +65,7 @@ struct gmx_wallcycle;
 namespace gmx
 {
 
-class ForceFlags;
+class StepWorkload;
 
 /*! \brief The number on bonded function types supported on GPUs */
 static constexpr int numFTypesOnGpu = 8;
@@ -137,9 +137,9 @@ class GpuBonded
          * assigned to the GPU */
         bool haveInteractions() const;
         /*! \brief Launches bonded kernel on a GPU */
-        void launchKernel(const t_forcerec      *fr,
-                          const gmx::ForceFlags &forceFlags,
-                          const matrix           box);
+        void launchKernel(const t_forcerec        *fr,
+                          const gmx::StepWorkload &stepWork,
+                          const matrix             box);
         /*! \brief Launches the transfer of computed bonded energies. */
         void launchEnergyTransfer();
         /*! \brief Waits on the energy transfer, and accumulates bonded energies to \c enerd. */

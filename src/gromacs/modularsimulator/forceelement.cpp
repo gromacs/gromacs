@@ -60,21 +60,21 @@ struct t_graph;
 namespace gmx
 {
 ForceElement::ForceElement(
-        StatePropagatorData *statePropagatorData,
-        EnergyElement       *energyElement,
-        bool                 isDynamicBox,
-        FILE                *fplog,
-        const t_commrec     *cr,
-        const t_inputrec    *inputrec,
-        const MDAtoms       *mdAtoms,
-        t_nrnb              *nrnb,
-        t_forcerec          *fr,
-        t_fcdata            *fcd,
-        gmx_wallcycle       *wcycle,
-        MdScheduleWorkload  *mdScheduleWork,
-        gmx_vsite_t         *vsite,
-        ImdSession          *imdSession,
-        pull_t              *pull_work) :
+        StatePropagatorData   *statePropagatorData,
+        EnergyElement         *energyElement,
+        bool                   isDynamicBox,
+        FILE                  *fplog,
+        const t_commrec       *cr,
+        const t_inputrec      *inputrec,
+        const MDAtoms         *mdAtoms,
+        t_nrnb                *nrnb,
+        t_forcerec            *fr,
+        t_fcdata              *fcd,
+        gmx_wallcycle         *wcycle,
+        MdrunScheduleWorkload *runScheduleWork,
+        gmx_vsite_t           *vsite,
+        ImdSession            *imdSession,
+        pull_t                *pull_work) :
     nextNSStep_(-1),
     nextEnergyCalculationStep_(-1),
     nextVirialCalculationStep_(-1),
@@ -96,7 +96,7 @@ ForceElement::ForceElement(
     imdSession_(imdSession),
     pull_work_(pull_work),
     fcd_(fcd),
-    mdScheduleWork_(mdScheduleWork)
+    runScheduleWork_(runScheduleWork)
 {
     lambda_.fill(0);
 }
@@ -152,7 +152,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
              box, x, hist,
              forces, force_vir, mdAtoms_->mdatoms(), energyElement_->enerdata(), fcd_,
              lambda_, graph,
-             fr_, mdScheduleWork_, vsite_, energyElement_->muTot(), time, ed,
+             fr_, runScheduleWork_, vsite_, energyElement_->muTot(), time, ed,
              static_cast<int>(flags), ddBalanceRegionHandler_);
     energyElement_->addToForceVirial(force_vir, step);
 }

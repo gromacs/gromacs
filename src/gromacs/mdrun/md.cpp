@@ -875,7 +875,7 @@ void gmx::LegacySimulator::do_md()
                                 &state->hist,
                                 f.arrayRefWithPadding(), force_vir, mdatoms,
                                 nrnb, wcycle, graph,
-                                shellfc, fr, mdScheduleWork, t, mu_tot,
+                                shellfc, fr, runScheduleWork, t, mu_tot,
                                 vsite,
                                 ddBalanceRegionHandler);
         }
@@ -905,7 +905,7 @@ void gmx::LegacySimulator::do_md()
                      state->box, state->x.arrayRefWithPadding(), &state->hist,
                      f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
-                     fr, mdScheduleWork, vsite, mu_tot, t, ed ? ed->getLegacyED() : nullptr,
+                     fr, runScheduleWork, vsite, mu_tot, t, ed ? ed->getLegacyED() : nullptr,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags,
                      ddBalanceRegionHandler);
         }

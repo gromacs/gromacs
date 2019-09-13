@@ -51,11 +51,11 @@
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/ppforceworkload.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gridset.h"
 #include "gromacs/nbnxm/nbnxm.h"
@@ -298,12 +298,12 @@ static void setupAndRunInstance(const gmx::BenchmarkSystem &system,
 
     gmx_enerdata_t        enerd(1, 0);
 
-    gmx::ForceFlags       forceFlags;
-    forceFlags.computeForces = true;
+    gmx::StepWorkload     stepWork;
+    stepWork.computeForces = true;
     if (options.computeVirialAndEnergy)
     {
-        forceFlags.computeVirial = true;
-        forceFlags.computeEnergy = true;
+        stepWork.computeVirial = true;
+        stepWork.computeEnergy = true;
     }
 
     const gmx::EnumerationArray<BenchMarkKernels, std::string>  kernelNames = { "auto", "no", "4xM", "2xMM" };
@@ -323,7 +323,7 @@ static void setupAndRunInstance(const gmx::BenchmarkSystem &system,
     for (int iter = 0; iter < options.numPreIterations; iter++)
     {
         nbv->dispatchNonbondedKernel(InteractionLocality::Local,
-                                     ic, forceFlags, enbvClearFYes, system.forceRec,
+                                     ic, stepWork, enbvClearFYes, system.forceRec,
                                      &enerd,
                                      &nrnb);
     }
@@ -336,7 +336,7 @@ static void setupAndRunInstance(const gmx::BenchmarkSystem &system,
     {
         // Run the kernel without force clearing
         nbv->dispatchNonbondedKernel(InteractionLocality::Local,
-                                     ic, forceFlags, enbvClearFNo, system.forceRec,
+                                     ic, stepWork, enbvClearFNo, system.forceRec,
                                      &enerd,
                                      &nrnb);
     }

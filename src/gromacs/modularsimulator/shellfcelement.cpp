@@ -76,24 +76,24 @@ bool ShellFCElement::doShellsOrFlexConstraints(
 }
 
 ShellFCElement::ShellFCElement(
-        StatePropagatorData *statePropagatorData,
-        EnergyElement       *energyElement,
-        bool                 isVerbose,
-        bool                 isDynamicBox,
-        FILE                *fplog,
-        const t_commrec     *cr,
-        const t_inputrec    *inputrec,
-        const MDAtoms       *mdAtoms,
-        t_nrnb              *nrnb,
-        t_forcerec          *fr,
-        t_fcdata            *fcd,
-        gmx_wallcycle       *wcycle,
-        MdScheduleWorkload  *mdScheduleWork,
-        gmx_vsite_t         *vsite,
-        ImdSession          *imdSession,
-        pull_t              *pull_work,
-        Constraints         *constr,
-        const gmx_mtop_t    *globalTopology) :
+        StatePropagatorData   *statePropagatorData,
+        EnergyElement         *energyElement,
+        bool                   isVerbose,
+        bool                   isDynamicBox,
+        FILE                  *fplog,
+        const t_commrec       *cr,
+        const t_inputrec      *inputrec,
+        const MDAtoms         *mdAtoms,
+        t_nrnb                *nrnb,
+        t_forcerec            *fr,
+        t_fcdata              *fcd,
+        gmx_wallcycle         *wcycle,
+        MdrunScheduleWorkload *runScheduleWork,
+        gmx_vsite_t           *vsite,
+        ImdSession            *imdSession,
+        pull_t                *pull_work,
+        Constraints           *constr,
+        const gmx_mtop_t      *globalTopology) :
     nextNSStep_(-1),
     nextEnergyCalculationStep_(-1),
     nextVirialCalculationStep_(-1),
@@ -116,7 +116,7 @@ ShellFCElement::ShellFCElement(
     imdSession_(imdSession),
     pull_work_(pull_work),
     fcd_(fcd),
-    mdScheduleWork_(mdScheduleWork),
+    runScheduleWork_(runScheduleWork),
     constr_(constr)
 {
     shellfc_ = init_shell_flexcon(
@@ -182,7 +182,7 @@ void ShellFCElement::run(Step step, Time time, unsigned int flags)
                         statePropagatorData_->localNumAtoms(),
                         x, v, box, lambda, hist, forces, force_vir,
                         mdAtoms_->mdatoms(), nrnb_, wcycle_, graph,
-                        shellfc_, fr_, mdScheduleWork_, time,
+                        shellfc_, fr_, runScheduleWork_, time,
                         energyElement_->muTot(), vsite_,
                         ddBalanceRegionHandler_);
     energyElement_->addToForceVirial(force_vir, step);

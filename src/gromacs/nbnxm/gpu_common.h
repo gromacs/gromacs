@@ -58,7 +58,7 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/listed_forces/gpubonded.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/ppforceworkload.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
@@ -367,7 +367,7 @@ gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t *timings,
 //TODO: move into shared source file with gmx_compile_cpp_as_cuda
 //NOLINTNEXTLINE(misc-definitions-in-headers)
 bool gpu_try_finish_task(gmx_nbnxn_gpu_t          *nb,
-                         const gmx::ForceFlags    &forceFlags,
+                         const gmx::StepWorkload  &stepWork,
                          const AtomLocality        aloc,
                          real                     *e_lj,
                          real                     *e_el,
@@ -410,10 +410,10 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t          *nb,
             gpuStreamSynchronize(nb->stream[iLocality]);
         }
 
-        gpu_accumulate_timings(nb->timings, nb->timers, nb->plist[iLocality], aloc, forceFlags.computeEnergy,
+        gpu_accumulate_timings(nb->timings, nb->timers, nb->plist[iLocality], aloc, stepWork.computeEnergy,
                                nb->bDoTime != 0);
 
-        gpu_reduce_staged_outputs(nb->nbst, iLocality, forceFlags.computeEnergy, forceFlags.computeVirial,
+        gpu_reduce_staged_outputs(nb->nbst, iLocality, stepWork.computeEnergy, stepWork.computeVirial,
                                   e_lj, e_el, as_rvec_array(shiftForces.data()));
     }
 
@@ -435,7 +435,7 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t          *nb,
  * pruning flags.
  *
  * \param[in] nb The nonbonded data GPU structure
- * \param[in]  forceFlags     Force schedule flags
+ * \param[in]  stepWork     Force schedule flags
  * \param[in] aloc Atom locality identifier
  * \param[out] e_lj Pointer to the LJ energy output to accumulate into
  * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
@@ -445,7 +445,7 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t          *nb,
  */
 //NOLINTNEXTLINE(misc-definitions-in-headers) TODO: move into source file
 float gpu_wait_finish_task(gmx_nbnxn_gpu_t         *nb,
-                           const gmx::ForceFlags   &forceFlags,
+                           const gmx::StepWorkload &stepWork,
                            AtomLocality             aloc,
                            real                    *e_lj,
                            real                    *e_el,
@@ -456,7 +456,7 @@ float gpu_wait_finish_task(gmx_nbnxn_gpu_t         *nb,
         (gpuAtomToInteractionLocality(aloc) == InteractionLocality::Local) ? ewcWAIT_GPU_NB_L : ewcWAIT_GPU_NB_NL;
 
     wallcycle_start(wcycle, cycleCounter);
-    gpu_try_finish_task(nb, forceFlags, aloc, e_lj, e_el, shiftForces,
+    gpu_try_finish_task(nb, stepWork, aloc, e_lj, e_el, shiftForces,
                         GpuTaskCompletion::Wait, wcycle);
     float waitTime = wallcycle_stop(wcycle, cycleCounter);
 

@@ -190,7 +190,7 @@ GpuBonded::haveInteractions() const
 
 void
 GpuBonded::launchKernel(const t_forcerec           * /* fr */,
-                        const gmx::ForceFlags      & /* forceFlags */,
+                        const gmx::StepWorkload    & /* stepWork */,
                         const matrix   /* box */)
 {
 }

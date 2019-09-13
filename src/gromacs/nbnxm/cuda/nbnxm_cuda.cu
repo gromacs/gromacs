@@ -56,7 +56,7 @@
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
-#include "gromacs/mdlib/ppforceworkload.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_common.h"
 #include "gromacs/nbnxm/gpu_common_utils.h"
@@ -402,7 +402,7 @@ void gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t       *nb,
    with this event in the non-local stream before launching the non-bonded kernel.
  */
 void gpu_launch_kernel(gmx_nbnxn_cuda_t          *nb,
-                       const gmx::ForceFlags     &forceFlags,
+                       const gmx::StepWorkload   &stepWork,
                        const InteractionLocality  iloc)
 {
     cu_atomdata_t       *adat    = nb->atdat;
@@ -485,10 +485,10 @@ void gpu_launch_kernel(gmx_nbnxn_cuda_t          *nb,
     auto       *timingEvent = bDoTime ? t->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
     const auto  kernel      = select_nbnxn_kernel(nbp->eeltype,
                                                   nbp->vdwtype,
-                                                  forceFlags.computeEnergy,
+                                                  stepWork.computeEnergy,
                                                   (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune),
                                                   nb->dev_info);
-    const auto kernelArgs  = prepareGpuKernelArguments(kernel, config, adat, nbp, plist, &forceFlags.computeVirial);
+    const auto kernelArgs  = prepareGpuKernelArguments(kernel, config, adat, nbp, plist, &stepWork.computeVirial);
     launchGpuKernel(kernel, config, timingEvent, "k_calc_nb", kernelArgs);
 
     if (bDoTime)
@@ -640,11 +640,11 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t          *nb,
     }
 }
 
-void gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
-                        nbnxn_atomdata_t       *nbatom,
-                        const gmx::ForceFlags  &forceFlags,
-                        const AtomLocality      atomLocality,
-                        const bool              copyBackNbForce)
+void gpu_launch_cpyback(gmx_nbnxn_cuda_t        *nb,
+                        nbnxn_atomdata_t        *nbatom,
+                        const gmx::StepWorkload &stepWork,
+                        const AtomLocality       atomLocality,
+                        const bool               copyBackNbForce)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -703,14 +703,14 @@ void gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     if (iloc == InteractionLocality::Local)
     {
         /* DtoH fshift when virial is needed */
-        if (forceFlags.computeVirial)
+        if (stepWork.computeVirial)
         {
             cu_copy_D2H_async(nb->nbst.fshift, adat->fshift,
                               SHIFTS * sizeof(*nb->nbst.fshift), stream);
         }
 
         /* DtoH energies */
-        if (forceFlags.computeEnergy)
+        if (stepWork.computeEnergy)
         {
             cu_copy_D2H_async(nb->nbst.e_lj, adat->e_lj,
                               sizeof(*nb->nbst.e_lj), stream);

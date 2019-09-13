@@ -59,7 +59,7 @@ enum class GpuTaskCompletion;
 namespace gmx
 {
 class GpuBonded;
-class ForceFlags;
+class StepWorkload;
 }
 
 namespace Nbnxm
@@ -93,9 +93,9 @@ void gpu_copy_xq_to_gpu(gmx_nbnxn_gpu_t gmx_unused               *nb,
  *
  */
 GPU_FUNC_QUALIFIER
-void gpu_launch_kernel(gmx_nbnxn_gpu_t gmx_unused      *nb,
-                       const gmx::ForceFlags gmx_unused &forceFlags,
-                       InteractionLocality gmx_unused    iloc) GPU_FUNC_TERM;
+void gpu_launch_kernel(gmx_nbnxn_gpu_t gmx_unused         *nb,
+                       const gmx::StepWorkload gmx_unused &stepWork,
+                       InteractionLocality gmx_unused      iloc) GPU_FUNC_TERM;
 
 /*! \brief
  * Launch asynchronously the nonbonded prune-only kernel.
@@ -142,11 +142,11 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t gmx_unused     *nb,
  * (and energies/shift forces if required).
  */
 GPU_FUNC_QUALIFIER
-void gpu_launch_cpyback(gmx_nbnxn_gpu_t       gmx_unused *nb,
-                        nbnxn_atomdata_t      gmx_unused *nbatom,
-                        const gmx::ForceFlags gmx_unused  &forceFlags,
-                        AtomLocality          gmx_unused  aloc,
-                        bool                  gmx_unused  copyBackNbForce) GPU_FUNC_TERM;
+void gpu_launch_cpyback(gmx_nbnxn_gpu_t         gmx_unused *nb,
+                        nbnxn_atomdata_t        gmx_unused *nbatom,
+                        const gmx::StepWorkload gmx_unused &stepWork,
+                        AtomLocality            gmx_unused aloc,
+                        bool                    gmx_unused copyBackNbForce) GPU_FUNC_TERM;
 
 /*! \brief Attempts to complete nonbonded GPU task.
  *
@@ -176,7 +176,7 @@ void gpu_launch_cpyback(gmx_nbnxn_gpu_t       gmx_unused *nb,
  *  the energy and Fshift contributions for some external/centralized reduction.
  *
  * \param[in]  nb             The nonbonded data GPU structure
- * \param[in]  forceFlags     Force schedule flags
+ * \param[in]  stepWork       Step schedule flags
  * \param[in]  aloc           Atom locality identifier
  * \param[out] e_lj           Pointer to the LJ energy output to accumulate into
  * \param[out] e_el           Pointer to the electrostatics energy output to accumulate into
@@ -186,8 +186,8 @@ void gpu_launch_cpyback(gmx_nbnxn_gpu_t       gmx_unused *nb,
  * \returns                   True if the nonbonded tasks associated with \p aloc locality have completed
  */
 GPU_FUNC_QUALIFIER
-bool gpu_try_finish_task(gmx_nbnxn_gpu_t gmx_unused           *nb,
-                         const gmx::ForceFlags gmx_unused     &forceFlags,
+bool gpu_try_finish_task(gmx_nbnxn_gpu_t gmx_unused          *nb,
+                         const gmx::StepWorkload gmx_unused  &stepWork,
                          AtomLocality    gmx_unused           aloc,
                          real            gmx_unused          *e_lj,
                          real            gmx_unused          *e_el,
@@ -203,7 +203,7 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t gmx_unused           *nb,
  * pruning flags.
  *
  * \param[in] nb The nonbonded data GPU structure
- * \param[in]  forceFlags     Force schedule flags
+ * \param[in]  stepWork        Step schedule flags
  * \param[in] aloc Atom locality identifier
  * \param[out] e_lj Pointer to the LJ energy output to accumulate into
  * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
@@ -211,7 +211,7 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t gmx_unused           *nb,
  */
 GPU_FUNC_QUALIFIER
 float gpu_wait_finish_task(gmx_nbnxn_gpu_t          gmx_unused *nb,
-                           const gmx::ForceFlags    gmx_unused &forceFlags,
+                           const gmx::StepWorkload  gmx_unused &stepWork,
                            AtomLocality             gmx_unused  aloc,
                            real                     gmx_unused *e_lj,
                            real                     gmx_unused *e_el,
