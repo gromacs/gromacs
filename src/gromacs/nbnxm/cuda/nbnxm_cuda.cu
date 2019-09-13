@@ -751,21 +751,21 @@ void nbnxn_gpu_copy_x_to_gpu(const Nbnxm::Grid               &grid,
                              const rvec                      *coordinatesHost)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
-    GMX_ASSERT(coordinatesHost,  "Need a valid host pointer");
 
     bool                       bDoTime = nb->bDoTime;
 
     Nbnxm::InteractionLocality interactionLoc            = gpuAtomToInteractionLocality(locality);
-    int                        nCopyAtoms                = grid.srcAtomEnd() - grid.srcAtomBegin();
+    int                        numCopyAtoms              = grid.srcAtomEnd() - grid.srcAtomBegin();
     int                        copyAtomStart             = grid.srcAtomBegin();
 
     cudaStream_t               stream  = nb->stream[interactionLoc];
 
     // empty domain avoid launching zero-byte copy
-    if (nCopyAtoms == 0)
+    if (numCopyAtoms == 0)
     {
         return;
     }
+    GMX_ASSERT(coordinatesHost,  "Need a valid host pointer");
 
     if (bDoTime)
     {
@@ -774,7 +774,7 @@ void nbnxn_gpu_copy_x_to_gpu(const Nbnxm::Grid               &grid,
 
     rvec       *devicePtrDest = reinterpret_cast<rvec *> (nb->xrvec[copyAtomStart]);
     const rvec *devicePtrSrc  = reinterpret_cast<const rvec *> (coordinatesHost[copyAtomStart]);
-    copyToDeviceBuffer(&devicePtrDest, devicePtrSrc, 0, nCopyAtoms,
+    copyToDeviceBuffer(&devicePtrDest, devicePtrSrc, 0, numCopyAtoms,
                        stream, GpuApiCallBehavior::Async, nullptr);
 
     if (bDoTime)
@@ -808,13 +808,13 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
 
     cudaStream_t               stream  = nb->stream[interactionLoc];
 
-    // TODO: This will only work with CUDA
-    GMX_ASSERT(coordinatesDevice,  "Need a valid device pointer");
-
     int numAtoms = grid.srcAtomEnd() - grid.srcAtomBegin();
     // avoid empty kernel launch, skip to inserting stream dependency
     if (numAtoms != 0)
     {
+        // TODO: This will only work with CUDA
+        GMX_ASSERT(coordinatesDevice, "Need a valid device pointer");
+
         KernelLaunchConfig config;
         config.blockSize[0]     = c_bufOpsThreadsPerBlock;
         config.blockSize[1]     = 1;
@@ -862,6 +862,8 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality               atomLocality,
                                bool                             accumulateForce)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+    GMX_ASSERT(numAtoms != 0, "Cannot call function with no atoms");
+    GMX_ASSERT(totalForcesDevice, "Need a valid totalForcesDevice pointer");
 
     const InteractionLocality iLocality     = gpuAtomToInteractionLocality(atomLocality);
     cudaStream_t              stream        = nb->stream[iLocality];
@@ -891,6 +893,7 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality               atomLocality,
 
     if (useGpuFPmeReduction)
     {
+        GMX_ASSERT(pmeForcesDevice, "Need a valid pmeForcesDevice pointer");
         kernelFn = accumulateForce ?
             nbnxn_gpu_add_nbat_f_to_f_kernel<true, true> :
             nbnxn_gpu_add_nbat_f_to_f_kernel<false, true>;
@@ -924,7 +927,6 @@ void nbnxn_launch_copy_f_to_gpu(const AtomLocality               atomLocality,
                                 rvec                            *f)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
-    GMX_ASSERT(f,  "Need a valid f pointer");
 
     const InteractionLocality iLocality = gpuAtomToInteractionLocality(atomLocality);
     cudaStream_t              stream    = nb->stream[iLocality];
@@ -932,9 +934,16 @@ void nbnxn_launch_copy_f_to_gpu(const AtomLocality               atomLocality,
     bool                      bDoTime = nb->bDoTime;
     cu_timers_t              *t       = nb->timers;
 
-    int                       atomStart = 0, nAtoms = 0;
+    int                       atomStart = 0, numCopyAtoms = 0;
 
-    nbnxn_get_atom_range(atomLocality, gridSet, &atomStart, &nAtoms);
+    nbnxn_get_atom_range(atomLocality, gridSet, &atomStart, &numCopyAtoms);
+
+    // Avoiding launching copy with no work
+    if (numCopyAtoms == 0)
+    {
+        return;
+    }
+    GMX_ASSERT(f, "Need a valid f pointer");
 
     if (bDoTime)
     {
@@ -943,10 +952,10 @@ void nbnxn_launch_copy_f_to_gpu(const AtomLocality               atomLocality,
 
     rvec       *ptrDest  = reinterpret_cast<rvec *> (nb->frvec[atomStart]);
     rvec       *ptrSrc   = reinterpret_cast<rvec *> (f[atomStart]);
-    //copyToDeviceBuffer(&ptrDest, ptrSrc, 0, nAtoms,
+    //copyToDeviceBuffer(&ptrDest, ptrSrc, 0, numCopyAtoms,
     //                   stream, GpuApiCallBehavior::Async, nullptr);
     //TODO use above API call rather than direct memcpy when force has been implemented in a hostvector
-    cudaMemcpyAsync(ptrDest, ptrSrc, nAtoms*sizeof(rvec), cudaMemcpyHostToDevice,
+    cudaMemcpyAsync(ptrDest, ptrSrc, numCopyAtoms*sizeof(rvec), cudaMemcpyHostToDevice,
                     stream);
 
     if (bDoTime)
@@ -963,16 +972,22 @@ void nbnxn_launch_copy_f_from_gpu(const AtomLocality               atomLocality,
                                   rvec                            *f)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
-    GMX_ASSERT(f,  "Need a valid f pointer");
 
     const InteractionLocality iLocality = gpuAtomToInteractionLocality(atomLocality);
     cudaStream_t              stream    = nb->stream[iLocality];
 
     bool                      bDoTime = nb->bDoTime;
     cu_timers_t              *t       = nb->timers;
-    int                       atomStart, nAtoms;
+    int                       atomStart, numCopyAtoms;
 
-    nbnxn_get_atom_range(atomLocality, gridSet, &atomStart, &nAtoms);
+    nbnxn_get_atom_range(atomLocality, gridSet, &atomStart, &numCopyAtoms);
+
+    // Avoiding launching copy with no work
+    if (numCopyAtoms == 0)
+    {
+        return;
+    }
+    GMX_ASSERT(f, "Need a valid f pointer");
 
     if (bDoTime)
     {
@@ -982,10 +997,10 @@ void nbnxn_launch_copy_f_from_gpu(const AtomLocality               atomLocality,
     GMX_ASSERT(nb->frvec,  "Need a valid nb->frvec pointer");
     rvec       *ptrDest = reinterpret_cast<rvec *> (f[atomStart]);
     rvec       *ptrSrc  = reinterpret_cast<rvec *> (nb->frvec[atomStart]);
-    //copyFromDeviceBuffer(ptrDest, &ptrSrc, 0, nAtoms,
+    //copyFromDeviceBuffer(ptrDest, &ptrSrc, 0, numCopyAtoms,
     //                   stream, GpuApiCallBehavior::Async, nullptr);
     //TODO use above API call rather than direct memcpy when force has been implemented in a hostvector
-    cudaMemcpyAsync(ptrDest, ptrSrc, nAtoms*sizeof(rvec), cudaMemcpyDeviceToHost,
+    cudaMemcpyAsync(ptrDest, ptrSrc, numCopyAtoms*sizeof(rvec), cudaMemcpyDeviceToHost,
                     stream);
 
     if (bDoTime)
