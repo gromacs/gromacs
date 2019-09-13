@@ -948,6 +948,8 @@ std::string getCoolQuote()
         { "I'm a strong believer that ignorance is important in science. If you know too much, you start seeing reasons why things won't work. That's why its important to change your field to collect more ignorance.", "Sydney Brenner" },
         { "It's more useful when you know what you're doing.", "Artem Zhmurov" },
         { "I have noticed a large, negative correlation between having a well-defined mission workload and concern for the Top500. It's almost like LINPACK is what you focus on when you don't know what to focus on.", "Jeff Hammond" },
+        { "Between equal rights, force decides.", "Karl Marx"},
+        {"To dissimulate is to feign not to have what one has. To simulate is to feign to have what one hasn't.", "Jean Baudrillard"},
     };
 
     if (beCool())
