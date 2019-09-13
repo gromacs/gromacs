@@ -88,7 +88,8 @@ dd_choose_grid(const gmx::MDLogger &mdlog,
                const gmx_mtop_t *mtop,
                const matrix box, const gmx_ddbox_t *ddbox,
                int numPmeRanksRequested,
-               gmx_bool bDynLoadBal, real dlb_scale,
+               bool request1DAnd1Pulse,
+               bool bDynLoadBal, real dlb_scale,
                const DDSystemInfo &systemInfo);
 
 #endif

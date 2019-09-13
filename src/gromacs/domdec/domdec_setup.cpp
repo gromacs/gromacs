@@ -541,7 +541,8 @@ static float comm_cost_est(real limit, real cutoff,
 }
 
 /*! \brief Assign penalty factors to possible domain decompositions, based on the estimated communication costs. */
-static void assign_factors(real limit, real cutoff,
+static void assign_factors(const real limit, const bool request1D,
+                           const real cutoff,
                            const matrix box, const gmx_ddbox_t *ddbox,
                            int natoms, const t_inputrec *ir,
                            float pbcdxr, int npme,
@@ -553,6 +554,15 @@ static void assign_factors(real limit, real cutoff,
 
     if (ndiv == 0)
     {
+        const int  maxDimensionSize             = std::max(ir_try[XX], std::max(ir_try[YY], ir_try[ZZ]));
+        const int  productOfDimensionSizes      = ir_try[XX]*ir_try[YY]*ir_try[ZZ];
+        const bool decompositionHasOneDimension = (maxDimensionSize == productOfDimensionSizes);
+        if (request1D && !decompositionHasOneDimension)
+        {
+            /* We requested 1D DD, but got multiple dimensions */
+            return;
+        }
+
         ce = comm_cost_est(limit, cutoff, box, ddbox,
                            natoms, ir, pbcdxr, npme, ir_try);
         if (ce >= 0 && (opt[XX] == 0 ||
@@ -584,7 +594,8 @@ static void assign_factors(real limit, real cutoff,
             }
 
             /* recurse */
-            assign_factors(limit, cutoff, box, ddbox, natoms, ir, pbcdxr, npme,
+            assign_factors(limit, request1D,
+                           cutoff, box, ddbox, natoms, ir, pbcdxr, npme,
                            ndiv-1, div+1, mdiv+1, ir_try, opt);
 
             for (i = 0; i < mdiv[0]-x-y; i++)
@@ -605,8 +616,9 @@ static void assign_factors(real limit, real cutoff,
 
 /*! \brief Determine the optimal distribution of DD cells for the simulation system and number of MPI ranks */
 static real optimize_ncells(const gmx::MDLogger &mdlog,
-                            int nnodes_tot, int npme_only,
-                            gmx_bool bDynLoadBal, real dlb_scale,
+                            const int nnodes_tot, const int npme_only,
+                            const bool request1DAnd1Pulse,
+                            const bool bDynLoadBal, const real dlb_scale,
                             const gmx_mtop_t *mtop,
                             const matrix box, const gmx_ddbox_t *ddbox,
                             const t_inputrec *ir,
@@ -619,6 +631,10 @@ static real optimize_ncells(const gmx::MDLogger &mdlog,
     ivec     itry;
 
     limit  = systemInfo.cellsizeLimit;
+    if (request1DAnd1Pulse)
+    {
+        limit = std::max(limit, ir->rlist);
+    }
 
     npp = nnodes_tot - npme_only;
     if (EEL_PME(ir->coulombtype))
@@ -708,7 +724,8 @@ static real optimize_ncells(const gmx::MDLogger &mdlog,
     itry[YY] = 1;
     itry[ZZ] = 1;
     clear_ivec(nc);
-    assign_factors(limit, systemInfo.cutoff, box, ddbox, mtop->natoms, ir, pbcdxr,
+    assign_factors(limit, request1DAnd1Pulse,
+                   systemInfo.cutoff, box, ddbox, mtop->natoms, ir, pbcdxr,
                    npme, div.size(), div.data(), mdiv.data(), itry, nc);
 
     return limit;
@@ -721,7 +738,8 @@ dd_choose_grid(const gmx::MDLogger &mdlog,
                const gmx_mtop_t *mtop,
                const matrix box, const gmx_ddbox_t *ddbox,
                const int numPmeRanksRequested,
-               const gmx_bool bDynLoadBal, const real dlb_scale,
+               const bool request1DAnd1Pulse,
+               const bool bDynLoadBal, const real dlb_scale,
                const DDSystemInfo &systemInfo)
 {
     DDGridSetup ddGridSetup;
@@ -797,6 +815,7 @@ dd_choose_grid(const gmx::MDLogger &mdlog,
 
         ddGridSetup.cellsizeLimit =
             optimize_ncells(mdlog, cr->nnodes, ddGridSetup.numPmeOnlyRanks,
+                            request1DAnd1Pulse,
                             bDynLoadBal, dlb_scale,
                             mtop, box, ddbox, ir,
                             systemInfo,

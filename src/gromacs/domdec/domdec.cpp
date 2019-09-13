@@ -2369,6 +2369,7 @@ getDDGridSetup(const gmx::MDLogger           &mdlog,
         ddGridSetup =
             dd_choose_grid(mdlog, cr, ir, mtop, box, ddbox,
                            options.numPmeRanks,
+                           ddSettings.request1DAnd1Pulse,
                            !isDlbDisabled(ddSettings.initialDlbState),
                            options.dlbScaling,
                            systemInfo);
@@ -2888,8 +2889,15 @@ static void set_cell_limits_dlb(const gmx::MDLogger &mdlog,
     comm->bVacDLBNoLimit = (ir->ePBC == epbcNONE);
     for (d = 0; d < dd->ndim; d++)
     {
-        comm->cd[d].np_dlb    = std::min(npulse, dd->nc[dd->dim[d]]-1);
-        comm->maxpulse        = std::max(comm->maxpulse, comm->cd[d].np_dlb);
+        if (comm->ddSettings.request1DAnd1Pulse)
+        {
+            comm->cd[d].np_dlb = 1;
+        }
+        else
+        {
+            comm->cd[d].np_dlb = std::min(npulse, dd->nc[dd->dim[d]]-1);
+            comm->maxpulse     = std::max(comm->maxpulse, comm->cd[d].np_dlb);
+        }
         if (comm->cd[d].np_dlb < dd->nc[dd->dim[d]]-1)
         {
             comm->bVacDLBNoLimit = FALSE;
@@ -3008,6 +3016,7 @@ getDDSettings(const gmx::MDLogger     &mdlog,
 
     ddSettings.useSendRecv2        = (dd_getenv(mdlog, "GMX_DD_USE_SENDRECV2", 0) != 0);
     ddSettings.dlb_scale_lim       = dd_getenv(mdlog, "GMX_DLB_MAX_BOX_SCALING", 10);
+    ddSettings.request1DAnd1Pulse  = bool(dd_getenv(mdlog, "GMX_DD_1D_1PULSE", 0));
     ddSettings.useDDOrderZYX       = bool(dd_getenv(mdlog, "GMX_DD_ORDER_ZYX", 0));
     ddSettings.useCartesianReorder = bool(dd_getenv(mdlog, "GMX_NO_CART_REORDER", 1));
     ddSettings.eFlop               = dd_getenv(mdlog, "GMX_DLB_BASED_ON_FLOPS", 0);
