@@ -357,7 +357,8 @@ CommunicationStatus ForceConstants::Receive(t_commrec *cr, int src)
 }
 
 void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
-                                 const Poldata            *pd)
+                                 const Poldata            *pd,
+                                 bool                      optimizeGeometry)
 {
     if (!bOpt_)
     {
@@ -372,7 +373,6 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
             std::vector<std::string> atoms;
             double                   geometry  = 0;
             std::string              params;
-            bool                     found     = false;
             std::string              buf;
             // Loop starts from 1 because the first value is the function type
             for(int j = 1; j <= interaction_function[ftype_].nratoms && bondsFound; j++)
@@ -395,6 +395,7 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
             {
                 int         index = 0;
                 std::string buf_reverse;
+                bool        found = false;
                 auto        ss    = gmx::splitString(buf);
                 for(int j = ss.size()-1; j >= 0; j--)
                 {
@@ -408,7 +409,10 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
                 case eitLINEAR_ANGLES:
                 case eitPROPER_DIHEDRALS:
                 case eitIMPROPER_DIHEDRALS:
-                    geometry = f->refValue();
+                    if (optimizeGeometry && itype_ != eitPROPER_DIHEDRALS)
+                    {
+                        geometry = f->refValue();
+                    }
                     params   = f->params();
                     index    = f - fs->forceBegin();
                     found    = true;
@@ -432,7 +436,7 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
                     else
                     {
                         BondNames bn(1, ftype_, buf, geometry, params, index, 0);
-                        addForceConstant(bn);
+                        addForceConstant(std::move(bn));
                     }
                 }
             }

@@ -186,7 +186,7 @@ class Optimization : public MolGen, Bayes
     private:
         std::vector<ForceConstants> ForceConstants_;
         std::vector<NonBondParams>  NonBondParams_;
-        std::vector<int>            iOpt_;
+        bool                        iOpt_[eitNR];
         bool                        optimizeGeometry_;
         std::vector<PoldataUpdate>  poldataUpdates_;
         real                        factor_     = 1;
@@ -205,7 +205,10 @@ class Optimization : public MolGen, Bayes
          */
         Optimization()
         {
-            iOpt_.resize(eitNR, false);
+            for(int bt = 0; bt < eitNR; bt++)
+            {
+                iOpt_[bt] = false;
+            }
             iOpt_[eitBONDS] = true;
         };
 
@@ -222,7 +225,7 @@ class Optimization : public MolGen, Bayes
         void add_pargs(std::vector<t_pargs> *pargs);
 
         //! \brief Return whether flag i is set
-        bool iOpt(int i) const { return iOpt_[i]; }
+        bool iOpt(InteractionType itype) const { return iOpt_[itype]; }
 
         //! \brief To be called after processing options
         void optionsFinished()
@@ -677,7 +680,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
     std::vector<std::string>    ctest;
 
     int nD   = ForceConstants_[eitBONDS].nbad();
-    int nMol =  mymols().size();
+    int nMol = mymols().size();
 
     if ((0 == nD) || (0 == nMol))
     {
@@ -739,7 +742,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
     }
 
     char buf[STRLEN];
-    snprintf(buf, sizeof(buf), "Inconsistency in number of energies nMol %d != #rhs %d", nMol, static_cast<int>(rhs.size()));
+    snprintf(buf, sizeof(buf), "Inconsistency in number of energies nMol %d != #rhs %zu", nMol, rhs.size());
     GMX_RELEASE_ASSERT(static_cast<int>(rhs.size()) == nMol, buf);
 
     auto nzero = std::count_if(ntest.begin(), ntest.end(), [](const int n)
@@ -788,18 +791,12 @@ void Optimization::getDissociationEnergy(FILE *fplog)
 
 void Optimization::InitOpt(FILE *fplog)
 {
-    std::vector<unsigned int> fts;
-
     for (auto fs = poldata()->forcesBegin();
          fs != poldata()->forcesEnd(); ++fs)
     {
-        fts.push_back(fs->fType());
-    }
-
-    for (size_t bt = 0; bt < fts.size(); bt++)
-    {
-        ForceConstants fc(fts[bt], static_cast<InteractionType>(bt), iOpt_[bt]);
-        fc.analyzeIdef(mymols(), poldata());
+        int bt = static_cast<int>(fs->iType());
+        ForceConstants fc(fs->fType(), fs->iType(), iOpt_[bt]);
+        fc.analyzeIdef(mymols(), poldata(), optimizeGeometry_);
         fc.makeReverseIndex();
         fc.dump(fplog);
         ForceConstants_.push_back(std::move(fc));

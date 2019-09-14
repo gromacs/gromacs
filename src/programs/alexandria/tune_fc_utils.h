@@ -254,8 +254,15 @@ class ForceConstants
 
         void addForceConstant(BondNames bn) { bn_.push_back(std::move(bn)); }
 
+        /*! \brief
+         * Extract information from the idef structure about parameters
+         * \param[in] mm All the molecule structures
+         * \param[in] pd The Poldata structure
+         * \param[in] optimizeGeometry Flag stating whether geometry should be extracted
+         */
         void analyzeIdef(const std::vector<MyMol> &mm,
-                         const Poldata            *pd);
+                         const Poldata            *pd,
+                         bool                      optimizeGeometry);
 
         /*! \brief Make reverse index from Poldata to BondNames
          *
