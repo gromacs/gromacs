@@ -124,28 +124,33 @@ void Bayes::setFunc(func_t  func,
     minEval_    = minEval;
 }
 
-void Bayes::setParamBounds(real factor)
+void Bayes::addParam(real val,
+                     real factor)
 {
     GMX_RELEASE_ASSERT(factor > 0, "Scaling factor for bounds should be larger than zero");
     if (factor < 1)
     {
         factor = 1/factor;
     }
-    for (size_t i = 0; i < param_.size(); i++)
-    {
-        lowerBound_.push_back(param_[i]/factor);
-        upperBound_.push_back(param_[i]*factor);
-    }
-    bestParam_  = param_;
+    param_.push_back(val);
+    prevParam_.push_back(val);
+    lowerBound_.push_back(val/factor);
+    upperBound_.push_back(val*factor);
 }
 
-void Bayes::setParam(parm_t param)
+void Bayes::addParam(real val,
+                     real lower,
+                     real upper)
 {
-    param_ = param;
+    param_.push_back(val);
+    prevParam_.push_back(val);
+    lowerBound_.push_back(lower);
+    upperBound_.push_back(upper);
 }
 
-void Bayes::changeParam(int j, real rand)
+void Bayes::changeParam(size_t j, real rand)
 {
+    GMX_RELEASE_ASSERT(j < param_.size(), "Parameter out of range");
     real delta = (2*rand-1)*step()*fabs(param_[j]);
     param_[j] += delta;
     if (bounds())
@@ -167,16 +172,14 @@ double Bayes::objFunction(const double v[])
     std::vector<bool> changed(np, false);
     for (size_t i = 0; i < np; i++)
     {
-        if (param_[i] != v[i])
+        if (prevParam_[i] != v[i])
         {
-            param_[i]  = v[i];
             changed[i] = true;
         }
     }
     toPolData(changed);
     return calcDeviation();
 }
-
 
 void Bayes::MCMC()
 {
@@ -206,13 +209,12 @@ void Bayes::MCMC()
     {
         fpe = xvgropen(xvgEpot(), "Parameter energy", "iteration", "\\f{12}c\\S2\\f{4}", oenv());
     }
-
     nParam = param_.size();
     sum.resize(nParam, 0);
     sum_of_sq.resize(nParam, 0);
     pmean_.resize(nParam, 0);
     psigma_.resize(nParam, 0);
-    
+
     prevEval  = func_(param_.data());
     *minEval_ = prevEval;
     if (debug)
@@ -223,7 +225,7 @@ void Bayes::MCMC()
     {
         double beta = computeBeta(iter/nParam);
         int       j = static_cast<int>(std::round((1+uniform(gen))*nParam)) % nParam; // Pick random parameter to change
-        
+        prevParam_ = param_;
         storeParam = param_[j];
         changeParam(j, uniform(gen));
         currEval        = func_(param_.data());

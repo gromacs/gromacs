@@ -242,12 +242,10 @@ class ForceConstants
 
         ForceConstants () {}
 
-    ForceConstants(int bt, 
-                   int ftype, 
+    ForceConstants(int ftype, 
                    InteractionType itype, 
                    bool bOpt)
             :
-              bt_(bt),
               ftype_(ftype),
               itype_(itype),
               bOpt_(bOpt)
@@ -256,8 +254,15 @@ class ForceConstants
 
         void addForceConstant(BondNames bn) { bn_.push_back(std::move(bn)); }
 
+        /*! \brief
+         * Extract information from the idef structure about parameters
+         * \param[in] mm All the molecule structures
+         * \param[in] pd The Poldata structure
+         * \param[in] optimizeGeometry Flag stating whether geometry should be extracted
+         */
         void analyzeIdef(const std::vector<MyMol> &mm,
-                         const Poldata            *pd);
+                         const Poldata            *pd,
+                         bool                      optimizeGeometry);
 
         /*! \brief Make reverse index from Poldata to BondNames
          *
@@ -274,8 +279,6 @@ class ForceConstants
 
             return reverseIndex_[poldataIndex];
         }
-
-        int bt2() const { return bt_; }
 
         int ftype() const { return ftype_; }
 
@@ -294,8 +297,6 @@ class ForceConstants
         CommunicationStatus Receive(t_commrec *cr, int src);
 
     private:
-
-        int                    bt_;
         int                    ftype_;
         InteractionType        itype_;
         bool                   bOpt_;

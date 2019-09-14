@@ -413,7 +413,8 @@ class MolGen
                     auto eee = energy(j);
                     if (eee > 0)
                     {
-                        fprintf(fp, "%-8s  %10.3f\n", rmsName(j), eee);
+                        fprintf(fp, "%-8s  %10.3f  weight: %g\n",
+                                rmsName(j), eee, fc_[j]);
                     }
                 }
             }

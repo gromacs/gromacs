@@ -90,9 +90,6 @@ class PlistWrapper
         //! Update the function type
         void setFtype(int ftype) { ftype_ = ftype; }
 
-        //! Return the interaction type
-        InteractionType interactionType() const { return itype_; }
-
         //! Loop over parameters
         ConstParamIterator beginParam() const { return p_.begin(); }
 

@@ -168,7 +168,12 @@ class OptACM : public MolGen, Bayes
 
         void initChargeGeneration();
 
-        void polData2TuneACM();
+        /*! \brief
+         *
+         * Fill parameter vector based on Poldata.
+         * \param[in] factor Scaling factor for parameters
+         */
+        void polData2TuneACM(real factor);
 
         /*! \brief
          * Copy the optimization parameters to the poldata structure
@@ -297,8 +302,7 @@ double OptACM::calcDeviation()
 
     if (PAR(commrec()) && !final())
     {
-        // TODO: just broadcast the eemprops
-        poldata()->broadcast(commrec());
+        poldata()->broadcast_eemprop(commrec());
     }
     resetEnergies();
     for (auto &mymol : mymols())
@@ -337,12 +341,11 @@ double OptACM::calcDeviation()
                     mymol.computeForces(nullptr, commrec());
                 }
 
-                auto qgen =
-                    mymol.Qgacm_.generateCharges(debug,
-                                                 mymol.molProp()->getMolname().c_str(),
-                                                 poldata(),
-                                                 mymol.atoms_,
-                                                 mymol.x());
+                auto qgen =  mymol.Qgacm_.generateCharges(debug,
+                                                          mymol.molProp()->getMolname().c_str(),
+                                                          poldata(),
+                                                          mymol.atoms_,
+                                                          mymol.x());
                 if (qgen != eQGEN_OK)
                 {
                     gmx_fatal(FARGS, "Could not generate charges for %s: %s",
@@ -367,7 +370,10 @@ double OptACM::calcDeviation()
                     mymol.mtop_->moltype[0].atoms.atom[i].qB =
                     mymol.atoms_->atom[i].q;
             }
-            dumpQ(debug, mymol.molProp()->getMolname(), mymol.atoms_);
+            if (debug)
+            {
+                dumpQ(debug, mymol.molProp()->getMolname(), mymol.atoms_);
+            }
             if (weight(ermsCHARGE))
             {
                 int    nChargeResidual = 0; // number of charge residuals added per molecule
@@ -480,7 +486,7 @@ double OptACM::calcDeviation()
     return energy(ermsTOT);
 }
 
-void OptACM::polData2TuneACM()
+void OptACM::polData2TuneACM(real factor)
 {
     auto *ic = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
@@ -493,12 +499,12 @@ void OptACM::polData2TuneACM()
             if (bFitChi_)
             {
                 auto J00  = ei->getJ0();
-                Bayes::addParam(J00);
+                Bayes::addParam(J00, factor);
                 
                 if (ai->name().compare(fixchi()) != 0)
                 {
                     auto Chi0 = ei->getChi0();
-                    Bayes::addParam(Chi0);
+                    Bayes::addParam(Chi0, factor);
                 }
             }
             if (bFitZeta_)
@@ -507,7 +513,7 @@ void OptACM::polData2TuneACM()
                 auto zeta  = ei->getZeta(nzeta-1); // We only optimize zeta for shell.
                 if (0 != zeta)
                 {
-                    Bayes::addParam(zeta);
+                    Bayes::addParam(zeta, factor);
                 }
                 else
                 {
@@ -523,7 +529,7 @@ void OptACM::polData2TuneACM()
                 {
                     if (0 != alpha)
                     {
-                        Bayes::addParam(alpha);
+                        Bayes::addParam(alpha, factor);
                     }
                     else
                     {
@@ -535,7 +541,7 @@ void OptACM::polData2TuneACM()
     }
     if (optHfac())
     {
-        Bayes::addParam(hfac());
+        Bayes::addParam(hfac(), factor);
     }
     
 }
@@ -627,8 +633,7 @@ void OptACM::toPolData(const std::vector<bool> &changed)
 
 void OptACM::InitOpt(real factor)
 {
-    polData2TuneACM();
-    Bayes::setParamBounds(factor);
+    polData2TuneACM(factor);
 }
 
 double OptACM::calcPenalty(AtomIndexIterator ai)
