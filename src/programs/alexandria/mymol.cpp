@@ -2096,6 +2096,10 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             imm = immNoData;
         }
     }
+    else
+    {
+        imm = immNoData;
+    }
     if (imm == immOK)
     {
         T = -1;
