@@ -395,7 +395,7 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
             {
                 int         index = 0;
                 std::string buf_reverse;
-                auto ss = gmx::splitString(buf);
+                auto        ss    = gmx::splitString(buf);
                 for(int j = ss.size()-1; j >= 0; j--)
                 {
                     buf_reverse.append(" ").append(ss[j]);
@@ -404,39 +404,17 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
                 switch (itype_)
                 {
                 case eitBONDS:
-                    {
-                        geometry    = f->refValue();
-                        params      = f->params();
-                        index       = f - fs->forceBegin();
-                        found       = true;
-                    }
-                    break;
                 case eitANGLES:
                 case eitLINEAR_ANGLES:
-                    {
-                        geometry    = f->refValue();
-                        params      = f->params();
-                        index       = f - fs->forceBegin();
-                        found       = true;
-                    }
-                    break;
                 case eitPROPER_DIHEDRALS:
                 case eitIMPROPER_DIHEDRALS:
-                    {
-                        geometry     = f->refValue();
-                        params       = f->params();
-                        index        = f - fs->forceBegin();
-                        found        = true;
-                    }
+                    geometry = f->refValue();
+                    params   = f->params();
+                    index    = f - fs->forceBegin();
+                    found    = true;
                     break;
-                case eitPOLARIZATION:
-                case eitVDW:
-                case eitLJ14:
-                case eitVSITE2:
-                case eitVSITE3FAD:
-                case eitVSITE3OUT:
-                case eitCONSTR:
-                case eitNR:
+                default:
+                    found = false;
                     break;
                 }
                 if (found)

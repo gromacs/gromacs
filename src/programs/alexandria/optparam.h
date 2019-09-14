@@ -168,20 +168,6 @@ class Bayes : public OptParam
         void setFunc(func_t func_, 
                      double *minEval_);
 
-        /*! \brief 
-         * Finalizes the parameter setup, that means this should be
-         * called after the last "addParam" call.
-         * Routine will copy the current parameters to the
-         * best parameters.
-         * Set the bounds for the optimization between 
-         * 1/factor and factor times the starting value.
-         * Will fail an assertion when factor <= 0
-         * \param[in] factor The scaling factor
-         */
-        void setParamBounds(real factor);
-        
-        void setParam(parm_t param);
-
         /*! \brief
          * Change parameter j based on a random unmber
          * obtained from a uniform distribution.
@@ -195,15 +181,25 @@ class Bayes : public OptParam
          * Dump the current parameters to a FILE if not nullptr
          * \param[in] fp The file pointer
          */
-        void dumpParam(FILE *fp);        
+        void dumpParam(FILE *fp);
+
         /*! \brief
          * Append parameter and set it to value
-         * \param[val] The value
+         * \param[in] val The value
+         * \param[in] factor Factor for automatically setting bounds
          */
-        void addParam(real val)
-        {
-            param_.push_back(val);
-        }
+        void addParam(real val,
+                      real factor);
+        /*! \brief
+         * Append parameter and set it to value. Add bounds
+         * as specified.
+         * \param[in] val   The value
+         * \param[in] lower The new lower bound value
+         * \param[in] upper The new lower bound value
+         */
+        void addParam(real val,
+                      real lower,
+                      real upper);
 
         /*! \brief
          * Set parameter j to a new value

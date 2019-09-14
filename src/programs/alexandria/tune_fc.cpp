@@ -250,8 +250,9 @@ class Optimization : public MolGen, Bayes
          *
          * Fill parameter vector using ForceConstants which
          * is built based on Poldata.
+         * \param[in] factor Scaling factor for parameters
          */
-        void polData2TuneFc();
+        void polData2TuneFc(real factor);
 
         /*! \brief
          *
@@ -512,7 +513,6 @@ void Optimization::checkSupport(FILE *fp)
         bool bSupport = true;
         for (int bt = 0; bSupport && (bt < eitNR); bt++)
         {
-            int  ft;
             if (iOpt_[bt])
             {
                 auto iType = static_cast<InteractionType>(bt);
@@ -521,124 +521,29 @@ void Optimization::checkSupport(FILE *fp)
                 {
                     continue;
                 }
-                ft         = fs->fType();
+                int ft     = fs->fType();
                 bSupport   = (mymol->ltop_ != nullptr);
-                for (int i = 0; bSupport && (i < mymol->ltop_->idef.il[ft].nr);
+                for (int i = 0; (i < mymol->ltop_->idef.il[ft].nr) && bSupport;
                      i += interaction_function[ft].nratoms+1)
                 {
-                    int                      ai, aj, ak, al;
-                    std::string              aai, aaj, aak, aal;
+                    // Loop starts from 1 because the first value is the function type
                     std::vector<std::string> atoms;
-
-                    ai  = mymol->ltop_->idef.il[ft].iatoms[i+1];
-                    aj  = mymol->ltop_->idef.il[ft].iatoms[i+2];
-                    if (!(poldata()->atypeToBtype(*mymol->atoms_->atomtype[ai], aai) &&
-                          poldata()->atypeToBtype(*mymol->atoms_->atomtype[aj], aaj)))
+                    for(int j = 1; j <= interaction_function[ft].nratoms && bSupport; j++)
                     {
-                        bSupport = false;
-                        if (debug)
+                        std::string aa;
+                        int         ai = mymol->ltop_->idef.il[ft].iatoms[i+j];
+                        if (!poldata()->atypeToBtype(*mymol->atoms_->atomtype[ai], aa))
                         {
-                            fprintf(debug, "Cannot find bond types %s and %s in %s.\n",
-                                    aai.c_str(), aaj.c_str(),
-                                    mymol->molProp()->getMolname().c_str());
+                            bSupport = false;
+                        }
+                        else
+                        {
+                            atoms.push_back(aa);
                         }
                     }
-                    switch (iType)
+                    if (bSupport)
                     {
-                        case eitBONDS:
-                        {
-                            atoms = {aai, aaj};
-                            auto fs = poldata()->findForces(iType);
-                            auto f  = fs->findForce(atoms);
-                            if (fs->forceEnd() == f)
-                            {
-                                bSupport = false;
-                                if (debug)
-                                {
-                                    fprintf(debug, "Cannot find bond %s-%s in %s.\n",
-                                            aai.c_str(), aaj.c_str(),
-                                            mymol->molProp()->getMolname().c_str());
-                                }
-                            }
-                            break;
-                        }
-                        case eitANGLES:
-                        case eitLINEAR_ANGLES:
-                        {
-                            ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
-                            if (!poldata()->atypeToBtype( *mymol->atoms_->atomtype[ak], aak))
-                            {
-                                bSupport = false;
-                                if (debug)
-                                {
-                                    fprintf(debug, "Cannot find bond types %s, %s and %s in %s.\n",
-                                            aai.c_str(), aaj.c_str(), aak.c_str(),
-                                            mymol->molProp()->getMolname().c_str());
-                                }
-                            }
-                            else
-                            {
-                                atoms   = {aai, aaj, aak};
-                                auto fs = poldata()->findForces(iType);
-                                auto f  = fs->findForce(atoms);
-                                if (fs->forceEnd() == f)
-                                {
-                                    bSupport = false;
-                                    if (debug)
-                                    {
-                                        fprintf(debug, "Cannot find %s %s-%s-%s in %s.\n",
-                                                eitANGLES ? "angles" : "linear_angles",
-                                                aai.c_str(), aaj.c_str(), aak.c_str(),
-                                                mymol->molProp()->getMolname().c_str());
-                                    }
-                                }
-                            }
-                        }
-                        break;
-                        case eitPROPER_DIHEDRALS:
-                        case eitIMPROPER_DIHEDRALS:
-                        {
-                            ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
-                            al  = mymol->ltop_->idef.il[ft].iatoms[i+4];
-                            if (!(poldata()->atypeToBtype( *mymol->atoms_->atomtype[ak], aak) &&
-                                  poldata()->atypeToBtype( *mymol->atoms_->atomtype[al], aal)))
-                            {
-                                bSupport = false;
-                                if (debug)
-                                {
-                                    fprintf(debug, "Cannot find bond types %s, %s, %s, and %s in %s\n",
-                                            aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str(),
-                                            mymol->molProp()->getMolname().c_str());
-                                }
-                            }
-                            else
-                            {
-                                atoms   = {aai, aaj, aak, aal};
-                                auto fs = poldata()->findForces(iType);
-                                auto f  = fs->findForce(atoms);
-                                if (fs->forceEnd() == f)
-                                {
-                                    bSupport = false;
-                                    if (debug)
-                                    {
-                                        fprintf(debug, "Cannot find %s dihedral %s-%s-%s-%s in %s\n",
-                                                (iType == eitPROPER_DIHEDRALS) ? "proper" : "improper",
-                                                aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str(),
-                                                mymol->molProp()->getMolname().c_str());
-                                    }
-                                }
-                            }
-                            break;
-                            case eitPOLARIZATION:
-                            case eitVDW:
-                            case eitLJ14:
-                            case eitVSITE2:
-                            case eitVSITE3FAD:
-                            case eitVSITE3OUT:
-                            case eitCONSTR:
-                            case eitNR:
-                                break;
-                        }
+                        bSupport = fs->findForce(atoms) != fs->forceEnd();
                     }
                 }
             }
@@ -666,7 +571,7 @@ void Optimization::checkSupport(FILE *fp)
     }
 }
 
-void Optimization::polData2TuneFc()
+void Optimization::polData2TuneFc(real factor)
 {
     for (auto &fc : ForceConstants_)
     {
@@ -674,11 +579,18 @@ void Optimization::polData2TuneFc()
         {
             if (optimizeGeometry_)
             {
-                Bayes::addParam(b->geometry());
+                Bayes::addParam(b->geometry(), factor);
             }
             for (const auto &p : b->paramValues())
             {
-                Bayes::addParam(p);
+                if (fc.ftype() == F_FOURDIHS)
+                {
+                    Bayes::addParam(p, -10, 10);
+                }
+                else
+                {
+                    Bayes::addParam(p, factor);
+                }
             }
         }
     }
@@ -688,7 +600,7 @@ void Optimization::polData2TuneFc()
         {
             for (const auto &p : at->paramValues())
             {
-                Bayes::addParam(p);
+                Bayes::addParam(p, factor);
             }
         }
     }
@@ -914,8 +826,7 @@ void Optimization::InitOpt(FILE *fplog)
     nbp.makeReverseIndex();
     NonBondParams_.push_back(std::move(nbp));
 
-    polData2TuneFc();
-    Bayes::setParamBounds(factor_);
+    polData2TuneFc(factor_);
 }
 
 double Optimization::calcDeviation()

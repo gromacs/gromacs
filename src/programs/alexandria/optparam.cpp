@@ -124,25 +124,28 @@ void Bayes::setFunc(func_t  func,
     minEval_    = minEval;
 }
 
-void Bayes::setParamBounds(real factor)
+void Bayes::addParam(real val,
+                     real factor)
 {
     GMX_RELEASE_ASSERT(factor > 0, "Scaling factor for bounds should be larger than zero");
     if (factor < 1)
     {
         factor = 1/factor;
     }
-    for (size_t i = 0; i < param_.size(); i++)
-    {
-        lowerBound_.push_back(param_[i]/factor);
-        upperBound_.push_back(param_[i]*factor);
-    }
-    bestParam_  = param_;
-    prevParam_  = param_;
+    param_.push_back(val);
+    prevParam_.push_back(val);
+    lowerBound_.push_back(val/factor);
+    upperBound_.push_back(val*factor);
 }
 
-void Bayes::setParam(parm_t param)
+void Bayes::addParam(real val,
+                     real lower,
+                     real upper)
 {
-    param_ = param;
+    param_.push_back(val);
+    prevParam_.push_back(val);
+    lowerBound_.push_back(lower);
+    upperBound_.push_back(upper);
 }
 
 void Bayes::changeParam(size_t j, real rand)
