@@ -1034,7 +1034,7 @@ def _make_registry_key(*args) -> OperationRegistryKey:
     raise exceptions.ValueError('Not a usable OperationRegistryKey: {}'.format(item))
 
 
-class OperationRegistry(typing.Mapping[OperationRegistryKey, OperationImplementation], collections.UserDict):
+class OperationRegistry(collections.UserDict):
     """Helper class to map identifiers to Operation implementation instances.
 
     This is an implementation detail of gmxapi.operation and should not be used from
@@ -2266,7 +2266,7 @@ class OperationPlaceholder(AbstractOperation):
 _HandleType = typing.TypeVar('_HandleType', bound=gmx.abc.OperationReference)
 
 
-class NodeBuilder(typing.Generic[_Context, _HandleType], gmx.abc.NodeBuilder):
+class NodeBuilder(gmx.abc.NodeBuilder):
     """Add an operation node to be managed by a Context.
 
     The NodeBuilder interface implies minimal internal logic, and instead
@@ -2454,7 +2454,7 @@ class Context(gmx.abc.Context):
     #     ...
 
 
-class ModuleNodeBuilder(NodeBuilder['ModuleContext', _HandleType]):
+class ModuleNodeBuilder(NodeBuilder):
     """Builder for work nodes in gmxapi.operation.ModuleContext."""
 
 
@@ -2996,7 +2996,7 @@ class GraphMeta(type):
         super().__init__(name, bases, namespace)
 
 
-class SubgraphNodeBuilder(NodeBuilder['SubgraphContext', _HandleType]):
+class SubgraphNodeBuilder(NodeBuilder):
 
     def __init__(self,
                  context: 'SubgraphContext',
