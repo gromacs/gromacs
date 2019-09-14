@@ -1001,6 +1001,71 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
     return cs;
 }
 
+void Poldata::broadcast_eemprop(const t_commrec *cr)
+{
+    size_t neep;
+    const int src = 0;
+    if (MASTER(cr))
+    {
+        for (auto dest = 1; dest < cr->nnodes; dest++)
+        {
+            auto cs = gmx_send_data(cr, dest);
+            if (CS_OK == cs)
+            {
+                if (nullptr != debug)
+                {
+                    fprintf(debug, "Going to update Poldata::eemprop on node %d\n", dest);
+                }
+                /*Send Eemprops*/
+                gmx_send_int(cr, dest, eep_.size());
+                for (auto &eep : eep_)
+                {
+                    cs = eep.Send(cr, dest);
+                }       
+            }
+            gmx_send_done(cr, dest);
+        }
+    }
+    else
+    {
+        auto cs = gmx_recv_data(cr, src);
+        if (CS_OK == cs)
+        {
+            /*Receive Eemprops*/
+            neep = gmx_recv_int(cr, src);
+            eep_.clear();
+            for (size_t n = 0; (CS_OK == cs) && (n < neep); n++)
+            {
+                Eemprops eep;
+                cs = eep.Receive(cr, src);
+                if (CS_OK == cs)
+                {
+                    eep_.push_back(eep);
+                    if (nullptr != debug)
+                    {
+                        fprintf(debug, "Poldata::eemprop is updated on node %d\n", cr->nodeid);
+                    }
+                }
+                else
+                {
+                    if (nullptr != debug)
+                    {
+                        fprintf(debug, "Could not update Poldata::eemprop on node %d\n", cr->nodeid);
+                    }
+                }   
+            }
+        }
+        else
+        {
+            if (nullptr != debug)
+            {
+                fprintf(debug, "Could not update Poldata::eemprop on node %d\n", cr->nodeid);
+            }
+        }
+        gmx_recv_data(cr, src);
+    }   
+}
+
 void Poldata::broadcast(const t_commrec *cr)
 {
     const int src = 0;
