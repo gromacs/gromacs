@@ -1137,7 +1137,7 @@ bool Optimization::optRun(FILE                   *fplog,
         {
             // Tell the slave nodes how many times they have
             // to run calcDeviation.
-            int niter = 3+Bayes::maxIter()*Bayes::nParam();
+            int niter = 1+Bayes::numberObjectiveFunctionCalls();
             for (int dest = 1; dest < commrec()->nnodes; dest++)
             {
                 gmx_send_int(commrec(), dest, niter);
@@ -1158,13 +1158,13 @@ bool Optimization::optRun(FILE                   *fplog,
             chi2_min = chi2;
             bMinimum = true;
 
-            // This call copies data to poldata as well.
-            setFinal();
+            setCalcAll(true);
             if (fplog)
             {
                 auto pmean  = Bayes::getPmean();
                 auto psigma = Bayes::getPsigma();
                 auto best   = Bayes::getBestParam();
+                // This call copies data to poldata as well.
                 double chi2 = Bayes::objFunction(best.data());
                 fprintf(fplog, "\nLowest RMSD value during optimization: %g.\n",
                         std::sqrt(chi2));
@@ -1530,6 +1530,7 @@ int alex_tune_fc(int argc, char *argv[])
         fprintf(fplog, "chi2 = %g\n", chi2);
         opt.printResults(fplog, (char *)"Before optimization",
                          nullptr, nullptr, oenv);
+        opt.setCalcAll(false);
     }
     if (bTestPar)
     {

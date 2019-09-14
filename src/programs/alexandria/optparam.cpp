@@ -145,8 +145,9 @@ void Bayes::setParam(parm_t param)
     param_ = param;
 }
 
-void Bayes::changeParam(int j, real rand)
+void Bayes::changeParam(size_t j, real rand)
 {
+    GMX_RELEASE_ASSERT(j < param_.size(), "Parameter out of range");
     real delta = (2*rand-1)*step()*fabs(param_[j]);
     param_[j] += delta;
     if (bounds())
@@ -170,14 +171,12 @@ double Bayes::objFunction(const double v[])
     {
         if (prevParam_[i] != v[i])
         {
-            //param_[i]  = v[i];
             changed[i] = true;
         }
     }
     toPolData(changed);
     return calcDeviation();
 }
-
 
 void Bayes::MCMC()
 {
@@ -212,7 +211,7 @@ void Bayes::MCMC()
     sum_of_sq.resize(nParam, 0);
     pmean_.resize(nParam, 0);
     psigma_.resize(nParam, 0);
-        
+
     prevEval  = func_(param_.data());
     *minEval_ = prevEval;
     if (debug)

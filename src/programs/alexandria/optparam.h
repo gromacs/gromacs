@@ -186,7 +186,7 @@ class Bayes : public OptParam
          * Change parameter j based on a random unmber
          * obtained from a uniform distribution.
          */
-        void changeParam(int j, real rand);
+        void changeParam(size_t j, real rand);
 
         //! \brief Return the number of parameters
         size_t nParam() const { return param_.size(); }
@@ -263,6 +263,15 @@ class Bayes : public OptParam
          * \return Total value (chi2) corresponding to deviation
          */
         double objFunction(const double v[]);
+
+        /*! Return number of planned function calls 
+         * Return the number of calls to the objective function
+         * that will be made by the Bayes::MCMC
+         */
+        size_t numberObjectiveFunctionCalls() const
+        {
+            return 1+maxIter()*nParam();
+        }
 };
 
 }
