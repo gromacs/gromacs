@@ -406,6 +406,7 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->settle.dhh = old[1];
             break;
         case F_VSITE2:
+        case F_VSITE2FD:
         case F_VSITE3:
         case F_VSITE3FD:
         case F_VSITE3OUT:

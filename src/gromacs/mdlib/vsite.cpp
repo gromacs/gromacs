@@ -189,6 +189,11 @@ static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
     }
 }
 
+static inline real inverseNorm(const rvec x)
+{
+    return gmx::invsqrt(iprod(x, x));
+}
+
 /* Vsite construction routines */
 
 static void constr_vsite2(const rvec xi, const rvec xj, rvec x, real a, const t_pbc *pbc)
@@ -213,6 +218,24 @@ static void constr_vsite2(const rvec xi, const rvec xj, rvec x, real a, const t_
     }
 
     /* TOTAL: 10 flops */
+}
+
+static void constr_vsite2FD(const rvec xi, const rvec xj, rvec x, real a,
+                            const t_pbc *pbc)
+{
+    rvec xij;
+    pbc_rvec_sub(pbc, xj, xi, xij);
+    /* 3 flops */
+
+    const real b = a*inverseNorm(xij);
+    /* 6 + 10 flops */
+
+    x[XX] = xi[XX] + b*xij[XX];
+    x[YY] = xi[YY] + b*xij[YY];
+    x[ZZ] = xi[ZZ] + b*xij[ZZ];
+    /* 6 Flops */
+
+    /* TOTAL: 25 flops */
 }
 
 static void constr_vsite3(const rvec xi, const rvec xj, const rvec xk, rvec x, real a, real b,
@@ -258,7 +281,7 @@ static void constr_vsite3FD(const rvec xi, const rvec xj, const rvec xk, rvec x,
     temp[ZZ] = xij[ZZ] + a*xjk[ZZ];
     /* 6 flops */
 
-    c = b*gmx::invsqrt(iprod(temp, temp));
+    c = b*inverseNorm(temp);
     /* 6 + 10 flops */
 
     x[XX] = xi[XX] + c*temp[XX];
@@ -278,13 +301,13 @@ static void constr_vsite3FAD(const rvec xi, const rvec xj, const rvec xk, rvec x
     pbc_rvec_sub(pbc, xk, xj, xjk);
     /* 6 flops */
 
-    invdij = gmx::invsqrt(iprod(xij, xij));
+    invdij = inverseNorm(xij);
     c1     = invdij * invdij * iprod(xij, xjk);
     xp[XX] = xjk[XX] - c1*xij[XX];
     xp[YY] = xjk[YY] - c1*xij[YY];
     xp[ZZ] = xjk[ZZ] - c1*xij[ZZ];
     a1     = a*invdij;
-    b1     = b*gmx::invsqrt(iprod(xp, xp));
+    b1     = b*inverseNorm(xp);
     /* 45 */
 
     x[XX] = xi[XX] + a1*xij[XX] + b1*xp[XX];
@@ -330,7 +353,7 @@ static void constr_vsite4FD(const rvec xi, const rvec xj, const rvec xk, const r
     temp[ZZ] = xij[ZZ] + a*xjk[ZZ] + b*xjl[ZZ];
     /* 12 flops */
 
-    d = c*gmx::invsqrt(iprod(temp, temp));
+    d = c*inverseNorm(temp);
     /* 6 + 10 flops */
 
     x[XX] = xi[XX] + d*temp[XX];
@@ -369,7 +392,7 @@ static void constr_vsite4FDN(const rvec xi, const rvec xj, const rvec xk, const 
     cprod(rja, rjb, rm);
     /* 9 flops */
 
-    d = c*gmx::invsqrt(norm2(rm));
+    d = c*inverseNorm(rm);
     /* 5+5+1 flops */
 
     x[XX] = xi[XX] + d*rm[XX];
@@ -495,6 +518,10 @@ static void construct_vsites_thread(rvec x[],
                     case F_VSITE2:
                         aj = ia[3];
                         constr_vsite2(x[ai], x[aj], x[avsite], a1, pbc_null2);
+                        break;
+                    case F_VSITE2FD:
+                        aj = ia[3];
+                        constr_vsite2FD(x[ai], x[aj], x[avsite], a1, pbc_null2);
                         break;
                     case F_VSITE3:
                         aj = ia[3];
@@ -736,6 +763,105 @@ void constructVsitesGlobal(const gmx_mtop_t         &mtop,
     }
 }
 
+static void spread_vsite2FD(const t_iatom ia[], real a,
+                            const rvec x[],
+                            rvec f[], rvec fshift[],
+                            gmx_bool VirCorr, matrix dxdf,
+                            const t_pbc *pbc, const t_graph *g)
+{
+    const int av = ia[1];
+    const int ai = ia[2];
+    const int aj = ia[3];
+    rvec      fv;
+    copy_rvec(f[av], fv);
+
+    rvec xij;
+    int  sji = pbc_rvec_sub(pbc, x[aj], x[ai], xij);
+    /* 6 flops */
+
+    const real invDistance = inverseNorm(xij);
+    const real b           = a*invDistance;
+    /* 4 + ?10? flops */
+
+    const real fproj = iprod(xij, fv)*invDistance*invDistance;
+
+    rvec       fj;
+    fj[XX] = b*(fv[XX] - fproj*xij[XX]);
+    fj[YY] = b*(fv[YY] - fproj*xij[YY]);
+    fj[ZZ] = b*(fv[ZZ] - fproj*xij[ZZ]);
+    /* 9 */
+
+    /* b is already calculated in constr_vsite2FD
+       storing b somewhere will save flops.     */
+
+    f[ai][XX] += fv[XX] - fj[XX];
+    f[ai][YY] += fv[YY] - fj[YY];
+    f[ai][ZZ] += fv[ZZ] - fj[ZZ];
+    f[aj][XX] += fj[XX];
+    f[aj][YY] += fj[YY];
+    f[aj][ZZ] += fj[ZZ];
+    /* 9 Flops */
+
+    if (fshift)
+    {
+        int svi;
+        if (g)
+        {
+            ivec di;
+            ivec_sub(SHIFT_IVEC(g, ia[1]), SHIFT_IVEC(g, ai), di);
+            svi = IVEC2IS(di);
+            ivec_sub(SHIFT_IVEC(g, aj), SHIFT_IVEC(g, ai), di);
+            sji = IVEC2IS(di);
+        }
+        else if (pbc)
+        {
+            rvec xvi;
+            svi = pbc_rvec_sub(pbc, x[av], x[ai], xvi);
+        }
+        else
+        {
+            svi = CENTRAL;
+        }
+
+        if (svi != CENTRAL || sji != CENTRAL)
+        {
+            rvec_dec(fshift[svi], fv);
+            fshift[CENTRAL][XX] += fv[XX] - fj[XX];
+            fshift[CENTRAL][YY] += fv[YY] - fj[YY];
+            fshift[CENTRAL][ZZ] += fv[ZZ] - fj[ZZ];
+            fshift[    sji][XX] += fj[XX];
+            fshift[    sji][YY] += fj[YY];
+            fshift[    sji][ZZ] += fj[ZZ];
+        }
+    }
+
+    if (VirCorr)
+    {
+        /* When VirCorr=TRUE, the virial for the current forces is not
+         * calculated from the redistributed forces. This means that
+         * the effect of non-linear virtual site constructions on the virial
+         * needs to be added separately. This contribution can be calculated
+         * in many ways, but the simplest and cheapest way is to use
+         * the first constructing atom ai as a reference position in space:
+         * subtract (xv-xi)*fv and add (xj-xi)*fj.
+         */
+        rvec xiv;
+
+        pbc_rvec_sub(pbc, x[av], x[ai], xiv);
+
+        for (int i = 0; i < DIM; i++)
+        {
+            for (int j = 0; j < DIM; j++)
+            {
+                /* As xix is a linear combination of j and k, use that here */
+                dxdf[i][j] += -xiv[i]*fv[j] + xij[i]*fj[j];
+            }
+        }
+    }
+
+    /* TOTAL: 38 flops */
+}
+
 static void spread_vsite3(const t_iatom ia[], real a, real b,
                           const rvec x[],
                           rvec f[], rvec fshift[],
@@ -800,7 +926,7 @@ static void spread_vsite3FD(const t_iatom ia[], real a, real b,
                             gmx_bool VirCorr, matrix dxdf,
                             const t_pbc *pbc, const t_graph *g)
 {
-    real    c, invl, fproj, a1;
+    real    fproj, a1;
     rvec    xvi, xij, xjk, xix, fv, temp;
     t_iatom av, ai, aj, ak;
     int     svi, sji, skj;
@@ -822,11 +948,11 @@ static void spread_vsite3FD(const t_iatom ia[], real a, real b,
     xix[ZZ] = xij[ZZ]+a*xjk[ZZ];
     /* 6 flops */
 
-    invl = gmx::invsqrt(iprod(xix, xix));
-    c    = b*invl;
+    const real invDistance = inverseNorm(xix);
+    const real c           = b*invDistance;
     /* 4 + ?10? flops */
 
-    fproj = iprod(xix, fv)*invl*invl; /* = (xix . f)/(xix . xix) */
+    fproj = iprod(xix, fv)*invDistance*invDistance; /* = (xix . f)/(xix . xix) */
 
     temp[XX] = c*(fv[XX]-fproj*xix[XX]);
     temp[YY] = c*(fv[YY]-fproj*xix[YY]);
@@ -929,14 +1055,14 @@ static void spread_vsite3FAD(const t_iatom ia[], real a, real b,
     skj = pbc_rvec_sub(pbc, x[ak], x[aj], xjk);
     /* 6 flops */
 
-    invdij    = gmx::invsqrt(iprod(xij, xij));
+    invdij    = inverseNorm(xij);
     invdij2   = invdij * invdij;
     c1        = iprod(xij, xjk) * invdij2;
     xperp[XX] = xjk[XX] - c1*xij[XX];
     xperp[YY] = xjk[YY] - c1*xij[YY];
     xperp[ZZ] = xjk[ZZ] - c1*xij[ZZ];
     /* xperp in plane ijk, perp. to ij */
-    invdp = gmx::invsqrt(iprod(xperp, xperp));
+    invdp = inverseNorm(xperp);
     a1    = a*invdij;
     b1    = b*invdp;
     /* 45 flops */
@@ -1122,7 +1248,7 @@ static void spread_vsite4FD(const t_iatom ia[], real a, real b, real c,
                             gmx_bool VirCorr, matrix dxdf,
                             const t_pbc *pbc, const t_graph *g)
 {
-    real    d, invl, fproj, a1;
+    real    fproj, a1;
     rvec    xvi, xij, xjk, xjl, xix, fv, temp;
     int     av, ai, aj, ak, al;
     ivec    di;
@@ -1146,13 +1272,13 @@ static void spread_vsite4FD(const t_iatom ia[], real a, real b, real c,
     }
     /* 12 flops */
 
-    invl = gmx::invsqrt(iprod(xix, xix));
-    d    = c*invl;
+    const real invDistance = inverseNorm(xix);
+    const real d           = c*invDistance;
     /* 4 + ?10? flops */
 
     copy_rvec(f[av], fv);
 
-    fproj = iprod(xix, fv)*invl*invl; /* = (xix . f)/(xix . xix) */
+    fproj = iprod(xix, fv)*invDistance*invDistance; /* = (xix . f)/(xix . xix) */
 
     for (m = 0; m < DIM; m++)
     {
@@ -1272,7 +1398,7 @@ static void spread_vsite4FDN(const t_iatom ia[], real a, real b, real c,
     cprod(rja, rjb, rm);
     /* 9 flops */
 
-    invrm = gmx::invsqrt(norm2(rm));
+    invrm = inverseNorm(rm);
     denom = invrm*invrm;
     /* 5+5+2 flops */
 
@@ -1481,6 +1607,9 @@ static void spread_vsite_f_thread(const rvec x[],
                 {
                     case F_VSITE2:
                         spread_vsite2(ia, a1, x, f, fshift, pbc_null2, g);
+                        break;
+                    case F_VSITE2FD:
+                        spread_vsite2FD(ia, a1, x, f, fshift, VirCorr, dxdf, pbc_null2, g);
                         break;
                     case F_VSITE3:
                         b1 = ip[tp].vsite.b;
@@ -1740,6 +1869,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
     }
 
     inc_nrnb(nrnb, eNR_VSITE2,   vsite_count(idef->il, F_VSITE2));
+    inc_nrnb(nrnb, eNR_VSITE2FD, vsite_count(idef->il, F_VSITE2FD));
     inc_nrnb(nrnb, eNR_VSITE3,   vsite_count(idef->il, F_VSITE3));
     inc_nrnb(nrnb, eNR_VSITE3FD, vsite_count(idef->il, F_VSITE3FD));
     inc_nrnb(nrnb, eNR_VSITE3FAD, vsite_count(idef->il, F_VSITE3FAD));

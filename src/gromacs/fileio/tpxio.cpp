@@ -125,6 +125,7 @@ enum tpxv
     tpxv_MimicQMMM,                                          /**< Introduced support for MiMiC QM/MM interface */
     tpxv_PullAverage,                                        /**< Added possibility to output average pull force and position */
     tpxv_GenericInternalParameters,                          /**< Added internal parameters for mdrun modules*/
+    tpxv_VSite2FD,                                           /**< Added 2FD type virtual site */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -207,6 +208,7 @@ static const t_ftupd ftupd[] = {
     { 79, F_DVDL_RESTRAINT    },
     { 79, F_DVDL_TEMPERATURE  },
     { tpxv_GenericInternalParameters, F_DENSITYFITTING },
+    { tpxv_VSite2FD, F_VSITE2FD },
 };
 #define NFTUPD asize(ftupd)
 
@@ -1968,6 +1970,7 @@ static void do_iparams(gmx::ISerializer         *serializer,
             serializer->doReal(&iparams->settle.dhh);
             break;
         case F_VSITE2:
+        case F_VSITE2FD:
             serializer->doReal(&iparams->vsite.a);
             break;
         case F_VSITE3:

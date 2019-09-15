@@ -17,3 +17,10 @@ increasing the similarity of a simulated density to the reference density.
 Multiple protocols are available for how to calculate simulated densities
 as well as how the similarity between a reference and a simulated density is
 evaluated.
+
+Virtual site on the line through two atoms at fixed distance
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This is use useful for e.g. halogens in the CHARMM force field.
+
+:issue:`2451`

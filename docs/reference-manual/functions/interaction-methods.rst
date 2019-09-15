@@ -170,7 +170,7 @@ However, in the general case redistribution should be done first.
 .. figure:: plots/dummies.*
    :width: 15.00000cm
 
-   The six different types of virtual site construction in . The
+   The seven different types of virtual site construction. The
    constructing atoms are shown as black circles, the virtual sites in
    gray.
 
@@ -206,6 +206,30 @@ can be constructed from “particles” that are simpler virtual sites.
 -  In this case the virtual site is on the line through atoms :math:`i`
    and :math:`j`.
 
+-  On the line through two atoms, with a fixed distance
+   (:numref:`Fig. %s <fig-vsites>` 2fd):
+
+   .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i + a \frac{ \mathbf{r}_ij }
+                                                  { | \mathbf{r}_ij | }
+             :label: eqnvsite2fdatom
+
+-  In this case the virtual site is on the line through the the other two
+   particles at a distance of :math:`|a|` from :math:`i`. The force on
+   particles :math:`i` and :math:`j` due to the force on the virtual site
+   can be computed as:
+
+   .. math:: \begin{array}{lcr}
+                     \mathbf{F}_i &=& \displaystyle \mathbf{F}_{s} - \gamma ( \mathbf{F}_is - \mathbf{p} ) \\[1ex]
+                     \mathbf{F}_j &=& \displaystyle \gamma (\mathbf{F}_{s} - \mathbf{p})      \\[1ex]
+                     \end{array}
+                     ~\mbox{~ where~ }~
+                     \begin{array}{c}
+             \displaystyle \gamma = \frac{a}{ | \mathbf{r}_ij | } \\[2ex]
+             \displaystyle \mathbf{p} = \frac{ \mathbf{r}_{is} \cdot \mathbf{F}_{s} }
+                                   { \mathbf{r}_{is} \cdot \mathbf{r}_is } \mathbf{r}_is
+             \end{array}
+             :label: eqnvsite2fdforce
+
 -  As a linear combination of three atoms
    (:numref:`Fig. %s <fig-vsites>` 3):
 
@@ -218,8 +242,8 @@ can be constructed from “particles” that are simpler virtual sites.
 -  In the plane of three atoms, with a fixed distance
    (:numref:`Fig. %s <fig-vsites>` 3fd):
 
-   .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i + b \frac{  \mathbf{r}_ij + a \mathbf{r}_{jk}  }
-                                                  { | \mathbf{r}_ij + a \mathbf{r}_{jk} | }
+   .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i + b \frac{  (1 - a) \mathbf{r}_ij + a \mathbf{r}_{jk}  }
+                                                  { | (1 - a) \mathbf{r}_ij + a \mathbf{r}_{jk} | }
              :label: eqnvsiteplane3atom
 
 -  In this case the virtual site is in the plane of the other three

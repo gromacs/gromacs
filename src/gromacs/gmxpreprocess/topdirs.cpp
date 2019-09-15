@@ -207,7 +207,15 @@ int ifunc_index(Directive d, int type)
                 return F_BHAM;
             }
         case Directive::d_vsites2:
-            return F_VSITE2;
+            switch (type)
+            {
+                case 1:
+                    return F_VSITE2;
+                case 2:
+                    return F_VSITE2FD;
+                default:
+                    gmx_fatal(FARGS, "Invalid vsites2 type %d", type);
+            }
         case Directive::d_vsites3:
             switch (type)
             {

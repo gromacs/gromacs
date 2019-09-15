@@ -186,6 +186,7 @@ enum
     F_CONSTRNC,
     F_SETTLE,
     F_VSITE2,
+    F_VSITE2FD,
     F_VSITE3,
     F_VSITE3FD,
     F_VSITE3FAD,
