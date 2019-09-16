@@ -128,10 +128,6 @@ static const bool c_disableAlternatingWait = (getenv("GMX_DISABLE_ALTERNATING_GP
 // TODO eventially tie this in with other existing GPU flags.
 static const bool c_enableGpuBufOps = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
 
-/*! \brief environment variable to enable GPU P2P communication */
-static const bool c_enableGpuHaloExchange = (getenv("GMX_GPU_DD_COMMS") != nullptr)
-    && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA);
-
 static void sum_forces(rvec f[], gmx::ArrayRef<const gmx::RVec> forceToAdd)
 {
     const int      end = forceToAdd.size();
@@ -1187,11 +1183,15 @@ void do_force(FILE                                     *fplog,
         launchPmeGpuFftAndGather(fr->pmedata, wcycle);
     }
 
-    const bool            ddUsesGpuDirectCommunication
-        = c_enableGpuHaloExchange && c_enableGpuBufOps && bUseGPU && havePPDomainDecomposition(cr);
-    gmx::GpuHaloExchange *gpuHaloExchange = ddUsesGpuDirectCommunication ? cr->dd->gpuHaloExchange.get() : nullptr;
-    GMX_ASSERT(!ddUsesGpuDirectCommunication || gpuHaloExchange != nullptr,
-               "Must have valid gpuHaloExchange when doing halo exchange on the GPU");
+    // TODO Update this comment when introducing SimulationWorkload
+    //
+    // The conditions for gpuHaloExchange e.g. using GPU buffer
+    // operations were checked before construction, so here we can
+    // just use it and assert upon any conditions.
+    gmx::GpuHaloExchange *gpuHaloExchange              = (havePPDomainDecomposition(cr) ? cr->dd->gpuHaloExchange.get() : nullptr);
+    const bool            ddUsesGpuDirectCommunication = (gpuHaloExchange != nullptr);
+    GMX_ASSERT(!ddUsesGpuDirectCommunication || (useGpuXBufOps == BufferOpsUseGpu::True),
+               "Must use coordinate buffer ops with GPU halo exchange");
 
     /* Communicate coordinates and sum dipole if necessary +
        do non-local pair search */

@@ -913,7 +913,16 @@ getDDGridSetup(const gmx::MDLogger           &mdlog,
                gmx::ArrayRef<const gmx::RVec> xGlobal,
                gmx_ddbox_t                   *ddbox)
 {
-    int       numPmeOnlyRanks = getNumPmeOnlyRanksToUse(mdlog, options, mtop, ir, box, numRanksRequested);
+    int numPmeOnlyRanks = getNumPmeOnlyRanksToUse(mdlog, options, mtop, ir, box, numRanksRequested);
+
+    if (ddSettings.request1DAnd1Pulse &&
+        (numRanksRequested - numPmeOnlyRanks == 1))
+    {
+        // With only one PP rank, there will not be a need for
+        // GPU-based halo exchange that wants to request that any DD
+        // has only 1 dimension and 1 pulse.
+        return DDGridSetup {};
+    }
 
     gmx::IVec numDomains;
     if (options.numCells[XX] > 0)

@@ -166,6 +166,9 @@ namespace gmx
 static const bool c_enableGpuHaloExchange = (getenv("GMX_GPU_DD_COMMS") != nullptr)
     && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA);
 
+/*! \brief environment variable to enable GPU buffer operations */
+static const bool c_enableGpuBufOps       = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
+
 /*! \brief Manage any development feature flag variables encountered
  *
  * The use of dev features indicated by environment variables is
@@ -194,8 +197,6 @@ static void manageDevelopmentFeatures(const gmx::MDLogger &mdlog)
         {
             gmx_fatal(FARGS, "Cannot enable GPU halo exchange without GPU buffer operations, set GMX_USE_GPU_BUFFER_OPS=1\n");
         }
-        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                "NOTE: This run uses the 'GPU halo exchange' feature, enabled by the GMX_GPU_DD_COMMS environment variable.");
     }
 
     if (useGpuUpdateConstrain)
@@ -1028,11 +1029,13 @@ int Mdrunner::mdrunner()
     prepare_verlet_scheme(fplog, cr, inputrec, nstlist_cmdline, &mtop, box,
                           useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes), *hwinfo->cpuInfo);
 
+    const bool          prefer1DAnd1PulseDD = (c_enableGpuHaloExchange && useGpuForNonbonded);
     LocalAtomSetManager atomSets;
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
         cr->dd = init_domain_decomposition(mdlog, cr, domdecOptions, mdrunOptions,
+                                           prefer1DAnd1PulseDD,
                                            &mtop, inputrec,
                                            box, positionsFromStatePointer(globalState.get()),
                                            &atomSets);
@@ -1340,12 +1343,15 @@ int Mdrunner::mdrunner()
         // TODO Move this to happen during domain decomposition setup,
         // once stream and event handling works well with that.
         // TODO remove need to pass local stream into GPU halo exchange - Redmine #3093
-        if (havePPDomainDecomposition(cr) && c_enableGpuHaloExchange && useGpuForNonbonded)
+        if (havePPDomainDecomposition(cr) && prefer1DAnd1PulseDD && is1DAnd1PulseDD(*cr->dd))
         {
+            GMX_RELEASE_ASSERT(c_enableGpuBufOps, "Must use GMX_GPU_BUFFER_OPS=1 to use GMX_GPU_DD_COMMS=1");
             void *streamLocal                   = Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::NonLocal);
             void *streamNonLocal                =
                 Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::NonLocal);
             void *coordinatesOnDeviceEvent = fr->nbv->get_x_on_device_event();
+            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                    "NOTE: This run uses the 'GPU halo exchange' feature, enabled by the GMX_GPU_DD_COMMS environment variable.");
             cr->dd->gpuHaloExchange = std::make_unique<GpuHaloExchange>(cr->dd, cr->mpi_comm_mysim, streamLocal,
                                                                         streamNonLocal, coordinatesOnDeviceEvent);
         }

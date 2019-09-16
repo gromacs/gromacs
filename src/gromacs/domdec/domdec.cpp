@@ -2971,13 +2971,7 @@ getDDSettings(const gmx::MDLogger     &mdlog,
 
     ddSettings.useSendRecv2        = (dd_getenv(mdlog, "GMX_DD_USE_SENDRECV2", 0) != 0);
     ddSettings.dlb_scale_lim       = dd_getenv(mdlog, "GMX_DLB_MAX_BOX_SCALING", 10);
-    // TODO GPU halo exchange requires a 1D single-pulse DD, and when
-    // it is properly integrated the hack with GMX_GPU_DD_COMMS should
-    // be removed.
-    ddSettings.request1DAnd1Pulse  = (bool(dd_getenv(mdlog, "GMX_DD_1D_1PULSE", 0)) ||
-                                      (bool(getenv("GMX_GPU_DD_COMMS") != nullptr &&
-                                            GMX_THREAD_MPI &&
-                                            (GMX_GPU == GMX_GPU_CUDA))));
+    ddSettings.request1DAnd1Pulse  = bool(dd_getenv(mdlog, "GMX_DD_1D_1PULSE", 0));
     ddSettings.useDDOrderZYX       = bool(dd_getenv(mdlog, "GMX_DD_ORDER_ZYX", 0));
     ddSettings.useCartesianReorder = bool(dd_getenv(mdlog, "GMX_NO_CART_REORDER", 1));
     ddSettings.eFlop               = dd_getenv(mdlog, "GMX_DLB_BASED_ON_FLOPS", 0);
@@ -3014,10 +3008,71 @@ gmx_domdec_t::gmx_domdec_t(const t_inputrec &ir) :
 {
 }
 
+/*! \brief Return whether the simulation described can run a 1D single-pulse DD.
+ *
+ * The GPU halo exchange code requires a 1D single-pulse DD. Such a DD
+ * generally requires a larger box than other possible decompositions
+ * with the same rank count, so the calling code might need to decide
+ * what is the most appropriate way to run the simulation based on
+ * whether such a DD is possible.
+ *
+ * This function works like init_domain_decomposition(), but will not
+ * give a fatal error, and only uses \c cr for communicating between
+ * ranks.
+ *
+ * It is safe to call before thread-MPI spawns ranks, so that
+ * thread-MPI can decide whether and how to trigger the GPU halo
+ * exchange code path. The number of PME ranks, if any, should be set
+ * in \c options.numPmeRanks.
+ */
+static bool
+canMake1DAnd1PulseDomainDecomposition(const DDSettings              &ddSettingsOriginal,
+                                      const t_commrec               *cr,
+                                      const int                      numRanksRequested,
+                                      const DomdecOptions           &options,
+                                      const gmx_mtop_t              &mtop,
+                                      const t_inputrec              &ir,
+                                      const matrix                   box,
+                                      gmx::ArrayRef<const gmx::RVec> xGlobal)
+{
+    // Ensure we don't write any output from this checking routine
+    gmx::MDLogger dummyLogger;
+
+    DDSystemInfo  systemInfo = getSystemInfo(dummyLogger, cr, options, &mtop, &ir, box, xGlobal);
+
+    int           numPPRanksRequested = numRanksRequested - (EEL_PME(ir.coulombtype) ? options.numPmeRanks : 0);
+
+    DDSettings    ddSettings = ddSettingsOriginal;
+    ddSettings.request1DAnd1Pulse = true;
+    const real    gridSetupCellsizeLimit = getDDGridSetupCellSizeLimit(dummyLogger, ddSettings.request1DAnd1Pulse,
+                                                                       !isDlbDisabled(ddSettings.initialDlbState),
+                                                                       options.dlbScaling, ir,
+                                                                       systemInfo.cellsizeLimit);
+    gmx_ddbox_t ddbox       = {0};
+    DDGridSetup ddGridSetup = getDDGridSetup(dummyLogger, cr, numPPRanksRequested, options,
+                                             ddSettings, systemInfo, gridSetupCellsizeLimit,
+                                             mtop, ir, box, xGlobal, &ddbox);
+
+    const bool canMakeDDWith1DAnd1Pulse = (ddGridSetup.numDomains[XX] != 0);
+
+    return canMakeDDWith1DAnd1Pulse;
+}
+
+bool is1DAnd1PulseDD(const gmx_domdec_t &dd)
+{
+    const int  maxDimensionSize             = std::max(dd.nc[XX], std::max(dd.nc[YY], dd.nc[ZZ]));
+    const int  productOfDimensionSizes      = dd.nc[XX]*dd.nc[YY]*dd.nc[ZZ];
+    const bool decompositionHasOneDimension = (maxDimensionSize == productOfDimensionSizes);
+
+    return (dd.comm->maxpulse == 1) && decompositionHasOneDimension;
+
+}
+
 gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
                                         t_commrec                     *cr,
                                         const DomdecOptions           &options,
                                         const gmx::MdrunOptions       &mdrunOptions,
+                                        const bool                     prefer1DAnd1Pulse,
                                         const gmx_mtop_t              *mtop,
                                         const t_inputrec              *ir,
                                         const matrix                   box,
@@ -3028,6 +3083,14 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
             "\nInitializing Domain Decomposition on %d ranks", cr->nnodes);
 
     DDSettings  ddSettings = getDDSettings(mdlog, options, mdrunOptions, *ir);
+
+    if (prefer1DAnd1Pulse &&
+        canMake1DAnd1PulseDomainDecomposition(ddSettings, cr, cr->nnodes, options,
+                                              *mtop, *ir, box, xGlobal))
+    {
+        ddSettings.request1DAnd1Pulse = true;
+    }
+
     if (ddSettings.eFlop > 1)
     {
         /* Ensure that we have different random flop counts on different ranks */
@@ -3039,16 +3102,16 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
     int          numRanksRequested = cr->nnodes;
     checkForValidRankCountRequests(numRanksRequested, EEL_PME(ir->coulombtype), options.numPmeRanks);
 
-    // DD grid setup uses a more conservative cell size limit for
+    // DD grid setup uses a more different cell size limit for
     // automated setup than the one in systemInfo. The latter is used
-    // later during DLB, for example.
+    // in set_dd_limits() to configure DLB, for example.
     const real gridSetupCellsizeLimit = getDDGridSetupCellSizeLimit(mdlog, ddSettings.request1DAnd1Pulse,
                                                                     !isDlbDisabled(ddSettings.initialDlbState),
                                                                     options.dlbScaling, *ir,
                                                                     systemInfo.cellsizeLimit);
     gmx_ddbox_t  ddbox       = {0};
-    DDGridSetup  ddGridSetup = getDDGridSetup(mdlog, cr, numRanksRequested, options, ddSettings, systemInfo,
-                                              gridSetupCellsizeLimit,
+    DDGridSetup  ddGridSetup = getDDGridSetup(mdlog, cr, numRanksRequested, options,
+                                              ddSettings, systemInfo, gridSetupCellsizeLimit,
                                               *mtop, *ir, box, xGlobal, &ddbox);
     checkDDGridSetup(ddGridSetup, cr, options, ddSettings, systemInfo, gridSetupCellsizeLimit, ddbox);
 

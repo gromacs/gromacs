@@ -162,11 +162,19 @@ init_domain_decomposition(const gmx::MDLogger            &mdlog,
                           t_commrec                      *cr,
                           const gmx::DomdecOptions       &options,
                           const gmx::MdrunOptions        &mdrunOptions,
+                          bool                            prefer1DAnd1Pulse,
                           const gmx_mtop_t               *mtop,
                           const t_inputrec               *ir,
                           const matrix                    box,
                           gmx::ArrayRef<const gmx::RVec>  xGlobal,
                           gmx::LocalAtomSetManager       *atomSets);
+
+/*! \brief Return whether the DD has a single dimension with a single pulse
+ *
+ * The GPU halo exchange code requires a 1D single-pulse DD, and its
+ * setup code can use the returned value to understand what it should
+ * do. */
+bool is1DAnd1PulseDD(const gmx_domdec_t &dd);
 
 /*! \brief Initialize data structures for bonded interactions */
 void dd_init_bondeds(FILE              *fplog,
