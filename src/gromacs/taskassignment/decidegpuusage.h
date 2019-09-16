@@ -232,7 +232,9 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
 /*! \brief Decide whether to use GPU for update.
  *
  * \param[in]  isDomainDecomposition     Whether there more than one domain.
+ * \param[in]  useGpuForPme              Whether GPUs will be used for PME interactions.
  * \param[in]  useGpuForNonbonded        Whether GPUs will be used for nonbonded interactions.
+ * \param[in]  useGpuForBufferOps        Whether GPUs will be used for buffer operations.
  * \param[in]  updateTarget              User choice for running simulation on GPU.
  * \param[in]  gpusWereDetected          Whether compatible GPUs were detected on any node.
  * \param[in]  inputrec                  The user input.
@@ -246,7 +248,9 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
  *             InconsistentInputError    If the user requirements are inconsistent.
  */
 bool decideWhetherToUseGpuForUpdate(bool              isDomainDecomposition,
+                                    bool              useGpuForPme,
                                     bool              useGpuForNonbonded,
+                                    bool              useGpuForBufferOps,
                                     TaskTarget        updateTarget,
                                     bool              gpusWereDetected,
                                     const t_inputrec &inputrec,

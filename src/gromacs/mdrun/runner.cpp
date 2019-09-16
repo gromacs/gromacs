@@ -1485,7 +1485,9 @@ int Mdrunner::mdrunner()
 
         // Before we start the actual simulator, try if we can run the update task on the GPU.
         useGpuForUpdate = decideWhetherToUseGpuForUpdate(DOMAINDECOMP(cr),
+                                                         useGpuForPme,
                                                          useGpuForNonbonded,
+                                                         c_enableGpuBufOps,
                                                          updateTarget,
                                                          gpusWereDetected,
                                                          *inputrec,

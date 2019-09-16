@@ -492,7 +492,9 @@ bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
 }
 
 bool decideWhetherToUseGpuForUpdate(bool              isDomainDecomposition,
+                                    bool              useGpuForPme,
                                     bool              useGpuForNonbonded,
+                                    bool              useGpuForBufferOps,
                                     TaskTarget        updateTarget,
                                     bool              gpusWereDetected,
                                     const t_inputrec &inputrec,
@@ -512,9 +514,12 @@ bool decideWhetherToUseGpuForUpdate(bool              isDomainDecomposition,
     {
         errorMessage += "Domain decomposition is not supported.\n";
     }
-    if (!useGpuForNonbonded)
+    // Using the GPU-version of update makes sense if forces are already on the GPU, i.e. if at least:
+    // 1. PME is on the GPU (there should be a copy of coordinates on a GPU in rvec format for PME spread).
+    // 2. Non-bonded interactions and buffer ops are on the GPU.
+    if (!(useGpuForPme || (useGpuForNonbonded && useGpuForBufferOps)))
     {
-        errorMessage += "Short-ranged non-bonded interaction tasks must run on the GPU.\n";
+        errorMessage += "Either PME or short-ranged non-bonded interaction tasks must run on the GPU.\n";
     }
     if (!gpusWereDetected)
     {
