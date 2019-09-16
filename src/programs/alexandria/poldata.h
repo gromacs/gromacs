@@ -476,8 +476,13 @@ class Poldata
 
         /* Return true on success or false otherwise */
 
-
-        void addForces(ListedForces forces) {forces_.push_back(forces); }
+        /*! \brief
+         * Add a new force list. The routine checks for duplicate itypes
+         * and will not add a second block of a certain type is one is
+         * present already.
+         * \param[in] forces
+         */
+        void addForces(const ListedForces &forces);
 
         size_t nforces() const { return forces_.size(); }
 
