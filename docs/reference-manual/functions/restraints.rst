@@ -259,12 +259,12 @@ The forces are
 
 .. math:: \mathbf{F}_i~=~ \left\{
           \begin{array}{lcllllll}
-          -k_{dr}(r_{ij}-r_0)\frac{\mathbf{r}_ij}{r_{ij}} 
+          -k_{dr}(r_{ij}-r_0)\frac{\mathbf{r}_{ij}}{r_{ij}} 
                           &\mbox{for}&     &     & r_{ij} & < & r_0       \\[1.5ex]
           0               &\mbox{for}& r_0 & \le & r_{ij} & < & r_1       \\[1.5ex]
-          -k_{dr}(r_{ij}-r_1)\frac{\mathbf{r}_ij}{r_{ij}} 
+          -k_{dr}(r_{ij}-r_1)\frac{\mathbf{r}_{ij}}{r_{ij}} 
                           &\mbox{for}& r_1 & \le & r_{ij} & < & r_2       \\[1.5ex]
-          -k_{dr}(r_2-r_1)\frac{\mathbf{r}_ij}{r_{ij}}    
+          -k_{dr}(r_2-r_1)\frac{\mathbf{r}_{ij}}{r_{ij}}    
                           &\mbox{for}& r_2 & \le & r_{ij} &   &
           \end{array} \right.
           :label: eqndisreforce
@@ -286,12 +286,12 @@ distance \ :ref:`91 <refTorda89>`. The forces with time averaging are:
 
 .. math:: \mathbf{F}_i~=~ \left\{
           \begin{array}{lcllllll}
-          -k^a_{dr}(\bar{r}_{ij}-r_0)\frac{\mathbf{r}_ij}{r_{ij}}   
+          -k^a_{dr}(\bar{r}_{ij}-r_0)\frac{\mathbf{r}_{ij}}{r_{ij}}   
                           &\mbox{for}&     &     & \bar{r}_{ij} & < & r_0 \\[1.5ex]
           0               &\mbox{for}& r_0 & \le & \bar{r}_{ij} & < & r_1 \\[1.5ex]
-          -k^a_{dr}(\bar{r}_{ij}-r_1)\frac{\mathbf{r}_ij}{r_{ij}}   
+          -k^a_{dr}(\bar{r}_{ij}-r_1)\frac{\mathbf{r}_{ij}}{r_{ij}}   
                           &\mbox{for}& r_1 & \le & \bar{r}_{ij} & < & r_2 \\[1.5ex]
-          -k^a_{dr}(r_2-r_1)\frac{\mathbf{r}_ij}{r_{ij}}    
+          -k^a_{dr}(r_2-r_1)\frac{\mathbf{r}_{ij}}{r_{ij}}    
                           &\mbox{for}& r_2 & \le & \bar{r}_{ij} &   &
           \end{array} \right.
           :label: eqntimeaveragerest
@@ -337,11 +337,11 @@ violation:
 
 .. math:: \mathbf{F}_i~=~ \left\{
           \begin{array}{lclll}
-          k^a_{dr}\sqrt{(r_{ij}-r_0)(\bar{r}_{ij}-r_0)}\frac{\mathbf{r}_ij}{r_{ij}}   
+          k^a_{dr}\sqrt{(r_{ij}-r_0)(\bar{r}_{ij}-r_0)}\frac{\mathbf{r}_{ij}}{r_{ij}}   
               & \mbox{for} & r_{ij} < r_0 & \mbox{and} & \bar{r}_{ij} < r_0 \\[1.5ex]
           -k^a _{dr} \,
             \mbox{min}\left(\sqrt{(r_{ij}-r_1)(\bar{r}_{ij}-r_1)},r_2-r_1\right)
-            \frac{\mathbf{r}_ij}{r_{ij}}   
+            \frac{\mathbf{r}_{ij}}{r_{ij}}   
               & \mbox{for} & r_{ij} > r_1 & \mbox{and} & \bar{r}_{ij} > r_1 \\[1.5ex]
           0               &\mbox{otherwise}
           \end{array} \right.
@@ -402,8 +402,8 @@ scalar force according to:
 .. math:: \mathbf{F}_i~=~\left\{
           \begin{array}{rcl}
           ~& 0 \hspace{4cm}  & r_{N} < r_1         \\
-           & k_{dr}(r_{N}-r_1)\frac{\mathbf{r}_ij}{r_{ij}} & r_1 \le r_{N} < r_2 \\
-           & k_{dr}(r_2-r_1)\frac{\mathbf{r}_ij}{r_{ij}}    & r_{N} \ge r_2 
+           & k_{dr}(r_{N}-r_1)\frac{\mathbf{r}_{ij}}{r_{ij}} & r_1 \le r_{N} < r_2 \\
+           & k_{dr}(r_2-r_1)\frac{\mathbf{r}_{ij}}{r_{ij}}    & r_{N} \ge r_2 
           \end{array} \right.
           :label: eqnrestscalarforce
 

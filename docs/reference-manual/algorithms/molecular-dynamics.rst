@@ -543,7 +543,7 @@ of isotropic systems, is computed as:
 
 The virial :math:`{\bf \Xi}` tensor is defined as:
 
-.. math:: {\bf \Xi} = -{\frac{1}{2}}\sum_{i<j} \mathbf{r}_ij \otimes \mathbf{F}_ij 
+.. math:: {\bf \Xi} = -{\frac{1}{2}}\sum_{i<j} \mathbf{r}_{ij} \otimes \mathbf{F}_{ij}
           :label: eqnXi
 
 The |Gromacs| implementation of the virial computation is described in
@@ -1007,7 +1007,7 @@ The conserved quantity for the Nosé-Hoover equations of motion is not
 the total energy, but rather
 
 .. math:: \begin{aligned}
-          H = \sum_{i=1}^{N} \frac{{{\mathbf{p}}}_i}{2m_i} + U\left({{\mathbf{r}}}_1,{{\mathbf{r}}}_2,\ldots,{{\mathbf{r}}}_N\right) +\frac{p_{\xi}^2}{2Q} + N_fkT\xi,\end{aligned}
+          H = \sum_{i=1}^{N} \frac{{{\mathbf{p}}}_i}{2m_i} + U\left({{\mathbf{r}}}_1,{{\mathbf{r}}}_2,\ldots,{{\mathbf{r}}}_N\right) +\frac{p_{\xi}^2}{2Q} + N_{f}kT\xi,\end{aligned}
           :label: eqnNHconservedbasic
 
 where :math:`N_f` is the total number of degrees of freedom.
@@ -1486,7 +1486,7 @@ The conserved quantity is now
 
 .. math:: \begin{aligned}
           H = \sum_{i=1}^{N} \frac{{{\mathbf{p}}}_i}{2m_i} + U\left({{\mathbf{r}}}_1,{{\mathbf{r}}}_2,\ldots,{{\mathbf{r}}}_N\right) + \frac{p^2_\epsilon}{2W} + PV + \nonumber \\
-          \sum_{k=1}^M\frac{p^2_{\xi_k}}{2Q_k} +\sum_{k=1}^M\frac{p^2_{\eta_k}}{2Q^{\prime}_k} + N_fkT\xi_1 +  kT\sum_{i=2}^M \xi_k + kT\sum_{k=1}^M \eta_k\end{aligned}
+          \sum_{k=1}^M\frac{p^2_{\xi_k}}{2Q_k} +\sum_{k=1}^M\frac{p^2_{\eta_k}}{2Q^{\prime}_k} + N_{f}kT\xi_1 +  kT\sum_{i=2}^M \xi_k + kT\sum_{k=1}^M \eta_k\end{aligned}
           :label: eqnMTTKthermandbarconserved
 
 Returning to the Trotter decomposition formalism, for pressure control

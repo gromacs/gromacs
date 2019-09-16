@@ -3,10 +3,10 @@ Non-bonded interactions
 
 Non-bonded interactions in |Gromacs| are pair-additive:
 
-.. math:: V(\mathbf{r}_1,\ldots \mathbf{r}_N) = \sum_{i<j}V_{ij}(\mathbf{r}_ij);
+.. math:: V(\mathbf{r}_1,\ldots \mathbf{r}_N) = \sum_{i<j}V_{ij}(\mathbf{r}_{ij});
           :label: eqnnbinteractions1
 
-.. math:: \mathbf{F}_i = -\sum_j \frac{dV_{ij}(r_{ij})}{dr_{ij}} \frac{\mathbf{r}_ij}{r_{ij}}
+.. math:: \mathbf{F}_i = -\sum_j \frac{dV_{ij}(r_{ij})}{dr_{ij}} \frac{\mathbf{r}_{ij}}{r_{ij}}
           :label: eqnnbinteractions2
 
 Since the potential only depends on the scalar distance, interactions
@@ -47,13 +47,13 @@ cut-off distance.
 
 The force derived from this potential is:
 
-.. math:: \mathbf{F}_i(\mathbf{r}_ij) = \left( 12~\frac{C_{ij}^{(12)}}{{r_{ij}}^{13}} -
+.. math:: \mathbf{F}_i(\mathbf{r}_{ij}) = \left( 12~\frac{C_{ij}^{(12)}}{{r_{ij}}^{13}} -
                                     6~\frac{C_{ij}^{(6)}}{{r_{ij}}^7} \right) {\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
           :label: eqnljforce
 
 The LJ potential may also be written in the following form:
 
-.. math:: V_{LJ}(\mathbf{r}_ij) = 4\epsilon_{ij}\left(\left(\frac{\sigma_{ij}} {{r_{ij}}}\right)^{12}
+.. math:: V_{LJ}(\mathbf{r}_{ij}) = 4\epsilon_{ij}\left(\left(\frac{\sigma_{ij}} {{r_{ij}}}\right)^{12}
           - \left(\frac{\sigma_{ij}}{{r_{ij}}}\right)^{6} \right)
           :label: eqnsigeps
 
@@ -138,7 +138,7 @@ See also :numref:`Fig. %s <fig-coul>`, where
 
 The force derived from this potential is:
 
-.. math:: \mathbf{F}_i(\mathbf{r}_ij) = f \frac{q_i q_j}{{\varepsilon_r}{r_{ij}}^2}{\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
+.. math:: \mathbf{F}_i(\mathbf{r}_{ij}) = f \frac{q_i q_j}{{\varepsilon_r}{r_{ij}}^2}{\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
           :label: eqnfcoul
 
 A plain Coulomb interaction should only be used without cut-off or when
@@ -197,7 +197,7 @@ modified interaction is plotted, and it is clear that the derivative
 with respect to :math:`{r_{ij}}` (= -force) goes to zero at the cut-off
 distance. The force derived from this potential reads:
 
-.. math:: \mathbf{F}_i(\mathbf{r}_ij) = f \frac{q_i q_j}{{\varepsilon_r}}\left[\frac{1}{{r_{ij}}^2} - 2 k_{rf}{r_{ij}}\right]{\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
+.. math:: \mathbf{F}_i(\mathbf{r}_{ij}) = f \frac{q_i q_j}{{\varepsilon_r}}\left[\frac{1}{{r_{ij}}^2} - 2 k_{rf}{r_{ij}}\right]{\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
           :label: eqnfcrf
 
 The reaction-field correction should also be applied to all excluded
@@ -228,7 +228,7 @@ to the *force function* :math:`F(r)`, related to the electrostatic or
 van der Waals force acting on particle :math:`i` by particle :math:`j`
 as:
 
-.. math:: \mathbf{F}_i = c \, F(r_{ij}) \frac{\mathbf{r}_ij}{r_{ij}}
+.. math:: \mathbf{F}_i = c \, F(r_{ij}) \frac{\mathbf{r}_{ij}}{r_{ij}}
           :label: eqnswitch
 
 For pure Coulomb or Lennard-Jones interactions
