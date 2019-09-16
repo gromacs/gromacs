@@ -94,7 +94,7 @@ const t_interaction_function interaction_function[F_NRE] =
     def_angle   ("ANGLES",   "Angle",           3, 2, 2),
     def_angle   ("G96ANGLES", "G96Angle",        3, 2, 2),
     def_angle   ("RESTRANGLES", "Restricted Angles", 3, 2, 2),
-    def_angle   ("LINEAR_ANGLES", "Lin. Angle", 3, 2, 2),
+    def_angle   ("LINEAR_ANGLES", "Lin. Angle", 3, 4, 4),
     def_bonded  ("CROSS_BOND_BOND", "Bond-Cross", 3, 3, 0),
     def_bonded  ("CROSS_BOND_ANGLE", "BA-Cross",   3, 4, 0),
     def_angle   ("UREY_BRADLEY", "U-B",          3, 4, 4),

@@ -403,6 +403,18 @@ bool Poldata::getMillerPol(const std::string &miller,
  * LISTED FORCES
  *-+-+-+-+-+-+-+-+-+-+
  */
+void Poldata::addForces(const ListedForces &forces)
+{
+    if (findForces(forces.iType()) == forcesEnd())
+    {
+        forces_.push_back(forces);
+    }
+    else
+    {
+        fprintf(stderr, "Will not add a second ListedForces for %s\n",
+                forces.function().c_str());
+    }
+}
 
 bool Poldata::atypeToBtype(const std::string &atype,
                            std::string       &btype) const
