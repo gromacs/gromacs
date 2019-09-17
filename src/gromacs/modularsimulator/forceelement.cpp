@@ -84,6 +84,7 @@ ForceElement::ForceElement(
     localTopology_(nullptr),
     isDynamicBox_(isDynamicBox),
     ddBalanceRegionHandler_(cr),
+    lambda_(),
     fplog_(fplog),
     cr_(cr),
     inputrec_(inputrec),
@@ -96,7 +97,9 @@ ForceElement::ForceElement(
     pull_work_(pull_work),
     fcd_(fcd),
     mdScheduleWork_(mdScheduleWork)
-{}
+{
+    lambda_.fill(0);
+}
 
 void ForceElement::scheduleTask(
         Step step, Time time,
@@ -140,8 +143,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
     auto       x      = statePropagatorData_->positionsView();
     auto       forces = statePropagatorData_->forcesView();
     auto       box    = statePropagatorData_->constBox();
-    auto       lambda = ArrayRef<real>(); // disabled
-    history_t *hist   = nullptr;          // disabled
+    history_t *hist   = nullptr;  // disabled
 
     tensor     force_vir = {{0}};
     do_force(fplog_, cr_, ms, inputrec_, awh, enforcedRotation, imdSession_,
@@ -149,7 +151,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
              step, nrnb_, wcycle_, localTopology_,
              box, x, hist,
              forces, force_vir, mdAtoms_->mdatoms(), energyElement_->enerdata(), fcd_,
-             lambda, graph,
+             lambda_, graph,
              fr_, mdScheduleWork_, vsite_, energyElement_->muTot(), time, ed,
              static_cast<int>(flags), ddBalanceRegionHandler_);
     energyElement_->addToForceVirial(force_vir, step);

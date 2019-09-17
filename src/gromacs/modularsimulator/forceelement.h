@@ -42,7 +42,11 @@
 #ifndef GMX_MODULARSIMULATOR_FORCEELEMENT_H
 #define GMX_MODULARSIMULATOR_FORCEELEMENT_H
 
+#include <array>
+
 #include "gromacs/domdec/dlbtiming.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/real.h"
 
 #include "modularsimulatorinterfaces.h"
 #include "topologyholder.h"
@@ -141,6 +145,9 @@ class ForceElement final :
 
         //! DD / DLB helper object
         const DDBalanceRegionHandler ddBalanceRegionHandler_;
+
+        //! The FEP lambda vector (unused, but needs to be allocated)
+        std::array<real, efptNR> lambda_;
 
         // Access to ISimulator data
         //! Handles logging.
