@@ -2377,7 +2377,7 @@ int gmx_grompp(int argc, char *argv[])
 
     if (EEL_PME(ir->coulombtype))
     {
-        float ratio = pme_load_estimate(&sys, ir, state.box);
+        float ratio = pme_load_estimate(sys, *ir, state.box);
         fprintf(stderr, "Estimate for the relative computational load of the PME mesh part: %.2f\n", ratio);
         /* With free energy we might need to do PME both for the A and B state
          * charges. This will double the cost, but the optimal performance will

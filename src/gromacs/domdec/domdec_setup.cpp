@@ -53,6 +53,7 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/options.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/utilities.h"
@@ -67,7 +68,12 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "box.h"
 #include "domdec_internal.h"
+#include "utility.h"
+
+// TODO remove this when moving domdec into gmx namespace
+using gmx::DomdecOptions;
 
 /*! \brief Margin for setting up the DD grid */
 #define DD_GRID_MARGIN_PRES_SCALE 1.05
@@ -179,9 +185,10 @@ static gmx_bool fits_pp_pme_perf(int ntot, int npme, float ratio)
 
 /*! \brief Make a guess for the number of PME ranks to use. */
 static int guess_npme(const gmx::MDLogger &mdlog,
-                      const gmx_mtop_t *mtop, const t_inputrec *ir,
-                      const matrix box,
-                      int nrank_tot)
+                      const gmx_mtop_t    &mtop,
+                      const t_inputrec    &ir,
+                      const matrix         box,
+                      int                  nrank_tot)
 {
     float      ratio;
     int        npme;
@@ -243,7 +250,7 @@ static int guess_npme(const gmx::MDLogger &mdlog,
     {
         gmx_fatal(FARGS, "Could not find an appropriate number of separate PME ranks. i.e. >= %5f*#ranks (%d) and <= #ranks/2 (%d) and reasonable performance wise (grid_x=%d, grid_y=%d).\n"
                   "Use the -npme option of mdrun or change the number of ranks or the PME grid dimensions, see the manual for details.",
-                  ratio, gmx::roundToInt(0.95*ratio*nrank_tot), nrank_tot/2, ir->nkx, ir->nky);
+                  ratio, gmx::roundToInt(0.95*ratio*nrank_tot), nrank_tot/2, ir.nkx, ir.nky);
     }
     else
     {
@@ -262,7 +269,7 @@ static int div_up(int n, int f)
     return (n + f - 1)/f;
 }
 
-real comm_box_frac(const ivec dd_nc, real cutoff, const gmx_ddbox_t *ddbox)
+real comm_box_frac(const gmx::IVec &dd_nc, real cutoff, const gmx_ddbox_t &ddbox)
 {
     int  i, j, k;
     rvec nw;
@@ -270,7 +277,7 @@ real comm_box_frac(const ivec dd_nc, real cutoff, const gmx_ddbox_t *ddbox)
 
     for (i = 0; i < DIM; i++)
     {
-        real bt = ddbox->box_size[i]*ddbox->skew_fac[i];
+        real bt = ddbox.box_size[i]*ddbox.skew_fac[i];
         nw[i] = dd_nc[i]*cutoff/bt;
     }
 
@@ -301,10 +308,10 @@ real comm_box_frac(const ivec dd_nc, real cutoff, const gmx_ddbox_t *ddbox)
 }
 
 /*! \brief Return whether the DD inhomogeneous in the z direction */
-static gmx_bool inhomogeneous_z(const t_inputrec *ir)
+static gmx_bool inhomogeneous_z(const t_inputrec &ir)
 {
-    return ((EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD) &&
-            ir->ePBC == epbcXYZ && ir->ewald_geometry == eewg3DC);
+    return ((EEL_PME(ir.coulombtype) || ir.coulombtype == eelEWALD) &&
+            ir.ePBC == epbcXYZ && ir.ewald_geometry == eewg3DC);
 }
 
 /*! \brief Estimate cost of PME FFT communication
@@ -330,15 +337,15 @@ static float comm_pme_cost_vol(int npme, int a, int b, int c)
 
 /*! \brief Estimate cost of communication for a possible domain decomposition. */
 static float comm_cost_est(real limit, real cutoff,
-                           const matrix box, const gmx_ddbox_t *ddbox,
-                           int natoms, const t_inputrec *ir,
+                           const matrix box, const gmx_ddbox_t &ddbox,
+                           int natoms, const t_inputrec &ir,
                            float pbcdxr,
-                           int npme_tot, ivec nc)
+                           int npme_tot, const gmx::IVec &nc)
 {
-    ivec  npme = {1, 1, 1};
-    int   i, j, nk, overlap;
-    rvec  bt;
-    float comm_vol, comm_vol_xf, comm_pme, cost_pbcdx;
+    gmx::IVec npme = {1, 1, 1};
+    int       i, j, nk, overlap;
+    rvec      bt;
+    float     comm_vol, comm_vol_xf, comm_pme, cost_pbcdx;
     /* This is the cost of a pbc_dx call relative to the cost
      * of communicating the coordinate and force of an atom.
      * This will be machine dependent.
@@ -349,8 +356,8 @@ static float comm_cost_est(real limit, real cutoff,
     float temp;
 
     /* Check the DD algorithm restrictions */
-    if ((ir->ePBC == epbcXY && ir->nwall < 2 && nc[ZZ] > 1) ||
-        (ir->ePBC == epbcSCREW && (nc[XX] == 1 || nc[YY] > 1 || nc[ZZ] > 1)))
+    if ((ir.ePBC == epbcXY && ir.nwall < 2 && nc[ZZ] > 1) ||
+        (ir.ePBC == epbcSCREW && (nc[XX] == 1 || nc[YY] > 1 || nc[ZZ] > 1)))
     {
         return -1;
     }
@@ -360,15 +367,15 @@ static float comm_cost_est(real limit, real cutoff,
         return -1;
     }
 
-    assert(ddbox->npbcdim <= DIM);
+    assert(ddbox.npbcdim <= DIM);
 
     /* Check if the triclinic requirements are met */
     for (i = 0; i < DIM; i++)
     {
-        for (j = i+1; j < ddbox->npbcdim; j++)
+        for (j = i+1; j < ddbox.npbcdim; j++)
         {
-            if (box[j][i] != 0 || ir->deform[j][i] != 0 ||
-                (ir->epc != epcNO && ir->compress[j][i] != 0))
+            if (box[j][i] != 0 || ir.deform[j][i] != 0 ||
+                (ir.epc != epcNO && ir.compress[j][i] != 0))
             {
                 if (nc[j] > 1 && nc[i] == 1)
                 {
@@ -380,15 +387,15 @@ static float comm_cost_est(real limit, real cutoff,
 
     for (i = 0; i < DIM; i++)
     {
-        bt[i] = ddbox->box_size[i]*ddbox->skew_fac[i];
+        bt[i] = ddbox.box_size[i]*ddbox.skew_fac[i];
 
         /* Without PBC and with 2 cells, there are no lower limits on the cell size */
-        if (!(i >= ddbox->npbcdim && nc[i] <= 2) && bt[i] < nc[i]*limit)
+        if (!(i >= ddbox.npbcdim && nc[i] <= 2) && bt[i] < nc[i]*limit)
         {
             return -1;
         }
         /* With PBC, check if the cut-off fits in nc[i]-1 cells */
-        if (i < ddbox->npbcdim && nc[i] > 1 && (nc[i] - 1)*bt[i] < nc[i]*cutoff)
+        if (i < ddbox.npbcdim && nc[i] > 1 && (nc[i] - 1)*bt[i] < nc[i]*cutoff)
         {
             return -1;
         }
@@ -417,7 +424,7 @@ static float comm_cost_est(real limit, real cutoff,
         }
     }
 
-    if (EEL_PME(ir->coulombtype) || EVDW_PME(ir->vdwtype))
+    if (EEL_PME(ir.coulombtype) || EVDW_PME(ir.vdwtype))
     {
         /* Check the PME grid restrictions.
          * Currently these can only be invalid here with too few grid lines
@@ -432,7 +439,7 @@ static float comm_cost_est(real limit, real cutoff,
          */
         bool useThreads     = true;
         bool errorsAreFatal = false;
-        if (!gmx_pme_check_restrictions(ir->pme_order, ir->nkx, ir->nky, ir->nkz,
+        if (!gmx_pme_check_restrictions(ir.pme_order, ir.nkx, ir.nky, ir.nkz,
                                         npme_x, useThreads, errorsAreFatal))
         {
             return -1;
@@ -497,28 +504,28 @@ static float comm_cost_est(real limit, real cutoff,
         /* Grid overlap communication */
         if (npme[i] > 1)
         {
-            nk        = (i == 0 ? ir->nkx : ir->nky);
-            overlap   = (nk % npme[i] == 0 ? ir->pme_order-1 : ir->pme_order);
+            nk        = (i == 0 ? ir.nkx : ir.nky);
+            overlap   = (nk % npme[i] == 0 ? ir.pme_order-1 : ir.pme_order);
             temp      = npme[i];
             temp     *= overlap;
-            temp     *= ir->nkx;
-            temp     *= ir->nky;
-            temp     *= ir->nkz;
+            temp     *= ir.nkx;
+            temp     *= ir.nky;
+            temp     *= ir.nkz;
             temp     /= nk;
             comm_pme += temp;
-/* Old line comm_pme += npme[i]*overlap*ir->nkx*ir->nky*ir->nkz/nk; */
+/* Old line comm_pme += npme[i]*overlap*ir.nkx*ir.nky*ir.nkz/nk; */
         }
     }
 
-    comm_pme += comm_pme_cost_vol(npme[YY], ir->nky, ir->nkz, ir->nkx);
-    comm_pme += comm_pme_cost_vol(npme[XX], ir->nkx, ir->nky, ir->nkz);
+    comm_pme += comm_pme_cost_vol(npme[YY], ir.nky, ir.nkz, ir.nkx);
+    comm_pme += comm_pme_cost_vol(npme[XX], ir.nkx, ir.nky, ir.nkz);
 
     /* Add cost of pbc_dx for bondeds */
     cost_pbcdx = 0;
-    if ((nc[XX] == 1 || nc[YY] == 1) || (nc[ZZ] == 1 && ir->ePBC != epbcXY))
+    if ((nc[XX] == 1 || nc[YY] == 1) || (nc[ZZ] == 1 && ir.ePBC != epbcXY))
     {
-        if ((ddbox->tric_dir[XX] && nc[XX] == 1) ||
-            (ddbox->tric_dir[YY] && nc[YY] == 1))
+        if ((ddbox.tric_dir[XX] && nc[XX] == 1) ||
+            (ddbox.tric_dir[YY] && nc[YY] == 1))
         {
             cost_pbcdx = pbcdxr*pbcdx_tric_fac;
         }
@@ -540,17 +547,20 @@ static float comm_cost_est(real limit, real cutoff,
     return 3*natoms*(comm_vol + cost_pbcdx) + comm_pme;
 }
 
-/*! \brief Assign penalty factors to possible domain decompositions, based on the estimated communication costs. */
+/*! \brief Assign penalty factors to possible domain decompositions,
+ * based on the estimated communication costs. */
 static void assign_factors(const real limit, const bool request1D,
                            const real cutoff,
-                           const matrix box, const gmx_ddbox_t *ddbox,
-                           int natoms, const t_inputrec *ir,
+                           const matrix box, const gmx_ddbox_t &ddbox,
+                           int natoms, const t_inputrec &ir,
                            float pbcdxr, int npme,
                            int ndiv, const int *div, const int *mdiv,
-                           ivec ir_try, ivec opt)
+                           gmx::IVec *irTryPtr,
+                           gmx::IVec *opt)
 {
-    int   x, y, i;
-    float ce;
+    int        x, y, i;
+    float      ce;
+    gmx::IVec &ir_try = *irTryPtr;
 
     if (ndiv == 0)
     {
@@ -565,12 +575,12 @@ static void assign_factors(const real limit, const bool request1D,
 
         ce = comm_cost_est(limit, cutoff, box, ddbox,
                            natoms, ir, pbcdxr, npme, ir_try);
-        if (ce >= 0 && (opt[XX] == 0 ||
+        if (ce >= 0 && ((*opt)[XX] == 0 ||
                         ce < comm_cost_est(limit, cutoff, box, ddbox,
                                            natoms, ir, pbcdxr,
-                                           npme, opt)))
+                                           npme, *opt)))
         {
-            copy_ivec(ir_try, opt);
+            *opt = ir_try;
         }
 
         return;
@@ -596,7 +606,7 @@ static void assign_factors(const real limit, const bool request1D,
             /* recurse */
             assign_factors(limit, request1D,
                            cutoff, box, ddbox, natoms, ir, pbcdxr, npme,
-                           ndiv-1, div+1, mdiv+1, ir_try, opt);
+                           ndiv-1, div+1, mdiv+1, irTryPtr, opt);
 
             for (i = 0; i < mdiv[0]-x-y; i++)
             {
@@ -614,37 +624,44 @@ static void assign_factors(const real limit, const bool request1D,
     }
 }
 
-/*! \brief Determine the optimal distribution of DD cells for the simulation system and number of MPI ranks */
-static real optimize_ncells(const gmx::MDLogger &mdlog,
-                            const int nnodes_tot, const int npme_only,
-                            const bool request1DAnd1Pulse,
-                            const bool bDynLoadBal, const real dlb_scale,
-                            const gmx_mtop_t *mtop,
-                            const matrix box, const gmx_ddbox_t *ddbox,
-                            const t_inputrec *ir,
-                            const DDSystemInfo &systemInfo,
-                            ivec nc)
+/*! \brief Determine the optimal distribution of DD cells for the
+ * simulation system and number of MPI ranks
+ *
+ * \returns The optimal grid cell choice. The latter will contain all
+ *          zeros if no valid cell choice exists. */
+static gmx::IVec
+optimizeDDCells(const gmx::MDLogger &mdlog,
+                const int            numRanksRequested,
+                const int            numPmeOnlyRanks,
+                const real           cellSizeLimit,
+                const bool           request1DAnd1Pulse,
+                const gmx_mtop_t    &mtop,
+                const matrix         box,
+                const gmx_ddbox_t   &ddbox,
+                const t_inputrec    &ir,
+                const DDSystemInfo  &systemInfo)
 {
-    int      npp, npme, d, nmax;
-    double   pbcdxr;
-    real     limit;
-    ivec     itry;
+    double    pbcdxr;
 
-    limit  = systemInfo.cellsizeLimit;
-    if (request1DAnd1Pulse)
+    const int numPPRanks = numRanksRequested - numPmeOnlyRanks;
+
+    GMX_LOG(mdlog.info).appendTextFormatted(
+            "Optimizing the DD grid for %d cells with a minimum initial size of %.3f nm",
+            numPPRanks, cellSizeLimit);
+    if (inhomogeneous_z(ir))
     {
-        limit = std::max(limit, ir->rlist);
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "Ewald_geometry=%s: assuming inhomogeneous particle distribution in z, will not decompose in z.",
+                eewg_names[ir.ewald_geometry]);
     }
 
-    npp = nnodes_tot - npme_only;
-    if (EEL_PME(ir->coulombtype))
-    {
-        npme = (npme_only > 0 ? npme_only : npp);
-    }
-    else
-    {
-        npme = 0;
-    }
+
+    // For cost estimates, we need the number of ranks doing PME work,
+    // which is the number of PP ranks when not using separate
+    // PME-only ranks.
+    const int numRanksDoingPmeWork = (EEL_PME(ir.coulombtype) ?
+                                      ((numPmeOnlyRanks > 0) ? numPmeOnlyRanks : numPPRanks) :
+                                      0);
 
     if (systemInfo.haveInterDomainBondeds)
     {
@@ -653,51 +670,21 @@ static real optimize_ncells(const gmx::MDLogger &mdlog,
          * Here we ignore SIMD bondeds as they always do (fast) PBC.
          */
         count_bonded_distances(mtop, ir, &pbcdxr, nullptr);
-        pbcdxr /= static_cast<double>(mtop->natoms);
+        pbcdxr /= static_cast<double>(mtop.natoms);
     }
     else
     {
         /* Every molecule is a single charge group: no pbc required */
         pbcdxr = 0;
     }
-    /* Add a margin for DLB and/or pressure scaling */
-    if (bDynLoadBal)
-    {
-        if (dlb_scale >= 1.0)
-        {
-            gmx_fatal(FARGS, "The value for option -dds should be smaller than 1");
-        }
-        GMX_LOG(mdlog.info).appendTextFormatted(
-                "Scaling the initial minimum size with 1/%g (option -dds) = %g",
-                dlb_scale, 1/dlb_scale);
-        limit /= dlb_scale;
-    }
-    else if (ir->epc != epcNO)
-    {
-        GMX_LOG(mdlog.info).appendTextFormatted(
-                "To account for pressure scaling, scaling the initial minimum size with %g",
-                DD_GRID_MARGIN_PRES_SCALE);
-        limit *= DD_GRID_MARGIN_PRES_SCALE;
-    }
 
-    GMX_LOG(mdlog.info).appendTextFormatted(
-            "Optimizing the DD grid for %d cells with a minimum initial size of %.3f nm",
-            npp, limit);
-
-    if (inhomogeneous_z(ir))
-    {
-        GMX_LOG(mdlog.info).appendTextFormatted(
-                "Ewald_geometry=%s: assuming inhomogeneous particle distribution in z, will not decompose in z.",
-                eewg_names[ir->ewald_geometry]);
-    }
-
-    if (limit > 0)
+    if (cellSizeLimit > 0)
     {
         std::string maximumCells = "The maximum allowed number of cells is:";
-        for (d = 0; d < DIM; d++)
+        for (int d = 0; d < DIM; d++)
         {
-            nmax = static_cast<int>(ddbox->box_size[d]*ddbox->skew_fac[d]/limit);
-            if (d >= ddbox->npbcdim && nmax < 2)
+            int nmax = static_cast<int>(ddbox.box_size[d]*ddbox.skew_fac[d]/cellSizeLimit);
+            if (d >= ddbox.npbcdim && nmax < 2)
             {
                 nmax = 2;
             }
@@ -715,123 +702,254 @@ static real optimize_ncells(const gmx::MDLogger &mdlog,
         fprintf(debug, "Average nr of pbc_dx calls per atom %.2f\n", pbcdxr);
     }
 
-    /* Decompose npp in factors */
+    /* Decompose numPPRanks in factors */
     std::vector<int> div;
     std::vector<int> mdiv;
-    factorize(npp, &div, &mdiv);
+    factorize(numPPRanks, &div, &mdiv);
 
-    itry[XX] = 1;
-    itry[YY] = 1;
-    itry[ZZ] = 1;
-    clear_ivec(nc);
-    assign_factors(limit, request1DAnd1Pulse,
-                   systemInfo.cutoff, box, ddbox, mtop->natoms, ir, pbcdxr,
-                   npme, div.size(), div.data(), mdiv.data(), itry, nc);
+    gmx::IVec itry       = { 1, 1, 1 };
+    gmx::IVec numDomains = { 0, 0, 0 };
+    assign_factors(cellSizeLimit, request1DAnd1Pulse,
+                   systemInfo.cutoff, box, ddbox, mtop.natoms, ir, pbcdxr,
+                   numRanksDoingPmeWork, div.size(), div.data(), mdiv.data(), &itry, &numDomains);
 
-    return limit;
+    return numDomains;
 }
 
-DDGridSetup
-dd_choose_grid(const gmx::MDLogger &mdlog,
-               const t_commrec *cr,
-               const t_inputrec *ir,
-               const gmx_mtop_t *mtop,
-               const matrix box, const gmx_ddbox_t *ddbox,
-               const int numPmeRanksRequested,
-               const bool request1DAnd1Pulse,
-               const bool bDynLoadBal, const real dlb_scale,
-               const DDSystemInfo &systemInfo)
+real
+getDDGridSetupCellSizeLimit(const gmx::MDLogger &mdlog,
+                            const bool           request1DAnd1Pulse,
+                            const bool           bDynLoadBal,
+                            const real           dlb_scale,
+                            const t_inputrec    &ir,
+                            const real           systemInfoCellSizeLimit)
 {
-    DDGridSetup ddGridSetup;
-
-    if (MASTER(cr))
+    real cellSizeLimit = systemInfoCellSizeLimit;
+    if (request1DAnd1Pulse)
     {
-        int64_t nnodes_div = cr->nnodes;
-        if (EEL_PME(ir->coulombtype))
-        {
-            if (numPmeRanksRequested > 0)
-            {
-                if (numPmeRanksRequested >= cr->nnodes)
-                {
-                    gmx_fatal(FARGS,
-                              "Cannot have %d separate PME ranks with just %d total ranks",
-                              numPmeRanksRequested, cr->nnodes);
-                }
+        cellSizeLimit = std::max(cellSizeLimit, ir.rlist);
+    }
 
-                /* If the user purposely selected the number of PME nodes,
-                 * only check for large primes in the PP node count.
-                 */
-                nnodes_div -= numPmeRanksRequested;
-            }
+    /* Add a margin for DLB and/or pressure scaling */
+    if (bDynLoadBal)
+    {
+        if (dlb_scale >= 1.0)
+        {
+            gmx_fatal(FARGS, "The value for option -dds should be smaller than 1");
+        }
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "Scaling the initial minimum size with 1/%g (option -dds) = %g",
+                dlb_scale, 1/dlb_scale);
+        cellSizeLimit /= dlb_scale;
+    }
+    else if (ir.epc != epcNO)
+    {
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "To account for pressure scaling, scaling the initial minimum size with %g",
+                DD_GRID_MARGIN_PRES_SCALE);
+        cellSizeLimit *= DD_GRID_MARGIN_PRES_SCALE;
+    }
+
+    return cellSizeLimit;
+}
+void
+checkForValidRankCountRequests(const int  numRanksRequested,
+                               const bool usingPme,
+                               const int  numPmeRanksRequested)
+{
+    int numPPRanksRequested = numRanksRequested;
+    if (usingPme)
+    {
+        numPPRanksRequested -= numPmeRanksRequested;
+        if (numPmeRanksRequested > numPPRanksRequested)
+        {
+            gmx_fatal(FARGS,
+                      "Cannot have %d separate PME ranks with only %d PP ranks, choose fewer or no separate PME ranks",
+                      numPmeRanksRequested, numPPRanksRequested);
+        }
+    }
+
+    // Once the rank count is large enough, it becomes worth
+    // suggesting improvements to the user.
+    const int minPPRankCountToCheckForLargePrimeFactors = 13;
+    if (numPPRanksRequested >= minPPRankCountToCheckForLargePrimeFactors)
+    {
+        const int largestDivisor = largest_divisor(numPPRanksRequested);
+        /* Check if the largest divisor is more than numPPRanks ^ (2/3) */
+        if (largestDivisor*largestDivisor*largestDivisor >
+            numPPRanksRequested*numPPRanksRequested)
+        {
+            gmx_fatal(FARGS, "The number of ranks selected for particle-particle work (%d) "
+                      "contains a large prime factor %d. In most cases this will lead to "
+                      "bad performance. Choose a number with smaller prime factors or "
+                      "set the decomposition (option -dd) manually.",
+                      numPPRanksRequested, largestDivisor);
+        }
+    }
+}
+
+/*! \brief Return the number of PME-only ranks used by the simulation
+ *
+ * If the user did not choose a number, then decide for them. */
+static int
+getNumPmeOnlyRanksToUse(const gmx::MDLogger &mdlog,
+                        const DomdecOptions &options,
+                        const gmx_mtop_t    &mtop,
+                        const t_inputrec    &ir,
+                        const matrix         box,
+                        const int            numRanksRequested)
+{
+    int         numPmeOnlyRanks;
+    const char *extraMessage = "";
+
+    if (options.numCells[XX] > 0)
+    {
+        if (options.numPmeRanks >= 0)
+        {
+            // TODO mdrun should give a fatal error with a non-PME input file and -npme > 0
+            numPmeOnlyRanks = options.numPmeRanks;
         }
         else
         {
-            ddGridSetup.numPmeOnlyRanks = 0;
+            // When the DD grid is set explicitly and -npme is set to auto,
+            // don't use PME ranks. We check later if the DD grid is
+            // compatible with the total number of ranks.
+            numPmeOnlyRanks = 0;
         }
-
-        if (nnodes_div > 12)
-        {
-            const int64_t ldiv = largest_divisor(nnodes_div);
-            /* Check if the largest divisor is more than nnodes^2/3 */
-            if (ldiv*ldiv*ldiv > nnodes_div*nnodes_div)
-            {
-                gmx_fatal(FARGS, "The number of ranks you selected (%" PRId64 ") contains a large prime factor %" PRId64 ". In most cases this will lead to bad performance. Choose a number with smaller prime factors or set the decomposition (option -dd) manually.",
-                          nnodes_div, ldiv);
-            }
-        }
-
-        if (EEL_PME(ir->coulombtype))
-        {
-            if (numPmeRanksRequested < 0)
-            {
-                /* Use PME nodes when the number of nodes is more than 16 */
-                if (cr->nnodes <= 18)
-                {
-                    ddGridSetup.numPmeOnlyRanks = 0;
-                    GMX_LOG(mdlog.info).appendTextFormatted(
-                            "Using %d separate PME ranks, as there are too few total\n"
-                            " ranks for efficient splitting",
-                            ddGridSetup.numPmeOnlyRanks);
-                }
-                else
-                {
-                    ddGridSetup.numPmeOnlyRanks = guess_npme(mdlog, mtop, ir, box, cr->nnodes);
-                    GMX_LOG(mdlog.info).appendTextFormatted(
-                            "Using %d separate PME ranks, as guessed by mdrun",
-                            ddGridSetup.numPmeOnlyRanks);
-                }
-            }
-            else
-            {
-                /* We checked above that nPmeRanks is a valid number */
-                ddGridSetup.numPmeOnlyRanks = numPmeRanksRequested;
-                GMX_LOG(mdlog.info).appendTextFormatted(
-                        "Using %d separate PME ranks", ddGridSetup.numPmeOnlyRanks);
-                // TODO: there was a ", per user request" note here, but it's not correct anymore,
-                // as with GPUs decision about nPmeRanks can be made in runner() as well.
-                // Consider a single spot for setting nPmeRanks.
-            }
-        }
-
-        ddGridSetup.cellsizeLimit =
-            optimize_ncells(mdlog, cr->nnodes, ddGridSetup.numPmeOnlyRanks,
-                            request1DAnd1Pulse,
-                            bDynLoadBal, dlb_scale,
-                            mtop, box, ddbox, ir,
-                            systemInfo,
-                            ddGridSetup.numDomains);
-    }
-
-    /* Communicate the information set by the master to all nodes */
-    gmx_bcast(sizeof(ddGridSetup.numDomains), ddGridSetup.numDomains, cr);
-    if (EEL_PME(ir->coulombtype))
-    {
-        gmx_bcast(sizeof(ddGridSetup.numPmeOnlyRanks), &ddGridSetup.numPmeOnlyRanks, cr);
     }
     else
     {
-        ddGridSetup.numPmeOnlyRanks = 0;
+        if (!EEL_PME(ir.coulombtype))
+        {
+            // TODO mdrun should give a fatal error with a non-PME input file and -npme > 0
+            numPmeOnlyRanks = 0;
+        }
+        else
+        {
+            if (options.numPmeRanks >= 0)
+            {
+                numPmeOnlyRanks = options.numPmeRanks;
+            }
+            else
+            {
+                // Controls the automated choice of when to use separate PME-only ranks.
+                const int minRankCountToDefaultToSeparatePmeRanks = 19;
+
+                if (numRanksRequested < minRankCountToDefaultToSeparatePmeRanks)
+                {
+                    numPmeOnlyRanks = 0;
+                    extraMessage    = ", as there are too few total\n"
+                        " ranks for efficient splitting";
+                }
+                else
+                {
+                    numPmeOnlyRanks = guess_npme(mdlog, mtop, ir, box, numRanksRequested);
+                    extraMessage    = ", as guessed by mdrun";
+                }
+            }
+        }
+
     }
+    GMX_RELEASE_ASSERT(numPmeOnlyRanks <= numRanksRequested,
+                       "Cannot have more PME ranks than total ranks");
+    if (EEL_PME(ir.coulombtype))
+    {
+        GMX_LOG(mdlog.info).appendTextFormatted
+            ("Using %d separate PME ranks%s", numPmeOnlyRanks, extraMessage);
+    }
+
+    return numPmeOnlyRanks;
+}
+
+/*! \brief Sets the order of the DD dimensions, returns the number of DD dimensions */
+static int set_dd_dim(const gmx::IVec  &numDDCells,
+                      const DDSettings &ddSettings,
+                      ivec             *dims)
+{
+    int ndim = 0;
+    if (ddSettings.useDDOrderZYX)
+    {
+        /* Decomposition order z,y,x */
+        for (int dim = DIM - 1; dim >= 0; dim--)
+        {
+            if (numDDCells[dim] > 1)
+            {
+                (*dims)[ndim++] = dim;
+            }
+        }
+    }
+    else
+    {
+        /* Decomposition order x,y,z */
+        for (int dim = 0; dim < DIM; dim++)
+        {
+            if (numDDCells[dim] > 1)
+            {
+                (*dims)[ndim++] = dim;
+            }
+        }
+    }
+
+    if (ndim == 0)
+    {
+        /* Set dim[0] to avoid extra checks on ndim in several places */
+        (*dims)[0] = XX;
+    }
+
+    return ndim;
+}
+
+DDGridSetup
+getDDGridSetup(const gmx::MDLogger           &mdlog,
+               const t_commrec               *cr,
+               const int                      numRanksRequested,
+               const DomdecOptions           &options,
+               const DDSettings              &ddSettings,
+               const DDSystemInfo            &systemInfo,
+               const real                     cellSizeLimit,
+               const gmx_mtop_t              &mtop,
+               const t_inputrec              &ir,
+               const matrix                   box,
+               gmx::ArrayRef<const gmx::RVec> xGlobal,
+               gmx_ddbox_t                   *ddbox)
+{
+    int       numPmeOnlyRanks = getNumPmeOnlyRanksToUse(mdlog, options, mtop, ir, box, numRanksRequested);
+
+    gmx::IVec numDomains;
+    if (options.numCells[XX] > 0)
+    {
+        numDomains = gmx::IVec(options.numCells);
+        const ivec numDomainsLegacyIvec = { numDomains[XX], numDomains[YY], numDomains[ZZ] };
+        set_ddbox_cr(*cr, &numDomainsLegacyIvec, ir, box, xGlobal, ddbox);
+    }
+    else
+    {
+        set_ddbox_cr(*cr, nullptr, ir, box, xGlobal, ddbox);
+
+        if (MASTER(cr))
+        {
+            numDomains =
+                optimizeDDCells(mdlog, numRanksRequested, numPmeOnlyRanks,
+                                cellSizeLimit,
+                                ddSettings.request1DAnd1Pulse,
+                                mtop, box, *ddbox, ir,
+                                systemInfo);
+        }
+    }
+
+    /* Communicate the information set by the master to all ranks */
+    gmx_bcast(sizeof(numDomains), numDomains, cr);
+    if (EEL_PME(ir.coulombtype))
+    {
+        gmx_bcast(sizeof(numPmeOnlyRanks), &numPmeOnlyRanks, cr);
+    }
+
+    DDGridSetup ddGridSetup;
+    ddGridSetup.numPmeOnlyRanks = numPmeOnlyRanks;
+    ddGridSetup.numDomains[XX]  = numDomains[XX];
+    ddGridSetup.numDomains[YY]  = numDomains[YY];
+    ddGridSetup.numDomains[ZZ]  = numDomains[ZZ];
+    ddGridSetup.numDDDimensions = set_dd_dim(numDomains, ddSettings, &ddGridSetup.ddDimensions);
 
     return ddGridSetup;
 }

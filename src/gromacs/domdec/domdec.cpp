@@ -1988,44 +1988,6 @@ static DlbState determineInitialDlbState(const gmx::MDLogger &mdlog,
     return dlbState;
 }
 
-/* Sets the order of the DD dimensions, returns the number of DD dimensions */
-static int set_dd_dim(const ivec        numDDCells,
-                      const DDSettings &ddSettings,
-                      ivec              dims)
-{
-    int ndim = 0;
-    if (ddSettings.useDDOrderZYX)
-    {
-        /* Decomposition order z,y,x */
-        for (int dim = DIM - 1; dim >= 0; dim--)
-        {
-            if (numDDCells[dim] > 1)
-            {
-                dims[ndim++] = dim;
-            }
-        }
-    }
-    else
-    {
-        /* Decomposition order x,y,z */
-        for (int dim = 0; dim < DIM; dim++)
-        {
-            if (numDDCells[dim] > 1)
-            {
-                dims[ndim++] = dim;
-            }
-        }
-    }
-
-    if (ndim == 0)
-    {
-        /* Set dim[0] to avoid extra checks on ndim in several places */
-        dims[0] = XX;
-    }
-
-    return ndim;
-}
-
 static gmx_domdec_comm_t *init_dd_comm()
 {
     gmx_domdec_comm_t *comm = new gmx_domdec_comm_t;
@@ -2167,7 +2129,7 @@ moleculesAreAlwaysWhole(const gmx_mtop_t                            &mtop,
 /*! \brief Generate the simulation system information */
 static DDSystemInfo
 getSystemInfo(const gmx::MDLogger           &mdlog,
-              t_commrec                     *cr,
+              const t_commrec               *cr,
               const DomdecOptions           &options,
               const gmx_mtop_t              *mtop,
               const t_inputrec              *ir,
@@ -2356,77 +2318,38 @@ getSystemInfo(const gmx::MDLogger           &mdlog,
     return systemInfo;
 }
 
-/*! \brief Set the cell size and interaction limits, as well as the DD grid
- *
- * Also computes the initial ddbox.
- */
-static DDGridSetup
-getDDGridSetup(const gmx::MDLogger           &mdlog,
-               t_commrec                     *cr,
-               const DomdecOptions           &options,
-               const DDSettings              &ddSettings,
-               const DDSystemInfo            &systemInfo,
-               const gmx_mtop_t              *mtop,
-               const t_inputrec              *ir,
-               const matrix                   box,
-               gmx::ArrayRef<const gmx::RVec> xGlobal,
-               gmx_ddbox_t                   *ddbox)
+/*! \brief Exit with a fatal error if the DDGridSetup cannot be
+ * implemented. */
+static void
+checkDDGridSetup(const DDGridSetup   &ddGridSetup,
+                 const t_commrec     *cr,
+                 const DomdecOptions &options,
+                 const DDSettings    &ddSettings,
+                 const DDSystemInfo  &systemInfo,
+                 const real           cellsizeLimit,
+                 const gmx_ddbox_t   &ddbox)
 {
-    DDGridSetup ddGridSetup;
-
-    if (options.numCells[XX] > 0)
+    if (options.numCells[XX] <= 0 && (ddGridSetup.numDomains[XX] == 0))
     {
-        copy_ivec(options.numCells, ddGridSetup.numDomains);
-        set_ddbox_cr(*cr, &ddGridSetup.numDomains, *ir, box, xGlobal, ddbox);
+        char     buf[STRLEN];
+        gmx_bool bC = (systemInfo.haveSplitConstraints &&
+                       systemInfo.constraintCommunicationRange > systemInfo.minCutoffForMultiBody);
+        sprintf(buf, "Change the number of ranks or mdrun option %s%s%s",
+                !bC ? "-rdd" : "-rcon",
+                ddSettings.initialDlbState != DlbState::offUser ? " or -dds" : "",
+                bC ? " or your LINCS settings" : "");
 
-        if (options.numPmeRanks >= 0)
-        {
-            ddGridSetup.numPmeOnlyRanks = options.numPmeRanks;
-        }
-        else
-        {
-            /* When the DD grid is set explicitly and -npme is set to auto,
-             * don't use PME ranks. We check later if the DD grid is
-             * compatible with the total number of ranks.
-             */
-            ddGridSetup.numPmeOnlyRanks = 0;
-        }
-    }
-    else
-    {
-        set_ddbox_cr(*cr, nullptr, *ir, box, xGlobal, ddbox);
-
-        /* We need to choose the optimal DD grid and possibly PME nodes */
-        ddGridSetup =
-            dd_choose_grid(mdlog, cr, ir, mtop, box, ddbox,
-                           options.numPmeRanks,
-                           ddSettings.request1DAnd1Pulse,
-                           !isDlbDisabled(ddSettings.initialDlbState),
-                           options.dlbScaling,
-                           systemInfo);
-
-        if (ddGridSetup.numDomains[XX] == 0)
-        {
-            char     buf[STRLEN];
-            gmx_bool bC = (systemInfo.haveSplitConstraints &&
-                           systemInfo.constraintCommunicationRange > systemInfo.minCutoffForMultiBody);
-            sprintf(buf, "Change the number of ranks or mdrun option %s%s%s",
-                    !bC ? "-rdd" : "-rcon",
-                    ddSettings.initialDlbState != DlbState::offUser ? " or -dds" : "",
-                    bC ? " or your LINCS settings" : "");
-
-            gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
-                                 "There is no domain decomposition for %d ranks that is compatible with the given box and a minimum cell size of %g nm\n"
-                                 "%s\n"
-                                 "Look in the log file for details on the domain decomposition",
-                                 cr->nnodes - ddGridSetup.numPmeOnlyRanks,
-                                 ddGridSetup.cellsizeLimit,
-                                 buf);
-        }
+        gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
+                             "There is no domain decomposition for %d ranks that is compatible with the given box and a minimum cell size of %g nm\n"
+                             "%s\n"
+                             "Look in the log file for details on the domain decomposition",
+                             cr->nnodes - ddGridSetup.numPmeOnlyRanks,
+                             cellsizeLimit,
+                             buf);
     }
 
-    const real acs = average_cellsize_min(*ddbox, ddGridSetup.numDomains);
-    if (acs < systemInfo.cellsizeLimit)
+    const real acs = average_cellsize_min(ddbox, ddGridSetup.numDomains);
+    if (acs < cellsizeLimit)
     {
         if (options.numCells[XX] <= 0)
         {
@@ -2436,7 +2359,7 @@ getDDGridSetup(const gmx::MDLogger           &mdlog,
         {
             gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
                                  "The initial cell size (%f) is smaller than the cell size limit (%f), change options -dd, -rdd or -rcon, see the log file for details",
-                                 acs, systemInfo.cellsizeLimit);
+                                 acs, cellsizeLimit);
         }
     }
 
@@ -2444,7 +2367,7 @@ getDDGridSetup(const gmx::MDLogger           &mdlog,
     if (cr->nnodes - numPPRanks != ddGridSetup.numPmeOnlyRanks)
     {
         gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
-                             "The size of the domain decomposition grid (%d) does not match the number of ranks (%d). The total number of ranks is %d",
+                             "The size of the domain decomposition grid (%d) does not match the number of PP ranks (%d). The total number of ranks is %d",
                              numPPRanks, cr->nnodes - ddGridSetup.numPmeOnlyRanks, cr->nnodes);
     }
     if (ddGridSetup.numPmeOnlyRanks > numPPRanks)
@@ -2452,11 +2375,6 @@ getDDGridSetup(const gmx::MDLogger           &mdlog,
         gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
                              "The number of separate PME ranks (%d) is larger than the number of PP ranks (%d), this is not supported.", ddGridSetup.numPmeOnlyRanks, numPPRanks);
     }
-
-    ddGridSetup.numDDDimensions = set_dd_dim(ddGridSetup.numDomains, ddSettings,
-                                             ddGridSetup.ddDimensions);
-
-    return ddGridSetup;
 }
 
 /*! \brief Set the cell size and interaction limits, as well as the DD grid */
@@ -2545,6 +2463,7 @@ static void set_dd_limits(const gmx::MDLogger &mdlog,
                           const DDSettings &ddSettings,
                           const DDSystemInfo &systemInfo,
                           const DDGridSetup &ddGridSetup,
+                          const int numPPRanks,
                           const gmx_mtop_t *mtop,
                           const t_inputrec *ir,
                           const gmx_ddbox_t &ddbox)
@@ -2575,7 +2494,7 @@ static void set_dd_limits(const gmx::MDLogger &mdlog,
          *       but that is not yet available here. But this anyhow only
          *       affect performance up to the second dd_partition_system call.
          */
-        const int homeAtomCountEstimate =  mtop->natoms/cr->nnodes;
+        const int homeAtomCountEstimate =  mtop->natoms/numPPRanks;
         comm->updateGroupsCog =
             std::make_unique<gmx::UpdateGroupsCog>(*mtop,
                                                    systemInfo.updateGroupingPerMoleculetype,
@@ -3029,7 +2948,7 @@ static void set_ddgrid_parameters(const gmx::MDLogger &mdlog,
     else
     {
         vol_frac =
-            (1 + comm_box_frac(dd->nc, comm->systemInfo.cutoff, ddbox))/static_cast<double>(dd->nnodes);
+            (1 + comm_box_frac(dd->nc, comm->systemInfo.cutoff, *ddbox))/static_cast<double>(dd->nnodes);
     }
     if (debug)
     {
@@ -3117,9 +3036,21 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
 
     DDSystemInfo systemInfo = getSystemInfo(mdlog, cr, options, mtop, ir, box, xGlobal);
 
+    int          numRanksRequested = cr->nnodes;
+    checkForValidRankCountRequests(numRanksRequested, EEL_PME(ir->coulombtype), options.numPmeRanks);
+
+    // DD grid setup uses a more conservative cell size limit for
+    // automated setup than the one in systemInfo. The latter is used
+    // later during DLB, for example.
+    const real gridSetupCellsizeLimit = getDDGridSetupCellSizeLimit(mdlog, ddSettings.request1DAnd1Pulse,
+                                                                    !isDlbDisabled(ddSettings.initialDlbState),
+                                                                    options.dlbScaling, *ir,
+                                                                    systemInfo.cellsizeLimit);
     gmx_ddbox_t  ddbox       = {0};
-    DDGridSetup  ddGridSetup = getDDGridSetup(mdlog, cr, options, ddSettings, systemInfo,
-                                              mtop, ir, box, xGlobal, &ddbox);
+    DDGridSetup  ddGridSetup = getDDGridSetup(mdlog, cr, numRanksRequested, options, ddSettings, systemInfo,
+                                              gridSetupCellsizeLimit,
+                                              *mtop, *ir, box, xGlobal, &ddbox);
+    checkDDGridSetup(ddGridSetup, cr, options, ddSettings, systemInfo, gridSetupCellsizeLimit, ddbox);
 
     cr->npmenodes = ddGridSetup.numPmeOnlyRanks;
 
@@ -3143,7 +3074,9 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
     dd->comm->cartesianRankSetup = cartSetup;
 
     set_dd_limits(mdlog, cr, dd, options,
-                  ddSettings, systemInfo, ddGridSetup,
+                  ddSettings, systemInfo,
+                  ddGridSetup,
+                  ddRankSetup.numPPRanks,
                   mtop, ir,
                   ddbox);
 

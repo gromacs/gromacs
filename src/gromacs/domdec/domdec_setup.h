@@ -44,6 +44,7 @@
 
 #include "gromacs/math/vec.h"
 
+struct DDSettings;
 struct DDSystemInfo;
 struct gmx_ddbox_t;
 struct gmx_mtop_t;
@@ -52,11 +53,13 @@ struct t_inputrec;
 
 namespace gmx
 {
+struct DomdecOptions;
 class MDLogger;
+template <typename T> class ArrayRef;
 } // namespace
 
 /*! \brief Returns the volume fraction of the system that is communicated */
-real comm_box_frac(const ivec dd_nc, real cutoff, const gmx_ddbox_t *ddbox);
+real comm_box_frac(const gmx::IVec &dd_nc, real cutoff, const gmx_ddbox_t &ddbox);
 
 /*! \internal
  * \brief Describes the DD grid setup
@@ -70,26 +73,49 @@ struct DDGridSetup
     int  numPmeOnlyRanks = 0;
     //! The number of domains along each dimension
     ivec numDomains      = { 0, 0, 0 };
-    //! The mininum required cell size in nm
-    real cellsizeLimit   = 0;
     //! The number of dimensions which we decompose in domains
     int  numDDDimensions = 0;
     //! The domain decomposition dimensions, the first numDDDimensions entries are used
     ivec ddDimensions    = { -1, -1, -1 };
 };
 
-/*! \brief Determines the optimal DD cell setup dd->nc and possibly npmenodes
- * for the system.
+/*! \brief Checks that requests for PP and PME ranks honor basic expectations
+ *
+ * Issues a fatal error if there are more PME ranks than PP, or if the
+ * count of PP ranks has a prime factor that is too large to be likely
+ * to have good performance. */
+void
+checkForValidRankCountRequests(int  numRanksRequested,
+                               bool usingPme,
+                               int  numPmeRanksRequested);
+
+/*! \brief Return the minimum cell size (in nm) required for DD */
+real
+getDDGridSetupCellSizeLimit(const gmx::MDLogger &mdlog,
+                            bool                 request1DAnd1Pulse,
+                            bool                 bDynLoadBal,
+                            real                 dlb_scale,
+                            const t_inputrec    &ir,
+                            real                 systemInfoCellSizeLimit);
+
+/*! \brief Determines the DD grid setup
+ *
+ * Either implements settings required by the user, or otherwise
+ * chooses estimated optimal number of separate PME ranks and DD grid
+ * cell setup, DD cell size limits, and the initial ddbox.
  */
 DDGridSetup
-dd_choose_grid(const gmx::MDLogger &mdlog,
-               const t_commrec *cr,
-               const t_inputrec *ir,
-               const gmx_mtop_t *mtop,
-               const matrix box, const gmx_ddbox_t *ddbox,
-               int numPmeRanksRequested,
-               bool request1DAnd1Pulse,
-               bool bDynLoadBal, real dlb_scale,
-               const DDSystemInfo &systemInfo);
+getDDGridSetup(const gmx::MDLogger           &mdlog,
+               const t_commrec               *cr,
+               int                            numRanksRequested,
+               const gmx::DomdecOptions      &options,
+               const DDSettings              &ddSettings,
+               const DDSystemInfo            &systemInfo,
+               real                           cellSizeLimit,
+               const gmx_mtop_t              &mtop,
+               const t_inputrec              &ir,
+               const matrix                   box,
+               gmx::ArrayRef<const gmx::RVec> xGlobal,
+               gmx_ddbox_t                   *ddbox);
 
 #endif

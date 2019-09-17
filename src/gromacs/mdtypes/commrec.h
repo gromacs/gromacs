@@ -150,8 +150,9 @@ static bool inline havePPDomainDecomposition(const t_commrec *cr)
     /* NOTE: It would be better to use cr->dd->nnodes, but we do not want
      *       to pull in a dependency on domdec.h into this file.
      */
-    return (cr != nullptr &&
-            cr->dd != nullptr &&
+    GMX_ASSERT(cr != nullptr, "Invalid call of havePPDomainDecomposition before commrec is made");
+    GMX_ASSERT(cr->npmenodes >= 0, "Invalid call of havePPDomainDecomposition before MPMD automated decomposition was chosen.");
+    return (cr->dd != nullptr &&
             cr->nnodes - cr->npmenodes > 1);
 }
 

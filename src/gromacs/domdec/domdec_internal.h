@@ -656,7 +656,10 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
 
     /** The coordinate/force communication setup and indices */
     gmx_domdec_comm_dim_t cd[DIM];
-    /** The maximum number of cells to communicate with in one dimension */
+    /** Restricts the maximum number of cells to communicate with in one dimension
+     *
+     * Dynamic load balancing is not permitted to change sizes if it
+     * would violate this restriction. */
     int                   maxpulse = 0;
 
     /** Which cg distribution is stored on the master node,

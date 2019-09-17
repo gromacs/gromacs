@@ -2019,7 +2019,7 @@ static float inspect_tpr(int nfile, t_filenm fnm[], real *rcoulomb)
     *rcoulomb = ir->rcoulomb;
 
     /* Return the estimate for the number of PME nodes */
-    float npme = pme_load_estimate(&mtop, ir, state.box);
+    float npme = pme_load_estimate(mtop, *ir, state.box);
     return npme;
 }
 

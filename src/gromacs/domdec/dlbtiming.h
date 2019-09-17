@@ -86,7 +86,7 @@ class DDBalanceRegionHandler
     public:
         //! Constructor, pass a pointer to t_commrec or nullptr when not using domain decomposition
         DDBalanceRegionHandler(const t_commrec *cr) :
-            useBalancingRegion_(havePPDomainDecomposition(cr)),
+            useBalancingRegion_(cr != nullptr ? havePPDomainDecomposition(cr) : false),
             dd_(cr != nullptr ? cr->dd : nullptr)
         {
         }
