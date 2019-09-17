@@ -342,8 +342,9 @@ void setCurrentLambdasRerun(int64_t step, const t_lambda *fepvals,
     }
 }
 
-void setCurrentLambdasLocal(int64_t step, const t_lambda *fepvals,
-                            const double *lam0, t_state *state)
+void setCurrentLambdasLocal(const int64_t step, const t_lambda *fepvals,
+                            const double *lam0, gmx::ArrayRef<real> lambda,
+                            const int currentFEPState)
 /* find the current lambdas.  If rerunning, we either read in a state, or a lambda value,
    requiring different logic. */
 {
@@ -359,7 +360,7 @@ void setCurrentLambdasLocal(int64_t step, const t_lambda *fepvals,
             frac          = frac*fepvals->n_lambda - fep_state;
             for (int i = 0; i < efptNR; i++)
             {
-                state->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
+                lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
                     frac*(fepvals->all_lambda[i][fep_state + 1] - fepvals->all_lambda[i][fep_state]);
             }
         }
@@ -367,18 +368,18 @@ void setCurrentLambdasLocal(int64_t step, const t_lambda *fepvals,
         {
             for (int i = 0; i < efptNR; i++)
             {
-                state->lambda[i] = lam0[i] + frac;
+                lambda[i] = lam0[i] + frac;
             }
         }
     }
     else
     {
         /* if < 0, fep_state was never defined, and we should not set lambda from the state */
-        if (state->fep_state > -1)
+        if (currentFEPState > -1)
         {
             for (int i = 0; i < efptNR; i++)
             {
-                state->lambda[i] = fepvals->all_lambda[i][state->fep_state];
+                lambda[i] = fepvals->all_lambda[i][currentFEPState];
             }
         }
     }

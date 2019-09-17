@@ -376,7 +376,7 @@ void gmx::LegacySimulator::do_mimic()
 
         if (ir->efep != efepNO)
         {
-            setCurrentLambdasLocal(step, ir->fepvals, lam0, state);
+            setCurrentLambdasLocal(step, ir->fepvals, lam0, state->lambda, state->fep_state);
         }
 
         if (MASTER(cr))
@@ -556,7 +556,7 @@ void gmx::LegacySimulator::do_mimic()
         {
             /* Sum up the foreign energy and dhdl terms for md and sd.
                Currently done every step so that dhdl is correct in the .edr */
-            sum_dhdl(enerd, state->lambda, ir->fepvals);
+            sum_dhdl(enerd, state->lambda, *ir->fepvals);
         }
 
         /* Output stuff */

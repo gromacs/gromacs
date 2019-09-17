@@ -56,6 +56,7 @@ struct t_trxframe;
 
 namespace gmx
 {
+template <typename T> class ArrayRef;
 class Constraints;
 class MDLogger;
 class SimulationSignaller;
@@ -115,7 +116,8 @@ void setCurrentLambdasRerun(int64_t step, const t_lambda *fepvals,
 
 /* Set the lambda values at each step of mdrun when they change */
 void setCurrentLambdasLocal(int64_t step, const t_lambda *fepvals,
-                            const double *lam0, t_state *state);
+                            const double *lam0, gmx::ArrayRef<real> lambda,
+                            int currentFEPState);
 
 int multisim_min(const gmx_multisim_t *ms, int nmin, int n);
 /* Set an appropriate value for n across the whole multi-simulation */

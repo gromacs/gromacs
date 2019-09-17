@@ -655,7 +655,7 @@ void gmx::LegacySimulator::do_rerun()
         {
             /* Sum up the foreign energy and dhdl terms for md and sd.
                Currently done every step so that dhdl is correct in the .edr */
-            sum_dhdl(enerd, state->lambda, ir->fepvals);
+            sum_dhdl(enerd, state->lambda, *ir->fepvals);
         }
 
         /* Output stuff */

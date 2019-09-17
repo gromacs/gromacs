@@ -90,7 +90,7 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot)
     }
 }
 
-void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda *fepvals)
+void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, const t_lambda &fepvals)
 {
     int    index;
 
@@ -98,7 +98,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda 
     enerd->term[F_DVDL]       = 0.0;
     for (int i = 0; i < efptNR; i++)
     {
-        if (fepvals->separate_dvdl[i])
+        if (fepvals.separate_dvdl[i])
         {
             /* could this be done more readably/compactly? */
             switch (i)
@@ -140,7 +140,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda 
         }
     }
 
-    if (fepvals->separate_dvdl[efptBONDED])
+    if (fepvals.separate_dvdl[efptBONDED])
     {
         enerd->term[F_DVDL_BONDED] += enerd->term[F_DVDL_CONSTR];
     }
@@ -149,7 +149,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda 
         enerd->term[F_DVDL] += enerd->term[F_DVDL_CONSTR];
     }
 
-    for (int i = 0; i < fepvals->n_lambda; i++)
+    for (int i = 0; i < fepvals.n_lambda; i++)
     {
         /* note we are iterating over fepvals here!
            For the current lam, dlam = 0 automatically,
@@ -165,7 +165,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda 
         for (gmx::index j = 0; j < lambda.ssize(); j++)
         {
             /* Note that this loop is over all dhdl components, not just the separated ones */
-            const double dlam  = fepvals->all_lambda[j][i] - lambda[j];
+            const double dlam  = fepvals.all_lambda[j][i] - lambda[j];
 
             enerpart_lambda   += dlam*enerd->dvdl_lin[j];
 
@@ -173,13 +173,13 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda 
              * a linear extrapolation. This is an approximation, but usually
              * quite accurate since constraints change little between lambdas.
              */
-            if ((j == efptBONDED && fepvals->separate_dvdl[efptBONDED]) ||
-                (j == efptFEP && !fepvals->separate_dvdl[efptBONDED]))
+            if ((j == efptBONDED && fepvals.separate_dvdl[efptBONDED]) ||
+                (j == efptFEP && !fepvals.separate_dvdl[efptBONDED]))
             {
                 enerpart_lambda += dlam*enerd->term[F_DVDL_CONSTR];
             }
 
-            if (j == efptMASS && !fepvals->separate_dvdl[j])
+            if (j == efptMASS && !fepvals.separate_dvdl[j])
             {
                 enerpart_lambda += dlam*enerd->term[F_DKDL];
             }
@@ -187,7 +187,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda 
             if (debug)
             {
                 fprintf(debug, "enerdiff lam %g: (%15s), non-linear %f linear %f*%f\n",
-                        fepvals->all_lambda[j][i], efpt_names[j],
+                        fepvals.all_lambda[j][i], efpt_names[j],
                         enerpart_lambda - enerd->enerpart_lambda[0],
                         dlam, enerd->dvdl_lin[j]);
             }

@@ -915,7 +915,7 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
     enerd->term[F_PRES] =
         calc_pres(fr->ePBC, inputrec->nwall, ems->s.box, ekin, vir, pres);
 
-    sum_dhdl(enerd, ems->s.lambda, inputrec->fepvals);
+    sum_dhdl(enerd, ems->s.lambda, *inputrec->fepvals);
 
     if (EI_ENERGY_MINIMIZATION(inputrec->eI))
     {

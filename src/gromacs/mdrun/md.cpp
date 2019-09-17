@@ -721,7 +721,7 @@ void gmx::LegacySimulator::do_md()
         if (ir->efep != efepNO || ir->bSimTemp)
         {
             /* find and set the current lambdas */
-            setCurrentLambdasLocal(step, ir->fepvals, lam0, state);
+            setCurrentLambdasLocal(step, ir->fepvals, lam0, state->lambda, state->fep_state);
 
             bDoDHDL      = do_per_step(step, ir->fepvals->nstdhdl);
             bDoFEP       = ((ir->efep != efepNO) && do_per_step(step, nstfep));
@@ -1064,7 +1064,7 @@ void gmx::LegacySimulator::do_md()
             /* sum up the foreign energy and dhdl terms for vv.  currently done every step so that dhdl is correct in the .edr */
             if (ir->efep != efepNO)
             {
-                sum_dhdl(enerd, state->lambda, ir->fepvals);
+                sum_dhdl(enerd, state->lambda, *ir->fepvals);
             }
         }
 
@@ -1364,7 +1364,7 @@ void gmx::LegacySimulator::do_md()
         {
             /* Sum up the foreign energy and dhdl terms for md and sd.
                Currently done every step so that dhdl is correct in the .edr */
-            sum_dhdl(enerd, state->lambda, ir->fepvals);
+            sum_dhdl(enerd, state->lambda, *ir->fepvals);
         }
 
         update_pcouple_after_coordinates(fplog, step, ir, mdatoms,
