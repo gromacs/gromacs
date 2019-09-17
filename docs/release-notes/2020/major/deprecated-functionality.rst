@@ -9,8 +9,14 @@
 Changes anticipated to |Gromacs| NEXT functionality
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Functionality deprecated in |Gromacs| NEXT
+Functionality deprecated in |Gromacs| 2020
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Support for 32bit architectures
+"""""""""""""""""""""""""""""""
+There are no current or planned large scale resources using 32bit architectures,
+and we have no ability to properly test and evaluate them.
+
 
 Functionality deprecated in |Gromacs| 2019
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
