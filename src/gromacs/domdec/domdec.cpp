@@ -2133,6 +2133,38 @@ UnitCellInfo::UnitCellInfo(const t_inputrec &ir) :
 {
 }
 
+/* Returns whether molecules are always whole, i.e. not broken by PBC */
+static bool
+moleculesAreAlwaysWhole(const gmx_mtop_t                            &mtop,
+                        const bool                                   useUpdateGroups,
+                        gmx::ArrayRef<const gmx::RangePartitioning>  updateGroupingPerMoleculetype)
+{
+    if (useUpdateGroups)
+    {
+        GMX_RELEASE_ASSERT(updateGroupingPerMoleculetype.size() == mtop.moltype.size(),
+                           "Need one grouping per moltype");
+        for (size_t mol = 0; mol < mtop.moltype.size(); mol++)
+        {
+            if (updateGroupingPerMoleculetype[mol].numBlocks() > 1)
+            {
+                return false;
+            }
+        }
+    }
+    else
+    {
+        for (const auto &moltype : mtop.moltype)
+        {
+            if (moltype.atoms.nr > 1)
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 /*! \brief Generate the simulation system information */
 static DDSystemInfo
 getSystemInfo(const gmx::MDLogger           &mdlog,
@@ -2155,10 +2187,14 @@ getSystemInfo(const gmx::MDLogger           &mdlog,
         setupUpdateGroups(mdlog, *mtop, *ir, cutoffMargin, &systemInfo);
     }
 
-    // TODO: Check whether all bondeds are within update groups
-    systemInfo.haveInterDomainBondeds          = (mtop->natoms > gmx_mtop_num_molecules(*mtop) ||
+    systemInfo.moleculesAreAlwaysWhole         =
+        moleculesAreAlwaysWhole(*mtop,
+                                systemInfo.useUpdateGroups,
+                                systemInfo.updateGroupingPerMoleculetype);
+    systemInfo.haveInterDomainBondeds          = (!systemInfo.moleculesAreAlwaysWhole ||
                                                   mtop->bIntermolecularInteractions);
-    systemInfo.haveInterDomainMultiBodyBondeds = (multi_body_bondeds_count(mtop) > 0);
+    systemInfo.haveInterDomainMultiBodyBondeds = (systemInfo.haveInterDomainBondeds &&
+                                                  multi_body_bondeds_count(mtop) > 0);
 
     if (systemInfo.useUpdateGroups)
     {
@@ -2929,6 +2965,11 @@ static void set_cell_limits_dlb(const gmx::MDLogger &mdlog,
     {
         set_dlb_limits(dd);
     }
+}
+
+bool dd_moleculesAreAlwaysWhole(const gmx_domdec_t &dd)
+{
+    return dd.comm->systemInfo.moleculesAreAlwaysWhole;
 }
 
 gmx_bool dd_bonded_molpbc(const gmx_domdec_t *dd, int ePBC)

@@ -1613,6 +1613,8 @@ void init_forcerec(FILE                             *fp,
     }
     else
     {
+        const bool useEwaldSurfaceCorrection =
+            (EEL_PME_EWALD(ir->coulombtype) && ir->epsilon_surface != 0);
         if (!DOMAINDECOMP(cr))
         {
             gmx_bool bSHAKE;
@@ -1638,9 +1640,10 @@ void init_forcerec(FILE                             *fp,
             else
             {
                 /* Not making molecules whole is faster in most cases,
-                 * but With orientation restraints we need whole molecules.
+                 * but with orientation restraints or non-tinfoil boundary
+                 * conditions we need whole molecules.
                  */
-                fr->bMolPBC = (fcd->orires.nr == 0);
+                fr->bMolPBC = (fcd->orires.nr == 0 && !useEwaldSurfaceCorrection);
 
                 if (getenv("GMX_USE_GRAPH") != nullptr)
                 {
@@ -1667,6 +1670,21 @@ void init_forcerec(FILE                             *fp,
         else
         {
             fr->bMolPBC = dd_bonded_molpbc(cr->dd, fr->ePBC);
+
+            if (useEwaldSurfaceCorrection && !dd_moleculesAreAlwaysWhole(*cr->dd))
+            {
+                gmx_fatal(FARGS,
+                          "You requested dipole correction (epsilon_surface > 0), but molecules are broken "
+                          "over periodic boundary conditions by the domain decomposition. "
+                          "Run without domain decomposition instead.");
+            }
+        }
+
+        if (useEwaldSurfaceCorrection)
+        {
+            GMX_RELEASE_ASSERT((!DOMAINDECOMP(cr) && !fr->bMolPBC) ||
+                               (DOMAINDECOMP(cr) && dd_moleculesAreAlwaysWhole(*cr->dd)),
+                               "Molecules can not be broken by PBC with epsilon_surface > 0");
         }
     }
 

@@ -177,6 +177,9 @@ void dd_init_bondeds(FILE              *fplog,
                      gmx_bool           bBCheck,
                      cginfo_mb_t       *cginfo_mb);
 
+/*! \brief Returns whether molecules are always whole, i.e. not broken by PBC */
+bool dd_moleculesAreAlwaysWhole(const gmx_domdec_t &dd);
+
 /*! \brief Returns if we need to do pbc for calculating bonded interactions */
 gmx_bool dd_bonded_molpbc(const gmx_domdec_t *dd, int ePBC);
 

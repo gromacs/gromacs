@@ -445,6 +445,8 @@ struct DDSystemInfo
     //! The maximum radius over all update groups
     real                                maxUpdateGroupRadius;
 
+    //! Are molecules always whole, i.e. not broken by PBC?
+    bool moleculesAreAlwaysWhole         = false;
     //! Are there inter-domain bonded interactions?
     bool haveInterDomainBondeds          = false;
     //! Are there inter-domain multi-body interactions?

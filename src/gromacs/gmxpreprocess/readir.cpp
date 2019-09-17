@@ -1190,18 +1190,14 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     }
     if ((ir->epsilon_surface != 0) && EEL_FULL(ir->coulombtype))
     {
-        if (ir->cutoff_scheme == ecutsVERLET)
-        {
-            sprintf(warn_buf, "Since molecules/charge groups are broken using the Verlet scheme, you can not use a dipole correction to the %s electrostatics.",
-                    eel_names[ir->coulombtype]);
-            warning(wi, warn_buf);
-        }
-        else
-        {
-            sprintf(warn_buf, "Dipole corrections to %s electrostatics only work if all charge groups that can cross PBC boundaries are dipoles. If this is not the case set epsilon_surface to 0",
-                    eel_names[ir->coulombtype]);
-            warning_note(wi, warn_buf);
-        }
+        sprintf(err_buf, "Cannot have periodic molecules with epsilon_surface > 0");
+        CHECK(ir->bPeriodicMols);
+        sprintf(warn_buf, "With epsilon_surface > 0 all molecules should be neutral.");
+        warning_note(wi, warn_buf);
+        sprintf(warn_buf,
+                "With epsilon_surface > 0 you can only use domain decomposition "
+                "when there are only small molecules with all bonds constrained (mdrun will check for this).");
+        warning_note(wi, warn_buf);
     }
 
     if (ir_vdw_switched(ir))
