@@ -250,8 +250,8 @@ void gmx::LegacySimulator::do_md()
     }
 
     initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda, lam0);
-    Update upd(ir, deform);
-    bool   doSimulatedAnnealing = initSimulatedAnnealing(ir, &upd);
+    Update     upd(ir, deform);
+    const bool doSimulatedAnnealing = initSimulatedAnnealing(ir, &upd);
     if (startingBehavior != StartingBehavior::RestartWithAppending)
     {
         pleaseCiteCouplingAlgorithms(fplog, *ir);
@@ -1434,11 +1434,17 @@ void gmx::LegacySimulator::do_md()
             gmx_bool do_dr  = do_per_step(step, ir->nstdisreout);
             gmx_bool do_or  = do_per_step(step, ir->nstorireout);
 
-            energyOutput.printAnnealingTemperatures(do_log ? fplog : nullptr, groups, &(ir->opts));
-            energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or,
-                                               do_log ? fplog : nullptr,
-                                               step, t,
-                                               fcd, awh.get());
+            if (doSimulatedAnnealing)
+            {
+                energyOutput.printAnnealingTemperatures(do_log ? fplog : nullptr, groups, &(ir->opts));
+            }
+            if (do_log || do_ene || do_dr || do_or)
+            {
+                energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or,
+                                                   do_log ? fplog : nullptr,
+                                                   step, t,
+                                                   fcd, awh.get());
+            }
 
             if (ir->bPull)
             {
