@@ -32,3 +32,11 @@ Data flow driven simulation and analysis from Python. Initial support includes
 simulation trajectory ensembles, looping, simulation parameter modification, and
 wrapping for command line tools or custom Python functions.
 
+New modular simulator
+"""""""""""""""""""""
+
+A new approach for how to combine individual calculation steps during a single simulation
+step is introduced, with focus on extensibility and modularization. This simulator is the default
+now for simulations using velocity-verlet in NVE, NVT (v-rescale thermostat only), NPT (v-rescale
+thermostat and Parrinello-Rahman barostat only), or NPH (Parrinello-Rahman barostat only), with or
+without free energy perturbation.

@@ -7,14 +7,18 @@ some highlights of what you can expect, along with more detail in the
 links below!
 
 As always, we've got several useful performance improvements, with or
-without GPUs, all enabled and automated by default. We are extremely
-interested in your feedback on how well this worked on your
-simulations and hardware. They are:
+without GPUs, all enabled and automated by default. In addition,
+several new features are available for running simulations. We are extremely
+interested in your feedback on how well the new release works on your
+simulations and hardware. The new features are:
 
 * Density-guided simulations allow "fitting" atoms into three-dimensional
   density maps. 
 * Inclusion of gmxapi 0.1, an API and user interface for managing
   complex simulations, data flow, and pluggable molecular dynamics extension code.
+* New modular simulator that can be built from individual objects describing different
+  calculations happening at each simulation step.
+* Parrinello-Rahman pressure coupling is now also available for the md-vv integrator.
 
 
 .. Note to developers!
