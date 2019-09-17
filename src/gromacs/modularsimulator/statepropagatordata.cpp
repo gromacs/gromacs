@@ -92,10 +92,6 @@ StatePropagatorData::StatePropagatorData(
     if (DOMAINDECOMP(cr))
     {
         auto localState = std::make_unique<t_state>();
-        if (useGPU)
-        {
-            changePinningPolicy(&x_, gmx::PinningPolicy::PinnedIfSupported);
-        }
         dd_init_local_state(cr->dd, globalState, localState.get());
         stateHasVelocities = static_cast<unsigned int>(localState->flags) & (1u << estV);
         setLocalState(std::move(localState));
@@ -112,6 +108,10 @@ StatePropagatorData::StatePropagatorData(
         previousX_.resizeWithPadding(localNAtoms_);
         ddpCount_ = globalState->ddp_count;
         copyPosition();
+    }
+    if (useGPU)
+    {
+        changePinningPolicy(&x_, gmx::PinningPolicy::PinnedIfSupported);
     }
 
     if (!inputrec->bContinuation)
