@@ -32,77 +32,50 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
- * Tests for functionality of the "dump" tool.
+ * Helper for generating reusuable TPR files for tests within the same test binary.
  *
- * \author
+ * \ingroup module_testutils
+ * \author Paul Bauer <paul.bauer.q@gmail.com>
  */
-#include "gmxpre.h"
+#ifndef GMX_TESTUTILS_TPRFILEGENERATOR_H
+#define GMX_TESTUTILS_TPRFILEGENERATOR_H
 
-#include "gromacs/tools/dump.h"
+#include <memory>
+#include <string>
 
-#include "gromacs/gmxpreprocess/grompp.h"
-#include "gromacs/utility/textwriter.h"
-
-#include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"
-#include "testutils/tprfilegenerator.h"
 
 namespace gmx
 {
-
 namespace test
 {
 
-class DumpTest : public ::testing::Test
+class TestFileManager;
+
+/*! \libinternal \brief
+ * Helper to bundle generated TPR and the file manager to clean it up.
+ */
+class TprAndFileManager
 {
     public:
-        //! Run test case.
-        void runTest(CommandLine *cmdline);
-    protected:
-        // TODO this is changed in newer googletest versions
-        //! Prepare shared resources.
-        static void SetUpTestCase()
-        {
-            s_tprFileHandle = new TprAndFileManager("lysozyme");
-        }
-        //! Clean up shared resources.
-        static void TearDownTestCase()
-        {
-            delete s_tprFileHandle;
-            s_tprFileHandle = nullptr;
-        }
-        //! Storage for opened file handles.
-        static TprAndFileManager *s_tprFileHandle;
+        /*! \brief
+         * Generates the file when needed.
+         *
+         * \param[in] name The basename of the input files and the generated TPR.
+         */
+        TprAndFileManager(const std::string &name);
+        //! Access to the string.
+        const std::string &tprName() const { return tprFileName_; }
+    private:
+        //! Tpr file name.
+        std::string     tprFileName_;
+        //! Filemanager, needed to clean up the file later.
+        TestFileManager fileManager_;
 };
 
-TprAndFileManager *DumpTest::s_tprFileHandle = nullptr;
-
-void DumpTest::runTest(CommandLine *cmdline)
-{
-    EXPECT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(
-                      &gmx::DumpInfo::create, cmdline));
-}
-
-TEST_F(DumpTest, WorksWithTpr)
-{
-    const char *const command[] =
-    { "dump", "-s", s_tprFileHandle->tprName().c_str()};
-    CommandLine       cmdline(command);
-    runTest(&cmdline);
-}
-
-TEST_F(DumpTest, WorksWithTprAndMdpWriting)
-{
-    TestFileManager    fileManager;
-    std::string        mdpName   = fileManager.getTemporaryFilePath("output.mdp");
-    const char *const  command[] =
-    { "dump", "-s", s_tprFileHandle->tprName().c_str(), "-om", mdpName.c_str() };
-    CommandLine        cmdline(command);
-    runTest(&cmdline);
-}
-
 } // namespace test
-
 } // namespace gmx
+
+#endif

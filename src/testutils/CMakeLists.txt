@@ -57,6 +57,7 @@ set(TESTUTILS_SOURCES
     testmatchers.cpp
     testoptions.cpp
     textblockmatchers.cpp
+    tprfilegenerator.cpp
     xvgtest.cpp
     )
 

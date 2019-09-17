@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -180,8 +180,17 @@ std::string TestFileManager::getTestSpecificFileNameRoot()
 {
     const ::testing::TestInfo *test_info =
             ::testing::UnitTest::GetInstance()->current_test_info();
-    std::string                filenameRoot = std::string(test_info->test_case_name())
-        + "_" + test_info->name();
+    std::string                filenameRoot;
+    if (test_info)
+    {
+        filenameRoot = std::string(test_info->test_case_name())
+            + "_" + test_info->name();
+    }
+    else
+    {
+        const ::testing::TestCase *test_case_info = ::testing::UnitTest::GetInstance()->current_test_case();
+        filenameRoot = std::string(test_case_info->name());
+    }
     std::replace(filenameRoot.begin(), filenameRoot.end(), '/', '_');
     return filenameRoot;
 }

@@ -34,75 +34,41 @@
  */
 /*! \internal \file
  * \brief
- * Tests for functionality of the "dump" tool.
+ * Implements helper for generating reusuable TPR files for tests within the same test binary.
  *
- * \author
+ * \author Paul Bauer <paul.bauer.q@gmail.com>
+ * \ingroup module_testutils
  */
+
 #include "gmxpre.h"
 
-#include "gromacs/tools/dump.h"
+#include "tprfilegenerator.h"
 
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "testutils/cmdlinetest.h"
-#include "testutils/testfilemanager.h"
-#include "testutils/tprfilegenerator.h"
 
 namespace gmx
 {
-
 namespace test
 {
 
-class DumpTest : public ::testing::Test
+TprAndFileManager::TprAndFileManager(const std::string &name)
 {
-    public:
-        //! Run test case.
-        void runTest(CommandLine *cmdline);
-    protected:
-        // TODO this is changed in newer googletest versions
-        //! Prepare shared resources.
-        static void SetUpTestCase()
-        {
-            s_tprFileHandle = new TprAndFileManager("lysozyme");
-        }
-        //! Clean up shared resources.
-        static void TearDownTestCase()
-        {
-            delete s_tprFileHandle;
-            s_tprFileHandle = nullptr;
-        }
-        //! Storage for opened file handles.
-        static TprAndFileManager *s_tprFileHandle;
-};
-
-TprAndFileManager *DumpTest::s_tprFileHandle = nullptr;
-
-void DumpTest::runTest(CommandLine *cmdline)
-{
-    EXPECT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(
-                      &gmx::DumpInfo::create, cmdline));
-}
-
-TEST_F(DumpTest, WorksWithTpr)
-{
-    const char *const command[] =
-    { "dump", "-s", s_tprFileHandle->tprName().c_str()};
-    CommandLine       cmdline(command);
-    runTest(&cmdline);
-}
-
-TEST_F(DumpTest, WorksWithTprAndMdpWriting)
-{
-    TestFileManager    fileManager;
-    std::string        mdpName   = fileManager.getTemporaryFilePath("output.mdp");
-    const char *const  command[] =
-    { "dump", "-s", s_tprFileHandle->tprName().c_str(), "-om", mdpName.c_str() };
-    CommandLine        cmdline(command);
-    runTest(&cmdline);
+    const std::string mdpInputFileName = fileManager_.getTemporaryFilePath(name + ".mdp");
+    gmx::TextWriter::writeFileFromString(mdpInputFileName, "");
+    tprFileName_ = fileManager_.getTemporaryFilePath(name + ".tpr");
+    {
+        CommandLine caller;
+        caller.append("grompp");
+        caller.addOption("-f", mdpInputFileName);
+        caller.addOption("-p", TestFileManager::getInputFilePath(name + ".top"));
+        caller.addOption("-c", TestFileManager::getInputFilePath(name + ".pdb"));
+        caller.addOption("-o", tprFileName_);
+        EXPECT_EQ(0, gmx_grompp(caller.argc(), caller.argv()));
+    }
 }
 
 } // namespace test
-
 } // namespace gmx
