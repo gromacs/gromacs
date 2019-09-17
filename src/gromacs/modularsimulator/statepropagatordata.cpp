@@ -214,7 +214,7 @@ int StatePropagatorData::localNumAtoms()
 std::unique_ptr<t_state> StatePropagatorData::localState()
 {
     auto state = std::make_unique<t_state>();
-    state->flags = estX | estV | estBOX;
+    state->flags = (1u << estX) | (1u << estV) | (1u << estBOX);
     state_change_natoms(state.get(), localNAtoms_);
     state->x = x_;
     state->v = v_;
@@ -401,6 +401,7 @@ void StatePropagatorData::writeCheckpoint(t_state *localState, t_state gmx_unuse
     localState->v = v_;
     copy_mat(box_, localState->box);
     localState->ddp_count = ddpCount_;
+    localState->flags    |= (1u << estX) | (1u << estV) | (1u << estBOX);
 }
 
 }  // namespace gmx

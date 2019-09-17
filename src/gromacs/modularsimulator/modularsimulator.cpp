@@ -485,7 +485,7 @@ void ModularSimulator::constructElementsAndSignallers()
                 std::move(checkpointClients),
                 std::move(checkpointHandler),
                 inputrec->init_step, trajectoryElement.get(),
-                state_global->natoms, fplog, cr,
+                top_global->natoms, fplog, cr,
                 observablesHistory, walltime_accounting, state_global,
                 mdrunOptions.writeConfout);
     lastStepSignallerBuilder.registerSignallerClient(compat::make_not_null(checkpointHelper_.get()));
