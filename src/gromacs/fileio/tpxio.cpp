@@ -2781,55 +2781,17 @@ static void do_tpxheader(gmx::FileIOXdrSerializer *serializer,
     }
 }
 
-static int do_tpx_body(gmx::ISerializer *serializer,
-                       TpxFileHeader    *tpx,
-                       t_inputrec       *ir,
-                       t_state          *state,
-                       rvec             *x,
-                       rvec             *v,
-                       gmx_mtop_t       *mtop)
+#define do_test(serializer, b, p) if ((serializer)->reading() && ((p) != nullptr) && !(b)) gmx_fatal(FARGS, "No %s in input file",#p)
+
+static void do_tpx_state_first(gmx::ISerializer *serializer,
+                               TpxFileHeader    *tpx,
+                               t_state          *state)
 {
-    int             ePBC;
-    gmx_bool        bPeriodicMols;
-
-    if (!serializer->reading())
-    {
-        GMX_RELEASE_ASSERT(x == nullptr && v == nullptr, "Passing separate x and v pointers to do_tpx() is not supported when writing");
-    }
-    else
-    {
-        GMX_RELEASE_ASSERT(!(x == nullptr && v != nullptr), "Passing x==NULL and v!=NULL is not supported");
-    }
-
     if (serializer->reading())
     {
         state->flags = 0;
         init_gtc_state(state, tpx->ngtc, 0, 0);
-        if (x == nullptr)
-        {
-            // v is also nullptr by the above assertion, so we may
-            // need to make memory in state for storing the contents
-            // of the tpx file.
-            if (tpx->bX)
-            {
-                state->flags |= (1 << estX);
-            }
-            if (tpx->bV)
-            {
-                state->flags |= (1 << estV);
-            }
-            state_change_natoms(state, tpx->natoms);
-        }
     }
-
-    if (x == nullptr)
-    {
-        x = state->x.rvec_array();
-        v = state->v.rvec_array();
-    }
-
-#define do_test(serializer, b, p) if ((serializer)->reading() && ((p) != nullptr) && !(b)) gmx_fatal(FARGS, "No %s in input file",#p)
-
     do_test(serializer, tpx->bBox, state->box);
     if (tpx->bBox)
     {
@@ -2863,19 +2825,67 @@ static int do_tpx_body(gmx::ISerializer *serializer,
         serializer->doRealArray(dumv, state->ngtc);
         sfree(dumv);
     }
+}
 
+static void do_tpx_mtop(gmx::ISerializer *serializer,
+                        TpxFileHeader    *tpx,
+                        gmx_mtop_t       *mtop)
+{
     do_test(serializer, tpx->bTop, mtop);
     if (tpx->bTop)
     {
         if (mtop)
         {
             do_mtop(serializer, mtop, tpx->fileVersion);
+            set_disres_npair(mtop);
+            gmx_mtop_finalize(mtop);
         }
         else
         {
             gmx_mtop_t dum_top;
             do_mtop(serializer, &dum_top, tpx->fileVersion);
         }
+    }
+}
+
+static void do_tpx_state_second(gmx::ISerializer *serializer,
+                                TpxFileHeader    *tpx,
+                                t_state          *state,
+                                rvec             *x,
+                                rvec             *v)
+{
+    if (!serializer->reading())
+    {
+        GMX_RELEASE_ASSERT(x == nullptr && v == nullptr, "Passing separate x and v pointers to do_tpx() is not supported when writing");
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(!(x == nullptr && v != nullptr), "Passing x==NULL and v!=NULL is not supported");
+    }
+
+    if (serializer->reading())
+    {
+        if (x == nullptr)
+        {
+            // v is also nullptr by the above assertion, so we may
+            // need to make memory in state for storing the contents
+            // of the tpx file.
+            if (tpx->bX)
+            {
+                state->flags |= (1 << estX);
+            }
+            if (tpx->bV)
+            {
+                state->flags |= (1 << estV);
+            }
+            state_change_natoms(state, tpx->natoms);
+        }
+    }
+
+    if (x == nullptr)
+    {
+        x = state->x.rvec_array();
+        v = state->v.rvec_array();
     }
     do_test(serializer, tpx->bX, x);
     if (tpx->bX)
@@ -2911,6 +2921,14 @@ static int do_tpx_body(gmx::ISerializer *serializer,
         std::vector<gmx::RVec> dummyForces(state->natoms);
         serializer->doRvecArray(as_rvec_array(dummyForces.data()), tpx->natoms);
     }
+}
+
+static int do_tpx_ir(gmx::ISerializer *serializer,
+                     TpxFileHeader    *tpx,
+                     t_inputrec       *ir)
+{
+    int             ePBC;
+    gmx_bool        bPeriodicMols;
 
     /* Starting with tpx version 26, we have the inputrec
      * at the end of the file, so we can ignore it
@@ -2939,10 +2957,6 @@ static int do_tpx_body(gmx::ISerializer *serializer,
         if (tpx->fileGeneration <= tpx_generation && ir)
         {
             do_inputrec(serializer, ir, tpx->fileVersion);
-            if (tpx->fileVersion < 51)
-            {
-                set_box_rel(ir, state);
-            }
             if (tpx->fileVersion < 53)
             {
                 ePBC          = ir->ePBC;
@@ -2956,39 +2970,68 @@ static int do_tpx_body(gmx::ISerializer *serializer,
             ir->bPeriodicMols = bPeriodicMols;
         }
     }
+    return ePBC;
+}
 
-    if (serializer->reading())
+/*! \brief
+ * Correct and finalize read information.
+ *
+ * Moved here from previous code because this is done after reading files.
+ *
+ * \param[in] tpx The file header used to check version numbers.
+ * \param[out] ir Input rec that needs correction.
+ * \param[out] state State needing correction.
+ * \param[out] mtop Topology to finalize.
+ */
+static void do_tpx_finalize(TpxFileHeader *tpx,
+                            t_inputrec    *ir,
+                            t_state       *state,
+                            gmx_mtop_t    *mtop)
+{
+    if (tpx->fileVersion < 51)
     {
-        if (tpx->bIr && ir)
+        set_box_rel(ir, state);
+    }
+    if (tpx->bIr && ir)
+    {
+        if (state->ngtc == 0)
         {
-            if (state->ngtc == 0)
-            {
-                /* Reading old version without tcoupl state data: set it */
-                init_gtc_state(state, ir->opts.ngtc, 0, ir->opts.nhchainlength);
-            }
-            if (tpx->bTop && mtop)
-            {
-                if (tpx->fileVersion < 57)
-                {
-                    if (mtop->moltype[0].ilist[F_DISRES].size() > 0)
-                    {
-                        ir->eDisre = edrSimple;
-                    }
-                    else
-                    {
-                        ir->eDisre = edrNone;
-                    }
-                }
-                set_disres_npair(mtop);
-            }
+            /* Reading old version without tcoupl state data: set it */
+            init_gtc_state(state, ir->opts.ngtc, 0, ir->opts.nhchainlength);
         }
-
         if (tpx->bTop && mtop)
         {
-            gmx_mtop_finalize(mtop);
+            if (tpx->fileVersion < 57)
+            {
+                if (mtop->moltype[0].ilist[F_DISRES].size() > 0)
+                {
+                    ir->eDisre = edrSimple;
+                }
+                else
+                {
+                    ir->eDisre = edrNone;
+                }
+            }
         }
     }
+}
 
+static int do_tpx_body(gmx::ISerializer *serializer,
+                       TpxFileHeader    *tpx,
+                       t_inputrec       *ir,
+                       t_state          *state,
+                       rvec             *x,
+                       rvec             *v,
+                       gmx_mtop_t       *mtop)
+{
+    do_tpx_state_first(serializer, tpx, state);
+    do_tpx_mtop(serializer, tpx, mtop);
+    do_tpx_state_second(serializer, tpx, state, x, v);
+    int ePBC = do_tpx_ir(serializer, tpx, ir);
+    if (serializer->reading())
+    {
+        do_tpx_finalize(tpx, ir, state, mtop);
+    }
     return ePBC;
 }
 
