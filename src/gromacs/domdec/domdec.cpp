@@ -1280,7 +1280,7 @@ static void setup_neighbor_relations(gmx_domdec_t *dd)
     ivec                    tmp, s;
     gmx_domdec_zones_t     *zones;
     gmx_domdec_ns_ranges_t *izone;
-    GMX_ASSERT(dd->ndim >= 0, "Must have non-negative number of dimensions for DD");
+    GMX_ASSERT((dd->ndim >= 0) && (dd->ndim <= DIM), "Must have valid number of dimensions for DD");
 
     for (d = 0; d < dd->ndim; d++)
     {
@@ -1301,7 +1301,6 @@ static void setup_neighbor_relations(gmx_domdec_t *dd)
     }
 
     int nzone  = (1 << dd->ndim);
-    GMX_ASSERT(dd->ndim < DIM, "Invalid number of dimensions");
     int nizone = (1 << std::max(dd->ndim - 1, 0));
     assert(nizone >= 1 && nizone <= DD_MAXIZONE);
 
