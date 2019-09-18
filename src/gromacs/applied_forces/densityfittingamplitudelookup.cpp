@@ -180,7 +180,7 @@ DensityFittingAmplitudeLookup::DensityFittingAmplitudeLookup(const DensityFittin
         case DensityFittingAmplitudeMethod::Mass:
             impl_ = std::make_unique<MassesAsAmplitudes>();
             break;
-        case DensityFittingAmplitudeMethod::Charges:
+        case DensityFittingAmplitudeMethod::Charge:
             impl_ = std::make_unique<ChargesAsAmplitudes>();
             break;
         default:

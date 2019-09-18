@@ -157,7 +157,7 @@ void DensityFittingOptions::buildMdpOutput(KeyValueTreeObjectBuilder *builder) c
                                                      c_densitySimilarityMeasureMethodNames[parameters_.similarityMeasureMethod_],
                                                      c_similarityMeasureTag_);
 
-        addDensityFittingMdpOutputValueComment(builder, "; Atom amplitude for spreading onto grid: unity, mass, or charges", c_amplitudeMethodTag_);
+        addDensityFittingMdpOutputValueComment(builder, "; Atom amplitude for spreading onto grid: unity, mass, or charge", c_amplitudeMethodTag_);
         addDensityFittingMdpOutputValue<std::string>(builder,
                                                      c_densityFittingAmplitudeMethodNames[parameters_.amplitudeLookupMethod_],
                                                      c_amplitudeMethodTag_);

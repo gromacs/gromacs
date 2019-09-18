@@ -77,9 +77,9 @@ TEST_F(DensityFittingAmplitudeLookupTest, Unity)
     EXPECT_EQ(lookupResult[1], 1);
 }
 
-TEST_F(DensityFittingAmplitudeLookupTest, Charges)
+TEST_F(DensityFittingAmplitudeLookupTest, Charge)
 {
-    DensityFittingAmplitudeLookup lookup(DensityFittingAmplitudeMethod::Charges);
+    DensityFittingAmplitudeLookup lookup(DensityFittingAmplitudeMethod::Charge);
     const auto                    lookupResult = lookup(atoms_, lookupIndices_);
     EXPECT_EQ(lookupResult[0], 30);
     EXPECT_EQ(lookupResult[1], 40);

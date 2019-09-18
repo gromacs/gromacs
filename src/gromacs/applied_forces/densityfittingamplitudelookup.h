@@ -59,9 +59,9 @@ namespace gmx
  */
 enum class DensityFittingAmplitudeMethod
 {
-    Unity,   //!< same spread amplitude, unity, for all atoms
-    Mass,    //!< atom mass is the spread amplitude
-    Charges, //!< partial charge determines the spread amplitude
+    Unity,  //!< same spread amplitude, unity, for all atoms
+    Mass,   //!< atom mass is the spread amplitude
+    Charge, //!< partial charge determines the spread amplitude
     Count
 };
 
