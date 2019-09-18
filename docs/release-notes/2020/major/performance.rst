@@ -7,6 +7,15 @@ Performance improvements
    Also, please use the syntax :issue:`number` to reference issues on redmine, without the
    a space between the colon and number!
 
+Up to a factor 2.5 speed-up of the non-bonded free-energy kernel
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The non-bonded free-energy kernel is a factor 2.5 faster with non-zero A and B
+states and a factor 1.5 with one zero state. This especially improves the run
+performance when non-perturbed non-bondeds are offloaded to a GPU. In that case
+the PME-mesh calculation now always takes the most CPU time.
+
+
 Proper dihedrals of Fourier type and improper dihedrals of preriodic type are SIMD accelerated
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
