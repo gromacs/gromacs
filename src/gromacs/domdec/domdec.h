@@ -320,8 +320,8 @@ void dd_init_local_state(struct gmx_domdec_t *dd,
                          const t_state *state_global, t_state *local_state);
 
 /*! \brief Generate a list of links between charge groups that are linked by bonded interactions */
-t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
-                                  cginfo_mb_t *cginfo_mb);
+t_blocka *make_charge_group_links(const gmx_mtop_t *mtop,
+                                  cginfo_mb_t      *cginfo_mb);
 
 /*! \brief Calculate the maximum distance involved in 2-body and multi-body bonded interactions */
 void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,

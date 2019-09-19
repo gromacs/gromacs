@@ -2611,7 +2611,7 @@ void dd_init_bondeds(FILE *fplog,
         /* Communicate atoms beyond the cut-off for bonded interactions */
         comm = dd->comm;
 
-        comm->cglink = make_charge_group_links(mtop, dd, cginfo_mb);
+        comm->cglink = make_charge_group_links(mtop, cginfo_mb);
 
         comm->bLocalCG = init_bLocalCG(mtop);
     }
