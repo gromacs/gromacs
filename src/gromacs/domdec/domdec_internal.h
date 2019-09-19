@@ -767,7 +767,7 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
  *
  * Zone permutation from the Cartesian x-major/z-minor order to an order
  * that leads to consecutive charge groups for neighbor searching.
- * TODO: remove when the group scheme is removed
+ * TODO: It should be possible to remove this now that the group scheme is removed
  */
 static const int zone_perm[3][4] = { {0, 0, 0, 0}, {1, 0, 0, 0}, {3, 0, 1, 2} };
 

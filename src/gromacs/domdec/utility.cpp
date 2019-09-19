@@ -122,8 +122,10 @@ void dd_resize_state(t_state                     *state,
     }
 }
 
-/*! \brief Enrsure fr, state and f, if != nullptr, can hold numChargeGroups
+/*! \brief Ensure fr, state and f, if != nullptr, can hold numChargeGroups
  *         atoms for the Verlet scheme and charge groups for the group scheme.
+ *
+ * todo refactor this now that group scheme is removed
  */
 void dd_check_alloc_ncg(t_forcerec                  *fr,
                         t_state                     *state,

@@ -138,15 +138,6 @@ TEST_F(GetIrTest, HandlesDifferentKindsOfMdpLines)
     runTest(joinStrings(inputMdpFile, "\n"));
 }
 
-// This case is used often by SimulationRunner::useEmptyMdpFile (see
-// comments there for explanation). When we remove the group scheme,
-// that usage will have to disappear, and so can this test.
-TEST_F(GetIrTest, HandlesOnlyCutoffScheme)
-{
-    const char *inputMdpFile = "cutoff-scheme = Group\n";
-    runTest(inputMdpFile);
-}
-
 TEST_F(GetIrTest, RejectsNonCommentLineWithNoEquals)
 {
     const char *inputMdpFile = "title simulation";

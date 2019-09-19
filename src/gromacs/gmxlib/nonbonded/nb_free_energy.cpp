@@ -683,7 +683,6 @@ nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
             {
                 /* For excluded pairs, which are only in this pair list when
                  * using the Verlet scheme, we don't use soft-core.
-                 * The group scheme also doesn't soft-core for these.
                  * As there is no singularity, there is no need for soft-core.
                  */
                 const real FF = -two*krf;

@@ -1459,6 +1459,8 @@ static void set_no_exclusions_zone(const gmx_domdec_zones_t *zones,
  * This is a legacy version for the group scheme of the same routine below.
  * Here charge groups and distance checks to ensure unique exclusions
  * are supported.
+ *
+ * todo It should be possible to remove this now that group scheme is removed
  */
 static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                    const std::vector<gmx_moltype_t> &moltype,

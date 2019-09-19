@@ -58,12 +58,10 @@ namespace gmx
  * \brief Contains a C-style t_mdatoms while managing some of its
  * memory with C++ vectors with allocators.
  *
- * The group-scheme kernels need to use a plain C-style t_mdatoms, so
+ * \todo The group-scheme kernels needed a plain C-style t_mdatoms, so
  * this type combines that with the memory management needed for
- * efficient PME on GPU transfers.
- *
- * \todo Refactor this class and rename MDAtoms once the group scheme
- * is removed. */
+ * efficient PME on GPU transfers. The mdatoms_ member should be
+ * removed. */
 class MDAtoms
 {
     //! C-style mdatoms struct.

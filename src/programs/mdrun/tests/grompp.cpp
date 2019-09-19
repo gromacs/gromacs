@@ -69,9 +69,7 @@ class GromppTest :
 /* This test ensures that an empty .mdp file (ie. all default values) works. */
 TEST_F(GromppTest, EmptyMdpFileWorks)
 {
-    /* TODO Now that Verlet is the default, change the implementation
-       of useEmptyMdpFile() to do that. */
-    runner_.useStringAsMdpFile("");
+    runner_.useEmptyMdpFile();
     runTest();
 }
 

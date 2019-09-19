@@ -119,8 +119,7 @@ SimulationRunner::SimulationRunner(TestFileManager *fileManager) :
 void
 SimulationRunner::useEmptyMdpFile()
 {
-    useStringAsMdpFile(R"(cutoff-scheme = Verlet
-                          verlet-buffer-tolerance = 0.005)");
+    useStringAsMdpFile("");
 }
 
 void

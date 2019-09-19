@@ -540,7 +540,6 @@ nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocali
     /* Add short-range interactions */
     donb_flags |= GMX_NONBONDED_DO_SR;
 
-    /* Currently all group scheme kernels always calculate (shift-)forces */
     if (stepWork.computeForces)
     {
         donb_flags |= GMX_NONBONDED_DO_FORCE;

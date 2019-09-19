@@ -2243,7 +2243,7 @@ static void clear_pairlist(NbnxnPairlistGpu *nbl)
     nbl->nci_tot = 0;
 }
 
-/* Clears a group scheme pair list */
+/* Clears an atom-atom-style pair list */
 static void clear_pairlist_fep(t_nblist *nl)
 {
     nl->nri = 0;

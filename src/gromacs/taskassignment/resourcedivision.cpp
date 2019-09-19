@@ -422,8 +422,8 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
         nthreads_tot_max = nthreads_hw;
     }
 
-    /* nonbondedOnGpu might be false e.g. because this simulation uses
-     * the group scheme, or is a rerun with energy groups. */
+    /* nonbondedOnGpu might be false e.g. because this simulation
+     * is a rerun with energy groups. */
     ngpu = (nonbondedOnGpu ? gmx::ssize(gpuIdsToUse) : 0);
 
     nrank =
