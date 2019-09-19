@@ -943,6 +943,7 @@ int alex_tune_eem(int argc, char *argv[])
              false,
              false,
              opt.fitZeta(),
+             false,
              tabfn);
 
     opt.initChargeGeneration();

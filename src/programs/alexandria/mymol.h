@@ -447,8 +447,11 @@ class MyMol
          * \param[in] lot      The level of theory used for QM calculation
          * \param[in] gap      Gaussian atom property
          */
-        immStatus getExpProps(gmx_bool bQM, gmx_bool bZero,
-                              gmx_bool bZPE, const char *lot,
+        immStatus getExpProps(gmx_bool       bQM,
+                              gmx_bool       bZero,
+                              gmx_bool       bZPE,
+                              gmx_bool       bDHform,
+                              const char    *lot,
                               const Poldata *pd);
 
         /*! \brief

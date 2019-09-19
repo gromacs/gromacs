@@ -472,6 +472,7 @@ void MolGen::Read(FILE            *fp,
                   bool             bDihedral,
                   bool             bZPE,
                   bool             bFitZeta,
+                  bool             bDHform,
                   const char      *tabfn)
 {
     int                              nwarn    = 0;
@@ -605,7 +606,8 @@ void MolGen::Read(FILE            *fp,
                 }
                 if (immOK == imm)
                 {
-                    imm = mymol.getExpProps(bQM_, bZero, bZPE, lot_, &pd_);
+                    imm = mymol.getExpProps(bQM_, bZero, bZPE, bDHform,
+                                            lot_, &pd_);
                 }
                 if (immOK == imm)
                 {
@@ -738,7 +740,8 @@ void MolGen::Read(FILE            *fp,
             }
             if (immOK == imm)
             {
-                imm = mymol.getExpProps(bQM_, bZero, bZPE, lot_, &pd_);
+                imm = mymol.getExpProps(bQM_, bZero, bZPE, bDHform,
+                                        lot_, &pd_);
             }
             mymol.eSupp_ = eSupportLocal;
             imm_count[imm]++;

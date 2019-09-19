@@ -162,6 +162,21 @@ CommunicationStatus NonBondParams::Receive(t_commrec *cr, int src)
     return cs;
 }
 
+void NonBondParams::dump(FILE *fplog) const
+{
+    if (fplog)
+    {
+        fprintf(fplog, "Atomtypes to tune the nonbonded parameters of type:\n");
+        fprintf(fplog, "Name   N    Parameters\n");
+        for (auto at = beginAT(); at < endAT(); ++at)
+        {
+            fprintf(fplog,"%-5s  %5d  %s\n",
+                    at->name().c_str(), at->nCopies(),
+                    at->paramString().c_str());
+        }
+    }
+}
+
 void NonBondParams::analyzeIdef(const std::vector<MyMol> &mm,
                                 const Poldata            *pd)
 {

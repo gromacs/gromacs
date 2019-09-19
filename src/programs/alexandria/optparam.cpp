@@ -62,11 +62,12 @@ void OptParam::add_pargs(std::vector<t_pargs> *pargs)
         { "-temp",    FALSE, etREAL, {&temperature_},
           "'Temperature' for the Monte Carlo simulation" },
         { "-anneal", FALSE, etBOOL, {&anneal_},
-          "Use annealing in Monte Carlo simulation." },
+          "Use annealing in Monte Carlo simulation, starting from the second half of the simulation." },
         { "-seed",   FALSE, etINT,  {&seed_},
           "Random number seed. If zero, a seed will be generated." },
         { "-step",  FALSE, etREAL, {&step_},
-          "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." }
+          //          "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." }
+          "Step size for the parameter optimization. Is used as fraction of the available range per parameter which depends on the parameter type" }
     };
     for (size_t i = 0; i < asize(pa); i++)
     {
@@ -151,7 +152,8 @@ void Bayes::addParam(real val,
 void Bayes::changeParam(size_t j, real rand)
 {
     GMX_RELEASE_ASSERT(j < param_.size(), "Parameter out of range");
-    real delta = (2*rand-1)*step()*fabs(param_[j]);
+    //real delta = (2*rand-1)*step()*fabs(param_[j]);
+    real delta = (2*rand-1)*step()*(upperBound_[j]-lowerBound_[j]);
     param_[j] += delta;
     if (bounds())
     {
