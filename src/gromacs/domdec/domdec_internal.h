@@ -619,8 +619,6 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
      */
     real PMELoadBal_max_cutoff = 0;
 
-    /**< tric_dir from \p gmx_ddbox_t is only stored here because dd_get_ns_ranges needs it */
-    ivec tric_dir = { };
     /**< box lower corner, required with dim's without pbc and -gcom */
     rvec box0 = { };
     /**< box size, required with dim's without pbc and -gcom */

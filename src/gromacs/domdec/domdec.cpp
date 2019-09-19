@@ -234,50 +234,6 @@ gmx_domdec_zones_t *domdec_zones(gmx_domdec_t *dd)
     return &dd->comm->zones;
 }
 
-void dd_get_ns_ranges(const gmx_domdec_t *dd, int icg,
-                      int *jcg0, int *jcg1, ivec shift0, ivec shift1)
-{
-    gmx_domdec_zones_t *zones;
-    int                 izone, d, dim;
-
-    zones = &dd->comm->zones;
-
-    izone = 0;
-    while (icg >= zones->izone[izone].cg1)
-    {
-        izone++;
-    }
-
-    if (izone == 0)
-    {
-        *jcg0 = icg;
-    }
-    else if (izone < zones->nizone)
-    {
-        *jcg0 = zones->izone[izone].jcg0;
-    }
-    else
-    {
-        gmx_fatal(FARGS, "DD icg %d out of range: izone (%d) >= nizone (%d)",
-                  icg, izone, zones->nizone);
-    }
-
-    *jcg1 = zones->izone[izone].jcg1;
-
-    for (d = 0; d < dd->ndim; d++)
-    {
-        dim         = dd->dim[d];
-        shift0[dim] = zones->izone[izone].shift0[dim];
-        shift1[dim] = zones->izone[izone].shift1[dim];
-        if (dd->comm->tric_dir[dim] || (isDlbOn(dd->comm) && d > 0))
-        {
-            /* A conservative approach, this can be optimized */
-            shift0[dim] -= 1;
-            shift1[dim] += 1;
-        }
-    }
-}
-
 int dd_numHomeAtoms(const gmx_domdec_t &dd)
 {
     return dd.comm->atomRanges.numHomeAtoms();

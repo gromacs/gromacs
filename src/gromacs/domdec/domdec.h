@@ -114,10 +114,6 @@ void dd_store_state(struct gmx_domdec_t *dd, t_state *state);
 /*! \brief Returns a pointer to the gmx_domdec_zones_t struct */
 struct gmx_domdec_zones_t *domdec_zones(struct gmx_domdec_t *dd);
 
-/*! \brief Sets the j-charge-group range for i-charge-group \p icg */
-void dd_get_ns_ranges(const gmx_domdec_t *dd, int icg,
-                      int *jcg0, int *jcg1, ivec shift0, ivec shift1);
-
 /*! \brief Returns the number of home atoms */
 int dd_numHomeAtoms(const gmx_domdec_t &dd);
 

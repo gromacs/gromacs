@@ -3025,9 +3025,6 @@ void dd_partition_system(FILE                        *fplog,
         comm_dd_ns_cell_sizes(dd, &ddbox, cell_ns_x0, cell_ns_x1, step);
     }
 
-    /* We need to store tric_dir for dd_get_ns_ranges called from ns.c */
-    copy_ivec(ddbox.tric_dir, comm->tric_dir);
-
     if (bSortCG)
     {
         wallcycle_sub_start(wcycle, ewcsDD_GRID);
