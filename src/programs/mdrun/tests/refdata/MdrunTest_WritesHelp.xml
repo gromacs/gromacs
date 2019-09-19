@@ -258,8 +258,7 @@ Other options:
  -nstlist &lt;int&gt;             (0)
            Set nstlist when using a Verlet buffer tolerance (0 is guess)
  -[no]tunepme               (yes)
-           Optimize PME load between PP/PME ranks or GPU/CPU (only with the
-           Verlet cut-off scheme)
+           Optimize PME load between PP/PME ranks or GPU/CPU
  -pme    &lt;enum&gt;             (auto)
            Perform PME calculations on: auto, cpu, gpu
  -pmefft &lt;enum&gt;             (auto)

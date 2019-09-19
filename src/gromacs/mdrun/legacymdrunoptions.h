@@ -217,7 +217,7 @@ class LegacyMdrunOptions
             { "-nstlist", FALSE, etINT, {&nstlist_cmdline},
               "Set nstlist when using a Verlet buffer tolerance (0 is guess)" },
             { "-tunepme", FALSE, etBOOL, {&mdrunOptions.tunePme},
-              "Optimize PME load between PP/PME ranks or GPU/CPU (only with the Verlet cut-off scheme)" },
+              "Optimize PME load between PP/PME ranks or GPU/CPU" },
             { "-pme",     FALSE, etENUM, {pme_opt_choices},
               "Perform PME calculations on" },
             { "-pmefft", FALSE, etENUM, {pme_fft_opt_choices},
