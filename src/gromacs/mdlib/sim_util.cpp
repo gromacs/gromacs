@@ -476,19 +476,19 @@ static void checkPotentialEnergyValidity(int64_t               step,
  * The conditionals exactly correspond to those in computeSpecialForces().
  */
 static bool
-haveSpecialForces(const t_inputrec              *inputrec,
-                  ForceProviders                *forceProviders,
+haveSpecialForces(const t_inputrec              &inputrec,
+                  const ForceProviders          &forceProviders,
                   const pull_t                  *pull_work,
                   const bool                     computeForces,
                   const gmx_edsam               *ed)
 {
 
     return
-        ((computeForces && forceProviders->hasForceProvider()) ||         // forceProviders
-         (inputrec->bPull && pull_have_potential(pull_work)) ||           // pull
-         inputrec->bRot ||                                                // enforced rotation
-         (ed != nullptr) ||                                               // flooding
-         (inputrec->bIMD && computeForces));                              // IMD
+        ((computeForces && forceProviders.hasForceProvider()) ||         // forceProviders
+         (inputrec.bPull && pull_have_potential(pull_work)) ||           // pull
+         inputrec.bRot ||                                                // enforced rotation
+         (ed != nullptr) ||                                              // flooding
+         (inputrec.bIMD && computeForces));                              // IMD
 }
 
 /*! \brief Compute forces and/or energies for special algorithms
@@ -769,19 +769,23 @@ setupForceOutputs(t_forcerec                          *fr,
  */
 static void
 setupDomainLifetimeWorkload(DomainLifetimeWorkload *domainWork,
-                            const t_inputrec       *inputrec,
-                            const t_forcerec       *fr,
+                            const t_inputrec       &inputrec,
+                            const t_forcerec       &fr,
                             const pull_t           *pull_work,
                             const gmx_edsam        *ed,
                             const t_idef           &idef,
-                            const t_fcdata         *fcd,
+                            const t_fcdata         &fcd,
+                            const t_mdatoms        &mdatoms,
                             const StepWorkload     &stepWork)
 {
-    domainWork->haveSpecialForces      = haveSpecialForces(inputrec, fr->forceProviders, pull_work, stepWork.computeForces, ed);
-    domainWork->haveCpuBondedWork      = haveCpuBondeds(*fr);
-    domainWork->haveGpuBondedWork      = ((fr->gpuBonded != nullptr) && fr->gpuBonded->haveInteractions());
-    domainWork->haveRestraintsWork     = havePositionRestraints(idef, *fcd);
-    domainWork->haveCpuListedForceWork = haveCpuListedForces(*fr, idef, *fcd);
+    // Note that haveSpecialForces is constant over the whole run
+    domainWork->haveSpecialForces      = haveSpecialForces(inputrec, *fr.forceProviders, pull_work, stepWork.computeForces, ed);
+    domainWork->haveCpuBondedWork      = haveCpuBondeds(fr);
+    domainWork->haveGpuBondedWork      = ((fr.gpuBonded != nullptr) && fr.gpuBonded->haveInteractions());
+    domainWork->haveRestraintsWork     = havePositionRestraints(idef, fcd);
+    domainWork->haveCpuListedForceWork = haveCpuListedForces(fr, idef, fcd);
+    // Note that haveFreeEnergyWork is constant over the whole run
+    domainWork->haveFreeEnergyWork     = (fr.efep != efepNO && mdatoms.nPerturbed != 0);
 }
 
 /*! \brief Set up force flag stuct from the force bitmask.
@@ -1082,12 +1086,13 @@ void do_force(FILE                                     *fplog,
         // Need to run after the GPU-offload bonded interaction lists
         // are set up to be able to determine whether there is bonded work.
         setupDomainLifetimeWorkload(&runScheduleWork->domainWork,
-                                    inputrec,
-                                    fr,
+                                    *inputrec,
+                                    *fr,
                                     pull_work,
                                     ed,
                                     top->idef,
-                                    fcd,
+                                    *fcd,
+                                    *mdatoms,
                                     stepWork);
     }
 
@@ -1219,8 +1224,7 @@ void do_force(FILE                                     *fplog,
                 // when the coordinate data has been copied to the device).
                 gpuHaloExchange->communicateHaloCoordinates(box);
 
-                // TODO Force flags should include haveFreeEnergyWork for this domain
-                if (domainWork.haveCpuBondedWork || (fr->efep != efepNO))
+                if (domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork)
                 {
                     //non-local part of coordinate buffer must be copied back to host for CPU work
                     nbv->launch_copy_x_from_gpu(as_rvec_array(x.unpaddedArrayRef().data()), Nbnxm::AtomLocality::NonLocal);
@@ -1320,7 +1324,7 @@ void do_force(FILE                                     *fplog,
             }
         }
     }
-    if (fr->efep == efepNO)
+    if (mdatoms->nChargePerturbed == 0)
     {
         copy_rvec(fr->mu_tot[0], mu_tot);
     }
@@ -1435,7 +1439,7 @@ void do_force(FILE                                     *fplog,
 
     // TODO Force flags should include haveFreeEnergyWork for this domain
     if (ddUsesGpuDirectCommunication &&
-        (domainWork.haveCpuBondedWork || (fr->efep != efepNO)))
+        (domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork))
     {
         /* Wait for non-local coordinate data to be copied from device */
         nbv->wait_nonlocal_x_copy_D2H_done();
@@ -1489,7 +1493,7 @@ void do_force(FILE                                     *fplog,
                 // TODO: move this into DomainLifetimeWorkload, including the second part of the condition
                 // The bonded and free energy CPU tasks can have non-local force contributions
                 // which are a dependency for the GPU force reduction.
-                bool  haveNonLocalForceContribInCpuBuffer = domainWork.haveCpuBondedWork || (fr->efep != efepNO);
+                bool  haveNonLocalForceContribInCpuBuffer = domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork;
 
                 rvec *f = as_rvec_array(forceWithShiftForces.force().data());
                 if (haveNonLocalForceContribInCpuBuffer)
