@@ -49,7 +49,6 @@
 #include "gromacs/awh/read_params.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
-#include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/functions.h"
@@ -206,11 +205,6 @@ static void check_nst(const char *desc_nst, int nst,
                 desc_p, desc_nst, desc_p, *p);
         warning(wi, buf);
     }
-}
-
-static bool ir_NVE(const t_inputrec *ir)
-{
-    return (EI_MD(ir->eI) && ir->etc == etcNO);
 }
 
 static int lcd(int n1, int n2)
@@ -4219,84 +4213,6 @@ void double_check(t_inputrec *ir, matrix box,
         {
             sprintf(warn_buf, "ERROR: The cut-off length is longer than half the shortest box vector or longer than the smallest box diagonal element. Increase the box size or decrease rlist.\n");
             warning_error(wi, warn_buf);
-        }
-    }
-}
-
-void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
-                             rvec *x,
-                             warninp_t wi)
-{
-    real rvdw1, rvdw2, rcoul1, rcoul2;
-    char warn_buf[STRLEN];
-
-    calc_chargegroup_radii(mtop, x, &rvdw1, &rvdw2, &rcoul1, &rcoul2);
-
-    if (rvdw1 > 0)
-    {
-        printf("Largest charge group radii for Van der Waals: %5.3f, %5.3f nm\n",
-               rvdw1, rvdw2);
-    }
-    if (rcoul1 > 0)
-    {
-        printf("Largest charge group radii for Coulomb:       %5.3f, %5.3f nm\n",
-               rcoul1, rcoul2);
-    }
-
-    if (ir->rlist > 0)
-    {
-        if (rvdw1  + rvdw2  > ir->rlist ||
-            rcoul1 + rcoul2 > ir->rlist)
-        {
-            sprintf(warn_buf,
-                    "The sum of the two largest charge group radii (%f) "
-                    "is larger than rlist (%f)\n",
-                    std::max(rvdw1+rvdw2, rcoul1+rcoul2), ir->rlist);
-            warning(wi, warn_buf);
-        }
-        else
-        {
-            /* Here we do not use the zero at cut-off macro,
-             * since user defined interactions might purposely
-             * not be zero at the cut-off.
-             */
-            if (ir_vdw_is_zero_at_cutoff(ir) &&
-                rvdw1 + rvdw2 > ir->rlist - ir->rvdw)
-            {
-                sprintf(warn_buf, "The sum of the two largest charge group "
-                        "radii (%f) is larger than rlist (%f) - rvdw (%f).\n"
-                        "With exact cut-offs, better performance can be "
-                        "obtained with cutoff-scheme = %s, because it "
-                        "does not use charge groups at all.",
-                        rvdw1+rvdw2,
-                        ir->rlist, ir->rvdw,
-                        ecutscheme_names[ecutsVERLET]);
-                if (ir_NVE(ir))
-                {
-                    warning(wi, warn_buf);
-                }
-                else
-                {
-                    warning_note(wi, warn_buf);
-                }
-            }
-            if (ir_coulomb_is_zero_at_cutoff(ir) &&
-                rcoul1 + rcoul2 > ir->rlist - ir->rcoulomb)
-            {
-                sprintf(warn_buf, "The sum of the two largest charge group radii (%f) is larger than rlist (%f) - rcoulomb (%f).\n"
-                        "With exact cut-offs, better performance can be obtained with cutoff-scheme = %s, because it does not use charge groups at all.",
-                        rcoul1+rcoul2,
-                        ir->rlist, ir->rcoulomb,
-                        ecutscheme_names[ecutsVERLET]);
-                if (ir_NVE(ir))
-                {
-                    warning(wi, warn_buf);
-                }
-                else
-                {
-                    warning_note(wi, warn_buf);
-                }
-            }
         }
     }
 }

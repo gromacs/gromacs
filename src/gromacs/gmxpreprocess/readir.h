@@ -111,11 +111,6 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                   warninp_t wi);
 /* Do even more checks */
 
-void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
-                             rvec *x,
-                             warninp_t wi);
-/* Even more checks, charge group radii vs. cut-off's only. */
-
 void get_ir(const char *mdparin, const char *mdparout,
             gmx::MDModules *mdModules, t_inputrec *ir, t_gromppopts *opts,
             WriteMdpHeader writeMdpHeader, warninp_t wi);

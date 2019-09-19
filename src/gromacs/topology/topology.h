@@ -86,7 +86,6 @@ struct gmx_moltype_t
     char              **name;   /**< Name of the molecule type            */
     t_atoms             atoms;  /**< The atoms in this molecule           */
     InteractionLists    ilist;  /**< Interaction list with local indices  */
-    t_block             cgs;    /**< The charge groups                    */
     t_blocka            excls;  /**< The exclusions                       */
 };
 
@@ -224,7 +223,6 @@ typedef struct t_topology
     t_idef          idef;                        /* The interaction function definition  */
     t_atoms         atoms;                       /* The atoms                            */
     t_atomtypes     atomtypes;                   /* Atomtype properties                  */
-    t_block         cgs;                         /* The charge groups                    */
     t_block         mols;                        /* The molecules                        */
     gmx_bool        bIntermolecularInteractions; /* Inter.mol. int. ?   */
     t_blocka        excls;                       /* The exclusions                       */

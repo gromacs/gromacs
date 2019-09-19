@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,28 +59,24 @@ typedef struct {
     real  q;
 } t_charge;
 
-static t_charge *mk_charge(const t_atoms *atoms, const t_block *cgs, int *nncg)
+static t_charge *mk_charge(const t_atoms *atoms, int *nncg)
 {
     t_charge *cg = nullptr;
     char      buf[32];
-    int       i, j, ncg, resnr, anr;
+    int       i, ncg, resnr, anr;
     real      qq;
 
     /* Find the charged groups */
     ncg = 0;
-    for (i = 0; (i < cgs->nr); i++)
+    for (i = 0; i < atoms->nr; i++)
     {
-        qq = 0.0;
-        for (j = cgs->index[i]; (j < cgs->index[i+1]); j++)
-        {
-            qq += atoms->atom[j].q;
-        }
+        qq = atoms->atom[i].q;
         if (std::abs(qq) > 1.0e-5)
         {
             srenew(cg, ncg+1);
             cg[ncg].q  = qq;
             cg[ncg].cg = i;
-            anr        = cgs->index[i];
+            anr        = i;
             resnr      = atoms->atom[anr].resind;
             sprintf(buf, "%s%d-%d",
                     *(atoms->resinfo[resnr].name),
@@ -96,35 +92,11 @@ static t_charge *mk_charge(const t_atoms *atoms, const t_block *cgs, int *nncg)
     {
         printf("CG: %10s Q: %6g  Atoms:",
                cg[i].label, cg[i].q);
-        for (j = cgs->index[cg[i].cg]; (j < cgs->index[cg[i].cg+1]); j++)
-        {
-            printf(" %4d", j);
-        }
+        printf(" %4d", cg[i].cg);
         printf("\n");
     }
 
     return cg;
-}
-
-static real calc_dist(t_pbc *pbc, rvec x[], const t_block *cgs, int icg, int jcg)
-{
-    int  i, j;
-    rvec dx;
-    real d2, mindist2 = 1000;
-
-    for (i = cgs->index[icg]; (i < cgs->index[icg+1]); i++)
-    {
-        for (j = cgs->index[jcg]; (j < cgs->index[jcg+1]); j++)
-        {
-            pbc_dx(pbc, x[i], x[j], dx);
-            d2 = norm2(dx);
-            if (d2 < mindist2)
-            {
-                mindist2 = d2;
-            }
-        }
-    }
-    return std::sqrt(mindist2);
 }
 
 int gmx_saltbr(int argc, char *argv[])
@@ -188,7 +160,7 @@ int gmx_saltbr(int argc, char *argv[])
     }
 
     top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
-    cg  = mk_charge(&top->atoms, &(top->cgs), &ncg);
+    cg  = mk_charge(&top->atoms, &ncg);
     snew(cgdist, ncg);
     snew(nWithin, ncg);
     for (i = 0; (i < ncg); i++)
@@ -213,8 +185,9 @@ int gmx_saltbr(int argc, char *argv[])
             for (j = i+1; (j < ncg); j++)
             {
                 srenew(cgdist[i][j], teller+1);
-                cgdist[i][j][teller] =
-                    calc_dist(&pbc, x, &(top->cgs), cg[i].cg, cg[j].cg);
+                rvec dx;
+                pbc_dx(&pbc, x[cg[i].cg], x[cg[j].cg], dx);
+                cgdist[i][j][teller] = norm(dx);
                 if (cgdist[i][j][teller] < truncate)
                 {
                     nWithin[i][j] = 1;

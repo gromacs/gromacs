@@ -404,7 +404,6 @@ static char **read_topol(const char *infile, const char *outfile,
     real                            fudgeLJ = -1;        /* Multiplication factor to generate 1-4 from LJ */
     bool                            bReadDefaults, bReadMolType, bGenPairs, bWarn_copy_A_B;
     double                          qt     = 0, qBt = 0; /* total charge */
-    int                             lastcg = -1;
     int                             dcatt  = -1, nmol_couple;
     /* File handling variables */
     int                             status;
@@ -726,7 +725,7 @@ static char **read_topol(const char *infile, const char *outfile,
                             break;
                         }
                         case Directive::d_atoms:
-                            push_atom(symtab, &(mi0->cgs), &(mi0->atoms), atypes, pline, &lastcg, wi);
+                            push_atom(symtab, &(mi0->atoms), atypes, pline, wi);
                             break;
 
                         case Directive::d_pairs:

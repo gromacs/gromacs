@@ -2117,8 +2117,9 @@ getSystemInfo(const gmx::MDLogger           &mdlog,
     }
     else
     {
-        systemInfo.haveSplitConstraints = gmx::inter_charge_group_constraints(mtop);
-        systemInfo.haveSplitSettles     = gmx::inter_charge_group_settles(mtop);
+        systemInfo.haveSplitConstraints = (gmx_mtop_ftype_count(mtop, F_CONSTR) > 0 ||
+                                           gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0);
+        systemInfo.haveSplitSettles     = (gmx_mtop_ftype_count(mtop, F_SETTLE) > 0);
     }
 
     if (ir.rlist == 0)

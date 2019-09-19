@@ -1385,31 +1385,16 @@ static void push_atom_now(t_symtab *symtab, t_atoms *at, int atomnr,
     at->nr++;
 }
 
-static void push_cg(t_block *block, int *lastindex, int index, int a)
-{
-    if (((block->nr) && (*lastindex != index)) || (!block->nr))
-    {
-        /* add a new block */
-        block->nr++;
-        srenew(block->index, block->nr+1);
-    }
-    block->index[block->nr] = a + 1;
-    *lastindex              = index;
-}
-
-void push_atom(t_symtab *symtab, t_block *cgs,
-               t_atoms *at, PreprocessingAtomTypes *atypes, char *line, int *lastcg,
+void push_atom(t_symtab *symtab,
+               t_atoms *at, PreprocessingAtomTypes *atypes, char *line,
                warninp *wi)
 {
-    int           nr, ptype;
+    int           ptype;
     int           cgnumber, atomnr, type, typeB, nscan;
     char          id[STRLEN], ctype[STRLEN], ctypeB[STRLEN],
                   resnumberic[STRLEN], resname[STRLEN], name[STRLEN], check[STRLEN];
     double        m, q, mb, qb;
     real          m0, q0, mB, qB;
-
-    /* Make a shortcut for writing in this molecule  */
-    nr = at->nr;
 
     /* Fixed parameters */
     if (sscanf(line, "%s%s%s%s%s%d",
@@ -1468,8 +1453,6 @@ void push_atom(t_symtab *symtab, t_block *cgs,
             }
         }
     }
-
-    push_cg(cgs, lastcg, cgnumber, nr);
 
     push_atom_now(symtab, at, atomnr, atypes->atomNumberFromAtomType(type),
                   type, ctype, ptype, resnumberic,

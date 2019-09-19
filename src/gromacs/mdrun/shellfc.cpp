@@ -50,7 +50,6 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/mdsetup.h"
-#include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
@@ -309,10 +308,10 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
 {
     gmx_shellfc_t            *shfc;
     t_shell                  *shell;
-    int                      *shell_index = nullptr, *at2cg;
+    int                      *shell_index = nullptr;
 
     int                       ns, nshell, nsi;
-    int                       i, j, type, a_offset, cg, mol, ftype, nra;
+    int                       i, j, type, a_offset, mol, ftype, nra;
     real                      qS, alpha;
     int                       aS, aN = 0; /* Shell and nucleus */
     int                       bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_WATER_POL };
@@ -387,6 +386,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     ffparams = &mtop->ffparams;
 
     /* Now fill the structures */
+    /* TODO: See if we can use update groups that cover shell constructions */
     shfc->bInterCG = FALSE;
     ns             = 0;
     a_offset       = 0;
@@ -394,18 +394,8 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     {
         const gmx_molblock_t *molb = &mtop->molblock[mb];
         const gmx_moltype_t  *molt = &mtop->moltype[molb->type];
-        const t_block        *cgs  = &molt->cgs;
 
-        snew(at2cg, molt->atoms.nr);
-        for (cg = 0; cg < cgs->nr; cg++)
-        {
-            for (i = cgs->index[cg]; i < cgs->index[cg+1]; i++)
-            {
-                at2cg[i] = cg;
-            }
-        }
-
-        const t_atom *atom = molt->atoms.atom;
+        const t_atom         *atom = molt->atoms.atom;
         for (mol = 0; mol < molb->nmol; mol++)
         {
             for (j = 0; (j < NBT); j++)
@@ -487,7 +477,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                             }
                             gmx_fatal(FARGS, "Can not handle more than three bonds per shell\n");
                         }
-                        if (at2cg[aS] != at2cg[aN])
+                        if (aS != aN)
                         {
                             /* shell[nsi].bInterCG = TRUE; */
                             shfc->bInterCG = TRUE;
@@ -533,7 +523,6 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
             a_offset += molt->atoms.nr;
         }
         /* Done with this molecule type */
-        sfree(at2cg);
     }
 
     /* Verify whether it's all correct */
@@ -581,7 +570,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
         {
             if (fplog)
             {
-                fprintf(fplog, "\nNOTE: there are shells that are connected to particles outside their own charge group, will not predict shells positions during the run\n\n");
+                fprintf(fplog, "\nNOTE: in the current version shell prediction during the crun is disabled\n\n");
             }
             /* Prediction improves performance, so we should implement either:
              * 1. communication for the atoms needed for prediction

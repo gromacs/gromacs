@@ -86,11 +86,9 @@ void push_nbt(Directive d, t_nbparam **nbt, PreprocessingAtomTypes *atype,
               warninp *wi);
 
 void push_atom(struct t_symtab           *symtab,
-               t_block                   *cgs,
                t_atoms                   *at,
                PreprocessingAtomTypes    *atype,
                char                      *line,
-               int                       *lastcg,
                warninp                   *wi);
 
 void push_bond(Directive d, gmx::ArrayRef<InteractionsOfType> bondtype,

@@ -80,7 +80,6 @@ void init_top(t_topology *top)
     init_idef(&top->idef);
     init_atom(&(top->atoms));
     init_atomtypes(&(top->atomtypes));
-    init_block(&top->cgs);
     init_block(&top->mols);
     init_blocka(&top->excls);
     open_symtab(&top->symtab);
@@ -89,7 +88,6 @@ void init_top(t_topology *top)
 
 gmx_moltype_t::gmx_moltype_t() :
     name(nullptr),
-    cgs(),
     excls()
 {
     init_t_atoms(&atoms, 0, FALSE);
@@ -98,7 +96,6 @@ gmx_moltype_t::gmx_moltype_t() :
 gmx_moltype_t::~gmx_moltype_t()
 {
     done_atom(&atoms);
-    done_block(&cgs);
     done_blocka(&excls);
 }
 
@@ -126,7 +123,6 @@ void done_top(t_topology *top)
     done_atomtypes(&(top->atomtypes));
 
     done_symtab(&(top->symtab));
-    done_block(&(top->cgs));
     done_block(&(top->mols));
     done_blocka(&(top->excls));
 }
@@ -139,7 +135,6 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
         {
             done_idef(&top->idef);
             done_atom(&top->atoms);
-            done_block(&top->cgs);
             done_blocka(&top->excls);
             done_block(&top->mols);
             done_symtab(&top->symtab);
@@ -307,7 +302,6 @@ static void pr_moltype(FILE *fp, int indent, const char *title,
     pr_indent(fp, indent);
     fprintf(fp, "name=\"%s\"\n", *(molt->name));
     pr_atoms(fp, indent, "atoms", &(molt->atoms), bShowNumbers);
-    pr_block(fp, indent, "cgs", &molt->cgs, bShowNumbers);
     pr_blocka(fp, indent, "excls", &molt->excls, bShowNumbers);
     for (j = 0; (j < F_NRE); j++)
     {
@@ -385,7 +379,6 @@ void pr_top(FILE *fp, int indent, const char *title, const t_topology *top,
         fprintf(fp, "name=\"%s\"\n", *(top->name));
         pr_atoms(fp, indent, "atoms", &(top->atoms), bShowNumbers);
         pr_atomtypes(fp, indent, "atomtypes", &(top->atomtypes), bShowNumbers);
-        pr_block(fp, indent, "cgs", &top->cgs, bShowNumbers);
         pr_block(fp, indent, "mols", &top->mols, bShowNumbers);
         pr_str(fp, indent, "bIntermolecularInteractions",
                gmx::boolToString(top->bIntermolecularInteractions));
@@ -476,15 +469,6 @@ static void cmp_cmap(FILE *fp, const gmx_cmap_t *cmap1, const gmx_cmap_t *cmap2,
     }
 }
 
-static void cmp_block(FILE *fp, const t_block *b1, const t_block *b2, const char *s)
-{
-    char buf[32];
-
-    fprintf(fp, "comparing block %s\n", s);
-    sprintf(buf, "%s.nr", s);
-    cmp_int(fp, buf, -1, b1->nr, b2->nr);
-}
-
 static void cmp_blocka(FILE *fp, const t_blocka *b1, const t_blocka *b2, const char *s)
 {
     char buf[32];
@@ -553,9 +537,7 @@ static void compareMoltypes(FILE *fp, gmx::ArrayRef<const gmx_moltype_t> mt1, gm
         cmp_str(fp, "Name", i, *mt1[i].name, *mt2[i].name);
         compareAtoms(fp, &mt1[i].atoms, &mt2[i].atoms, relativeTolerance, absoluteTolerance);
         compareInteractionLists(fp, &mt1[i].ilist, &mt2[i].ilist);
-        std::string buf = gmx::formatString("cgs[%d]", i);
-        cmp_block(fp, &mt1[i].cgs, &mt2[i].cgs, buf.c_str());
-        buf = gmx::formatString("excls[%d]", i);
+        std::string buf = gmx::formatString("excls[%d]", i);
         cmp_blocka(fp, &mt1[i].excls, &mt2[i].excls, buf.c_str());
     }
 }
@@ -691,7 +673,6 @@ void copy_moltype(const gmx_moltype_t *src, gmx_moltype_t *dst)
 {
     dst->name = src->name;
     copy_blocka(&src->excls, &dst->excls);
-    copy_block(&src->cgs, &dst->cgs);
     t_atoms *atomsCopy = copy_t_atoms(&src->atoms);
     dst->atoms = *atomsCopy;
     sfree(atomsCopy);

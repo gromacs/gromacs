@@ -1585,7 +1585,7 @@ static void low_do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
     {
         const gmx_moltype_t &moltype = mtop->moltype[molb.type];
         if (moltype.atoms.nr == 1 ||
-            (!bFirst && moltype.cgs.nr == 1))
+            (!bFirst && moltype.atoms.nr == 1))
         {
             /* Just one atom or charge group in the molecule, no PBC required */
             as += molb.nmol*moltype.atoms.nr;

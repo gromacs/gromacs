@@ -173,8 +173,6 @@ struct MoleculeInformation
     bool                                         bProcessed = false;
     //! Atoms in the moelcule.
     t_atoms                                      atoms;
-    //! Charge groups in the molecule
-    t_block                                      cgs;
     //! Molecules separated in datastructure.
     t_block                                      mols;
     //! Exclusions in the molecule.

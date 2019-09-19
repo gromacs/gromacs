@@ -229,7 +229,6 @@ void InteractionOfType::setForceParameter(int pos, real value)
 
 void MoleculeInformation::initMolInfo()
 {
-    init_block(&cgs);
     init_block(&mols);
     init_blocka(&excls);
     init_t_atoms(&atoms, 0, FALSE);
@@ -243,7 +242,6 @@ void MoleculeInformation::partialCleanUp()
 void MoleculeInformation::fullCleanUp()
 {
     done_atom (&atoms);
-    done_block(&cgs);
     done_block(&mols);
 }
 
@@ -300,70 +298,6 @@ static int check_atom_names(const char *fn1, const char *fn2,
     }
 
     return nmismatch;
-}
-
-static void check_eg_vs_cg(gmx_mtop_t *mtop)
-{
-    int            astart, m, cg, j, firstj;
-    unsigned char  firsteg, eg;
-    gmx_moltype_t *molt;
-
-    /* Go through all the charge groups and make sure all their
-     * atoms are in the same energy group.
-     */
-
-    astart = 0;
-    for (const gmx_molblock_t &molb : mtop->molblock)
-    {
-        molt = &mtop->moltype[molb.type];
-        for (m = 0; m < molb.nmol; m++)
-        {
-            for (cg = 0; cg < molt->cgs.nr; cg++)
-            {
-                /* Get the energy group of the first atom in this charge group */
-                firstj  = astart + molt->cgs.index[cg];
-                firsteg = getGroupType(mtop->groups, SimulationAtomGroupType::EnergyOutput, firstj);
-                for (j = molt->cgs.index[cg]+1; j < molt->cgs.index[cg+1]; j++)
-                {
-                    eg = getGroupType(mtop->groups, SimulationAtomGroupType::EnergyOutput, astart+j);
-                    if (eg != firsteg)
-                    {
-                        gmx_fatal(FARGS, "atoms %d and %d in charge group %d of molecule type '%s' are in different energy groups",
-                                  firstj+1, astart+j+1, cg+1, *molt->name);
-                    }
-                }
-            }
-            astart += molt->atoms.nr;
-        }
-    }
-}
-
-static void check_cg_sizes(const char *topfn, const t_block *cgs, warninp *wi)
-{
-    int  maxsize, cg;
-    char warn_buf[STRLEN];
-
-    maxsize = 0;
-    for (cg = 0; cg < cgs->nr; cg++)
-    {
-        maxsize = std::max(maxsize, cgs->index[cg+1]-cgs->index[cg]);
-    }
-
-    if (maxsize > MAX_CHARGEGROUP_SIZE)
-    {
-        gmx_fatal(FARGS, "The largest charge group contains %d atoms. The maximum is %d.", maxsize, MAX_CHARGEGROUP_SIZE);
-    }
-    else if (maxsize > 10)
-    {
-        set_warning_line(wi, topfn, -1);
-        sprintf(warn_buf,
-                "The largest charge group contains %d atoms.\n"
-                "Since atoms only see each other when the centers of geometry of the charge groups they belong to are within the cut-off distance, too large charge groups can lead to serious cut-off artifacts.\n"
-                "For efficiency and accuracy, charge group should consist of a few atoms.\n"
-                "For all-atom force fields use: CH3, CH2, CH, NH2, NH, OH, CO2, CO, etc.",
-                maxsize);
-        warning_note(wi, warn_buf);
-    }
 }
 
 static void check_bonds_timestep(const gmx_mtop_t *mtop, double dt, warninp *wi)
@@ -616,7 +550,6 @@ static void molinfo2mtop(gmx::ArrayRef<const MoleculeInformation> mi, gmx_mtop_t
         molt.name           = mol.name;
         molt.atoms          = mol.atoms;
         /* ilists are copied later */
-        molt.cgs            = mol.cgs;
         molt.excls          = mol.excls;
         pos++;
     }
@@ -1951,15 +1884,6 @@ int gmx_grompp(int argc, char *argv[])
         }
     }
 
-    if (ir->cutoff_scheme == ecutsVERLET)
-    {
-        fprintf(stderr, "Removing all charge groups because cutoff-scheme=%s\n",
-                ecutscheme_names[ir->cutoff_scheme]);
-
-        /* Remove all charge groups */
-        gmx_mtop_remove_chargegroups(&sys);
-    }
-
     if ((count_constraints(&sys, mi, wi) != 0) && (ir->eConstrAlg == econtSHAKE))
     {
         if (ir->eI == eiCG || ir->eI == eiLBFGS)
@@ -2124,11 +2048,6 @@ int gmx_grompp(int argc, char *argv[])
 
     checkForUnboundAtoms(&sys, bVerbose, wi);
 
-    for (const gmx_moltype_t &moltype : sys.moltype)
-    {
-        check_cg_sizes(ftp2fn(efTOP, NFILE, fnm), &moltype.cgs, wi);
-    }
-
     if (EI_DYNAMICS(ir->eI) && ir->eI != eiBD)
     {
         check_bonds_timestep(&sys, ir->delta_t, wi);
@@ -2227,12 +2146,6 @@ int gmx_grompp(int argc, char *argv[])
     /* Init the temperature coupling state */
     init_gtc_state(&state, ir->opts.ngtc, 0, ir->opts.nhchainlength); /* need to add nnhpres here? */
 
-    if (bVerbose)
-    {
-        fprintf(stderr, "Checking consistency between energy and charge groups...\n");
-    }
-    check_eg_vs_cg(&sys);
-
     if (debug)
     {
         pr_symtab(debug, 0, "After index", &sys.symtab);
@@ -2274,12 +2187,6 @@ int gmx_grompp(int argc, char *argv[])
     if (ir->ePBC == epbcXY && ir->nwall != 2)
     {
         clear_rvec(state.box[ZZ]);
-    }
-
-    if (ir->cutoff_scheme != ecutsVERLET && ir->rlist > 0)
-    {
-        set_warning_line(wi, mdparin, -1);
-        check_chargegroup_radii(&sys, ir, state.x.rvec_array(), wi);
     }
 
     if (EEL_FULL(ir->coulombtype) || EVDW_PME(ir->vdwtype))

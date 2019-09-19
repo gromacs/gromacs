@@ -57,7 +57,6 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/ga2la.h"
-#include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec.h"
@@ -128,8 +127,8 @@ struct gmx_reverse_top_t
     bool                         bSettle = false;
     //! \brief All bonded interactions have to be assigned?
     bool                         bBCheck = false;
-    //! \brief Are there bondeds/exclusions between charge-groups?
-    bool                         bInterCGInteractions = false;
+    //! \brief Are there bondeds/exclusions between atoms?
+    bool                         bInterAtomicInteractions = false;
     //! \brief Reverse ilist for all moltypes
     std::vector<reverse_ilist_t> ril_mt;
     //! \brief The size of ril_mt[?].index summed over all entries
@@ -629,16 +628,16 @@ static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
     rt.bSettle = bSettle;
     rt.bBCheck = bBCheck;
 
-    rt.bInterCGInteractions = mtop->bIntermolecularInteractions;
+    rt.bInterAtomicInteractions = mtop->bIntermolecularInteractions;
     rt.ril_mt.resize(mtop->moltype.size());
     rt.ril_mt_tot_size = 0;
     std::vector<int> nint_mt;
     for (size_t mt = 0; mt < mtop->moltype.size(); mt++)
     {
         const gmx_moltype_t &molt = mtop->moltype[mt];
-        if (molt.cgs.nr > 1)
+        if (molt.atoms.nr > 1)
         {
-            rt.bInterCGInteractions = true;
+            rt.bInterAtomicInteractions = true;
         }
 
         /* Make the atom to interaction list for this molecule type */
@@ -1594,7 +1593,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
     int                nbonded_local;
     gmx_reverse_top_t *rt;
 
-    if (dd->reverse_top->bInterCGInteractions)
+    if (dd->reverse_top->bInterAtomicInteractions)
     {
         nzone_bondeds = zones->n;
     }
@@ -1754,7 +1753,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     bRCheckMB   = FALSE;
     bRCheck2B   = FALSE;
 
-    if (dd->reverse_top->bInterCGInteractions)
+    if (dd->reverse_top->bInterAtomicInteractions)
     {
         /* We need to check to which cell bondeds should be assigned */
         rc = dd_cutoff_twobody(dd);
@@ -1898,40 +1897,20 @@ static void check_link(t_blocka *link, int cg_gl, int cg_gl_j)
     }
 }
 
-/*! \brief Return a vector of the charge group index for all atoms */
-static std::vector<int> make_at2cg(const t_block &cgs)
-{
-    std::vector<int> at2cg(cgs.index[cgs.nr]);
-    for (int cg = 0; cg < cgs.nr; cg++)
-    {
-        for (int a = cgs.index[cg]; a < cgs.index[cg + 1]; a++)
-        {
-            at2cg[a] = cg;
-        }
-    }
-
-    return at2cg;
-}
-
 t_blocka *makeBondedLinks(const gmx_mtop_t *mtop,
                           cginfo_mb_t      *cginfo_mb)
 {
     t_blocka           *link;
     cginfo_mb_t        *cgi_mb;
 
-    /* For each charge group make a list of other charge groups
-     * in the system that a linked to it via bonded interactions
+    /* For each atom make a list of other atoms in the system
+     * that a linked to it via bonded interactions
      * which are also stored in reverse_top.
      */
 
     reverse_ilist_t ril_intermol;
     if (mtop->bIntermolecularInteractions)
     {
-        if (ncg_mtop(mtop) < mtop->natoms)
-        {
-            gmx_fatal(FARGS, "The combination of intermolecular interactions, charge groups and domain decomposition is not supported. Use cutoff-scheme=Verlet (which removes the charge groups) or run without domain decomposition.");
-        }
-
         t_atoms atoms;
 
         atoms.nr   = mtop->natoms;
@@ -1945,7 +1924,7 @@ t_blocka *makeBondedLinks(const gmx_mtop_t *mtop,
     }
 
     snew(link, 1);
-    snew(link->index, ncg_mtop(mtop)+1);
+    snew(link->index, mtop->natoms + 1);
     link->nalloc_a = 0;
     link->a        = nullptr;
 
@@ -1960,8 +1939,6 @@ t_blocka *makeBondedLinks(const gmx_mtop_t *mtop,
             continue;
         }
         const gmx_moltype_t &molt  = mtop->moltype[molb.type];
-        const t_block       &cgs   = molt.cgs;
-        std::vector<int>     a2c   = make_at2cg(cgs);
         /* Make a reverse ilist in which the interactions are linked
          * to all atoms, not only the first atom as in gmx_reverse_top.
          * The constraints are discarded here.
@@ -1975,65 +1952,62 @@ t_blocka *makeBondedLinks(const gmx_mtop_t *mtop,
         int mol;
         for (mol = 0; mol < (mtop->bIntermolecularInteractions ? molb.nmol : 1); mol++)
         {
-            for (int cg = 0; cg < cgs.nr; cg++)
+            for (int a = 0; a < molt.atoms.nr; a++)
             {
-                int cg_gl            = cg_offset + cg;
+                int cg_gl            = cg_offset + a;
                 link->index[cg_gl+1] = link->index[cg_gl];
-                for (int a = cgs.index[cg]; a < cgs.index[cg + 1]; a++)
+                int i                = ril.index[a];
+                while (i < ril.index[a+1])
                 {
-                    int i = ril.index[a];
-                    while (i < ril.index[a+1])
+                    int ftype = ril.il[i++];
+                    int nral  = NRAL(ftype);
+                    /* Skip the ifunc index */
+                    i++;
+                    for (int j = 0; j < nral; j++)
                     {
-                        int ftype = ril.il[i++];
+                        int aj = ril.il[i + j];
+                        if (aj != a)
+                        {
+                            check_link(link, cg_gl, cg_offset + aj);
+                        }
+                    }
+                    i += nral_rt(ftype);
+                }
+
+                if (mtop->bIntermolecularInteractions)
+                {
+                    int i = ril_intermol.index[a];
+                    while (i < ril_intermol.index[a+1])
+                    {
+                        int ftype = ril_intermol.il[i++];
                         int nral  = NRAL(ftype);
                         /* Skip the ifunc index */
                         i++;
                         for (int j = 0; j < nral; j++)
                         {
-                            int aj = ril.il[i + j];
-                            if (a2c[aj] != cg)
-                            {
-                                check_link(link, cg_gl, cg_offset+a2c[aj]);
-                            }
+                            /* Here we assume we have no charge groups;
+                             * this has been checked above.
+                             */
+                            int aj = ril_intermol.il[i + j];
+                            check_link(link, cg_gl, aj);
                         }
                         i += nral_rt(ftype);
-                    }
-
-                    if (mtop->bIntermolecularInteractions)
-                    {
-                        int i = ril_intermol.index[a];
-                        while (i < ril_intermol.index[a+1])
-                        {
-                            int ftype = ril_intermol.il[i++];
-                            int nral  = NRAL(ftype);
-                            /* Skip the ifunc index */
-                            i++;
-                            for (int j = 0; j < nral; j++)
-                            {
-                                /* Here we assume we have no charge groups;
-                                 * this has been checked above.
-                                 */
-                                int aj = ril_intermol.il[i + j];
-                                check_link(link, cg_gl, aj);
-                            }
-                            i += nral_rt(ftype);
-                        }
                     }
                 }
                 if (link->index[cg_gl+1] - link->index[cg_gl] > 0)
                 {
-                    SET_CGINFO_BOND_INTER(cgi_mb->cginfo[cg]);
+                    SET_CGINFO_BOND_INTER(cgi_mb->cginfo[a]);
                     ncgi++;
                 }
             }
 
-            cg_offset += cgs.nr;
+            cg_offset += molt.atoms.nr;
         }
-        int nlink_mol = link->index[cg_offset] - link->index[cg_offset - cgs.nr];
+        int nlink_mol = link->index[cg_offset] - link->index[cg_offset - molt.atoms.nr];
 
         if (debug)
         {
-            fprintf(debug, "molecule type '%s' %d cgs has %d cg links through bonded interac.\n", *molt.name, cgs.nr, nlink_mol);
+            fprintf(debug, "molecule type '%s' %d atoms has %d atom links through bonded interac.\n", *molt.name, molt.atoms.nr, nlink_mol);
         }
 
         if (molb.nmol > mol)
@@ -2043,14 +2017,14 @@ t_blocka *makeBondedLinks(const gmx_mtop_t *mtop,
             srenew(link->a, link->nalloc_a);
             for (; mol < molb.nmol; mol++)
             {
-                for (int cg = 0; cg < cgs.nr; cg++)
+                for (int a = 0; a < molt.atoms.nr; a++)
                 {
-                    int cg_gl              = cg_offset + cg;
+                    int cg_gl              = cg_offset + a;
                     link->index[cg_gl + 1] =
-                        link->index[cg_gl + 1 - cgs.nr] + nlink_mol;
+                        link->index[cg_gl + 1 - molt.atoms.nr] + nlink_mol;
                     for (int j = link->index[cg_gl]; j < link->index[cg_gl+1]; j++)
                     {
-                        link->a[j] = link->a[j - nlink_mol] + cgs.nr;
+                        link->a[j] = link->a[j - nlink_mol] + molt.atoms.nr;
                     }
                     if (link->index[cg_gl+1] - link->index[cg_gl] > 0 &&
                         cg_gl - cgi_mb->cg_start < cgi_mb->cg_mod)
@@ -2059,14 +2033,15 @@ t_blocka *makeBondedLinks(const gmx_mtop_t *mtop,
                         ncgi++;
                     }
                 }
-                cg_offset += cgs.nr;
+                cg_offset += molt.atoms.nr;
             }
         }
     }
 
     if (debug)
     {
-        fprintf(debug, "Of the %d charge groups %d are linked via bonded interactions\n", ncg_mtop(mtop), ncgi);
+        fprintf(debug, "Of the %d atoms %d are linked via bonded interactions\n",
+                mtop->natoms, ncgi);
     }
 
     return link;
@@ -2094,7 +2069,6 @@ static void update_max_bonded_distance(real r2, int ftype, int a1, int a2,
 
 /*! \brief Set the distance, function type and atom indices for the longest distance between charge-groups of molecule type \p molt for two-body and multi-body bonded interactions */
 static void bonded_cg_distance_mol(const gmx_moltype_t *molt,
-                                   const std::vector<int> &at2cg,
                                    gmx_bool bBCheck, gmx_bool bExcl, rvec *cg_cm,
                                    bonded_distance_t *bd_2b,
                                    bonded_distance_t *bd_mb)
@@ -2111,17 +2085,16 @@ static void bonded_cg_distance_mol(const gmx_moltype_t *molt,
                 {
                     for (int ai = 0; ai < nral; ai++)
                     {
-                        int cgi = at2cg[il.iatoms[i+1+ai]];
+                        int atomI = il.iatoms[i + 1 + ai];
                         for (int aj = ai + 1; aj < nral; aj++)
                         {
-                            int cgj = at2cg[il.iatoms[i+1+aj]];
-                            if (cgi != cgj)
+                            int atomJ = il.iatoms[i + 1 + aj];
+                            if (atomI != atomJ)
                             {
-                                real rij2 = distance2(cg_cm[cgi], cg_cm[cgj]);
+                                real rij2 = distance2(cg_cm[atomI], cg_cm[atomJ]);
 
                                 update_max_bonded_distance(rij2, ftype,
-                                                           il.iatoms[i+1+ai],
-                                                           il.iatoms[i+1+aj],
+                                                           atomI, atomJ,
                                                            (nral == 2) ? bd_2b : bd_mb);
                             }
                         }
@@ -2135,16 +2108,15 @@ static void bonded_cg_distance_mol(const gmx_moltype_t *molt,
         const t_blocka *excls = &molt->excls;
         for (int ai = 0; ai < excls->nr; ai++)
         {
-            int cgi = at2cg[ai];
             for (int j = excls->index[ai]; j < excls->index[ai+1]; j++)
             {
-                int cgj = at2cg[excls->a[j]];
-                if (cgi != cgj)
+                int aj = excls->a[j];
+                if (ai != aj)
                 {
-                    real rij2 = distance2(cg_cm[cgi], cg_cm[cgj]);
+                    real rij2 = distance2(cg_cm[ai], cg_cm[aj]);
 
                     /* There is no function type for exclusions, use -1 */
-                    update_max_bonded_distance(rij2, -1, ai, excls->a[j], bd_2b);
+                    update_max_bonded_distance(rij2, -1, ai, aj, bd_2b);
                 }
             }
         }
@@ -2215,11 +2187,11 @@ static bool moltypeHasVsite(const gmx_moltype_t &molt)
     return hasVsite;
 }
 
-//! Compute charge group centers of mass for molecule \p molt
-static void get_cgcm_mol(const gmx_moltype_t *molt,
-                         const gmx_ffparams_t *ffparams,
-                         int ePBC, t_graph *graph, const matrix box,
-                         const rvec *x, rvec *xs, rvec *cg_cm)
+//! Returns coordinates not broken over PBC for a molecule
+static void getWholeMoleculeCoordinates(const gmx_moltype_t *molt,
+                                        const gmx_ffparams_t *ffparams,
+                                        int ePBC, t_graph *graph, const matrix box,
+                                        const rvec *x, rvec *xs)
 {
     int n, i;
 
@@ -2241,7 +2213,7 @@ static void get_cgcm_mol(const gmx_moltype_t *molt,
          * unchanged, just to be 100% sure that we do not affect
          * binary reproducibility of simulations.
          */
-        n = molt->cgs.index[molt->cgs.nr];
+        n = molt->atoms.nr;
         for (i = 0; i < n; i++)
         {
             copy_rvec(x[i], xs[i]);
@@ -2265,8 +2237,6 @@ static void get_cgcm_mol(const gmx_moltype_t *molt,
                          ffparams->iparams.data(), ilist,
                          epbcNONE, TRUE, nullptr, nullptr);
     }
-
-    calc_cgcm(nullptr, 0, molt->cgs.nr, &molt->cgs, xs, cg_cm);
 }
 
 void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
@@ -2279,7 +2249,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
     gmx_bool           bExclRequired;
     int                at_offset;
     t_graph            graph;
-    rvec              *xs, *cg_cm;
+    rvec              *xs;
     bonded_distance_t  bd_2b = { 0, -1, -1, -1 };
     bonded_distance_t  bd_mb = { 0, -1, -1, -1 };
 
@@ -2291,7 +2261,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
         const gmx_moltype_t &molt = mtop->moltype[molb.type];
-        if (molt.cgs.nr == 1 || molb.nmol == 0)
+        if (molt.atoms.nr == 1 || molb.nmol == 0)
         {
             at_offset += molb.nmol*molt.atoms.nr;
         }
@@ -2302,18 +2272,16 @@ void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
                 mk_graph_moltype(molt, &graph);
             }
 
-            std::vector<int> at2cg = make_at2cg(molt.cgs);
             snew(xs, molt.atoms.nr);
-            snew(cg_cm, molt.cgs.nr);
             for (int mol = 0; mol < molb.nmol; mol++)
             {
-                get_cgcm_mol(&molt, &mtop->ffparams, ir->ePBC, &graph, box,
-                             x+at_offset, xs, cg_cm);
+                getWholeMoleculeCoordinates(&molt, &mtop->ffparams, ir->ePBC, &graph, box,
+                                            x+at_offset, xs);
 
                 bonded_distance_t bd_mol_2b = { 0, -1, -1, -1 };
                 bonded_distance_t bd_mol_mb = { 0, -1, -1, -1 };
 
-                bonded_cg_distance_mol(&molt, at2cg, bBCheck, bExclRequired, cg_cm,
+                bonded_cg_distance_mol(&molt, bBCheck, bExclRequired, xs,
                                        &bd_mol_2b, &bd_mol_mb);
 
                 /* Process the mol data adding the atom index offset */
@@ -2328,7 +2296,6 @@ void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
 
                 at_offset += molt.atoms.nr;
             }
-            sfree(cg_cm);
             sfree(xs);
             if (ir->ePBC != epbcNONE)
             {
@@ -2339,11 +2306,6 @@ void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
 
     if (mtop->bIntermolecularInteractions)
     {
-        if (ncg_mtop(mtop) < mtop->natoms)
-        {
-            gmx_fatal(FARGS, "The combination of intermolecular interactions, charge groups and domain decomposition is not supported. Use cutoff-scheme=Verlet (which removes the charge groups) or run without domain decomposition.");
-        }
-
         GMX_RELEASE_ASSERT(mtop->intermolecular_ilist, "We should have an ilist when intermolecular interactions are on");
 
         bonded_distance_intermol(*mtop->intermolecular_ilist,

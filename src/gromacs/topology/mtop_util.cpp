@@ -169,17 +169,6 @@ void gmx_mtop_count_atomtypes(const gmx_mtop_t *mtop, int state, int typecount[]
     }
 }
 
-int ncg_mtop(const gmx_mtop_t *mtop)
-{
-    int ncg = 0;
-    for (const gmx_molblock_t &molb : mtop->molblock)
-    {
-        ncg += molb.nmol*mtop->moltype[molb.type].cgs.nr;
-    }
-
-    return ncg;
-}
-
 int gmx_mtop_num_molecules(const gmx_mtop_t &mtop)
 {
     int numMolecules = 0;
@@ -198,23 +187,6 @@ int gmx_mtop_nres(const gmx_mtop_t *mtop)
         nres += molb.nmol*mtop->moltype[molb.type].atoms.nres;
     }
     return nres;
-}
-
-void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop)
-{
-    for (gmx_moltype_t &molt : mtop->moltype)
-    {
-        t_block &cgs = molt.cgs;
-        if (cgs.nr < molt.atoms.nr)
-        {
-            cgs.nr = molt.atoms.nr;
-            srenew(cgs.index, cgs.nr + 1);
-            for (int i = 0; i < cgs.nr + 1; i++)
-            {
-                cgs.index[i] = i;
-            }
-        }
-    }
 }
 
 AtomIterator::AtomIterator(const gmx_mtop_t &mtop, int globalAtomNumber)
@@ -654,32 +626,6 @@ t_atoms gmx_mtop_global_atoms(const gmx_mtop_t *mtop)
  * The cat routines below are old code from src/kernel/topcat.c
  */
 
-static void blockcat(t_block *dest, const t_block *src, int copies)
-{
-    int i, j, l, nra, size;
-
-    if (src->nr)
-    {
-        size = (dest->nr+copies*src->nr+1);
-        srenew(dest->index, size);
-    }
-
-    nra = dest->index[dest->nr];
-    for (l = dest->nr, j = 0; (j < copies); j++)
-    {
-        for (i = 0; (i < src->nr); i++)
-        {
-            dest->index[l++] = nra + src->index[i];
-        }
-        if (src->nr > 0)
-        {
-            nra += src->index[src->nr];
-        }
-    }
-    dest->nr             += copies*src->nr;
-    dest->index[dest->nr] = nra;
-}
-
 static void blockacat(t_blocka *dest, const t_blocka *src, int copies,
                       int dnum, int snum)
 {
@@ -977,25 +923,6 @@ static void copyAtomtypesFromMtop(const gmx_mtop_t &mtop,
     }
 }
 
-/*! \brief Copy cgs from mtop.
- *
- * Makes a deep copy of cgs(t_block) from gmx_mtop_t.
- * Used to initialize legacy topology types.
- *
- * \param[in] mtop Reference to input mtop.
- * \param[in] cgs  Pointer to final cgs data structure.
- */
-static void copyCgsFromMtop(const gmx_mtop_t &mtop,
-                            t_block          *cgs)
-{
-    init_block(cgs);
-    for (const gmx_molblock_t &molb : mtop.molblock)
-    {
-        const gmx_moltype_t &molt = mtop.moltype[molb.type];
-        blockcat(cgs, &molt.cgs, molb.nmol);
-    }
-}
-
 /*! \brief Copy excls from mtop.
  *
  * Makes a deep copy of excls(t_blocka) from gmx_mtop_t.
@@ -1170,7 +1097,6 @@ static void gen_t_topology(const gmx_mtop_t &mtop,
 {
     copyAtomtypesFromMtop(mtop, &top->atomtypes);
     copyIdefFromMtop(mtop, &top->idef, freeEnergyInteractionsAtEnd, bMergeConstr);
-    copyCgsFromMtop(mtop, &top->cgs);
     copyExclsFromMtop(mtop, &top->excls);
 
     top->name                        = mtop.name;

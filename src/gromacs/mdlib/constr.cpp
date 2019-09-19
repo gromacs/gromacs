@@ -136,8 +136,6 @@ class Constraints::Impl
         std::vector<t_blocka> at2con_mt;
         //! A list of atoms to settles for each moleculetype
         std::vector < std::vector < int>> at2settle_mt;
-        //! Whether any SETTLES cross charge-group boundaries.
-        bool                  bInterCGsettles = false;
         //! LINCS data.
         Lincs                *lincsd = nullptr; // TODO this should become a unique_ptr
         //! SHAKE data.
@@ -426,7 +424,7 @@ Constraints::Impl::apply(bool                  bLog,
         nth = 1;
     }
 
-    /* We do not need full pbc when constraints do not cross charge groups,
+    /* We do not need full pbc when constraints do not cross update groups
      * i.e. when dd->constraint_comm==NULL.
      * Note that PBC for constraints is different from PBC for bondeds.
      * For constraints there is both forward and backward communication.
@@ -1082,7 +1080,7 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
         {
             if (DOMAINDECOMP(cr) && ddHaveSplitConstraints(*cr->dd))
             {
-                gmx_fatal(FARGS, "SHAKE is not supported with domain decomposition and constraint that cross charge group boundaries, use LINCS");
+                gmx_fatal(FARGS, "SHAKE is not supported with domain decomposition and constraint that cross domain boundaries, use LINCS");
             }
             if (nflexcon)
             {
@@ -1101,8 +1099,6 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
     if (numSettles > 0)
     {
         please_cite(log, "Miyamoto92a");
-
-        bInterCGsettles = inter_charge_group_settles(mtop);
 
         settled         = settle_init(mtop);
 
@@ -1184,96 +1180,6 @@ Constraints::atom2constraints_moltype() const
 ArrayRef < const std::vector < int>> Constraints::atom2settle_moltype() const
 {
     return impl_->at2settle_mt;
-}
-
-
-bool inter_charge_group_constraints(const gmx_mtop_t &mtop)
-{
-    const gmx_moltype_t *molt;
-    const t_block       *cgs;
-    int                 *at2cg, cg, a, ftype, i;
-    bool                 bInterCG;
-
-    bInterCG = FALSE;
-    for (size_t mb = 0; mb < mtop.molblock.size() && !bInterCG; mb++)
-    {
-        molt = &mtop.moltype[mtop.molblock[mb].type];
-
-        if (molt->ilist[F_CONSTR].size()   > 0 ||
-            molt->ilist[F_CONSTRNC].size() > 0 ||
-            molt->ilist[F_SETTLE].size()   > 0)
-        {
-            cgs  = &molt->cgs;
-            snew(at2cg, molt->atoms.nr);
-            for (cg = 0; cg < cgs->nr; cg++)
-            {
-                for (a = cgs->index[cg]; a < cgs->index[cg+1]; a++)
-                {
-                    at2cg[a] = cg;
-                }
-            }
-
-            for (ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
-            {
-                const InteractionList &il = molt->ilist[ftype];
-                for (i = 0; i < il.size() && !bInterCG; i += 1+NRAL(ftype))
-                {
-                    if (at2cg[il.iatoms[i + 1]] != at2cg[il.iatoms[i + 2]])
-                    {
-                        bInterCG = TRUE;
-                    }
-                }
-            }
-
-            sfree(at2cg);
-        }
-    }
-
-    return bInterCG;
-}
-
-bool inter_charge_group_settles(const gmx_mtop_t &mtop)
-{
-    const gmx_moltype_t *molt;
-    const t_block       *cgs;
-    int                 *at2cg, cg, a, ftype, i;
-    bool                 bInterCG;
-
-    bInterCG = FALSE;
-    for (size_t mb = 0; mb < mtop.molblock.size() && !bInterCG; mb++)
-    {
-        molt = &mtop.moltype[mtop.molblock[mb].type];
-
-        if (molt->ilist[F_SETTLE].size() > 0)
-        {
-            cgs  = &molt->cgs;
-            snew(at2cg, molt->atoms.nr);
-            for (cg = 0; cg < cgs->nr; cg++)
-            {
-                for (a = cgs->index[cg]; a < cgs->index[cg+1]; a++)
-                {
-                    at2cg[a] = cg;
-                }
-            }
-
-            for (ftype = F_SETTLE; ftype <= F_SETTLE; ftype++)
-            {
-                const InteractionList &il = molt->ilist[ftype];
-                for (i = 0; i < il.size() && !bInterCG; i += 1+NRAL(F_SETTLE))
-                {
-                    if (at2cg[il.iatoms[i + 1]] != at2cg[il.iatoms[i + 2]] ||
-                        at2cg[il.iatoms[i + 1]] != at2cg[il.iatoms[i + 3]])
-                    {
-                        bInterCG = TRUE;
-                    }
-                }
-            }
-
-            sfree(at2cg);
-        }
-    }
-
-    return bInterCG;
 }
 
 void do_constrain_first(FILE *fplog, gmx::Constraints *constr,

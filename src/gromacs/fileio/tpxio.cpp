@@ -2483,7 +2483,17 @@ static void do_moltype(gmx::ISerializer         *serializer,
 
     do_ilists(serializer, &molt->ilist, file_version);
 
-    do_block(serializer, &molt->cgs);
+    /* TODO: Remove the obsolete charge group index from the file */
+    t_block cgs;
+    cgs.nr           = molt->atoms.nr;
+    cgs.nalloc_index = cgs.nr + 1;
+    snew(cgs.index, cgs.nalloc_index);
+    for (int i = 0; i < cgs.nr + 1; i++)
+    {
+        cgs.index[i] = i;
+    }
+    do_block(serializer, &cgs);
+    sfree(cgs.index);
 
     /* This used to be in the atoms struct */
     do_blocka(serializer, &molt->excls);

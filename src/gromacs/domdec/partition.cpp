@@ -61,7 +61,6 @@
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/domdec/mdsetup.h"
 #include "gromacs/ewald/pme.h"
-#include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/imd/imd.h"
