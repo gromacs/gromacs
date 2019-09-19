@@ -530,34 +530,6 @@ int gmx_mtop_ftype_count(const gmx_mtop_t &mtop, int ftype)
     return gmx_mtop_ftype_count(&mtop, ftype);
 }
 
-t_block gmx_mtop_global_cgs(const gmx_mtop_t *mtop)
-{
-    t_block cgs_gl;
-    /* In most cases this is too much, but we realloc at the end */
-    snew(cgs_gl.index, mtop->natoms+1);
-
-    cgs_gl.nr       = 0;
-    cgs_gl.index[0] = 0;
-    for (const gmx_molblock_t &molb : mtop->molblock)
-    {
-        const t_block &cgs_mol = mtop->moltype[molb.type].cgs;
-        for (int mol = 0; mol < molb.nmol; mol++)
-        {
-            for (int cg = 0; cg < cgs_mol.nr; cg++)
-            {
-                cgs_gl.index[cgs_gl.nr + 1] =
-                    cgs_gl.index[cgs_gl.nr] +
-                    cgs_mol.index[cg + 1] - cgs_mol.index[cg];
-                cgs_gl.nr++;
-            }
-        }
-    }
-    cgs_gl.nalloc_index = cgs_gl.nr + 1;
-    srenew(cgs_gl.index, cgs_gl.nalloc_index);
-
-    return cgs_gl;
-}
-
 static void atomcat(t_atoms *dest, const t_atoms *src, int copies,
                     int maxres_renum, int *maxresnr)
 {

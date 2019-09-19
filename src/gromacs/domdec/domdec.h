@@ -102,9 +102,6 @@ struct MdrunOptions;
  */
 int ddglatnr(const gmx_domdec_t *dd, int i);
 
-/*! \brief Return a block struct for the charge groups of the whole system */
-t_block *dd_charge_groups_global(struct gmx_domdec_t *dd);
-
 /*! \brief Returns a list of update group partitioning for each molecule type or empty when update groups are not used */
 gmx::ArrayRef<const gmx::RangePartitioning> getUpdateGroupingPerMoleculetype(const gmx_domdec_t &dd);
 

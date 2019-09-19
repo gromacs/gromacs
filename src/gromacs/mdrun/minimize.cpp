@@ -932,10 +932,6 @@ static double reorder_partsum(const t_commrec *cr, t_grpopts *opts,
                               gmx_mtop_t *top_global,
                               em_state_t *s_min, em_state_t *s_b)
 {
-    t_block       *cgs_gl;
-    int            ncg, *cg_gl, *index, c, cg, i, a0, a1, a, gf, m;
-    double         partsum;
-
     if (debug)
     {
         fprintf(debug, "Doing reorder_partsum\n");
@@ -944,59 +940,43 @@ static double reorder_partsum(const t_commrec *cr, t_grpopts *opts,
     const rvec *fm = s_min->f.rvec_array();
     const rvec *fb = s_b->f.rvec_array();
 
-    cgs_gl = dd_charge_groups_global(cr->dd);
-    index  = cgs_gl->index;
-
     /* Collect fm in a global vector fmg.
      * This conflicts with the spirit of domain decomposition,
      * but to fully optimize this a much more complicated algorithm is required.
      */
-    rvec *fmg;
-    snew(fmg, top_global->natoms);
+    const int  natoms = top_global->natoms;
+    rvec      *fmg;
+    snew(fmg, natoms);
 
-    ncg   = s_min->s.cg_gl.size();
-    cg_gl = s_min->s.cg_gl.data();
-    i     = 0;
-    for (c = 0; c < ncg; c++)
+    gmx::ArrayRef<const int> indicesMin = s_b->s.cg_gl;
+    int i = 0;
+    for (int a : indicesMin)
     {
-        cg = cg_gl[c];
-        a0 = index[cg];
-        a1 = index[cg+1];
-        for (a = a0; a < a1; a++)
-        {
-            copy_rvec(fm[i], fmg[a]);
-            i++;
-        }
+        copy_rvec(fm[i], fmg[a]);
     }
     gmx_sum(top_global->natoms*3, fmg[0], cr);
 
     /* Now we will determine the part of the sum for the cgs in state s_b */
-    ncg         = s_b->s.cg_gl.size();
-    cg_gl       = s_b->s.cg_gl.data();
-    partsum     = 0;
-    i           = 0;
-    gf          = 0;
+    gmx::ArrayRef<const int> indicesB = s_b->s.cg_gl;
+
+    double                   partsum = 0;
+    i              = 0;
+    int gf         = 0;
     gmx::ArrayRef<unsigned char> grpnrFREEZE = top_global->groups.groupNumbers[SimulationAtomGroupType::Freeze];
-    for (c = 0; c < ncg; c++)
+    for (int a : indicesB)
     {
-        cg = cg_gl[c];
-        a0 = index[cg];
-        a1 = index[cg+1];
-        for (a = a0; a < a1; a++)
+        if (!grpnrFREEZE.empty())
         {
-            if (!grpnrFREEZE.empty())
-            {
-                gf = grpnrFREEZE[i];
-            }
-            for (m = 0; m < DIM; m++)
-            {
-                if (!opts->nFreeze[gf][m])
-                {
-                    partsum += (fb[i][m] - fmg[a][m])*fb[i][m];
-                }
-            }
-            i++;
+            gf = grpnrFREEZE[i];
         }
+        for (int m = 0; m < DIM; m++)
+        {
+            if (!opts->nFreeze[gf][m])
+            {
+                partsum += (fb[i][m] - fmg[a][m])*fb[i][m];
+            }
+        }
+        i++;
     }
 
     sfree(fmg);

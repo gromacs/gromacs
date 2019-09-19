@@ -259,11 +259,6 @@ gmx_mtop_ftype_count(const gmx_mtop_t *mtop, int ftype);
 int
 gmx_mtop_ftype_count(const gmx_mtop_t &mtop, int ftype);
 
-/* Returns a charge group index for the whole system */
-t_block
-gmx_mtop_global_cgs(const gmx_mtop_t *mtop);
-
-
 /* Returns a single t_atoms struct for the whole system */
 t_atoms
 gmx_mtop_global_atoms(const gmx_mtop_t *mtop);

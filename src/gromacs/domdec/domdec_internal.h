@@ -576,10 +576,6 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     /**< Information on the Cartesian part of the DD rank setup */
     CartesianRankSetup cartesianRankSetup;
 
-    /* The DLB state, used for reloading old states, during e.g. EM */
-    /**< The global charge groups, this defined the DD state (except for the DLB state) */
-    t_block cgs_gl = { };
-
     /* Charge group / atom sorting */
     /**< Data structure for cg/atom sorting */
     std::unique_ptr<gmx_domdec_sort_t> sort;

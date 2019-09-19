@@ -78,14 +78,8 @@ static void dd_collect_cg(gmx_domdec_t  *dd,
         /* The DD is out of sync with the local state, but we have stored
          * the cg indices with the local state, so we can use those.
          */
-        const t_block &cgs_gl = dd->comm->cgs_gl;
-
         atomGroups = state_local->cg_gl;
-        nat_home   = 0;
-        for (const int &i : atomGroups)
-        {
-            nat_home += cgs_gl.index[i + 1] - cgs_gl.index[i];
-        }
+        nat_home   = atomGroups.size();
     }
     else
     {
@@ -161,17 +155,11 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t                  *dd,
     {
         AtomDistribution &ma = *dd->ma;
 
-        /* Copy the master coordinates to the global array */
-        const t_block &cgs_gl    = dd->comm->cgs_gl;
-
-        int            rank      = dd->masterrank;
-        int            localAtom = 0;
-        for (const int &i : ma.domainGroups[rank].atomGroups)
+        int               rank      = dd->masterrank;
+        int               localAtom = 0;
+        for (const int &globalAtom : ma.domainGroups[rank].atomGroups)
         {
-            for (int globalAtom = cgs_gl.index[i]; globalAtom < cgs_gl.index[i + 1]; globalAtom++)
-            {
-                copy_rvec(lv[localAtom++], v[globalAtom]);
-            }
+            copy_rvec(lv[localAtom++], v[globalAtom]);
         }
 
         for (int rank = 0; rank < dd->nnodes; rank++)
@@ -195,12 +183,9 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t                  *dd,
                          rank, dd->mpi_comm_all, MPI_STATUS_IGNORE);
 #endif
                 int localAtom = 0;
-                for (const int &cg : domainGroups.atomGroups)
+                for (const int &globalAtom : domainGroups.atomGroups)
                 {
-                    for (int globalAtom = cgs_gl.index[cg]; globalAtom < cgs_gl.index[cg + 1]; globalAtom++)
-                    {
-                        copy_rvec(ma.rvecBuffer[localAtom++], v[globalAtom]);
-                    }
+                    copy_rvec(ma.rvecBuffer[localAtom++], v[globalAtom]);
                 }
             }
         }
@@ -227,18 +212,13 @@ static void dd_collect_vec_gatherv(gmx_domdec_t                  *dd,
     {
         const AtomDistribution &ma     = *dd->ma;
 
-        const t_block          &cgs_gl = dd->comm->cgs_gl;
-
         int                     bufferAtom = 0;
         for (int rank = 0; rank < dd->nnodes; rank++)
         {
             const auto &domainGroups = ma.domainGroups[rank];
-            for (const int &cg : domainGroups.atomGroups)
+            for (const int &globalAtom : domainGroups.atomGroups)
             {
-                for (int globalAtom = cgs_gl.index[cg]; globalAtom < cgs_gl.index[cg + 1]; globalAtom++)
-                {
-                    copy_rvec(ma.rvecBuffer[bufferAtom++], v[globalAtom]);
-                }
+                copy_rvec(ma.rvecBuffer[bufferAtom++], v[globalAtom]);
             }
         }
     }

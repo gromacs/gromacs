@@ -205,11 +205,6 @@ int ddglatnr(const gmx_domdec_t *dd, int i)
     return atnr;
 }
 
-t_block *dd_charge_groups_global(gmx_domdec_t *dd)
-{
-    return &dd->comm->cgs_gl;
-}
-
 gmx::ArrayRef<const gmx::RangePartitioning> getUpdateGroupingPerMoleculetype(const gmx_domdec_t &dd)
 {
     GMX_RELEASE_ASSERT(dd.comm, "Need a valid dd.comm");
@@ -1728,6 +1723,7 @@ static void setupGroupCommunication(const gmx::MDLogger      &mdlog,
                                     const DDSettings         &ddSettings,
                                     gmx::ArrayRef<const int>  pmeRanks,
                                     t_commrec                *cr,
+                                    const int                 numAtomsInSystem,
                                     gmx_domdec_t             *dd)
 {
     const DDRankSetup        &ddRankSetup = dd->comm->ddRankSetup;
@@ -1771,8 +1767,8 @@ static void setupGroupCommunication(const gmx::MDLogger      &mdlog,
     if (MASTER(cr))
     {
         dd->ma = std::make_unique<AtomDistribution>(dd->nc,
-                                                    dd->comm->cgs_gl.nr,
-                                                    dd->comm->cgs_gl.index[dd->comm->cgs_gl.nr]);
+                                                    numAtomsInSystem,
+                                                    numAtomsInSystem);
     }
 }
 
@@ -2502,8 +2498,6 @@ static void set_dd_limits(const gmx::MDLogger &mdlog,
                                                    homeAtomCountEstimate);
     }
 
-    comm->cgs_gl = gmx_mtop_global_cgs(mtop);
-
     /* Set the DD setup given by ddGridSetup */
     copy_ivec(ddGridSetup.numDomains, dd->nc);
     dd->ndim = ddGridSetup.numDDDimensions;
@@ -2935,7 +2929,7 @@ static void set_ddgrid_parameters(const gmx::MDLogger &mdlog,
     {
         fprintf(debug, "Volume fraction for all DD zones: %f\n", vol_frac);
     }
-    int natoms_tot = comm->cgs_gl.index[comm->cgs_gl.nr];
+    int natoms_tot = mtop->natoms;
 
     dd->ga2la      = new gmx_ga2la_t(natoms_tot,
                                      static_cast<int>(vol_frac*natoms_tot));
@@ -3128,7 +3122,7 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
                   mtop, ir,
                   ddbox);
 
-    setupGroupCommunication(mdlog, ddSettings, pmeRanks, cr, dd);
+    setupGroupCommunication(mdlog, ddSettings, pmeRanks, cr, mtop->natoms, dd);
 
     if (thisRankHasDuty(cr, DUTY_PP))
     {
