@@ -1334,7 +1334,6 @@ int Mdrunner::mdrunner()
                       opt2fns("-tableb", filenames.size(), filenames.data()),
                       *hwinfo, nonbondedDeviceInfo,
                       useGpuForBonded,
-                      FALSE,
                       pforce,
                       wcycle);
 

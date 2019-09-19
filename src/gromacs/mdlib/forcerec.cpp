@@ -174,396 +174,14 @@ static real *make_ljpme_c6grid(const gmx_ffparams_t *idef, t_forcerec *fr)
     return grid;
 }
 
-/* This routine sets fr->solvent_opt to the most common solvent in the
- * system, e.g. esolSPC or esolTIP4P. It will also mark each charge group in
- * the fr->solvent_type array with the correct type (or esolNO).
- *
- * Charge groups that fulfill the conditions but are not identical to the
- * most common one will be marked as esolNO in the solvent_type array.
- *
- * TIP3p is identical to SPC for these purposes, so we call it
- * SPC in the arrays (Apologies to Bill Jorgensen ;-)
- *
- * NOTE: QM particle should not
- * become an optimized solvent. Not even if there is only one charge
- * group in the Qm
- */
-
-typedef struct
-{
-    int    model;
-    int    count;
-    int    vdwtype[4];
-    real   charge[4];
-} solvent_parameters_t;
-
-static void
-check_solvent_cg(const gmx_moltype_t    *molt,
-                 int                     cg0,
-                 int                     nmol,
-                 const unsigned char    *qm_grpnr,
-                 const AtomGroupIndices *qm_grps,
-                 t_forcerec             *fr,
-                 int                    *n_solvent_parameters,
-                 solvent_parameters_t  **solvent_parameters_p,
-                 int                     cginfo,
-                 int                    *cg_sp)
-{
-    t_atom               *atom;
-    int                   j, k;
-    int                   j0, j1, nj;
-    gmx_bool              perturbed;
-    gmx_bool              has_vdw[4];
-    gmx_bool              match;
-    real                  tmp_charge[4]  = { 0.0 }; /* init to zero to make gcc 7 happy */
-    int                   tmp_vdwtype[4] = { 0 };   /* init to zero to make gcc 7 happy */
-    int                   tjA;
-    gmx_bool              qm;
-    solvent_parameters_t *solvent_parameters;
-
-    /* We use a list with parameters for each solvent type.
-     * Every time we discover a new molecule that fulfills the basic
-     * conditions for a solvent we compare with the previous entries
-     * in these lists. If the parameters are the same we just increment
-     * the counter for that type, and otherwise we create a new type
-     * based on the current molecule.
-     *
-     * Once we've finished going through all molecules we check which
-     * solvent is most common, and mark all those molecules while we
-     * clear the flag on all others.
-     */
-
-    solvent_parameters = *solvent_parameters_p;
-
-    /* Mark the cg first as non optimized */
-    *cg_sp = -1;
-
-    /* Check if this cg has no exclusions with atoms in other charge groups
-     * and all atoms inside the charge group excluded.
-     * We only have 3 or 4 atom solvent loops.
-     */
-    if (GET_CGINFO_EXCL_INTER(cginfo) ||
-        !GET_CGINFO_EXCL_INTRA(cginfo))
-    {
-        return;
-    }
-
-    /* Get the indices of the first atom in this charge group */
-    j0     = molt->cgs.index[cg0];
-    j1     = molt->cgs.index[cg0+1];
-
-    /* Number of atoms in our molecule */
-    nj     = j1 - j0;
-
-    if (debug)
-    {
-        fprintf(debug,
-                "Moltype '%s': there are %d atoms in this charge group\n",
-                *molt->name, nj);
-    }
-
-    /* Check if it could be an SPC (3 atoms) or TIP4p (4) water,
-     * otherwise skip it.
-     */
-    if (nj < 3 || nj > 4)
-    {
-        return;
-    }
-
-    /* Check if we are doing QM on this group */
-    qm = FALSE;
-    if (qm_grpnr != nullptr)
-    {
-        for (j = j0; j < j1 && !qm; j++)
-        {
-            qm = (qm_grpnr[j] < qm_grps->size() - 1);
-        }
-    }
-    /* Cannot use solvent optimization with QM */
-    if (qm)
-    {
-        return;
-    }
-
-    atom = molt->atoms.atom;
-
-    /* Still looks like a solvent, time to check parameters */
-
-    /* If it is perturbed (free energy) we can't use the solvent loops,
-     * so then we just skip to the next molecule.
-     */
-    perturbed = FALSE;
-
-    for (j = j0; j < j1 && !perturbed; j++)
-    {
-        perturbed = PERTURBED(atom[j]);
-    }
-
-    if (perturbed)
-    {
-        return;
-    }
-
-    /* Now it's only a question if the VdW and charge parameters
-     * are OK. Before doing the check we compare and see if they are
-     * identical to a possible previous solvent type.
-     * First we assign the current types and charges.
-     */
-    for (j = 0; j < nj; j++)
-    {
-        tmp_vdwtype[j] = atom[j0+j].type;
-        tmp_charge[j]  = atom[j0+j].q;
-    }
-
-    /* Does it match any previous solvent type? */
-    for (k = 0; k < *n_solvent_parameters; k++)
-    {
-        match = TRUE;
-
-
-        /* We can only match SPC with 3 atoms and TIP4p with 4 atoms */
-        if ( (solvent_parameters[k].model == esolSPC   && nj != 3)  ||
-             (solvent_parameters[k].model == esolTIP4P && nj != 4) )
-        {
-            match = FALSE;
-        }
-
-        /* Check that types & charges match for all atoms in molecule */
-        for (j = 0; j < nj && match; j++)
-        {
-            if (tmp_vdwtype[j] != solvent_parameters[k].vdwtype[j])
-            {
-                match = FALSE;
-            }
-            if (tmp_charge[j] != solvent_parameters[k].charge[j])
-            {
-                match = FALSE;
-            }
-        }
-        if (match)
-        {
-            /* Congratulations! We have a matched solvent.
-             * Flag it with this type for later processing.
-             */
-            *cg_sp = k;
-            solvent_parameters[k].count += nmol;
-
-            /* We are done with this charge group */
-            return;
-        }
-    }
-
-    /* If we get here, we have a tentative new solvent type.
-     * Before we add it we must check that it fulfills the requirements
-     * of the solvent optimized loops. First determine which atoms have
-     * VdW interactions.
-     */
-    for (j = 0; j < nj; j++)
-    {
-        has_vdw[j] = FALSE;
-        tjA        = tmp_vdwtype[j];
-
-        /* Go through all other tpes and see if any have non-zero
-         * VdW parameters when combined with this one.
-         */
-        for (k = 0; k < fr->ntype && (!has_vdw[j]); k++)
-        {
-            /* We already checked that the atoms weren't perturbed,
-             * so we only need to check state A now.
-             */
-            if (fr->bBHAM)
-            {
-                has_vdw[j] = (has_vdw[j] ||
-                              (BHAMA(fr->nbfp, fr->ntype, tjA, k) != 0.0) ||
-                              (BHAMB(fr->nbfp, fr->ntype, tjA, k) != 0.0) ||
-                              (BHAMC(fr->nbfp, fr->ntype, tjA, k) != 0.0));
-            }
-            else
-            {
-                /* Standard LJ */
-                has_vdw[j] = (has_vdw[j] ||
-                              (C6(fr->nbfp, fr->ntype, tjA, k)  != 0.0) ||
-                              (C12(fr->nbfp, fr->ntype, tjA, k) != 0.0));
-            }
-        }
-    }
-
-    /* Now we know all we need to make the final check and assignment. */
-    if (nj == 3)
-    {
-        /* So, is it an SPC?
-         * For this we require thatn all atoms have charge,
-         * the charges on atom 2 & 3 should be the same, and only
-         * atom 1 might have VdW.
-         */
-        if (!has_vdw[1] &&
-            !has_vdw[2] &&
-            tmp_charge[0]  != 0 &&
-            tmp_charge[1]  != 0 &&
-            tmp_charge[2]  == tmp_charge[1])
-        {
-            srenew(solvent_parameters, *n_solvent_parameters+1);
-            solvent_parameters[*n_solvent_parameters].model = esolSPC;
-            solvent_parameters[*n_solvent_parameters].count = nmol;
-            for (k = 0; k < 3; k++)
-            {
-                solvent_parameters[*n_solvent_parameters].vdwtype[k] = tmp_vdwtype[k];
-                solvent_parameters[*n_solvent_parameters].charge[k]  = tmp_charge[k];
-            }
-
-            *cg_sp = *n_solvent_parameters;
-            (*n_solvent_parameters)++;
-        }
-    }
-    else if (nj == 4)
-    {
-        /* Or could it be a TIP4P?
-         * For this we require thatn atoms 2,3,4 have charge, but not atom 1.
-         * Only atom 1 mght have VdW.
-         */
-        if (!has_vdw[1] &&
-            !has_vdw[2] &&
-            !has_vdw[3] &&
-            tmp_charge[0]  == 0 &&
-            tmp_charge[1]  != 0 &&
-            tmp_charge[2]  == tmp_charge[1] &&
-            tmp_charge[3]  != 0)
-        {
-            srenew(solvent_parameters, *n_solvent_parameters+1);
-            solvent_parameters[*n_solvent_parameters].model = esolTIP4P;
-            solvent_parameters[*n_solvent_parameters].count = nmol;
-            for (k = 0; k < 4; k++)
-            {
-                solvent_parameters[*n_solvent_parameters].vdwtype[k] = tmp_vdwtype[k];
-                solvent_parameters[*n_solvent_parameters].charge[k]  = tmp_charge[k];
-            }
-
-            *cg_sp = *n_solvent_parameters;
-            (*n_solvent_parameters)++;
-        }
-    }
-
-    *solvent_parameters_p = solvent_parameters;
-}
-
-static void
-check_solvent(FILE  *                fp,
-              const gmx_mtop_t  *    mtop,
-              t_forcerec  *          fr,
-              cginfo_mb_t           *cginfo_mb)
-{
-    const t_block     *   cgs;
-    const gmx_moltype_t  *molt;
-    int                   mol, cg_mol, at_offset, am, cgm, i, nmol_ch, nmol;
-    int                   n_solvent_parameters;
-    solvent_parameters_t *solvent_parameters;
-    int                 **cg_sp;
-    int                   bestsp, bestsol;
-
-    if (debug)
-    {
-        fprintf(debug, "Going to determine what solvent types we have.\n");
-    }
-
-    n_solvent_parameters = 0;
-    solvent_parameters   = nullptr;
-    /* Allocate temporary array for solvent type */
-    snew(cg_sp, mtop->molblock.size());
-
-    at_offset = 0;
-    for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
-    {
-        molt = &mtop->moltype[mtop->molblock[mb].type];
-        cgs  = &molt->cgs;
-        /* Here we have to loop over all individual molecules
-         * because we need to check for QMMM particles.
-         */
-        snew(cg_sp[mb], cginfo_mb[mb].cg_mod);
-        nmol_ch = cginfo_mb[mb].cg_mod/cgs->nr;
-        nmol    = mtop->molblock[mb].nmol/nmol_ch;
-        for (mol = 0; mol < nmol_ch; mol++)
-        {
-            cgm = mol*cgs->nr;
-            am  = mol*cgs->index[cgs->nr];
-            for (cg_mol = 0; cg_mol < cgs->nr; cg_mol++)
-            {
-                check_solvent_cg(molt, cg_mol, nmol,
-                                 mtop->groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics].empty() ?
-                                 nullptr : mtop->groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics].data()+at_offset+am,
-                                 &mtop->groups.groups[SimulationAtomGroupType::QuantumMechanics],
-                                 fr,
-                                 &n_solvent_parameters, &solvent_parameters,
-                                 cginfo_mb[mb].cginfo[cgm+cg_mol],
-                                 &cg_sp[mb][cgm+cg_mol]);
-            }
-        }
-        at_offset += cgs->index[cgs->nr];
-    }
-
-    /* Puh! We finished going through all charge groups.
-     * Now find the most common solvent model.
-     */
-
-    /* Most common solvent this far */
-    bestsp = -2;
-    for (i = 0; i < n_solvent_parameters; i++)
-    {
-        if (bestsp == -2 ||
-            solvent_parameters[i].count > solvent_parameters[bestsp].count)
-        {
-            bestsp = i;
-        }
-    }
-
-    if (bestsp >= 0)
-    {
-        bestsol = solvent_parameters[bestsp].model;
-    }
-    else
-    {
-        bestsol = esolNO;
-    }
-
-    fr->nWatMol = 0;
-    for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
-    {
-        cgs  = &mtop->moltype[mtop->molblock[mb].type].cgs;
-        nmol = (mtop->molblock[mb].nmol*cgs->nr)/cginfo_mb[mb].cg_mod;
-        for (i = 0; i < cginfo_mb[mb].cg_mod; i++)
-        {
-            if (cg_sp[mb][i] == bestsp)
-            {
-                SET_CGINFO_SOLOPT(cginfo_mb[mb].cginfo[i], bestsol);
-                fr->nWatMol += nmol;
-            }
-            else
-            {
-                SET_CGINFO_SOLOPT(cginfo_mb[mb].cginfo[i], esolNO);
-            }
-        }
-        sfree(cg_sp[mb]);
-    }
-    sfree(cg_sp);
-
-    if (bestsol != esolNO && fp != nullptr)
-    {
-        fprintf(fp, "\nEnabling %s-like water optimization for %d molecules.\n\n",
-                esol_names[bestsol],
-                solvent_parameters[bestsp].count);
-    }
-
-    sfree(solvent_parameters);
-    fr->solvent_opt = bestsol;
-}
-
 enum {
     acNONE = 0, acCONSTRAINT, acSETTLE
 };
 
-static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
-                                   t_forcerec *fr, gmx_bool bNoSolvOpt,
-                                   gmx_bool *bFEP_NonBonded,
-                                   gmx_bool *bExcl_IntraCGAll_InterCGNone)
+static cginfo_mb_t *init_cginfo_mb(const gmx_mtop_t *mtop,
+                                   const t_forcerec *fr,
+                                   gmx_bool         *bFEP_NonBonded,
+                                   gmx_bool         *bExcl_IntraCGAll_InterCGNone)
 {
     const t_block        *cgs;
     const t_blocka       *excl;
@@ -769,8 +387,6 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                     SET_CGINFO_FEP(cginfo[cgm+cg]);
                     *bFEP_NonBonded = TRUE;
                 }
-                /* Store the charge group size */
-                SET_CGINFO_NATOMS(cginfo[cgm+cg], a1-a0);
 
                 if (!bExclIntraAll || bExclInter)
                 {
@@ -786,37 +402,6 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
     }
     sfree(type_VDW);
     sfree(bExcl);
-
-    /* the solvent optimizer is called after the QM is initialized,
-     * because we don't want to have the QM subsystemto become an
-     * optimized solvent
-     */
-
-    check_solvent(fplog, mtop, fr, cginfo_mb);
-
-    if (getenv("GMX_NO_SOLV_OPT"))
-    {
-        if (fplog)
-        {
-            fprintf(fplog, "Found environment variable GMX_NO_SOLV_OPT.\n"
-                    "Disabling all solvent optimization\n");
-        }
-        fr->solvent_opt = esolNO;
-    }
-    if (bNoSolvOpt)
-    {
-        fr->solvent_opt = esolNO;
-    }
-    if (!fr->solvent_opt)
-    {
-        for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
-        {
-            for (cg = 0; cg < cginfo_mb[mb].cg_mod; cg++)
-            {
-                SET_CGINFO_SOLOPT(cginfo_mb[mb].cginfo[cg], esolNO);
-            }
-        }
-    }
 
     return cginfo_mb;
 }
@@ -1468,14 +1053,12 @@ void init_forcerec(FILE                             *fp,
                    const gmx_hw_info_t              &hardwareInfo,
                    const gmx_device_info_t          *deviceInfo,
                    const bool                        useGpuForBonded,
-                   gmx_bool                          bNoSolvOpt,
                    real                              print_force,
                    gmx_wallcycle                    *wcycle)
 {
     real           rtab;
     char          *env;
     double         dbl;
-    gmx_bool       bGenericKernelOnly;
     gmx_bool       bFEP_NonBonded;
 
     /* By default we turn SIMD kernels on, but it might be turned off further down... */
@@ -1563,29 +1146,6 @@ void init_forcerec(FILE                             *fp,
         GMX_LOG(mdlog.warning).asParagraph().appendText(
                 "Found environment variable GMX_NO_NONBONDED.\n"
                 "Disabling nonbonded calculations.");
-    }
-
-    bGenericKernelOnly = FALSE;
-
-    /* We now check in the NS code whether a particular combination of interactions
-     * can be used with water optimization, and disable it if that is not the case.
-     */
-
-    if (getenv("GMX_NB_GENERIC") != nullptr)
-    {
-        if (fp != nullptr)
-        {
-            fprintf(fp,
-                    "Found environment variable GMX_NB_GENERIC.\n"
-                    "Disabling all interaction-specific nonbonded kernels, will only\n"
-                    "use the slow generic ones in src/gmxlib/nonbonded/nb_generic.c\n\n");
-        }
-        bGenericKernelOnly = TRUE;
-    }
-
-    if (bGenericKernelOnly)
-    {
-        bNoSolvOpt         = TRUE;
     }
 
     if ( (getenv("GMX_DISABLE_SIMD_KERNELS") != nullptr) || (getenv("GMX_NOOPTIMIZEDKERNELS") != nullptr) )
@@ -1938,7 +1498,7 @@ void init_forcerec(FILE                             *fp,
     }
 
     /* Set all the static charge group info */
-    fr->cginfo_mb = init_cginfo_mb(fp, mtop, fr, bNoSolvOpt,
+    fr->cginfo_mb = init_cginfo_mb(mtop, fr,
                                    &bFEP_NonBonded,
                                    &fr->bExcl_IntraCGAll_InterCGNone);
     if (!DOMAINDECOMP(cr))

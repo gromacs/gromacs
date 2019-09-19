@@ -80,8 +80,6 @@ class GpuBonded;
 #define GET_CGINFO_EXCL_INTRA(cgi) ( (cgi)            &  (1<<16))
 #define SET_CGINFO_EXCL_INTER(cgi)   (cgi) =  ((cgi)  |  (1<<17))
 #define GET_CGINFO_EXCL_INTER(cgi) ( (cgi)            &  (1<<17))
-#define SET_CGINFO_SOLOPT(cgi, opt)  (cgi) = (((cgi)  & ~(3<<18)) | ((opt)<<18))
-#define GET_CGINFO_SOLOPT(cgi)     (((cgi)>>18)       &   3)
 #define SET_CGINFO_CONSTR(cgi)       (cgi) =  ((cgi)  |  (1<<20))
 #define GET_CGINFO_CONSTR(cgi)     ( (cgi)            &  (1<<20))
 #define SET_CGINFO_SETTLE(cgi)       (cgi) =  ((cgi)  |  (1<<21))
@@ -93,8 +91,6 @@ class GpuBonded;
 #define GET_CGINFO_HAS_VDW(cgi)    ( (cgi)            &  (1<<23))
 #define SET_CGINFO_HAS_Q(cgi)        (cgi) =  ((cgi)  |  (1<<24))
 #define GET_CGINFO_HAS_Q(cgi)      ( (cgi)            &  (1<<24))
-#define SET_CGINFO_NATOMS(cgi, opt)  (cgi) = (((cgi)  & ~(63<<25)) | ((opt)<<25))
-#define GET_CGINFO_NATOMS(cgi)     (((cgi)>>25)       &   63)
 
 
 /* Value to be used in mdrun for an infinite cut-off.
