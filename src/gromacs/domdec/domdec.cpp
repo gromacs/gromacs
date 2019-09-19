@@ -2578,27 +2578,13 @@ static void set_dd_limits(const gmx::MDLogger &mdlog,
     }
 }
 
-static char *init_bLocalCG(const gmx_mtop_t *mtop)
-{
-    int   ncg, cg;
-    char *bLocalCG;
-
-    ncg = ncg_mtop(mtop);
-    snew(bLocalCG, ncg);
-    for (cg = 0; cg < ncg; cg++)
-    {
-        bLocalCG[cg] = FALSE;
-    }
-
-    return bLocalCG;
-}
-
-void dd_init_bondeds(FILE *fplog,
-                     gmx_domdec_t *dd,
-                     const gmx_mtop_t *mtop,
-                     const gmx_vsite_t *vsite,
-                     const t_inputrec *ir,
-                     gmx_bool bBCheck, cginfo_mb_t *cginfo_mb)
+void dd_init_bondeds(FILE                       *fplog,
+                     gmx_domdec_t               *dd,
+                     const gmx_mtop_t           *mtop,
+                     const gmx_vsite_t          *vsite,
+                     const t_inputrec           *ir,
+                     gmx_bool                    bBCheck,
+                     cginfo_mb_t                *cginfo_mb)
 {
     gmx_domdec_comm_t *comm;
 
@@ -2609,17 +2595,12 @@ void dd_init_bondeds(FILE *fplog,
     if (comm->systemInfo.filterBondedCommunication)
     {
         /* Communicate atoms beyond the cut-off for bonded interactions */
-        comm = dd->comm;
-
-        comm->cglink = make_charge_group_links(mtop, cginfo_mb);
-
-        comm->bLocalCG = init_bLocalCG(mtop);
+        comm->bondedLinks = makeBondedLinks(mtop, cginfo_mb);
     }
     else
     {
         /* Only communicate atoms based on cut-off */
-        comm->cglink   = nullptr;
-        comm->bLocalCG = nullptr;
+        comm->bondedLinks = nullptr;
     }
 }
 

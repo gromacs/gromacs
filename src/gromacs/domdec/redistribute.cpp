@@ -127,10 +127,8 @@ copyMovedUpdateGroupCogs(gmx::ArrayRef<const int> move,
 }
 
 static void clear_and_mark_ind(gmx::ArrayRef<const int>      move,
-                               gmx::ArrayRef<const int>      globalAtomGroupIndices,
                                gmx::ArrayRef<const int>      globalAtomIndices,
                                gmx_ga2la_t                  *ga2la,
-                               char                         *bLocalCG,
                                int                          *cell_index)
 {
     for (gmx::index a = 0; a < move.ssize(); a++)
@@ -139,10 +137,6 @@ static void clear_and_mark_ind(gmx::ArrayRef<const int>      move,
         {
             /* Clear the global indices */
             ga2la->erase(globalAtomIndices[a]);
-            if (bLocalCG)
-            {
-                bLocalCG[globalAtomGroupIndices[a]] = FALSE;
-            }
             /* Signal that this atom has moved using the ns cell index.
              * Here we set it to -1. fill_grid will change it
              * from -1 to NSGRID_SIGNAL_MOVED_FAC*grid->ncells.
@@ -742,8 +736,8 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
     int *moved = getMovedBuffer(comm, 0, dd->ncg_home);
 
     clear_and_mark_ind(move,
-                       dd->globalAtomGroupIndices, dd->globalAtomIndices,
-                       dd->ga2la, comm->bLocalCG,
+                       dd->globalAtomIndices,
+                       dd->ga2la,
                        moved);
 
     /* Now we can remove the excess global atom-group indices from the list */
@@ -913,10 +907,6 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
                 /* Set the cginfo */
                 fr->cginfo[home_pos_cg] = ddcginfo(cginfo_mb,
                                                    globalAtomGroupIndex);
-                if (comm->bLocalCG)
-                {
-                    comm->bLocalCG[globalAtomGroupIndex] = TRUE;
-                }
 
                 auto  x       = makeArrayRef(state->x);
                 auto  v       = makeArrayRef(state->v);

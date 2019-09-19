@@ -1930,8 +1930,8 @@ static std::vector<int> make_at2cg(const t_block &cgs)
     return at2cg;
 }
 
-t_blocka *make_charge_group_links(const gmx_mtop_t *mtop,
-                                  cginfo_mb_t      *cginfo_mb)
+t_blocka *makeBondedLinks(const gmx_mtop_t *mtop,
+                          cginfo_mb_t      *cginfo_mb)
 {
     t_blocka           *link;
     cginfo_mb_t        *cgi_mb;

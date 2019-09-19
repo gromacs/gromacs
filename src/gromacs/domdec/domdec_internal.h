@@ -588,10 +588,8 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     std::unique_ptr<gmx::UpdateGroupsCog> updateGroupsCog;
 
     /* Data for the optional filtering of communication of atoms for bonded interactions */
-    /**< Links between cg's through bonded interactions */
-    t_blocka *cglink = nullptr;
-    /**< Local cg availability, TODO: remove when group scheme is removed */
-    char     *bLocalCG = nullptr;
+    /**< Links between atoms through bonded interactions */
+    t_blocka *bondedLinks = nullptr;
 
     /* The DLB state, possible values are defined above */
     DlbState dlbState;

@@ -466,7 +466,7 @@ static void restoreAtomGroups(gmx_domdec_t  *dd,
 
 //! Sets the cginfo structures.
 static void dd_set_cginfo(gmx::ArrayRef<const int> index_gl, int cg0, int cg1,
-                          t_forcerec *fr, char *bLocalCG)
+                          t_forcerec *fr)
 {
     if (fr != nullptr)
     {
@@ -476,14 +476,6 @@ static void dd_set_cginfo(gmx::ArrayRef<const int> index_gl, int cg0, int cg1,
         for (int cg = cg0; cg < cg1; cg++)
         {
             cginfo[cg] = ddcginfo(cginfo_mb, index_gl[cg]);
-        }
-    }
-
-    if (bLocalCG != nullptr)
-    {
-        for (int cg = cg0; cg < cg1; cg++)
-        {
-            bLocalCG[index_gl[cg]] = TRUE;
         }
     }
 }
@@ -538,45 +530,10 @@ static void make_dd_indices(gmx_domdec_t *dd,
     }
 }
 
-//! Checks the charge-group assignements.
-static int check_bLocalCG(gmx_domdec_t *dd, int ncg_sys, const char *bLocalCG,
-                          const char *where)
-{
-    int nerr = 0;
-    if (bLocalCG == nullptr)
-    {
-        return nerr;
-    }
-    for (size_t i = 0; i < dd->globalAtomGroupIndices.size(); i++)
-    {
-        if (!bLocalCG[dd->globalAtomGroupIndices[i]])
-        {
-            fprintf(stderr,
-                    "DD rank %d, %s: atom group %zu, global atom group %d is not marked in bLocalCG (ncg_home %d)\n", dd->rank, where, i + 1, dd->globalAtomGroupIndices[i] + 1, dd->ncg_home);
-            nerr++;
-        }
-    }
-    size_t ngl = 0;
-    for (int i = 0; i < ncg_sys; i++)
-    {
-        if (bLocalCG[i])
-        {
-            ngl++;
-        }
-    }
-    if (ngl != dd->globalAtomGroupIndices.size())
-    {
-        fprintf(stderr, "DD rank %d, %s: In bLocalCG %zu atom groups are marked as local, whereas there are %zu\n", dd->rank, where, ngl, dd->globalAtomGroupIndices.size());
-        nerr++;
-    }
-
-    return nerr;
-}
-
 //! Checks whether global and local atom indices are consistent.
-static void check_index_consistency(gmx_domdec_t *dd,
-                                    int natoms_sys, int ncg_sys,
-                                    const char *where)
+static void check_index_consistency(const gmx_domdec_t *dd,
+                                    int                 natoms_sys,
+                                    const char         *where)
 {
     int       nerr = 0;
 
@@ -640,8 +597,6 @@ static void check_index_consistency(gmx_domdec_t *dd,
         }
     }
 
-    nerr += check_bLocalCG(dd, ncg_sys, dd->comm->bLocalCG, where);
-
     if (nerr > 0)
     {
         gmx_fatal(FARGS, "DD rank %d, %s: %d atom(group) index inconsistencies",
@@ -649,14 +604,13 @@ static void check_index_consistency(gmx_domdec_t *dd,
     }
 }
 
-//! Clear all DD global state indices, starting from \p atomGroupStart and \p atomStart
+//! Clear all DD global state indices
 static void clearDDStateIndices(gmx_domdec_t *dd,
-                                int           atomGroupStart,
-                                int           atomStart)
+                                const bool    keepLocalAtomIndices)
 {
     gmx_ga2la_t &ga2la = *dd->ga2la;
 
-    if (atomStart == 0)
+    if (!keepLocalAtomIndices)
     {
         /* Clear the whole list without the overhead of searching */
         ga2la.clear();
@@ -667,15 +621,6 @@ static void clearDDStateIndices(gmx_domdec_t *dd,
         for (int i = 0; i < numAtomsInZones; i++)
         {
             ga2la.erase(dd->globalAtomIndices[i]);
-        }
-    }
-
-    char *bLocalCG = dd->comm->bLocalCG;
-    if (bLocalCG)
-    {
-        for (size_t atomGroup = atomGroupStart; atomGroup < dd->globalAtomGroupIndices.size(); atomGroup++)
-        {
-            bLocalCG[dd->globalAtomGroupIndices[atomGroup]] = FALSE;
         }
     }
 
@@ -1478,21 +1423,19 @@ static void make_cell2at_index(gmx_domdec_comm_dim_t        *cd,
 }
 
 //! Returns whether a link is missing.
-static gmx_bool missing_link(t_blocka *link, int cg_gl, const char *bLocalCG)
+static gmx_bool missing_link(const t_blocka    &link,
+                             const int          globalAtomIndex,
+                             const gmx_ga2la_t &ga2la)
 {
-    int      i;
-    gmx_bool bMiss;
-
-    bMiss = FALSE;
-    for (i = link->index[cg_gl]; i < link->index[cg_gl+1]; i++)
+    for (int i = link.index[globalAtomIndex]; i < link.index[globalAtomIndex + 1]; i++)
     {
-        if (!bLocalCG[link->a[i]])
+        if (!ga2la.findHome(link.a[i]))
         {
-            bMiss = TRUE;
+            return true;
         }
     }
 
-    return bMiss;
+    return false;
 }
 
 //! Domain corners for communication, a maximum of 4 i-zones see a j domain
@@ -1832,8 +1775,8 @@ get_zone_pulse_cgs(gmx_domdec_t *dd,
               (bDist2B && r2  < r_bcomm2)) &&
              (!bBondComm ||
               (GET_CGINFO_BOND_INTER(cginfo[cg]) &&
-               missing_link(comm->cglink, globalAtomGroupIndices[cg],
-                            comm->bLocalCG)))))
+               missing_link(*comm->bondedLinks, globalAtomGroupIndices[cg],
+                            *dd->ga2la)))))
         {
             /* Store the local and global atom group indices and position */
             localAtomGroups->push_back(cg);
@@ -1884,7 +1827,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
 {
     int                    dim_ind, dim, dim0, dim1, dim2, dimd, nat_tot;
     int                    nzone, nzone_send, zone, zonei, cg0, cg1;
-    int                    c, i, cg, cg_gl;
+    int                    c;
     int                   *zone_cg_range, pos_cg;
     gmx_domdec_comm_t     *comm;
     gmx_domdec_zones_t    *zones;
@@ -1979,7 +1922,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
 
         /* Check if we need to compute triclinic distances along this dim */
         bool distanceIsTriclinic = false;
-        for (i = 0; i <= dim_ind; i++)
+        for (int i = 0; i <= dim_ind; i++)
         {
             if (ddbox->tric_dir[dd->dim[i]])
             {
@@ -2028,7 +1971,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                         sf2_round[dimd] = 1;
                         if (ddbox->tric_dir[dimd])
                         {
-                            for (i = dd->dim[dimd]+1; i < DIM; i++)
+                            for (int i = dd->dim[dimd] + 1; i < DIM; i++)
                             {
                                 /* If we are shifted in dimension i
                                  * and the cell plane is tilted forward
@@ -2186,17 +2129,10 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                 zone = (p == 0 ? 0 : nzone - 1);
                 while (zone < nzone)
                 {
-                    for (cg = 0; cg < ind->nrecv[zone]; cg++)
+                    for (int i = 0; i < ind->nrecv[zone]; i++)
                     {
-                        cg_gl                              = dd->globalAtomGroupIndices[pos_cg];
-                        fr->cginfo[pos_cg]                 = ddcginfo(cginfo_mb, cg_gl);
-                        if (bBondComm)
-                        {
-                            /* Update the charge group presence,
-                             * so we can use it in the next pass of the loop.
-                             */
-                            comm->bLocalCG[cg_gl] = TRUE;
-                        }
+                        int globalAtomIndex = dd->globalAtomGroupIndices[pos_cg];
+                        fr->cginfo[pos_cg]  = ddcginfo(cginfo_mb, globalAtomIndex);
                         pos_cg++;
                     }
                     if (p == 0)
@@ -2235,7 +2171,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
          */
         dd_set_cginfo(dd->globalAtomGroupIndices,
                       dd->ncg_home, dd->globalAtomGroupIndices.size(),
-                      nullptr, comm->bLocalCG);
+                      nullptr);
     }
 
     if (debug)
@@ -2959,7 +2895,7 @@ void dd_partition_system(FILE                        *fplog,
     if (bMasterState)
     {
         /* Clear the old state */
-        clearDDStateIndices(dd, 0, 0);
+        clearDDStateIndices(dd, false);
         ncgindex_set = 0;
 
         auto xGlobal = positionsFromStatePointer(state_global);
@@ -2976,7 +2912,7 @@ void dd_partition_system(FILE                        *fplog,
 
         inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
 
-        dd_set_cginfo(dd->globalAtomGroupIndices, 0, dd->ncg_home, fr, comm->bLocalCG);
+        dd_set_cginfo(dd->globalAtomGroupIndices, 0, dd->ncg_home, fr);
     }
     else if (state_local->ddp_count != dd->ddp_count)
     {
@@ -2991,7 +2927,7 @@ void dd_partition_system(FILE                        *fplog,
         }
 
         /* Clear the old state */
-        clearDDStateIndices(dd, 0, 0);
+        clearDDStateIndices(dd, false);
 
         /* Restore the atom group indices from state_local */
         restoreAtomGroups(dd, state_local);
@@ -3000,7 +2936,7 @@ void dd_partition_system(FILE                        *fplog,
 
         inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
 
-        dd_set_cginfo(dd->globalAtomGroupIndices, 0, dd->ncg_home, fr, comm->bLocalCG);
+        dd_set_cginfo(dd->globalAtomGroupIndices, 0, dd->ncg_home, fr);
 
         set_ddbox(*dd, bMasterState, state_local->box,
                   true, state_local->x, &ddbox);
@@ -3012,7 +2948,7 @@ void dd_partition_system(FILE                        *fplog,
         /* We have the full state, only redistribute the cgs */
 
         /* Clear the non-home indices */
-        clearDDStateIndices(dd, dd->ncg_home, comm->atomRanges.numHomeAtoms());
+        clearDDStateIndices(dd, true);
         ncgindex_set = 0;
 
         /* To avoid global communication, we do not recompute the extent
@@ -3341,8 +3277,7 @@ void dd_partition_system(FILE                        *fplog,
     if (comm->ddSettings.DD_debug > 0)
     {
         /* Set the env var GMX_DD_DEBUG if you suspect corrupted indices */
-        check_index_consistency(dd, top_global.natoms, ncg_mtop(&top_global),
-                                "after partitioning");
+        check_index_consistency(dd, top_global.natoms, "after partitioning");
     }
 
     wallcycle_stop(wcycle, ewcDOMDEC);
