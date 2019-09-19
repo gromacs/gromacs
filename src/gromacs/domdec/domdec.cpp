@@ -1165,7 +1165,7 @@ static void make_load_communicator(gmx_domdec_t *dd, int dim_ind, ivec loc)
 }
 #endif
 
-void dd_setup_dlb_resource_sharing(t_commrec            *cr,
+void dd_setup_dlb_resource_sharing(const t_commrec      *cr,
                                    int                   gpu_id)
 {
 #if GMX_MPI

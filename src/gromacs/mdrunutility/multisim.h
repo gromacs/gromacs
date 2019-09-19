@@ -146,4 +146,7 @@ bool isMasterSim(const gmx_multisim_t *ms);
 bool isMasterSimMasterRank(const gmx_multisim_t *ms,
                            bool                  isMaster);
 
+//! Make a barrier across all multi-simulation master ranks
+void multiSimBarrier(const gmx_multisim_t *ms);
+
 #endif

@@ -899,12 +899,10 @@ int Mdrunner::mdrunner()
                   "The -dd or -npme option request a parallel simulation, "
 #if !GMX_MPI
                   "but %s was compiled without threads or MPI enabled", output_env_get_program_display_name(oenv));
-#else
-#if GMX_THREAD_MPI
+#elif GMX_THREAD_MPI
                   "but the number of MPI-threads (option -ntmpi) is not set or is 1");
 #else
                   "but %s was not started through mpirun/mpiexec or only one rank was requested through mpirun/mpiexec", output_env_get_program_display_name(oenv));
-#endif
 #endif
     }
 
@@ -1117,12 +1115,6 @@ int Mdrunner::mdrunner()
         gmx_feenableexcept();
     }
 
-    // Build a data structure that expresses which kinds of non-bonded
-    // task are handled by this rank.
-    //
-    // TODO Later, this might become a loop over all registered modules
-    // relevant to the mdp inputs, to find those that have such tasks.
-    //
     // TODO This could move before init_domain_decomposition() as part
     // of refactoring that separates the responsibility for duty
     // assignment from setup for communication between tasks, and
@@ -1133,128 +1125,59 @@ int Mdrunner::mdrunner()
     // that is inconsistent with the presence of actual GPUs on any
     // rank, and that is not known to be a problem until the
     // duty of the ranks on a node become known.
-    //
-    // TODO Later we might need the concept of computeTasksOnThisRank,
-    // from which we construct gpuTasksOnThisRank.
-    //
-    // Currently the DD code assigns duty to ranks that can
-    // include PP work that currently can be executed on a single
-    // GPU, if present and compatible.  This has to be coordinated
-    // across PP ranks on a node, with possible multiple devices
-    // or sharing devices on a node, either from the user
-    // selection, or automatically.
-    auto                 haveGpus = !gpuIdsToUse.empty();
-    std::vector<GpuTask> gpuTasksOnThisRank;
-    if (thisRankHasDuty(cr, DUTY_PP))
-    {
-        if (useGpuForNonbonded)
-        {
-            // Note that any bonded tasks on a GPU always accompany a
-            // non-bonded task.
-            if (haveGpus)
-            {
-                gpuTasksOnThisRank.push_back(GpuTask::Nonbonded);
-            }
-            else if (nonbondedTarget == TaskTarget::Gpu)
-            {
-                gmx_fatal(FARGS, "Cannot run short-ranged nonbonded interactions on a GPU because no GPU is detected.");
-            }
-            else if (bondedTarget == TaskTarget::Gpu)
-            {
-                gmx_fatal(FARGS, "Cannot run bonded interactions on a GPU because no GPU is detected.");
-            }
-        }
-    }
-    // TODO cr->duty & DUTY_PME should imply that a PME algorithm is active, but currently does not.
-    if (EEL_PME(inputrec->coulombtype) && (thisRankHasDuty(cr, DUTY_PME)))
-    {
-        if (useGpuForPme)
-        {
-            if (haveGpus)
-            {
-                gpuTasksOnThisRank.push_back(GpuTask::Pme);
-            }
-            else if (pmeTarget == TaskTarget::Gpu)
-            {
-                gmx_fatal(FARGS, "Cannot run PME on a GPU because no GPU is detected.");
-            }
-        }
-    }
 
-    GpuTaskAssignment gpuTaskAssignment;
-    try
-    {
-        // Produce the task assignment for this rank.
-        gpuTaskAssignment = runTaskAssignment(gpuIdsToUse, userGpuTaskAssignment, *hwinfo,
-                                              mdlog, cr, ms, physicalNodeComm, gpuTasksOnThisRank,
-                                              useGpuForBonded, pmeRunMode);
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    // Produce the task assignment for this rank.
+    GpuTaskAssignmentsBuilder gpuTaskAssignmentsBuilder;
+    GpuTaskAssignments        gpuTaskAssignments =
+        gpuTaskAssignmentsBuilder.build(gpuIdsToUse,
+                                        userGpuTaskAssignment,
+                                        *hwinfo,
+                                        cr,
+                                        ms,
+                                        physicalNodeComm,
+                                        nonbondedTarget,
+                                        pmeTarget,
+                                        bondedTarget,
+                                        updateTarget,
+                                        useGpuForNonbonded,
+                                        useGpuForPme,
+                                        thisRankHasDuty(cr, DUTY_PP),
+                                        // TODO cr->duty & DUTY_PME should imply that a PME
+                                        // algorithm is active, but currently does not.
+                                        EEL_PME(inputrec->coulombtype) &&
+                                        thisRankHasDuty(cr, DUTY_PME));
 
-    /* Prevent other ranks from continuing after an issue was found
-     * and reported as a fatal error.
-     *
-     * TODO This function implements a barrier so that MPI runtimes
-     * can organize an orderly shutdown if one of the ranks has had to
-     * issue a fatal error in various code already run. When we have
-     * MPI-aware error handling and reporting, this should be
-     * improved. */
-#if GMX_MPI
-    if (PAR(cr))
+    const bool printHostName = (cr->nnodes > 1);
+    gpuTaskAssignments.reportGpuUsage(mdlog, printHostName, useGpuForBonded, pmeRunMode);
+
+    // If the user chose a task assignment, give them some hints
+    // where appropriate.
+    if (!userGpuTaskAssignment.empty())
     {
-        MPI_Barrier(cr->mpi_comm_mysim);
+        gpuTaskAssignments.logPerformanceHints(mdlog,
+                                               ssize(gpuIdsToUse));
     }
-    if (isMultiSim(ms))
-    {
-        if (SIMMASTER(cr))
-        {
-            MPI_Barrier(ms->mpi_comm_masters);
-        }
-        /* We need another barrier to prevent non-master ranks from contiuing
-         * when an error occured in a different simulation.
-         */
-        MPI_Barrier(cr->mpi_comm_mysim);
-    }
-#endif
 
     /* Now that we know the setup is consistent, check for efficiency */
-    check_resource_division_efficiency(hwinfo, !gpuTaskAssignment.empty(), mdrunOptions.ntompOptionIsSet,
-                                       cr, mdlog);
+    check_resource_division_efficiency(hwinfo,
+                                       gpuTaskAssignments.thisRankHasAnyGpuTask(),
+                                       mdrunOptions.ntompOptionIsSet,
+                                       cr,
+                                       mdlog);
 
-    gmx_device_info_t *nonbondedDeviceInfo = nullptr;
+    // Get the device handles for the modules, nullptr when no task is assigned.
+    gmx_device_info_t *nonbondedDeviceInfo   = gpuTaskAssignments.initNonbondedDevice(cr);
+    gmx_device_info_t *pmeDeviceInfo         = gpuTaskAssignments.initPmeDevice();
+    const bool         thisRankHasPmeGpuTask = gpuTaskAssignments.thisRankHasPmeGpuTask();
 
-    if (thisRankHasDuty(cr, DUTY_PP))
-    {
-        // This works because only one task of each type is currently permitted.
-        auto nbGpuTaskMapping = std::find_if(gpuTaskAssignment.begin(), gpuTaskAssignment.end(),
-                                             hasTaskType<GpuTask::Nonbonded>);
-        if (nbGpuTaskMapping != gpuTaskAssignment.end())
-        {
-            int nonbondedDeviceId = nbGpuTaskMapping->deviceId_;
-            nonbondedDeviceInfo = getDeviceInfo(hwinfo->gpu_info, nonbondedDeviceId);
-            init_gpu(nonbondedDeviceInfo);
-
-            if (DOMAINDECOMP(cr))
-            {
-                /* When we share GPUs over ranks, we need to know this for the DLB */
-                dd_setup_dlb_resource_sharing(cr, nonbondedDeviceId);
-            }
-
-        }
-    }
-
-    gmx_device_info_t                *pmeDeviceInfo = nullptr;
+    // TODO should live in ewald module once its testing is improved
+    //
     // Later, this program could contain kernels that might be later
     // re-used as auto-tuning progresses, or subsequent simulations
     // are invoked.
     PmeGpuProgramStorage pmeGpuProgram;
-    // This works because only one task of each type is currently permitted.
-    auto                 pmeGpuTaskMapping     = std::find_if(gpuTaskAssignment.begin(), gpuTaskAssignment.end(), hasTaskType<GpuTask::Pme>);
-    const bool           thisRankHasPmeGpuTask = (pmeGpuTaskMapping != gpuTaskAssignment.end());
     if (thisRankHasPmeGpuTask)
     {
-        pmeDeviceInfo = getDeviceInfo(hwinfo->gpu_info, pmeGpuTaskMapping->deviceId_);
-        init_gpu(pmeDeviceInfo);
         pmeGpuProgram = buildPmeGpuProgram(pmeDeviceInfo);
     }
 

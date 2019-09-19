@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,13 +48,70 @@
 #include <numeric>
 #include <vector>
 
+#include "gromacs/taskassignment/decidegpuusage.h"
+#include "gromacs/taskassignment/taskassignment.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 
 namespace gmx
 {
+
+std::vector<GpuTask>
+findGpuTasksOnThisRank(const bool       haveGpusOnThisPhysicalNode,
+                       const TaskTarget nonbondedTarget,
+                       const TaskTarget pmeTarget,
+                       const TaskTarget bondedTarget,
+                       const TaskTarget updateTarget,
+                       const bool       useGpuForNonbonded,
+                       const bool       useGpuForPme,
+                       const bool       rankHasPpTask,
+                       const bool       rankHasPmeTask)
+{
+    std::vector<GpuTask> gpuTasksOnThisRank;
+    if (rankHasPpTask)
+    {
+        if (useGpuForNonbonded)
+        {
+            // Note that any bonded tasks on a GPU always accompany a
+            // non-bonded task.
+            if (haveGpusOnThisPhysicalNode)
+            {
+                gpuTasksOnThisRank.push_back(GpuTask::Nonbonded);
+            }
+            else if (nonbondedTarget == TaskTarget::Gpu)
+            {
+                gmx_fatal(FARGS, "Cannot run short-ranged nonbonded interactions on a GPU because no GPU is detected.");
+            }
+            else if (bondedTarget == TaskTarget::Gpu)
+            {
+                gmx_fatal(FARGS, "Cannot run bonded interactions on a GPU because no GPU is detected.");
+            }
+            else if (updateTarget == TaskTarget::Gpu)
+            {
+                gmx_fatal(FARGS, "Cannot run coordinate update on a GPU because no GPU is detected.");
+            }
+        }
+    }
+    if (rankHasPmeTask)
+    {
+        if (useGpuForPme)
+        {
+            if (haveGpusOnThisPhysicalNode)
+            {
+                gpuTasksOnThisRank.push_back(GpuTask::Pme);
+            }
+            else if (pmeTarget == TaskTarget::Gpu)
+            {
+                gmx_fatal(FARGS, "Cannot run PME on a GPU because no GPU is detected.");
+            }
+        }
+    }
+    return gpuTasksOnThisRank;
+}
 
 namespace
 {

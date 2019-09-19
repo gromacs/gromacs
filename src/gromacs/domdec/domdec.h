@@ -213,7 +213,7 @@ gmx_bool change_dd_cutoff(t_commrec                     *cr,
  * GPU finish. Therefore there wait times need to be averaged over the ranks
  * sharing the same GPU. This function sets up the communication for that.
  */
-void dd_setup_dlb_resource_sharing(t_commrec           *cr,
+void dd_setup_dlb_resource_sharing(const t_commrec     *cr,
                                    int                  gpu_id);
 
 /*! \brief Cycle counter indices used internally in the domain decomposition */

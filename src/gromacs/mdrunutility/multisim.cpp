@@ -396,3 +396,16 @@ bool isMasterSimMasterRank(const gmx_multisim_t *ms,
 {
     return (isMaster && isMasterSim(ms));
 }
+
+void multiSimBarrier(const gmx_multisim_t *ms)
+{
+    if (isMultiSim(ms))
+    {
+#if GMX_MPI
+        if (ms->mpi_comm_masters != MPI_COMM_NULL)
+        {
+            MPI_Barrier(ms->mpi_comm_masters);
+        }
+#endif
+    }
+}

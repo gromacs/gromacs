@@ -562,3 +562,13 @@ void gmx_fatal_collective(int f_errno, const char *file, int line,
     gmx_fatal_mpi_va(f_errno, file, line, bMaster, bFinalize, fmt, ap);
     va_end(ap);
 }
+
+void simulationBarrier(const t_commrec *cr)
+{
+    if (PAR(cr))
+    {
+#if GMX_MPI
+        MPI_Barrier(cr->mpi_comm_mysim);
+#endif
+    }
+}

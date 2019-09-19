@@ -60,11 +60,14 @@ struct gmx_hw_info_t
     ~gmx_hw_info_t();
 
     /* Data for our local physical node */
-    struct gmx_gpu_info_t gpu_info;                /* Information about GPUs detected in the system */
+    //! Information about GPUs detected on this physical node
+    gmx_gpu_info_t gpu_info;
 
-    int                   nthreads_hw_avail;       /* Number of hardware threads available; this number
-                                                      is based on the number of CPUs reported as available
-                                                      by the OS at the time of detection. */
+    /*! \brief Number of hardware threads available.
+     *
+     * This number is based on the number of CPUs reported as
+     * available by the OS at the time of detection. */
+    int nthreads_hw_avail;
 
 
     std::unique_ptr<gmx::CpuInfo>          cpuInfo;           /* Information about CPU capabilities */

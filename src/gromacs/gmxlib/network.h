@@ -120,4 +120,7 @@ gmx_fatal_collective(int f_errno, const char *file, int line,
  * for all processes.
  */
 
+//! Make a barrier across all ranks of this simulation
+void simulationBarrier(const t_commrec *cr);
+
 #endif

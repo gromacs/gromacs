@@ -47,6 +47,8 @@
 
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/taskassignment/taskassignment.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
@@ -64,7 +66,8 @@ namespace
  * GPUs used (per node) can be different from the number of GPU IDs
  * used.
  */
-size_t countUniqueGpuIdsUsed(const GpuTaskAssignments &gpuTaskAssignmentOnRanksOfThisNode)
+size_t
+countUniqueGpuIdsUsed(ArrayRef<const GpuTaskAssignment> gpuTaskAssignmentOnRanksOfThisNode)
 {
     std::set<int> uniqueIds;
     for (const auto &assignmentsOnRank : gpuTaskAssignmentOnRanksOfThisNode)
@@ -80,13 +83,13 @@ size_t countUniqueGpuIdsUsed(const GpuTaskAssignments &gpuTaskAssignmentOnRanksO
 }   // namespace
 
 void
-reportGpuUsage(const MDLogger                &mdlog,
-               const GpuTaskAssignments      &gpuTaskAssignmentOnRanksOfThisNode,
-               size_t                         numGpuTasksOnThisNode,
-               size_t                         numRanks,
-               bool                           bPrintHostName,
-               bool                           useGpuForBonded,
-               PmeRunMode                     pmeRunMode)
+reportGpuUsage(const MDLogger                   &mdlog,
+               ArrayRef<const GpuTaskAssignment> gpuTaskAssignmentOnRanksOfThisNode,
+               size_t                            numGpuTasksOnThisNode,
+               size_t                            numRanks,
+               bool                              printHostName,
+               bool                              useGpuForBonded,
+               PmeRunMode                        pmeRunMode)
 {
     size_t numGpusInUse = countUniqueGpuIdsUsed(gpuTaskAssignmentOnRanksOfThisNode);
     if (numGpusInUse == 0)
@@ -120,7 +123,7 @@ reportGpuUsage(const MDLogger                &mdlog,
         }
         bool        bPluralGpus  = numGpusInUse > 1;
 
-        if (bPrintHostName)
+        if (printHostName)
         {
             char host[STRLEN];
             gmx_gethostname(host, STRLEN);

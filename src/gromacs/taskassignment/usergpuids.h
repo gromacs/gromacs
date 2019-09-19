@@ -78,13 +78,13 @@ std::vector<int>
 parseUserGpuIdString(const std::string &gpuIdString);
 
 /*! \brief Implement GPU ID selection by returning the available GPU
- * IDs that are compatible.
+ * IDs on this physical node that are compatible.
  *
  * If the string supplied by the user is empty, then return the IDs of
- * all compatible GPUs. Otherwise, check the user specified compatible
- * GPUs and return their IDs.
+ * all compatible GPUs on this physical node. Otherwise, check the
+ * user specified compatible GPUs and return their IDs.
  *
- * \param[in]  gpuInfo                Information detected about GPUs
+ * \param[in]  gpuInfo                Information detected about GPUs on this physical node
  * \param[in]  gpuIdsAvailableString  String like "013" or "0,1,3" typically
  *                                    supplied by the user to mdrun -gpu_id.
  *                                    Must contain only unique decimal digits, or only decimal
@@ -92,7 +92,7 @@ parseUserGpuIdString(const std::string &gpuIdString);
  *                                    comma is accceptable (and required to specify a
  *                                    single ID that is larger than 9).
  *
- * \returns  A vector of unique compatible GPU IDs.
+ * \returns  A vector of unique compatible GPU IDs on this physical node.
  *
  * \throws   std::bad_alloc     If out of memory.
  *           InvalidInputError  If an invalid character is found (ie not a digit or ',') or if
