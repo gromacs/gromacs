@@ -3199,7 +3199,7 @@ void dd_partition_system(FILE                        *fplog,
      * allocation, zeroing and copying, but this is probably not worth
      * the complications and checking.
      */
-    forcerec_set_ranges(fr, dd->ncg_home, dd->globalAtomGroupIndices.size(),
+    forcerec_set_ranges(fr,
                         comm->atomRanges.end(DDAtomRanges::Type::Zones),
                         comm->atomRanges.end(DDAtomRanges::Type::Constraints),
                         nat_f_novirsum);

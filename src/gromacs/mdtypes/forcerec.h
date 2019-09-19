@@ -76,8 +76,6 @@ class GpuBonded;
 #define GET_CGINFO_GID(cgi)        ( (cgi)            &   255)
 #define SET_CGINFO_FEP(cgi)          (cgi) =  ((cgi)  |  (1<<15))
 #define GET_CGINFO_FEP(cgi)        ( (cgi)            &  (1<<15))
-#define SET_CGINFO_EXCL_INTRA(cgi)   (cgi) =  ((cgi)  |  (1<<16))
-#define GET_CGINFO_EXCL_INTRA(cgi) ( (cgi)            &  (1<<16))
 #define SET_CGINFO_EXCL_INTER(cgi)   (cgi) =  ((cgi)  |  (1<<17))
 #define GET_CGINFO_EXCL_INTER(cgi) ( (cgi)            &  (1<<17))
 #define SET_CGINFO_CONSTR(cgi)       (cgi) =  ((cgi)  |  (1<<20))
@@ -179,17 +177,11 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     real     sc_sigma6_def = 0;
     real     sc_sigma6_min = 0;
 
-    /* NS Stuff */
-    int  cg0 = 0;
-    int  hcg = 0;
-    /* solvent_opt contains the enum for the most common solvent
-     * in the system, which will be optimized.
-     * It can be set to esolNO to disable all water optimization */
-    int                 solvent_opt                  = 0;
-    int                 nWatMol                      = 0;
-    gmx_bool            bExcl_IntraCGAll_InterCGNone = FALSE;
+    /* Information about atom properties for the molecule blocks in the system */
     struct cginfo_mb_t *cginfo_mb                    = nullptr;
+    /* Information about atom properties for local and non-local atoms */
     std::vector<int>    cginfo;
+
     rvec               *shift_vec                    = nullptr;
 
     int                 cutoff_scheme = 0;     /* group- or Verlet-style cutoff */
@@ -202,8 +194,6 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     int                    nwall    = 0;
     t_forcetable        ***wall_tab = nullptr;
 
-    /* The number of charge groups participating in do_force_lowlevel */
-    int ncg_force = 0;
     /* The number of atoms participating in do_force_lowlevel */
     int natoms_force = 0;
     /* The number of atoms participating in force and constraints */

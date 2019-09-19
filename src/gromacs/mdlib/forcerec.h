@@ -74,8 +74,6 @@ void pr_forcerec(FILE *fplog, t_forcerec *fr);
  * The force calculation needs information on which atoms it
  * should do work.
  * \param[inout] fr                  The forcerec
- * \param[in]    ncg_home            Number of charge groups on this processor
- * \param[in]    ncg_force           Number of charge groups to compute force on
  * \param[in]    natoms_force        Number of atoms to compute force on
  * \param[in]    natoms_force_constr Number of atoms involved in constraints
  * \param[in]    natoms_f_novirsum   Number of atoms for which
@@ -83,7 +81,6 @@ void pr_forcerec(FILE *fplog, t_forcerec *fr);
  */
 void
 forcerec_set_ranges(t_forcerec *fr,
-                    int ncg_home, int ncg_force,
                     int natoms_force,
                     int natoms_force_constr, int natoms_f_novirsum);
 
