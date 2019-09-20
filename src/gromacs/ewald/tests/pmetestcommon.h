@@ -118,6 +118,14 @@ uint64_t getSplineModuliDoublePrecisionUlps(int splineOrder);
 
 // PME stages
 
+//! PME initialization
+PmeSafePointer pmeInitWrapper(const t_inputrec         *inputRec,
+                              CodePath                  mode,
+                              const gmx_device_info_t  *gpuInfo,
+                              PmeGpuProgramHandle       pmeGpuProgram,
+                              const Matrix3x3          &box,
+                              real                      ewaldCoeff_q = 1.0F,
+                              real                      ewaldCoeff_lj = 1.0F);
 //! Simple PME initialization (no atom data)
 PmeSafePointer pmeInitEmpty(const t_inputrec *inputRec,
                             CodePath mode = CodePath::CPU,
@@ -125,16 +133,15 @@ PmeSafePointer pmeInitEmpty(const t_inputrec *inputRec,
                             PmeGpuProgramHandle pmeGpuProgram = nullptr,
                             const Matrix3x3 &box = {{1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F}},
                             real ewaldCoeff_q = 0.0F, real ewaldCoeff_lj = 0.0F);
+//! Make a GPU state-propagator manager
+StatePropagatorDataGpu
+makeStatePropagatorDataGpu(const gmx_pme_t &pme);
 //! PME initialization with atom data and system box
-PmeSafePointer pmeInitAtoms(const t_inputrec                        *inputRec,
-                            CodePath                                 mode,
-                            const gmx_device_info_t                 *gpuInfo,
-                            PmeGpuProgramHandle                      pmeGpuProgram,
-                            const CoordinatesVector                 &coordinates,
-                            const ChargesVector                     &charges,
-                            const Matrix3x3                         &box,
-                            std::shared_ptr<StatePropagatorDataGpu>  stateGpu
-                            );
+void pmeInitAtoms(gmx_pme_t               *pme,
+                  StatePropagatorDataGpu  *stateGpu,
+                  CodePath                 mode,
+                  const CoordinatesVector &coordinates,
+                  const ChargesVector     &charges);
 //! PME spline computation and charge spreading
 void pmePerformSplineAndSpread(gmx_pme_t *pme, CodePath mode,
                                bool computeSplines, bool spreadCharges);

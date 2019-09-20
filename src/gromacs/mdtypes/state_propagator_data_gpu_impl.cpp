@@ -62,9 +62,11 @@ StatePropagatorDataGpu::StatePropagatorDataGpu(const void *       /* commandStre
 {
 }
 
-StatePropagatorDataGpu::~StatePropagatorDataGpu()
-{
-}
+StatePropagatorDataGpu::StatePropagatorDataGpu(StatePropagatorDataGpu && /* other */) noexcept = default;
+
+StatePropagatorDataGpu &StatePropagatorDataGpu::operator=(StatePropagatorDataGpu && /* other */) noexcept = default;
+
+StatePropagatorDataGpu::~StatePropagatorDataGpu() = default;
 
 void StatePropagatorDataGpu::reinit(int  /* numAtomsLocal */,
                                     int  /* numAtomsAll   */)

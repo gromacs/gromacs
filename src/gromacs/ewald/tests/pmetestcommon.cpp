@@ -106,15 +106,14 @@ uint64_t getSplineModuliDoublePrecisionUlps(int splineOrder)
     return 4 * (splineOrder - 2) + 2 * sineUlps * splineOrder;
 }
 
-//! PME initialization - internal
-static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
-                                      CodePath                  mode,
-                                      const gmx_device_info_t  *gpuInfo,
-                                      PmeGpuProgramHandle       pmeGpuProgram,
-                                      const Matrix3x3          &box,
-                                      real                      ewaldCoeff_q = 1.0F,
-                                      real                      ewaldCoeff_lj = 1.0F
-                                      )
+//! PME initialization
+PmeSafePointer pmeInitWrapper(const t_inputrec         *inputRec,
+                              const CodePath            mode,
+                              const gmx_device_info_t  *gpuInfo,
+                              PmeGpuProgramHandle       pmeGpuProgram,
+                              const Matrix3x3          &box,
+                              const real                ewaldCoeff_q,
+                              const real                ewaldCoeff_lj)
 {
     const MDLogger dummyLogger;
     const auto     runMode       = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::Mixed;
@@ -156,7 +155,7 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
 
 //! Simple PME initialization based on input, no atom data
 PmeSafePointer pmeInitEmpty(const t_inputrec         *inputRec,
-                            CodePath                  mode,
+                            const CodePath            mode,
                             const gmx_device_info_t  *gpuInfo,
                             PmeGpuProgramHandle       pmeGpuProgram,
                             const Matrix3x3          &box,
@@ -164,59 +163,58 @@ PmeSafePointer pmeInitEmpty(const t_inputrec         *inputRec,
                             real                      ewaldCoeff_lj
                             )
 {
-    return pmeInitInternal(inputRec, mode, gpuInfo, pmeGpuProgram, box, ewaldCoeff_q, ewaldCoeff_lj);
+    return pmeInitWrapper(inputRec, mode, gpuInfo, pmeGpuProgram, box, ewaldCoeff_q, ewaldCoeff_lj);
     // hiding the fact that PME actually needs to know the number of atoms in advance
 }
 
-//! PME initialization with atom data
-PmeSafePointer pmeInitAtoms(const t_inputrec                        *inputRec,
-                            CodePath                                 mode,
-                            const gmx_device_info_t                 *gpuInfo,
-                            PmeGpuProgramHandle                      pmeGpuProgram,
-                            const CoordinatesVector                 &coordinates,
-                            const ChargesVector                     &charges,
-                            const Matrix3x3                         &box,
-                            std::shared_ptr<StatePropagatorDataGpu>  stateGpu
-                            )
+//! Make a GPU state-propagator manager
+StatePropagatorDataGpu
+makeStatePropagatorDataGpu(const gmx_pme_t &pme)
 {
-    const index     atomCount = coordinates.size();
+    // TODO: Pin the host buffer and use async memory copies
+    return StatePropagatorDataGpu(pme_gpu_get_device_stream(&pme),
+                                  pme_gpu_get_device_context(&pme),
+                                  GpuApiCallBehavior::Sync,
+                                  pme_gpu_get_padding_size(&pme));
+}
+
+//! PME initialization with atom data
+void pmeInitAtoms(gmx_pme_t               *pme,
+                  StatePropagatorDataGpu  *stateGpu,
+                  const CodePath           mode,
+                  const CoordinatesVector &coordinates,
+                  const ChargesVector     &charges)
+{
+    const index  atomCount = coordinates.size();
     GMX_RELEASE_ASSERT(atomCount == charges.ssize(), "Mismatch in atom data");
-    PmeSafePointer  pmeSafe = pmeInitInternal(inputRec, mode, gpuInfo, pmeGpuProgram, box);
-    PmeAtomComm    *atc     = nullptr;
+    PmeAtomComm *atc = nullptr;
 
     switch (mode)
     {
         case CodePath::CPU:
-            atc              = &(pmeSafe->atc[0]);
+            atc              = &(pme->atc[0]);
             atc->x           = coordinates;
             atc->coefficient = charges;
-            gmx_pme_reinit_atoms(pmeSafe.get(), atomCount, charges.data());
+            gmx_pme_reinit_atoms(pme, atomCount, charges.data());
             /* With decomposition there would be more boilerplate atc code here, e.g. do_redist_pos_coeffs */
             break;
 
         case CodePath::GPU:
             // TODO: Avoid use of atc in the GPU code path
-            atc              = &(pmeSafe->atc[0]);
+            atc              = &(pme->atc[0]);
             // We need to set atc->n for passing the size in the tests
             atc->setNumAtoms(atomCount);
-            gmx_pme_reinit_atoms(pmeSafe.get(), atomCount, charges.data());
+            gmx_pme_reinit_atoms(pme, atomCount, charges.data());
 
-            // TODO: Pin the host buffer and use async memory copies
-            stateGpu = std::make_unique<StatePropagatorDataGpu>(pme_gpu_get_device_stream(pmeSafe.get()),
-                                                                pme_gpu_get_device_context(pmeSafe.get()),
-                                                                GpuApiCallBehavior::Sync,
-                                                                pme_gpu_get_padding_size(pmeSafe.get()));
             stateGpu->reinit(atomCount, atomCount);
             stateGpu->copyCoordinatesToGpu(arrayRefFromArray(coordinates.data(), coordinates.size()), gmx::StatePropagatorDataGpu::AtomLocality::All);
-            pme_gpu_set_kernelparam_coordinates(pmeSafe->gpu, stateGpu->getCoordinates());
+            pme_gpu_set_kernelparam_coordinates(pme->gpu, stateGpu->getCoordinates());
 
             break;
 
         default:
             GMX_THROW(InternalError("Test not implemented for this mode"));
     }
-
-    return pmeSafe;
 }
 
 //! Getting local PME real grid pointer for test I/O

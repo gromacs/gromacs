@@ -294,6 +294,10 @@ StatePropagatorDataGpu::StatePropagatorDataGpu(const void        *commandStream,
 {
 }
 
+StatePropagatorDataGpu::StatePropagatorDataGpu(StatePropagatorDataGpu && /* other */) noexcept = default;
+
+StatePropagatorDataGpu &StatePropagatorDataGpu::operator=(StatePropagatorDataGpu && /* other */) noexcept = default;
+
 StatePropagatorDataGpu::~StatePropagatorDataGpu() = default;
 
 

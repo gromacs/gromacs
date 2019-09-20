@@ -105,7 +105,11 @@ class StatePropagatorDataGpu
                                const void        *gpuContext,
                                GpuApiCallBehavior transferKind,
                                int                paddingSize);
-
+        //! Move constructor
+        StatePropagatorDataGpu(StatePropagatorDataGpu &&other) noexcept;
+        //! Move assignment
+        StatePropagatorDataGpu &operator=(StatePropagatorDataGpu &&other) noexcept;
+        //! Destructor
         ~StatePropagatorDataGpu();
 
         /*! \brief Set the ranges for local and non-local atoms and reallocates buffers.
@@ -217,7 +221,7 @@ class StatePropagatorDataGpu
     private:
         class Impl;
         gmx::PrivateImplPointer<Impl> impl_;
-
+        GMX_DISALLOW_COPY_AND_ASSIGN(StatePropagatorDataGpu);
 };
 
 }      // namespace gmx
