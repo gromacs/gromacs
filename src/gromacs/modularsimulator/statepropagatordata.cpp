@@ -234,6 +234,18 @@ void StatePropagatorData::setLocalState(std::unique_ptr<t_state> state)
     copy_mat(state->box, box_);
     copyPosition();
     ddpCount_ = state->ddp_count;
+
+    if (vvResetVelocities_)
+    {
+        /* DomDec runs twice early in the simulation, once at setup time, and once before the first step.
+         * Every time DD runs, it sets a new local state here. We are saving a backup during setup time
+         * (ok for non-DD cases), so we need to update our backup to the DD state before the first step
+         * here to avoid resetting to an earlier DD state. This is done before any propagation that needs
+         * to be reset, so it's not very safe but correct for now.
+         * TODO: Get rid of this once input is assumed to be at half steps
+         */
+        velocityBackup_ = v_;
+    }
 }
 
 t_state* StatePropagatorData::globalState()
@@ -385,6 +397,9 @@ void StatePropagatorData::elementSetup()
 {
     if (vvResetVelocities_)
     {
+        // MD-VV does the first velocity half-step only to calculate the constraint virial,
+        // then resets the velocities since the input is assumed to be positions and velocities
+        // at full time step. TODO: Change this to have input at half time steps.
         velocityBackup_ = v_;
     }
 }
