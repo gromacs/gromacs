@@ -3045,7 +3045,11 @@ bool is1DAnd1PulseDD(const gmx_domdec_t &dd)
     const int  productOfDimensionSizes      = dd.nc[XX]*dd.nc[YY]*dd.nc[ZZ];
     const bool decompositionHasOneDimension = (maxDimensionSize == productOfDimensionSizes);
 
-    return (dd.comm->maxpulse == 1) && decompositionHasOneDimension;
+    const bool hasMax1Pulse =
+        ((isDlbDisabled(dd.comm) && dd.comm->cellsize_limit >= dd.comm->systemInfo.cutoff) ||
+         (!isDlbDisabled(dd.comm) && dd.comm->maxpulse == 1));
+
+    return decompositionHasOneDimension && hasMax1Pulse;
 
 }
 
@@ -3169,6 +3173,11 @@ static gmx_bool test_dd_cutoff(t_commrec                     *cr,
         }
 
         np = 1 + static_cast<int>(cutoffRequested*inv_cell_size*ddbox.skew_fac[dim]);
+
+        if (dd->comm->ddSettings.request1DAnd1Pulse && np > 1)
+        {
+            return FALSE;
+        }
 
         if (!isDlbDisabled(dd->comm) && (dim < ddbox.npbcdim) && (dd->comm->cd[d].np_dlb > 0))
         {
