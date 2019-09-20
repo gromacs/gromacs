@@ -160,10 +160,12 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
             trajectoryComparison);
 }
 
-// TODO The time for OpenCL kernel compilation means these tests time
-// out. Once that compilation is cached for the whole process, these
-// tests can run in such configurations.
-#if GMX_GPU != GMX_GPU_OPENCL
+// TODO: The time for OpenCL kernel compilation means these tests time
+//       out. Once that compilation is cached for the whole process, these
+//       tests can run in such configurations.
+// These tests are very sensitive, so we only run them in double precision.
+// As we change call ordering, they might actually become too strict to be useful.
+#if GMX_GPU != GMX_GPU_OPENCL && GMX_DOUBLE
 INSTANTIATE_TEST_CASE_P(SimulatorsAreEquivalentDefaultModular, SimulatorComparisonTest,
                             ::testing::Combine(
                                     ::testing::Combine(::testing::Values("argon12", "tip3p5"),
