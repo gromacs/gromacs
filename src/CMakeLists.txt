@@ -36,20 +36,29 @@
 # Output compiler and CFLAGS used
 ######################################
 include(GetCompilerInfo.cmake)
-get_compiler_info(C BUILD_C_COMPILER BUILD_CFLAGS)
-get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
+get_compiler_info(C BUILD_C_COMPILER)
+get_compiler_info(CXX BUILD_CXX_COMPILER)
 if(GMX_USE_CUDA)
     if(NOT GMX_CLANG_CUDA)
         GMX_SET_CUDA_NVCC_FLAGS()
     endif()
 
-    get_cuda_compiler_info(CUDA_COMPILER_INFO CUDA_COMPILER_FLAGS)
+    get_cuda_compiler_info(CUDA_COMPILER_INFO CUDA_DEVICE_COMPILER_FLAGS CUDA_HOST_COMPILER_FLAGS)
 endif()
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UPPER)
 configure_file(config.h.cmakein config.h)
 configure_file(gmxpre-config.h.cmakein gmxpre-config.h)
 configure_file(buildinfo.h.cmakein buildinfo.h ESCAPE_QUOTES)
+# Make a file with compiler flags used for libgromacs for each
+# langauge and build configuration.  The one that corresponds to
+# CMAKE_BUILD_TYPE is #included into buildinfo.h and populates the
+# fields e.g. printed to the log file.
+file(GENERATE
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/compilerflaginfo-$<CONFIG>-$<COMPILE_LANGUAGE>.h
+    INPUT ${CMAKE_CURRENT_SOURCE_DIR}/compilerflaginfo.h.cmakein
+    CONDITION $<CONFIG:${CMAKE_BUILD_TYPE}>
+    )
 
 ####
 set(IGNORED_CLANG_ALL_WARNINGS

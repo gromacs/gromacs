@@ -148,11 +148,12 @@ endif()
 # Note that semicolon is used as separator for nvcc.
 #
 # Parameters:
-#   COMPILER_INFO   - [output variable] string with compiler path, ID and
-#                     some compiler-provided information
-#   COMPILER_FLAGS  - [output variable] flags for the compiler
+#   COMPILER_INFO         - [output variable] string with compiler path, ID and
+#                           some compiler-provided information
+#   DEVICE_COMPILER_FLAGS - [output variable] device flags for the compiler
+#   HOST_COMPILER_FLAGS   - [output variable] host flags for the compiler, if propagated
 #
-macro(get_cuda_compiler_info COMPILER_INFO COMPILER_FLAGS)
+macro(get_cuda_compiler_info COMPILER_INFO DEVICE_COMPILER_FLAGS HOST_COMPILER_FLAGS)
     if(NOT GMX_CLANG_CUDA)
         if(CUDA_NVCC_EXECUTABLE)
 
@@ -171,9 +172,11 @@ macro(get_cuda_compiler_info COMPILER_INFO COMPILER_FLAGS)
                 string(TOUPPER ${CMAKE_BUILD_TYPE} _build_type)
                 SET(_compiler_flags "${CUDA_NVCC_FLAGS_${_build_type}}")
                 if(CUDA_PROPAGATE_HOST_FLAGS)
-                    string(REGEX REPLACE "[ ]+" ";" _cxx_flags_nospace "${BUILD_CXXFLAGS}")
+                    set(${HOST_COMPILER_FLAGS} BUILD_CXXFLAGS)
+                else()
+                    set(${HOST_COMPILER_FLAGS} "")
                 endif()
-                SET(${COMPILER_FLAGS} "${CUDA_NVCC_FLAGS}${CUDA_NVCC_FLAGS_${_build_type}}; ${_cxx_flags_nospace}")
+                SET(${DEVICE_COMPILER_FLAGS} "${CUDA_NVCC_FLAGS}${CUDA_NVCC_FLAGS_${_build_type}}")
             else()
                 SET(${COMPILER_INFO} "N/A")
                 SET(${COMPILER_FLAGS} "N/A")
