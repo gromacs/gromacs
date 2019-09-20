@@ -79,8 +79,9 @@ ConstraintsElement<variable>::ConstraintsElement(
 template <ConstraintVariable variable>
 void ConstraintsElement<variable>::elementSetup()
 {
-    if ((variable == ConstraintVariable::Positions && inputrec_->eI == eiMD) ||
-        (variable == ConstraintVariable::Velocities && inputrec_->eI == eiVV))
+    if (!inputrec_->bContinuation &&
+        ((variable == ConstraintVariable::Positions && inputrec_->eI == eiMD) ||
+         (variable == ConstraintVariable::Velocities && inputrec_->eI == eiVV)))
     {
         // disabled functionality
         real  lambda    = 0;
@@ -92,7 +93,7 @@ void ConstraintsElement<variable>::elementSetup()
                 statePropagatorData_->velocitiesView(),
                 statePropagatorData_->box(), lambda);
 
-        if (isMasterRank_ && !inputrec_->bContinuation)
+        if (isMasterRank_)
         {
             if (inputrec_->eConstrAlg == econtLINCS)
             {
