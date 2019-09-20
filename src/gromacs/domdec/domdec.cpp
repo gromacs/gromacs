@@ -3015,8 +3015,6 @@ canMake1DAnd1PulseDomainDecomposition(const DDSettings              &ddSettingsO
 
     DDSystemInfo  systemInfo = getSystemInfo(dummyLogger, cr, options, &mtop, &ir, box, xGlobal);
 
-    int           numPPRanksRequested = numRanksRequested - (EEL_PME(ir.coulombtype) ? options.numPmeRanks : 0);
-
     DDSettings    ddSettings = ddSettingsOriginal;
     ddSettings.request1DAnd1Pulse = true;
     const real    gridSetupCellsizeLimit = getDDGridSetupCellSizeLimit(dummyLogger, ddSettings.request1DAnd1Pulse,
@@ -3024,7 +3022,7 @@ canMake1DAnd1PulseDomainDecomposition(const DDSettings              &ddSettingsO
                                                                        options.dlbScaling, ir,
                                                                        systemInfo.cellsizeLimit);
     gmx_ddbox_t ddbox       = {0};
-    DDGridSetup ddGridSetup = getDDGridSetup(dummyLogger, cr, numPPRanksRequested, options,
+    DDGridSetup ddGridSetup = getDDGridSetup(dummyLogger, cr, numRanksRequested, options,
                                              ddSettings, systemInfo, gridSetupCellsizeLimit,
                                              mtop, ir, box, xGlobal, &ddbox);
 
