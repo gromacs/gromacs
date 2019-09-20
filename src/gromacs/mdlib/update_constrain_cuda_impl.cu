@@ -85,13 +85,18 @@ void UpdateConstrainCuda::Impl::integrate(const real                        dt,
     // TODO There is no point in having separate virial matrix for constraints
     clear_mat(virial);
 
+    // The integrate should save a copy of the current coordinates in d_xp_ and write updated once into d_x_.
+    // The d_xp_ is only needed by constraints.
     integrator_->integrate(d_x_, d_xp_, d_v_, d_f_, dt,
                            doTempCouple, tcstat,
                            doPressureCouple, dtPressureCouple, velocityScalingMatrix);
-    lincsCuda_->apply(d_x_, d_xp_,
+    // Constraints need both coordinates before (d_x_) and after (d_xp_) update. However, after constraints
+    // are applied, the d_x_ can be discarded. So we intentionally swap the d_x_ and d_xp_ here to avoid the
+    // d_xp_ -> d_x_ copy after constraints. Note that the integrate saves them in the wrong order as well.
+    lincsCuda_->apply(d_xp_, d_x_,
                       updateVelocities, d_v_, 1.0/dt,
                       computeVirial, virial);
-    settleCuda_->apply(d_x_, d_xp_,
+    settleCuda_->apply(d_xp_, d_x_,
                        updateVelocities, d_v_, 1.0/dt,
                        computeVirial, virial);
 
@@ -104,9 +109,6 @@ void UpdateConstrainCuda::Impl::integrate(const real                        dt,
             virial[i][j] = scaleFactor*virial[i][j];
         }
     }
-
-    // TODO: This should be eliminated
-    cudaMemcpy(d_x_, d_xp_, numAtoms_*sizeof(float3), cudaMemcpyDeviceToDevice);
 
     return;
 }

@@ -102,12 +102,9 @@ void integrateLeapFrogGpu(LeapFrogTestData *testData,
         integrator->integrate(d_x, d_xp, d_v, d_f, testData->timestep_,
                               doTempCouple, testData->kineticEnergyData_.tcstat,
                               doPressureCouple, testData->dtPressureCouple_, testData->velocityScalingMatrix_);
-
-        copyFromDeviceBuffer(h_xp, &d_xp, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
-        copyToDeviceBuffer(&d_x,    h_xp, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
     }
 
-    copyFromDeviceBuffer(h_xp, &d_xp, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
+    copyFromDeviceBuffer(h_xp, &d_x, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
     copyFromDeviceBuffer(h_v,  &d_v,  0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
 
     freeDeviceBuffer(&d_x);

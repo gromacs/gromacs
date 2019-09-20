@@ -68,7 +68,10 @@
 namespace gmx
 {
 
-//! Number of CUDA threads in a block
+/*!\brief Number of CUDA threads in a block
+ *
+ * \todo Check if using smaller block size will lead to better prformance.
+ */
 constexpr static int c_threadsPerBlock = 256;
 //! Maximum number of threads in a block (for __launch_bounds__)
 constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
@@ -99,6 +102,9 @@ enum class VelocityScalingType
 
 /*! \brief Main kernel for Leap-Frog integrator.
  *
+ *  The coordinates and velocities are updated on the GPU. Also saves the intermediate values of the coordinates for
+ *   further use in constraints.
+ *
  *  Each GPU thread works with a single particle. Empty declaration is needed to
  *  avoid "no previous prototype for function" clang warning.
  *
@@ -108,8 +114,8 @@ enum class VelocityScalingType
  * \tparam        numTempScaleValues             The number of different T-couple values.
  * \tparam        velocityScaling                Type of the Parrinello-Rahman velocity rescaling.
  * \param[in]     numAtoms                       Total number of atoms.
- * \param[in]     gm_x                           Coordinates before the timestep
- * \param[out]    gm_xp                          Coordinates after the timestep.
+ * \param[in,out] gm_x                           Coordinates to update upon integration.
+ * \param[out]    gm_xp                          A copy of the coordinates before the integration (for constraints).
  * \param[in,out] gm_v                           Velocities to update.
  * \param[in]     gm_f                           Atomic forces.
  * \param[in]     gm_inverseMasses               Reciprocal masses.
@@ -122,7 +128,7 @@ enum class VelocityScalingType
 template<NumTempScaleValues numTempScaleValues, VelocityScalingType velocityScaling>
 __launch_bounds__(c_maxThreadsPerBlock)
 __global__ void leapfrog_kernel(const int                             numAtoms,
-                                const float3* __restrict__            gm_x,
+                                float3* __restrict__                  gm_x,
                                 float3* __restrict__                  gm_xp,
                                 float3* __restrict__                  gm_v,
                                 const float3* __restrict__            gm_f,
@@ -135,7 +141,7 @@ __global__ void leapfrog_kernel(const int                             numAtoms,
 template<NumTempScaleValues numTempScaleValues, VelocityScalingType velocityScaling>
 __launch_bounds__(c_maxThreadsPerBlock)
 __global__ void leapfrog_kernel(const int                             numAtoms,
-                                const float3* __restrict__            gm_x,
+                                float3* __restrict__                  gm_x,
                                 float3* __restrict__                  gm_xp,
                                 float3* __restrict__                  gm_v,
                                 const float3* __restrict__            gm_f,
@@ -153,6 +159,11 @@ __global__ void leapfrog_kernel(const int                             numAtoms,
         float3 f           = gm_f[threadIndex];
         float  im          = gm_inverseMasses[threadIndex];
         float  imdt        = im*dt;
+
+        // Swapping places for xp and x so that the x will contain the updated coordinates and xp - the
+        // coordinates before update. This should be taken into account when (if) constraints are applied
+        // after the update: x and xp have to be passed to constraints in the 'wrong' order.
+        gm_xp[threadIndex]  = x;
 
         if (numTempScaleValues != NumTempScaleValues::None || velocityScaling != VelocityScalingType::None)
         {
@@ -187,7 +198,8 @@ __global__ void leapfrog_kernel(const int                             numAtoms,
 
         x                  += v*dt;
         gm_v[threadIndex]   = v;
-        gm_xp[threadIndex]  = x;
+        gm_x[threadIndex]   = x;
+
     }
     return;
 }
