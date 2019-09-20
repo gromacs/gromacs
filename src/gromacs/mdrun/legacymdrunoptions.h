@@ -164,7 +164,7 @@ class LegacyMdrunOptions
 
         ImdOptions       &imdOptions = mdrunOptions.imdOptions;
 
-        t_pargs           pa[48] = {
+        t_pargs           pa[47] = {
 
             { "-dd",      FALSE, etRVEC, {&realddxyz},
               "Domain decomposition grid, 0 is optimize" },
@@ -227,8 +227,6 @@ class LegacyMdrunOptions
               "Perform PME FFT calculations on" },
             { "-bonded",     FALSE, etENUM, {bonded_opt_choices},
               "Perform bonded calculations on" },
-            { "-update", FALSE, etENUM, {update_opt_choices},
-              "Perform update and constraints on"},
             { "-v",       FALSE, etBOOL, {&mdrunOptions.verbose},
               "Be loud and noisy" },
             { "-pforce",  FALSE, etREAL, {&pforce},
