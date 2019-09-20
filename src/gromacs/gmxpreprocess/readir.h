@@ -93,8 +93,8 @@ void init_inputrec_strings();
 /*! \brief Clean up object that holds strings parsed from an .mdp file */
 void done_inputrec_strings();
 
-void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
-              warninp_t wi);
+void check_ir(const char *mdparin, const gmx::MdModulesNotifier &mdModulesNotifier,
+              t_inputrec *ir, t_gromppopts *opts, warninp_t wi);
 /* Validate inputrec data.
  * Fatal errors will be added to nerror.
  */

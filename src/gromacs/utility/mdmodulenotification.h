@@ -45,6 +45,7 @@
 #define GMX_MDRUNUTILITY_MDMODULENOTIFICATION_H
 
 #include <functional>
+#include <string>
 #include <vector>
 
 struct t_commrec;
@@ -209,11 +210,50 @@ struct MdModulesEnergyOutputToDensityFittingRequestChecker
     bool energyOutputToDensityFitting_ = false;
 };
 
+/*! \libinternal
+ * \brief Collect errors for the energy calculation frequency.
+ *
+ * Collect errors regarding energy calculation frequencies as strings that then
+ * may be used to issue errors.
+ *
+ * \note The mdp option "nstcalcenergy" is altered after reading the .mdp input
+ *       and only used in certain integrators, thus this class is to be used
+ *       only after all these operations are done.
+ */
+class EnergyCalculationFrequencyErrors
+{
+    public:
+        //! Construct by setting the energy calculation frequency
+        EnergyCalculationFrequencyErrors(int64_t energyCalculationIntervalInSteps) :
+            energyCalculationIntervalInSteps_(energyCalculationIntervalInSteps){}
+        //! Return the number of steps of an energy calculation interval
+        std::int64_t energyCalculationIntervalInSteps() const
+        {
+            return energyCalculationIntervalInSteps_;
+        }
+        //! Collect error messages
+        void addError(const std::string &errorMessage)
+        {
+            errorMessages_.push_back(errorMessage);
+        }
+        //! Return error messages
+        const std::vector<std::string> &errorMessages() const
+        {
+            return errorMessages_;
+        }
+    private:
+        //! The frequency of energy calculations
+        const std::int64_t       energyCalculationIntervalInSteps_;
+        //! The error messages
+        std::vector<std::string> errorMessages_;
+};
+
 struct MdModulesNotifier
 {
 //! Register callback function types for MdModule
     registerMdModuleNotification<
         const t_commrec &,
+        EnergyCalculationFrequencyErrors *,
         IndexGroupsAndNames,
         KeyValueTreeObjectBuilder,
         const KeyValueTreeObject &,

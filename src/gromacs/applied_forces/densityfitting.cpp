@@ -263,6 +263,12 @@ class DensityFitting final : public IMDModule
                 };
             notifier->notifier_.subscribe(readInternalParametersFunction);
 
+            // Checking for consistency with all .mdp options
+            const auto checkEnergyCaluclationFrequencyFunction = [this](EnergyCalculationFrequencyErrors * energyCalculationFrequencyErrors) {
+                    densityFittingOptions_.checkEnergyCaluclationFrequency(energyCalculationFrequencyErrors);
+                };
+            notifier->notifier_.subscribe(checkEnergyCaluclationFrequencyFunction);
+
             // constructing local atom sets during simulation setup
             const auto setLocalAtomSetFunction = [this](LocalAtomSetManager *localAtomSetManager) {
                     this->constructLocalAtomSet(localAtomSetManager);

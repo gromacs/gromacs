@@ -44,6 +44,9 @@
 
 #include <string>
 
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -101,6 +104,16 @@ class DensityFittingTest : public MdrunTestFixture
                     "density-guided-simulation-reference-density-filename = %s\n",
                     TestFileManager::getInputFilePath("ellipsoid-density.mrc").c_str() );
 
+        //! Mdp values for md integrator with default density fitting parameters.
+        const std::string mdpMdDensfitYesUnsetValues = formatString(
+                    "integrator                       = md\n"
+                    "nsteps                           = 2\n"
+                    "cutoff-scheme                    = verlet\n"
+                    "density-guided-simulation-active = yes\n"
+                    "density-guided-simulation-group  = FirstThreeOfTwelve\n"
+                    "density-guided-simulation-reference-density-filename = %s\n",
+                    TestFileManager::getInputFilePath("ellipsoid-density.mrc").c_str() );
+
         //! Mdp values for steepest-decent energy minimization with density fitting values set to non-defaults.
         const std::string mdpDensiftAllDefaultsChanged_ = formatString(
                     "density-guided-simulation-similarity-measure = relative-entropy\n"
@@ -110,7 +123,11 @@ class DensityFittingTest : public MdrunTestFixture
                     "density-guided-simulation-gaussian-transform-spreading-range-in-multiples-of-width = 6\n"
                     "density-guided-simulation-normalize-densities = false\n"
                     );
-
+        //! Set mdp values so that energy calculation interval and density guided simulation interval mismatch.
+        const std::string mdpEnergyAndDensityfittingIntervalMismatch_ = formatString(
+                    "nstcalcenergy = 7\n"
+                    "density-guided-simulation-nst = 3\n"
+                    );
         //! The command line to call mdrun
         CommandLine       commandLineForMdrun_;
 };
@@ -144,6 +161,15 @@ TEST_F(DensityFittingTest, EnergyMinimizationEnergyCorrectForRelativeEntropy)
     checkMdrun(expectedEnergyTermMagnitude);
 }
 
+/* Test that grompp exits with error message if energy evaluation frequencies
+ * do not match.
+ */
+TEST_F(DensityFittingTest, GromppErrorWhenEnergyEvaluationFrequencyMismatch)
+{
+    runner_.useStringAsMdpFile(mdpMdDensfitYesUnsetValues + mdpEnergyAndDensityfittingIntervalMismatch_);
+
+    EXPECT_DEATH_IF_SUPPORTED(runner_.callGrompp(), ".*is not a multiple of density-guided-simulation-nst.*");
+}
 
 } // namespace test
 } // namespace gmx

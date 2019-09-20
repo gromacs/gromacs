@@ -137,8 +137,8 @@ The cost of applying forces every integration step is reduced when applying the
 density-guided simulation forces only every :math:`N` steps. The applied force
 is scaled by :math:`N` to approximate the same effective Hamiltonian as when
 applying the forces every step, while maintaining time-reversibility and energy
-conservation. Note that for this setting, the energy output frequency should
-be a multiple of :math:`N`.
+conservation. Note that for this setting, the energy output frequency must be a
+multiple of :math:`N`.
 
 The maximal time-step should not exceed the fastest oscillation period of any
 atom within the map potential divided by :math:`\pi`. This oscillation period

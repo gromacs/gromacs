@@ -1882,7 +1882,7 @@ int gmx_grompp(int argc, char *argv[])
     {
         fprintf(stderr, "checking input for internal consistency...\n");
     }
-    check_ir(mdparin, ir, opts, wi);
+    check_ir(mdparin, mdModules.notifier(), ir, opts, wi);
 
     if (ir->ld_seed == -1)
     {

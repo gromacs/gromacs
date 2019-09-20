@@ -238,8 +238,8 @@ static void process_interaction_modifier(int *eintmod)
     }
 }
 
-void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
-              warninp_t wi)
+void check_ir(const char *mdparin, const gmx::MdModulesNotifier &mdModulesNotifier,
+              t_inputrec *ir, t_gromppopts *opts, warninp_t wi)
 /* Check internal consistency.
  * NOTE: index groups are not set here yet, don't check things
  * like temperature coupling group options here, but in triple_check
@@ -526,6 +526,17 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
              */
             check_nst("nstcalcenergy", ir->nstcalcenergy,
                       "nstenergy", &ir->nstenergy, wi);
+        }
+
+        // Inquire all MdModules, if their parameters match with the energy
+        // calculation frequency
+        gmx::EnergyCalculationFrequencyErrors energyCalculationFrequencyErrors(ir->nstcalcenergy);
+        mdModulesNotifier.notifier_.notify(&energyCalculationFrequencyErrors);
+
+        // Emit all errors from the energy calculation frequency checks
+        for (const std::string &energyFrequencyErrorMessage : energyCalculationFrequencyErrors.errorMessages())
+        {
+            warning_error(wi, energyFrequencyErrorMessage);
         }
     }
 

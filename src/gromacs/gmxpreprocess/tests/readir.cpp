@@ -99,7 +99,7 @@ class GetIrTest : public ::testing::Test
             get_ir(inputMdpFilename.c_str(), outputMdpFilename.c_str(),
                    &mdModules_, &ir_, &opts_, WriteMdpHeader::no, wi_);
 
-            check_ir(inputMdpFilename.c_str(), &ir_, &opts_, wi_);
+            check_ir(inputMdpFilename.c_str(), mdModules_.notifier(), &ir_, &opts_, wi_);
             // Now check
             bool                 failure = warning_errors_exist(wi_);
             TestReferenceData    data;
