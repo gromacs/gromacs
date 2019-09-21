@@ -16,6 +16,19 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix incorrect pressure when atoms in CMAP cross a box boundary
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The virial calculation and thus the pressure would be incorrect
+when the second and third atom involved in a CHARMM CMAP correction
+term would reside in different periodic images. This can happen when
+a protein is positioned over a box boundary. Note that the energy
+and forces were correct, but sampling was affected when pressure
+coupling was applied when a protein crossed a box boundary.
+
+:issue:`2845`
+:issue:`2867`
+
 Fix incorrect LJ cut-off on GPU when rvdw < rcoulomb
 """"""""""""""""""""""""""""""""""""""""""""""""""""
 
