@@ -1,0 +1,33 @@
+GROMACS 2018.8 release notes
+----------------------------
+
+This version was released on TODO, 2019. These release notes document
+the changes that have taken place in GROMACS since version 2018.7, to fix known
+issues. It also incorporates all fixes made in previous versions,
+which you can find described in the :ref:`release-notes`.
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix incorrect pressure when atoms in CMAP cross a box boundary
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The virial calculation and thus the pressure would be incorrect
+when the second and third atom involved in a CHARMM CMAP correction
+term would reside in different periodic images. This can happen when
+a protein is positioned over a box boundary. Note that the energy
+and forces were correct, but sampling was affected when pressure
+coupling was applied when a protein crossed a box boundary.
+
+:issue:`2845`
+:issue:`2867`
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixes to improve portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Miscellaneous
+^^^^^^^^^^^^^
+
