@@ -60,6 +60,7 @@
 #include "gromacs/topology/topology.h"
 
 #include "statepropagatordata.h"
+#include "vrescalethermostat.h"
 
 struct pull_t;
 class t_state;
@@ -95,7 +96,9 @@ EnergyElement::EnergyElement(
 #endif
     needToSumEkinhOld_(false),
     startingBehavior_(startingBehavior),
+    dummyLegacyState_(),
     statePropagatorData_(statePropagatorData),
+    vRescaleThermostat_(nullptr),
     inputrec_(inputrec),
     top_global_(globalTopology),
     mdAtoms_(mdAtoms),
@@ -239,11 +242,18 @@ void EnergyElement::doStep(
         bool isFreeEnergyCalculationStep)
 {
     enerd_->term[F_ETOT] = enerd_->term[F_EPOT] + enerd_->term[F_EKIN];
-    // All the state is used for is turned off for now (free energy, temperature / pressure coupling)
-    t_state *localState = nullptr;
+    if (vRescaleThermostat_)
+    {
+        dummyLegacyState_.therm_integral = vRescaleThermostat_->thermostatIntegral();
+    }
+    if (integratorHasConservedEnergyQuantity(inputrec_))
+    {
+        enerd_->term[F_ECONSERVED] = enerd_->term[F_ETOT] +
+            NPT_energy(inputrec_, &dummyLegacyState_, nullptr);
+    }
     energyOutput_->addDataAtEnergyStep(
             isFreeEnergyCalculationStep, isEnergyCalculationStep,
-            time, mdAtoms_->mdatoms()->tmass, enerd_, localState,
+            time, mdAtoms_->mdatoms()->tmass, enerd_, &dummyLegacyState_,
             inputrec_->fepvals, inputrec_->expandedvals,
             statePropagatorData_->constPreviousBox(),
             shakeVirial_, forceVirial_, totalVirial_, pressure_,
@@ -401,6 +411,15 @@ void EnergyElement::initializeEnergyHistory(
     }
     /* Set the initial energy history */
     energyOutput->fillEnergyHistory(observablesHistory->energyHistory.get());
+}
+
+void EnergyElement::setVRescaleThermostat(const gmx::VRescaleThermostat *vRescaleThermostat)
+{
+    vRescaleThermostat_ = vRescaleThermostat;
+    if (vRescaleThermostat_)
+    {
+        dummyLegacyState_.flags |= (1u << estTHERM_INT);
+    }
 }
 
 } // namespace gmx

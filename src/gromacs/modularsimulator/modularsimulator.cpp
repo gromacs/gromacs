@@ -417,12 +417,17 @@ void ModularSimulator::constructElementsAndSignallers()
      * constraining, and of the place the statePropagatorData and the energy element
      * have a full timestep state.
      */
-    CheckBondedInteractionsCallbackPtr checkBondedInteractionsCallback = nullptr;
+    // TODO: Make a CheckpointHelperBuilder
+    std::vector<ICheckpointHelperClient*> checkpointClients = {
+        statePropagatorDataPtr, energyElementPtr
+    };
+    CheckBondedInteractionsCallbackPtr    checkBondedInteractionsCallback = nullptr;
     auto integrator = buildIntegrator(
                 &neighborSearchSignallerBuilder,
                 &energySignallerBuilder,
                 &loggingSignallerBuilder,
                 &trajectoryElementBuilder,
+                &checkpointClients,
                 &checkBondedInteractionsCallback,
                 statePropagatorDataPtr,
                 energyElementPtr,
@@ -481,7 +486,6 @@ void ModularSimulator::constructElementsAndSignallers()
                 compat::make_not_null<SimulationSignal*>(&signals_[eglsCHKPT]),
                 simulationsShareState, inputrec->nstlist == 0, MASTER(cr),
                 mdrunOptions.writeConfout, mdrunOptions.checkpointOptions.period);
-    std::vector<ICheckpointHelperClient*> checkpointClients = {statePropagatorDataPtr, energyElementPtr};
     checkpointHelper_ = std::make_unique<CheckpointHelper>(
                 std::move(checkpointClients),
                 std::move(checkpointHandler),
@@ -575,6 +579,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
         SignallerBuilder<EnergySignaller>         *energySignallerBuilder,
         SignallerBuilder<LoggingSignaller>        *loggingSignallerBuilder,
         TrajectoryElementBuilder                  *trajectoryElementBuilder,
+        std::vector<ICheckpointHelperClient*>     *checkpointClients,
         CheckBondedInteractionsCallbackPtr        *checkBondedInteractionsCallback,
         compat::not_null<StatePropagatorData*>     statePropagatorDataPtr,
         compat::not_null<EnergyElement*>           energyElementPtr,
@@ -621,7 +626,10 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
                         inputrec->opts.ref_t, inputrec->opts.tau_t, inputrec->opts.nrdf,
                         energyElementPtr,
                         propagator->viewOnVelocityScaling(),
-                        propagator->velocityScalingCallback());
+                        propagator->velocityScalingCallback(),
+                        state_global, cr, inputrec->bContinuation);
+            checkpointClients->emplace_back(thermostat.get());
+            energyElementPtr->setVRescaleThermostat(thermostat.get());
             addToCallListAndMove(std::move(thermostat), elementCallList, elementsOwnershipList);
         }
         addToCallListAndMove(std::move(propagator), elementCallList, elementsOwnershipList);
@@ -694,7 +702,10 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
                         inputrec->opts.ref_t, inputrec->opts.tau_t, inputrec->opts.nrdf,
                         energyElementPtr,
                         propagatorVelocitiesAndPositions->viewOnVelocityScaling(),
-                        propagatorVelocitiesAndPositions->velocityScalingCallback());
+                        propagatorVelocitiesAndPositions->velocityScalingCallback(),
+                        state_global, cr, inputrec->bContinuation);
+            checkpointClients->emplace_back(thermostat.get());
+            energyElementPtr->setVRescaleThermostat(thermostat.get());
             addToCallListAndMove(std::move(thermostat), elementCallList, elementsOwnershipList);
         }
         addToCallListAndMove(std::move(propagatorVelocitiesAndPositions), elementCallList, elementsOwnershipList);

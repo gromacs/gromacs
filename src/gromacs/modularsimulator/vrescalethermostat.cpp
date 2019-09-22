@@ -43,11 +43,14 @@
 
 #include "vrescalethermostat.h"
 
+#include "gromacs/domdec/domdec_network.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/update.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/group.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/fatalerror.h"
 
 namespace gmx
@@ -65,7 +68,10 @@ VRescaleThermostat::VRescaleThermostat(
         const real           *numDegreesOfFreedom,
         EnergyElement        *energyElement,
         ArrayRef<real>        lambdaView,
-        PropagatorCallbackPtr propagatorCallback) :
+        PropagatorCallbackPtr propagatorCallback,
+        const t_state        *globalState,
+        t_commrec            *cr,
+        bool                  isRestart) :
     nstcouple_(nstcouple),
     offset_(offset),
     useFullStepKE_(useFullStepKE),
@@ -79,7 +85,24 @@ VRescaleThermostat::VRescaleThermostat(
     energyElement_(energyElement),
     lambda_(lambdaView),
     propagatorCallback_(std::move(propagatorCallback))
-{}
+{
+    // TODO: This is only needed to restore the thermostatIntegral_ from cpt. Remove this when
+    //       switching to purely client-based checkpointing.
+    if (isRestart)
+    {
+        if (MASTER(cr))
+        {
+            for (unsigned long i = 0; i < thermostatIntegral_.size(); ++i)
+            {
+                thermostatIntegral_[i] = globalState->therm_integral[i];
+            }
+        }
+        if (DOMAINDECOMP(cr))
+        {
+            dd_bcast(cr->dd, int(thermostatIntegral_.size()*sizeof(double)), thermostatIntegral_.data());
+        }
+    }
+}
 
 void VRescaleThermostat::scheduleTask(
         Step step, Time gmx_unused time,
@@ -155,6 +178,17 @@ void VRescaleThermostat::setLambda(Step step)
             lambda_[i] = 1.0;
         }
     }
+}
+
+void VRescaleThermostat::writeCheckpoint(t_state *localState, t_state gmx_unused *globalState)
+{
+    localState->therm_integral = thermostatIntegral_;
+    localState->flags         |= (1u << estTHERM_INT);
+}
+
+const std::vector<double> &VRescaleThermostat::thermostatIntegral() const
+{
+    return thermostatIntegral_;
 }
 
 }  // namespace gmx

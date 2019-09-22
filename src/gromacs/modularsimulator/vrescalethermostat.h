@@ -48,13 +48,16 @@
 #include "modularsimulatorinterfaces.h"
 #include "propagator.h"
 
+struct t_commrec;
+
 namespace gmx
 {
 //! \addtogroup module_modularsimulator
 //! \{
 
 class VRescaleThermostat final :
-    public               ISimulatorElement
+    public               ISimulatorElement,
+    public               ICheckpointHelperClient
 {
     public:
         //! Constructor
@@ -70,7 +73,10 @@ class VRescaleThermostat final :
             const real *numDegreesOfFreedom,
             EnergyElement *energyElement,
             ArrayRef<real> lambdaView,
-            PropagatorCallbackPtr propagatorCallback);
+            PropagatorCallbackPtr propagatorCallback,
+            const t_state *globalState,
+            t_commrec *cr,
+            bool isRestart);
 
         /*! \brief Register run function for step / time
          *
@@ -86,6 +92,9 @@ class VRescaleThermostat final :
         void elementSetup() override {}
         //! No element teardown needed
         void elementTeardown() override {}
+
+        //! Getter for the thermostatIntegral
+        const std::vector<double> &thermostatIntegral() const;
 
     private:
         //! The frequency at which the thermostat is applied
@@ -120,6 +129,9 @@ class VRescaleThermostat final :
 
         //! Set new lambda value (at T-coupling steps)
         void setLambda(Step step);
+
+        //! ICheckpointHelperClient implementation
+        void writeCheckpoint(t_state *localState, t_state *globalState) override;
 
 };
 

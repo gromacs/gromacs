@@ -155,6 +155,7 @@ class ModularSimulator final :
             SignallerBuilder<EnergySignaller>         *energySignallerBuilder,
             SignallerBuilder<LoggingSignaller>        *loggingSignallerBuilder,
             TrajectoryElementBuilder                  *trajectoryElementBuilder,
+            std::vector<ICheckpointHelperClient*>     *checkpointClients,
             CheckBondedInteractionsCallbackPtr        *checkBondedInteractionsCallback,
             compat::not_null<StatePropagatorData*>     statePropagatorDataPtr,
             compat::not_null<EnergyElement*>           energyElementPtr,
