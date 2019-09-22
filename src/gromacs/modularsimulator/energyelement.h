@@ -62,6 +62,7 @@ class Constraints;
 class EnergyOutput;
 class FreeEnergyPerturbationElement;
 class MDAtoms;
+class ParrinelloRahmanBarostat;
 class StatePropagatorData;
 class VRescaleThermostat;
 struct MdModulesNotifier;
@@ -211,6 +212,14 @@ class EnergyElement final :
          */
         void setVRescaleThermostat(const VRescaleThermostat* vRescaleThermostat);
 
+        /*! \brief set Parrinello-Rahman barostat
+         *
+         * This allows to set a pointer to the Parrinello-Rahman barostat used to
+         * print the box velocities.
+         * TODO: This should be made obsolete my a more modular energy element
+         */
+        void setParrinelloRahamnBarostat(const ParrinelloRahmanBarostat* parrinelloRahmanBarostat);
+
         /*! \brief Initialize energy history
          *
          * Kept as a static function to allow usage from legacy code
@@ -317,33 +326,35 @@ class EnergyElement final :
          * Pointers to Simulator data
          */
         //! Pointer to the state propagator data
-        StatePropagatorData           *statePropagatorData_;
+        StatePropagatorData            *statePropagatorData_;
         //! Pointer to the free energy perturbation element
-        FreeEnergyPerturbationElement *freeEnergyPerturbationElement_;
+        FreeEnergyPerturbationElement  *freeEnergyPerturbationElement_;
         //! Pointer to the vrescale thermostat
-        const VRescaleThermostat      *vRescaleThermostat_;
+        const VRescaleThermostat       *vRescaleThermostat_;
+        //! Pointer to the Parrinello-Rahman barostat
+        const ParrinelloRahmanBarostat *parrinelloRahmanBarostat_;
         //! Contains user input mdp options.
-        const t_inputrec              *inputrec_;
+        const t_inputrec               *inputrec_;
         //! Full system topology.
-        const gmx_mtop_t              *top_global_;
+        const gmx_mtop_t               *top_global_;
         //! Atom parameters for this domain.
-        const MDAtoms                 *mdAtoms_;
+        const MDAtoms                  *mdAtoms_;
         //! Energy data structure
-        gmx_enerdata_t                *enerd_;
+        gmx_enerdata_t                 *enerd_;
         //! Kinetic energy data
-        gmx_ekindata_t                *ekind_;
+        gmx_ekindata_t                 *ekind_;
         //! Handles constraints.
-        const Constraints             *constr_;
+        const Constraints              *constr_;
         //! Handles logging.
-        FILE                          *fplog_;
+        FILE                           *fplog_;
         //! Helper struct for force calculations.
-        t_fcdata                      *fcd_;
+        t_fcdata                       *fcd_;
         //! Notification to MD modules
-        const MdModulesNotifier       &mdModulesNotifier_;
+        const MdModulesNotifier        &mdModulesNotifier_;
         //! Global topology groups
-        const SimulationGroups        *groups_;
+        const SimulationGroups         *groups_;
         //! History of simulation observables.
-        ObservablesHistory            *observablesHistory_;
+        ObservablesHistory             *observablesHistory_;
 };
 
 //! /}

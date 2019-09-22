@@ -61,6 +61,7 @@
 #include "gromacs/topology/topology.h"
 
 #include "freeenergyperturbationelement.h"
+#include "parrinellorahmanbarostat.h"
 #include "statepropagatordata.h"
 #include "vrescalethermostat.h"
 
@@ -101,6 +102,7 @@ EnergyElement::EnergyElement(
     statePropagatorData_(statePropagatorData),
     freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
     vRescaleThermostat_(nullptr),
+    parrinelloRahmanBarostat_(nullptr),
     inputrec_(inputrec),
     top_global_(globalTopology),
     mdAtoms_(mdAtoms),
@@ -257,6 +259,11 @@ void EnergyElement::doStep(
     {
         sum_dhdl(enerd_, freeEnergyPerturbationElement_->constLambdaView(), *inputrec_->fepvals);
         dummyLegacyState_.fep_state = freeEnergyPerturbationElement_->currentFEPState();
+    }
+    if (parrinelloRahmanBarostat_)
+    {
+        copy_mat(parrinelloRahmanBarostat_->boxVelocities(), dummyLegacyState_.boxv);
+        copy_mat(statePropagatorData_->constBox(), dummyLegacyState_.box);
     }
     if (integratorHasConservedEnergyQuantity(inputrec_))
     {
@@ -451,6 +458,15 @@ void EnergyElement::setVRescaleThermostat(const gmx::VRescaleThermostat *vRescal
     if (vRescaleThermostat_)
     {
         dummyLegacyState_.flags |= (1u << estTHERM_INT);
+    }
+}
+
+void EnergyElement::setParrinelloRahamnBarostat(const gmx::ParrinelloRahmanBarostat *parrinelloRahmanBarostat)
+{
+    parrinelloRahmanBarostat_ = parrinelloRahmanBarostat;
+    if (parrinelloRahmanBarostat_)
+    {
+        dummyLegacyState_.flags |= (1u << estBOX) | (1u << estBOXV);
     }
 }
 

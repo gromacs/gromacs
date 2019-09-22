@@ -78,6 +78,7 @@
 #include "energyelement.h"
 #include "forceelement.h"
 #include "freeenergyperturbationelement.h"
+#include "parrinellorahmanbarostat.h"
 #include "propagator.h"
 #include "shellfcelement.h"
 #include "signallers.h"
@@ -486,7 +487,7 @@ void ModularSimulator::constructElementsAndSignallers()
      * maintained.
      */
     auto energySignaller = energySignallerBuilder.build(
-                inputrec->nstcalcenergy, inputrec->fepvals->nstdhdl);
+                inputrec->nstcalcenergy, inputrec->fepvals->nstdhdl, inputrec->nstpcouple);
     trajectoryElementBuilder.registerSignallerClient(compat::make_not_null(energySignaller.get()));
     loggingSignallerBuilder.registerSignallerClient(compat::make_not_null(energySignaller.get()));
     auto trajectoryElement = trajectoryElementBuilder.build(
@@ -655,6 +656,20 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
             energyElementPtr->setVRescaleThermostat(thermostat.get());
             addToCallListAndMove(std::move(thermostat), elementCallList, elementsOwnershipList);
         }
+
+        std::unique_ptr<ParrinelloRahmanBarostat> prBarostat = nullptr;
+        if (inputrec->epc == epcPARRINELLORAHMAN)
+        {
+            // Building the PR barostat here since it needs access to the propagator
+            // and we want to be able to move the propagator object
+            prBarostat = std::make_unique<ParrinelloRahmanBarostat>(
+                        inputrec->nstpcouple, -1, inputrec->delta_t*inputrec->nstpcouple, inputrec->init_step,
+                        propagator->viewOnPRScalingMatrix(), propagator->prScalingCallback(),
+                        statePropagatorDataPtr, energyElementPtr, fplog, inputrec, mdAtoms,
+                        state_global, cr, inputrec->bContinuation);
+            energyElementPtr->setParrinelloRahamnBarostat(prBarostat.get());
+            checkpointClients->emplace_back(prBarostat.get());
+        }
         addToCallListAndMove(std::move(propagator), elementCallList, elementsOwnershipList);
         if (constr)
         {
@@ -671,6 +686,10 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
 
         addToCallListAndMove(std::move(computeGlobalsElement), elementCallList, elementsOwnershipList);
         addToCallList(energyElementPtr, elementCallList);  // we have the energies at time t here!
+        if (prBarostat)
+        {
+            addToCallListAndMove(std::move(prBarostat), elementCallList, elementsOwnershipList);
+        }
     }
     else if (inputrec->eI == eiVV)
     {
@@ -802,8 +821,8 @@ bool ModularSimulator::isInputCompatible(
                 inputrec->etc == etcNO || inputrec->etc == etcVRESCALE,
                 "Only v-rescale thermostat is supported by the modular simulator.");
     isInputCompatible = isInputCompatible && conditionalAssert(
-                inputrec->epc == epcNO,
-                "Pressure coupling is not supported by the modular simulator.");
+                inputrec->epc == epcNO || (inputrec->epc == epcPARRINELLORAHMAN && inputrec->eI == eiMD),
+                "Only Parrinello-Rahman barostat (md only) is supported by the modular simulator.");
     isInputCompatible = isInputCompatible && conditionalAssert(
                 !(inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec) || inputrecNvtTrotter(inputrec)),
                 "Legacy Trotter decomposition is not supported by the modular simulator.");

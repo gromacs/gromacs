@@ -303,13 +303,15 @@ class EnergySignaller final :
          * @param calculateFreeEnergyCallbacks  A vector of pointers to callbacks (free energy steps)
          * @param nstcalcenergy                 The energy calculation frequency
          * @param nstcalcfreeenergy             The free energy calculation frequency
+         * @param nstcalcvirial                 The free energy calculation frequency
          */
         EnergySignaller(
             std::vector<SignallerCallbackPtr> calculateEnergyCallbacks,
             std::vector<SignallerCallbackPtr> calculateVirialCallbacks,
             std::vector<SignallerCallbackPtr> calculateFreeEnergyCallbacks,
-            int nstcalcenergy,
-            int nstcalcfreeenergy);
+            int                               nstcalcenergy,
+            int                               nstcalcfreeenergy,
+            int                               nstcalcvirial);
 
         //! Client callbacks
         //! {
@@ -322,6 +324,8 @@ class EnergySignaller final :
         const int nstcalcenergy_;
         //! The free energy calculation frequency
         const int nstcalcfreeenergy_;
+        //! The virial calculation frequency
+        const int nstcalcvirial_;
 
         //! ITrajectorySignallerClient implementation
         SignallerCallbackPtr registerTrajectorySignallerCallback(TrajectoryEvent event) override;
