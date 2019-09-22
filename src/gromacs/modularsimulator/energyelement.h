@@ -299,12 +299,10 @@ class EnergyElement final :
         Step forceVirialStep_;
         //! The step number of the current constraint virial tensor
         Step shakeVirialStep_;
-#ifndef NDEBUG
         //! The step number of the current total virial tensor
         Step totalVirialStep_;
         //! The step number of the current pressure tensor
         Step pressureStep_;
-#endif
 
         //! Whether ekinh_old needs to be summed up (set by compute globals)
         bool needToSumEkinhOld_;

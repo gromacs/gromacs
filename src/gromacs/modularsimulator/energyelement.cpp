@@ -93,10 +93,8 @@ EnergyElement::EnergyElement(
     logWritingStep_(-1),
     forceVirialStep_(-1),
     shakeVirialStep_(-1),
-#ifndef NDEBUG
     totalVirialStep_(-1),
     pressureStep_(-1),
-#endif
     needToSumEkinhOld_(false),
     startingBehavior_(startingBehavior),
     dummyLegacyState_(),
@@ -319,6 +317,11 @@ void EnergyElement::addToConstraintVirial(const tensor virial, Step step)
 
 rvec* EnergyElement::forceVirial(Step gmx_unused step)
 {
+    if (step > forceVirialStep_)
+    {
+        forceVirialStep_ = step;
+        clear_mat(forceVirial_);
+    }
     GMX_ASSERT(step >= forceVirialStep_ || forceVirialStep_ == -1,
                "Asked for force virial of previous step.");
     return forceVirial_;
@@ -326,6 +329,11 @@ rvec* EnergyElement::forceVirial(Step gmx_unused step)
 
 rvec* EnergyElement::constraintVirial(Step gmx_unused step)
 {
+    if (step > shakeVirialStep_)
+    {
+        shakeVirialStep_ = step;
+        clear_mat(shakeVirial_);
+    }
     GMX_ASSERT(step >= shakeVirialStep_ || shakeVirialStep_ == -1,
                "Asked for constraint virial of previous step.");
     return shakeVirial_;
@@ -333,6 +341,11 @@ rvec* EnergyElement::constraintVirial(Step gmx_unused step)
 
 rvec* EnergyElement::totalVirial(Step gmx_unused step)
 {
+    if (step > totalVirialStep_)
+    {
+        totalVirialStep_ = step;
+        clear_mat(totalVirial_);
+    }
     GMX_ASSERT(step >= totalVirialStep_ || totalVirialStep_ == -1,
                "Asked for total virial of previous step.");
     return totalVirial_;
@@ -340,6 +353,11 @@ rvec* EnergyElement::totalVirial(Step gmx_unused step)
 
 rvec* EnergyElement::pressure(Step gmx_unused step)
 {
+    if (step > pressureStep_)
+    {
+        pressureStep_ = step;
+        clear_mat(pressure_);
+    }
     GMX_ASSERT(step >= pressureStep_ || pressureStep_ == -1,
                "Asked for pressure of previous step.");
     return pressure_;
