@@ -3223,7 +3223,7 @@ cmap_dihs(int nbonds,
             rvec_inc(fshift[t21], f1_k);
             rvec_inc(fshift[t31], f1_l);
 
-            rvec_inc(fshift[t21], f2_i);
+            rvec_inc(fshift[t12], f2_i);
             rvec_inc(fshift[CENTRAL], f2_j);
             rvec_inc(fshift[t22], f2_k);
             rvec_inc(fshift[t32], f2_l);

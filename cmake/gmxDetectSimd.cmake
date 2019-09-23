@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -95,8 +95,18 @@ function(gmx_suggest_simd _suggested_simd)
                 endif()
             elseif(CPU_DETECTION_FEATURES MATCHES " avx2 ")
                 if(CPU_DETECTION_FEATURES MATCHES " amd ")
-                    set(OUTPUT_SIMD "AVX2_128")
+                    gmx_run_cpu_detection(family)
+                    gmx_run_cpu_detection(model)
+                    set(ZEN1_MODELS 1 17 8 24)
+                    if("${CPU_DETECTION_FAMILY}" STREQUAL "23" AND "${CPU_DETECTION_MODEL}" IN_LIST ZEN1_MODELS)
+                        # Zen/Zen+, where 128-bit AVX2 will be faster
+                        set(OUTPUT_SIMD "AVX2_128")
+                    else()
+                        # Zen2 or later, where 256-bit AVX2 should be faster
+                        set(OUTPUT_SIMD "AVX2_256")
+                    endif()
                 else()
+                    # not AMD
                     set(OUTPUT_SIMD "AVX2_256")
                 endif()
             elseif(CPU_DETECTION_FEATURES MATCHES " avx ")

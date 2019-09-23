@@ -52,6 +52,7 @@
 #include "gpu_types.h"
 #include "locality.h"
 
+struct interaction_const_t;
 struct nbnxn_atomdata_t;
 struct gmx_wallcycle;
 enum class GpuTaskCompletion;
@@ -220,7 +221,7 @@ float gpu_wait_finish_task(gmx_nbnxn_gpu_t          gmx_unused *nb,
 
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
 GPU_FUNC_QUALIFIER
-int gpu_pick_ewald_kernel_type(bool gmx_unused bTwinCut) GPU_FUNC_TERM_WITH_RETURN(-1);
+int nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t gmx_unused &ic) GPU_FUNC_TERM_WITH_RETURN(-1);
 
 /*! \brief Initialization for X buffer operations on GPU.
  * Called on the NS step and performs (re-)allocations and memory copies. !*/
