@@ -42,7 +42,11 @@
 #ifndef GMX_MODULARSIMULATOR_SHELLFCELEMENT_H
 #define GMX_MODULARSIMULATOR_SHELLFCELEMENT_H
 
+#include <array>
+
 #include "gromacs/domdec/dlbtiming.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/real.h"
 
 #include "modularsimulatorinterfaces.h"
 #include "topologyholder.h"
@@ -57,6 +61,7 @@ namespace gmx
 {
 class Awh;
 class EnergyElement;
+class FreeEnergyPerturbationElement;
 class ImdSession;
 class MDAtoms;
 class MdrunScheduleWorkload;
@@ -79,24 +84,25 @@ class ShellFCElement final :
     public:
         //! Constructor
         ShellFCElement(
-            StatePropagatorData   *statePropagatorData,
-            EnergyElement         *energyElement,
-            bool                   isVerbose,
-            bool                   isDynamicBox,
-            FILE                  *fplog,
-            const t_commrec       *cr,
-            const t_inputrec      *inputrec,
-            const MDAtoms         *mdAtoms,
-            t_nrnb                *nrnb,
-            t_forcerec            *fr,
-            t_fcdata              *fcd,
-            gmx_wallcycle         *wcycle,
-            MdrunScheduleWorkload *runScheduleWork,
-            gmx_vsite_t           *vsite,
-            ImdSession            *imdSession,
-            pull_t                *pull_work,
-            Constraints           *constr,
-            const gmx_mtop_t      *globalTopology);
+            StatePropagatorData           *statePropagatorData,
+            EnergyElement                 *energyElement,
+            FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
+            bool                           isVerbose,
+            bool                           isDynamicBox,
+            FILE                          *fplog,
+            const t_commrec               *cr,
+            const t_inputrec              *inputrec,
+            const MDAtoms                 *mdAtoms,
+            t_nrnb                        *nrnb,
+            t_forcerec                    *fr,
+            t_fcdata                      *fcd,
+            gmx_wallcycle                 *wcycle,
+            MdrunScheduleWorkload         *runScheduleWork,
+            gmx_vsite_t                   *vsite,
+            ImdSession                    *imdSession,
+            pull_t                        *pull_work,
+            Constraints                   *constr,
+            const gmx_mtop_t              *globalTopology);
 
         /*! \brief Register shell / flex constraint calculation for step / time
          *
@@ -139,9 +145,11 @@ class ShellFCElement final :
         Step nextFreeEnergyCalculationStep_;
 
         //! Pointer to the micro state
-        StatePropagatorData *statePropagatorData_;
+        StatePropagatorData           *statePropagatorData_;
         //! Pointer to the energy element
-        EnergyElement       *energyElement_;
+        EnergyElement                 *energyElement_;
+        //! The free energy perturbation element
+        FreeEnergyPerturbationElement *freeEnergyPerturbationElement_;
 
         //! The local topology - updated by Topology via Client system
         const gmx_localtop_t *localTopology_;
@@ -155,6 +163,13 @@ class ShellFCElement final :
 
         //! DD / DLB helper object
         const DDBalanceRegionHandler ddBalanceRegionHandler_;
+
+        /* \brief The FEP lambda vector
+         *
+         * Used if FEP is off, since do_force
+         * requires lambda to be allocated anyway
+         */
+        std::array<real, efptNR> lambda_;
 
         // Access to ISimulator data
         //! Handles logging.

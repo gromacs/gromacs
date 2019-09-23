@@ -57,6 +57,7 @@ struct t_mdatoms;
 namespace gmx
 {
 enum class ConstraintVariable;
+class FreeEnergyPerturbationElement;
 
 //! \addtogroup module_modularsimulator
 //! \{
@@ -106,17 +107,18 @@ class StatePropagatorData final :
     public:
         //! Constructor
         StatePropagatorData(
-            int               numAtoms,
-            FILE             *fplog,
-            const t_commrec  *cr,
-            t_state          *globalState,
-            int               nstxout,
-            int               nstvout,
-            int               nstfout,
-            int               nstxout_compressed,
-            bool              useGPU,
-            const t_inputrec *inputrec,
-            const t_mdatoms  *mdatoms);
+            int                             numAtoms,
+            FILE                           *fplog,
+            const t_commrec                *cr,
+            t_state                        *globalState,
+            int                             nstxout,
+            int                             nstvout,
+            int                             nstfout,
+            int                             nstxout_compressed,
+            bool                            useGPU,
+            FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
+            const t_inputrec              *inputrec,
+            const t_mdatoms               *mdatoms);
 
         // Allow access to state
         //! Get write access to position vector
@@ -254,6 +256,9 @@ class StatePropagatorData final :
         PaddedHostVector<RVec> velocityBackup_;
         //! Function resetting the velocities
         void resetVelocities();
+
+        //! Pointer to the free energy perturbation element (for trajectory writing only)
+        FreeEnergyPerturbationElement *freeEnergyPerturbationElement_;
 
         // Access to ISimulator data
         //! Handles logging.

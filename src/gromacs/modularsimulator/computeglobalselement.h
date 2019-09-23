@@ -56,6 +56,7 @@ struct t_nrnb;
 
 namespace gmx
 {
+class FreeEnergyPerturbationElement;
 class MDAtoms;
 class MDLogger;
 
@@ -105,20 +106,21 @@ class ComputeGlobalsElement final :
     public:
         //! Constructor
         ComputeGlobalsElement(
-            StatePropagatorData *statePropagatorData,
-            EnergyElement       *energyElement,
-            int                  nstglobalcomm,
-            FILE                *fplog,
-            const MDLogger      &mdlog,
-            t_commrec           *cr,
-            t_inputrec          *inputrec,
-            const MDAtoms       *mdAtoms,
-            t_nrnb              *nrnb,
-            gmx_wallcycle       *wcycle,
-            t_forcerec          *fr,
-            const gmx_mtop_t    *global_top,
-            Constraints         *constr,
-            bool                 hasReadEkinState);
+            StatePropagatorData           *statePropagatorData,
+            EnergyElement                 *energyElement,
+            FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
+            int                            nstglobalcomm,
+            FILE                          *fplog,
+            const MDLogger                &mdlog,
+            t_commrec                     *cr,
+            t_inputrec                    *inputrec,
+            const MDAtoms                 *mdAtoms,
+            t_nrnb                        *nrnb,
+            gmx_wallcycle                 *wcycle,
+            t_forcerec                    *fr,
+            const gmx_mtop_t              *global_top,
+            Constraints                   *constr,
+            bool                           hasReadEkinState);
 
         //! Destructor
         ~ComputeGlobalsElement() override;
@@ -208,11 +210,13 @@ class ComputeGlobalsElement final :
         gmx_global_stat *gstat_;
 
         //! Pointer to the microstate
-        StatePropagatorData  *statePropagatorData_;
+        StatePropagatorData           *statePropagatorData_;
         //! Pointer to the energy element (needed for the tensors and mu_tot)
-        EnergyElement        *energyElement_;
+        EnergyElement                 *energyElement_;
         //! Pointer to the local topology (only needed for checkNumberOfBondedInteractions)
-        const gmx_localtop_t *localTopology_;
+        const gmx_localtop_t          *localTopology_;
+        //! Pointer to the free energy perturbation element
+        FreeEnergyPerturbationElement *freeEnergyPerturbationElement_;
 
         //! Center of mass motion removal
         t_vcm             vcm_;

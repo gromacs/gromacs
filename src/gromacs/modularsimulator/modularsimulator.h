@@ -58,6 +58,7 @@ namespace gmx
 class DomDecHelper;
 class EnergyElement;
 class EnergySignaller;
+class FreeEnergyPerturbationElement;
 class LoggingSignaller;
 class StatePropagatorData;
 class NeighborSearchSignaller;
@@ -159,6 +160,7 @@ class ModularSimulator final :
             CheckBondedInteractionsCallbackPtr        *checkBondedInteractionsCallback,
             compat::not_null<StatePropagatorData*>     statePropagatorDataPtr,
             compat::not_null<EnergyElement*>           energyElementPtr,
+            FreeEnergyPerturbationElement             *freeEnergyPerturbationElementPtr,
             bool                                       hasReadEkinState);
 
         //! Build the force element - can be normal forces or shell / flex constraints
@@ -166,7 +168,8 @@ class ModularSimulator final :
             SignallerBuilder<NeighborSearchSignaller> *neighborSearchSignallerBuilder,
             SignallerBuilder<EnergySignaller>         *energySignallerBuilder,
             StatePropagatorData                       *statePropagatorDataPtr,
-            EnergyElement                             *energyElementPtr);
+            EnergyElement                             *energyElementPtr,
+            FreeEnergyPerturbationElement             *freeEnergyPerturbationElement);
 
         /*! \brief Add run functions to the task queue
          *

@@ -50,6 +50,7 @@ namespace gmx
 {
 class Constraints;
 class EnergyElement;
+class FreeEnergyPerturbationElement;
 class StatePropagatorData;
 
 //! \addtogroup module_modularsimulator
@@ -75,13 +76,14 @@ class ConstraintsElement final :
     public:
         //! Constructor
         ConstraintsElement(
-            Constraints         *constr,
-            StatePropagatorData *statePropagatorData,
-            EnergyElement       *energyElement,
-            bool                 isMaster,
-            FILE                *fplog,
-            const t_inputrec    *inputrec,
-            const t_mdatoms     *mdAtoms);
+            Constraints                   *constr,
+            StatePropagatorData           *statePropagatorData,
+            EnergyElement                 *energyElement,
+            FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
+            bool                           isMaster,
+            FILE                          *fplog,
+            const t_inputrec              *inputrec,
+            const t_mdatoms               *mdAtoms);
 
         /*! \brief Register constraining function for step / time
          *
@@ -132,9 +134,11 @@ class ConstraintsElement final :
         const bool isMasterRank_;
 
         //! Pointer to the micro state
-        StatePropagatorData *statePropagatorData_;
+        StatePropagatorData           *statePropagatorData_;
         //! Pointer to the energy element
-        EnergyElement       *energyElement_;
+        EnergyElement                 *energyElement_;
+        //! Pointer to the free energy perturbation element (only for initial constraining)
+        FreeEnergyPerturbationElement *freeEnergyPerturbationElement_;
 
         // Access to ISimulator data
         //! Handles constraints.

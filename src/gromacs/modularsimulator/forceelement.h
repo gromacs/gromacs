@@ -60,6 +60,7 @@ namespace gmx
 {
 class Awh;
 class EnergyElement;
+class FreeEnergyPerturbationElement;
 class ImdSession;
 class MDAtoms;
 class MdrunScheduleWorkload;
@@ -82,21 +83,22 @@ class ForceElement final :
     public:
         //! Constructor
         ForceElement(
-            StatePropagatorData   *statePropagatorData,
-            EnergyElement         *energyElement,
-            bool                   isDynamicBox,
-            FILE                  *fplog,
-            const t_commrec       *cr,
-            const t_inputrec      *inputrec,
-            const MDAtoms         *mdAtoms,
-            t_nrnb                *nrnb,
-            t_forcerec            *fr,
-            t_fcdata              *fcd,
-            gmx_wallcycle         *wcycle,
-            MdrunScheduleWorkload *runScheduleWork,
-            gmx_vsite_t           *vsite,
-            ImdSession            *imdSession,
-            pull_t                *pull_work);
+            StatePropagatorData           *statePropagatorData,
+            EnergyElement                 *energyElement,
+            FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
+            bool                           isDynamicBox,
+            FILE                          *fplog,
+            const t_commrec               *cr,
+            const t_inputrec              *inputrec,
+            const MDAtoms                 *mdAtoms,
+            t_nrnb                        *nrnb,
+            t_forcerec                    *fr,
+            t_fcdata                      *fcd,
+            gmx_wallcycle                 *wcycle,
+            MdrunScheduleWorkload         *runScheduleWork,
+            gmx_vsite_t                   *vsite,
+            ImdSession                    *imdSession,
+            pull_t                        *pull_work);
 
         /*! \brief Register force calculation for step / time
          *
@@ -133,9 +135,11 @@ class ForceElement final :
         Step nextFreeEnergyCalculationStep_;
 
         //! Pointer to the micro state
-        StatePropagatorData *statePropagatorData_;
+        StatePropagatorData           *statePropagatorData_;
         //! Pointer to the energy element
-        EnergyElement       *energyElement_;
+        EnergyElement                 *energyElement_;
+        //! Pointer to the free energy perturbation element
+        FreeEnergyPerturbationElement *freeEnergyPerturbationElement_;
 
         //! The local topology - updated by Topology via Client system
         const gmx_localtop_t *localTopology_;
@@ -146,7 +150,11 @@ class ForceElement final :
         //! DD / DLB helper object
         const DDBalanceRegionHandler ddBalanceRegionHandler_;
 
-        //! The FEP lambda vector (unused, but needs to be allocated)
+        /* \brief The FEP lambda vector
+         *
+         * Used if FEP is off, since do_force
+         * requires lambda to be allocated anyway
+         */
         std::array<real, efptNR> lambda_;
 
         // Access to ISimulator data

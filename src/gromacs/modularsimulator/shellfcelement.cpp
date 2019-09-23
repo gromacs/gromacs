@@ -54,6 +54,7 @@
 #include "gromacs/topology/atoms.h"
 
 #include "energyelement.h"
+#include "freeenergyperturbationelement.h"
 #include "statepropagatordata.h"
 
 struct gmx_edsam;
@@ -76,30 +77,32 @@ bool ShellFCElement::doShellsOrFlexConstraints(
 }
 
 ShellFCElement::ShellFCElement(
-        StatePropagatorData   *statePropagatorData,
-        EnergyElement         *energyElement,
-        bool                   isVerbose,
-        bool                   isDynamicBox,
-        FILE                  *fplog,
-        const t_commrec       *cr,
-        const t_inputrec      *inputrec,
-        const MDAtoms         *mdAtoms,
-        t_nrnb                *nrnb,
-        t_forcerec            *fr,
-        t_fcdata              *fcd,
-        gmx_wallcycle         *wcycle,
-        MdrunScheduleWorkload *runScheduleWork,
-        gmx_vsite_t           *vsite,
-        ImdSession            *imdSession,
-        pull_t                *pull_work,
-        Constraints           *constr,
-        const gmx_mtop_t      *globalTopology) :
+        StatePropagatorData           *statePropagatorData,
+        EnergyElement                 *energyElement,
+        FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
+        bool                           isVerbose,
+        bool                           isDynamicBox,
+        FILE                          *fplog,
+        const t_commrec               *cr,
+        const t_inputrec              *inputrec,
+        const MDAtoms                 *mdAtoms,
+        t_nrnb                        *nrnb,
+        t_forcerec                    *fr,
+        t_fcdata                      *fcd,
+        gmx_wallcycle                 *wcycle,
+        MdrunScheduleWorkload         *runScheduleWork,
+        gmx_vsite_t                   *vsite,
+        ImdSession                    *imdSession,
+        pull_t                        *pull_work,
+        Constraints                   *constr,
+        const gmx_mtop_t              *globalTopology) :
     nextNSStep_(-1),
     nextEnergyCalculationStep_(-1),
     nextVirialCalculationStep_(-1),
     nextFreeEnergyCalculationStep_(-1),
     statePropagatorData_(statePropagatorData),
     energyElement_(energyElement),
+    freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
     localTopology_(nullptr),
     isDynamicBox_(isDynamicBox),
     isVerbose_(isVerbose),
@@ -119,6 +122,8 @@ ShellFCElement::ShellFCElement(
     runScheduleWork_(runScheduleWork),
     constr_(constr)
 {
+    lambda_.fill(0);
+
     shellfc_ = init_shell_flexcon(
                 fplog, globalTopology,
                 constr_ ? constr_->numFlexibleConstraints() : 0,
@@ -170,10 +175,12 @@ void ShellFCElement::run(Step step, Time time, unsigned int flags)
     auto            v      = statePropagatorData_->velocitiesView();
     auto            forces = statePropagatorData_->forcesView();
     auto            box    = statePropagatorData_->constBox();
-    auto            lambda = ArrayRef<real>();     // disabled
     history_t      *hist   = nullptr;              // disabled
 
     tensor          force_vir = {{0}};
+    // TODO: Make lambda const (needs some adjustments in lower force routines)
+    ArrayRef<real>  lambda = freeEnergyPerturbationElement_ ?
+        freeEnergyPerturbationElement_->lambdaView() : lambda_;
     relax_shell_flexcon(fplog_, cr_, ms, isVerbose_,
                         enforcedRotation, step,
                         inputrec_, imdSession_, pull_work_, step == nextNSStep_,

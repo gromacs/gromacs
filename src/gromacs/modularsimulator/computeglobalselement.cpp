@@ -54,24 +54,27 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/topology.h"
 
+#include "freeenergyperturbationelement.h"
+
 namespace gmx
 {
 template <ComputeGlobalsAlgorithm algorithm>
 ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(
-        StatePropagatorData *statePropagatorData,
-        EnergyElement       *energyElement,
-        int                  nstglobalcomm,
-        FILE                *fplog,
-        const MDLogger      &mdlog,
-        t_commrec           *cr,
-        t_inputrec          *inputrec,
-        const MDAtoms       *mdAtoms,
-        t_nrnb              *nrnb,
-        gmx_wallcycle       *wcycle,
-        t_forcerec          *fr,
-        const gmx_mtop_t    *global_top,
-        Constraints         *constr,
-        bool                 hasReadEkinState) :
+        StatePropagatorData           *statePropagatorData,
+        EnergyElement                 *energyElement,
+        FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
+        int                            nstglobalcomm,
+        FILE                          *fplog,
+        const MDLogger                &mdlog,
+        t_commrec                     *cr,
+        t_inputrec                    *inputrec,
+        const MDAtoms                 *mdAtoms,
+        t_nrnb                        *nrnb,
+        gmx_wallcycle                 *wcycle,
+        t_forcerec                    *fr,
+        const gmx_mtop_t              *global_top,
+        Constraints                   *constr,
+        bool                           hasReadEkinState) :
     energyReductionStep_(-1),
     virialReductionStep_(-1),
     doStopCM_(inputrec->comm_mode != ecmNO),
@@ -85,6 +88,7 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(
     statePropagatorData_(statePropagatorData),
     energyElement_(energyElement),
     localTopology_(nullptr),
+    freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
     vcm_(global_top->groups, *inputrec),
     signals_(),
     fplog_(fplog),
@@ -283,15 +287,17 @@ void ComputeGlobalsElement<algorithm>::compute(
         SimulationSignaller *signaller,
         bool useLastBox, bool isInit)
 {
-    auto x       = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    auto v       = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    auto box     = statePropagatorData_->constBox();
-    auto lastbox = useLastBox ? statePropagatorData_->constPreviousBox() : statePropagatorData_->constBox();
-    real lambda  = 0;
+    auto       x       = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
+    auto       v       = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
+    auto       box     = statePropagatorData_->constBox();
+    auto       lastbox = useLastBox ? statePropagatorData_->constPreviousBox() : statePropagatorData_->constBox();
+
+    const real vdwLambda = freeEnergyPerturbationElement_ ?
+        freeEnergyPerturbationElement_->constLambdaView()[efptVDW] : 0;
 
     compute_globals(gstat_, cr_, inputrec_, fr_,
                     energyElement_->ekindata(),
-                    x, v, box, lambda,
+                    x, v, box, vdwLambda,
                     mdAtoms_->mdatoms(), nrnb_, &vcm_,
                     step != -1 ? wcycle_ : nullptr,
                     energyElement_->enerdata(),

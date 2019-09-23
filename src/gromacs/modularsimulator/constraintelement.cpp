@@ -49,25 +49,28 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "energyelement.h"
+#include "freeenergyperturbationelement.h"
 #include "statepropagatordata.h"
 
 namespace gmx
 {
 template <ConstraintVariable variable>
 ConstraintsElement<variable>::ConstraintsElement(
-        Constraints         *constr,
-        StatePropagatorData *statePropagatorData,
-        EnergyElement       *energyElement,
-        bool                 isMaster,
-        FILE                *fplog,
-        const t_inputrec    *inputrec,
-        const t_mdatoms     *mdAtoms) :
+        Constraints                   *constr,
+        StatePropagatorData           *statePropagatorData,
+        EnergyElement                 *energyElement,
+        FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
+        bool                           isMaster,
+        FILE                          *fplog,
+        const t_inputrec              *inputrec,
+        const t_mdatoms               *mdAtoms) :
     nextVirialCalculationStep_(-1),
     nextEnergyWritingStep_(-1),
     nextLogWritingStep_(-1),
     isMasterRank_(isMaster),
     statePropagatorData_(statePropagatorData),
     energyElement_(energyElement),
+    freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
     constr_(constr),
     fplog_(fplog),
     inputrec_(inputrec),
@@ -83,15 +86,16 @@ void ConstraintsElement<variable>::elementSetup()
         ((variable == ConstraintVariable::Positions && inputrec_->eI == eiMD) ||
          (variable == ConstraintVariable::Velocities && inputrec_->eI == eiVV)))
     {
-        // disabled functionality
-        real  lambda    = 0;
+        const real lambdaBonded = freeEnergyPerturbationElement_ ?
+            freeEnergyPerturbationElement_->constLambdaView()[efptBONDED] : 0;
         // Constrain the initial coordinates and velocities
         do_constrain_first(
                 fplog_, constr_, inputrec_, mdAtoms_,
                 statePropagatorData_->localNumAtoms(),
                 statePropagatorData_->positionsView(),
                 statePropagatorData_->velocitiesView(),
-                statePropagatorData_->box(), lambda);
+                statePropagatorData_->box(),
+                lambdaBonded);
 
         if (isMasterRank_)
         {

@@ -49,6 +49,7 @@
 #include "gromacs/mdlib/mdatoms.h"
 
 #include "energyelement.h"
+#include "freeenergyperturbationelement.h"
 #include "statepropagatordata.h"
 
 struct gmx_edsam;
@@ -60,27 +61,29 @@ struct t_graph;
 namespace gmx
 {
 ForceElement::ForceElement(
-        StatePropagatorData   *statePropagatorData,
-        EnergyElement         *energyElement,
-        bool                   isDynamicBox,
-        FILE                  *fplog,
-        const t_commrec       *cr,
-        const t_inputrec      *inputrec,
-        const MDAtoms         *mdAtoms,
-        t_nrnb                *nrnb,
-        t_forcerec            *fr,
-        t_fcdata              *fcd,
-        gmx_wallcycle         *wcycle,
-        MdrunScheduleWorkload *runScheduleWork,
-        gmx_vsite_t           *vsite,
-        ImdSession            *imdSession,
-        pull_t                *pull_work) :
+        StatePropagatorData           *statePropagatorData,
+        EnergyElement                 *energyElement,
+        FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
+        bool                           isDynamicBox,
+        FILE                          *fplog,
+        const t_commrec               *cr,
+        const t_inputrec              *inputrec,
+        const MDAtoms                 *mdAtoms,
+        t_nrnb                        *nrnb,
+        t_forcerec                    *fr,
+        t_fcdata                      *fcd,
+        gmx_wallcycle                 *wcycle,
+        MdrunScheduleWorkload         *runScheduleWork,
+        gmx_vsite_t                   *vsite,
+        ImdSession                    *imdSession,
+        pull_t                        *pull_work) :
     nextNSStep_(-1),
     nextEnergyCalculationStep_(-1),
     nextVirialCalculationStep_(-1),
     nextFreeEnergyCalculationStep_(-1),
     statePropagatorData_(statePropagatorData),
     energyElement_(energyElement),
+    freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
     localTopology_(nullptr),
     isDynamicBox_(isDynamicBox),
     ddBalanceRegionHandler_(cr),
@@ -140,18 +143,22 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
      * This is parallelized as well, and does communication too.
      * Check comments in sim_util.c
      */
-    auto       x      = statePropagatorData_->positionsView();
-    auto       forces = statePropagatorData_->forcesView();
-    auto       box    = statePropagatorData_->constBox();
-    history_t *hist   = nullptr;  // disabled
+    auto           x      = statePropagatorData_->positionsView();
+    auto           forces = statePropagatorData_->forcesView();
+    auto           box    = statePropagatorData_->constBox();
+    history_t     *hist   = nullptr; // disabled
 
-    tensor     force_vir = {{0}};
+    tensor         force_vir = {{0}};
+    // TODO: Make lambda const (needs some adjustments in lower force routines)
+    ArrayRef<real> lambda = freeEnergyPerturbationElement_ ?
+        freeEnergyPerturbationElement_->lambdaView() : lambda_;
+
     do_force(fplog_, cr_, ms, inputrec_, awh, enforcedRotation, imdSession_,
              pull_work_,
              step, nrnb_, wcycle_, localTopology_,
              box, x, hist,
              forces, force_vir, mdAtoms_->mdatoms(), energyElement_->enerdata(), fcd_,
-             lambda_, graph,
+             lambda, graph,
              fr_, runScheduleWork_, vsite_, energyElement_->muTot(), time, ed,
              static_cast<int>(flags), ddBalanceRegionHandler_);
     energyElement_->addToForceVirial(force_vir, step);

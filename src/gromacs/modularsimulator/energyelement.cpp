@@ -45,6 +45,7 @@
 
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/compute_io.h"
+#include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdoutf.h"
@@ -59,6 +60,7 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/topology/topology.h"
 
+#include "freeenergyperturbationelement.h"
 #include "statepropagatordata.h"
 #include "vrescalethermostat.h"
 
@@ -70,19 +72,20 @@ namespace gmx
 class Awh;
 
 EnergyElement::EnergyElement(
-        StatePropagatorData     *statePropagatorData,
-        const gmx_mtop_t        *globalTopology,
-        const t_inputrec        *inputrec,
-        const MDAtoms           *mdAtoms,
-        gmx_enerdata_t          *enerd,
-        gmx_ekindata_t          *ekind,
-        const Constraints       *constr,
-        FILE                    *fplog,
-        t_fcdata                *fcd,
-        const MdModulesNotifier &mdModulesNotifier,
-        bool                     isMaster,
-        ObservablesHistory      *observablesHistory,
-        StartingBehavior         startingBehavior) :
+        StatePropagatorData           *statePropagatorData,
+        FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
+        const gmx_mtop_t              *globalTopology,
+        const t_inputrec              *inputrec,
+        const MDAtoms                 *mdAtoms,
+        gmx_enerdata_t                *enerd,
+        gmx_ekindata_t                *ekind,
+        const Constraints             *constr,
+        FILE                          *fplog,
+        t_fcdata                      *fcd,
+        const MdModulesNotifier       &mdModulesNotifier,
+        bool                           isMaster,
+        ObservablesHistory            *observablesHistory,
+        StartingBehavior               startingBehavior) :
     isMaster_(isMaster),
     energyWritingStep_(-1),
     energyCalculationStep_(-1),
@@ -98,6 +101,7 @@ EnergyElement::EnergyElement(
     startingBehavior_(startingBehavior),
     dummyLegacyState_(),
     statePropagatorData_(statePropagatorData),
+    freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
     vRescaleThermostat_(nullptr),
     inputrec_(inputrec),
     top_global_(globalTopology),
@@ -116,6 +120,11 @@ EnergyElement::EnergyElement(
     clear_mat(totalVirial_);
     clear_mat(pressure_);
     clear_rvec(muTot_);
+
+    if (freeEnergyPerturbationElement_)
+    {
+        dummyLegacyState_.flags = (1u << estFEPSTATE);
+    }
 }
 
 void EnergyElement::scheduleTask(
@@ -245,6 +254,11 @@ void EnergyElement::doStep(
     if (vRescaleThermostat_)
     {
         dummyLegacyState_.therm_integral = vRescaleThermostat_->thermostatIntegral();
+    }
+    if (freeEnergyPerturbationElement_)
+    {
+        sum_dhdl(enerd_, freeEnergyPerturbationElement_->constLambdaView(), *inputrec_->fepvals);
+        dummyLegacyState_.fep_state = freeEnergyPerturbationElement_->currentFEPState();
     }
     if (integratorHasConservedEnergyQuantity(inputrec_))
     {

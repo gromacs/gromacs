@@ -154,11 +154,13 @@ EnergySignaller::EnergySignaller(
         std::vector<SignallerCallbackPtr> calculateEnergyCallbacks,
         std::vector<SignallerCallbackPtr> calculateVirialCallbacks,
         std::vector<SignallerCallbackPtr> calculateFreeEnergyCallbacks,
-        int                               nstcalcenergy) :
+        int                               nstcalcenergy,
+        int                               nstcalcfreeenergy) :
     calculateEnergyCallbacks_(std::move(calculateEnergyCallbacks)),
     calculateVirialCallbacks_(std::move(calculateVirialCallbacks)),
     calculateFreeEnergyCallbacks_(std::move(calculateFreeEnergyCallbacks)),
     nstcalcenergy_(nstcalcenergy),
+    nstcalcfreeenergy_(nstcalcfreeenergy),
     energyWritingStep_(-1),
     trajectoryRegistrationDone_(false),
     loggingStep_(-1),
@@ -170,7 +172,7 @@ void EnergySignaller::signal(
         Time time)
 {
     bool calculateEnergy     = do_per_step(step, nstcalcenergy_);
-    bool calculateFreeEnergy = false;  // currently disabled
+    bool calculateFreeEnergy = do_per_step(step, nstcalcfreeenergy_);
     bool writeEnergy         = energyWritingStep_ == step;
 
     if (calculateEnergy || writeEnergy || step == loggingStep_)

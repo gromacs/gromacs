@@ -55,20 +55,23 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/topology/atoms.h"
 
+#include "freeenergyperturbationelement.h"
+
 namespace gmx
 {
 StatePropagatorData::StatePropagatorData(
-        int               numAtoms,
-        FILE             *fplog,
-        const t_commrec  *cr,
-        t_state          *globalState,
-        int               nstxout,
-        int               nstvout,
-        int               nstfout,
-        int               nstxout_compressed,
-        bool              useGPU,
-        const t_inputrec *inputrec,
-        const t_mdatoms  *mdatoms) :
+        int                            numAtoms,
+        FILE                          *fplog,
+        const t_commrec               *cr,
+        t_state                       *globalState,
+        int                            nstxout,
+        int                            nstvout,
+        int                            nstfout,
+        int                            nstxout_compressed,
+        bool                           useGPU,
+        FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
+        const t_inputrec              *inputrec,
+        const t_mdatoms               *mdatoms) :
     totalNumAtoms_(numAtoms),
     nstxout_(nstxout),
     nstvout_(nstvout),
@@ -78,6 +81,7 @@ StatePropagatorData::StatePropagatorData(
     ddpCount_(0),
     writeOutStep_(-1),
     vvResetVelocities_(false),
+    freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
     fplog_(fplog),
     cr_(cr),
     globalState_(globalState)
@@ -316,6 +320,16 @@ void StatePropagatorData::saveState()
             !localStateBackup_,
             "Save state called again before previous state was written.");
     localStateBackup_ = localState();
+    if (freeEnergyPerturbationElement_)
+    {
+        localStateBackup_->fep_state = freeEnergyPerturbationElement_->currentFEPState();
+        for (unsigned long i = 0; i < localStateBackup_->lambda.size(); ++i)
+        {
+            localStateBackup_->lambda[i] =
+                freeEnergyPerturbationElement_->constLambdaView()[i];
+        }
+        localStateBackup_->flags |= (1u<<estLAMBDA) | (1u<<estFEPSTATE);
+    }
 }
 
 SignallerCallbackPtr
