@@ -78,6 +78,11 @@ CheckpointHelper::CheckpointHelper(
     walltime_accounting_(walltime_accounting),
     state_global_(state_global)
 {
+    // Get rid of nullptr in clients list
+    clients_.erase(
+            std::remove_if(clients_.begin(), clients_.end(),
+                           [](ICheckpointHelperClient* ptr){return !ptr; }),
+            clients_.end());
     if (DOMAINDECOMP(cr))
     {
         localState_ = std::make_unique<t_state>();
@@ -121,6 +126,7 @@ void CheckpointHelper::scheduleTask(
 
 void CheckpointHelper::writeCheckpoint(Step step, Time time)
 {
+    localStateInstance_->flags = 0;
     for (const auto &client : clients_)
     {
         client->writeCheckpoint(localStateInstance_, state_global_);
