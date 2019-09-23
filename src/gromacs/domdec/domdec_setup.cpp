@@ -758,7 +758,7 @@ checkForValidRankCountRequests(const int  numRanksRequested,
                                const int  numPmeRanksRequested)
 {
     int numPPRanksRequested = numRanksRequested;
-    if (usingPme)
+    if (usingPme && numPmeRanksRequested > 0)
     {
         numPPRanksRequested -= numPmeRanksRequested;
         if (numPmeRanksRequested > numPPRanksRequested)
