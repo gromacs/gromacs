@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -189,8 +189,10 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo             &cpuInfo,
 {
     const int  ncore        = hwinfo_g->hardwareTopology->numberOfCores();
     /* Zen has family=23, for now we treat future AMD CPUs like Zen */
-    const bool cpuIsAmdZen  = (cpuInfo.vendor() == CpuInfo::Vendor::Amd &&
-                               cpuInfo.family() >= 23);
+    const bool cpuIsAmdZen1 = (cpuInfo.vendor() == CpuInfo::Vendor::Amd &&
+                               cpuInfo.family() == 23 &&
+                               (cpuInfo.model() == 1 || cpuInfo.model() == 17 ||
+                                cpuInfo.model() == 8 || cpuInfo.model() == 24));
 
 #if GMX_LIB_MPI
     int       nhwthread, ngpu, i;
@@ -252,7 +254,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo             &cpuInfo,
         maxMinLocal[7]  = -maxMinLocal[2];
         maxMinLocal[8]  = -maxMinLocal[3];
         maxMinLocal[9]  = -maxMinLocal[4];
-        maxMinLocal[10] = (cpuIsAmdZen ? 1 : 0);
+        maxMinLocal[10] = (cpuIsAmdZen1 ? 1 : 0);
 
         MPI_Allreduce(maxMinLocal.data(), maxMinReduced.data(), maxMinLocal.size(),
                       MPI_INT, MPI_MAX, MPI_COMM_WORLD);
@@ -271,7 +273,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo             &cpuInfo,
     hwinfo_g->simd_suggest_min    = -maxMinReduced[8];
     hwinfo_g->simd_suggest_max    = maxMinReduced[3];
     hwinfo_g->bIdenticalGPUs      = (maxMinReduced[4] == -maxMinReduced[9]);
-    hwinfo_g->haveAmdZenCpu       = (maxMinReduced[10] > 0);
+    hwinfo_g->haveAmdZen1Cpu      = (maxMinReduced[10] > 0);
 #else
     /* All ranks use the same pointer, protected by a mutex in the caller */
     hwinfo_g->nphysicalnode       = 1;
@@ -287,7 +289,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo             &cpuInfo,
     hwinfo_g->simd_suggest_min    = static_cast<int>(simdSuggested(cpuInfo));
     hwinfo_g->simd_suggest_max    = static_cast<int>(simdSuggested(cpuInfo));
     hwinfo_g->bIdenticalGPUs      = TRUE;
-    hwinfo_g->haveAmdZenCpu       = cpuIsAmdZen;
+    hwinfo_g->haveAmdZen1Cpu      = cpuIsAmdZen1;
     GMX_UNUSED_VALUE(physicalNodeComm);
 #endif
 }

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1617,7 +1617,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
             *kernel_type = nbnxnk4xN_SIMD_2xNN;
         }
 #endif
-        if (hardwareInfo.haveAmdZenCpu)
+        if (hardwareInfo.haveAmdZen1Cpu)
         {
             /* One 256-bit FMA per cycle makes 2xNN faster */
             *kernel_type = nbnxnk4xN_SIMD_2xNN;
@@ -1654,7 +1654,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
         /* On AMD Zen, tabulated Ewald kernels are faster on all 4 combinations
          * of single or double precision and 128 or 256-bit AVX2.
          */
-        if (!hardwareInfo.haveAmdZenCpu)
+        if (!hardwareInfo.haveAmdZen1Cpu)
         {
             *ewald_excl = ewaldexclAnalytical;
         }
