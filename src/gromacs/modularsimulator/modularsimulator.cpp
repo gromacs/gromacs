@@ -721,6 +721,20 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
                     inputrec->delta_t, statePropagatorDataPtr, mdAtoms, wcycle);
 
         addToCallListAndMove(std::move(forceElement), elementCallList, elementsOwnershipList);
+
+        std::unique_ptr<ParrinelloRahmanBarostat> prBarostat = nullptr;
+        if (inputrec->epc == epcPARRINELLORAHMAN)
+        {
+            // Building the PR barostat here since it needs access to the propagator
+            // and we want to be able to move the propagator object
+            prBarostat = std::make_unique<ParrinelloRahmanBarostat>(
+                        inputrec->nstpcouple, -1, inputrec->delta_t*inputrec->nstpcouple, inputrec->init_step,
+                        propagatorVelocities->viewOnPRScalingMatrix(), propagatorVelocities->prScalingCallback(),
+                        statePropagatorDataPtr, energyElementPtr, fplog, inputrec, mdAtoms,
+                        state_global, cr, inputrec->bContinuation);
+            energyElementPtr->setParrinelloRahamnBarostat(prBarostat.get());
+            checkpointClients->emplace_back(prBarostat.get());
+        }
         addToCallListAndMove(std::move(propagatorVelocities), elementCallList, elementsOwnershipList);
         if (constr)
         {
@@ -766,6 +780,10 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
         }
         addToCallListAndMove(std::move(computeGlobalsElementAfterCoordinateUpdate), elementCallList, elementsOwnershipList);
         addToCallList(energyElementPtr, elementCallList);  // we have the energies at time t here!
+        if (prBarostat)
+        {
+            addToCallListAndMove(std::move(prBarostat), elementCallList, elementsOwnershipList);
+        }
     }
     else
     {
@@ -807,6 +825,16 @@ bool ModularSimulator::isInputCompatible(
     // such as the leap-frog integrator
     const auto modularSimulatorExplicitlyTurnedOn =
         (getenv("GMX_USE_MODULAR_SIMULATOR") != nullptr);
+    // GMX_USE_MODULAR_SIMULATOR allows to use disable modular simulator for all uses,
+    // including the velocity-verlet integrator used by default
+    const auto modularSimulatorExplicitlyTurnedOff =
+        (getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
+
+    GMX_RELEASE_ASSERT(
+            !(modularSimulatorExplicitlyTurnedOff && inputrec->eI == eiVV && inputrec->epc == epcPARRINELLORAHMAN),
+            "Cannot use a Parrinello-Rahman barostat with md-vv and GMX_DISABLE_MODULAR_SIMULATOR=ON, "
+            "as the Parrinello-Rahman barostat is not implemented in the legacy simulator. Unset "
+            "GMX_DISABLE_MODULAR_SIMULATOR or use a different pressure control algorithm.");
 
     isInputCompatible = isInputCompatible && conditionalAssert(
                 inputrec->eI == eiMD || inputrec->eI == eiVV,
@@ -821,8 +849,8 @@ bool ModularSimulator::isInputCompatible(
                 inputrec->etc == etcNO || inputrec->etc == etcVRESCALE,
                 "Only v-rescale thermostat is supported by the modular simulator.");
     isInputCompatible = isInputCompatible && conditionalAssert(
-                inputrec->epc == epcNO || (inputrec->epc == epcPARRINELLORAHMAN && inputrec->eI == eiMD),
-                "Only Parrinello-Rahman barostat (md only) is supported by the modular simulator.");
+                inputrec->epc == epcNO || inputrec->epc == epcPARRINELLORAHMAN,
+                "Only Parrinello-Rahman barostat is supported by the modular simulator.");
     isInputCompatible = isInputCompatible && conditionalAssert(
                 !(inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec) || inputrecNvtTrotter(inputrec)),
                 "Legacy Trotter decomposition is not supported by the modular simulator.");

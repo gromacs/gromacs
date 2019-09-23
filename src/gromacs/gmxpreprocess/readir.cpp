@@ -1025,17 +1025,7 @@ void check_ir(const char *mdparin, const gmx::MdModulesNotifier &mdModulesNotifi
         }
     }
 
-    if (EI_VV(ir->eI))
-    {
-        if (ir->epc > epcNO)
-        {
-            if ((ir->epc != epcBERENDSEN) && (ir->epc != epcMTTK))
-            {
-                warning_error(wi, "for md-vv and md-vv-avek, can only use Berendsen and Martyna-Tuckerman-Tobias-Klein (MTTK) equations for pressure control; MTTK is equivalent to Parrinello-Rahman.");
-            }
-        }
-    }
-    else
+    if (!EI_VV(ir->eI))
     {
         if (ir->epc == epcMTTK)
         {
