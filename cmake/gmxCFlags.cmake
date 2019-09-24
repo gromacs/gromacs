@@ -404,6 +404,11 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3;/wd161;/wd177;/wd411;/wd593;/wd981;/wd1418;/wd14
             endif()
             GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra;-Wno-missing-field-initializers;-Wpointer-arith;-Wmissing-prototypes" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_DEPRECATED "-Wdeprecated" GMXC_CXXFLAGS)
+            # Functions placed in headers for inlining are not always
+            # used in every translation unit that includes the files,
+            # so we must disable the warning that there are such
+            # functions that are unused.
+            GMX_TEST_CXXFLAG(CXXFLAGS_NO_UNUSED_FUNCTION "-Wno-unused-function" GMXC_CXXFLAGS)
         endif()
         if(NOT GMX_OPENMP)
             GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
