@@ -67,6 +67,7 @@
 #include <tuple>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/compat/optional.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/network.h"
@@ -168,6 +169,43 @@ const char *precisionToString(bool isDoublePrecision)
     return isDoublePrecision ? "double" : "mixed";
 }
 
+/*! \brief Describes how mdrun will (re)start and provides supporting
+ * functionality based on that data. */
+class StartingBehaviorHandler
+{
+    public:
+        /*! \brief Throw unless all simulations in a multi-sim restart the same way.
+         *
+         * The restart could differ if checkpoint or other output files are
+         * not found in a consistent way across the set of multi-simulations,
+         * or are from different simulation parts.
+         *
+         * \param[in]  ms      Multi-sim handler.
+         *
+         * May only be called from the master rank of each simulation.
+         *
+         * \throws InconsistentInputError if either simulations restart
+         * differently, or from checkpoints from different simulation parts.
+         */
+        void ensureMultiSimBehaviorsMatch(const gmx_multisim_t *ms);
+        /*! \brief Return an optional value that describes the index
+         * of the next simulation part when not appending.
+         *
+         * \param[in] appendingBehavior  Whether this simulation is appending
+         *                                (relevant only when restarting)
+         *
+         * Does not throw */
+        compat::optional<int> makeIndexOfNextPart(AppendingBehavior appendingBehavior) const;
+
+        //! Describes how mdrun will (re)start
+        StartingBehavior                           startingBehavior = StartingBehavior::NewSimulation;
+        //! When restarting from a checkpoint, contains the contents of its header
+        compat::optional<CheckpointHeaderContents> headerContents;
+        //! When restarting from a checkpoint, contains the names of expected output files
+        compat::optional < std::vector < gmx_file_position_t>> outputFiles;
+
+};
+
 /*! \brief Choose the starting behaviour for this simulation
  *
  * This routine cannot print tons of data, since it is called before
@@ -178,19 +216,17 @@ const char *precisionToString(bool isDoublePrecision)
  * found (and other files found, when appending), and so can differ
  * between multi-simulations. It is the caller's responsibility to
  * detect this and react accordingly. */
-std::tuple < StartingBehavior,
-CheckpointHeaderContents,
-std::vector < gmx_file_position_t>>
+StartingBehaviorHandler
 chooseStartingBehavior(const AppendingBehavior appendingBehavior,
-                       const int nfile,
-                       t_filenm fnm[])
+                       const int               nfile,
+                       t_filenm                fnm[])
 {
-    CheckpointHeaderContents         headerContents;
-    std::vector<gmx_file_position_t> outputFiles;
+    StartingBehaviorHandler handler;
     if (!opt2bSet("-cpi", nfile, fnm))
     {
         // No need to tell the user anything
-        return std::make_tuple(StartingBehavior::NewSimulation, headerContents, outputFiles);
+        handler.startingBehavior = StartingBehavior::NewSimulation;
+        return handler;
     }
 
     // A -cpi option was provided, do a restart if there is an input checkpoint file available
@@ -208,7 +244,8 @@ chooseStartingBehavior(const AppendingBehavior appendingBehavior,
                           "or do not use -append"));
         }
         // No need to tell the user that mdrun -cpi without a file means a new simulation
-        return std::make_tuple(StartingBehavior::NewSimulation, headerContents, outputFiles);
+        handler.startingBehavior = StartingBehavior::NewSimulation;
+        return handler;
     }
 
     t_fileio *fp = gmx_fio_open(checkpointFilename, "r");
@@ -219,7 +256,8 @@ chooseStartingBehavior(const AppendingBehavior appendingBehavior,
                                     "reading. Check the file permissions.", checkpointFilename)));
     }
 
-    headerContents =
+    std::vector < gmx_file_position_t> outputFiles;
+    CheckpointHeaderContents           headerContents =
         read_checkpoint_simulation_part_and_filenames(fp, &outputFiles);
 
     GMX_RELEASE_ASSERT(!outputFiles.empty(),
@@ -307,7 +345,8 @@ chooseStartingBehavior(const AppendingBehavior appendingBehavior,
         else
         {
             // Everything is perfect - we can do an appending restart.
-            return std::make_tuple(StartingBehavior::RestartWithAppending, headerContents, outputFiles);
+            handler = { StartingBehavior::RestartWithAppending, headerContents, outputFiles };
+            return handler;
         }
 
         // No need to tell the user anything because the previous
@@ -316,7 +355,8 @@ chooseStartingBehavior(const AppendingBehavior appendingBehavior,
     }
 
     GMX_RELEASE_ASSERT(appendingBehavior != AppendingBehavior::Appending, "Logic error in appending");
-    return std::make_tuple(StartingBehavior::RestartWithoutAppending, headerContents, outputFiles);
+    handler = { StartingBehavior::RestartWithoutAppending, headerContents, outputFiles };
+    return handler;
 }
 
 //! Check whether chksum_file output file has a checksum that matches \c outputfile from the checkpoint.
@@ -471,26 +511,7 @@ prepareForAppending(const ArrayRef<const gmx_file_position_t> outputFiles,
     }
 }
 
-/*! \brief Throw unless all simulations in a multi-sim restart the same way.
- *
- * The restart could differ if checkpoint or other output files are
- * not found in a consistent way across the set of multi-simulations,
- * or are from different simulation parts.
- *
- * \param[in]  ms                Multi-sim handler.
- * \param[in]  startingBehavior  Behavior of the current simulation
- * \param[in]  simulationPart    The number of the part of the simulation described by
- *                               the checkpoint file, when doing a restart. Otherwise
- *                               unused and may contain any value.
- *
- * May only be called from the master rank of each simulation.
- *
- * \throws InconsistentInputError if either simulations restart
- * differently, or from checkpoints from different simulation parts.
- */
-void ensureMultiSimBehaviorsMatch(const gmx_multisim_t  *ms,
-                                  const StartingBehavior startingBehavior,
-                                  const int              simulationPart)
+void StartingBehaviorHandler::ensureMultiSimBehaviorsMatch(const gmx_multisim_t *ms)
 {
     if (!isMultiSim(ms))
     {
@@ -537,7 +558,7 @@ simulations wanted the following respective behaviors:
     // Multi-simulation restarts require that each checkpoint
     // describes the same simulation part. If those don't match, then
     // the simulation cannot proceed.
-    auto simulationParts          = gatherIntFromMultiSimulation(ms, simulationPart);
+    auto simulationParts          = gatherIntFromMultiSimulation(ms, headerContents->simulation_part);
     bool identicalSimulationParts = (std::adjacent_find(std::begin(simulationParts),
                                                         std::end(simulationParts),
                                                         std::not_equal_to<>()) == std::end(simulationParts));
@@ -566,6 +587,24 @@ simulation parts:
     }
 }
 
+compat::optional<int>
+StartingBehaviorHandler::makeIndexOfNextPart(const AppendingBehavior appendingBehavior) const
+{
+    compat::optional<int> indexOfNextPart;
+
+    if (startingBehavior == StartingBehavior::RestartWithoutAppending)
+    {
+        indexOfNextPart = headerContents->simulation_part + 1;
+    }
+    else if (startingBehavior == StartingBehavior::NewSimulation &&
+             appendingBehavior == AppendingBehavior::NoAppending)
+    {
+        indexOfNextPart = 1;
+    }
+
+    return indexOfNextPart;
+}
+
 }   // namespace
 
 std::tuple<StartingBehavior, LogFilePtr>
@@ -575,8 +614,8 @@ handleRestart(t_commrec              *cr,
               const int               nfile,
               t_filenm                fnm[])
 {
-    StartingBehavior startingBehavior;
-    LogFilePtr       logFileGuard = nullptr;
+    StartingBehaviorHandler handler;
+    LogFilePtr              logFileGuard = nullptr;
 
     // Make sure all ranks agree on whether the (multi-)simulation can
     // proceed.
@@ -590,28 +629,29 @@ handleRestart(t_commrec              *cr,
     {
         try
         {
-            CheckpointHeaderContents         headerContents;
-            std::vector<gmx_file_position_t> outputFiles;
+            handler = chooseStartingBehavior(appendingBehavior, nfile, fnm);
 
-            std::tie(startingBehavior, headerContents, outputFiles) = chooseStartingBehavior(appendingBehavior, nfile, fnm);
+            handler.ensureMultiSimBehaviorsMatch(ms);
 
-            ensureMultiSimBehaviorsMatch(ms, startingBehavior, headerContents.simulation_part);
+            // When not appending, prepare a suffix for the part number
+            compat::optional<int> indexOfNextPart
+                = handler.makeIndexOfNextPart(appendingBehavior);
 
-            if (startingBehavior == StartingBehavior::RestartWithAppending)
+            // If a part suffix is used, change the file names accordingly.
+            if (indexOfNextPart)
             {
-                logFileGuard = openLogFile(ftp2fn(efLOG, nfile, fnm),
-                                           startingBehavior == StartingBehavior::RestartWithAppending);
-                prepareForAppending(outputFiles, logFileGuard.get());
+                std::string suffix = formatString(".part%04d", *indexOfNextPart);
+                add_suffix_to_output_names(fnm, nfile, suffix.c_str());
             }
-            else
+
+            // Open the log file, now that it has the right name
+            logFileGuard = openLogFile(ftp2fn(efLOG, nfile, fnm),
+                                       handler.startingBehavior == StartingBehavior::RestartWithAppending);
+
+            // When appending, the other output files need special handling before opening
+            if (handler.startingBehavior == StartingBehavior::RestartWithAppending)
             {
-                if (startingBehavior == StartingBehavior::RestartWithoutAppending)
-                {
-                    std::string suffix = formatString(".part%04d", headerContents.simulation_part + 1);
-                    add_suffix_to_output_names(fnm, nfile, suffix.c_str());
-                }
-                logFileGuard = openLogFile(ftp2fn(efLOG, nfile, fnm),
-                                           startingBehavior == StartingBehavior::RestartWithAppending);
+                prepareForAppending(*handler.outputFiles, logFileGuard.get());
             }
         }
         catch (const std::exception & /*ex*/)
@@ -654,10 +694,10 @@ handleRestart(t_commrec              *cr,
     }
     if (PAR(cr))
     {
-        gmx_bcast(sizeof(startingBehavior), &startingBehavior, cr);
+        gmx_bcast(sizeof(handler.startingBehavior), &handler.startingBehavior, cr);
     }
 
-    return std::make_tuple(startingBehavior, std::move(logFileGuard));
+    return std::make_tuple(handler.startingBehavior, std::move(logFileGuard));
 }
 
 } // namespace gmx
