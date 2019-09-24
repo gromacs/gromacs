@@ -49,6 +49,7 @@
 #include "gromacs/domdec/gpuhaloexchange.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/gpu_utils/hostallocator.h"
+#include "gromacs/utility/gmxmpi.h"
 
 namespace gmx
 {

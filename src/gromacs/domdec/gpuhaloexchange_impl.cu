@@ -156,9 +156,11 @@ void GpuHaloExchange::Impl::reinitHalo(float3      *d_coordinatesBuffer,
     }
 
     xSendSize_ = newSize;
+#if GMX_MPI
     MPI_Sendrecv(&xSendSize_, sizeof(int), MPI_BYTE, sendRankX_, 0,
                  &xRecvSize_, sizeof(int), MPI_BYTE, recvRankX_, 0,
                  mpi_comm_mysim_, MPI_STATUS_IGNORE);
+#endif
     fSendSize_ = xRecvSize_;
     fRecvSize_ = xSendSize_;
 
@@ -175,6 +177,7 @@ void GpuHaloExchange::Impl::reinitHalo(float3      *d_coordinatesBuffer,
     // since the pointers will not change until the next NS step.
 
     //Coordinates buffer:
+#if GMX_MPI
     void* recvPtr  = static_cast<void*> (&d_coordinatesBuffer[numHomeAtoms_]);
     MPI_Sendrecv(&recvPtr, sizeof(void*), MPI_BYTE, recvRankX_, 0,
                  &remoteXPtr_, sizeof(void*), MPI_BYTE, sendRankX_, 0,
@@ -185,6 +188,7 @@ void GpuHaloExchange::Impl::reinitHalo(float3      *d_coordinatesBuffer,
     MPI_Sendrecv(&recvPtr, sizeof(void*), MPI_BYTE, recvRankF_, 0,
                  &remoteFPtr_, sizeof(void*), MPI_BYTE, sendRankF_, 0,
                  mpi_comm_mysim_, MPI_STATUS_IGNORE);
+#endif
 
 
     return;
@@ -313,11 +317,13 @@ void GpuHaloExchange::Impl::communicateHaloData(float3     * d_ptr,
         sendRank  = sendRankX_;
         recvRank  = recvRankX_;
 
+#if GMX_MPI
         //Wait for signal from receiving task that it is ready, and similarly send signal to task that will push data to this task
         char thisTaskIsReady, remoteTaskIsReady;
         MPI_Sendrecv(&thisTaskIsReady, sizeof(char), MPI_BYTE, recvRank, 0,
                      &remoteTaskIsReady, sizeof(char), MPI_BYTE, sendRank, 0,
                      mpi_comm_mysim_, MPI_STATUS_IGNORE);
+#endif
     }
     else
     {
@@ -354,6 +360,7 @@ void GpuHaloExchange::Impl::communicateHaloDataWithCudaDirect(void *sendPtr,
         CU_RET_ERR(stat, "cudaMemcpyAsync on GPU Domdec CUDA direct data transfer failed");
     }
 
+#if GMX_MPI
     //ensure pushed data has arrived before remote rank progresses
     // This rank records an event and sends it to the remote rank which has just been pushed data.
     // This rank recieves event from remote rank which has pushed data here, and enqueues that event to
@@ -367,6 +374,10 @@ void GpuHaloExchange::Impl::communicateHaloDataWithCudaDirect(void *sendPtr,
                  mpi_comm_mysim_, MPI_STATUS_IGNORE);
 
     haloDataTransferRemote->enqueueWaitEvent(stream);
+#else
+    GMX_UNUSED_VALUE(sendRank);
+    GMX_UNUSED_VALUE(recvRank);
+#endif
 
 }
 
