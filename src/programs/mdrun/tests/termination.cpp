@@ -333,5 +333,50 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWorksEvenWithAppendAndMissingCheck
     }
 }
 
+TEST_F(MdrunTerminationTest, RunWithNoAppendCreatesPartFiles)
+{
+    runner_.cptFileName_ = fileManager_.getTemporaryFilePath(".cpt");
+
+    runner_.useTopGroAndNdxFromDatabase("spc2");
+    organizeMdpFile(&runner_);
+    EXPECT_EQ(0, runner_.callGrompp());
+
+    SCOPED_TRACE("Running the first simulation part with -noappend");
+    {
+        CommandLine firstPart;
+        firstPart.append("mdrun");
+        firstPart.addOption("-cpo", runner_.cptFileName_);
+        firstPart.append("-noappend");
+        ASSERT_EQ(0, runner_.callMdrun(firstPart));
+        auto expectedLogFileName = fileManager_.getTemporaryFilePath(".part0001.log");
+        ASSERT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError)) <<
+        expectedLogFileName << " was not found";
+        auto expectedEdrFileName = fileManager_.getTemporaryFilePath(".part0001.edr");
+        ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError)) <<
+        expectedEdrFileName << " was not found";
+        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError)) <<
+        runner_.cptFileName_ << " was not found";
+    }
+
+    SCOPED_TRACE("Running the second simulation part with -noappend");
+    {
+        runner_.changeTprNsteps(4);
+
+        CommandLine secondPart;
+        secondPart.append("mdrun");
+        secondPart.addOption("-cpi", runner_.cptFileName_);
+        secondPart.addOption("-cpo", runner_.cptFileName_);
+        secondPart.append("-noappend");
+        ASSERT_EQ(0, runner_.callMdrun(secondPart));
+
+        auto expectedLogFileName = fileManager_.getTemporaryFilePath(".part0002.log");
+        ASSERT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError)) <<
+        expectedLogFileName << " was not found";
+        auto expectedEdrFileName = fileManager_.getTemporaryFilePath(".part0002.edr");
+        ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError)) <<
+        expectedEdrFileName << " was not found";
+    }
+}
+
 }  // namespace test
 }  // namespace gmx

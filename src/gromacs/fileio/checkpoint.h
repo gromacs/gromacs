@@ -98,47 +98,80 @@ struct MdModulesWriteCheckpointData
 // TODO Replace this mechanism with std::array<char, 1024> or similar.
 #define CPTSTRLEN 1024
 
-// TODO Expand this into being a container of all data for
-// serialization of a checkpoint, which can be stored by the caller
-// (e.g. so that mdrun doesn't have to open the checkpoint twice).
-// This will separate issues of allocation from those of
-// serialization, help separate comparison from reading, and have
-// better defined transformation functions to/from trajectory frame
-// data structures.
-//
-// Several fields were once written to checkpoint file headers, but
-// have been removed. So that old files can continue to be read,
-// the names of such fields contain the string "_UNUSED" so that it
-// is clear they should not be used.
+/*!
+ * \brief
+ * Header explaining the context of a checkpoint file.
+ *
+ * TODO Expand this into being a container of all data for
+ * serialization of a checkpoint, which can be stored by the caller
+ * (e.g. so that mdrun doesn't have to open the checkpoint twice).
+ * This will separate issues of allocation from those of
+ * serialization, help separate comparison from reading, and have
+ * better defined transformation functions to/from trajectory frame
+ * data structures.
+ *
+ * Several fields were once written to checkpoint file headers, but
+ * have been removed. So that old files can continue to be read,
+ * the names of such fields contain the string "_UNUSED" so that it
+ * is clear they should not be used.
+ */
 struct CheckpointHeaderContents
 {
+    //! Version of checkpoint file read from disk.
     int         file_version;
+    //! Version string.
     char        version[CPTSTRLEN];
+    //! Deprecated string for time.
     char        btime_UNUSED[CPTSTRLEN];
+    //! Deprecated string for user.
     char        buser_UNUSED[CPTSTRLEN];
+    //! Deprecated string for host.
     char        bhost_UNUSED[CPTSTRLEN];
+    //! Value for precision.
     int         double_prec;
+    //! Program string.
     char        fprog[CPTSTRLEN];
+    //! Time string.
     char        ftime[CPTSTRLEN];
+    //! Which integrator is in use.
     int         eIntegrator;
+    //! Which part of the simulation this is.
     int         simulation_part;
+    //! Which step the checkpoint is at.
     int64_t     step;
+    //! Current simulation time.
     double      t;
+    //! Number of nodes used for simulation,
     int         nnodes;
+    //! Domain decomposition settings?
     ivec        dd_nc;
+    //! Number of separate PME ranks.
     int         npme;
+    //! Number of atoms.
     int         natoms;
+    //! Number of temperature coupling groups.
     int         ngtc;
+    //! Number of Nose-Hoover pressure coupling chains.
     int         nnhpres;
+    //! Length of Nose-Hoover chains.
     int         nhchainlength;
+    //! Current FEP lambda state.
     int         nlambda;
+    //! Current state flags.
     int         flags_state;
+    //! Flags for kinetic energy.
     int         flags_eks;
+    //! Flags for energy history.
     int         flags_enh;
+    //! Flags for pull history.
     int         flagsPullHistory;
+    //! Flags for mystery history.
     int         flags_dfh;
+    //! Flags for AWH history.
     int         flags_awhh;
+    //! Essential dynamics states.
     int         nED;
+    //! Enum for coordinate swapping.
     int         eSwapCoords;
 };
 
