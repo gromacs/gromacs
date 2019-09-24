@@ -106,7 +106,7 @@ void make_shake(gmx::ArrayRef<InteractionsOfType> plist, t_atoms *atoms, int nsh
              */
             for (int ftype = 0; (ftype < F_NRE); ftype++)
             {
-                if (interaction_function[ftype].flags & IF_BTYPE)
+                if (interaction_function[ftype].flags & IF_CHEMBOND)
                 {
                     InteractionsOfType *bonds = &(plist[ftype]);
 
@@ -159,6 +159,12 @@ void make_shake(gmx::ArrayRef<InteractionsOfType> plist, t_atoms *atoms, int nsh
                                         real              param = std::sqrt( b_ij*b_ij + b_jk*b_jk -
                                                                              2.0*b_ij*b_jk*cos(DEG2RAD*ang->c0()));
                                         std::vector<real> forceParm = {param, param};
+                                        if (ftype == F_CONNBONDS ||
+                                            ftype_a == F_CONNBONDS)
+                                        {
+                                            gmx_fatal(FARGS, "Can not constrain all angles when they involved bonds of type %s",
+                                                      interaction_function[F_CONNBONDS].longname);
+                                        }
                                         /* apply law of cosines */
 #ifdef DEBUG
                                         printf("p: %d, q: %d, dist: %12.5e\n", atomNumbers[0],

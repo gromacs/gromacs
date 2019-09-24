@@ -155,8 +155,9 @@ static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
 
 /*! Selects the Ewald kernel type, analytical on SM 3.0 and later, tabulated on
     earlier GPUs, single or twin cut-off. */
-static int pick_ewald_kernel_type(bool                     bTwinCut)
+static int pick_ewald_kernel_type(const interaction_const_t &ic)
 {
+    bool bTwinCut = (ic.rcoulomb != ic.rvdw);
     bool bUseAnalyticalEwald, bForceAnalyticalEwald, bForceTabulatedEwald;
     int  kernel_type;
 
@@ -309,8 +310,7 @@ static void init_nbparam(cu_nbparam_t                   *nbp,
     }
     else if ((EEL_PME(ic->eeltype) || ic->eeltype == eelEWALD))
     {
-        /* Initially rcoulomb == rvdw, so it's surely not twin cut-off. */
-        nbp->eeltype = pick_ewald_kernel_type(false);
+        nbp->eeltype = pick_ewald_kernel_type(*ic);
     }
     else
     {
@@ -354,7 +354,7 @@ void gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
 
     set_cutoff_parameters(nbp, ic, nbv->pairlistSets().params());
 
-    nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw);
+    nbp->eeltype        = pick_ewald_kernel_type(*ic);
 
     GMX_RELEASE_ASSERT(ic->coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
     init_ewald_coulomb_force_table(*ic->coulombEwaldTables, nbp);

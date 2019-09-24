@@ -293,8 +293,7 @@ map_interaction_types_to_gpu_kernel_flavors(const interaction_const_t *ic,
     }
     else if ((EEL_PME(ic->eeltype) || ic->eeltype == eelEWALD))
     {
-        /* Initially rcoulomb == rvdw, so it's surely not twin cut-off. */
-        *gpu_eeltype = gpu_pick_ewald_kernel_type(false);
+        *gpu_eeltype = nbnxn_gpu_pick_ewald_kernel_type(*ic);
     }
     else
     {
@@ -429,7 +428,7 @@ void gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
 
     set_cutoff_parameters(nbp, ic, nbv->pairlistSets().params());
 
-    nbp->eeltype = gpu_pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw);
+    nbp->eeltype = nbnxn_gpu_pick_ewald_kernel_type(*ic);
 
     GMX_RELEASE_ASSERT(ic->coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
     init_ewald_coulomb_force_table(*ic->coulombEwaldTables, nbp, nb->dev_rundata);

@@ -829,8 +829,9 @@ void gpu_launch_cpyback(gmx_nbnxn_ocl_t                          *nb,
 
 
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
-int gpu_pick_ewald_kernel_type(const bool bTwinCut)
+int nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t &ic)
 {
+    bool bTwinCut = (ic.rcoulomb != ic.rvdw);
     bool bUseAnalyticalEwald, bForceAnalyticalEwald, bForceTabulatedEwald;
     int  kernel_type;
 

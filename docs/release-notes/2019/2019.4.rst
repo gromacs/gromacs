@@ -16,6 +16,32 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix incorrect pressure when atoms in CMAP cross a box boundary
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The virial calculation and thus the pressure would be incorrect
+when the second and third atom involved in a CHARMM CMAP correction
+term would reside in different periodic images. This can happen when
+a protein is positioned over a box boundary. Note that the energy
+and forces were correct, but sampling was affected when pressure
+coupling was applied when a protein crossed a box boundary.
+
+:issue:`2845`
+:issue:`2867`
+
+Fix incorrect LJ cut-off on GPU when rvdw < rcoulomb
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When rvdw was chosen by the user to be smaller than rcoulomb in the mdp file,
+the LJ cut-off would initially be set to the Coulomb cut-off for computing
+non-bonded interactions on the GPU. This only affected energy minimization,
+mdrun -rerun and the first 2*nstlist steps of a normal MD run, since the correct
+LJ cut-off is set when PME tuning (on by default) starts after 2*nstlist steps
+(unless PME tuning was disabled with -notunepme).
+
+:issue:`3056`
+
+
 Fix (unlikely) missing bonded forces with CUDA GPUs and domain decomposition
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -36,6 +62,15 @@ Fix segmentation fault in grompp and mdrun with cosine COM pulling
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix grompp not adding angle constraints between constraints
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using the mdp option constraints=all-angles, angles involving
+bonds supplied as constraints in the topology would be removed,
+but not replaced by angle constraints.
+
+:issue:`3067`
 
 Fix bug in gmx xpm2ps
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
