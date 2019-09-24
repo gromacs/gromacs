@@ -207,6 +207,10 @@ TEST_F(DensityFittingOptionsTest, OutputDefaultValuesWhenActive)
         "density-guided-simulation-nst = 1\n"
         "; Normalize the sum of density voxel values to one\n"
         "density-guided-simulation-normalize-densities = true\n"
+        "; Apply adaptive force scaling\n"
+        "density-guided-simulation-adaptive-force-scaling = false\n"
+        "; Time constant for adaptive force scaling in ps\n"
+        "density-guided-simulation-adaptive-force-scaling-time-constant = 4\n"
         };
 
     EXPECT_EQ(expectedString, stream.toString());

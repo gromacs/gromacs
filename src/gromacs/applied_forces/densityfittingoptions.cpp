@@ -140,6 +140,8 @@ void DensityFittingOptions::initMdpTransform(IKeyValueTreeTransformRules * rules
     densityfittingMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_referenceDensityFileNameTag_);
     densityfittingMdpTransformFromString<std::int64_t>(rules, &fromStdString<std::int64_t>, c_everyNStepsTag_);
     densityfittingMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_normalizeDensitiesTag_);
+    densityfittingMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_adaptiveForceScalingTag_);
+    densityfittingMdpTransformFromString<real>(rules, &fromStdString<real>, c_adaptiveForceScalingTimeConstantTag_);
 }
 
 void DensityFittingOptions::buildMdpOutput(KeyValueTreeObjectBuilder *builder) const
@@ -171,6 +173,10 @@ void DensityFittingOptions::buildMdpOutput(KeyValueTreeObjectBuilder *builder) c
         addDensityFittingMdpOutputValue(builder, parameters_.calculationIntervalInSteps_, c_everyNStepsTag_);
         addDensityFittingMdpOutputValueComment(builder, "; Normalize the sum of density voxel values to one", c_normalizeDensitiesTag_);
         addDensityFittingMdpOutputValue(builder, parameters_.normalizeDensities_, c_normalizeDensitiesTag_);
+        addDensityFittingMdpOutputValueComment(builder, "; Apply adaptive force scaling", c_adaptiveForceScalingTag_);
+        addDensityFittingMdpOutputValue(builder, parameters_.adaptiveForceScaling_, c_adaptiveForceScalingTag_);
+        addDensityFittingMdpOutputValueComment(builder, "; Time constant for adaptive force scaling in ps", c_adaptiveForceScalingTimeConstantTag_);
+        addDensityFittingMdpOutputValue(builder, parameters_.adaptiveForceScalingTimeConstant_, c_adaptiveForceScalingTimeConstantTag_);
     }
 }
 
@@ -195,6 +201,8 @@ void DensityFittingOptions::initMdpOptions(IOptionsContainerWithSections *option
     section.addOption(StringOption(c_referenceDensityFileNameTag_.c_str()).store(&referenceDensityFileName_));
     section.addOption(Int64Option(c_everyNStepsTag_.c_str()).store(&parameters_.calculationIntervalInSteps_));
     section.addOption(BooleanOption(c_normalizeDensitiesTag_.c_str()).store(&parameters_.normalizeDensities_));
+    section.addOption(BooleanOption(c_adaptiveForceScalingTag_.c_str()).store(&parameters_.adaptiveForceScaling_));
+    section.addOption(RealOption(c_adaptiveForceScalingTimeConstantTag_.c_str()).store(&parameters_.adaptiveForceScalingTimeConstant_));
 }
 
 bool DensityFittingOptions::active() const

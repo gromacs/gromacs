@@ -248,6 +248,12 @@ class EnergyCalculationFrequencyErrors
         std::vector<std::string> errorMessages_;
 };
 
+struct SimulationTimeStep
+{
+    //! Time step (ps)
+    const double delta_t;
+};
+
 struct MdModulesNotifier
 {
 //! Register callback function types for MdModule
@@ -262,7 +268,8 @@ struct MdModulesNotifier
         MdModulesCheckpointReadingDataOnMaster,
         MdModulesCheckpointReadingBroadcast,
         MdModulesWriteCheckpointData,
-        PeriodicBoundaryConditionType>::type notifier_;
+        PeriodicBoundaryConditionType,
+        const SimulationTimeStep &>::type notifier_;
 };
 
 } // namespace gmx

@@ -45,9 +45,11 @@
 
 #include <numeric>
 
+#include "gromacs/compat/optional.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/densityfit.h"
 #include "gromacs/math/densityfittingforce.h"
+#include "gromacs/math/exponentialmovingaverage.h"
 #include "gromacs/math/gausstransform.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -100,6 +102,7 @@ class DensityFittingForceProvider::Impl
              const TranslateAndScale &transformationToDensityLattice,
              const LocalAtomSet &localAtomSet,
              int pbcType,
+             double simulationTimeStep,
              const DensityFittingForceProviderState &state);
         ~Impl();
         void calculateForces(const ForceProviderInput &forceProviderInput, ForceProviderOutput *forceProviderOutput);
@@ -122,8 +125,9 @@ class DensityFittingForceProvider::Impl
         TranslateAndScale                     transformationToDensityLattice_;
         RVec                                  referenceDensityCenter_;
         int                                   pbcType_;
-        real                                  forceConstantScale_;
 
+        //! Optionally scale the force according to a moving average of the similarity
+        compat::optional<ExponentialMovingAverage> expAverageSimilarity_;
 };
 
 DensityFittingForceProvider::Impl::~Impl() = default;
@@ -133,6 +137,7 @@ DensityFittingForceProvider::Impl::Impl(const DensityFittingParameters &paramete
                                         const TranslateAndScale &transformationToDensityLattice,
                                         const LocalAtomSet &localAtomSet,
                                         int pbcType,
+                                        double simulationTimeStep,
                                         const DensityFittingForceProviderState &state) :
     parameters_(parameters),
     state_(state),
@@ -147,8 +152,16 @@ DensityFittingForceProvider::Impl::Impl(const DensityFittingParameters &paramete
     amplitudeLookup_(parameters_.amplitudeLookupMethod_),
     transformationToDensityLattice_(transformationToDensityLattice),
     pbcType_(pbcType),
-    forceConstantScale_(parameters_.calculationIntervalInSteps_)
+    expAverageSimilarity_(compat::nullopt)
 {
+    if (parameters_.adaptiveForceScaling_)
+    {
+        GMX_ASSERT(simulationTimeStep > 0, "Simulation time step must be larger than zero for adaptive for scaling.");
+        expAverageSimilarity_.emplace(ExponentialMovingAverage(
+                                              parameters_.adaptiveForceScalingTimeConstant_
+                                              / (simulationTimeStep * parameters_.calculationIntervalInSteps_),
+                                              state.exponentialMovingAverageState_));
+    }
     referenceDensityCenter_  = {
         real(referenceDensity.extent(XX))/2,
         real(referenceDensity.extent(YY))/2,
@@ -256,23 +269,43 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
 
     transformationToDensityLattice_.scaleOperationOnly().inverseIgnoringZeroScale(forces_);
 
-    auto densityForceIterator = forces_.cbegin();
+    auto       densityForceIterator   = forces_.cbegin();
+    const real effectiveForceConstant = state_.adaptiveForceConstantScale_ *
+        parameters_.calculationIntervalInSteps_ * parameters_.forceConstant_;
     for (const auto localAtomIndex : localAtomSet_.localIndex())
     {
-        forceProviderOutput->forceWithVirial_.force_[localAtomIndex] +=
-            forceConstantScale_ * parameters_.forceConstant_ * *densityForceIterator;
+        forceProviderOutput->forceWithVirial_.force_[localAtomIndex]
+            += effectiveForceConstant * *densityForceIterator;
         ++densityForceIterator;
     }
 
     // calculate corresponding potential energy
     const float similarity  = measure_.similarity(gaussTransform_.constView());
-    const real  energy      = -similarity * parameters_.forceConstant_;
+    const real  energy      = -similarity * parameters_.forceConstant_ * state_.adaptiveForceConstantScale_;
     forceProviderOutput->enerd_.term[F_DENSITYFITTING] += energy;
+
+    if (expAverageSimilarity_.has_value())
+    {
+        expAverageSimilarity_->updateWithDataPoint(similarity);
+
+        if (expAverageSimilarity_->increasing())
+        {
+            state_.adaptiveForceConstantScale_ /= 1._real + expAverageSimilarity_->inverseTimeConstant();
+        }
+        else
+        {
+            state_.adaptiveForceConstantScale_ *= 1._real + expAverageSimilarity_->inverseTimeConstant();
+        }
+    }
 }
 
 DensityFittingForceProviderState
 DensityFittingForceProvider::Impl::state()
 {
+    if (expAverageSimilarity_.has_value())
+    {
+        state_.exponentialMovingAverageState_ = expAverageSimilarity_->state();
+    }
     return state_;
 }
 
@@ -287,8 +320,9 @@ DensityFittingForceProvider::DensityFittingForceProvider(const DensityFittingPar
                                                          const TranslateAndScale &transformationToDensityLattice,
                                                          const LocalAtomSet &localAtomSet,
                                                          int pbcType,
+                                                         double simulationTimeStep,
                                                          const DensityFittingForceProviderState &state)
-    : impl_(new Impl(parameters, referenceDensity, transformationToDensityLattice, localAtomSet, pbcType, state))
+    : impl_(new Impl(parameters, referenceDensity, transformationToDensityLattice, localAtomSet, pbcType, simulationTimeStep, state))
 {}
 
 void DensityFittingForceProvider::calculateForces(const ForceProviderInput  &forceProviderInput,

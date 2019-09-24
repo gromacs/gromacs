@@ -139,6 +139,22 @@ TEST(ExponentialMovingAverage, InverseLagTimeCorrect)
     EXPECT_REAL_EQ(0.5, exponentialMovingAverage.inverseTimeConstant());
 }
 
+TEST(ExponentialMovingAverage, RoundTripAsKeyValueTree)
+{
+    KeyValueTreeBuilder           builder;
+    const real                    weightedSum   = 9;
+    const real                    weightedCount = 1;
+    const bool                    increasing    = true;
+    ExponentialMovingAverageState state         = {weightedSum, weightedCount, increasing};
+    exponentialMovingAverageStateAsKeyValueTree(builder.rootObject(), state);
+    state = {};
+    KeyValueTreeObject result = builder.build();
+    state = exponentialMovingAverageStateFromKeyValueTree(result);
+    EXPECT_EQ(weightedSum, state.weightedSum_);
+    EXPECT_EQ(weightedCount, state.weightedCount_);
+    EXPECT_EQ(increasing, state.increasing_);
+}
+
 } // namespace
 
 } // namespace test

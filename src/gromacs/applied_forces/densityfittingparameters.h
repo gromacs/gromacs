@@ -77,6 +77,10 @@ struct DensityFittingParameters
     std::int64_t                   calculationIntervalInSteps_ = 1;
     //! Normalize reference and simulated densities
     bool                           normalizeDensities_ = true;
+    //! Perform adaptive force scaling during the simulation
+    bool                           adaptiveForceScaling_ = false;
+    //! The time constant for the adaptive force scaling in ps
+    real                           adaptiveForceScalingTimeConstant_ = 4;
 };
 
 /*!\brief Check if two structs holding density fitting parameters are equal.

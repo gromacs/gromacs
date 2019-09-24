@@ -46,6 +46,7 @@
 
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/math/coordinatetransformation.h"
+#include "gromacs/math/exponentialmovingaverage.h"
 #include "gromacs/mdspan/extensions.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/utility/classhelpers.h"
@@ -63,7 +64,11 @@ struct DensityFittingForceProviderState
     /*! \brief The steps since the last force calculation.
      *  Used if density fitting is to be calculated every N steps.
      */
-    std::int64_t stepsSinceLastCalculation_ = 0;
+    std::int64_t                  stepsSinceLastCalculation_ = 0;
+    //! The state of the exponential moving average of the similarity measure
+    ExponentialMovingAverageState exponentialMovingAverageState_ = {};
+    //! An additional factor scaling the force for adaptive force scaling
+    real                          adaptiveForceConstantScale_ = 1.0_real;
 };
 
 /*! \internal \brief
@@ -78,6 +83,7 @@ class DensityFittingForceProvider final : public IForceProvider
                                     const TranslateAndScale &transformationToDensityLattice,
                                     const LocalAtomSet &localAtomSet,
                                     int pbcType,
+                                    double simulationTimeStep,
                                     const DensityFittingForceProviderState &state);
         ~DensityFittingForceProvider();
         /*!\brief Calculate forces that maximise goodness-of-fit with a reference density map.

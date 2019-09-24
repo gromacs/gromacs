@@ -43,6 +43,7 @@
 #ifndef GMX_MATH_EXPONENTIALMOVINGAVERAGE_H
 #define GMX_MATH_EXPONENTIALMOVINGAVERAGE_H
 
+#include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx
@@ -61,6 +62,13 @@ struct ExponentialMovingAverageState
     //! Remember if adding the latest data point increased the average
     bool increasing_ = false;
 };
+
+//! Convert the exponential moving average state as key-value-tree object
+void exponentialMovingAverageStateAsKeyValueTree(KeyValueTreeObjectBuilder builder, const ExponentialMovingAverageState &state);
+
+//! Sets the expoential moving average state from a key-value-tree object
+ExponentialMovingAverageState
+exponentialMovingAverageStateFromKeyValueTree(const KeyValueTreeObject &object);
 
 /*! \libinternal
  * \brief Evaluate the exponential moving average with bias correction.

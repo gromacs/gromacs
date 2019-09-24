@@ -194,6 +194,18 @@ class DensityFittingSimulationParameterSetup
             return *pbcType_;
         }
 
+        //! Set the simulation time step
+        void setSimulationTimeStep(double timeStep)
+        {
+            simulationTimeStep_ = timeStep;
+        }
+
+        //! Return the simulation time step
+        double simulationTimeStep()
+        {
+            return simulationTimeStep_;
+        }
+
     private:
         //! The reference density to fit to
         std::unique_ptr<MultiDimArray<std::vector<float>, dynamicExtents3D> > referenceDensity_;
@@ -203,6 +215,8 @@ class DensityFittingSimulationParameterSetup
         std::unique_ptr<LocalAtomSet>      localAtomSet_;
         //! The type of periodic boundary conditions in the simulation
         std::unique_ptr<int>               pbcType_;
+        //! The simulation time step
+        double simulationTimeStep_ = 1;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(DensityFittingSimulationParameterSetup);
 };
@@ -281,6 +295,12 @@ class DensityFitting final : public IMDModule
                 };
             notifier->notifier_.subscribe(setPeriodicBoundaryContionsFunction);
 
+            // setting the simulation time step
+            const auto setSimulationTimeStepFunction = [this](const SimulationTimeStep &simulationTimeStep) {
+                    this->densityFittingSimulationParameters_.setSimulationTimeStep(simulationTimeStep.delta_t);
+                };
+            notifier->notifier_.subscribe(setSimulationTimeStepFunction);
+
             // adding output to energy file
             const auto requestEnergyOutput
                 = [this](MdModulesEnergyOutputToDensityFittingRequestChecker *energyOutputRequest) {
@@ -327,6 +347,7 @@ class DensityFitting final : public IMDModule
                             densityFittingSimulationParameters_.transformationToDensityLattice(),
                             densityFittingSimulationParameters_.localAtomSet(),
                             densityFittingSimulationParameters_.periodicBoundaryConditionType(),
+                            densityFittingSimulationParameters_.simulationTimeStep(),
                             densityFittingState_);
                 forceProviders->addForceProvider(forceProvider_.get());
             }
@@ -373,6 +394,13 @@ class DensityFitting final : public IMDModule
                 checkpointWriting.builder_.addValue<std::int64_t>(
                         DensityFittingModuleInfo::name_ + "-stepsSinceLastCalculation",
                         state.stepsSinceLastCalculation_);
+                checkpointWriting.builder_.addValue<real>(
+                        DensityFittingModuleInfo::name_ + "-adaptiveForceConstantScale",
+                        state.adaptiveForceConstantScale_);
+                KeyValueTreeObjectBuilder exponentialMovingAverageKvtEntry =
+                    checkpointWriting.builder_.addObject(
+                            DensityFittingModuleInfo::name_ + "-exponentialMovingAverageState");
+                exponentialMovingAverageStateAsKeyValueTree(exponentialMovingAverageKvtEntry, state.exponentialMovingAverageState_);
             }
         }
 
@@ -390,6 +418,19 @@ class DensityFitting final : public IMDModule
                         checkpointReading.checkpointedData_[
                             DensityFittingModuleInfo::name_ + "-stepsSinceLastCalculation"].cast<std::int64_t>();
                 }
+                if (checkpointReading.checkpointedData_.keyExists(DensityFittingModuleInfo::name_ + "-adaptiveForceConstantScale"))
+                {
+                    densityFittingState_.adaptiveForceConstantScale_
+                        = checkpointReading
+                                .checkpointedData_[DensityFittingModuleInfo::name_ + "-adaptiveForceConstantScale"].cast<real>();
+                }
+                if (checkpointReading.checkpointedData_.keyExists(
+                            DensityFittingModuleInfo::name_ + "-exponentialMovingAverageState"))
+                {
+                    densityFittingState_.exponentialMovingAverageState_ =
+                        exponentialMovingAverageStateFromKeyValueTree(checkpointReading
+                                                                          .checkpointedData_[DensityFittingModuleInfo::name_ + "-exponentialMovingAverageState"].asObject());
+                }
             }
         }
 
@@ -404,6 +445,8 @@ class DensityFitting final : public IMDModule
                 if (PAR(&(checkpointBroadcast.cr_)))
                 {
                     block_bc(&(checkpointBroadcast.cr_), densityFittingState_.stepsSinceLastCalculation_);
+                    block_bc(&(checkpointBroadcast.cr_), densityFittingState_.adaptiveForceConstantScale_);
+                    block_bc(&(checkpointBroadcast.cr_), densityFittingState_.exponentialMovingAverageState_);
                 }
             }
         }

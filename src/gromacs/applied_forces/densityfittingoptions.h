@@ -131,6 +131,10 @@ class DensityFittingOptions final : public IMdpOptionProvider
 
         const std::string c_normalizeDensitiesTag_ = "normalize-densities";
 
+        const std::string c_adaptiveForceScalingTag_ = "adaptive-force-scaling";
+
+        const std::string c_adaptiveForceScalingTimeConstantTag_ = "adaptive-force-scaling-time-constant";
+
 
         DensityFittingParameters parameters_;
 };

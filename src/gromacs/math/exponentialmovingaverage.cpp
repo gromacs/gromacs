@@ -44,12 +44,31 @@
 #include "exponentialmovingaverage.h"
 
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/keyvaluetree.h"
 
 namespace gmx
 {
 
-ExponentialMovingAverage::ExponentialMovingAverage(real timeConstant, const ExponentialMovingAverageState &state) :
-    state_(state)
+//! Convert the exponential moving average state as key-value-tree object
+void exponentialMovingAverageStateAsKeyValueTree(KeyValueTreeObjectBuilder builder, const ExponentialMovingAverageState &state)
+{
+    builder.addValue<real>("weighted-sum", state.weightedSum_);
+    builder.addValue<real>("weighted-count", state.weightedCount_);
+    builder.addValue<bool>("increasing", state.increasing_);
+}
+
+//! Sets the exponential moving average state from a key-value-tree object
+ExponentialMovingAverageState
+exponentialMovingAverageStateFromKeyValueTree(const KeyValueTreeObject &object)
+{
+    const real weightedSum   = object["weighted-sum"].cast<real>();
+    const real weightedCount = object["weighted-count"].cast<real>();
+    const bool increasing    = object["increasing"].cast<bool>();
+    return {weightedSum, weightedCount, increasing};
+}
+
+ExponentialMovingAverage::ExponentialMovingAverage(real timeConstant, const ExponentialMovingAverageState &state)
+    : state_(state)
 {
     if (timeConstant < 1)
     {
