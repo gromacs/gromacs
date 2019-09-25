@@ -110,17 +110,17 @@ void detail::export_tprfile(pybind11::module &module)
 
     // Overload a setter for each known type and None
     mdparams.def("set",
-                 [](GmxMdParams* self, const std::string &key, py::int_ value)
+                 [](GmxMdParams* self, const std::string &key, int64_t value)
                  {
-                     gmxapicompat::setParam(self, key, py::cast<int64_t>(value));
+                     gmxapicompat::setParam(self, key, value);
                  },
                  py::arg("key").none(false),
                  py::arg("value").none(false),
                  "Use a dictionary to update simulation parameters.");
     mdparams.def("set",
-                 [](GmxMdParams* self, const std::string &key, py::float_ value)
+                 [](GmxMdParams* self, const std::string &key, double value)
                  {
-                     gmxapicompat::setParam(self, key, py::cast<double>(value));
+                     gmxapicompat::setParam(self, key, value);
                  },
                  py::arg("key").none(false),
                  py::arg("value").none(false),
