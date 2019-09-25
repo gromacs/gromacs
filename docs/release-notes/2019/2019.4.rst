@@ -114,3 +114,10 @@ The OpenCL PME support is therefore disabled on Apple platforms.
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Added AMD Zen 2 detection
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The AMD Zen 2 architecture is now detected as different from Zen 1
+and uses 256-bit wide AVX2 SIMD instructions (GMX_SIMD=AVX2_256) by default. 
+Also the non-bonded kernel parameters have been tuned for Zen 2.
+This has a significant impact on performance.

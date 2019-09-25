@@ -186,12 +186,15 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo               &cpuInfo,
                                      compat::not_null<gmx_hw_info_t *> hardwareInfo)
 {
     const int  ncore        = hardwareInfo->hardwareTopology->numberOfCores();
-    /* Zen has family=23, for now we treat future AMD CPUs like Zen
-     * and Hygon Dhyana like Zen */
-    const bool cpuIsAmdZen  = ((cpuInfo.vendor() == CpuInfo::Vendor::Amd &&
-                                cpuInfo.family() >= 23) ||
+    /* Zen1 is assumed for:
+     * - family=23 with the below listed models;
+     * - Hygon as vendor.
+     */
+    const bool cpuIsAmdZen1 = ((cpuInfo.vendor() == CpuInfo::Vendor::Amd &&
+                                cpuInfo.family() == 23 &&
+                                (cpuInfo.model() == 1 || cpuInfo.model() == 17 ||
+                                 cpuInfo.model() == 8 || cpuInfo.model() == 24)) ||
                                cpuInfo.vendor() == CpuInfo::Vendor::Hygon);
-
 #if GMX_LIB_MPI
     int       nhwthread, ngpu, i;
     int       gpu_hash;
@@ -252,7 +255,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo               &cpuInfo,
         maxMinLocal[7]  = -maxMinLocal[2];
         maxMinLocal[8]  = -maxMinLocal[3];
         maxMinLocal[9]  = -maxMinLocal[4];
-        maxMinLocal[10] = (cpuIsAmdZen ? 1 : 0);
+        maxMinLocal[10] = (cpuIsAmdZen1 ? 1 : 0);
 
         MPI_Allreduce(maxMinLocal.data(), maxMinReduced.data(), maxMinLocal.size(),
                       MPI_INT, MPI_MAX, MPI_COMM_WORLD);
@@ -271,7 +274,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo               &cpuInfo,
     hardwareInfo->simd_suggest_min    = -maxMinReduced[8];
     hardwareInfo->simd_suggest_max    = maxMinReduced[3];
     hardwareInfo->bIdenticalGPUs      = (maxMinReduced[4] == -maxMinReduced[9]);
-    hardwareInfo->haveAmdZenCpu       = (maxMinReduced[10] > 0);
+    hardwareInfo->haveAmdZen1Cpu      = (maxMinReduced[10] > 0);
 #else
     /* All ranks use the same pointer, protected by a mutex in the caller */
     hardwareInfo->nphysicalnode       = 1;
@@ -287,7 +290,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo               &cpuInfo,
     hardwareInfo->simd_suggest_min    = static_cast<int>(simdSuggested(cpuInfo));
     hardwareInfo->simd_suggest_max    = static_cast<int>(simdSuggested(cpuInfo));
     hardwareInfo->bIdenticalGPUs      = TRUE;
-    hardwareInfo->haveAmdZenCpu       = cpuIsAmdZen;
+    hardwareInfo->haveAmdZen1Cpu      = cpuIsAmdZen1;
     GMX_UNUSED_VALUE(physicalNodeComm);
 #endif
 }

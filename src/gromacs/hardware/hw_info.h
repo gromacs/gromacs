@@ -90,7 +90,7 @@ struct gmx_hw_info_t
     int                 simd_suggest_max;    /* Highest SIMD instruction set supported by at least one rank */
 
     gmx_bool            bIdenticalGPUs;      /* TRUE if all ranks have the same type(s) and order of GPUs */
-    bool                haveAmdZenCpu;       /* TRUE when at least one CPU in any of the nodes is AMD Zen arch */
+    bool                haveAmdZen1Cpu;      /* TRUE when at least one CPU in any of the nodes is AMD Zen of the first generation */
 };
 
 
