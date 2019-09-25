@@ -1092,7 +1092,7 @@ ImdSession::Impl::prepareMoleculesInImdGroup(const gmx_mtop_t *top_global)
         int  count = 0;
         for (int ii = 0; ii < nat; ii++)
         {
-            if (mol.inRange(ind[ii]))
+            if (mol.isInRange(ind[ii]))
             {
                 count += 1;
             }

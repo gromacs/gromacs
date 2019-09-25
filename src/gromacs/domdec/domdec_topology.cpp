@@ -1356,7 +1356,7 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
                              const t_iparams *ip_in,
                              t_idef *idef,
                              int izone,
-                             gmx::RangePartitioning::Block atomRange)
+                             const gmx::Range<int> &atomRange)
 {
     int                mb, mt, mol, i_mol;
     gmx_bool           bBCheck;
@@ -1442,9 +1442,9 @@ static void make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 
     const gmx_ga2la_t &ga2la  = *dd->ga2la;
 
-    // TODO: Replace this by a more standard range
-    const gmx::RangePartitioning::Block jRange(zones->izone[iz].jcg0,
-                                               zones->izone[iz].jcg1);
+    /* Extract the j-atom range */
+    const gmx::Range<int> jRange(zones->izone[iz].jcg0,
+                                 zones->izone[iz].jcg1);
 
     n_excl_at_max = dd->reverse_top->n_excl_at_max;
 
@@ -1487,7 +1487,7 @@ static void make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                      * the number of exclusions in the list, which in turn
                      * can speed up the pair list construction a bit.
                      */
-                    if (jRange.inRange(jEntry->la))
+                    if (jRange.isInRange(jEntry->la))
                     {
                         lexcls->a[n++] = jEntry->la;
                     }
@@ -1557,9 +1557,8 @@ static void check_exclusions_alloc(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 static void finish_local_exclusions(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                     t_blocka *lexcls)
 {
-    // TODO: Replace this by a more standard range
-    const gmx::RangePartitioning::Block nonhomeIzonesAtomRange(zones->izone[0].cg1,
-                                                               zones->izone[zones->nizone - 1].cg1);
+    const gmx::Range<int> nonhomeIzonesAtomRange(zones->izone[0].cg1,
+                                                 zones->izone[zones->nizone - 1].cg1);
 
     if (dd->n_intercg_excl == 0)
     {
@@ -1683,7 +1682,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                                       pbc_null, cg_cm, idef->iparams,
                                       idef_t,
                                       izone,
-                                      gmx::RangePartitioning::Block(cg0t, cg1t));
+                                      gmx::Range<int>(cg0t, cg1t));
 
                 if (izone < nzone_excl)
                 {

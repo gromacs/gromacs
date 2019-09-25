@@ -43,6 +43,7 @@
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/range.h"
 
 namespace gmx
 {
@@ -56,63 +57,8 @@ namespace gmx
 class RangePartitioning
 {
     public:
-        /*! \brief Struct for returning the range of a block.
-         *
-         * Can be used in a range loop.
-         */
-        struct Block
-        {
-            public:
-                /*! \brief An iterator that loops over integers */
-                struct iterator
-                {
-                    //! Constructor
-                    iterator(int value) : value_(value) {}
-                    //! Value
-                    operator int () const { return value_; }
-                    //! Reference
-                    operator int &()      { return value_; }
-                    //! Pointer
-                    int operator* () const { return value_; }
-                    //! Inequality comparison
-                    bool operator!= (const iterator other) { return value_ != other; }
-                    //! Increment operator
-                    iterator &operator++() { ++value_; return *this; }
-                    //! Increment operator
-                    iterator operator++(int) { iterator tmp(*this); ++value_; return tmp; }
-                    //! The actual value
-                    int value_;
-                };
-
-                /*! \brief Constructor, constructs a range starting at 0 with 0 blocks */
-                Block(int begin,
-                      int end) :
-                    begin_(begin),
-                    end_(end)
-                {
-                }
-
-                /*! \brief Begin iterator/value */
-                iterator begin() const { return begin_; }
-                /*! \brief End iterator/value */
-                iterator end() const { return end_; }
-
-                /*! \brief The number of items in the block */
-                int size() const
-                {
-                    return end_ - begin_;
-                }
-
-                /*! \brief Returns whether \p index is within range of the block */
-                bool inRange(int index) const
-                {
-                    return (begin_ <= index && index < end_);
-                }
-
-            private:
-                const int begin_; /**< The start index of the block */
-                const int end_;   /**< The end index of the block */
-        };
+        /*! \brief A block defined by a range of atom indices */
+        using Block = Range<int>;
 
         /*! \brief Returns the number of blocks */
         int numBlocks() const
