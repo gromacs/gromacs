@@ -1,7 +1,7 @@
 GROMACS 2018.8 release notes
 ----------------------------
 
-This version was released on TODO, 2019. These release notes document
+This version was released on October 4th, 2019. These release notes document
 the changes that have taken place in GROMACS since version 2018.7, to fix known
 issues. It also incorporates all fixes made in previous versions,
 which you can find described in the :ref:`release-notes`.
