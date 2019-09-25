@@ -1126,9 +1126,9 @@ check_assign_interactions_atom(int i, int i_gl,
                                gmx_bool bBCheck,
                                int *nbonded_local)
 {
-    int j;
+    gmx::ArrayRef<const DDPairInteractionRanges> iZones = zones->iZones;
 
-    j = ind_start;
+    int j = ind_start;
     while (j < ind_end)
     {
         t_iatom   tiatoms[1 + MAXATOMLIST];
@@ -1203,14 +1203,12 @@ check_assign_interactions_atom(int i, int i_gl,
                         kz -= zones->n;
                     }
                     /* Check zone interaction assignments */
-                    bUse = ((iz < zones->nizone &&
+                    bUse = ((iz < iZones.ssize() &&
                              iz <= kz &&
-                             kz >= zones->izone[iz].j0 &&
-                             kz <  zones->izone[iz].j1) ||
-                            (kz < zones->nizone &&
+                             iZones[iz].jZoneRange.isInRange(kz)) ||
+                            (kz < iZones.ssize() &&
                                   iz > kz &&
-                             iz >= zones->izone[kz].j0 &&
-                             iz <  zones->izone[kz].j1));
+                             iZones[kz].jZoneRange.isInRange(iz)));
                     if (bUse)
                     {
                         GMX_ASSERT(ftype != F_CONSTR || (iz == 0 && kz == 0),
@@ -1425,9 +1423,7 @@ static void make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 
     const gmx_ga2la_t &ga2la  = *dd->ga2la;
 
-    /* Extract the j-atom range */
-    const gmx::Range<int> jRange(zones->izone[iz].jcg0,
-                                 zones->izone[iz].jcg1);
+    const auto        &jAtomRange = zones->iZones[iz].jAtomRange;
 
     n_excl_at_max = dd->reverse_top->n_excl_at_max;
 
@@ -1470,7 +1466,7 @@ static void make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                      * the number of exclusions in the list, which in turn
                      * can speed up the pair list construction a bit.
                      */
-                    if (jRange.isInRange(jEntry->la))
+                    if (jAtomRange.isInRange(jEntry->la))
                     {
                         lexcls->a[n++] = jEntry->la;
                     }
@@ -1523,10 +1519,11 @@ static void check_alloc_index(t_blocka *ba, int nindex_max)
 }
 
 /*! \brief Ensure that we have enough space for exclusion storate in \p lexcls */
-static void check_exclusions_alloc(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
-                                   t_blocka *lexcls)
+static void check_exclusions_alloc(const gmx_domdec_t       *dd,
+                                   const gmx_domdec_zones_t *zones,
+                                   t_blocka                 *lexcls)
 {
-    const int nr = zones->izone[zones->nizone - 1].cg1;
+    const int nr = zones->iZones.back().iAtomRange.end();
 
     check_alloc_index(lexcls, nr);
 
@@ -1540,8 +1537,8 @@ static void check_exclusions_alloc(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 static void finish_local_exclusions(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                     t_blocka *lexcls)
 {
-    const gmx::Range<int> nonhomeIzonesAtomRange(zones->izone[0].cg1,
-                                                 zones->izone[zones->nizone - 1].cg1);
+    const gmx::Range<int> nonhomeIzonesAtomRange(zones->iZones[0].iAtomRange.end(),
+                                                 zones->iZones.back().iAtomRange.end());
 
     if (!dd->haveExclusions)
     {
@@ -1588,7 +1585,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                                     t_blocka *lexcls, int *excl_count)
 {
     int                nzone_bondeds, nzone_excl;
-    int                izone, cg0, cg1;
+    int                cg0, cg1;
     real               rc2;
     int                nbonded_local;
     gmx_reverse_top_t *rt;
@@ -1608,7 +1605,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
     if (dd->haveExclusions)
     {
         /* We only use exclusions from i-zones to i- and j-zones */
-        nzone_excl = zones->nizone;
+        nzone_excl = zones->iZones.size();
     }
     else
     {
@@ -1630,7 +1627,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
     lexcls->nra   = 0;
     *excl_count   = 0;
 
-    for (izone = 0; izone < nzone_bondeds; izone++)
+    for (int izone = 0; izone < nzone_bondeds; izone++)
     {
         cg0 = zones->cg_range[izone];
         cg1 = zones->cg_range[izone + 1];
@@ -1717,9 +1714,9 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
     /* Some zones might not have exclusions, but some code still needs to
      * loop over the index, so we set the indices here.
      */
-    for (izone = nzone_excl; izone < zones->nizone; izone++)
+    for (size_t iZone = nzone_excl; iZone < zones->iZones.size(); iZone++)
     {
-        set_no_exclusions_zone(zones, izone, lexcls);
+        set_no_exclusions_zone(zones, iZone, lexcls);
     }
 
     finish_local_exclusions(dd, zones, lexcls);

@@ -47,6 +47,7 @@
 
 #include <cstddef>
 
+#include <array>
 #include <memory>
 #include <vector>
 
@@ -54,6 +55,7 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
 
 //! Max number of zones in domain decomposition
@@ -77,22 +79,24 @@ class LocalAtomSetManager;
 class GpuHaloExchange;
 }
 
-typedef struct {
-    /* j-zone start               */
-    int  j0 = 0;
-    /* j-zone end                 */
-    int  j1 = 0;
-    /* i-charge-group end         */
-    int  cg1 = 0;
-    /* j-charge-group start       */
-    int  jcg0 = 0;
-    /* j-charge-group end         */
-    int  jcg1 = 0;
-    /* Minimum shifts to consider */
-    ivec shift0 = { };
-    /* Maximum shifts to consider */
-    ivec shift1 = { };
-} gmx_domdec_ns_ranges_t;
+/*! \internal
+ * \brief Pair interaction zone and atom range for an i-zone
+ */
+struct DDPairInteractionRanges
+{
+    //! The index of this i-zone in the i-zone list
+    int             iZoneIndex = -1;
+    //! The range of j-zones
+    gmx::Range<int> jZoneRange;
+    //! The i-atom range
+    gmx::Range<int> iAtomRange;
+    //! The j-atom range
+    gmx::Range<int> jAtomRange;
+    //! Minimum shifts to consider
+    ivec            shift0 = { };
+    //! Maximum shifts to consider
+    ivec            shift1 = { };
+};
 
 typedef struct {
     /* Zone lower corner in triclinic coordinates         */
@@ -107,19 +111,17 @@ typedef struct {
 
 struct gmx_domdec_zones_t {
     /* The number of zones including the home zone */
-    int                    n = 0;
+    int                                  n = 0;
     /* The shift of the zones with respect to the home zone */
-    ivec                   shift[DD_MAXZONE] = { };
+    ivec                                 shift[DD_MAXZONE] = { };
     /* The charge group boundaries for the zones */
-    int                    cg_range[DD_MAXZONE+1] = { };
-    /* The number of neighbor search zones with i-particles */
-    int                    nizone = 0;
-    /* The neighbor search charge group ranges for each i-zone */
-    gmx_domdec_ns_ranges_t izone[DD_MAXIZONE];
+    int                                  cg_range[DD_MAXZONE+1] = { };
+    /* The pair interaction zone and atom ranges per each i-zone */
+    std::vector<DDPairInteractionRanges> iZones;
     /* Boundaries of the zones */
-    gmx_domdec_zone_size_t size[DD_MAXZONE];
+    gmx_domdec_zone_size_t               size[DD_MAXZONE];
     /* The cg density of the home zone */
-    real                   dens_zone0 = 0;
+    real                                 dens_zone0 = 0;
 };
 
 struct gmx_ddbox_t {

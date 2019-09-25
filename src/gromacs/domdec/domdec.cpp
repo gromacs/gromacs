@@ -1233,10 +1233,9 @@ static void make_load_communicators(gmx_domdec_t gmx_unused *dd)
 /*! \brief Sets up the relation between neighboring domains and zones */
 static void setup_neighbor_relations(gmx_domdec_t *dd)
 {
-    int                     d, dim, i, j, m;
+    int                     d, dim, m;
     ivec                    tmp, s;
     gmx_domdec_zones_t     *zones;
-    gmx_domdec_ns_ranges_t *izone;
     GMX_ASSERT((dd->ndim >= 0) && (dd->ndim <= DIM), "Must have valid number of dimensions for DD");
 
     for (d = 0; d < dd->ndim; d++)
@@ -1263,7 +1262,7 @@ static void setup_neighbor_relations(gmx_domdec_t *dd)
 
     zones = &dd->comm->zones;
 
-    for (i = 0; i < nzone; i++)
+    for (int i = 0; i < nzone; i++)
     {
         m = 0;
         clear_ivec(zones->shift[i]);
@@ -1274,7 +1273,7 @@ static void setup_neighbor_relations(gmx_domdec_t *dd)
     }
 
     zones->n = nzone;
-    for (i = 0; i < nzone; i++)
+    for (int i = 0; i < nzone; i++)
     {
         for (d = 0; d < DIM; d++)
         {
@@ -1289,44 +1288,48 @@ static void setup_neighbor_relations(gmx_domdec_t *dd)
             }
         }
     }
-    zones->nizone = nizone;
-    for (i = 0; i < zones->nizone; i++)
+    for (int iZoneIndex = 0; iZoneIndex < nizone; iZoneIndex++)
     {
-        assert(ddNonbondedZonePairRanges[i][0] == i);
+        GMX_RELEASE_ASSERT(ddNonbondedZonePairRanges[iZoneIndex][0] == iZoneIndex,
+                           "The first element for each ddNonbondedZonePairRanges should match its index");
 
-        izone     = &zones->izone[i];
+        DDPairInteractionRanges iZone;
+        iZone.iZoneIndex = iZoneIndex;
         /* dd_zp3 is for 3D decomposition, for fewer dimensions use only
          * j-zones up to nzone.
          */
-        izone->j0 = std::min(ddNonbondedZonePairRanges[i][1], nzone);
-        izone->j1 = std::min(ddNonbondedZonePairRanges[i][2], nzone);
+        iZone.jZoneRange =
+            gmx::Range<int>(std::min(ddNonbondedZonePairRanges[iZoneIndex][1], nzone),
+                            std::min(ddNonbondedZonePairRanges[iZoneIndex][2], nzone));
         for (dim = 0; dim < DIM; dim++)
         {
             if (dd->nc[dim] == 1)
             {
                 /* All shifts should be allowed */
-                izone->shift0[dim] = -1;
-                izone->shift1[dim] = 1;
+                iZone.shift0[dim] = -1;
+                iZone.shift1[dim] = 1;
             }
             else
             {
                 /* Determine the min/max j-zone shift wrt the i-zone */
-                izone->shift0[dim] = 1;
-                izone->shift1[dim] = -1;
-                for (j = izone->j0; j < izone->j1; j++)
+                iZone.shift0[dim] = 1;
+                iZone.shift1[dim] = -1;
+                for (int jZone : iZone.jZoneRange)
                 {
-                    int shift_diff = zones->shift[j][dim] - zones->shift[i][dim];
-                    if (shift_diff < izone->shift0[dim])
+                    int shift_diff = zones->shift[jZone][dim] - zones->shift[iZoneIndex][dim];
+                    if (shift_diff < iZone.shift0[dim])
                     {
-                        izone->shift0[dim] = shift_diff;
+                        iZone.shift0[dim] = shift_diff;
                     }
-                    if (shift_diff > izone->shift1[dim])
+                    if (shift_diff > iZone.shift1[dim])
                     {
-                        izone->shift1[dim] = shift_diff;
+                        iZone.shift1[dim] = shift_diff;
                     }
                 }
             }
         }
+
+        zones->iZones.push_back(iZone);
     }
 
     if (!isDlbDisabled(dd->comm))

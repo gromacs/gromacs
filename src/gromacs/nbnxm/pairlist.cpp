@@ -4005,7 +4005,7 @@ PairlistSet::constructPairlists(const Nbnxm::GridSet          &gridSet,
     }
     else
     {
-        nzi = gridSet.domainSetup().zones->nizone;
+        nzi = gridSet.domainSetup().zones->iZones.size();
     }
 
     if (!isCpuType_ && minimumIlistCountForGpuBalancing > 0)
@@ -4048,29 +4048,23 @@ PairlistSet::constructPairlists(const Nbnxm::GridSet          &gridSet,
         }
         const Grid &iGrid = gridSet.grids()[zi];
 
-        int                 zj0;
-        int                 zj1;
+        Range<int> jZoneRange;
         if (locality_ == InteractionLocality::Local)
         {
-            zj0 = 0;
-            zj1 = 1;
+            jZoneRange = Range<int>(0, 1);
         }
         else
         {
-            zj0 = ddZones->izone[zi].j0;
-            zj1 = ddZones->izone[zi].j1;
-            if (zi == 0)
-            {
-                zj0++;
-            }
+            jZoneRange = Range<int>(ddZones->iZones[zi].jZoneRange.begin() + (zi == 0 ? 1 : 0),
+                                    ddZones->iZones[zi].jZoneRange.end());
         }
-        for (int zj = zj0; zj < zj1; zj++)
+        for (int jZone : jZoneRange)
         {
-            const Grid &jGrid = gridSet.grids()[zj];
+            const Grid &jGrid = gridSet.grids()[jZone];
 
             if (debug)
             {
-                fprintf(debug, "ns search grid %d vs %d\n", zi, zj);
+                fprintf(debug, "ns search grid %d vs %d\n", zi, jZone);
             }
 
             searchCycleCounting->start(enbsCCsearch);
@@ -4090,7 +4084,7 @@ PairlistSet::constructPairlists(const Nbnxm::GridSet          &gridSet,
                     /* Re-init the thread-local work flag data before making
                      * the first list (not an elegant conditional).
                      */
-                    if (nbat->bUseBufferFlags && ((zi == 0 && zj == 0)))
+                    if (nbat->bUseBufferFlags && (zi == 0 && jZone == 0))
                     {
                         init_buffer_flags(&searchWork[th].buffer_flags, nbat->numAtoms());
                     }
