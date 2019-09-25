@@ -6,7 +6,7 @@
    Also, please use the syntax :issue:`number` to reference issues on redmine, without the
    a space between the colon and number!
 
-Changes anticipated to |Gromacs| NEXT functionality
+Changes anticipated to |Gromacs| 2020 functionality
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Functionality deprecated in |Gromacs| 2020
