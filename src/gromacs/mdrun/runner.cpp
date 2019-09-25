@@ -657,7 +657,7 @@ int Mdrunner::mdrunner()
     auto       pmeTarget       = findTaskTarget(pme_opt);
     auto       pmeFftTarget    = findTaskTarget(pme_fft_opt);
     auto       bondedTarget    = findTaskTarget(bonded_opt);
-    auto       updateTarget    = TaskTarget::Cpu;
+    auto       updateTarget    = findTaskTarget(update_opt);
     PmeRunMode pmeRunMode      = PmeRunMode::None;
 
     // Here we assume that SIMMASTER(cr) does not change even after the
@@ -1885,6 +1885,16 @@ Mdrunner Mdrunner::BuilderImplementation::build()
     {
         GMX_THROW(gmx::APIError("MdrunnerBuilder::addBondedTaskAssignment() is required before build()"));
     }
+
+    if (update_opt_)
+    {
+        newRunner.update_opt = update_opt_;
+    }
+    else
+    {
+        GMX_THROW(gmx::APIError("MdrunnerBuilder::addUpdateTaskAssignment() is required before build()  "));
+    }
+
 
     newRunner.restraintManager_ = std::make_unique<gmx::RestraintManager>();
 

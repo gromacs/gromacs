@@ -17,9 +17,9 @@ gmx [-s [&lt;.tpr&gt;]] [-cpi [&lt;.cpt&gt;]] [-table [&lt;.xvg&gt;]] [-tablep [
     [-pinstride &lt;int&gt;] [-gpu_id &lt;string&gt;] [-gputasks &lt;string&gt;] [-[no]ddcheck]
     [-rdd &lt;real&gt;] [-rcon &lt;real&gt;] [-dlb &lt;enum&gt;] [-dds &lt;real&gt;] [-nb &lt;enum&gt;]
     [-nstlist &lt;int&gt;] [-[no]tunepme] [-pme &lt;enum&gt;] [-pmefft &lt;enum&gt;]
-    [-bonded &lt;enum&gt;] [-[no]v] [-pforce &lt;real&gt;] [-[no]reprod] [-cpt &lt;real&gt;]
-    [-[no]cpnum] [-[no]append] [-nsteps &lt;int&gt;] [-maxh &lt;real&gt;] [-replex &lt;int&gt;]
-    [-nex &lt;int&gt;] [-reseed &lt;int&gt;]
+    [-bonded &lt;enum&gt;] [-update &lt;enum&gt;] [-[no]v] [-pforce &lt;real&gt;] [-[no]reprod]
+    [-cpt &lt;real&gt;] [-[no]cpnum] [-[no]append] [-nsteps &lt;int&gt;] [-maxh &lt;real&gt;]
+    [-replex &lt;int&gt;] [-nex &lt;int&gt;] [-reseed &lt;int&gt;]
 
 DESCRIPTION
 
@@ -265,6 +265,8 @@ Other options:
            Perform PME FFT calculations on: auto, cpu, gpu
  -bonded &lt;enum&gt;             (auto)
            Perform bonded calculations on: auto, cpu, gpu
+ -update &lt;enum&gt;             (auto)
+           Perform update and constraints on: auto, cpu, gpu
  -[no]v                     (no)
            Be loud and noisy
  -pforce &lt;real&gt;             (-1)
