@@ -91,6 +91,12 @@ if(gmxapi_FOUND)
     message(STATUS "Found gmxapi version ${gmxapi_VERSION}${_suffix}")
 endif()
 
+# The Gromacs::gmxapi target could be imported from an existing installation or
+# provided as an alias target within the GROMACS build tree.
+if (NOT TARGET Gromacs::gmxapi)
+    message(FATAL_ERROR "Cannot build Python package without GROMACS gmxapi support.")
+endif ()
+
 # TODO: Provide user hints for mpi4py installation.
 # Note that neither the Python package nor the Gromacs::gmxapi CMake target are
 # built with MPI in any case, but they _should_ be built with a C++ compiler
