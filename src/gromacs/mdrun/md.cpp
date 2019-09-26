@@ -324,7 +324,8 @@ void gmx::LegacySimulator::do_md()
         GMX_RELEASE_ASSERT(ed == nullptr, "Essential dynamics is not supported with GPU-based update constraints.");
         GMX_LOG(mdlog.info).asParagraph().
             appendText("Updating coordinates on the GPU.");
-        integrator = std::make_unique<UpdateConstrainCuda>(*ir, *top_global);
+        // TODO: Pass proper device command stream
+        integrator = std::make_unique<UpdateConstrainCuda>(*ir, *top_global, nullptr);
         integrator->set(top.idef, *mdatoms, ekind->ngtc);
         t_pbc pbc;
         set_pbc(&pbc, epbcXYZ, state->box);

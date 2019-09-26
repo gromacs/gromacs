@@ -109,14 +109,14 @@ void UpdateConstrainCuda::Impl::integrate(const real                        dt,
 }
 
 UpdateConstrainCuda::Impl::Impl(const t_inputrec  &ir,
-                                const gmx_mtop_t  &mtop)
+                                const gmx_mtop_t  &mtop,
+                                const void        *commandStream)
 {
-    // TODO When the code will be integrated into the schedule, it will be assigned non-default stream.
-    stream_ = nullptr;
+    commandStream != nullptr ? commandStream_ = *static_cast<const CommandStream*>(commandStream) : commandStream_ = nullptr;
 
-    integrator_ = std::make_unique<LeapFrogCuda>();
-    lincsCuda_  = std::make_unique<LincsCuda>(ir.nLincsIter, ir.nProjOrder);
-    settleCuda_ = std::make_unique<SettleCuda>(mtop);
+    integrator_ = std::make_unique<LeapFrogCuda>(commandStream_);
+    lincsCuda_  = std::make_unique<LincsCuda>(ir.nLincsIter, ir.nProjOrder, commandStream_);
+    settleCuda_ = std::make_unique<SettleCuda>(mtop, commandStream_);
 
 }
 
@@ -154,32 +154,32 @@ void UpdateConstrainCuda::Impl::setPbc(const t_pbc *pbc)
 
 void UpdateConstrainCuda::Impl::copyCoordinatesToGpu(const rvec *h_x)
 {
-    copyToDeviceBuffer(&d_x_, (float3*)h_x, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_x_, (float3*)h_x, 0, numAtoms_, commandStream_, GpuApiCallBehavior::Sync, nullptr);
 }
 
 void UpdateConstrainCuda::Impl::copyVelocitiesToGpu(const rvec *h_v)
 {
-    copyToDeviceBuffer(&d_v_, (float3*)h_v, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_v_, (float3*)h_v, 0, numAtoms_, commandStream_, GpuApiCallBehavior::Sync, nullptr);
 }
 
 void UpdateConstrainCuda::Impl::copyForcesToGpu(const rvec *h_f)
 {
-    copyToDeviceBuffer(&d_f_, (float3*)h_f, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_f_, (float3*)h_f, 0, numAtoms_, commandStream_, GpuApiCallBehavior::Sync, nullptr);
 }
 
 void UpdateConstrainCuda::Impl::copyCoordinatesFromGpu(rvec *h_xp)
 {
-    copyFromDeviceBuffer((float3*)h_xp, &d_xp_, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
+    copyFromDeviceBuffer((float3*)h_xp, &d_xp_, 0, numAtoms_, commandStream_, GpuApiCallBehavior::Sync, nullptr);
 }
 
 void UpdateConstrainCuda::Impl::copyVelocitiesFromGpu(rvec *h_v)
 {
-    copyFromDeviceBuffer((float3*)h_v, &d_v_, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
+    copyFromDeviceBuffer((float3*)h_v, &d_v_, 0, numAtoms_, commandStream_, GpuApiCallBehavior::Sync, nullptr);
 }
 
 void UpdateConstrainCuda::Impl::copyForcesFromGpu(rvec *h_f)
 {
-    copyFromDeviceBuffer((float3*)h_f, &d_f_, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
+    copyFromDeviceBuffer((float3*)h_f, &d_f_, 0, numAtoms_, commandStream_, GpuApiCallBehavior::Sync, nullptr);
 }
 
 void UpdateConstrainCuda::Impl::setXVFPointers(rvec *d_x, rvec *d_xp, rvec *d_v, rvec *d_f)
@@ -190,10 +190,10 @@ void UpdateConstrainCuda::Impl::setXVFPointers(rvec *d_x, rvec *d_xp, rvec *d_v,
     d_f_  = (float3*)d_f;
 }
 
-
 UpdateConstrainCuda::UpdateConstrainCuda(const t_inputrec  &ir,
-                                         const gmx_mtop_t  &mtop)
-    : impl_(new Impl(ir, mtop))
+                                         const gmx_mtop_t  &mtop,
+                                         const void        *commandStream)
+    : impl_(new Impl(ir, mtop, commandStream))
 {
 }
 

@@ -450,7 +450,7 @@ void LincsCuda::apply(const float3 *d_x,
     {
         // Fill with zeros so the values can be reduced to it
         // Only 6 values are needed because virial is symmetrical
-        clearDeviceBufferAsync(&kernelParams_.d_virialScaled, 0, 6, stream_);
+        clearDeviceBufferAsync(&kernelParams_.d_virialScaled, 0, 6, commandStream_);
     }
 
     auto               kernelPtr = getLincsKernelPtr(updateVelocities, computeVirial);
@@ -478,7 +478,7 @@ void LincsCuda::apply(const float3 *d_x,
     {
         config.sharedMemorySize = c_threadsPerBlock*3*sizeof(float);
     }
-    config.stream           = stream_;
+    config.stream           = commandStream_;
 
     const auto     kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
                                                           &kernelParams_,
@@ -493,7 +493,7 @@ void LincsCuda::apply(const float3 *d_x,
         // Copy LINCS virial data and add it to the common virial
         copyFromDeviceBuffer(h_virialScaled_.data(), &kernelParams_.d_virialScaled,
                              0, 6,
-                             stream_, GpuApiCallBehavior::Sync, nullptr);
+                             commandStream_, GpuApiCallBehavior::Sync, nullptr);
 
         // Mapping [XX, XY, XZ, YY, YZ, ZZ] internal format to a tensor object
         virialScaled[XX][XX] += h_virialScaled_[0];
@@ -512,8 +512,10 @@ void LincsCuda::apply(const float3 *d_x,
     return;
 }
 
-LincsCuda::LincsCuda(int numIterations,
-                     int expansionOrder)
+LincsCuda::LincsCuda(int           numIterations,
+                     int           expansionOrder,
+                     CommandStream commandStream) :
+    commandStream_(commandStream)
 {
     kernelParams_.numIterations              = numIterations;
     kernelParams_.expansionOrder             = expansionOrder;
@@ -529,10 +531,6 @@ LincsCuda::LincsCuda(int numIterations,
     // The data arrays should be expanded/reallocated on first call of set() function.
     numConstraintsThreadsAlloc_ = 0;
     numAtomsAlloc_              = 0;
-    // Use default stream.
-    // TODO The stream should/can be assigned by the GPU schedule when the code will be integrated.
-    stream_ = nullptr;
-
 }
 
 LincsCuda::~LincsCuda()
@@ -826,24 +824,24 @@ void LincsCuda::set(const t_idef    &idef,
     // Copy data to GPU.
     copyToDeviceBuffer(&kernelParams_.d_constraints, constraintsHost.data(),
                        0, kernelParams_.numConstraintsThreads,
-                       stream_, GpuApiCallBehavior::Sync, nullptr);
+                       commandStream_, GpuApiCallBehavior::Sync, nullptr);
     copyToDeviceBuffer(&kernelParams_.d_constraintsTargetLengths, constraintsTargetLengthsHost.data(),
                        0, kernelParams_.numConstraintsThreads,
-                       stream_, GpuApiCallBehavior::Sync, nullptr);
+                       commandStream_, GpuApiCallBehavior::Sync, nullptr);
     copyToDeviceBuffer(&kernelParams_.d_coupledConstraintsCounts, coupledConstraintsCountsHost.data(),
                        0, kernelParams_.numConstraintsThreads,
-                       stream_, GpuApiCallBehavior::Sync, nullptr);
+                       commandStream_, GpuApiCallBehavior::Sync, nullptr);
     copyToDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices, coupledConstraintsIndicesHost.data(),
                        0, maxCoupledConstraints*kernelParams_.numConstraintsThreads,
-                       stream_, GpuApiCallBehavior::Sync, nullptr);
+                       commandStream_, GpuApiCallBehavior::Sync, nullptr);
     copyToDeviceBuffer(&kernelParams_.d_massFactors, massFactorsHost.data(),
                        0, maxCoupledConstraints*kernelParams_.numConstraintsThreads,
-                       stream_, GpuApiCallBehavior::Sync, nullptr);
+                       commandStream_, GpuApiCallBehavior::Sync, nullptr);
 
     GMX_RELEASE_ASSERT(md.invmass != nullptr, "Masses of attoms should be specified.\n");
     copyToDeviceBuffer(&kernelParams_.d_inverseMasses, md.invmass,
                        0, numAtoms,
-                       stream_, GpuApiCallBehavior::Sync, nullptr);
+                       commandStream_, GpuApiCallBehavior::Sync, nullptr);
 
 }
 

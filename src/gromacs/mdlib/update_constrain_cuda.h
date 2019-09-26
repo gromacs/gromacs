@@ -67,13 +67,15 @@ class UpdateConstrainCuda
     public:
         /*! \brief Create Update-Constrain object.
          *
-         * \param[in] ir        Input record data: LINCS takes number of iterations and order of
-         *                      projection from it.
-         * \param[in] mtop      Topology of the system: SETTLE gets the masses for O and H atoms
-         *                      and target O-H and H-H distances from this object.
+         * \param[in] ir             Input record data: LINCS takes number of iterations and order of
+         *                           projection from it.
+         * \param[in] mtop           Topology of the system: SETTLE gets the masses for O and H atoms
+         *                           and target O-H and H-H distances from this object.
+         * \param[in] commandStream  GPU stream to use. Can be nullptr.
          */
         UpdateConstrainCuda(const t_inputrec  &ir,
-                            const gmx_mtop_t  &mtop);
+                            const gmx_mtop_t  &mtop,
+                            const void        *commandStream);
 
         ~UpdateConstrainCuda();
 

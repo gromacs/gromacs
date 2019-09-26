@@ -45,6 +45,7 @@
 
 #include "gmxpre.h"
 
+#include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/vec.h"
@@ -194,21 +195,13 @@ class SettleCuda
          *  from the topology data (mtop), check their values for consistency and calls the
          *  following constructor.
          *
-         * \param[in] mtop      Topology of the system to gen the masses for O and H atoms and
-         *                      target O-H and H-H distances. These values are also checked for
-         *                      consistency.
+         * \param[in] mtop           Topology of the system to gen the masses for O and H atoms and
+         *                           target O-H and H-H distances. These values are also checked for
+         *                           consistency.
+         * \param[in] commandStream  Device stream to use.
          */
-        SettleCuda(const gmx_mtop_t  &mtop);
-
-        /*! \brief Create SETTLE object
-         *
-         * \param[in] mO        Mass of the oxygen atom.
-         * \param[in] mH        Mass of the hydrogen atom.
-         * \param[in] dOH       Target distance for O-H bonds.
-         * \param[in] dHH       Target for the distance between two hydrogen atoms.
-         */
-        SettleCuda(const real mO,  const real mH,
-                   const real dOH, const real dHH);
+        SettleCuda(const gmx_mtop_t  &mtop,
+                   CommandStream      commandStream);
 
         ~SettleCuda();
 
@@ -270,7 +263,7 @@ class SettleCuda
     private:
 
         //! CUDA stream
-        cudaStream_t        stream_;
+        CommandStream       commandStream_;
         //! Periodic boundary data
         PbcAiuc             pbcAiuc_;
 

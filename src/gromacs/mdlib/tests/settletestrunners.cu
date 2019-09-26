@@ -85,7 +85,7 @@ void applySettleGpu(SettleTestData               *testData,
     // TODO: Here we should check that at least 1 suitable GPU is available
     GMX_RELEASE_ASSERT(canPerformGpuDetection(), "Can't detect CUDA-capable GPUs.");
 
-    auto settleCuda = std::make_unique<SettleCuda>(testData->mtop_);
+    auto settleCuda = std::make_unique<SettleCuda>(testData->mtop_, nullptr);
     settleCuda->setPbc(&pbc);
     settleCuda->set(testData->idef_, testData->mdatoms_);
 

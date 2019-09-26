@@ -63,7 +63,11 @@ class LeapFrogCuda
 
     public:
 
-        LeapFrogCuda();
+        /*! \brief Constructor.
+         *
+         * \param[in] commandStream  Device command stream to use.
+         */
+        LeapFrogCuda(CommandStream commandStream);
         ~LeapFrogCuda();
 
         /*! \brief
@@ -122,7 +126,7 @@ class LeapFrogCuda
     private:
 
         //! CUDA stream
-        cudaStream_t           stream_;
+        CommandStream          commandStream_;
         //! CUDA kernel launch config
         KernelLaunchConfig     kernelLaunchConfig_;
         //! Periodic boundary data

@@ -44,6 +44,7 @@
 #ifndef GMX_MDLIB_LINCS_CUDA_CUH
 #define GMX_MDLIB_LINCS_CUDA_CUH
 
+#include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
@@ -102,9 +103,11 @@ class LincsCuda
          *
          * \param[in] numIterations    Number of iteration for the correction of the projection.
          * \param[in] expansionOrder   Order of the matrix inversion algorithm.
+         * \param[in] commandStream    Device command stream.
          */
-        LincsCuda(int numIterations,
-                  int expansionOrder);
+        LincsCuda(int           numIterations,
+                  int           expansionOrder,
+                  CommandStream commandStream);
         /*! \brief Destructor.*/
         ~LincsCuda();
 
@@ -170,12 +173,8 @@ class LincsCuda
 
     private:
 
-        /*! \brief CUDA stream
-         *
-         *  \todo Currently default stream (nullptr) is used. The streams should be managed outside this module
-         *        and passed here if needed.
-         */
-        cudaStream_t              stream_;
+        //! CUDA stream
+        CommandStream             commandStream_;
 
         //! Parameters and pointers, passed to the CUDA kernel
         LincsCudaKernelParameters kernelParams_;

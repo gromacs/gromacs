@@ -90,7 +90,7 @@ void integrateLeapFrogGpu(LeapFrogTestData *testData,
     copyToDeviceBuffer(&d_v,  h_v,  0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
     copyToDeviceBuffer(&d_f,  h_f,  0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
 
-    auto integrator = std::make_unique<LeapFrogCuda>();
+    auto integrator = std::make_unique<LeapFrogCuda>(nullptr);
 
     integrator->set(testData->mdAtoms_, testData->numTCoupleGroups_, testData->mdAtoms_.cTC);
 

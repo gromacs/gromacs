@@ -56,7 +56,8 @@ class UpdateConstrainCuda::Impl
 };
 
 UpdateConstrainCuda::UpdateConstrainCuda(gmx_unused const t_inputrec     &ir,
-                                         gmx_unused const gmx_mtop_t     &mtop)
+                                         gmx_unused const gmx_mtop_t     &mtop,
+                                         gmx_unused const void           *commandStream)
     : impl_(nullptr)
 {
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");

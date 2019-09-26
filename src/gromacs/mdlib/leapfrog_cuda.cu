@@ -277,7 +277,7 @@ void LeapFrogCuda::integrate(const float3                      *d_x,
                 h_lambdas_[i] = tcstat[i].lambda;
             }
             copyToDeviceBuffer(&d_lambdas_, h_lambdas_.data(),
-                               0, numTempScaleValues_, stream_, GpuApiCallBehavior::Async, nullptr);
+                               0, numTempScaleValues_, commandStream_, GpuApiCallBehavior::Async, nullptr);
         }
         VelocityScalingType velocityScaling = VelocityScalingType::None;
         if (doPressureCouple)
@@ -306,12 +306,10 @@ void LeapFrogCuda::integrate(const float3                      *d_x,
     return;
 }
 
-LeapFrogCuda::LeapFrogCuda()
+LeapFrogCuda::LeapFrogCuda(CommandStream commandStream) :
+    commandStream_(commandStream)
 {
     numAtoms_ = 0;
-
-    // TODO When the code is integrated into the schedule, it should be assigned non-default stream.
-    stream_ = nullptr;
 
     changePinningPolicy(&h_lambdas_, gmx::PinningPolicy::PinnedIfSupported);
 
@@ -319,7 +317,7 @@ LeapFrogCuda::LeapFrogCuda()
     kernelLaunchConfig_.blockSize[1]     = 1;
     kernelLaunchConfig_.blockSize[2]     = 1;
     kernelLaunchConfig_.sharedMemorySize = 0;
-    kernelLaunchConfig_.stream           = stream_;
+    kernelLaunchConfig_.stream           = commandStream_;
 }
 
 LeapFrogCuda::~LeapFrogCuda()
@@ -344,14 +342,14 @@ void LeapFrogCuda::set(const t_mdatoms      &md,
 
     reallocateDeviceBuffer(&d_inverseMasses_, numAtoms_, &numInverseMasses_, &numInverseMassesAlloc_, nullptr);
     copyToDeviceBuffer(&d_inverseMasses_, (float*)md.invmass,
-                       0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
+                       0, numAtoms_, commandStream_, GpuApiCallBehavior::Sync, nullptr);
 
     // Temperature scale group map only used if there are more then one group
     if (numTempScaleValues > 1)
     {
         reallocateDeviceBuffer(&d_tempScaleGroups_, numAtoms_, &numTempScaleGroups_, &numTempScaleGroupsAlloc_, nullptr);
         copyToDeviceBuffer(&d_tempScaleGroups_, tempScaleGroups,
-                           0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
+                           0, numAtoms_, commandStream_, GpuApiCallBehavior::Sync, nullptr);
     }
 
     // If the temperature coupling is enabled, we need to make space for scaling factors

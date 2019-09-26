@@ -71,7 +71,8 @@ namespace test
 void applyLincsCuda(ConstraintsTestData *testData, t_pbc pbc)
 {
     auto lincsCuda = std::make_unique<LincsCuda>(testData->ir_.nLincsIter,
-                                                 testData->ir_.nProjOrder);
+                                                 testData->ir_.nProjOrder,
+                                                 nullptr);
 
     bool    updateVelocities = true;
     int     numAtoms         = testData->numAtoms_;
