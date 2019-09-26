@@ -482,7 +482,7 @@ void write_hconf_indexed_p(FILE *out, const char *title, const t_atoms *atoms,
         std::string nm;
         if (atoms->atom)
         {
-            nm = *atoms->atomname[i];
+            nm = *atoms->atomname[ai];
         }
         else
         {
