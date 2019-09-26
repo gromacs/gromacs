@@ -100,6 +100,16 @@ Made gmx disre work with non-consecutively labeled restraints
 
 :issue:`2953`
 
+Fixed writing of gro files with index groups
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+An output ``.gro`` file from from e.g. ``gmx editconf -f -n`` would
+take the atom names for the output file in order from the atoms in the
+input file, rather than in order from the atoms indicated by the
+indices in the index file.
+
+:issue:`3107`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
