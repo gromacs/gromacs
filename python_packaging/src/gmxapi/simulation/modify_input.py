@@ -333,6 +333,7 @@ class StandardDirector(gmxapi.abc.OperationDirector):
 
                 def simulation_input_workaround(input, parameters: dict):
                     source = input
+                    # TODO: Normalize mechanism for obtaining SimulationInput references.
                     if hasattr(source, 'output'):
                         source = input.output
                     assert hasattr(source, '_simulation_input')
@@ -380,6 +381,10 @@ def modify_input(input,
         # Allow automatic dispatching
         source_context = None
 
+    # TODO: Fix this protocol to do dispatching in the correct place.
+    # The source Context here is None (the handle Context). The resources themselves
+    # may be from different Contexts, so we should dispatch at the add_resource
+    # builder method, not here in the director client.
     resource_factory = node_director.resource_factory(source=source_context, target=target_context)
     resources = resource_factory(input=input, parameters=parameters)
     handle = node_director(resources=resources, label=label)

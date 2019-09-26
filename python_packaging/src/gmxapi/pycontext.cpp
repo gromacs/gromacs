@@ -99,7 +99,6 @@ void PyContext::addMDModule(pybind11::object force_object)
                     delete holder_ptr;
                     // \todo double-check whether there is something we should do to invalidate a PyCapsule.
                 }
-                ;
             };
         auto capsule = py::capsule(holder,
                                    gmxapi::MDHolder_Name,

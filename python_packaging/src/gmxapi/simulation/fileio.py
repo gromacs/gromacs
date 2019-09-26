@@ -43,8 +43,8 @@ __all__ = ['TprFile', 'read_tpr', 'write_tpr_file']
 
 import os
 
+import gmxapi._gmxapi as _gmxapi
 from gmxapi import exceptions
-from gmxapi import _gmxapi
 
 
 class TprFile(object):
@@ -71,11 +71,6 @@ class TprFile(object):
         Note:
             Currently, TPR files are read-only from the Python interface.
 
-        Example:
-
-            >>> import gmxapi as gmx
-            >>> filehandle = gmx.TprFile(filename, 'r')
-
         """
         if filename is None:
             raise exceptions.UsageError("TprFile objects must be associated with a file.")
@@ -90,7 +85,7 @@ class TprFile(object):
         self._tprFileHandle = None
 
     def __repr__(self):
-        return "gmx.fileio.TprFile('{}', '{}')".format(self.filename, self.mode)
+        return "{}('{}', '{}')".format(self.__class__.__name__, self.filename, self.mode)
 
     def __enter__(self):
         self._tprFileHandle = _gmxapi.read_tprfile(self.filename)

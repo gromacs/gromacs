@@ -41,9 +41,6 @@
 
 #include "module.h"
 
-#include <iostream>
-
-#include "gmxapi/md.h"
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
 #include "gmxapi/system.h"

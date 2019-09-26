@@ -38,24 +38,24 @@ Provides additional support for annotation and static type checking.
 Extends the specifications of the abstract base classes in gmxapi.abc.
 """
 
-from typing import TypeVar, Generic, NewType, Type, Callable
+from typing import TypeVar, Generic, NewType, Type
 
-import gmxapi as gmx
+import gmxapi.abc
 
 # Use SourceTypeVar and ResultTypeVar for static type hints, annotations, and as a parameter to generics.
 # Use valid_source_types and valid_result_types for run-time type checking.
-ResultTypeVar = TypeVar('ResultTypeVar', *(str, bool, int, float, dict, gmx.abc.NDArray))
+ResultTypeVar = TypeVar('ResultTypeVar', *(str, bool, int, float, dict, gmxapi.abc.NDArray))
 valid_result_types = ResultTypeVar.__constraints__
 
 SourceTypeVar = TypeVar('SourceTypeVar',
-                        *(str, bool, int, float, dict, gmx.abc.NDArray, gmx.abc.EnsembleDataSource))
+                        *(str, bool, int, float, dict, gmxapi.abc.NDArray, gmxapi.abc.EnsembleDataSource))
 valid_source_types = SourceTypeVar.__constraints__
 
 # Place holder for type annotations of Context objects.
 # TODO: Expand to support some static type checking.
-_Context = TypeVar('_Context', bound=gmx.abc.Context)
+_Context = TypeVar('_Context', bound=gmxapi.abc.Context)
 # Type variable that binds to subclasses of the forward referenced OperationImplentation ABC.
-_Op = TypeVar('_Op', bound=gmx.abc.OperationImplementation)
+_Op = TypeVar('_Op', bound=gmxapi.abc.OperationImplementation)
 
 # Note: We could make many types generic in SourceContext and TargetContext and
 # compose functionality into instances of a helpful base class with the option of
@@ -86,7 +86,7 @@ class Future(Generic[ResultTypeVar]):
         ...
 
 
-class OperationReference(gmx.abc.OperationReference, Generic[_Op]):
+class OperationReference(gmxapi.abc.OperationReference, Generic[_Op]):
     """Object with an OperationReference interface.
 
     Generic version of AbstractOperationReference, parameterized by operation
@@ -110,7 +110,7 @@ class OperationDirector(Generic[_Op, _Context]):
     """
 
 
-class OperationImplementation(Generic[_Op], gmx.abc.OperationImplementation):
+class OperationImplementation(Generic[_Op], gmxapi.abc.OperationImplementation):
     """Essential interface of an Operation implementation.
 
     Describe the essential features of an Operation that can be registered with

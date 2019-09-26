@@ -223,7 +223,10 @@ def _get_mpi_ensemble_communicator(session_communicator, ensemble_size):
     rather than a null communicator in processes that aren't participating in
     a given ensemble.
     """
-    from mpi4py import MPI
+    try:
+        from mpi4py import MPI
+    except ImportError:
+        raise exceptions.FeatureNotAvailableError('MPI ensemble communicator requires mpi4py package.')
 
     session_size = session_communicator.Get_size()
     session_rank = session_communicator.Get_rank()
@@ -335,11 +338,14 @@ def _acquire_communicator(communicator=None):
 
     if communicator is None:
         try:
-            import mpi4py.MPI as MPI
-            communicator = MPI.COMM_WORLD
+            import mpi4py.MPI as _MPI
         except ImportError:
+            _MPI = None
+        if _MPI is None:
             logger.info("mpi4py is not available for default session communication.")
             communicator = _DummyCommunicator()
+        else:
+            communicator = _MPI.COMM_WORLD
     else:
         communicator = communicator
 

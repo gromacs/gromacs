@@ -81,9 +81,11 @@ static void setMDArgs(std::vector<std::string>* mdargs,
             throw gmxapi::UsageError("Grid argument must describe domain decomposition grid.");
         }
         std::vector<std::string> vals;
-        for (auto && val : params["grid"])
+        auto                     iterator = py::iter(params["grid"]);
+        while (iterator != py::iterator::sentinel())
         {
-            vals.emplace_back(py::cast<std::string>(py::str(val)));
+            vals.emplace_back(py::cast<std::string>(py::str(iterator)));
+            ++iterator;
         }
         mdargs->emplace_back("-dd");
         for (auto && val : vals)
