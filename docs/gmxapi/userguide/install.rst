@@ -96,7 +96,14 @@ if gmxapi is unable to find the Python tools it needs, try a different Python
 installation or install the additional development packages.
 
 On a Linux system, this may require installing packages such as ``python-dev``
-and/or ``python3-dev``. Alternatively, various Python distributions provide a
+and/or ``python3-dev``.
+If you are building Python, either from scratch or with a tool like
+``pyenv install`` (see
+`wiki entry <https://github.com/pyenv/pyenv/wiki#how-to-build-cpython-with---enable-shared>`_
+),
+be sure to enable installation of the Python C library with the
+``--enable-shared`` flag.
+Alternatively, various Python distributions provide a
 sufficient build environment while only requiring installation into a user
 home directory. (Some examples below.)
 
