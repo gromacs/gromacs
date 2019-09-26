@@ -71,35 +71,46 @@ class EditconfTest : public test::CommandLineTestBase,
     public:
         EditconfTest()
         {
+            const auto &params = GetParam();
+            setInputFile("-f", std::get<0>(params));
+
+            std::string    outputfile = "output.";
+            outputfile += ftp2ext(std::get<1>(params));
+            ExactTextMatch settings;
+            setOutputFile("-o", outputfile.c_str(), TextFileMatch(settings));
         }
 
-        void runTest(const CommandLine &args)
+        void runTest(const char *testName)
         {
+            // Get the command line flags that were set up in the constructor
             CommandLine &cmdline = commandLine();
-            cmdline.merge(args);
 
-            TestReferenceChecker rootChecker(this->rootChecker());
+            // Provide the name of the module to call
+            std::string module[] = {
+                "editconf"
+            };
+            cmdline.merge(CommandLine(module));
 
+            // Call the module
             ASSERT_EQ(0, gmx_editconf(cmdline.argc(), cmdline.argv()));
 
-            auto extension = ftp2ext(std::get<1>(GetParam()));
-            rootChecker.checkString(extension, "Output file type");
+            // Check the output
+            auto                 extension = ftp2ext(std::get<1>(GetParam()));
+            TestReferenceChecker rootChecker(this->rootChecker());
+            rootChecker.checkString(extension, testName);
             checkOutputFiles();
         }
 };
 
 TEST_P(EditconfTest, ProducesMatchingOutputStructureFile)
 {
-    const auto    &params    = GetParam();
-    std::string    cmdline[] = {
-        "editconf"
-    };
-    setInputFile("-f", std::get<0>(params));
-    std::string    outputfile = "output.";
-    outputfile += ftp2ext(std::get<1>(params));
-    ExactTextMatch settings;
-    setOutputFile("-o", outputfile.c_str(), TextFileMatch(settings));
-    runTest(CommandLine(cmdline));
+    runTest("Output file type");
+}
+
+TEST_P(EditconfTest, ProducesMatchingOutputStructureFileUsingIndexGroup)
+{
+    setInputFile("-n", "fragment1.ndx");
+    runTest("Output file type using index group");
 }
 
 // TODO These reproduce slightly differently in double precision, and

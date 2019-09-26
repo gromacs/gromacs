@@ -1273,6 +1273,8 @@ int gmx_editconf(int argc, char *argv[])
         {
             write_sto_conf_indexed(outfile, name, &atoms, x, bHaveV ? v : nullptr, ePBC, box, isize, index);
         }
+        sfree(grpname);
+        sfree(index);
     }
     else
     {

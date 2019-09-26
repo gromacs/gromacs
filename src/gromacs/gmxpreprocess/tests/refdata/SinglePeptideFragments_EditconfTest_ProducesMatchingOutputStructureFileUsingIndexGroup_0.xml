@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Output file type using index group">pdb</String>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <String Name="Contents"><![CDATA[
+TITLE     Protein (first fragment of regressiontests/complex/aminoacids.gro)
+REMARK    THIS IS A SIMULATION BOX
+CRYST1   80.562   56.371   74.450  90.00  90.00  90.00 P 1           1
+MODEL        1
+ATOM     13  N   CYS     3      41.410  19.640  -0.130  1.00  0.00           N
+ATOM     14  H   CYS     3      41.928  19.877  -0.952  1.00  0.00           H
+ATOM     15  CA  CYS     3      40.000  19.960  -0.040  1.00  0.00           C
+ATOM     16  HA  CYS     3      39.726  19.549   0.830  1.00  0.00           H
+ATOM     17  CB  CYS     3      39.690  21.510  -0.040  1.00  0.00           C
+ATOM     18  HB1 CYS     3      40.088  21.896  -0.872  1.00  0.00           H
+ATOM     19  HB2 CYS     3      38.696  21.618  -0.065  1.00  0.00           H
+ATOM     20  SG  CYS     3      40.430  22.190   1.470  1.00  0.00           S
+ATOM     21  HG  CYS     3      40.257  23.174   1.512  1.00  0.00           H
+ATOM     22  C   CYS     3      39.300  19.330  -1.220  1.00  0.00           C
+ATOM     23  O   CYS     3      38.170  19.680  -1.550  1.00  0.00           O
+ATOM     24  N   ASP     4      40.000  18.460  -1.980  1.00  0.00           N
+ATOM     25  H   ASP     4      40.969  18.366  -1.751  1.00  0.00           H
+ATOM     26  CA  ASP     4      39.530  17.640  -3.090  1.00  0.00           C
+ATOM     27  HA  ASP     4      39.109  18.223  -3.785  1.00  0.00           H
+ATOM     28  CB  ASP     4      40.780  16.940  -3.740  1.00  0.00           C
+ATOM     29  HB1 ASP     4      40.501  16.361  -4.506  1.00  0.00           H
+ATOM     30  HB2 ASP     4      41.439  17.621  -4.059  1.00  0.00           H
+ATOM     31  CG  ASP     4      41.430  16.080  -2.680  1.00  0.00           C
+ATOM     32  OD1 ASP     4      41.220  14.850  -2.810  1.00  0.00           O
+ATOM     33  OD2 ASP     4      41.940  16.580  -1.630  1.00  0.00           O
+ATOM     34  C   ASP     4      38.410  16.690  -2.560  1.00  0.00           C
+ATOM     35  O   ASP     4      37.470  17.010  -1.820  1.00  0.00           O
+TER
+ENDMDL
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>
