@@ -575,8 +575,7 @@ bool decideWhetherToUseGpuForUpdate(bool              isDomainDecomposition,
         }
         return false;
     }
-
-    return true;
+    return (updateTarget == TaskTarget::Gpu);
 }
 
 }  // namespace gmx
