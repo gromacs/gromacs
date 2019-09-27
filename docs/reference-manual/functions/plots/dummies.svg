@@ -1,6 +1,6 @@
 <?xml version="1.0" standalone="no"?>
 <!-- Creator: fig2dev Version 3.2.6a -->
-<!-- CreationDate: 2019-09-16 11:10:00 -->
+<!-- CreationDate: 2019-09-27 15:51:01 -->
 <!-- Magnification: 1 -->
 <svg	xmlns="http://www.w3.org/2000/svg"
 	xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -119,7 +119,7 @@
 <!-- Text -->
 <text xml:space="preserve" x="5175" y="1950" fill="#000000" font-family="Helvetica" font-style="normal" font-weight="normal" font-size="288" text-anchor="start">|   |</text>
 <!-- Arc -->
-<path d="M 12525,1200 A 673 673 0 1 0 11550 1800"
+<path d="M 15075,1200 A 673 673 0 1 0 14100 1800"
 	stroke="#000000" stroke-width="8px" stroke-dasharray="10 30"/>
 <!-- Circle -->
 <defs>
@@ -271,8 +271,13 @@
 <!-- Circle -->
 <circle cx="15300" cy="1200" r="150" fill="#7f7f7f"/>
 <!-- Circle -->
+<circle cx="16290" cy="2355" r="150" fill="#000000"
+	stroke="#000000" stroke-width="8px"/>
+<!-- Circle -->
+<circle cx="17940" cy="3180" r="168" fill="#7f7f7f"/>
+<!-- Circle -->
 <defs>
-<circle cx="14400" cy="1200" r="150" id="p13"/>
+<circle cx="17715" cy="1980" r="150" id="p13"/>
 <pattern id="tile13" patternUnits="userSpaceOnUse"
 	x="0" y="0" width="134" height="134">
 <g stroke-width="7.5" stroke="#000000" fill="none">
@@ -284,13 +289,8 @@
 <use xlink:href="#p13" fill="url(#tile13)"
 	stroke="#000000" stroke-width="8px"/>
 <!-- Circle -->
-<circle cx="16290" cy="2355" r="150" fill="#000000"
-	stroke="#000000" stroke-width="8px"/>
-<!-- Circle -->
-<circle cx="17940" cy="3180" r="168" fill="#7f7f7f"/>
-<!-- Circle -->
 <defs>
-<circle cx="17715" cy="1980" r="150" id="p14"/>
+<circle cx="19350" cy="1593" r="168" id="p14"/>
 <pattern id="tile14" patternUnits="userSpaceOnUse"
 	x="0" y="0" width="134" height="134">
 <g stroke-width="7.5" stroke="#000000" fill="none">
@@ -303,7 +303,7 @@
 	stroke="#000000" stroke-width="8px"/>
 <!-- Circle -->
 <defs>
-<circle cx="19350" cy="1593" r="168" id="p15"/>
+<circle cx="19350" cy="3282" r="168" id="p15"/>
 <pattern id="tile15" patternUnits="userSpaceOnUse"
 	x="0" y="0" width="134" height="134">
 <g stroke-width="7.5" stroke="#000000" fill="none">
@@ -315,8 +315,10 @@
 <use xlink:href="#p15" fill="url(#tile15)"
 	stroke="#000000" stroke-width="8px"/>
 <!-- Circle -->
+<circle cx="20550" cy="2400" r="150" fill="#7f7f7f"/>
+<!-- Circle -->
 <defs>
-<circle cx="19350" cy="3282" r="168" id="p16"/>
+<circle cx="14400" cy="1200" r="150" id="p16"/>
 <pattern id="tile16" patternUnits="userSpaceOnUse"
 	x="0" y="0" width="134" height="134">
 <g stroke-width="7.5" stroke="#000000" fill="none">
@@ -327,8 +329,6 @@
 <use xlink:href="#p16" fill="#000000"/>
 <use xlink:href="#p16" fill="url(#tile16)"
 	stroke="#000000" stroke-width="8px"/>
-<!-- Circle -->
-<circle cx="20550" cy="2400" r="150" fill="#7f7f7f"/>
 <!-- Line -->
 <polyline points=" 9375,1200 10050,2400 9375,3600"
 	stroke="#000000" stroke-width="8px"/>
