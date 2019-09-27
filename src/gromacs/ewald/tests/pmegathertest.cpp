@@ -407,9 +407,10 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
                                           (inputForceTreatment == PmeForceOutputHandling::ReduceWithInput) ? "with reduction" : "without reduction"
                                           ));
 
-                PmeSafePointer         pmeSafe  = pmeInitWrapper(&inputRec, codePath, context->getDeviceInfo(), context->getPmeGpuProgram(), box);
-                StatePropagatorDataGpu stateGpu = makeStatePropagatorDataGpu(*pmeSafe.get());
-                pmeInitAtoms(pmeSafe.get(), &stateGpu, codePath, inputAtomData.coordinates, inputAtomData.charges);
+                PmeSafePointer pmeSafe = pmeInitWrapper(&inputRec, codePath, context->getDeviceInfo(), context->getPmeGpuProgram(), box);
+                std::unique_ptr<StatePropagatorDataGpu> stateGpu = (codePath == CodePath::GPU) ? makeStatePropagatorDataGpu(*pmeSafe.get()) : nullptr;
+
+                pmeInitAtoms(pmeSafe.get(), stateGpu.get(), codePath, inputAtomData.coordinates, inputAtomData.charges);
 
                 /* Setting some more inputs */
                 pmeSetRealGrid(pmeSafe.get(), codePath, nonZeroGridValues);

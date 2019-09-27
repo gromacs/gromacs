@@ -352,7 +352,7 @@ void gmx::LegacySimulator::do_md()
             GMX_LOG(mdlog.info).asParagraph().
                 appendText("Updating coordinates on the GPU.");
         }
-        integrator = std::make_unique<UpdateConstrainCuda>(*ir, *top_global, nullptr);
+        integrator = std::make_unique<UpdateConstrainCuda>(*ir, *top_global, fr->stateGpu->getUpdateStream());
     }
 
     if (useGpuForPme || (useGpuForNonbonded && useGpuForBufferOps) || useGpuForUpdate)
@@ -1241,7 +1241,9 @@ void gmx::LegacySimulator::do_md()
                                   doPressureCouple, ir->nstpcouple*ir->delta_t, M);
             stateGpu->copyCoordinatesFromGpu(ArrayRef<RVec>(state->x), StatePropagatorDataGpu::AtomLocality::All);
             stateGpu->copyVelocitiesFromGpu(state->v, StatePropagatorDataGpu::AtomLocality::All);
-            stateGpu->synchronizeStream();
+            // Synchronize the update stream.
+            // TODO: Replace with event-based synchronization.
+            integrator->synchronizeStream();
         }
         else
         {

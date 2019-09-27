@@ -132,6 +132,10 @@ class UpdateConstrainCuda::Impl
          */
         void setPbc(const t_pbc *pbc);
 
+        /*! \brief Synchronize the device stream.
+         */
+        void synchronizeStream();
+
     private:
 
         //! CUDA stream

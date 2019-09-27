@@ -168,14 +168,14 @@ PmeSafePointer pmeInitEmpty(const t_inputrec         *inputRec,
 }
 
 //! Make a GPU state-propagator manager
-StatePropagatorDataGpu
+std::unique_ptr<StatePropagatorDataGpu>
 makeStatePropagatorDataGpu(const gmx_pme_t &pme)
 {
     // TODO: Pin the host buffer and use async memory copies
-    return StatePropagatorDataGpu(pme_gpu_get_device_stream(&pme),
-                                  pme_gpu_get_device_context(&pme),
-                                  GpuApiCallBehavior::Sync,
-                                  pme_gpu_get_padding_size(&pme));
+    return std::make_unique<StatePropagatorDataGpu>(pme_gpu_get_device_stream(&pme), nullptr, nullptr,
+                                                    pme_gpu_get_device_context(&pme),
+                                                    GpuApiCallBehavior::Sync,
+                                                    pme_gpu_get_padding_size(&pme));
 }
 
 //! PME initialization with atom data

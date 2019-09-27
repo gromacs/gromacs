@@ -556,8 +556,15 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         changePinningPolicy(&pme_pp->x, pme_get_pinning_policy());
     }
 
-    // Unconditionally initialize the StatePropagatorDataGpu object to get more verbose message if it is used from CPU builds
-    auto stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(commandStream, deviceContext, GpuApiCallBehavior::Sync, paddingSize);
+    std::unique_ptr<gmx::StatePropagatorDataGpu> stateGpu;
+    if (useGpuForPme)
+    {
+        // TODO: The local and non-local nonbonded streams are passed as nullptrs, since they will be not used for the GPU buffer
+        //       management in PME only ranks. Make the constructor safer.
+        stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(commandStream, nullptr, nullptr,
+                                                                 deviceContext, GpuApiCallBehavior::Sync, paddingSize);
+    }
+
 
     clear_nrnb(mynrnb);
 

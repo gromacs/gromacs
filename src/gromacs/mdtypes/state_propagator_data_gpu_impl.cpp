@@ -54,10 +54,12 @@ class StatePropagatorDataGpu::Impl
 {
 };
 
-StatePropagatorDataGpu::StatePropagatorDataGpu(const void *       /* commandStream */,
-                                               const void *       /* deviceContext */,
-                                               GpuApiCallBehavior /* transferKind  */,
-                                               int                /* paddingSize   */)
+StatePropagatorDataGpu::StatePropagatorDataGpu(const void *       /* pmeStream       */,
+                                               const void *       /* localStream     */,
+                                               const void *       /* nonLocalStream  */,
+                                               const void *       /* deviceContext   */,
+                                               GpuApiCallBehavior /* transferKind    */,
+                                               int                /* paddingSize     */)
     : impl_(nullptr)
 {
 }
@@ -136,9 +138,10 @@ void StatePropagatorDataGpu::copyForcesFromGpu(gmx::ArrayRef<gmx::RVec>  /* h_f 
     GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called insted of one from GPU implementation.");
 }
 
-void StatePropagatorDataGpu::synchronizeStream()
+void* StatePropagatorDataGpu::getUpdateStream()
 {
     GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called insted of one from GPU implementation.");
+    return nullptr;
 }
 
 int StatePropagatorDataGpu::numAtomsLocal()

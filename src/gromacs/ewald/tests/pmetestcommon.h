@@ -134,7 +134,7 @@ PmeSafePointer pmeInitEmpty(const t_inputrec *inputRec,
                             const Matrix3x3 &box = {{1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F}},
                             real ewaldCoeff_q = 0.0F, real ewaldCoeff_lj = 0.0F);
 //! Make a GPU state-propagator manager
-StatePropagatorDataGpu
+std::unique_ptr<StatePropagatorDataGpu>
 makeStatePropagatorDataGpu(const gmx_pme_t &pme);
 //! PME initialization with atom data and system box
 void pmeInitAtoms(gmx_pme_t               *pme,

@@ -93,6 +93,11 @@ void UpdateConstrainCuda::setPbc(gmx_unused const t_pbc *pbc)
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
 }
 
+void UpdateConstrainCuda::synchronizeStream()
+{
+    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
+}
+
 }      // namespace gmx
 
 #endif /* GMX_GPU != GMX_GPU_CUDA */

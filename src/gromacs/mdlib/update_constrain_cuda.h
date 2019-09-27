@@ -128,6 +128,9 @@ class UpdateConstrainCuda
          */
         void setPbc(const t_pbc *pbc);
 
+        /*! \brief Synchronize the device stream.
+         */
+        void synchronizeStream();
 
     private:
         class Impl;

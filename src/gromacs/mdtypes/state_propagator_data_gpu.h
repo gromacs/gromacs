@@ -96,12 +96,16 @@ class StatePropagatorDataGpu
          * \todo A DeviceContext object is visible in CPU parts of the code so we
          *       can stop passing a void*.
          *
-         *  \param[in] commandStream  GPU stream, nullptr allowed.
-         *  \param[in] deviceContext  GPU context, nullptr allowed.
-         *  \param[in] transferKind   H2D/D2H transfer call behavior (synchronous or not).
-         *  \param[in] paddingSize    Padding size for coordinates buffer.
+         *  \param[in] pmeStream       Device PME stream, nullptr allowed.
+         *  \param[in] localStream     Device NBNXM local stream, nullptr allowed.
+         *  \param[in] nonLocalStream  Device NBNXM non-local stream, nullptr allowed.
+         *  \param[in] deviceContext   Device context, nullptr allowed.
+         *  \param[in] transferKind    H2D/D2H transfer call behavior (synchronous or not).
+         *  \param[in] paddingSize     Padding size for coordinates buffer.
          */
-        StatePropagatorDataGpu(const void        *commandStream,
+        StatePropagatorDataGpu(const void        *pmeStream,
+                               const void        *localStream,
+                               const void        *nonLocalStream,
                                const void        *deviceContext,
                                GpuApiCallBehavior transferKind,
                                int                paddingSize);
@@ -202,9 +206,14 @@ class StatePropagatorDataGpu
          */
         void copyForcesFromGpu(gmx::ArrayRef<gmx::RVec>  h_f,
                                AtomLocality              atomLocality);
-        /*! \brief Synchronize the underlying GPU stream
+
+        /*! \brief Getter for the update stream.
+         *
+         *  \todo This is temporary here, until the management of this stream is taken over.
+         *
+         *  \returns The device command stream to use in update-constraints.
          */
-        void synchronizeStream();
+        void* getUpdateStream();
 
         /*! \brief Getter for the number of local atoms.
          *

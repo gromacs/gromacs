@@ -162,6 +162,11 @@ void UpdateConstrainCuda::Impl::setPbc(const t_pbc *pbc)
     settleCuda_->setPbc(pbc);
 }
 
+void UpdateConstrainCuda::Impl::synchronizeStream()
+{
+    gpuStreamSynchronize(commandStream_);
+}
+
 UpdateConstrainCuda::UpdateConstrainCuda(const t_inputrec  &ir,
                                          const gmx_mtop_t  &mtop,
                                          const void        *commandStream)
@@ -199,6 +204,11 @@ void UpdateConstrainCuda::set(DeviceBuffer<float>        d_x,
 void UpdateConstrainCuda::setPbc(const t_pbc *pbc)
 {
     impl_->setPbc(pbc);
+}
+
+void UpdateConstrainCuda::synchronizeStream()
+{
+    impl_->synchronizeStream();
 }
 
 } //namespace gmx
