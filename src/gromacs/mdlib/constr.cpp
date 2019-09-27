@@ -747,6 +747,11 @@ real Constraints::rmsd() const
     }
 }
 
+int Constraints::numConstraintsTotal()
+{
+    return impl_->ncon_tot;
+}
+
 FlexibleConstraintTreatment flexibleConstraintTreatment(bool haveDynamicsIntegrator)
 {
     if (haveDynamicsIntegrator)

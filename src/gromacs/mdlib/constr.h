@@ -193,6 +193,12 @@ class Constraints
         /*! \brief Return the RMSD of the constraints when available. */
         real rmsd() const;
 
+        /*! \brief Get the total number of constraints.
+         *
+         * \returns Total number of constraints, including SETTLE and LINCS/SHAKE constraints.
+         */
+        int numConstraintsTotal();
+
     private:
         //! Implementation type.
         class Impl;

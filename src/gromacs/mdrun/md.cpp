@@ -315,21 +315,35 @@ void gmx::LegacySimulator::do_md()
         upd.setNumAtoms(state->natoms);
     }
 
+    bool useGpuForPme       = (fr->pmedata != nullptr) && (pme_run_mode(fr->pmedata) != PmeRunMode::CPU);
+    bool useGpuForNonbonded = fr->nbv->useGpu();
+
     if (useGpuForUpdate)
     {
-        GMX_RELEASE_ASSERT(ir->eI == eiMD, "Only md integrator is supported on the GPU.");
-        GMX_RELEASE_ASSERT(ir->etc != etcNOSEHOOVER, "Nose Hoover temperature coupling is not supported on the GPU.");
-        GMX_RELEASE_ASSERT(ir->epc == epcNO || ir->epc == epcPARRINELLORAHMAN, "Only Parrinello Rahman pressure control is supported on the GPU.");
-        GMX_RELEASE_ASSERT(!mdatoms->haveVsites, "Virtual sites are not supported on the GPU");
-        GMX_RELEASE_ASSERT(ed == nullptr, "Essential dynamics is not supported with GPU-based update constraints.");
-        GMX_LOG(mdlog.info).asParagraph().
-            appendText("Updating coordinates on the GPU.");
-        // TODO: Pass proper device command stream
+        GMX_RELEASE_ASSERT(!DOMAINDECOMP(cr), "Domain decomposition is not supported with the GPU update.\n");
+        GMX_RELEASE_ASSERT(useGpuForPme || (useGpuForNonbonded && getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr),
+                           "Either PME or short-ranged non-bonded interaction tasks must run on the GPU to use GPU update.\n");
+        GMX_RELEASE_ASSERT(ir->eI == eiMD, "Only the md integrator is supported with the GPU update.\n");
+        GMX_RELEASE_ASSERT(ir->etc != etcNOSEHOOVER, "Nose-Hoover temperature coupling is not supported with the GPU update.\n");
+        GMX_RELEASE_ASSERT(ir->epc == epcNO || ir->epc == epcPARRINELLORAHMAN, "Only Parrinello-Rahman pressure control is supported with the GPU update.\n");
+        GMX_RELEASE_ASSERT(!mdatoms->haveVsites, "Virtual sites are not supported with the GPU update.\n");
+        GMX_RELEASE_ASSERT(ed == nullptr, "Essential dynamics is not supported with the GPU update.\n");
+        GMX_RELEASE_ASSERT(!ir->bPull && !ir->pull, "Pulling is not supported with the GPU update.\n");
+        GMX_RELEASE_ASSERT(fcd->orires.nr == 0, "Orientation restraints are not supported with the GPU update.\n");
+        GMX_RELEASE_ASSERT(fcd->disres.npair  == 0, "Distance restraints are not supported with the GPU update.\n");
+        GMX_RELEASE_ASSERT(ir->efep == efepNO, "Free energy perturbations are not supported with the GPU update.");
+
+        if (constr != nullptr && constr->numConstraintsTotal() > 0)
+        {
+            GMX_LOG(mdlog.info).asParagraph().
+                appendText("Updating coordinates and applying constraints on the GPU.");
+        }
+        else
+        {
+            GMX_LOG(mdlog.info).asParagraph().
+                appendText("Updating coordinates on the GPU.");
+        }
         integrator = std::make_unique<UpdateConstrainCuda>(*ir, *top_global, nullptr);
-        integrator->set(top.idef, *mdatoms, ekind->ngtc);
-        t_pbc pbc;
-        set_pbc(&pbc, epbcXYZ, state->box);
-        integrator->setPbc(&pbc);
     }
 
     if (fr->nbv->useGpu())
