@@ -146,8 +146,7 @@ GPU_FUNC_QUALIFIER
 void gpu_launch_cpyback(gmx_nbnxn_gpu_t         gmx_unused *nb,
                         nbnxn_atomdata_t        gmx_unused *nbatom,
                         const gmx::StepWorkload gmx_unused &stepWork,
-                        AtomLocality            gmx_unused aloc,
-                        bool                    gmx_unused copyBackNbForce) GPU_FUNC_TERM;
+                        AtomLocality            gmx_unused aloc) GPU_FUNC_TERM;
 
 /*! \brief Attempts to complete nonbonded GPU task.
  *

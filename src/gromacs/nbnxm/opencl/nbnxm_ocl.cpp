@@ -735,8 +735,7 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t           *nb,
 void gpu_launch_cpyback(gmx_nbnxn_ocl_t                          *nb,
                         struct nbnxn_atomdata_t                  *nbatom,
                         const gmx::StepWorkload                  &stepWork,
-                        const AtomLocality                        aloc,
-                        const bool                     gmx_unused copyBackNbForce)
+                        const AtomLocality                        aloc)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 

@@ -643,8 +643,7 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t          *nb,
 void gpu_launch_cpyback(gmx_nbnxn_cuda_t        *nb,
                         nbnxn_atomdata_t        *nbatom,
                         const gmx::StepWorkload &stepWork,
-                        const AtomLocality       atomLocality,
-                        const bool               copyBackNbForce)
+                        const AtomLocality       atomLocality)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -682,8 +681,10 @@ void gpu_launch_cpyback(gmx_nbnxn_cuda_t        *nb,
         CU_RET_ERR(stat, "cudaStreamWaitEvent on nonlocal_done failed");
     }
 
-    /* DtoH f */
-    if (copyBackNbForce)
+    /* DtoH f
+     * Skip if buffer ops / reduction is offloaded to the GPU.
+     */
+    if (!stepWork.useGpuFBufferOps)
     {
         cu_copy_D2H_async(nbatom->out[0].f.data() + adat_begin * 3, adat->f + adat_begin,
                           (adat_len)*sizeof(*adat->f), stream);

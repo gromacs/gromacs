@@ -1323,15 +1323,13 @@ void do_force(FILE                                     *fplog,
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
-        bool copyBackNbForce  = (useGpuFBufOps == BufferOpsUseGpu::False);
-
         if (havePPDomainDecomposition(cr))
         {
             Nbnxm::gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat.get(),
-                                      stepWork, Nbnxm::AtomLocality::NonLocal, copyBackNbForce);
+                                      stepWork, Nbnxm::AtomLocality::NonLocal);
         }
         Nbnxm::gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat.get(),
-                                  stepWork, Nbnxm::AtomLocality::Local, copyBackNbForce);
+                                  stepWork, Nbnxm::AtomLocality::Local);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
         if (domainWork.haveGpuBondedWork && stepWork.computeEnergy)
