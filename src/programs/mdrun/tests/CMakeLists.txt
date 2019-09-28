@@ -123,4 +123,4 @@ gmx_add_gtest_executable(
     $<TARGET_OBJECTS:mdrun_objlib>
     )
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
-gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST)
+gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST)
