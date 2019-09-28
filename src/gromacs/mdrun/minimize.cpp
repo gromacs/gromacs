@@ -948,11 +948,12 @@ static double reorder_partsum(const t_commrec *cr, t_grpopts *opts,
     rvec      *fmg;
     snew(fmg, natoms);
 
-    gmx::ArrayRef<const int> indicesMin = s_b->s.cg_gl;
+    gmx::ArrayRef<const int> indicesMin = s_min->s.cg_gl;
     int i = 0;
     for (int a : indicesMin)
     {
         copy_rvec(fm[i], fmg[a]);
+        i++;
     }
     gmx_sum(top_global->natoms*3, fmg[0], cr);
 
