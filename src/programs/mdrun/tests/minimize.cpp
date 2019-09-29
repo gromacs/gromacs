@@ -95,7 +95,7 @@ std::unordered_map<std::string, FloatingPointTolerance> potentialEnergyTolerance
      },
      {
          "tip3p5",
-         relativeToleranceAsPrecisionDependentUlp(-50, 150, 3800)
+         relativeToleranceAsPrecisionDependentUlp(-50, 200, 3800)
      },
      {
          "glycine_vacuo",
