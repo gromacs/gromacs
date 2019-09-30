@@ -1174,17 +1174,6 @@ int Mdrunner::mdrunner()
     gmx_device_info_t *pmeDeviceInfo         = gpuTaskAssignments.initPmeDevice();
     const bool         thisRankHasPmeGpuTask = gpuTaskAssignments.thisRankHasPmeGpuTask();
 
-    // TODO should live in ewald module once its testing is improved
-    //
-    // Later, this program could contain kernels that might be later
-    // re-used as auto-tuning progresses, or subsequent simulations
-    // are invoked.
-    PmeGpuProgramStorage pmeGpuProgram;
-    if (thisRankHasPmeGpuTask)
-    {
-        pmeGpuProgram = buildPmeGpuProgram(pmeDeviceInfo);
-    }
-
     /* getting number of PP/PME threads on this MPI / tMPI rank.
        PME: env variable should be read only on one node to make sure it is
        identical everywhere;
@@ -1344,6 +1333,17 @@ int Mdrunner::mdrunner()
     // This reference hides the fact that PME data is owned by runner on PME-only ranks and by forcerec on other ranks
     GMX_ASSERT(thisRankHasDuty(cr, DUTY_PP) == (fr != nullptr), "Double-checking that only PME-only ranks have no forcerec");
     gmx_pme_t * &pmedata = fr ? fr->pmedata : sepPmeData;
+
+    // TODO should live in ewald module once its testing is improved
+    //
+    // Later, this program could contain kernels that might be later
+    // re-used as auto-tuning progresses, or subsequent simulations
+    // are invoked.
+    PmeGpuProgramStorage pmeGpuProgram;
+    if (thisRankHasPmeGpuTask)
+    {
+        pmeGpuProgram = buildPmeGpuProgram(pmeDeviceInfo);
+    }
 
     /* Initiate PME if necessary,
      * either on all nodes or on dedicated PME nodes only. */
