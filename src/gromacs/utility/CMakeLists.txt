@@ -52,6 +52,7 @@ if(GMX_INSTALL_LEGACY_API)
           baseversion.h
           enumerationhelpers.h
           programcontext.h
+          range.h
           smalloc.h
           unique_cptr.h
           DESTINATION include/gromacs/utility)
