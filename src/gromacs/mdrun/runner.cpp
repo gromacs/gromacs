@@ -172,9 +172,9 @@ static const bool c_enableGpuBufOps       = (getenv("GMX_USE_GPU_BUFFER_OPS") !=
 /*! \brief Manage any development feature flag variables encountered
  *
  * The use of dev features indicated by environment variables is
- * logged in order to ensure that runs with such featrues enabled can
+ * logged in order to ensure that runs with such features enabled can
  * be identified from their log and standard output. Any cross
- * dependencies are also checked, and if unsatisified, a fatal error
+ * dependencies are also checked, and if unsatisfied, a fatal error
  * issued.
  *
  * \param[in]  mdlog        Logger object.
@@ -796,7 +796,7 @@ int Mdrunner::mdrunner()
     try
     {
         // It's possible that there are different numbers of GPUs on
-        // different nodes, which is the user's responsibilty to
+        // different nodes, which is the user's responsibility to
         // handle. If unsuitable, we will notice that during task
         // assignment.
         auto canUseGpuForNonbonded = buildSupportsNonbondedOnGpu(nullptr);
@@ -980,7 +980,7 @@ int Mdrunner::mdrunner()
          */
         if (mdrunOptions.numStepsCommandline > -2)
         {
-            /* Temporarily set the number of steps to unmlimited to avoid
+            /* Temporarily set the number of steps to unlimited to avoid
              * triggering the nsteps check in load_checkpoint().
              * This hack will go away soon when the -nsteps option is removed.
              */
@@ -1010,7 +1010,7 @@ int Mdrunner::mdrunner()
             appendText("The -nsteps functionality is deprecated, and may be removed in a future version. "
                        "Consider using gmx convert-tpr -nsteps or changing the appropriate .mdp file field.");
     }
-    /* override nsteps with value set on the commamdline */
+    /* override nsteps with value set on the commandline */
     override_nsteps_cmdline(mdlog, mdrunOptions.numStepsCommandline, inputrec);
 
     if (SIMMASTER(cr))

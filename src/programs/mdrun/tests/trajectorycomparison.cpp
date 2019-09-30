@@ -146,7 +146,7 @@ static bool shouldDoComparison(const ComparisonConditions comparisonConditions,
             (!referenceIsEmpty &&
              comparisonConditions == ComparisonConditions::CompareIfReferenceFound))
         {
-            ADD_FAILURE() << "Test frame lacked quantitiy for required comparison";
+            ADD_FAILURE() << "Test frame lacked quantity for required comparison";
         }
         doComparison = false;
     }
