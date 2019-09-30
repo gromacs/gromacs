@@ -73,86 +73,97 @@ StatePropagatorDataGpu::~StatePropagatorDataGpu() = default;
 void StatePropagatorDataGpu::reinit(int  /* numAtomsLocal */,
                                     int  /* numAtomsAll   */)
 {
-    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called insted of one from GPU implementation.");
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
 }
 
 std::tuple<int, int> StatePropagatorDataGpu::getAtomRangesFromAtomLocality(AtomLocality  /* atomLocality */)
 {
-    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called insted of one from GPU implementation.");
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
     return std::make_tuple(0, 0);
 }
 
 DeviceBuffer<float> StatePropagatorDataGpu::getCoordinates()
 {
-    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called insted of one from GPU implementation.");
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
     return DeviceBuffer<float> {};
+}
+
+GpuEventSynchronizer* StatePropagatorDataGpu::getCoordinatesReadyOnDeviceEvent(AtomLocality  /* atomLocality */)
+{
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
+    return nullptr;
 }
 
 void StatePropagatorDataGpu::copyCoordinatesToGpu(const gmx::ArrayRef<const gmx::RVec>  /* h_x          */,
                                                   AtomLocality                          /* atomLocality */)
 {
-    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called insted of one from GPU implementation.");
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
+}
+
+void StatePropagatorDataGpu::waitCoordinatesReadyOnHost(AtomLocality   /* atomLocality */)
+{
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
 }
 
 void StatePropagatorDataGpu::copyCoordinatesFromGpu(gmx::ArrayRef<gmx::RVec>  /* h_x          */,
                                                     AtomLocality              /* atomLocality */)
 {
-    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called insted of one from GPU implementation.");
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
 }
 
 
 DeviceBuffer<float> StatePropagatorDataGpu::getVelocities()
 {
-    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called insted of one from GPU implementation.");
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
     return DeviceBuffer<float> {};
 }
 
 void StatePropagatorDataGpu::copyVelocitiesToGpu(const gmx::ArrayRef<const gmx::RVec>  /* h_v          */,
                                                  AtomLocality                          /* atomLocality */)
 {
-    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called insted of one from GPU implementation.");
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
 }
 
 void StatePropagatorDataGpu::copyVelocitiesFromGpu(gmx::ArrayRef<gmx::RVec>  /* h_v          */,
                                                    AtomLocality              /* atomLocality */)
 {
-    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called insted of one from GPU implementation.");
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
 }
 
 
 DeviceBuffer<float> StatePropagatorDataGpu::getForces()
 {
-    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called insted of one from GPU implementation.");
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
     return DeviceBuffer<float> {};
 }
 
 void StatePropagatorDataGpu::copyForcesToGpu(const gmx::ArrayRef<const gmx::RVec>  /* h_f          */,
                                              AtomLocality                          /* atomLocality */)
 {
-    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called insted of one from GPU implementation.");
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
 }
 
 void StatePropagatorDataGpu::copyForcesFromGpu(gmx::ArrayRef<gmx::RVec>  /* h_f          */,
                                                AtomLocality              /* atomLocality */)
 {
-    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called insted of one from GPU implementation.");
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
 }
 
 void* StatePropagatorDataGpu::getUpdateStream()
 {
-    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called insted of one from GPU implementation.");
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
     return nullptr;
 }
 
 int StatePropagatorDataGpu::numAtomsLocal()
 {
-    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called insted of one from GPU implementation.");
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
     return 0;
 }
 
 int StatePropagatorDataGpu::numAtomsAll()
 {
-    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called insted of one from GPU implementation.");
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
     return 0;
 }
 

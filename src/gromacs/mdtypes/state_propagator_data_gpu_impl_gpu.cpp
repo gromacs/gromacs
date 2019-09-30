@@ -71,33 +71,52 @@ StatePropagatorDataGpu::Impl::Impl(const void            *pmeStream,
     transferKind_(transferKind),
     paddingSize_(paddingSize)
 {
-
+    static_assert(GMX_GPU != GMX_GPU_NONE, "This object should only be constructed on the GPU code-paths.");
     GMX_RELEASE_ASSERT(getenv("GMX_USE_GPU_BUFFER_OPS") == nullptr, "GPU buffer ops are not supported in this build.");
 
-    if (pmeStream != nullptr)
+    // TODO: Refactor when the StreamManager is introduced.
+    if (GMX_GPU == GMX_GPU_OPENCL)
     {
-        pmeStream_ = *static_cast<const CommandStream*>(pmeStream);
-    }
-    if (localStream != nullptr)
-    {
-        localStream_ = *static_cast<const CommandStream*>(localStream);
-    }
-    if (nonLocalStream != nullptr)
-    {
-        nonLocalStream_ = *static_cast<const CommandStream*>(nonLocalStream);
-    }
-// The OpenCL build will never use the updateStream
-// TODO: The update stream should be created only when it is needed.
-#if GMX_GPU == GMX_GPU_CUDA
-    cudaError_t stat;
-    stat = cudaStreamCreate(&updateStream_);
-    CU_RET_ERR(stat, "CUDA stream creation failed in StatePropagatorDataGpu");
-#endif
-    if (deviceContext != nullptr)
-    {
-        deviceContext_ = *static_cast<const DeviceContext*>(deviceContext);
+        GMX_ASSERT(deviceContext != nullptr, "GPU context should be set in OpenCL builds.");
+        GMX_ASSERT(pmeStream != nullptr, "GPU PME stream should be set in OpenCL builds.");
+
+        // The update stream is set to the PME stream in OpenCL, since PME stream is the only stream created in the PME context.
+        pmeStream_      = *static_cast<const CommandStream*>(pmeStream);
+        updateStream_   = *static_cast<const CommandStream*>(pmeStream);
+        deviceContext_  = *static_cast<const DeviceContext*>(deviceContext);
+        GMX_UNUSED_VALUE(localStream);
+        GMX_UNUSED_VALUE(nonLocalStream);
     }
 
+    if (GMX_GPU == GMX_GPU_CUDA)
+    {
+        if (pmeStream != nullptr)
+        {
+            pmeStream_ = *static_cast<const CommandStream*>(pmeStream);
+        }
+        if (localStream != nullptr)
+        {
+            localStream_ = *static_cast<const CommandStream*>(localStream);
+        }
+        if (nonLocalStream != nullptr)
+        {
+            nonLocalStream_ = *static_cast<const CommandStream*>(nonLocalStream);
+        }
+
+        // TODO: The update stream should be created only when it is needed.
+#if (GMX_GPU == GMX_GPU_CUDA)
+        cudaError_t stat;
+        stat = cudaStreamCreate(&updateStream_);
+        CU_RET_ERR(stat, "CUDA stream creation failed in StatePropagatorDataGpu");
+#endif
+        GMX_UNUSED_VALUE(deviceContext);
+    }
+
+    // Map the atom locality to the stream that will be used for coordinates transfer.
+    // Same streams are used for H2D and D2H copies
+    xCopyStreams_[AtomLocality::Local]    = updateStream_;
+    xCopyStreams_[AtomLocality::NonLocal] = nonLocalStream_;
+    xCopyStreams_[AtomLocality::All]      = updateStream_;
 }
 
 StatePropagatorDataGpu::Impl::~Impl()
@@ -106,9 +125,6 @@ StatePropagatorDataGpu::Impl::~Impl()
 
 void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll)
 {
-#if GMX_GPU == GMX_GPU_OPENCL
-    GMX_ASSERT(deviceContext_ != nullptr, "GPU context should be set in OpenCL builds.");
-#endif
     numAtomsLocal_ = numAtomsLocal;
     numAtomsAll_   = numAtomsAll;
 
@@ -127,9 +143,7 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll)
     const size_t paddingAllocationSize = numAtomsPadded - numAtomsAll_;
     if (paddingAllocationSize > 0)
     {
-        // The PME stream is used here because:
-        // 1. The padding clearing is only needed by PME.
-        // 2. It is the stream that is created in the PME OpenCL context.
+        // The PME stream is used here because the padding region of d_x_ is only in the PME task.
         clearDeviceBufferAsync(&d_x_, DIM*numAtomsAll_, DIM*paddingAllocationSize, pmeStream_);
     }
 
@@ -171,14 +185,6 @@ void StatePropagatorDataGpu::Impl::copyToDevice(DeviceBuffer<float>             
                                                 CommandStream                         commandStream)
 {
 
-#if GMX_GPU == GMX_GPU_OPENCL
-    GMX_ASSERT(deviceContext_ != nullptr, "GPU context should be set in OpenCL builds.");
-    // The PME stream is used for OpenCL builds, because it is the context that it associated with the
-    // PME task which requires the coordinates managed here in OpenCL.
-    // TODO: This will have to be changed when the OpenCL implementation will be extended.
-    commandStream = pmeStream_;
-#endif
-
     GMX_UNUSED_VALUE(dataSize);
 
     GMX_ASSERT(dataSize >= 0, "Trying to copy to device buffer before it was allocated.");
@@ -206,14 +212,6 @@ void StatePropagatorDataGpu::Impl::copyFromDevice(gmx::ArrayRef<gmx::RVec>  h_da
                                                   AtomLocality              atomLocality,
                                                   CommandStream             commandStream)
 {
-
-#if GMX_GPU == GMX_GPU_OPENCL
-    GMX_ASSERT(deviceContext_ != nullptr, "GPU context should be set in OpenCL builds.");
-    // The PME stream is used for OpenCL builds, because it is the context that it associated with the
-    // PME task which requires the coordinates managed here in OpenCL.
-    // TODO: This will have to be changed when the OpenCL implementation will be extended.
-    commandStream = pmeStream_;
-#endif
 
     GMX_UNUSED_VALUE(dataSize);
 
@@ -244,15 +242,46 @@ DeviceBuffer<float> StatePropagatorDataGpu::Impl::getCoordinates()
 void StatePropagatorDataGpu::Impl::copyCoordinatesToGpu(const gmx::ArrayRef<const gmx::RVec>  h_x,
                                                         AtomLocality                          atomLocality)
 {
-    // TODO: Use the correct stream
-    copyToDevice(d_x_, h_x, d_xSize_, atomLocality, nullptr);
+    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
+    CommandStream commandStream = xCopyStreams_[atomLocality];
+    GMX_ASSERT(commandStream != nullptr, "No stream is valid for copying positions with given atom locality.");
+
+    copyToDevice(d_x_, h_x, d_xSize_, atomLocality, commandStream);
+
+    // markEvent is skipped in OpenCL as:
+    //   - it's not needed, copy is done in the same stream as the only consumer task (PME)
+    //   - we don't consume the events in OpenCL which is not allowed by GpuEventSynchronizer (would leak memory).
+    // TODO: remove this by adding an event-mark free flavor of this function
+    if (GMX_GPU == GMX_GPU_CUDA)
+    {
+        xReadyOnDevice_[atomLocality].markEvent(commandStream);
+        // TODO: Remove When event-based synchronization is introduced
+        gpuStreamSynchronize(commandStream);
+    }
+}
+
+GpuEventSynchronizer* StatePropagatorDataGpu::Impl::getCoordinatesReadyOnDeviceEvent(AtomLocality  atomLocality)
+{
+    return &xReadyOnDevice_[atomLocality];
 }
 
 void StatePropagatorDataGpu::Impl::copyCoordinatesFromGpu(gmx::ArrayRef<gmx::RVec>  h_x,
                                                           AtomLocality              atomLocality)
 {
-    // TODO: Use the correct stream
-    copyFromDevice(h_x, d_x_, d_xSize_, atomLocality, nullptr);
+    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
+    CommandStream commandStream = xCopyStreams_[atomLocality];
+    GMX_ASSERT(commandStream != nullptr, "No stream is valid for copying positions with given atom locality.");
+
+    copyFromDevice(h_x, d_x_, d_xSize_, atomLocality, commandStream);
+    // TODO: Remove When event-based synchronization is introduced
+    gpuStreamSynchronize(commandStream);
+    // Note: unlike copyCoordinatesToGpu this is not used in OpenCL, and the conditional is not needed.
+    xReadyOnHost_[atomLocality].markEvent(commandStream);
+}
+
+void StatePropagatorDataGpu::Impl::waitCoordinatesReadyOnHost(AtomLocality  atomLocality)
+{
+    xReadyOnHost_[atomLocality].waitForEvent();
 }
 
 
@@ -356,10 +385,20 @@ void StatePropagatorDataGpu::copyCoordinatesToGpu(const gmx::ArrayRef<const gmx:
     return impl_->copyCoordinatesToGpu(h_x, atomLocality);
 }
 
+GpuEventSynchronizer* StatePropagatorDataGpu::getCoordinatesReadyOnDeviceEvent(AtomLocality  atomLocality)
+{
+    return impl_->getCoordinatesReadyOnDeviceEvent(atomLocality);
+}
+
 void StatePropagatorDataGpu::copyCoordinatesFromGpu(gmx::ArrayRef<RVec>  h_x,
                                                     AtomLocality         atomLocality)
 {
     return impl_->copyCoordinatesFromGpu(h_x, atomLocality);
+}
+
+void StatePropagatorDataGpu::waitCoordinatesReadyOnHost(AtomLocality  atomLocality)
+{
+    return impl_->waitCoordinatesReadyOnHost(atomLocality);
 }
 
 

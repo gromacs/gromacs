@@ -45,10 +45,18 @@
 
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include "gromacs/gpu_utils/devicebuffer.h"
+#if GMX_GPU == GMX_GPU_CUDA
+#include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
+#elif GMX_GPU == GMX_GPU_OPENCL
+#include "gromacs/gpu_utils/gpueventsynchronizer_ocl.h"
+#endif
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 namespace gmx
 {
@@ -71,14 +79,29 @@ class StatePropagatorDataGpu::Impl
          * PME work on the GPU, and if that rank also does PP work that is the only
          * rank. So all coordinates are always transferred.
          *
-         * \note \p commandStream and \p deviceContext are allowed to be nullptr if
-         *       StatePropagatorDataGpu is not used in the OpenCL run (e.g. if PME
-         *       does not run on the GPU).
+         * In OpenCL, only pmeStream is used since it is the only stream created in
+         * PME context. The local and non-local streams are only needed when buffer
+         * ops are offloaded. This feature is currently not available in OpenCL and
+         * hence these streams are not set in these builds.
          *
-         * \todo A CommandStream is now visible in the CPU parts of the code so we
-         *       can stop passing a void*.
-         * \todo A DeviceContext object is visible in CPU parts of the code so we
-         *       can stop passing a void*.
+         * \note In CUDA, the update stream is created in the constructor as a temporary
+         *       solution, in place until the stream manager is introduced.
+         *       Note that this makes it impossible to construct this object in CUDA
+         *       builds executing on a host without any CUDA-capable device available.
+         *
+         * \note In CUDA, \p deviceContext is unused, hence always nullptr;
+         *       all stream arguments can also be nullptr in runs where the
+         *       respective streams are not required.
+         *       In OpenCL, \p deviceContext needs to be a valid device context.
+         *       In OpenCL runs StatePropagatorDataGpu is currently only used
+         *       with PME offload, and only on ranks with PME duty. Hence, the
+         *       \p pmeStream argument needs to be a valid OpenCL queue object
+         *       which must have been created in \p deviceContext.
+         *
+         * \todo Make a \p CommandStream visible in the CPU parts of the code so we
+         *       will not have to pass a void*.
+         * \todo Make a \p DeviceContext object visible in CPU parts of the code so we
+         *       will not have to pass a void*.
          *
          *  \param[in] pmeStream       Device PME stream, nullptr allowed.
          *  \param[in] localStream     Device NBNXM local stream, nullptr allowed.
@@ -99,11 +122,11 @@ class StatePropagatorDataGpu::Impl
 
         /*! \brief Set the ranges for local and non-local atoms and reallocates buffers.
          *
-         * The coordinates buffer is reallocated with the padding added at the end. The
-         * size of padding is set by the constructor.
-         *
-         * \note The PME requires clearing of the padding, which is done in the pmeStream_.
-         *       Hence the pmeStream_ should be created in the gpuContext_.
+         * \note
+         * The coordinates buffer is (re)allocated, when required by PME, with a padding,
+         * the size of which is set by the constructor. The padding region clearing kernel
+         * is scheduled in the \p pmeStream_ (unlike the coordinates H2D) as only the PME
+         * task uses this padding area.
          *
          *  \param[in] numAtomsLocal  Number of atoms in local domain.
          *  \param[in] numAtomsAll    Total number of atoms to handle.
@@ -137,6 +160,14 @@ class StatePropagatorDataGpu::Impl
         void copyCoordinatesToGpu(gmx::ArrayRef<const gmx::RVec>  h_x,
                                   AtomLocality                    atomLocality);
 
+        /*! \brief Get the event synchronizer on the H2D coordinates copy.
+         *
+         *  \param[in] atomLocality  Locality of the particles to wait for.
+         *
+         *  \returns  The event to synchronize the stream that consumes coordinates on device.
+         */
+        GpuEventSynchronizer* getCoordinatesReadyOnDeviceEvent(AtomLocality  atomLocality);
+
         /*! \brief Copy positions from the GPU memory.
          *
          *  \param[in] h_x           Positions buffer in the host memory.
@@ -144,6 +175,12 @@ class StatePropagatorDataGpu::Impl
          */
         void copyCoordinatesFromGpu(gmx::ArrayRef<gmx::RVec>  h_x,
                                     AtomLocality              atomLocality);
+
+        /*! \brief Wait until coordinates are available on the host.
+         *
+         *  \param[in] atomLocality  Locality of the particles to wait for.
+         */
+        void waitCoordinatesReadyOnHost(AtomLocality  atomLocality);
 
 
         /*! \brief Get the velocities buffer on the GPU.
@@ -221,6 +258,15 @@ class StatePropagatorDataGpu::Impl
         CommandStream        nonLocalStream_             = nullptr;
         //! GPU Update-constreaints stream.
         CommandStream        updateStream_               = nullptr;
+
+        // Streams to use for coordinates H2S and D2H copies (one event for each atom locality)
+        EnumerationArray<AtomLocality, CommandStream> xCopyStreams_ = {{nullptr}};
+
+        //! An array of events that indicate H2D copy is complete (one event for each atom locality)
+        EnumerationArray<AtomLocality, GpuEventSynchronizer> xReadyOnDevice_;
+        //! An array of events that indicate D2H copy is complete (one event for each atom locality)
+        EnumerationArray<AtomLocality, GpuEventSynchronizer> xReadyOnHost_;
+
         /*! \brief GPU context (for OpenCL builds)
          * \todo Make a Context class usable in CPU code
          */
