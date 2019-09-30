@@ -50,6 +50,7 @@
 #include <algorithm>
 #include <memory>
 
+#include "gromacs/domdec/builder.h"
 #include "gromacs/domdec/collect.h"
 #include "gromacs/domdec/dlb.h"
 #include "gromacs/domdec/dlbtiming.h"
@@ -2083,8 +2084,8 @@ static DDSystemInfo
 getSystemInfo(const gmx::MDLogger           &mdlog,
               const t_commrec               *cr,
               const DomdecOptions           &options,
-              const gmx_mtop_t              *mtop,
-              const t_inputrec              *ir,
+              const gmx_mtop_t              &mtop,
+              const t_inputrec              &ir,
               const matrix                   box,
               gmx::ArrayRef<const gmx::RVec> xGlobal)
 {
@@ -2094,20 +2095,20 @@ getSystemInfo(const gmx::MDLogger           &mdlog,
 
     /* We need to decide on update groups early, as this affects communication distances */
     systemInfo.useUpdateGroups = false;
-    if (ir->cutoff_scheme == ecutsVERLET)
+    if (ir.cutoff_scheme == ecutsVERLET)
     {
-        real cutoffMargin = std::sqrt(max_cutoff2(ir->ePBC, box)) - ir->rlist;
-        setupUpdateGroups(mdlog, *mtop, *ir, cutoffMargin, &systemInfo);
+        real cutoffMargin = std::sqrt(max_cutoff2(ir.ePBC, box)) - ir.rlist;
+        setupUpdateGroups(mdlog, mtop, ir, cutoffMargin, &systemInfo);
     }
 
     systemInfo.moleculesAreAlwaysWhole         =
-        moleculesAreAlwaysWhole(*mtop,
+        moleculesAreAlwaysWhole(mtop,
                                 systemInfo.useUpdateGroups,
                                 systemInfo.updateGroupingPerMoleculetype);
     systemInfo.haveInterDomainBondeds          = (!systemInfo.moleculesAreAlwaysWhole ||
-                                                  mtop->bIntermolecularInteractions);
+                                                  mtop.bIntermolecularInteractions);
     systemInfo.haveInterDomainMultiBodyBondeds = (systemInfo.haveInterDomainBondeds &&
-                                                  multi_body_bondeds_count(mtop) > 0);
+                                                  multi_body_bondeds_count(&mtop) > 0);
 
     if (systemInfo.useUpdateGroups)
     {
@@ -2116,11 +2117,11 @@ getSystemInfo(const gmx::MDLogger           &mdlog,
     }
     else
     {
-        systemInfo.haveSplitConstraints = gmx::inter_charge_group_constraints(*mtop);
-        systemInfo.haveSplitSettles     = gmx::inter_charge_group_settles(*mtop);
+        systemInfo.haveSplitConstraints = gmx::inter_charge_group_constraints(mtop);
+        systemInfo.haveSplitSettles     = gmx::inter_charge_group_settles(mtop);
     }
 
-    if (ir->rlist == 0)
+    if (ir.rlist == 0)
     {
         /* Set the cut-off to some very large value,
          * so we don't need if statements everywhere in the code.
@@ -2130,7 +2131,7 @@ getSystemInfo(const gmx::MDLogger           &mdlog,
     }
     else
     {
-        systemInfo.cutoff = atomToAtomIntoDomainToDomainCutoff(systemInfo, ir->rlist);
+        systemInfo.cutoff = atomToAtomIntoDomainToDomainCutoff(systemInfo, ir.rlist);
     }
     systemInfo.minCutoffForMultiBody = 0;
 
@@ -2147,7 +2148,7 @@ getSystemInfo(const gmx::MDLogger           &mdlog,
      */
     constexpr real c_chanceThatAtomMovesBeyondDomain = 1e-12;
     const real     limitForAtomDisplacement          =
-        minCellSizeForAtomDisplacement(*mtop, *ir,
+        minCellSizeForAtomDisplacement(mtop, ir,
                                        systemInfo.updateGroupingPerMoleculetype,
                                        c_chanceThatAtomMovesBeyondDomain);
     GMX_LOG(mdlog.info).appendTextFormatted(
@@ -2182,7 +2183,7 @@ getSystemInfo(const gmx::MDLogger           &mdlog,
                                              systemInfo.minCutoffForMultiBody);
             }
         }
-        else if (ir->bPeriodicMols)
+        else if (ir.bPeriodicMols)
         {
             /* Can not easily determine the required cut-off */
             GMX_LOG(mdlog.warning).appendText("NOTE: Periodic molecules are present in this system. Because of this, the domain decomposition algorithm cannot easily determine the minimum cell size that it requires for treating bonded interactions. Instead, domain decomposition will assume that half the non-bonded cut-off will be a suitable lower bound.");
@@ -2194,7 +2195,7 @@ getSystemInfo(const gmx::MDLogger           &mdlog,
 
             if (MASTER(cr))
             {
-                dd_bonded_cg_distance(mdlog, mtop, ir, as_rvec_array(xGlobal.data()), box,
+                dd_bonded_cg_distance(mdlog, &mtop, &ir, as_rvec_array(xGlobal.data()), box,
                                       options.checkBondedInteractions,
                                       &r_2b, &r_mb);
             }
@@ -2244,7 +2245,7 @@ getSystemInfo(const gmx::MDLogger           &mdlog,
     if (systemInfo.haveSplitConstraints && options.constraintCommunicationRange <= 0)
     {
         /* There is a cell size limit due to the constraints (P-LINCS) */
-        systemInfo.constraintCommunicationRange = gmx::constr_r_max(mdlog, mtop, ir);
+        systemInfo.constraintCommunicationRange = gmx::constr_r_max(mdlog, &mtop, &ir);
         GMX_LOG(mdlog.info).appendTextFormatted(
                 "Estimated maximum distance required for P-LINCS: %.3f nm",
                 systemInfo.constraintCommunicationRange);
@@ -2969,7 +2970,7 @@ canMake1DAnd1PulseDomainDecomposition(const DDSettings              &ddSettingsO
     // Ensure we don't write any output from this checking routine
     gmx::MDLogger dummyLogger;
 
-    DDSystemInfo  systemInfo = getSystemInfo(dummyLogger, cr, options, &mtop, &ir, box, xGlobal);
+    DDSystemInfo  systemInfo = getSystemInfo(dummyLogger, cr, options, mtop, ir, box, xGlobal);
 
     DDSettings    ddSettings = ddSettingsOriginal;
     ddSettings.request1DAnd1Pulse = true;
@@ -3001,86 +3002,149 @@ bool is1DAnd1PulseDD(const gmx_domdec_t &dd)
 
 }
 
-gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
-                                        t_commrec                     *cr,
-                                        const DomdecOptions           &options,
-                                        const gmx::MdrunOptions       &mdrunOptions,
-                                        const bool                     prefer1DAnd1Pulse,
-                                        const gmx_mtop_t              *mtop,
-                                        const t_inputrec              *ir,
-                                        const matrix                   box,
-                                        gmx::ArrayRef<const gmx::RVec> xGlobal,
-                                        gmx::LocalAtomSetManager      *atomSets)
+namespace gmx
 {
-    GMX_LOG(mdlog.info).appendTextFormatted(
-            "\nInitializing Domain Decomposition on %d ranks", cr->nnodes);
 
-    DDSettings  ddSettings = getDDSettings(mdlog, options, mdrunOptions, *ir);
+// TODO once the functionality stablizes, move this class and
+// supporting functionality into builder.cpp
+/*! \brief Impl class for DD builder */
+class DomainDecompositionBuilder::Impl
+{
+    public:
+        //! Constructor
+        Impl(const MDLogger      &mdlog,
+             t_commrec           *cr,
+             const DomdecOptions &options,
+             const MdrunOptions  &mdrunOptions,
+             bool                 prefer1DAnd1Pulse,
+             const gmx_mtop_t    &mtop,
+             const t_inputrec    &ir,
+             const matrix         box,
+             ArrayRef<const RVec> xGlobal);
+
+        //! Build the resulting DD manager
+        gmx_domdec_t *build(LocalAtomSetManager *atomSets);
+
+        //! Objects used in constructing and configuring DD
+        //! {
+        //! Logging object
+        const MDLogger      &mdlog_;
+        //! Communication object
+        t_commrec           *cr_;
+        //! User-supplied options configuring DD behavior
+        const DomdecOptions  options_;
+        //! Global system topology
+        const gmx_mtop_t    &mtop_;
+        //! User input values from the tpr file
+        const t_inputrec    &ir_;
+        //! }
+
+        //! Internal objects used in constructing DD
+        //! {
+        //! Settings combined from the user input
+        DDSettings           ddSettings_;
+        //! Information derived from the simulation system
+        DDSystemInfo         systemInfo_;
+        //! Box structure
+        gmx_ddbox_t          ddbox_ = { 0 };
+        //! Organization of the DD grids
+        DDGridSetup          ddGridSetup_;
+        //! Organzation of the DD ranks
+        DDRankSetup          ddRankSetup_;
+        //! Number of DD cells in each dimension
+        ivec                 ddCellIndex_ = { 0, 0, 0 };
+        //! IDs of PME-only ranks
+        std::vector<int>     pmeRanks_;
+        //! Contains a valid Cartesian-communicator-based setup, or defaults.
+        CartesianRankSetup   cartSetup_;
+        //! }
+
+};
+
+DomainDecompositionBuilder::Impl::Impl(const MDLogger      &mdlog,
+                                       t_commrec           *cr,
+                                       const DomdecOptions &options,
+                                       const MdrunOptions  &mdrunOptions,
+                                       const bool           prefer1DAnd1Pulse,
+                                       const gmx_mtop_t    &mtop,
+                                       const t_inputrec    &ir,
+                                       const matrix         box,
+                                       ArrayRef<const RVec> xGlobal)
+    : mdlog_(mdlog),
+      cr_(cr),
+      options_(options),
+      mtop_(mtop),
+      ir_(ir)
+{
+    GMX_LOG(mdlog_.info).appendTextFormatted(
+            "\nInitializing Domain Decomposition on %d ranks", cr_->nnodes);
+
+    ddSettings_ = getDDSettings(mdlog_, options_, mdrunOptions, ir_);
 
     if (prefer1DAnd1Pulse &&
-        canMake1DAnd1PulseDomainDecomposition(ddSettings, cr, cr->nnodes, options,
-                                              *mtop, *ir, box, xGlobal))
+        canMake1DAnd1PulseDomainDecomposition(ddSettings_, cr_, cr_->nnodes, options_,
+                                              mtop_, ir_, box, xGlobal))
     {
-        ddSettings.request1DAnd1Pulse = true;
+        ddSettings_.request1DAnd1Pulse = true;
     }
 
-    if (ddSettings.eFlop > 1)
+    if (ddSettings_.eFlop > 1)
     {
         /* Ensure that we have different random flop counts on different ranks */
-        srand(1 + cr->nodeid);
+        srand(1 + cr_->nodeid);
     }
 
-    DDSystemInfo systemInfo = getSystemInfo(mdlog, cr, options, mtop, ir, box, xGlobal);
+    systemInfo_ = getSystemInfo(mdlog_, cr_, options_, mtop_, ir_, box, xGlobal);
 
-    int          numRanksRequested = cr->nnodes;
-    checkForValidRankCountRequests(numRanksRequested, EEL_PME(ir->coulombtype), options.numPmeRanks);
+    const int numRanksRequested = cr_->nnodes;
+    checkForValidRankCountRequests(numRanksRequested, EEL_PME(ir_.coulombtype), options_.numPmeRanks);
 
     // DD grid setup uses a more different cell size limit for
-    // automated setup than the one in systemInfo. The latter is used
+    // automated setup than the one in systemInfo_. The latter is used
     // in set_dd_limits() to configure DLB, for example.
-    const real gridSetupCellsizeLimit = getDDGridSetupCellSizeLimit(mdlog, ddSettings.request1DAnd1Pulse,
-                                                                    !isDlbDisabled(ddSettings.initialDlbState),
-                                                                    options.dlbScaling, *ir,
-                                                                    systemInfo.cellsizeLimit);
-    gmx_ddbox_t  ddbox       = {0};
-    DDGridSetup  ddGridSetup = getDDGridSetup(mdlog, cr, numRanksRequested, options,
-                                              ddSettings, systemInfo, gridSetupCellsizeLimit,
-                                              *mtop, *ir, box, xGlobal, &ddbox);
-    checkDDGridSetup(ddGridSetup, cr, options, ddSettings, systemInfo, gridSetupCellsizeLimit, ddbox);
+    const real gridSetupCellsizeLimit = getDDGridSetupCellSizeLimit(mdlog_, ddSettings_.request1DAnd1Pulse,
+                                                                    !isDlbDisabled(ddSettings_.initialDlbState),
+                                                                    options_.dlbScaling, ir_,
+                                                                    systemInfo_.cellsizeLimit);
+    ddGridSetup_ = getDDGridSetup(mdlog_, cr_, numRanksRequested, options_,
+                                  ddSettings_, systemInfo_, gridSetupCellsizeLimit,
+                                  mtop_, ir_, box, xGlobal, &ddbox_);
+    checkDDGridSetup(ddGridSetup_, cr_, options_, ddSettings_, systemInfo_, gridSetupCellsizeLimit, ddbox_);
 
-    cr->npmenodes = ddGridSetup.numPmeOnlyRanks;
+    cr_->npmenodes = ddGridSetup_.numPmeOnlyRanks;
 
-    DDRankSetup ddRankSetup = getDDRankSetup(mdlog, cr, ddGridSetup, *ir);
+    ddRankSetup_ = getDDRankSetup(mdlog_, cr_, ddGridSetup_, ir_);
 
     /* Generate the group communicator, also decides the duty of each rank */
-    ivec               ddCellIndex = { 0, 0, 0 };
-    std::vector<int>   pmeRanks;
-    CartesianRankSetup cartSetup   =
-        makeGroupCommunicators(mdlog, ddSettings, options.rankOrder,
-                               ddRankSetup, cr,
-                               ddCellIndex, &pmeRanks);
+    cartSetup_   =
+        makeGroupCommunicators(mdlog_, ddSettings_, options_.rankOrder,
+                               ddRankSetup_, cr_,
+                               ddCellIndex_, &pmeRanks_);
+}
 
-    gmx_domdec_t *dd = new gmx_domdec_t(*ir);
+gmx_domdec_t *DomainDecompositionBuilder::Impl::build(LocalAtomSetManager *atomSets)
+{
+    gmx_domdec_t *dd = new gmx_domdec_t(ir_);
 
-    copy_ivec(ddCellIndex, dd->ci);
+    copy_ivec(ddCellIndex_, dd->ci);
 
     dd->comm = init_dd_comm();
 
-    dd->comm->ddRankSetup        = ddRankSetup;
-    dd->comm->cartesianRankSetup = cartSetup;
+    dd->comm->ddRankSetup        = ddRankSetup_;
+    dd->comm->cartesianRankSetup = cartSetup_;
 
-    set_dd_limits(mdlog, cr, dd, options,
-                  ddSettings, systemInfo,
-                  ddGridSetup,
-                  ddRankSetup.numPPRanks,
-                  mtop, ir,
-                  ddbox);
+    set_dd_limits(mdlog_, cr_, dd, options_,
+                  ddSettings_, systemInfo_,
+                  ddGridSetup_,
+                  ddRankSetup_.numPPRanks,
+                  &mtop_, &ir_,
+                  ddbox_);
 
-    setupGroupCommunication(mdlog, ddSettings, pmeRanks, cr, mtop->natoms, dd);
+    setupGroupCommunication(mdlog_, ddSettings_, pmeRanks_, cr_, mtop_.natoms, dd);
 
-    if (thisRankHasDuty(cr, DUTY_PP))
+    if (thisRankHasDuty(cr_, DUTY_PP))
     {
-        set_ddgrid_parameters(mdlog, dd, options.dlbScaling, mtop, ir, &ddbox);
+        set_ddgrid_parameters(mdlog_, dd, options_.dlbScaling, &mtop_, &ir_, &ddbox_);
 
         setup_neighbor_relations(dd);
     }
@@ -3092,6 +3156,28 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
 
     return dd;
 }
+
+DomainDecompositionBuilder::DomainDecompositionBuilder(const MDLogger      &mdlog,
+                                                       t_commrec           *cr,
+                                                       const DomdecOptions &options,
+                                                       const MdrunOptions  &mdrunOptions,
+                                                       const bool           prefer1DAnd1Pulse,
+                                                       const gmx_mtop_t    &mtop,
+                                                       const t_inputrec    &ir,
+                                                       const matrix         box,
+                                                       ArrayRef<const RVec> xGlobal)
+    : impl_(new Impl(mdlog, cr, options, mdrunOptions, prefer1DAnd1Pulse, mtop, ir, box, xGlobal))
+{
+}
+
+gmx_domdec_t *DomainDecompositionBuilder::build(LocalAtomSetManager *atomSets)
+{
+    return impl_->build(atomSets);
+}
+
+DomainDecompositionBuilder::~DomainDecompositionBuilder() = default;
+
+} // namespace gmx
 
 static gmx_bool test_dd_cutoff(t_commrec                     *cr,
                                const matrix                   box,

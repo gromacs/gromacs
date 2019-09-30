@@ -57,6 +57,7 @@
 #include <memory>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/domdec/builder.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/gpuhaloexchange.h"
@@ -1036,11 +1037,14 @@ int Mdrunner::mdrunner()
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
-        cr->dd = init_domain_decomposition(mdlog, cr, domdecOptions, mdrunOptions,
-                                           prefer1DAnd1PulseDD,
-                                           &mtop, inputrec,
-                                           box, positionsFromStatePointer(globalState.get()),
-                                           &atomSets);
+        DomainDecompositionBuilder ddBuilder(mdlog, cr, domdecOptions, mdrunOptions,
+                                             prefer1DAnd1PulseDD,
+                                             mtop, *inputrec,
+                                             box, positionsFromStatePointer(globalState.get()));
+        // TODO use cr->duty in task and GPU assignment so that
+        // ddBuilder can receive the GPU streams to use in buffer
+        // transfers (e.g. halo exchange)
+        cr->dd = ddBuilder.build(&atomSets);
         // Note that local state still does not exist yet.
     }
     else

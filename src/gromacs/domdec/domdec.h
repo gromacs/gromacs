@@ -67,7 +67,6 @@
 #include "gromacs/utility/real.h"
 
 struct cginfo_mb_t;
-struct DDSystemInfo;
 struct gmx_domdec_t;
 struct gmx_ddbox_t;
 struct gmx_domdec_zones_t;
@@ -88,10 +87,7 @@ namespace gmx
 {
 class ForceWithShiftForces;
 class MDLogger;
-class LocalAtomSetManager;
 class RangePartitioning;
-struct DomdecOptions;
-struct MdrunOptions;
 } // namespace
 
 /*! \brief Returns the global topology atom number belonging to local atom index i.
@@ -148,19 +144,6 @@ int dd_pme_maxshift_y(const gmx_domdec_t *dd);
 
 /*! \brief Return whether constraints, not including settles, cross domain boundaries */
 bool ddHaveSplitConstraints(const gmx_domdec_t &dd);
-
-/*! \brief Initialized the domain decomposition, chooses the DD grid and PME ranks, return the DD struct */
-gmx_domdec_t *
-init_domain_decomposition(const gmx::MDLogger            &mdlog,
-                          t_commrec                      *cr,
-                          const gmx::DomdecOptions       &options,
-                          const gmx::MdrunOptions        &mdrunOptions,
-                          bool                            prefer1DAnd1Pulse,
-                          const gmx_mtop_t               *mtop,
-                          const t_inputrec               *ir,
-                          const matrix                    box,
-                          gmx::ArrayRef<const gmx::RVec>  xGlobal,
-                          gmx::LocalAtomSetManager       *atomSets);
 
 /*! \brief Return whether the DD has a single dimension with a single pulse
  *
