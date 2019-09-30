@@ -72,6 +72,15 @@ but not replaced by angle constraints.
 
 :issue:`3067`
 
+Fix gmx wham with angle and dihedral geometries
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+gmx wham would apply an incorrect radian to degree unit conversion,
+leading to no overlap or not-a-number output.
+
+:issue:`2609`
+:issue:`3094`
+
 Fix bug in gmx xpm2ps
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

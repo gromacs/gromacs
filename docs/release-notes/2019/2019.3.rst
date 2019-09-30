@@ -67,9 +67,11 @@ Fix gmx wham with angle geometries
 """"""""""""""""""""""""""""""""""
 
 gmx wham would mix up degree and radian units leading to no overlap
-or not-a-number output.
+or not-a-number output. **Note**: this fix is not correct, a correct
+fix is applied in the next patch release.
 
 :issue:`2609`
+:issue:`3094`
 
 Add some information for grompp error with wrong line endings
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
