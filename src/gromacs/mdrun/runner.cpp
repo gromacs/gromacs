@@ -1023,20 +1023,19 @@ int Mdrunner::mdrunner()
     prepare_verlet_scheme(fplog, cr, inputrec, nstlist_cmdline, &mtop, box,
                           useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes), *hwinfo->cpuInfo);
 
-    const bool          prefer1DAnd1PulseDD = (c_enableGpuHaloExchange && useGpuForNonbonded);
-    LocalAtomSetManager atomSets;
+    const bool prefer1DAnd1PulseDD = (c_enableGpuHaloExchange && useGpuForNonbonded);
+    // This builder is necessary while we have multi-part construction
+    // of DD. Before DD is constructed, we use the existence of
+    // the builder object to indicate that further construction of DD
+    // is needed.
+    std::unique_ptr<DomainDecompositionBuilder> ddBuilder;
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
-        DomainDecompositionBuilder ddBuilder(mdlog, cr, domdecOptions, mdrunOptions,
-                                             prefer1DAnd1PulseDD,
-                                             mtop, *inputrec,
-                                             box, positionsFromStatePointer(globalState.get()));
-        // TODO use cr->duty in task and GPU assignment so that
-        // ddBuilder can receive the GPU streams to use in buffer
-        // transfers (e.g. halo exchange)
-        cr->dd = ddBuilder.build(&atomSets);
-        // Note that local state still does not exist yet.
+        ddBuilder = std::make_unique<DomainDecompositionBuilder>
+                (mdlog, cr, domdecOptions, mdrunOptions,
+                prefer1DAnd1PulseDD, mtop, *inputrec,
+                box, positionsFromStatePointer(globalState.get()));
     }
     else
     {
@@ -1049,6 +1048,60 @@ int Mdrunner::mdrunner()
             gmx_fatal(FARGS,
                       "pbc=screw is only implemented with domain decomposition");
         }
+    }
+
+    // Produce the task assignment for this rank.
+    GpuTaskAssignmentsBuilder gpuTaskAssignmentsBuilder;
+    GpuTaskAssignments        gpuTaskAssignments =
+        gpuTaskAssignmentsBuilder.build(gpuIdsToUse,
+                                        userGpuTaskAssignment,
+                                        *hwinfo,
+                                        cr,
+                                        ms,
+                                        physicalNodeComm,
+                                        nonbondedTarget,
+                                        pmeTarget,
+                                        bondedTarget,
+                                        updateTarget,
+                                        useGpuForNonbonded,
+                                        useGpuForPme,
+                                        thisRankHasDuty(cr, DUTY_PP),
+                                        // TODO cr->duty & DUTY_PME should imply that a PME
+                                        // algorithm is active, but currently does not.
+                                        EEL_PME(inputrec->coulombtype) &&
+                                        thisRankHasDuty(cr, DUTY_PME));
+
+    const bool printHostName = (cr->nnodes > 1);
+    gpuTaskAssignments.reportGpuUsage(mdlog, printHostName, useGpuForBonded, pmeRunMode);
+
+    // If the user chose a task assignment, give them some hints
+    // where appropriate.
+    if (!userGpuTaskAssignment.empty())
+    {
+        gpuTaskAssignments.logPerformanceHints(mdlog,
+                                               ssize(gpuIdsToUse));
+    }
+
+    // Get the device handles for the modules, nullptr when no task is assigned.
+    gmx_device_info_t *nonbondedDeviceInfo   = gpuTaskAssignments.initNonbondedDevice(cr);
+    gmx_device_info_t *pmeDeviceInfo         = gpuTaskAssignments.initPmeDevice();
+
+    // TODO Initialize GPU streams here.
+
+    // TODO Currently this is always built, yet DD partition code
+    // checks if it is built before using it. Probably it should
+    // become an MDModule that is made only when another module
+    // requires it (e.g. pull, CompEl, density fitting), so that we
+    // don't update the local atom sets unilaterally every step.
+    LocalAtomSetManager atomSets;
+    if (ddBuilder)
+    {
+        // TODO Pass the GPU streams to ddBuilder to use in buffer
+        // transfers (e.g. halo exchange)
+        cr->dd = ddBuilder->build(&atomSets);
+        // The builder's job is done, so destruct it
+        ddBuilder.reset(nullptr);
+        // Note that local state still does not exist yet.
     }
 
     if (PAR(cr))
@@ -1114,60 +1167,12 @@ int Mdrunner::mdrunner()
         gmx_feenableexcept();
     }
 
-    // TODO This could move before init_domain_decomposition() as part
-    // of refactoring that separates the responsibility for duty
-    // assignment from setup for communication between tasks, and
-    // setup for tasks handled with a domain (ie including short-ranged
-    // tasks, bonded tasks, etc.).
-    //
-    // Note that in general useGpuForNonbonded, etc. can have a value
-    // that is inconsistent with the presence of actual GPUs on any
-    // rank, and that is not known to be a problem until the
-    // duty of the ranks on a node become known.
-
-    // Produce the task assignment for this rank.
-    GpuTaskAssignmentsBuilder gpuTaskAssignmentsBuilder;
-    GpuTaskAssignments        gpuTaskAssignments =
-        gpuTaskAssignmentsBuilder.build(gpuIdsToUse,
-                                        userGpuTaskAssignment,
-                                        *hwinfo,
-                                        cr,
-                                        ms,
-                                        physicalNodeComm,
-                                        nonbondedTarget,
-                                        pmeTarget,
-                                        bondedTarget,
-                                        updateTarget,
-                                        useGpuForNonbonded,
-                                        useGpuForPme,
-                                        thisRankHasDuty(cr, DUTY_PP),
-                                        // TODO cr->duty & DUTY_PME should imply that a PME
-                                        // algorithm is active, but currently does not.
-                                        EEL_PME(inputrec->coulombtype) &&
-                                        thisRankHasDuty(cr, DUTY_PME));
-
-    const bool printHostName = (cr->nnodes > 1);
-    gpuTaskAssignments.reportGpuUsage(mdlog, printHostName, useGpuForBonded, pmeRunMode);
-
-    // If the user chose a task assignment, give them some hints
-    // where appropriate.
-    if (!userGpuTaskAssignment.empty())
-    {
-        gpuTaskAssignments.logPerformanceHints(mdlog,
-                                               ssize(gpuIdsToUse));
-    }
-
     /* Now that we know the setup is consistent, check for efficiency */
     check_resource_division_efficiency(hwinfo,
                                        gpuTaskAssignments.thisRankHasAnyGpuTask(),
                                        mdrunOptions.ntompOptionIsSet,
                                        cr,
                                        mdlog);
-
-    // Get the device handles for the modules, nullptr when no task is assigned.
-    gmx_device_info_t *nonbondedDeviceInfo   = gpuTaskAssignments.initNonbondedDevice(cr);
-    gmx_device_info_t *pmeDeviceInfo         = gpuTaskAssignments.initPmeDevice();
-    const bool         thisRankHasPmeGpuTask = gpuTaskAssignments.thisRankHasPmeGpuTask();
 
     /* getting number of PP/PME threads on this MPI / tMPI rank.
        PME: env variable should be read only on one node to make sure it is
@@ -1229,6 +1234,7 @@ int Mdrunner::mdrunner()
                                  .checkpointOptions.period);
     }
 
+    const bool                   thisRankHasPmeGpuTask = gpuTaskAssignments.thisRankHasPmeGpuTask();
     std::unique_ptr<MDAtoms>     mdAtoms;
     std::unique_ptr<gmx_vsite_t> vsite;
 
