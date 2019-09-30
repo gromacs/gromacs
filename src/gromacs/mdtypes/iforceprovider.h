@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -169,19 +169,13 @@ class IForceProvider
         ~IForceProvider() {}
 };
 
-} // namespace gmx
-
 /*! \libinternal \brief
  * Evaluates forces from a collection of gmx::IForceProvider.
- *
- * This class is a `struct` outside the `gmx` namespace to make it possible to
- * forward-declare it in forcerec.h, which still needs to compile when included
- * from the C group kernels.
  *
  * \inlibraryapi
  * \ingroup module_mdtypes
  */
-struct ForceProviders
+class ForceProviders
 {
     public:
         ForceProviders();
@@ -204,5 +198,7 @@ struct ForceProviders
 
         gmx::PrivateImplPointer<Impl> impl_;
 };
+
+} // namespace gmx
 
 #endif

@@ -47,8 +47,6 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct ForceProviders;
-
 /* Abstract type for PME that is defined only in the routine that use them. */
 struct gmx_ns_t;
 struct gmx_pme_t;
@@ -61,6 +59,7 @@ struct t_QMMMrec;
 namespace gmx
 {
 class GpuBonded;
+class ForceProviders;
 }
 
 /* macros for the cginfo data in forcerec
@@ -268,7 +267,7 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     int                         nthread_ewc = 0;
     struct ewald_corr_thread_t *ewc_t       = nullptr;
 
-    struct ForceProviders      *forceProviders = nullptr;
+    gmx::ForceProviders        *forceProviders = nullptr;
 };
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have

@@ -473,7 +473,7 @@ static void checkPotentialEnergyValidity(int64_t               step,
  */
 static bool
 haveSpecialForces(const t_inputrec              &inputrec,
-                  const ForceProviders          &forceProviders,
+                  const gmx::ForceProviders     &forceProviders,
                   const pull_t                  *pull_work,
                   const bool                     computeForces,
                   const gmx_edsam               *ed)
@@ -532,7 +532,7 @@ computeSpecialForces(FILE                          *fplog,
                      int64_t                        step,
                      double                         t,
                      gmx_wallcycle_t                wcycle,
-                     ForceProviders                *forceProviders,
+                     gmx::ForceProviders           *forceProviders,
                      const matrix                   box,
                      gmx::ArrayRef<const gmx::RVec> x,
                      const t_mdatoms               *mdatoms,
