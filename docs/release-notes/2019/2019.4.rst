@@ -54,6 +54,15 @@ other non-local atoms within the pair-list cut-off distance.
 
 :issue:`3063`
 
+Fix incorrect reporting of final kinetic energy and temperature
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With the leap-frog integrator, the kinetic energy and temperature reported
+for the last step were incorrect when the last step was not divisible by
+nstcalcenergy, nsttcouple or nstpcouple.
+
+:issue:`2950`
+
 Fix segmentation fault in grompp and mdrun with cosine COM pulling
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

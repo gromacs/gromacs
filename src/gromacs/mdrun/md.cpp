@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -729,6 +729,11 @@ void gmx::Integrator::do_md()
         /* Determine whether or not to do Neighbour Searching */
         bNS = (bFirstStep || bNStList || bExchanged || bNeedRepartition);
 
+        /* Note that the stopHandler will cause termination at nstglobalcomm
+         * steps. Since this concides with nstcalcenergy, nsttcouple and/or
+         * nstpcouple steps, we have computed the half-step kinetic energy
+         * of the previous step and can always output energies at the last step.
+         */
         bLastStep = bLastStep || stopHandler->stoppingAfterCurrentStep(bNS);
 
         /* do_log triggers energy and virial calculation. Because this leads
@@ -1245,9 +1250,16 @@ void gmx::Integrator::do_md()
         {
             // Organize to do inter-simulation signalling on steps if
             // and when algorithms require it.
-            bool doInterSimSignal = (simulationsShareState && do_per_step(step, nstSignalComm));
+            const bool doInterSimSignal = (simulationsShareState && do_per_step(step, nstSignalComm));
 
-            if (bGStat || (!EI_VV(ir->eI) && do_per_step(step+1, nstglobalcomm)) || doInterSimSignal)
+            // With leap-frog we also need to compute the half-step
+            // kinetic energy at the step before we need to write
+            // the full-step kinetic energy
+            const bool needEkinAtNextStep =
+                (!EI_VV(ir->eI) && (do_per_step(step + 1, nstglobalcomm) ||
+                                    step_rel + 1 == ir->nsteps));
+
+            if (bGStat || needEkinAtNextStep || doInterSimSignal)
             {
                 // Since we're already communicating at this step, we
                 // can propagate intra-simulation signals. Note that
