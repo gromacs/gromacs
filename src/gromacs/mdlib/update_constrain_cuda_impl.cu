@@ -107,6 +107,8 @@ void UpdateConstrainCuda::Impl::integrate(const real                        dt,
         }
     }
 
+    coordinatesReady_.markEvent(commandStream_);
+
     return;
 }
 
@@ -162,9 +164,14 @@ void UpdateConstrainCuda::Impl::setPbc(const t_pbc *pbc)
     settleCuda_->setPbc(pbc);
 }
 
-void UpdateConstrainCuda::Impl::synchronizeStream()
+void UpdateConstrainCuda::Impl::waitCoordinatesReadyOnDevice()
 {
-    gpuStreamSynchronize(commandStream_);
+    coordinatesReady_.waitForEvent();
+}
+
+void *UpdateConstrainCuda::Impl::getCoordinatesReadySync()
+{
+    return static_cast<void*> (&coordinatesReady_);
 }
 
 UpdateConstrainCuda::UpdateConstrainCuda(const t_inputrec  &ir,
@@ -206,9 +213,14 @@ void UpdateConstrainCuda::setPbc(const t_pbc *pbc)
     impl_->setPbc(pbc);
 }
 
-void UpdateConstrainCuda::synchronizeStream()
+void UpdateConstrainCuda::waitCoordinatesReadyOnDevice()
 {
-    impl_->synchronizeStream();
+    impl_->waitCoordinatesReadyOnDevice();
+}
+
+void* UpdateConstrainCuda::getCoordinatesReadySync()
+{
+    return impl_->getCoordinatesReadySync();
 }
 
 } //namespace gmx

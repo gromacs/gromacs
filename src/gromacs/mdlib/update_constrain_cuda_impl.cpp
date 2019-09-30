@@ -60,7 +60,7 @@ UpdateConstrainCuda::UpdateConstrainCuda(gmx_unused const t_inputrec     &ir,
                                          gmx_unused const void           *commandStream)
     : impl_(nullptr)
 {
-    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
+    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
 UpdateConstrainCuda::~UpdateConstrainCuda() = default;
@@ -75,7 +75,7 @@ void UpdateConstrainCuda::integrate(gmx_unused const real                       
                                     gmx_unused const float                       dtPressureCouple,
                                     gmx_unused const matrix                      velocityScalingMatrix)
 {
-    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
+    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
 void UpdateConstrainCuda::set(gmx_unused DeviceBuffer<float>        d_x,
@@ -85,17 +85,23 @@ void UpdateConstrainCuda::set(gmx_unused DeviceBuffer<float>        d_x,
                               gmx_unused const t_mdatoms           &md,
                               gmx_unused const int                  numTempScaleValues)
 {
-    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
+    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
 void UpdateConstrainCuda::setPbc(gmx_unused const t_pbc *pbc)
 {
-    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
+    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
-void UpdateConstrainCuda::synchronizeStream()
+void UpdateConstrainCuda::waitCoordinatesReadyOnDevice()
 {
-    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
+    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
+}
+
+void* UpdateConstrainCuda::getCoordinatesReadySync()
+{
+    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
+    return nullptr;
 }
 
 }      // namespace gmx

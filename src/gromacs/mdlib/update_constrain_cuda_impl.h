@@ -48,6 +48,7 @@
 
 #include "gmxpre.h"
 
+#include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/mdlib/leapfrog_cuda.cuh"
 #include "gromacs/mdlib/lincs_cuda.cuh"
 #include "gromacs/mdlib/settle_cuda.cuh"
@@ -132,9 +133,16 @@ class UpdateConstrainCuda::Impl
          */
         void setPbc(const t_pbc *pbc);
 
-        /*! \brief Synchronize the device stream.
+        /*! \brief Blocking wait on the update of coordinates being ready.
+         *
+         * \todo Remove when the "stitching" is done.
          */
-        void synchronizeStream();
+        void waitCoordinatesReadyOnDevice();
+
+
+        /*! \brief Return the synchronizer associated with the event indicated that the coordinates are ready on the device.
+         */
+        void *getCoordinatesReadySync();
 
     private:
 
@@ -176,6 +184,8 @@ class UpdateConstrainCuda::Impl
         //! SETTLE CUDA object for water constrains
         std::unique_ptr<SettleCuda>          settleCuda_;
 
+        //! An event to indicate when the update of coordinates is complete
+        GpuEventSynchronizer                 coordinatesReady_;
 };
 
 } // namespace gmx

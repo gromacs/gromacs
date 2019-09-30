@@ -1241,9 +1241,9 @@ void gmx::LegacySimulator::do_md()
                                   doPressureCouple, ir->nstpcouple*ir->delta_t, M);
             stateGpu->copyCoordinatesFromGpu(ArrayRef<RVec>(state->x), StatePropagatorDataGpu::AtomLocality::All);
             stateGpu->copyVelocitiesFromGpu(state->v, StatePropagatorDataGpu::AtomLocality::All);
-            // Synchronize the update stream.
-            // TODO: Replace with event-based synchronization.
-            integrator->synchronizeStream();
+
+            // TODO: replace with stateGpu->waitForCopyCoordinatesFromGpu(...)
+            integrator->waitCoordinatesReadyOnDevice();
         }
         else
         {
