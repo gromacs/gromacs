@@ -458,38 +458,21 @@ static void global_atomnr_to_moltype_ind(const gmx_reverse_top_t *rt,
     *i_mol = (i_gl - mbi->a_start) - (*mol)*mbi->natoms_mol;
 }
 
-/*! \brief Count the exclusions for all atoms in \p cgs */
-static void count_excls(const t_block *cgs, const t_blocka *excls,
-                        int *n_excl, int *n_intercg_excl, int *n_excl_at_max)
+/*! \brief Returns the maximum number of exclusions per atom */
+static int getMaxNumExclusionsPerAtom(const t_blocka &excls)
 {
-    int cg, at0, at1, at, excl, atj;
-
-    *n_excl         = 0;
-    *n_intercg_excl = 0;
-    *n_excl_at_max  = 0;
-    for (cg = 0; cg < cgs->nr; cg++)
+    int maxNumExcls = 0;
+    for (int at = 0; at < excls.nr; at++)
     {
-        at0 = cgs->index[cg];
-        at1 = cgs->index[cg+1];
-        for (at = at0; at < at1; at++)
-        {
-            for (excl = excls->index[at]; excl < excls->index[at+1]; excl++)
-            {
-                atj = excls->a[excl];
-                if (atj > at)
-                {
-                    (*n_excl)++;
-                    if (atj < at0 || atj >= at1)
-                    {
-                        (*n_intercg_excl)++;
-                    }
-                }
-            }
+        const int numExcls = excls.index[at + 1] - excls.index[at];
 
-            *n_excl_at_max = std::max(*n_excl_at_max,
-                                      excls->index[at+1] - excls->index[at]);
-        }
+        GMX_RELEASE_ASSERT(numExcls != 1 || excls.a[excls.index[at]] == at,
+                           "With 1 exclusion we expect a self-exclusion");
+
+        maxNumExcls = std::max(maxNumExcls, numExcls);
     }
+
+    return maxNumExcls;
 }
 
 /*! \brief Run the reverse ilist generation and store it in r_il when \p bAssign = TRUE */
@@ -750,17 +733,18 @@ void dd_make_reverse_top(FILE *fplog,
 
     gmx_reverse_top_t *rt = dd->reverse_top;
 
-    dd->n_intercg_excl = 0;
+    dd->haveExclusions = false;
     rt->n_excl_at_max  = 0;
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        int                  n_excl_mol, n_excl_icg, n_excl_at_max;
-
-        const gmx_moltype_t &molt = mtop->moltype[molb.type];
-        count_excls(&molt.cgs, &molt.excls,
-                    &n_excl_mol, &n_excl_icg, &n_excl_at_max);
-        dd->n_intercg_excl += molb.nmol*n_excl_icg;
-        rt->n_excl_at_max   = std::max(rt->n_excl_at_max, n_excl_at_max);
+        const int maxNumExclusionsPerAtom =
+            getMaxNumExclusionsPerAtom(mtop->moltype[molb.type].excls);
+        // We checked above that max 1 exclusion means only self exclusions
+        if (maxNumExclusionsPerAtom > 1)
+        {
+            dd->haveExclusions = true;
+        }
+        rt->n_excl_at_max = std::max(rt->n_excl_at_max, maxNumExclusionsPerAtom);
     }
 
     if (vsite && vsite->numInterUpdategroupVsites > 0)
@@ -1560,7 +1544,7 @@ static void finish_local_exclusions(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     const gmx::Range<int> nonhomeIzonesAtomRange(zones->izone[0].cg1,
                                                  zones->izone[zones->nizone - 1].cg1);
 
-    if (dd->n_intercg_excl == 0)
+    if (!dd->haveExclusions)
     {
         /* There are no exclusions involving non-home charge groups,
          * but we need to set the indices for neighborsearching.
@@ -1622,14 +1606,14 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
         nzone_bondeds = 1;
     }
 
-    if (dd->n_intercg_excl > 0)
+    if (dd->haveExclusions)
     {
         /* We only use exclusions from i-zones to i- and j-zones */
         nzone_excl = zones->nizone;
     }
     else
     {
-        /* There are no inter-cg exclusions and only zone 0 sees itself */
+        /* There are no exclusions and only zone 0 sees itself */
         nzone_excl = 1;
     }
 

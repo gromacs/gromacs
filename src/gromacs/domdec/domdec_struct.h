@@ -193,8 +193,8 @@ struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     int                 nbonded_global = 0;
     int                 nbonded_local  = 0;
 
-    /* The number of inter charge-group exclusions */
-    int  n_intercg_excl = 0;
+    /* Whether we have non-self exclusion */
+    bool haveExclusions = false;
 
     /* Vsite stuff */
     gmx::HashedMap<int>       *ga2la_vsite = nullptr;

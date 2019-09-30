@@ -3178,7 +3178,7 @@ void dd_partition_system(FILE                        *fplog,
         }
         else
         {
-            if (EEL_FULL(ir->coulombtype) && dd->n_intercg_excl > 0)
+            if (EEL_FULL(ir->coulombtype) && dd->haveExclusions)
             {
                 nat_f_novirsum = comm->atomRanges.end(DDAtomRanges::Type::Zones);
             }
