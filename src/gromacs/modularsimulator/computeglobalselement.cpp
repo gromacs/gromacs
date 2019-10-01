@@ -80,6 +80,7 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(
     doStopCM_(inputrec->comm_mode != ecmNO),
     nstcomm_(inputrec->nstcomm),
     nstglobalcomm_(nstglobalcomm),
+    lastStep_(inputrec->nsteps + inputrec->init_step),
     initStep_(inputrec->init_step),
     nullSignaller_(std::make_unique<SimulationSignaller>(nullptr, nullptr, nullptr, false, false)),
     hasReadEkinState_(hasReadEkinState),
@@ -190,7 +191,15 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(
         // With Leap-Frog we can skip compute_globals at
         // non-communication steps, but we need to calculate
         // the kinetic energy one step before communication.
-        if (!needGlobalReduction && !do_per_step(step+1, nstglobalcomm_))
+
+        // With leap-frog we also need to compute the half-step
+        // kinetic energy at the step before we need to write
+        // the full-step kinetic energy
+        const bool needEkinAtNextStep =
+            (do_per_step(step + 1, nstglobalcomm_) ||
+             step + 1 == lastStep_);
+
+        if (!needGlobalReduction && !needEkinAtNextStep)
         {
             return;
         }

@@ -172,6 +172,8 @@ class ComputeGlobalsElement final :
         int                                  nstcomm_;
         //! Compute globals communication period
         int                                  nstglobalcomm_;
+        //! The last (planned) step (only used for LF)
+        const Step                           lastStep_;
         //! The initial step (only used for VV)
         const Step                           initStep_;
         //! A dummy signaller (used for setup and VV)
