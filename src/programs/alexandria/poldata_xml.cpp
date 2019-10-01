@@ -617,7 +617,7 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                              my_atof(xbuf[exmlJ0_SIGMA].c_str()),
                              my_atof(xbuf[exmlCHI0].c_str()),
                              my_atof(xbuf[exmlCHI0_SIGMA].c_str()));
-                pd.addEemprops(eep);
+                pd.addEemprops(std::move(eep));
             }
             break;
         default:
@@ -729,6 +729,10 @@ void readPoldata(const std::string &fileName,
 
     xmlFreeDoc(doc);
 
+    // Generate maps
+    pd.mapAtypeToEempropsConstIterator();
+    pd.mapAtypeToEempropsIterator();
+    pd.checkConsistency(debug);
     if (nullptr != debug)
     {
         writePoldata("pdout.dat", &pd, false);

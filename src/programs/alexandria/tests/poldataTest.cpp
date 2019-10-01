@@ -172,13 +172,15 @@ TEST_F (PoldataTest, Bosque)
 
 TEST_F (PoldataTest, chi)
 {
-    std::vector<double>                  chi0s;
+    std::vector<double>      chi0s;
     std::vector<ChargeModel> eqd = { eqdACM_g, eqdACM_pg };
 
     for (auto model : eqd)
     {
         auto pd       = getPoldata(model);
-        auto atomName = pd->findAtype("ha")->getType();
+        auto fa       = pd->findAtype("ha");
+        GMX_RELEASE_ASSERT(fa != pd->getAtypeEnd(), "Can not find ha");
+        auto atomName = fa->getType();
         chi0s.push_back(pd->getChi0(atomName));
     }
     checker_.checkSequence(chi0s.begin(), chi0s.end(), "chi");

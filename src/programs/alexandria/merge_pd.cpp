@@ -102,7 +102,7 @@ static void merge_J00Chi(std::vector<alexandria::Poldata>     pds,
     {
         for (const auto& pd : pds)
         {
-            auto ei = pd.findEem(atp->getType());
+            auto ei = pd.findEemConst(atp->getType());
             if (ei != pd.EndEemprops())
             {
                 switch (eematp)
@@ -202,7 +202,7 @@ static void merge_zeta(std::vector<alexandria::Poldata>     pds,
     {
         for (const auto& pd : pds)
         {
-            auto ei = pd.findEem(atp->getZtype());
+            auto ei = pd.findEemConst(atp->getZtype());
             if (ei != pd.EndEemprops())
             {
                 auto nzeta = pd.getNzeta(ei->getName());

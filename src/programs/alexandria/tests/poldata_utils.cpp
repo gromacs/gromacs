@@ -57,7 +57,7 @@ alexandria::Poldata *getPoldata(std::string qdist)
         {
             alexandria::Poldata pd;
             alexandria::readPoldata(dataName, pd, aps);
-            pdTest.insert(std::pair<std::string, alexandria::Poldata>(qdist, pd));
+            pdTest.insert(std::pair<std::string, alexandria::Poldata>(qdist, std::move(pd)));
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
@@ -68,3 +68,4 @@ alexandria::Poldata *getPoldata(alexandria::ChargeModel qdist)
 {
     return getPoldata(getEemtypeName(qdist));
 }
+

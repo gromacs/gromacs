@@ -625,9 +625,32 @@ class Poldata
          *            structure or EndEemprops in case the atom type
          *            is not found.
          */
-        EempropsConstIterator findEem(const std::string &atype) const;
+        EempropsConstIterator findEemConst(const std::string &atype) const
+        {
+            auto eic = mapAtypeToEempropsConstIterator_.find(atype);
+            if (eic != mapAtypeToEempropsConstIterator_.end())
+            {
+                return eic->second;
+            }
+            else
+            {
+                return EndEemprops();
+            }
+        }
 
-        EempropsIterator findEem(const std::string &atype);
+        EempropsIterator findEem(const std::string &atype)
+        {
+            auto eic = mapAtypeToEempropsIterator_.find(atype);
+            if (eic != mapAtypeToEempropsIterator_.end())
+            {
+                return eic->second;
+            }
+            else
+            {
+                return EndEemprops();
+            }
+        }
+
                                  
         EempropsConstIterator ztype2Eem(const std::string &ztype) const;
 
@@ -664,6 +687,11 @@ class Poldata
 
         CommunicationStatus Receive(const t_commrec *cr, int src);
 
+        void mapAtypeToEempropsConstIterator();
+
+        void mapAtypeToEempropsIterator();
+        
+        void checkConsistency(FILE *fplog) const;
     private:
         std::string                           filename_;
         std::vector<Ptype>                    ptype_;
@@ -699,6 +727,9 @@ class Poldata
         {
             return (pointer - &(vector[0]));
         }
+        
+        std::map<std::string, EempropsConstIterator> mapAtypeToEempropsConstIterator_;
+        std::map<std::string, EempropsIterator> mapAtypeToEempropsIterator_;
 };
 
 }

@@ -2857,6 +2857,7 @@
     <eemprop name="z_oh" jaa="10.3619" jaa_sigma="0.0370556" chi="5.44859" chi_sigma="0.0271229" zeta="15.5046 " zeta_sigma="0.220202 " charge="0" row="2"/>
     <eemprop name="z_ow" jaa="12.2488" jaa_sigma="0.527056" chi="6.34049" chi_sigma="0.24154" zeta="1225.22 " zeta_sigma="693.121 " charge="0" row="2"/>
     <eemprop name="z_o" jaa="9.849" jaa_sigma="0.021538" chi="5.86264" chi_sigma="0.015662" zeta="23.0077 " zeta_sigma="0.268153 " charge="0" row="2"/>
+    <eemprop name="z_om" jaa="9.84971" jaa_sigma="0.0137743" chi="4.80957" chi_sigma="0.0100568" zeta="14.4131 " zeta_sigma="0.183178 " charge="0" row="2"/>
     <eemprop name="z_os" jaa="9.84971" jaa_sigma="0.0137743" chi="4.80957" chi_sigma="0.0100568" zeta="14.4131 " zeta_sigma="0.183178 " charge="0" row="2"/>
     <eemprop name="z_f" jaa="11.3623" jaa_sigma="0.0726659" chi="4.62859" chi_sigma="0.0160594" zeta="11.7569 " zeta_sigma="0.120279 " charge="0" row="2"/>
     <eemprop name="z_p4" jaa="6.18014" jaa_sigma="0.040834" chi="2.68831" chi_sigma="0.0156611" zeta="8.87425 " zeta_sigma="0.123214 " charge="0" row="3"/>
