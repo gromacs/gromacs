@@ -244,12 +244,11 @@ void GridSet::putOnGrid(const matrix                    box,
     }
 
     int maxNumColumns = 0;
-    for (const auto &grid : grids())
+    for (int i = 0; i <= gridIndex; i++)
     {
-        maxNumColumns = std::max(maxNumColumns, grid.numColumns());
+        maxNumColumns = std::max(maxNumColumns, grids_[i].numColumns());
     }
     setNumColumnsMax(maxNumColumns);
-
 }
 
 } // namespace Nbnxm
