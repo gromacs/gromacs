@@ -675,6 +675,7 @@ int alex_tune_zeta(int argc, char *argv[])
              false,
              bZPE,
              true,
+             false,
              tabfn);
 
     if (bOptimize)

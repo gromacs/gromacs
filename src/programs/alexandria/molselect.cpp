@@ -315,7 +315,7 @@ int alex_molselect(int argc, char *argv[])
              opt2fn_null("-d", NFILE, fnm),
              bZero, opt_elem,
              gms, true, false, false,
-             false, true, nullptr);
+             false, true, false, nullptr);
 
     printAtomtypeStatistics(fp, mdp.poldata(), mdp.mymols());
 

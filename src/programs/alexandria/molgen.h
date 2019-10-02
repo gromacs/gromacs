@@ -421,18 +421,19 @@ class MolGen
         }
 
         //! \brief Read the molecular property data file to generate molecues.
-        void Read(FILE                      *fp,
-                  const char                *fn,
-                  const char                *pd_fn,
-                  gmx_bool                   bZero,
-                  char                      *opt_elem,
-                  const MolSelect           &gms,
-                  gmx_bool                   bCheckSupport,
-                  bool                       bPairs,
-                  bool                       bDihedral,
-                  bool                       bZPE,
-                  bool                       bFitZeta,
-                  const char                *tabfn);
+        void Read(FILE            *fp,
+                  const char      *fn,
+                  const char      *pd_fn,
+                  gmx_bool         bZero,
+                  char            *opt_elem,
+                  const MolSelect &gms,
+                  gmx_bool         bCheckSupport,
+                  bool             bPairs,
+                  bool             bDihedral,
+                  bool             bZPE,
+                  bool             bFitZeta,
+                  bool             bDHform,
+                  const char      *tabfn);
 
 };
 

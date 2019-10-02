@@ -185,15 +185,15 @@ class Optimization : public MolGen, Bayes
 
     private:
         std::vector<ForceConstants> ForceConstants_;
-        std::vector<NonBondParams>  NonBondParams_;
-        bool                        iOpt_[eitNR];
-        bool                        optimizeGeometry_;
+        NonBondParams               NonBondParams_;
+        int                         iOpt_[eitNR]      = { 0 };
+        bool                        optimizeGeometry_ = false;
         std::vector<PoldataUpdate>  poldataUpdates_;
-        real                        factor_     = 1;
-        bool                        bDissoc_    = true;
-        real                        w_dhf_      = 1;
-        const char                 *lot_        = nullptr;
-        bool                        calcAll_    = false;
+        real                        factor_           = 1;
+        bool                        bDissoc_          = true;
+        real                        w_dhf_            = 1;
+        const char                 *lot_              = nullptr;
+        bool                        calcAll_          = false;
         // Map from molid to MolEnergy
         std::map<int, MolEnergy>    MolEnergyMap_;
     public:
@@ -205,11 +205,7 @@ class Optimization : public MolGen, Bayes
          */
         Optimization()
         {
-            for(int bt = 0; bt < eitNR; bt++)
-            {
-                iOpt_[bt] = false;
-            }
-            iOpt_[eitBONDS] = true;
+            iOpt_[eitBONDS] = 1;
         };
 
         /*! \brief
@@ -224,9 +220,6 @@ class Optimization : public MolGen, Bayes
          */
         void add_pargs(std::vector<t_pargs> *pargs);
 
-        //! \brief Return whether flag i is set
-        bool iOpt(InteractionType itype) const { return iOpt_[itype]; }
-
         //! \brief To be called after processing options
         void optionsFinished()
         {
@@ -234,6 +227,8 @@ class Optimization : public MolGen, Bayes
             setBounds(weight(ermsBOUNDS) > 0);
         }
 
+        int iOpt(int itype) { return iOpt_[itype]; }
+    
         void setCalcAll(bool calcAll) { calcAll_ = calcAll; }
 
         //! \brief Return the level of theory used as reference
@@ -359,15 +354,11 @@ CommunicationStatus Optimization::Send(t_commrec *cr, int dest)
     if (CS_OK == cs)
     {
         gmx_send_int(cr, dest, ForceConstants_.size());
-        gmx_send_int(cr, dest, NonBondParams_.size());
         for (auto &fc : ForceConstants_)
         {
             fc.Send(cr, dest);
         }
-        for (auto &nb : NonBondParams_)
-        {
-            nb.Send(cr, dest);
-        }
+        NonBondParams_.Send(cr, dest);
     }
     return cs;
 }
@@ -379,7 +370,6 @@ CommunicationStatus Optimization::Receive(t_commrec *cr, int src)
     if (CS_OK == cs)
     {
         int nfc = gmx_recv_int(cr, src);
-        int nnb = gmx_recv_int(cr, src);
 
         for (int n = 0; (CS_OK == cs) && (n < nfc); n++)
         {
@@ -390,15 +380,7 @@ CommunicationStatus Optimization::Receive(t_commrec *cr, int src)
                 ForceConstants_.push_back(fc);
             }
         }
-        for (int n = 0; (CS_OK == cs) && (n < nnb); n++)
-        {
-            alexandria::NonBondParams nb;
-            cs = nb.Receive(cr, src);
-            if (CS_OK == cs)
-            {
-                NonBondParams_.push_back(std::move(nb));
-            }
-        }
+        cs = NonBondParams_.Receive(cr, src);
     }
     return cs;
 }
@@ -413,8 +395,6 @@ void Optimization::add_pargs(std::vector<t_pargs> *pargs)
           "Optimize bond lengths, angles and dihedral angles" },
         { "-weight_dhf", FALSE, etREAL, {&w_dhf_},
           "Fitting weight of the minimum energy structure, representing the enthalpy of formation relative to high energy structures." },
-        { "-bonds",   FALSE, etINT, {&(iOpt_[eitBONDS])},
-          "Optimize bond parameters" },
         { "-angles",  FALSE, etINT, {&(iOpt_[eitANGLES])},
           "Optimize angle parameters" },
         { "-langles", FALSE, etINT, {&(iOpt_[eitLINEAR_ANGLES])},
@@ -425,8 +405,6 @@ void Optimization::add_pargs(std::vector<t_pargs> *pargs)
           "Optimize improper dihedral parameters" },
         { "-vdw", FALSE, etINT, {&(iOpt_[eitVDW])},
           "Optimize van der Waals parameters" },
-        { "-pairs",  FALSE, etINT, {&(iOpt_[eitLJ14])},
-          "Optimize 1-4 interaction parameters" },
         { "-factor", FALSE, etREAL, {&factor_},
           "Parameters will be taken within the limit factor*x - x/factor." }
     };
@@ -597,14 +575,11 @@ void Optimization::polData2TuneFc(real factor)
             }
         }
     }
-    for (auto nbp : NonBondParams_)
+    for (auto at = NonBondParams_.beginAT(); at < NonBondParams_.endAT(); ++at)
     {
-        for (auto at = nbp.beginAT(); at < nbp.endAT(); ++at)
+        for (const auto &p : at->paramValues())
         {
-            for (const auto &p : at->paramValues())
-            {
-                Bayes::addParam(p, factor);
-            }
+            Bayes::addParam(p, factor);
         }
     }
     if (debug)
@@ -648,26 +623,23 @@ void Optimization::toPolData(const std::vector<bool> &changed)
             }
         }
     }
-    for (auto &nbp : NonBondParams_)
+    for (auto at = NonBondParams_.beginAT(); at < NonBondParams_.endAT(); ++at)
     {
-        for (auto at = nbp.beginAT(); at < nbp.endAT(); ++at)
+        bool        bondChanged = false;
+        double      geometry    = 0;
+        std::string paramString;
+        for (size_t p = 0; p < at->nParams(); p++)
         {
-            bool        bondChanged = false;
-            double      geometry    = 0;
-            std::string paramString;
-            for (size_t p = 0; p < at->nParams(); p++)
-            {
-                bondChanged = bondChanged || changed[n];
-                paramString.append(gmx::formatString(" %g", param[n++]));
-            }
-            if (bondChanged)
-            {
-                at->setParamString(paramString);
-                poldataUpdates_.push_back(PoldataUpdate(eitVDW,
-                                                        at->poldataIndex(),
-                                                        geometry,
-                                                        paramString));
-            }
+            bondChanged = bondChanged || changed[n];
+            paramString.append(gmx::formatString(" %g", param[n++]));
+        }
+        if (bondChanged)
+        {
+            at->setParamString(paramString);
+            poldataUpdates_.push_back(PoldataUpdate(eitVDW,
+                                                    at->poldataIndex(),
+                                                    geometry,
+                                                    paramString));
         }
     }
     GMX_RELEASE_ASSERT(n == param.size(), "Number of parameters set should be equal to the length of the parameter array");
@@ -781,7 +753,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
         if (!f->fixed())
         {
             /* TODO: De is assumed to be the first parameter. Please fix. */
-            snprintf(buf, sizeof(buf), "%.2f  %s", Edissoc[i], pp[1].c_str());
+            snprintf(buf, sizeof(buf), "%.2f  %s", std::max(100.0, Edissoc[i]), pp[1].c_str());
             f->setParams(buf);
             b->setParamString(buf);
             i++;
@@ -795,13 +767,15 @@ void Optimization::InitOpt(FILE *fplog)
          fs != poldata()->forcesEnd(); ++fs)
     {
         int bt = static_cast<int>(fs->iType());
-        ForceConstants fc(fs->fType(), fs->iType(), iOpt_[bt]);
-        fc.analyzeIdef(mymols(), poldata(), optimizeGeometry_);
-        fc.makeReverseIndex();
-        fc.dump(fplog);
-        ForceConstants_.push_back(std::move(fc));
+        if (iOpt_[bt])
+        {
+            ForceConstants fc(fs->fType(), fs->iType(), iOpt_[bt]);
+            fc.analyzeIdef(mymols(), poldata(), optimizeGeometry_);
+            fc.makeReverseIndex();
+            fc.dump(fplog);
+            ForceConstants_.push_back(std::move(fc));
+        }
     }
-
     if (bDissoc_)
     {
         if (ForceConstants_[eitBONDS].nbad() <= mymols().size())
@@ -818,11 +792,14 @@ void Optimization::InitOpt(FILE *fplog)
                    mymols().size(), ForceConstants_[eitBONDS].nbad());
         }
     }
-    NonBondParams nbp(iOpt_[eitVDW], eitVDW);
-    nbp.analyzeIdef(mymols(), poldata());
-    nbp.makeReverseIndex();
-    NonBondParams_.push_back(std::move(nbp));
-
+    
+    if (iOpt_[eitVDW])
+    {
+        NonBondParams_.setOpt(true);
+        NonBondParams_.analyzeIdef(mymols(), poldata());
+        NonBondParams_.makeReverseIndex();
+        NonBondParams_.dump(fplog);
+    }
     polData2TuneFc(factor_);
 }
 
@@ -868,12 +845,10 @@ double Optimization::calcDeviation()
                     }
                 }
 
-                for (const auto nbp : NonBondParams_)
+                if (NonBondParams_.nAT() > 0)
                 {
-                    if (nbp.nAT() > 0)
-                    {
-                        mymol.UpdateIdef(poldata(), nbp.interactionType());
-                    }
+                    mymol.UpdateIdef(poldata(),
+                                     NonBondParams_.interactionType());
                 }
                 mymol.f_.resizeWithPadding(natoms);
                 mymol.optf_.resizeWithPadding(natoms);
@@ -1051,8 +1026,12 @@ bool Optimization::optRun(FILE                   *fplog,
                 gmx_send_int(commrec(), dest, niter);
             }
         }
-        double   chi2_min = Bayes::objFunction(Bayes::getParam().data());
-        double   chi2     = chi2_min;
+        double chi2_min = Bayes::objFunction(Bayes::getParam().data());
+        double chi2     = chi2_min;
+        if (fplog)
+        {
+            fprintf(fplog, "Initial chi2 %g\n", chi2_min);
+        }
         {
             auto func = [&] (const double v[]) {
                             return Bayes::objFunction(v);
@@ -1061,6 +1040,10 @@ bool Optimization::optRun(FILE                   *fplog,
             Bayes::setOutputFiles(xvgconv, xvgepot, oenv);
         }
         Bayes::MCMC();
+        if (fplog)
+        {
+            fprintf(fplog, "Final chi2 %g\n", chi2_min);
+        }
         if (chi2 < chi2_min)
         {
             chi2_min = chi2;
@@ -1404,10 +1387,11 @@ int alex_tune_fc(int argc, char *argv[])
              nullptr,
              gms,
              false,
-             opt.iOpt(eitLJ14),
+             false,
              opt.iOpt(eitPROPER_DIHEDRALS),
              bZPE,
              false,
+             true,
              tabfn);
 
     opt.checkSupport(fplog);

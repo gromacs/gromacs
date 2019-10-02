@@ -246,22 +246,12 @@ MatrixWrapper::~MatrixWrapper()
     free_matrix(a_);
 }
 
-void MatrixWrapper::set(int col, int row, double value)
-{
-    a_[col][row] = value;
-}
-
 void MatrixWrapper::setRow(int row, const double value[])
 {
     for (int i = 0; i < ncolumn_; i++)
     {
         set(i, row, value[i]);
     }
-}
-
-double MatrixWrapper::get(int col, int row) const
-{
-    return a_[col][row];
 }
 
 void MatrixWrapper::solve(std::vector<double> rhs, std::vector<double> *solution)

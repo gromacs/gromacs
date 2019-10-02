@@ -97,12 +97,13 @@ class AtomTypes
 };
 
 using AtomTypesIterator = typename std::vector<AtomTypes>::iterator;
+using ConstAtomTypesIterator = typename std::vector<AtomTypes>::const_iterator;
 
 class NonBondParams
 {
     public:
 
-        NonBondParams () {}
+        NonBondParams () : bOpt_(false), itype_(eitVDW) {}
 
         NonBondParams(bool bOpt, InteractionType  itype)
 
@@ -119,6 +120,8 @@ class NonBondParams
 
         void makeReverseIndex();
 
+        void dump(FILE *fp) const;
+
         int reverseIndex(int poldataIndex)
         {
             GMX_RELEASE_ASSERT(poldataIndex >= 0 && poldataIndex < static_cast<int>(reverseIndex_.size()), "Incorrect poldataIndex");
@@ -131,9 +134,17 @@ class NonBondParams
 
         AtomTypesIterator endAT() { return at_.end(); }
 
+        ConstAtomTypesIterator beginAT() const { return at_.begin(); }
+
+        ConstAtomTypesIterator endAT() const { return at_.end(); }
+
         InteractionType interactionType() const { return itype_; }
 
+        void setInteractionType(InteractionType iType) { itype_ = iType; }
+
         size_t nAT() const { return at_.size(); }
+        
+        void setOpt(bool Opt) { bOpt_ = Opt; }
 
         CommunicationStatus Send(t_commrec *cr, int dest);
 

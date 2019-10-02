@@ -1972,8 +1972,11 @@ void MyMol::setQandMoments(qType qt, int natom, real q[])
     }
 }
 
-immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
-                             gmx_bool bZPE, const char *lot,
+immStatus MyMol::getExpProps(gmx_bool       bQM,
+                             gmx_bool       bZero,
+                             gmx_bool       bZPE, 
+                             gmx_bool       bDHform,
+                             const char    *lot,
                              const Poldata *pd)
 {
     int          ia    = 0;
@@ -2053,7 +2056,8 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     }
     T = 298.15;
     immStatus imm = immOK;
-    if (molProp()->getProp(MPO_ENERGY, (bQM ? iqmQM : iqmExp),
+    if (bDHform &&
+        molProp()->getProp(MPO_ENERGY, (bQM ? iqmQM : iqmExp),
                            lot, "", (char *)"DeltaHform", &value, &error, &T))
     {
         Hform_ = value;
@@ -2096,10 +2100,6 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         {
             imm = immNoData;
         }
-    }
-    else
-    {
-        imm = immNoData;
     }
     if (imm == immOK)
     {
