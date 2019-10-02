@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -240,6 +240,7 @@ static inline void nbnxn_gpu_reduce_staged_outputs(const StagingData &nbst,
  * \param[in]  plist             Pointer to the pair list data
  * \param[in]  atomLocality      Atom locality specifier
  * \param[in]  didEnergyKernels  True if energy kernels have been called in the current step
+ * \param[in]  doNeighbourSearch True if this is a neighbour search step.
  * \param[in]  doTiming          True if timing is enabled.
  *
  */
@@ -249,6 +250,7 @@ static inline void nbnxn_gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t *timin
                                                 const GpuPairlist         *plist,
                                                 int                        atomLocality,
                                                 bool                       didEnergyKernels,
+                                                bool                       doNeighbourSearch,
                                                 bool                       doTiming)
 {
     /* timing data accumulation */
@@ -283,15 +285,15 @@ static inline void nbnxn_gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t *timin
        for the force D2H). */
     countPruneKernelTime(timers, timings, iLocality);
 
-    /* only count atdat and pair-list H2D at pair-search step */
+    /* only count atdat and pair-list H2D at pair-search step (add only once, at local F wait) */
+    if (doNeighbourSearch && LOCAL_A(atomLocality))
+    {
+        timings->pl_h2d_c++;
+        timings->pl_h2d_t += timers->atdat.getLastRangeTime();
+    }
     if (timers->didPairlistH2D[iLocality])
     {
-        /* atdat transfer timing (add only once, at local F wait) */
-        if (LOCAL_A(atomLocality))
-        {
-            timings->pl_h2d_c++;
-            timings->pl_h2d_t += timers->atdat.getLastRangeTime();
-        }
+
 
         timings->pl_h2d_t += timers->pl_h2d[iLocality].getLastRangeTime();
 
@@ -335,9 +337,10 @@ bool nbnxn_gpu_try_finish_task(gmx_nbnxn_gpu_t  *nb,
 
         bool calcEner   = (flags & GMX_FORCE_ENERGY) != 0;
         bool calcFshift = (flags & GMX_FORCE_VIRIAL) != 0;
+        bool doSearch   = (flags & GMX_FORCE_NS) != 0;
 
         nbnxn_gpu_accumulate_timings(nb->timings, nb->timers, nb->plist[iLocality], aloc, calcEner,
-                                     nb->bDoTime != 0);
+                                     doSearch, nb->bDoTime != 0);
 
         nbnxn_gpu_reduce_staged_outputs(nb->nbst, iLocality, calcEner, calcFshift, e_lj, e_el, fshift);
     }
