@@ -52,8 +52,7 @@ namespace gmx
 //! \cond libapi
 SimulationContext::SimulationContext(MPI_Comm                          communicator,
                                      const ArrayRef<const std::string> multiSimDirectoryNames) :
-    communicator_(communicator),
-    multiSimulation_()
+    communicator_(communicator)
 {
     GMX_RELEASE_ASSERT((GMX_LIB_MPI && (communicator != MPI_COMM_NULL)) ||
                        (!GMX_LIB_MPI && (communicator == MPI_COMM_NULL)),

@@ -1317,7 +1317,7 @@ static bool checkDeviceBuffer(gmx_unused DeviceBuffer<T> buffer, gmx_unused int 
     return buffer != nullptr;
 #elif GMX_GPU == GMX_GPU_OPENCL
     size_t size;
-    int    retval = clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size), &size, NULL);
+    int    retval = clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size), &size, nullptr);
     GMX_ASSERT(retval == CL_SUCCESS, gmx::formatString("clGetMemObjectInfo failed with error code #%d", retval).c_str());
     GMX_ASSERT(static_cast<int>(size) >= requiredSize, "Number of atoms in device buffer is smaller then required size.");
     return retval == CL_SUCCESS && static_cast<int>(size) >= requiredSize;

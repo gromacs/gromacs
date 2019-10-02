@@ -250,10 +250,10 @@ class StatePropagatorDataGpu::Impl
          * \param[in]      dataSize      Device-side data allocation size.
          * \param[in]      atomLocality  If all, local or non-local ranges should be copied.
          */
-        void copyToDevice(DeviceBuffer<float>                   d_data,
-                          const gmx::ArrayRef<const gmx::RVec>  h_data,
-                          int                                   dataSize,
-                          AtomLocality                          atomLocality);
+        void copyToDevice(DeviceBuffer<float>            d_data,
+                          gmx::ArrayRef<const gmx::RVec> h_data,
+                          int                            dataSize,
+                          AtomLocality                   atomLocality);
 
         /*! \brief Performs the copy of data from device to host buffer.
          *
