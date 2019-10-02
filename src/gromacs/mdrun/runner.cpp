@@ -1264,9 +1264,8 @@ int Mdrunner::mdrunner()
         if (havePPDomainDecomposition(cr) && prefer1DAnd1PulseDD && is1DAnd1PulseDD(*cr->dd))
         {
             GMX_RELEASE_ASSERT(c_enableGpuBufOps, "Must use GMX_GPU_BUFFER_OPS=1 to use GMX_GPU_DD_COMMS=1");
-            void *streamLocal                   = Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::NonLocal);
-            void *streamNonLocal                =
-                Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::NonLocal);
+            void *streamLocal              = Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::Local);
+            void *streamNonLocal           = Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::NonLocal);
             void *coordinatesOnDeviceEvent = fr->nbv->get_x_on_device_event();
             GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                     "NOTE: This run uses the 'GPU halo exchange' feature, enabled by the GMX_GPU_DD_COMMS environment variable.");
