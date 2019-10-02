@@ -679,16 +679,19 @@ static bool do_em_step(const t_commrec *cr,
 
         if (DOMAINDECOMP(cr))
         {
-            s2->ddp_count = s1->ddp_count;
-
             /* OpenMP does not supported unsigned loop variables */
 #pragma omp for schedule(static) nowait
             for (int i = 0; i < static_cast<int>(s2->cg_gl.size()); i++)
             {
                 s2->cg_gl[i] = s1->cg_gl[i];
             }
-            s2->ddp_count_cg_gl = s1->ddp_count_cg_gl;
         }
+    }
+
+    if (DOMAINDECOMP(cr))
+    {
+        s2->ddp_count       = s1->ddp_count;
+        s2->ddp_count_cg_gl = s1->ddp_count_cg_gl;
     }
 
     if (constr)
