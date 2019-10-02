@@ -302,7 +302,7 @@ gpu_reduce_staged_outputs(const StagingData         &nbst,
  * \param[in]  timers            Pointer to GPU timers data
  * \param[in]  plist             Pointer to the pair list data
  * \param[in]  atomLocality      Atom locality specifier
- * \param[in]  didEnergyKernels  True if energy kernels have been called in the current step
+ * \param[in]  stepWork          Force schedule flags
  * \param[in]  doTiming          True if timing is enabled.
  *
  */
@@ -312,7 +312,7 @@ gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t *timings,
                        GpuTimers                 *timers,
                        const GpuPairlist         *plist,
                        AtomLocality               atomLocality,
-                       bool                       didEnergyKernels,
+                       const gmx::StepWorkload   &stepWork,
                        bool                       doTiming)
 {
     /* timing data accumulation */
@@ -322,7 +322,8 @@ gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t *timings,
     }
 
     /* determine interaction locality from atom locality */
-    const InteractionLocality iLocality = gpuAtomToInteractionLocality(atomLocality);
+    const InteractionLocality iLocality        = gpuAtomToInteractionLocality(atomLocality);
+    const bool                didEnergyKernels = stepWork.computeEnergy;
 
     /* only increase counter once (at local F wait) */
     if (iLocality == InteractionLocality::Local)
@@ -347,16 +348,17 @@ gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t *timings,
        for the force D2H). */
     countPruneKernelTime(timers, timings, iLocality);
 
-    /* only count atdat and pair-list H2D at pair-search step */
+    /* only count atdat at pair-search steps (add only once, at local F wait) */
+    if (stepWork.doNeighborSearch && atomLocality == AtomLocality::Local)
+    {
+        /* atdat transfer timing */
+        timings->pl_h2d_c++;
+        timings->pl_h2d_t += timers->atdat.getLastRangeTime();
+    }
+
+    /* only count pair-list H2D when actually performed */
     if (timers->interaction[iLocality].didPairlistH2D)
     {
-        /* atdat transfer timing (add only once, at local F wait) */
-        if (atomLocality == AtomLocality::Local)
-        {
-            timings->pl_h2d_c++;
-            timings->pl_h2d_t += timers->atdat.getLastRangeTime();
-        }
-
         timings->pl_h2d_t += timers->interaction[iLocality].pl_h2d.getLastRangeTime();
 
         /* Clear the timing flag for the next step */
@@ -410,7 +412,7 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t          *nb,
             gpuStreamSynchronize(nb->stream[iLocality]);
         }
 
-        gpu_accumulate_timings(nb->timings, nb->timers, nb->plist[iLocality], aloc, stepWork.computeEnergy,
+        gpu_accumulate_timings(nb->timings, nb->timers, nb->plist[iLocality], aloc, stepWork,
                                nb->bDoTime != 0);
 
         gpu_reduce_staged_outputs(nb->nbst, iLocality, stepWork.computeEnergy, stepWork.computeVirial,
