@@ -1241,7 +1241,7 @@ void print_top_header(FILE                    *fp,
             fprintf(fp, "[ distributed_charges ]\n");
             for (auto atype = pd->getAtypeBegin(); atype != pd->getAtypeEnd(); atype++)
             {
-                auto eem = pd->findEemConst(atype->getType());
+                auto eem = pd->atype2Eem(atype->getType());
                 if (eem == pd->EndEemprops())
                 {
                     continue;

@@ -162,7 +162,7 @@ void OptZeta::polData2TuneZeta()
     {
         if (!ai->isConst())
         {
-            auto ei    = pd->findEem(ai->name());
+            auto ei    = pd->ztype2Eem(ai->name());
             GMX_RELEASE_ASSERT(ei != pd->EndEemprops(), "Cannot find eemprops");
             auto nzeta = ei->getNzeta();
             auto zeta  = ei->getZeta(nzeta-1); // only optimize zeta for the shell of the polarizable model
@@ -214,7 +214,7 @@ void OptZeta::toPolData(const std::vector<bool> gmx_unused &changed)
     {
         if (!ai->isConst())
         {
-            auto        ei = pd->findEem(ai->name());
+            auto        ei = pd->ztype2Eem(ai->name());
             GMX_RELEASE_ASSERT(ei != pd->EndEemprops(), "Cannot find eemprops");
             std::string qstr   = ei->getQstr();
             std::string rowstr = ei->getRowstr();

@@ -730,8 +730,7 @@ void readPoldata(const std::string &fileName,
     xmlFreeDoc(doc);
 
     // Generate maps
-    pd.mapAtypeToEempropsConstIterator();
-    pd.mapAtypeToEempropsIterator();
+    pd.makeMappings();
     pd.checkConsistency(debug);
     if (nullptr != debug)
     {

@@ -288,11 +288,11 @@ static void gen_alexandria_tables(Poldata                 &pd,
     filter_atypes(&FFatypes, atypes);        
     for (auto atpi = FFatypes.begin(); atpi != FFatypes.end(); atpi++)
     {
-        auto eei    = pd.findEem(atpi->getZtype());
+        auto eei    = pd.ztype2Eem(atpi->getZtype());
         auto nzetaI = pd.getNzeta(eei->getName());
         for (auto atpj = atpi; atpj != FFatypes.end(); atpj++)
         {
-            auto eej    = pd.findEem(atpj->getZtype());
+            auto eej    = pd.ztype2Eem(atpj->getZtype());
             auto nzetaJ =  pd.getNzeta(eej->getName());
             for (auto i = 0; i < nzetaI; i++)
             {

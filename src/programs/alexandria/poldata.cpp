@@ -677,7 +677,7 @@ int Poldata::havePolSupport(const std::string &atype) const
 bool Poldata::haveEemSupport(const std::string &atype,
                              gmx_bool           bAllowZeroParameters) const
 {
-    auto eep = findEemConst(atype);
+    auto eep = atype2Eem(atype);
     return (eep != EndEemprops() &&
             (bAllowZeroParameters || ((eep->getJ0() > 0) && (eep->getChi0() > 0))));
 }
@@ -685,7 +685,7 @@ bool Poldata::haveEemSupport(const std::string &atype,
 double Poldata::getJ00(const std::string &atype) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEemConst(atype)) != EndEemprops())
+    if ((eer = atype2Eem(atype)) != EndEemprops())
     {
         return eer->getJ0();
     }
@@ -695,7 +695,7 @@ double Poldata::getJ00(const std::string &atype) const
 const char *Poldata::getQstr(const std::string       &atype) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEemConst(atype)) != EndEemprops())
+    if ((eer = atype2Eem(atype)) != EndEemprops())
     {
         return eer->getQstr();
     }
@@ -705,7 +705,7 @@ const char *Poldata::getQstr(const std::string       &atype) const
 const char *Poldata::getRowstr(const std::string &name) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEemConst(name)) != EndEemprops())
+    if ((eer = atype2Eem(name)) != EndEemprops())
     {
         return eer->getRowstr();
     }
@@ -716,7 +716,7 @@ int Poldata::getRow(const std::string       &name,
                     int                      zz) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEemConst(name)) != EndEemprops())
+    if ((eer = atype2Eem(name)) != EndEemprops())
     {
         range_check(zz, 0, eer->getNzeta());
         return eer->getRow(zz);
@@ -728,7 +728,7 @@ double Poldata::getZeta(const std::string       &name,
                         int                      zz) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEemConst(name)) != EndEemprops())
+    if ((eer = atype2Eem(name)) != EndEemprops())
     {
         if ((zz < 0) || (zz >= eer->getNzeta()))
         {
@@ -743,7 +743,7 @@ double Poldata::getZeta(const std::string       &name,
 int Poldata::getNzeta(const std::string &atype) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEemConst(atype)) != EndEemprops())
+    if ((eer = atype2Eem(atype)) != EndEemprops())
     {
         return eer->getNzeta();
     }
@@ -754,7 +754,7 @@ double Poldata::getQ(const std::string       &atype,
                      int                      zz) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEemConst(atype)) != EndEemprops())
+    if ((eer = atype2Eem(atype)) != EndEemprops())
     {
         range_check(zz, 0, eer->getNzeta());
         return eer->getQ(zz);
@@ -765,7 +765,7 @@ double Poldata::getQ(const std::string       &atype,
 double Poldata::getChi0(const  std::string &atype) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEemConst(atype)) != EndEemprops())
+    if ((eer = atype2Eem(atype)) != EndEemprops())
     {
         return eer->getChi0();
     }
@@ -1119,62 +1119,36 @@ void Poldata::broadcast(const t_commrec *cr)
             }
         }
         gmx_recv_data(cr, src);
+        makeMappings();
     }
 }
 
-EempropsConstIterator Poldata::ztype2Eem(const std::string &ztype) const
-{
-    return std::find_if(eep_.begin(), eep_.end(),
-                        [ztype](Eemprops const &eep)
-                        {
-                            return (strcasecmp(eep.getName(), ztype.c_str()));
-                        });
-}
-
-EempropsIterator Poldata::ztype2Eem(const std::string &ztype)
-{
-    return std::find_if(eep_.begin(), eep_.end(),
-                        [ztype](Eemprops const &eep)
-                        {
-                            return (strcasecmp(eep.getName(), ztype.c_str()) == 0);
-                        });
-}
-
-void Poldata::mapAtypeToEempropsConstIterator()
+void Poldata::makeMappings()
 {
     for (auto fa = getAtypeBegin(); fa < getAtypeEnd(); ++fa)
     {
-        std::string nn    = fa->getZtype();
-        std::string atype = fa->getType();
+        auto ztype = fa->getZtype();
+        auto atype = fa->getType();
+        auto eepC  = std::find_if(BeginEemprops(), EndEemprops(),
+                                  [ztype](Eemprops const &eepC)
+                                  { return (eepC.getName() == ztype); });
+        if (eepC == EndEemprops())
+        {
+            gmx_fatal(FARGS, "Can not find atype %s in eemprops",
+                      atype.c_str());
+        }
+        mapAtypeToEempropsConstIterator_.insert(std::pair<std::string, EempropsConstIterator>(atype, eepC));
+        mapZtypeToEempropsConstIterator_.insert(std::pair<std::string, EempropsConstIterator>(ztype, eepC));
         auto eep = std::find_if(BeginEemprops(), EndEemprops(),
-                                [nn](Eemprops const &eep)
-                                {
-                                    return (eep.getName() == nn);
-                                });
+                                [ztype](Eemprops &eep)
+                                { return (eep.getName() == ztype); });
         if (eep == EndEemprops())
         {
-            gmx_fatal(FARGS, "Can not find atype %s in eemprops", atype.c_str());
+            gmx_fatal(FARGS, "Can not find atype %s in eemprops",
+                      atype.c_str());
         }
-        mapAtypeToEempropsConstIterator_.insert(std::pair<std::string, EempropsConstIterator>(std::move(atype), eep));
-    }
-}
-
-void Poldata::mapAtypeToEempropsIterator()
-{
-    for (auto fa = getAtypeBegin(); fa < getAtypeEnd(); ++fa)
-    {
-        std::string nn    = fa->getZtype();
-        std::string atype = fa->getType();
-        auto eep = std::find_if(BeginEemprops(), EndEemprops(),
-                                [nn](Eemprops &eep)
-                                {
-                                    return (eep.getName() == nn);
-                                });
-        if (eep == EndEemprops())
-        {
-            gmx_fatal(FARGS, "Can not find atype %s in eemprops", atype.c_str());
-        }
-        mapAtypeToEempropsIterator_.insert(std::pair<std::string, EempropsIterator>(std::move(atype), eep));
+        mapAtypeToEempropsIterator_.insert(std::pair<std::string, EempropsIterator>(atype, eep));
+        mapZtypeToEempropsIterator_.insert(std::pair<std::string, EempropsIterator>(ztype, eep));
     }
 }
 
@@ -1185,7 +1159,7 @@ void Poldata::checkConsistency(FILE *fp) const
     {
         std::string atype = atp->getType();
         // Check whether zeta types are present
-        auto eem = findEemConst(atype);
+        auto eem = atype2Eem(atype);
         if (eem == EndEemprops())
         {
             fprintf(stderr, "ERROR: No eemprops for %s\n", atype.c_str());

@@ -1399,7 +1399,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
 
             auto q     = Qgacm_.q();
             auto natom = Qgacm_.natom();
-
+            GMX_RELEASE_ASSERT(q.size() == natom+1, "Internal mismatch in qgen_acm");
             qq.resize(natom + 1);
             for (auto i = 0; i < natom + 1; i++)
             {

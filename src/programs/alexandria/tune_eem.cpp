@@ -493,8 +493,8 @@ void OptACM::polData2TuneACM(real factor)
     {
         if (!ai->isConst())
         {
-            auto ei   = poldata()->findEem(ai->name());
-            GMX_RELEASE_ASSERT(ei != poldata()->EndEemprops(), "Cannot find eemprops");
+            auto ei   = poldata()->ztype2Eem(ai->name());
+            GMX_RELEASE_ASSERT(ei != poldata()->EndEemprops(), gmx::formatString("Cannot find eemprops for %s", ai->name().c_str()).c_str());
             ai->setEemProps(ei);
             if (bFitChi_)
             {
@@ -649,7 +649,7 @@ double OptACM::calcPenalty(AtomIndexIterator ai)
 
     if (strlen(fixchi()) != 0)
     {
-        const auto ref_eem  = pd->findEem(fixchi());
+        const auto ref_eem  = pd->atype2Eem(fixchi());
         if (ai_chi < ref_eem->getChi0())
         {
             penalty += penalty_;
