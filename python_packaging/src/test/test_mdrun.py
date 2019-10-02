@@ -114,6 +114,7 @@ def test_run_trivial_ensemble(spc_water_box, caplog):
             # important use case outside of testing.
             assert output_directory[0] != output_directory[1]
             assert os.path.exists(output_directory[current_rank])
+            assert os.path.exists(md.output.trajectory.result()[current_rank])
 
 
 @pytest.mark.usefixtures('cleandir')
@@ -122,6 +123,8 @@ def test_run_from_read_tpr_op(spc_water_box):
     md = gmx.mdrun(input=simulation_input)
 
     md.run()
+    assert os.path.exists(md.output.trajectory.result())
+
 
 @pytest.mark.usefixtures('cleandir')
 def test_run_from_modify_input_op(spc_water_box, caplog):

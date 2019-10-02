@@ -71,6 +71,7 @@ logger.info('Importing {}'.format(__name__))
 #  attributes of the data proxies.
 _output_descriptors = (
     _op.OutputDataDescriptor('_work_dir', str),
+    _op.OutputDataDescriptor('trajectory', str)
 )
 _publishing_descriptors = {desc._name: gmxapi.operation.Publisher(desc._name, desc._dtype) for desc in
                            _output_descriptors}
@@ -308,6 +309,13 @@ class SubscriptionPublishingRunner(object):
         """Operation implementation in the gmxapi.operation module context."""
         publisher = self.resources.output
         publisher._work_dir = self.resources.workdir
+        # TODO: Make the return value a trajectory handle rather than a file path.
+        # TODO: Decide how to handle append vs. noappend output.
+        # TODO: More rigorous handling of the trajectory file(s)
+        # We have no way to query the name of the trajectory produced, and we
+        # have avoided exposing the ability to specify it, so we have to assume
+        # GROMACS default behavior.
+        publisher.trajectory = os.path.join(self.resources.workdir, 'traj.trr')
 
 
 _next_uid = 0
