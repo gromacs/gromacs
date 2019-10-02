@@ -16,8 +16,8 @@ examples at the end.  The remaining sections provide the details for
 understanding why the examples are the way they are, and for more complex
 situations.  They are meant more as a reference to look up solutions for
 particular problems, rather than single-time reading.  To understand or find
-individual Doxygen commands, you should first look at Doxygen documentation
-(http://www.stack.nl/~dimitri/doxygen/manual/index.html).
+individual Doxygen commands, you should first look at the Doxygen documentation
+(http://www.doxygen.nl/manual/).
 
 
 Documentation flavors
