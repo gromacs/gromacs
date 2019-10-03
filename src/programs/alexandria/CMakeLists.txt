@@ -42,6 +42,7 @@ set(ALEXANDRIA_SOURCES
            poldata_tables.cpp
            poldata_low.cpp
            xml_util.cpp
+           readpsi4.cpp
            latex_util.cpp
            mymol_low.cpp
            mymol.cpp

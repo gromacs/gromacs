@@ -48,7 +48,6 @@
 #include "stringutil.h"
 #include "xml_util.h"
 
-
 static const char *job_name[alexandria::JOB_NR] =
 {
     "Opt",
@@ -69,7 +68,7 @@ const char *alexandria::jobType2string(alexandria::jobType jType)
 {
     if (jType < alexandria::JOB_NR)
     {
-        return job_name[jType];
+        return job_name[static_cast<int>(jType)];
     }
     return nullptr;
 }

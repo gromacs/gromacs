@@ -57,16 +57,20 @@
 #include "molprop_xml.h"
 #include "poldata.h"
 #include "poldata_xml.h"
+#include "readpsi4.h"
 
 int alex_gauss2molprop(int argc, char *argv[])
 {
-    static const char               *desc[] = {
-        "gauss2molprop reads a series of Gaussian output files, and collects",
-        "useful information, and saves it to molprop file."
+    static const char               *desc[] = 
+        {
+         "qm2molprop reads a series of output files from either",
+         "Gaussian ([TT]-g03[tt] option) or Psi4 ([TT]-psi4[tt] option),",
+         "collects useful information and saves it to molprop file."
     };
 
     t_filenm                         fnm[] = {
-        { efLOG, "-g03",  "gauss",   ffRDMULT },
+        { efLOG, "-g03",  "gauss",   ffOPTRDMULT },
+        { efOUT, "-psi4", "psi4",    ffOPTRDMULT },
         { efDAT, "-d",    "gentop",  ffREAD },
         { efDAT, "-o",    "molprop", ffWRITE }
     };
@@ -124,25 +128,47 @@ int alex_gauss2molprop(int argc, char *argv[])
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    gmx::ArrayRef<const std::string> fns = ftp2fns(efLOG, NFILE, fnm);    
-    for (auto &i : fns)
+    // Read Gaussian files
+    if (opt2bSet("-g03", NFILE, fnm))
     {
-        alexandria::MolProp mmm;
-        readBabel(i.c_str(), 
-                  mmm, 
-                  molnm, 
-                  iupac, 
-                  conf, 
-                  basis,
-                  maxpot, 
-                  nsymm, 
-                  jobtype,
-                  0.0);
-        mp.push_back(std::move(mmm));
+        gmx::ArrayRef<const std::string> gfns = ftp2fns(efLOG, NFILE, fnm);    
+        for (auto &i : gfns)
+        {
+            alexandria::MolProp mmm;
+            readBabel(i.c_str(), 
+                      mmm, 
+                      molnm, 
+                      iupac, 
+                      conf, 
+                      basis,
+                      maxpot, 
+                      nsymm, 
+                      jobtype,
+                      0.0);
+            mp.push_back(std::move(mmm));
+        }
+        
+        printf("Succesfully read %d molprops from %d Gaussian files.\n", 
+               static_cast<int>(mp.size()), static_cast<int>(gfns.size()));
     }
-
-    printf("Succesfully read %d molprops from %d Gaussian files.\n", 
-           static_cast<int>(mp.size()), static_cast<int>(fns.size()));
+    auto mpsize = mp.size();
+    
+    // Read Psi4 files
+    if (opt2bSet("-psi4", NFILE, fnm))
+    {
+        gmx::ArrayRef<const std::string> pfns = ftp2fns(efOUT, NFILE, fnm);    
+        for (auto &i : pfns)
+        {
+            alexandria::MolProp mmm;
+            if (alexandria::readPsi4(i, &mmm))
+            {
+                mp.push_back(std::move(mmm));
+            }
+        }
+        
+        printf("Succesfully read %d molprops from %d Psi4 files.\n", 
+               static_cast<int>(mp.size()-mpsize), static_cast<int>(pfns.size()));
+    }
     alexandria::MolSelect gms;
     MolPropSort(mp, MPSA_MOLNAME, nullptr, gms);
     merge_doubles(mp, nullptr, TRUE);
