@@ -16,6 +16,23 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix use of uninitialized data on PME only ranks
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When building GPU enabled versions of |Gromacs| with clang as either host only or host
+and device side compiler, PME datastructures could be left uninitialized, leading
+to the use of random values for LJ PME energies, virial and pressure.
+
+The effect of this bug was that the potential and total energy could
+be wrong, but not the Coulomb mesh energy. This didn't affect sampling.
+The pressure could also be wrong, which would affect sampling when pressure
+coupling is used, but likely the simulation would explode after a few steps.
+
+This doesn't seem to have affected versions of |Gromacs| built
+with gcc as the host side compiler.
+
+:issue:`3120`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

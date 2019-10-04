@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,11 +111,12 @@ struct PmeGpuSettings
 // possible. Use mdspan?
 struct PmeOutput
 {
-    gmx::ArrayRef<gmx::RVec> forces_;
-    real                     coulombEnergy_;
-    matrix                   coulombVirial_;
-    real                     lennardJonesEnergy_;
-    matrix                   lennardJonesVirial_;
+    gmx::ArrayRef<gmx::RVec> forces_;                     //!< Host staging area for PME forces
+    real                     coulombEnergy_      = 0;     //!< Host staging area for PME coulomb energy
+    matrix                   coulombVirial_      = {{0}}; //!< Host staging area for PME coulomb virial contributions
+    real                     lennardJonesEnergy_ = 0;     //!< Host staging area for PME LJ energy
+    matrix                   lennardJonesVirial_ = {{0}}; //!< Host staging area for PME LJ virial contributions
+
 };
 
 /*! \internal \brief
