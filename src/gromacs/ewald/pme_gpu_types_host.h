@@ -119,12 +119,12 @@ struct PmeGpuSettings
 // possible. Use mdspan?
 struct PmeOutput
 {
-    gmx::ArrayRef<gmx::RVec> forces_;               //!< Host staging area for PME forces
-    bool                     haveForceOutput_;      //!< True if forces have been staged other false (when forces are reduced on the GPU).
-    real                     coulombEnergy_;        //!< Host staging area for PME coulomb energy
-    matrix                   coulombVirial_;        //!< Host staging area for PME coulomb virial contributions
-    real                     lennardJonesEnergy_;   //!< Host staging area for PME LJ energy
-    matrix                   lennardJonesVirial_;   //!< Host staging area for PME LJ virial contributions
+    gmx::ArrayRef<gmx::RVec> forces_;                     //!< Host staging area for PME forces
+    bool                     haveForceOutput_    = false; //!< True if forces have been staged other false (when forces are reduced on the GPU).
+    real                     coulombEnergy_      = 0;     //!< Host staging area for PME coulomb energy
+    matrix                   coulombVirial_      = {{0}}; //!< Host staging area for PME coulomb virial contributions
+    real                     lennardJonesEnergy_ = 0;     //!< Host staging area for PME LJ energy
+    matrix                   lennardJonesVirial_ = {{0}}; //!< Host staging area for PME LJ virial contributions
 
 };
 
