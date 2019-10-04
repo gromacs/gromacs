@@ -197,6 +197,14 @@ class StatePropagatorDataGpu::Impl
         void copyVelocitiesToGpu(gmx::ArrayRef<const gmx::RVec>  h_v,
                                  AtomLocality                    atomLocality);
 
+        /*! \brief Get the event synchronizer on the H2D velocities copy.
+         *
+         *  \param[in] atomLocality  Locality of the particles to wait for.
+         *
+         *  \returns  The event to synchronize the stream that consumes velocities on device.
+         */
+        GpuEventSynchronizer* getVelocitiesReadyOnDeviceEvent(AtomLocality  atomLocality);
+
         /*! \brief Copy velocities from the GPU memory.
          *
          *  \param[in] h_v           Velocities buffer in the host memory.
@@ -204,6 +212,12 @@ class StatePropagatorDataGpu::Impl
          */
         void copyVelocitiesFromGpu(gmx::ArrayRef<gmx::RVec>  h_v,
                                    AtomLocality              atomLocality);
+
+        /*! \brief Wait until velocities are available on the host.
+         *
+         *  \param[in] atomLocality  Locality of the particles to wait for.
+         */
+        void waitVelocitiesReadyOnHost(AtomLocality  atomLocality);
 
 
         /*! \brief Get the force buffer on the GPU.
@@ -220,6 +234,14 @@ class StatePropagatorDataGpu::Impl
         void copyForcesToGpu(gmx::ArrayRef<const gmx::RVec>  h_f,
                              AtomLocality                    atomLocality);
 
+        /*! \brief Get the event synchronizer on the H2D forces copy.
+         *
+         *  \param[in] atomLocality  Locality of the particles to wait for.
+         *
+         *  \returns  The event to synchronize the stream that consumes forces on device.
+         */
+        GpuEventSynchronizer* getForcesReadyOnDeviceEvent(AtomLocality  atomLocality);
+
         /*! \brief Copy forces from the GPU memory.
          *
          *  \param[in] h_f           Forces buffer in the host memory.
@@ -227,6 +249,12 @@ class StatePropagatorDataGpu::Impl
          */
         void copyForcesFromGpu(gmx::ArrayRef<gmx::RVec>  h_f,
                                AtomLocality              atomLocality);
+
+        /*! \brief Wait until forces are available on the host.
+         *
+         *  \param[in] atomLocality  Locality of the particles to wait for.
+         */
+        void waitForcesReadyOnHost(AtomLocality  atomLocality);
 
         /*! \brief Getter for the update stream.
          *
@@ -259,13 +287,27 @@ class StatePropagatorDataGpu::Impl
         //! GPU Update-constreaints stream.
         CommandStream        updateStream_               = nullptr;
 
-        // Streams to use for coordinates H2S and D2H copies (one event for each atom locality)
+        // Streams to use for coordinates H2D and D2H copies (one event for each atom locality)
         EnumerationArray<AtomLocality, CommandStream> xCopyStreams_ = {{nullptr}};
+        // Streams to use for velocities H2D and D2H copies (one event for each atom locality)
+        EnumerationArray<AtomLocality, CommandStream> vCopyStreams_ = {{nullptr}};
+        // Streams to use for forces H2D and D2H copies (one event for each atom locality)
+        EnumerationArray<AtomLocality, CommandStream> fCopyStreams_ = {{nullptr}};
 
         //! An array of events that indicate H2D copy is complete (one event for each atom locality)
         EnumerationArray<AtomLocality, GpuEventSynchronizer> xReadyOnDevice_;
-        //! An array of events that indicate D2H copy is complete (one event for each atom locality)
+        //! An array of events that indicate D2H copy of coordinates is complete (one event for each atom locality)
         EnumerationArray<AtomLocality, GpuEventSynchronizer> xReadyOnHost_;
+
+        //! An array of events that indicate H2D copy of velocities is complete (one event for each atom locality)
+        EnumerationArray<AtomLocality, GpuEventSynchronizer> vReadyOnDevice_;
+        //! An array of events that indicate D2H copy of velocities is complete (one event for each atom locality)
+        EnumerationArray<AtomLocality, GpuEventSynchronizer> vReadyOnHost_;
+
+        //! An array of events that indicate H2D copy of forces is complete (one event for each atom locality)
+        EnumerationArray<AtomLocality, GpuEventSynchronizer> fReadyOnDevice_;
+        //! An array of events that indicate D2H copy of forces is complete (one event for each atom locality)
+        EnumerationArray<AtomLocality, GpuEventSynchronizer> fReadyOnHost_;
 
         /*! \brief GPU context (for OpenCL builds)
          * \todo Make a Context class usable in CPU code

@@ -124,8 +124,19 @@ void StatePropagatorDataGpu::copyVelocitiesToGpu(const gmx::ArrayRef<const gmx::
     GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
 }
 
+GpuEventSynchronizer* StatePropagatorDataGpu::getVelocitiesReadyOnDeviceEvent(AtomLocality  /* atomLocality */)
+{
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
+    return nullptr;
+}
+
 void StatePropagatorDataGpu::copyVelocitiesFromGpu(gmx::ArrayRef<gmx::RVec>  /* h_v          */,
                                                    AtomLocality              /* atomLocality */)
+{
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
+}
+
+void StatePropagatorDataGpu::waitVelocitiesReadyOnHost(AtomLocality  /* atomLocality */)
 {
     GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
 }
@@ -143,11 +154,23 @@ void StatePropagatorDataGpu::copyForcesToGpu(const gmx::ArrayRef<const gmx::RVec
     GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
 }
 
+GpuEventSynchronizer* StatePropagatorDataGpu::getForcesReadyOnDeviceEvent(AtomLocality  /* atomLocality */)
+{
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called insted of one from GPU implementation.");
+    return nullptr;
+}
+
 void StatePropagatorDataGpu::copyForcesFromGpu(gmx::ArrayRef<gmx::RVec>  /* h_f          */,
                                                AtomLocality              /* atomLocality */)
 {
     GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
 }
+
+void StatePropagatorDataGpu::waitForcesReadyOnHost(AtomLocality  /* atomLocality */)
+{
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
+}
+
 
 void* StatePropagatorDataGpu::getUpdateStream()
 {

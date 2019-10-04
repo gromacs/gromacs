@@ -173,7 +173,7 @@ class StatePropagatorDataGpu
         void copyCoordinatesToGpu(gmx::ArrayRef<const gmx::RVec>  h_x,
                                   AtomLocality                    atomLocality);
 
-        /*! \brief Get the event synchronizer on the H2D coordinates copy.
+        /*! \brief Get the event synchronizer for the H2D coordinates copy.
          *
          *  \param[in] atomLocality  Locality of the particles to wait for.
          *
@@ -210,6 +210,14 @@ class StatePropagatorDataGpu
         void copyVelocitiesToGpu(gmx::ArrayRef<const gmx::RVec>  h_v,
                                  AtomLocality                    atomLocality);
 
+        /*! \brief Get the event synchronizer for the H2D velocities copy.
+         *
+         *  \param[in] atomLocality  Locality of the particles to wait for.
+         *
+         *  \returns  The event to synchronize the stream that consumes velocities on device.
+         */
+        GpuEventSynchronizer* getVelocitiesReadyOnDeviceEvent(AtomLocality  atomLocality);
+
         /*! \brief Copy velocities from the GPU memory.
          *
          *  \param[in] h_v           Velocities buffer in the host memory.
@@ -217,6 +225,12 @@ class StatePropagatorDataGpu
          */
         void copyVelocitiesFromGpu(gmx::ArrayRef<gmx::RVec>  h_v,
                                    AtomLocality              atomLocality);
+
+        /*! \brief Wait until velocities are available on the host.
+         *
+         *  \param[in] atomLocality  Locality of the particles to wait for.
+         */
+        void waitVelocitiesReadyOnHost(AtomLocality  atomLocality);
 
 
         /*! \brief Get the force buffer on the GPU.
@@ -233,6 +247,14 @@ class StatePropagatorDataGpu
         void copyForcesToGpu(gmx::ArrayRef<const gmx::RVec>  h_f,
                              AtomLocality                    atomLocality);
 
+        /*! \brief Get the event synchronizer for the H2D forces copy.
+         *
+         *  \param[in] atomLocality  Locality of the particles to wait for.
+         *
+         *  \returns  The event to synchronize the stream that consumes forces on device.
+         */
+        GpuEventSynchronizer* getForcesReadyOnDeviceEvent(AtomLocality  atomLocality);
+
         /*! \brief Copy forces from the GPU memory.
          *
          *  \param[in] h_f           Forces buffer in the host memory.
@@ -240,6 +262,12 @@ class StatePropagatorDataGpu
          */
         void copyForcesFromGpu(gmx::ArrayRef<gmx::RVec>  h_f,
                                AtomLocality              atomLocality);
+
+        /*! \brief Wait until forces are available on the host.
+         *
+         *  \param[in] atomLocality  Locality of the particles to wait for.
+         */
+        void waitForcesReadyOnHost(AtomLocality  atomLocality);
 
         /*! \brief Getter for the update stream.
          *
