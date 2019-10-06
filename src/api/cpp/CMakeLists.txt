@@ -91,7 +91,7 @@ install(DIRECTORY include/gmxapi
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/gmxapi/version.h
         DESTINATION include/gmxapi)
 
-# Ref. https://cmake.org/Wiki/CMake_RPATH_handling
+# Ref. https://gitlab.kitware.com/cmake/community/wikis/doc/cmake/RPATH-handling
 # use, i.e. don't skip the full RPATH for the build tree
 set_target_properties(gmxapi PROPERTIES SKIP_BUILD_RPATH FALSE)
 
@@ -100,7 +100,8 @@ set_target_properties(gmxapi PROPERTIES SKIP_BUILD_RPATH FALSE)
 set_target_properties(gmxapi PROPERTIES BUILD_WITH_INSTALL_RPATH FALSE)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    set_target_properties(gmxapi PROPERTIES INSTALL_NAME_DIR "\@rpath")
+    # Instruct a linking client to use its RPATH to resolve the libgmxapi location.
+    set_target_properties(gmxapi PROPERTIES INSTALL_NAME_DIR "@rpath")
 endif()
 
 set_target_properties(gmxapi PROPERTIES
