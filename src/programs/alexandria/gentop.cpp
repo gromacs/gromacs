@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2019
  *
