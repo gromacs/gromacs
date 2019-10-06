@@ -269,7 +269,6 @@ void OptZeta::InitOpt(real  factor)
 double OptZeta::calcDeviation()
 {
     int    j, n   = 0;
-    double qtot   = 0;
     real   rrms   = 0;
     real   wtot   = 0;
     double bounds = 0;
@@ -316,40 +315,51 @@ double OptZeta::calcDeviation()
                 mymol.computeForces(nullptr, commrec());
                 mymol.Qgresp_.updateAtomCoords(mymol.x());
             }
-            if (bCharge_)
+            if (weight(ermsCHARGE))
             {
-                qtot = 0;
-                for (j = 0; j < mymol.atoms_->nr; j++)
+                int    nChargeResidual = 0; // number of charge residuals added per molecule
+                double ChargeResidual  = 0;
+                bool   isPolarizable   = (nullptr != mymol.shellfc_);
+                double qtot = 0;
+                int    i;
+                for (j = i = 0; j < mymol.atoms_->nr; j++)
                 {
                     auto atomnr = mymol.atoms_->atom[j].atomnumber;
-                    auto qq     = mymol.Qgresp_.getAtomCharge(j);
+                    auto qq     = mymol.atoms_->atom[j].q;
                     qtot       += qq;
-                    mymol.mtop_->moltype[0].atoms.atom[j].q              =
-                        mymol.mtop_->moltype[0].atoms.atom[j].qB         =
-                            mymol.atoms_->atom[j].q             =
-                                mymol.atoms_->atom[j].qB        = qq;
                     if (mymol.atoms_->atom[j].ptype == eptAtom ||
                         mymol.atoms_->atom[j].ptype == eptNucleus)
                     {
-                        auto q_H        = 0 ? (nullptr != mymol.shellfc_) : 1;
-                        auto q_OFSClBrI = 0 ? (nullptr != mymol.shellfc_) : 2;
-                        if (((qq < q_H) && (atomnr == 1)) ||
-                            ((qq > q_OFSClBrI) && ((atomnr == 8)  || (atomnr == 9) ||
-                                                   (atomnr == 16) || (atomnr == 17) ||
-                                                   (atomnr == 35) || (atomnr == 53))))
+                        double qref = (isPolarizable ? mymol.atoms_->atom[j+1].q : 0);
+                        double dq   = 0;
+                        if (atomnr == 1)
                         {
-                            increaseEnergy(ermsCHARGE, gmx::square(qq));
+                            // Penalty if qH < 0
+                            dq = qq + qref;
+                        }
+                        else if ((atomnr == 8)  || (atomnr == 9) ||
+                                 (atomnr == 16) || (atomnr == 17) ||
+                                 (atomnr == 35) || (atomnr == 53))
+                        {
+                            // Penalty if qO > 0, therefore we reverse the sign
+                            dq = -(qq + qref);
+                        }
+                        if (dq < 0)
+                        {
+                            ChargeResidual += gmx::square(dq);
+                            nChargeResidual++;
                         }
                     }
-
                 }
-                increaseEnergy(ermsCHARGE, gmx::square(qtot - mymol.molProp()->getCharge()));
+                ChargeResidual += gmx::square(qtot - mymol.molProp()->getCharge());
+                nChargeResidual++;
+                increaseEnergy(ermsCHARGE, (ChargeResidual/nChargeResidual));
             }
             mymol.Qgresp_.calcPot();
             real cosangle = 0;
             increaseEnergy(ermsESP,
                            convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms, &cosangle), eg2cHartree_e));
-            if (bDipole_)
+            if (weight(ermsMU))
             {
                 mymol.CalcDipole();
                 if (bQM())
@@ -363,7 +373,7 @@ double OptZeta::calcDeviation()
                     increaseEnergy(ermsMU, gmx::square(mymol.dipQM(qtCalc) - mymol.dipExper()));
                 }
             }
-            if (bQuadrupole_)
+            if (weight(ermsQUAD))
             {
                 mymol.CalcQuadrupole();
                 for (auto mm = 0; mm < DIM; mm++)
