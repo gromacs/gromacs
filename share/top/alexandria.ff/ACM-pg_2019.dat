@@ -35,7 +35,7 @@
     <atomtype elem="N" description="sp1 N" atype="n1" ptype="p_n" btype="b_n1" ztype="z_n1" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
     <atomtype elem="N" description="sp2 N with 2 subst." atype="n2" ptype="p_n" btype="b_n2" ztype="z_n2" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
     <atomtype elem="N" description="sp3 N with 3 subst." atype="n3" ptype="p_n" btype="b_n3" ztype="z_n3" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="sp3 N with 4 subst." atype="n4" ptype="p_n" btype="b_n3" ztype="z_n3" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="sp3 N with 4 subst." atype="n4" ptype="p_n" btype="b_n3" ztype="z_n4" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
     <atomtype elem="N" description="sp2 N with 3 subst." atype="na" ptype="p_na" btype="b_na" ztype="z_n2" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
     <atomtype elem="N" description="aromatic N" atype="nb" ptype="p_na" btype="b_na" ztype="z_nb" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
     <atomtype elem="N" description="inner sp2 N of conjugated ring systems" atype="nc" ptype="p_n" btype="b_na" ztype="z_n2" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
@@ -2850,6 +2850,7 @@
     <eemprop name="z_n" jaa="16.1203" jaa_sigma="1.53322" chi="4.69139" chi_sigma="0.187545" zeta="12.5989 12.5989 " zeta_sigma="0.927274 0.927274 " charge="0  -2" row="1 2"/>
     <eemprop name="z_n1" jaa="12.1575" jaa_sigma="0.902273" chi="6.67954" chi_sigma="0.138732" zeta="10.1041 10.1041 " zeta_sigma="0.304608 0.304608 " charge="0  -2" row="1 2"/>
     <eemprop name="z_n3" jaa="7.69219" jaa_sigma="0.277471" chi="4.27711" chi_sigma="0.273567" zeta="10.4868 10.4868 " zeta_sigma="0.554536 0.554536 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_n4" jaa="7.69219" jaa_sigma="0.277471" chi="4.27711" chi_sigma="0.273567" zeta="10.4868 10.4868 " zeta_sigma="0.554536 0.554536 " charge="0  -2" row="1 2"/>
     <eemprop name="z_nb" jaa="7.80156" jaa_sigma="0.284113" chi="5.3091" chi_sigma="0.271283" zeta="8.4274 8.4274 " zeta_sigma="0.343674 0.343674 " charge="0  -2" row="1 2"/>
     <eemprop name="z_n2" jaa="10.7146" jaa_sigma="0.266339" chi="5.8698" chi_sigma="0.146115" zeta="10.9507 10.9507 " zeta_sigma="0.91312 0.91312 " charge="0  -2" row="1 2"/>
     <eemprop name="z_nh" jaa="11.8178" jaa_sigma="0.561686" chi="6.2374" chi_sigma="0.294459" zeta="11.1172 11.1172 " zeta_sigma="0.530691 0.530691 " charge="0  -2" row="1 2"/>
@@ -2857,6 +2858,7 @@
     <eemprop name="z_oh" jaa="10.5442" jaa_sigma="0.199354" chi="5.36733" chi_sigma="0.217389" zeta="12.6457 12.6457 " zeta_sigma="0.56578 0.56578 " charge="0  -2" row="1 2"/>
     <eemprop name="z_ow" jaa="11.3302" jaa_sigma="0.235126" chi="5.95423" chi_sigma="0.251577" zeta="19.8248 19.8248 " zeta_sigma="1.03761 1.03761 " charge="0  -2" row="1 2"/>
     <eemprop name="z_o" jaa="10.4694" jaa_sigma="0.323132" chi="6.16472" chi_sigma="0.254349" zeta="14.516 14.516 " zeta_sigma="0.904592 0.904592 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_om" jaa="10.4694" jaa_sigma="0.323132" chi="6.16472" chi_sigma="0.254349" zeta="14.516 14.516 " zeta_sigma="0.904592 0.904592 " charge="0  -2" row="1 2"/>
     <eemprop name="z_os" jaa="11.2985" jaa_sigma="0.181205" chi="4.9957" chi_sigma="0.0998943" zeta="10.685 10.685 " zeta_sigma="0.558307 0.558307 " charge="0  -2" row="1 2"/>
     <eemprop name="z_f" jaa="15.1718" jaa_sigma="0.344213" chi="4.91637" chi_sigma="0.224783" zeta="12.4245 12.4245 " zeta_sigma="0.330791 0.330791 " charge="0  -2" row="1 2"/>
     <eemprop name="z_p4" jaa="6.81261" jaa_sigma="0.223356" chi="3.848" chi_sigma="0.226379" zeta="7.99952 7.99952 " zeta_sigma="0.24637 0.24637 " charge="0  -2" row="1 3"/>
