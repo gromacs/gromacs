@@ -138,7 +138,7 @@ class OptZeta : public MolGen, Bayes
             return (x < min) ? (0.5 * gmx::square(x-min)) : ((x > max) ? (0.5 * gmx::square(x-max)) : 0);
         }
 
-        void polData2TuneZeta();
+        void polData2TuneZeta(real factor);
 
         void toPolData(const std::vector<bool> gmx_unused &changed);
 
@@ -154,21 +154,21 @@ class OptZeta : public MolGen, Bayes
                     const char             *xvgepot);
 };
 
-void OptZeta::polData2TuneZeta()
+void OptZeta::polData2TuneZeta(real factor)
 {
     auto *ic = indexCount();
-    auto  pd = poldata();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
         if (!ai->isConst())
         {
-            auto ei    = pd->ztype2Eem(ai->name());
-            GMX_RELEASE_ASSERT(ei != pd->EndEemprops(), "Cannot find eemprops");
+            auto ei   = poldata()->ztype2Eem(ai->name());
+            GMX_RELEASE_ASSERT(ei != poldata()->EndEemprops(), gmx::formatString("Cannot find eemprops for %s", ai->name().c_str()).c_str());
+            ai->setEemProps(ei);
             auto nzeta = ei->getNzeta();
             auto zeta  = ei->getZeta(nzeta-1); // only optimize zeta for the shell of the polarizable model
             if (0 != zeta)
             {
-                Bayes::addParam(zeta);
+                Bayes::addParam(zeta, factor);
             }
             else
             {
@@ -180,11 +180,11 @@ void OptZeta::polData2TuneZeta()
             {
                 auto alpha = 0.0;
                 auto sigma = 0.0;
-                if (pd->getAtypePol(ai->name(), &alpha, &sigma))
+                if (poldata()->getAtypePol(ai->name(), &alpha, &sigma))
                 {
                     if (0 != alpha)
                     {
-                        Bayes::addParam(alpha);
+                        Bayes::addParam(alpha, factor);
                     }
                     else
                     {
@@ -199,89 +199,57 @@ void OptZeta::polData2TuneZeta()
 
 void OptZeta::toPolData(const std::vector<bool> gmx_unused &changed)
 {
-    int      n = 0;
-    char     zstr[STRLEN];
-    char     z_sig[STRLEN];
-    char     buf[STRLEN];
-    char     buf_sig[STRLEN];
-    
-    double   zeta  = 0;
-    double   sigma = 0;
-
-    auto  pd = poldata();
-    auto *ic = indexCount();
+    size_t   n           = 0;
+    auto     pd          = poldata();
+    bool     distributed = getEemtypeDistributed(pd->getChargeModel());
+    auto    *ic          = indexCount();
+    auto     param       = Bayes::getParam();
+    auto     psigma      = Bayes::getPsigma();
+    if (psigma.empty())
+    {
+        psigma.resize(param.size(), 0);
+    }
+    Bayes::dumpParam(debug);
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
         if (!ai->isConst())
         {
-            auto        ei = pd->ztype2Eem(ai->name());
-            GMX_RELEASE_ASSERT(ei != pd->EndEemprops(), "Cannot find eemprops");
+            auto ei = ai->eemProps();
+            std::string zstr, z_sig;
             std::string qstr   = ei->getQstr();
             std::string rowstr = ei->getRowstr();
-            zstr[0]  = '\0';
-            z_sig[0] = '\0';
-
-            // Begin to add  optimized zeta to poldata
-            auto iModel = poldata()->getChargeModel();
             auto nZeta  = ei->getNzeta();
-            if (getEemtypeDistributed(iModel))
+            
+            if (distributed)
             {
                 if (bSameZeta_ && nZeta == 2)
                 {
-                    zeta   = param_[n]; // Same zeta will be used for both core and shell
-                    sigma  = psigma_[n++];
-
-                    sprintf(buf, "%g %g ", zeta, zeta);
-                    sprintf(buf_sig, "%g %g ", sigma, sigma);
-                    strcat(zstr, buf);
-                    strcat(z_sig, buf_sig);
+                    double zeta   = param[n]; 
+                    double sigma  = psigma[n++];
+                    zstr.assign(gmx::formatString("%g %g ", zeta, zeta));
+                    z_sig.assign(gmx::formatString("%g %g ", sigma, sigma));
                 }
                 else
                 {
-                    zeta    = ei->getZeta(0); //zeta for core read from poldata
-                    sigma   = 0;
                     for (auto i = 0; i < nZeta; i++)
                     {
-                        if (i > 0)
-                        {
-                            zeta   = param_[n]; // zeta for shell from param_ vector
-                            sigma  = psigma_[n++];
-                        }
-                        sprintf(buf, "%g ", zeta);
-                        sprintf(buf_sig, "%g ", sigma);
-                        strcat(zstr, buf);
-                        strcat(z_sig, buf_sig);
+                        double zeta   = param[n];
+                        double sigma  = psigma[n++];
+                        zstr.assign(gmx::formatString("%g ", zeta));
+                        z_sig.assign(gmx::formatString("%g ", sigma));
                     }
-                }
-            }
-            else
-            {
-                zeta   = param_[n];
-                sigma  = psigma_[n++];
-                for (auto i = 0; i < nZeta; i++)
-                {
-                    sprintf(buf, "%g ", zeta);
-                    sprintf(buf_sig, "%g ", sigma);
-                    strcat(zstr, buf);
-                    strcat(z_sig, buf_sig);
                 }
             }
             ei->setRowZetaQ(rowstr, zstr, qstr);
             ei->setZetastr(zstr);
             ei->setZeta_sigma(z_sig);
-            // End to add  optimized zeta to poldata
 
-            // Begin to add optimized alpha to poldata
             if (bFitAlpha_)
             {
-
-
-
-
                 std::string ptype;
                 if (pd->atypeToPtype(ai->name(), ptype))
                 {
-                    pd->setPtypePolarizability(ptype, param_[n], psigma_[n]);
+                    pd->setPtypePolarizability(ptype, param[n], psigma[n]);
                     n++;
                 }
                 else
@@ -289,31 +257,13 @@ void OptZeta::toPolData(const std::vector<bool> gmx_unused &changed)
                     gmx_fatal(FARGS, "No Ptype for atom type %s\n", ai->name().c_str());
                 }
             }
-            // End to add optimized alpha to poldata
         }
     }
 }
 
 void OptZeta::InitOpt(real  factor)
 {
-    polData2TuneZeta();
-
-    orig_.resize(param_.size(), 0);
-    best_.resize(param_.size(), 0);
-    lower_.resize(param_.size(), 0);
-    upper_.resize(param_.size(), 0);
-    psigma_.resize(param_.size(), 0);
-    pmean_.resize(param_.size(), 0);
-    if (factor < 1)
-    {
-        factor = 1/factor;
-    }
-    for (size_t i = 0; (i < param_.size()); i++)
-    {
-        best_[i]  = orig_[i] = param_[i];
-        lower_[i] = orig_[i]/factor;
-        upper_[i] = orig_[i]*factor;
-    }
+    polData2TuneZeta(factor);
 }
 
 double OptZeta::calcDeviation()
@@ -323,12 +273,15 @@ double OptZeta::calcDeviation()
     real   rrms   = 0;
     real   wtot   = 0;
     double bounds = 0;
+    
+    const param_type    &param     = Bayes::getParam();
+    
     auto *ic = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
         if (!ai->isConst())
         {
-            auto zeta = param_[n++];
+            auto zeta = param[n++];
             bounds   += l2_regularizer(zeta, zetaMin(), zetaMax());
 
         }
@@ -352,7 +305,7 @@ double OptZeta::calcDeviation()
         if ((mymol.eSupp_ == eSupportLocal) ||
             (final() && (mymol.eSupp_ == eSupportRemote)))
         {
-            mymol.Qgresp_.updateZeta(&mymol.atoms_-> poldata());
+            mymol.Qgresp_.updateZeta(mymol.atoms_, poldata());
             mymol.Qgresp_.optimizeCharges();
             if (nullptr != mymol.shellfc_)
             {
@@ -441,7 +394,6 @@ void OptZeta::optRun(FILE                   *fp,
                      const char             *xvgepot)
 {
     std::vector<double> optb, opts, optm;
-    double              chi2, chi2_min;
     gmx_bool            bMinimum = false;
 
     auto                func = [&] (const double v[]) {
@@ -451,14 +403,18 @@ void OptZeta::optRun(FILE                   *fp,
     {
         if (PAR(commrec()))
         {
+            int niter = 3 + nrun*Bayes::maxIter()*Bayes::nParam();
             for (int dest = 1; dest < commrec()->nnodes; dest++)
             {
-                gmx_send_int(commrec(), dest, (nrun*Bayes::maxIter()*param_.size()));
+                gmx_send_int(commrec(), dest, niter);
             }
         }
-        chi2 = chi2_min = GMX_REAL_MAX;
+        double chi2;
         Bayes::setFunc(func, &chi2);
-        Bayes::Init(xvgconv, xvgepot, oenv);
+        Bayes::setOutputFiles(xvgconv, xvgepot, oenv);
+        param_type param = Bayes::getParam();
+        double chi2_min  = Bayes::objFunction(param.data());
+        chi2             = chi2_min;
 
         for (auto n = 0; n < nrun; n++)
         {
@@ -483,7 +439,7 @@ void OptZeta::optRun(FILE                   *fp,
             {
                 fprintf(fplog, "\nMinimum rmsd value during optimization: %.3f.\n", sqrt(emin));
                 fprintf(fplog, "Statistics of parameters after optimization\n");
-                for (size_t k = 0; k < param_.size(); k++)
+                for (size_t k = 0; k <  Bayes::nParam(); k++)
                 {
                     fprintf(fplog, "Parameter %3zu  Best value:%10g  Mean value:%10g  Sigma:%10g\n",
                             k, best[k], pmean[k], psigma[k]);
@@ -503,7 +459,8 @@ void OptZeta::optRun(FILE                   *fp,
     setFinal();
     if (MASTER(commrec()))
     {
-        chi2 = Bayes::objFunction(best_.data());
+        param_type best = Bayes::getBestParam();
+        (void) Bayes::objFunction(best.data());
         printEnergies(fp);
         printEnergies(fplog);
     }
