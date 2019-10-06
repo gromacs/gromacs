@@ -36,6 +36,7 @@ cmake_minimum_required(VERSION 3.9.6)
 if(POLICY CMP0074) #3.12
     cmake_policy(SET CMP0074 NEW)
 endif()
+cmake_policy(SET CMP0068 NEW) # From CMake-3.9
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
@@ -810,10 +811,7 @@ else()
     # RPATHs), and makes the binaries in the build tree relocatable.
     if(CMAKE_INSTALL_LIBDIR STREQUAL "lib")
         set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-        if(POLICY CMP0068)
-            cmake_policy(SET CMP0068 NEW) # From CMake-3.9
-            set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR TRUE)
-        endif()
+        set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR TRUE)
     endif()
     # Set the RPATH as relative to the executable location to make the
     # binaries relocatable.
