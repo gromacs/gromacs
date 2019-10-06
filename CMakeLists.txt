@@ -42,6 +42,18 @@ cmake_policy(SET CMP0068 NEW) # From CMake-3.9
 # This needs to be set before project() in order to pick up toolchain files
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Platform)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    # Providing a default value >=10.9 helps to find modern C++ compatibility,
+    # such as by defaulting to the Clang libc++ instead of libstdc++.
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9 CACHE STRING
+        "OS X deployment target affects default SDK version and compiler flags."
+        FORCE)
+    # By default, limit the binary architecture to a single 64-bit build.
+    set(CMAKE_OSX_ARCHITECTURES x86_64 CACHE STRING
+        "OS X architecture affects the compatibility of the (potentially fat) binaries produced."
+        FORCE)
+endif()
+
 project(Gromacs)
 
 set(CMAKE_CXX_STANDARD 14)

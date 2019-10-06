@@ -154,6 +154,10 @@ If you are running on Mac OS X, the best option is the Intel
 compiler. Both clang and gcc will work, but they produce lower
 performance and each have some shortcomings. clang 3.8 now offers
 support for OpenMP, and so may provide decent performance.
+The CMake variable ``CMAKE_OSX_DEPLOYMENT_TARGET`` influences CMake's
+choice of C++ stdlib implementation. Setting to ``10.9`` (default) or
+higher is the simplest way to find a compatible compiler and stdlib
+implementation.
 
 For all non-x86 platforms, your best option is typically to use gcc or
 the vendor's default or recommended compiler, and check for
