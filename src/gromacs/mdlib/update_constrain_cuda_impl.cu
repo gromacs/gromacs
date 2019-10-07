@@ -38,9 +38,6 @@
  *
  * The class combines Leap-Frog integrator with LINCS and SETTLE constraints.
  *
- * \todo This class should take over the management of coordinates, velocities
- *       forces, virial, and PBC from its members (i.e. from Leap-Frog, LINCS
- *       and SETTLE).
  * \todo The computational procedures in members should be integrated to improve
  *       computational performance.
  *

@@ -36,8 +36,6 @@
  *
  * \brief Declaration of high-level functions of CUDA implementation of update and constrain class.
  *
- * \todo This should only list interfaces needed for libgromacs clients (e.g.
- *       management of coordinates, velocities and forces should not be here).
  * \todo Change "cuda" suffix to "gpu"
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>

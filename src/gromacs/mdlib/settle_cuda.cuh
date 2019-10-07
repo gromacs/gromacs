@@ -207,15 +207,14 @@ class SettleCuda
 
         /*! \brief Apply SETTLE.
          *
-         * Applies SETTLE to coordinates and velocities, stored on GPU.
-         * Data at pointers xPrime and v (class fields) change in the GPU
-         * memory. The results are not automatically copied back to the CPU
-         * memory. Method uses this class data structures which should be
-         * updated when needed using update method.
+         * Applies SETTLE to coordinates and velocities, stored on GPU. Data at pointers d_xp and
+         * d_v change in the GPU memory. The results are not automatically copied back to the CPU
+         * memory. Method uses this class data structures which should be updated when needed using
+         * update method.
          *
          * \param[in]     d_x               Coordinates before timestep (in GPU memory)
          * \param[in,out] d_xp              Coordinates after timestep (in GPU memory). The
-         *                                  resulting constrained codrdinates will be saved here.
+         *                                  resulting constrained coordinates will be saved here.
          * \param[in]     updateVelocities  If the velocities should be updated.
          * \param[in,out] d_v               Velocities to update (in GPU memory, can be nullptr
          *                                  if not updated)

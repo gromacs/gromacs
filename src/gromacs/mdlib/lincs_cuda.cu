@@ -40,9 +40,8 @@
  * using CUDA, including class initialization, data-structures management
  * and GPU kernel.
  *
- * \note Management of CUDA stream and periodic boundary exists here as a temporary
- *       scaffolding to allow this class to be used as a stand-alone unit. The scaffolding
- *        is intended to be removed once constraints are fully integrated with update module.
+ * \note Management of periodic boundary should be unified with SETTLE and
+ *       removed from here.
  * \todo Reconsider naming, i.e. "cuda" suffics should be changed to "gpu".
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>

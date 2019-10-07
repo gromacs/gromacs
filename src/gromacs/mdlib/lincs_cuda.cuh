@@ -34,7 +34,7 @@
  */
 /*! \libinternal \file
  *
- * \brief Declaration of high-level functions of CUDA implementation of LINCS.
+ * \brief Declares the class for CUDA implementation of LINCS.
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  *
