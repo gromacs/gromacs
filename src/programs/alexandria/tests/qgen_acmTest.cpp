@@ -115,7 +115,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             }
             
             readBabel(dataName.c_str(), 
-                      molprop, 
+                      &molprop, 
                       molnm, 
                       iupac, 
                       conf, 

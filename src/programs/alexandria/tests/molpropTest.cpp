@@ -61,7 +61,7 @@ class MolpropTest : public gmx::test::CommandLineTestBase
             aps_  = gmx_atomprop_init();
 
             std::string mpFile = fileManager().getInputFilePath("molprop.dat");
-            MolPropRead(mpFile.c_str(), mp_);
+            MolPropRead(mpFile.c_str(), &mp_);
         }
 
         // Static initiation, only run once every test.
