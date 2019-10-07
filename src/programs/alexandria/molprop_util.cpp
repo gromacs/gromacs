@@ -97,9 +97,9 @@ void generate_formula(std::vector<MolProp> &mp,
     }
 }
 
-int merge_doubles(std::vector<alexandria::MolProp> &mp, 
-                  char                            *doubles,
-                  bool                             bForceMerge)
+int MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp, 
+                        char                             *doubles,
+                        bool                              bForceMerge)
 {
     alexandria::MolPropIterator mpi, mmm[2];
     std::string                 molname[2];
@@ -121,7 +121,7 @@ int merge_doubles(std::vector<alexandria::MolProp> &mp,
         fp = nullptr;
     }
     i = 0;
-    for (mpi = mp.begin(); (mpi < mp.end()); )
+    for (mpi = mp->begin(); (mpi < mp->end()); )
     {
         bDouble = false;
         mpi->Dump(debug);
@@ -147,11 +147,11 @@ int merge_doubles(std::vector<alexandria::MolProp> &mp,
                         fprintf(fp, "%5d  %s\n", ndouble+1, molname[prev].c_str());
                     }
                     nwarn += mmm[prev]->Merge(mmm[cur]);
-                    mpi    = mp.erase(mmm[cur]);
+                    mpi    = mp->erase(mmm[cur]);
 
                     bDouble = true;
                     ndouble++;
-                    if (mpi != mp.end())
+                    if (mpi != mp->end())
                     {
                         mmm[cur]      = mpi;
                         molname[cur]  = mmm[cur]->getMolname();
@@ -167,7 +167,7 @@ int merge_doubles(std::vector<alexandria::MolProp> &mp,
             i++;
         }
     }
-    for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
+    for (mpi = mp->begin(); (mpi < mp->end()); mpi++)
     {
         mpi->Dump(debug);
     }
@@ -176,18 +176,18 @@ int merge_doubles(std::vector<alexandria::MolProp> &mp,
         fclose(fp);
     }
     printf("There were %d double entries, leaving %d after merging.\n",
-           ndouble, (int)mp.size());
+           ndouble, (int)mp->size());
     return nwarn;
 }
 
-static void dump_mp(std::vector<alexandria::MolProp> mp)
+static void dump_mp(std::vector<alexandria::MolProp> *mp)
 {
     alexandria::MolPropIterator mpi;
     FILE *fp;
 
     fp = fopen("dump_mp.dat", "w");
 
-    for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
+    for (mpi = mp->begin(); (mpi < mp->end()); mpi++)
     {
         fprintf(fp, "%-20s  %s\n", mpi->formula().c_str(),
                 mpi->getMolname().c_str());
@@ -197,46 +197,44 @@ static void dump_mp(std::vector<alexandria::MolProp> mp)
 }
 
 int merge_xml(gmx::ArrayRef<const std::string> filens,
-              std::vector<alexandria::MolProp> &mpout,
+              std::vector<alexandria::MolProp> *mpout,
               char *outf, char *sorted, char *doubles,
               gmx_atomprop_t ap,
               const Poldata &pd,
               bool bForceMerge)
 {
-    std::vector<alexandria::MolProp> mp;
-    alexandria::MolPropIterator      mpi;
     int npout = 0, tmp;
 
     for (auto &fn : filens)
     {
+        std::vector<alexandria::MolProp> mp;
         if (!gmx_fexist(fn.c_str()))
         {
             continue;
         }
-        MolPropRead(fn.c_str(), mp);
+        MolPropRead(fn.c_str(), &mp);
         generate_composition(mp, &pd);
         generate_formula(mp, ap);
-        for (mpi = mp.begin(); (mpi < mp.end()); )
+        for (auto mpi : mp)
         {
-            mpout.push_back(*mpi);
-            mpi = mp.erase(mpi);
+            mpout->push_back(std::move(mpi));
         }
     }
-    tmp = mpout.size();
+    tmp = mpout->size();
     if (nullptr != debug)
     {
-        fprintf(debug, "mpout.size() = %u mpout.max_size() = %u\n",
-                (unsigned int)mpout.size(), (unsigned int)mpout.max_size());
-        for (mpi = mpout.begin(); (mpi < mpout.end()); mpi++)
+        fprintf(debug, "mpout->size() = %u mpout->max_size() = %u\n",
+                (unsigned int)mpout->size(), (unsigned int)mpout->max_size());
+        for (auto mpi = mpout->begin(); mpi < mpout->end(); ++mpi)
         {
             mpi->Dump(debug);
         }
     }
     MolSelect gms;
     MolPropSort(mpout, MPSA_MOLNAME, nullptr, gms);
-    int nwarn = merge_doubles(mpout, doubles, bForceMerge);
+    int nwarn = MergeDoubleMolprops(mpout, doubles, bForceMerge);
     printf("There were %d total molecules before merging, %d after.\n",
-           tmp, (int)mpout.size());
+           tmp, (int)mpout->size());
     if (nwarn > 0)
     {
         char buf[256];
@@ -340,12 +338,12 @@ static bool comp_mp_index(alexandria::MolProp ma,
     return (ma.getIndex() < mb.getIndex());
 }
 
-void MolPropSort(std::vector<alexandria::MolProp> &mp,
+void MolPropSort(std::vector<alexandria::MolProp> *mp,
                  MolPropSortAlgorithm mpsa, gmx_atomprop_t apt,
                  const MolSelect &gms)
 {
-    printf("There are %d molprops. Will now sort them.\n", (int)mp.size());
-    for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
+    printf("There are %d molprops. Will now sort them.\n", (int)mp->size());
+    for (auto mpi = mp->begin(); (mpi < mp->end()); mpi++)
     {
         if (nullptr != debug)
         {
@@ -355,16 +353,16 @@ void MolPropSort(std::vector<alexandria::MolProp> &mp,
     switch (mpsa)
     {
         case MPSA_MOLNAME:
-            std::sort(mp.begin(), mp.end(), comp_mp_molname);
+            std::sort(mp->begin(), mp->end(), comp_mp_molname);
             break;
         case MPSA_FORMULA:
-            std::sort(mp.begin(), mp.end(), comp_mp_formula);
+            std::sort(mp->begin(), mp->end(), comp_mp_formula);
             break;
         case MPSA_COMPOSITION:
             if (nullptr != apt)
             {
                 my_aps = apt;
-                std::sort(mp.begin(), mp.end(), comp_mp_elem);
+                std::sort(mp->begin(), mp->end(), comp_mp_elem);
                 my_aps = nullptr;
             }
             else
@@ -375,12 +373,12 @@ void MolPropSort(std::vector<alexandria::MolProp> &mp,
         case MPSA_SELECTION:
             if (gms.nMol() > 0)
             {
-                for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
+                for (auto mpi = mp->begin(); mpi < mp->end(); mpi++)
                 {
                     int index = gms.index(mpi->getIupac());
                     mpi->SetIndex(index);
                 }
-                std::sort(mp.begin(), mp.end(), comp_mp_index);
+                std::sort(mp->begin(), mp->end(), comp_mp_index);
             }
             else
             {

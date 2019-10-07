@@ -62,7 +62,7 @@ int alex_molprop_check(int argc, char*argv[])
     {
         return 0;
     }
-    MolPropRead(opt2fn("-f", NFILE, fnm), mp);
+    MolPropRead(opt2fn("-f", NFILE, fnm), &mp);
 
     for (auto &m : mp)
     {

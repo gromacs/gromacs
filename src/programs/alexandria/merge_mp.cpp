@@ -194,7 +194,7 @@ int alex_merge_mp(int argc, char *argv[])
     };
     t_filenm                         fnm[] =
     {
-        { efDAT, "-f",  "data",      ffRDMULT },
+        { efDAT, "-f",  "data",      ffOPTRDMULT },
         { efDAT, "-o",  "allmols",   ffWRITE },
         { efDAT, "-di", "gentop",    ffOPTRD },
         { efDAT, "-db", "sqlite",    ffOPTRD },
@@ -236,7 +236,7 @@ int alex_merge_mp(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     auto fns = opt2fns("-f", NFILE, fnm);
-    int nwarn = merge_xml(fns, mp, nullptr, nullptr, nullptr, ap, pd, true);
+    int nwarn = merge_xml(fns, &mp, nullptr, nullptr, nullptr, ap, pd, true);
 
     if (nwarn <= maxwarn)
     {
@@ -246,7 +246,7 @@ int alex_merge_mp(int argc, char *argv[])
 
         add_charges(opt2fn_null("-c", NFILE, fnm), mp, temperature);
 
-        MolPropWrite(opt2fn("-o", NFILE, fnm), mp, compress);
+        MolPropWrite(opt2fn("-o", NFILE, fnm), &mp, compress);
     }
     else
     {

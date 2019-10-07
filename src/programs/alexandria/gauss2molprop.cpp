@@ -128,27 +128,29 @@ int alex_gauss2molprop(int argc, char *argv[])
     for (auto &i : fns)
     {
         alexandria::MolProp mmm;
-        readBabel(i.c_str(), 
-                  mmm, 
-                  molnm, 
-                  iupac, 
-                  conf, 
-                  basis,
-                  maxpot, 
-                  nsymm, 
-                  jobtype,
-                  0.0);
-        mp.push_back(std::move(mmm));
+        if (readBabel(i.c_str(), 
+                      &mmm, 
+                      molnm, 
+                      iupac, 
+                      conf, 
+                      basis,
+                      maxpot, 
+                      nsymm, 
+                      jobtype,
+                      0.0))
+        {
+            mp.push_back(std::move(mmm));
+        }
     }
 
     printf("Succesfully read %d molprops from %d Gaussian files.\n", 
            static_cast<int>(mp.size()), static_cast<int>(fns.size()));
     alexandria::MolSelect gms;
-    MolPropSort(mp, MPSA_MOLNAME, nullptr, gms);
-    merge_doubles(mp, nullptr, TRUE);
+    MolPropSort(&mp, MPSA_MOLNAME, nullptr, gms);
+    MergeDoubleMolprops(&mp, nullptr, TRUE);
     if (mp.size() > 0)
     {
-        MolPropWrite(opt2fn("-o", NFILE, fnm), mp, (int)compress);
+        MolPropWrite(opt2fn("-o", NFILE, fnm), &mp, (int)compress);
     }
 
     return 0;

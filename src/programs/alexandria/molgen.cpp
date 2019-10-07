@@ -514,7 +514,7 @@ void MolGen::Read(FILE            *fp,
     /* Reading Molecules from allmols.dat */
     if (MASTER(cr_))
     {
-        MolPropRead(fn, mp);
+        MolPropRead(fn, &mp);
         for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
             mpi->CheckConsistency();

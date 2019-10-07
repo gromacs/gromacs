@@ -59,9 +59,9 @@ int alex_molprop_test(int argc, char*argv[])
         return 0;
     }
 
-    MolPropRead(opt2fn("-f", NFILE, fnm), mpt);
+    MolPropRead(opt2fn("-f", NFILE, fnm), &mpt);
     printf("Read %d molecules from %s\n", (int)mpt.size(), argv[1]);
-    MolPropWrite(opt2fn("-o", NFILE, fnm), mpt, 1);
+    MolPropWrite(opt2fn("-o", NFILE, fnm), &mpt, 1);
 
     return 0;
 }

@@ -140,11 +140,8 @@ void generate_formula(std::vector<MolProp> &mp,
 
 void generate_index(std::vector<MolProp> *mp);
                     
-int merge_doubles(std::vector<alexandria::MolProp> &mp,
-                  char *doubles, bool bForceMerge);
-
-int merge_xml(gmx::ArrayRef<const std::string> infiles,
-              std::vector<alexandria::MolProp> &mp,
+int merge_xml(gmx::ArrayRef<const std::string>  infiles,
+              std::vector<alexandria::MolProp> *mp,
               char *outf, char *sorted, char *doubles,
               gmx_atomprop_t ap,
               const Poldata &pd,
@@ -168,11 +165,24 @@ void find_calculations(std::vector<alexandria::MolProp> &mp,
  * \param[in]     mgs       Optional structure containing selection criteria
  * \ingroup module_alexandria
  */
-void MolPropSort(std::vector<MolProp> &mp,
+void MolPropSort(std::vector<MolProp> *mp,
                  MolPropSortAlgorithm  mpsa,
                  gmx_atomprop_t        apt,
                  const MolSelect      &gms);
 
+/*! \brief
+ * Merge multiple molprops for molecules into one, e.g. one molprop for water
+ * one for methane etc.
+ *
+ * \param[inout]  mp        The vector of MolProps
+ * \param[in]     doubles   File name for dumping output, can be nullptr
+ * \param[in]     bForceMerge If true all molprops for a compound are merged
+ * \return the number of remaining molprops
+ * \ingroup module_alexandria
+ */
+int MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp, 
+                        char                             *doubles,
+                        bool                              bForceMerge);
 } // namespace alexandria
 
 #endif

@@ -783,7 +783,7 @@ int alex_tune_pol(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     
     auto fns = opt2fns("-f", NFILE, fnm);
-    nwarn = merge_xml(fns, mp, nullptr, nullptr, (char *)"double_dip.dat", ap, pd, true);
+    nwarn = merge_xml(fns, &mp, nullptr, nullptr, (char *)"double_dip.dat", ap, pd, true);
     
     if (nwarn > maxwarn)
     {
@@ -857,10 +857,10 @@ int alex_tune_pol(int argc, char *argv[])
         if (mpsa != MPSA_NR)
         {
             alexandria::MolSelect gms;
-            MolPropSort(mp, mpsa, ap, gms);
+            MolPropSort(&mp, mpsa, ap, gms);
         }
 
-        MolPropWrite(mpfn, mp, bCompress);
+        MolPropWrite(mpfn, &mp, bCompress);
     }
     return 0;
 }

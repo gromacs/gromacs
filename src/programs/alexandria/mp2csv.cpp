@@ -202,11 +202,11 @@ int alex_mp2csv(int argc, char*argv[])
     {
         return 0;
     }
-    MolPropRead(opt2fn("-f", NFILE, fnm), mp);
+    MolPropRead(opt2fn("-f", NFILE, fnm), &mp);
     ap = gmx_atomprop_init();
 
     alexandria::MolSelect gms;
-    MolPropSort(mp, MPSA_COMPOSITION, ap, gms);
+    MolPropSort(&mp, MPSA_COMPOSITION, ap, gms);
 
     gmx_molprop_csv(opt2fn("-o", NFILE, fnm), mp,
                     strlen(dip_str) > 0  ? dip_str : nullptr,
