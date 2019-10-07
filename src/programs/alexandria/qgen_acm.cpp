@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2019
  *
@@ -123,7 +123,7 @@ void QgenAcm::setInfo(const Poldata            *pd,
             }
             if (bSupport)
             {
-                auto eem   = pd->findEem(atp);
+                auto eem   = pd->atype2Eem(atp);
                 elem_[j]   = atp;
                 atomnr_[j] = atm;
                 chi0_[j]   = eem->getChi0();
@@ -178,7 +178,7 @@ void QgenAcm::updateInfo(const Poldata *pd)
 {
     for (auto i = 0; i < natom_; i++)
     {
-        auto ei  = pd->findEem(elem_[i]);
+        auto ei  = pd->atype2Eem(elem_[i]);
         chi0_[i] = ei->getChi0();
         j00_[i]  = ei->getJ0();
         for (auto k = 0; k < nZeta_[i]; k++)

@@ -1149,6 +1149,7 @@
     <eemprop name="z_oh" jaa="10.6061" jaa_sigma="0" chi="6" chi_sigma="0" zeta="10 25.7003" zeta_sigma="0 0" charge="0  -2" row="1 2"/>
     <eemprop name="z_ow" jaa="10.6061" jaa_sigma="0" chi="6" chi_sigma="0" zeta="10 25.7003" zeta_sigma="0 0" charge="0  -2" row="1 2"/>
     <eemprop name="z_o" jaa="10.6061" jaa_sigma="0" chi="6" chi_sigma="0" zeta="10 25.7003" zeta_sigma="0 0" charge="0  -2" row="1 2"/>
+    <eemprop name="z_om" jaa="10.6061" jaa_sigma="0" chi="6" chi_sigma="0" zeta="10 25.7003" zeta_sigma="0 0" charge="0  -2" row="1 2"/>
     <eemprop name="z_os" jaa="10.6061" jaa_sigma="0" chi="6" chi_sigma="0" zeta="10 25.7003" zeta_sigma="0 0" charge="0  -2" row="1 2"/>
     <eemprop name="z_f" jaa="12.2807" jaa_sigma="0" chi="7" chi_sigma="0" zeta="10 25.1334" zeta_sigma="0 0" charge="0  -2" row="1 2"/>
     <eemprop name="z_p4" jaa="6.54206" jaa_sigma="0" chi="5.2" chi_sigma="0" zeta="10 17.1965" zeta_sigma="0 0" charge="0  -2" row="1 3"/>

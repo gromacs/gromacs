@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2019
  *
@@ -239,7 +239,7 @@ int alex_fit_qs_zeta(int argc, char *argv[])
         for(auto ai = pd.getAtypeBegin(); ai < pd.getAtypeEnd(); ++ai)
         {
             auto cdm = pd.getChargeModel();
-            auto eem = pd.findEem(ai->getType());
+            auto eem = pd.atype2Eem(ai->getType());
             if (pd.EndEemprops() != eem)
             {
                 double zeta, qs;

@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2019
  *
@@ -284,7 +284,7 @@ MolGen::MolGen()
     zeta_max_  = 30;
     watoms_    = 0;
     qtol_      = 1e-6;
-    qcycle_    = 1000;
+    qcycle_    = 500;
     mindata_   = 3;
     nexcl_     = 2;
     hfac_      = 0;

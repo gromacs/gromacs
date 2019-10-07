@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2019 
  *
@@ -102,7 +102,7 @@ static void merge_J00Chi(std::vector<alexandria::Poldata>     pds,
     {
         for (const auto& pd : pds)
         {
-            auto ei = pd.findEem(atp->getType());
+            auto ei = pd.atype2Eem(atp->getType());
             if (ei != pd.EndEemprops())
             {
                 switch (eematp)
@@ -129,7 +129,7 @@ static void merge_J00Chi(std::vector<alexandria::Poldata>     pds,
     for (auto atp = pdout.getAtypeBegin(); 
          atp < pdout.getAtypeEnd(); atp++, j++)
     {
-        auto ei = pdout.findEem(atp->getType());
+        auto ei = pdout.atype2Eem(atp->getType());
         if (ei != pdout.EndEemprops())
         {
             if ((estatsOK == gmx_stats_get_average(lsq[j], &average))&&
@@ -202,7 +202,7 @@ static void merge_zeta(std::vector<alexandria::Poldata>     pds,
     {
         for (const auto& pd : pds)
         {
-            auto ei = pd.findEem(atp->getZtype());
+            auto ei = pd.ztype2Eem(atp->getZtype());
             if (ei != pd.EndEemprops())
             {
                 auto nzeta = pd.getNzeta(ei->getName());
@@ -228,7 +228,7 @@ static void merge_zeta(std::vector<alexandria::Poldata>     pds,
     for (auto atp = pdout.getAtypeBegin(); 
          atp < pdout.getAtypeEnd(); atp++, j++)
     {
-        auto ei = pdout.findEem(atp->getZtype());
+        auto ei = pdout.ztype2Eem(atp->getZtype());
         if (ei != pdout.EndEemprops())
         {
             zstr[0]  = '\0';

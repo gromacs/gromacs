@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2019 
  *
@@ -625,13 +625,66 @@ class Poldata
          *            structure or EndEemprops in case the atom type
          *            is not found.
          */
-        EempropsConstIterator findEem(const std::string &atype) const;
+        EempropsConstIterator atype2Eem(const std::string &atype) const
+        {
+            auto eic = mapAtypeToEempropsConstIterator_.find(atype);
+            if (eic != mapAtypeToEempropsConstIterator_.end())
+            {
+                return eic->second;
+            }
+            else
+            {
+                return EndEemprops();
+            }
+        }
 
-        EempropsIterator findEem(const std::string &atype);
+        EempropsIterator atype2Eem(const std::string &atype)
+        {
+            auto eic = mapAtypeToEempropsIterator_.find(atype);
+            if (eic != mapAtypeToEempropsIterator_.end())
+            {
+                return eic->second;
+            }
+            else
+            {
+                return EndEemprops();
+            }
+        }
                                  
-        EempropsConstIterator ztype2Eem(const std::string &ztype) const;
+        /*! \brief Find the EEM properties
+         *
+         * Find the EEM properties corresponding to a zeta type.
+         * \param[in] atype     The Alexandria atom type
+         * \returns   An iterator pointing to the right EEMprops
+         *            structure or EndEemprops in case the atom type
+         *            is not found.
+         */
+        EempropsConstIterator ztype2Eem(const std::string &ztype) const
+        {
+            auto eic = mapZtypeToEempropsConstIterator_.find(ztype);
+            if (eic != mapZtypeToEempropsConstIterator_.end())
+            {
+                return eic->second;
+            }
+            else
+            {
+                return EndEemprops();
+            }
+        }
 
-        EempropsIterator ztype2Eem(const std::string &ztype);
+        EempropsIterator ztype2Eem(const std::string &ztype)
+        {
+            auto eic = mapZtypeToEempropsIterator_.find(ztype);
+            if (eic != mapZtypeToEempropsIterator_.end())
+            {
+                return eic->second;
+            }
+            else
+            {
+                return EndEemprops();
+            }
+        }
+
                                    
         //! Return the charge distribution model used
         ChargeModel getChargeModel() const { return ChargeModel_; }
@@ -664,6 +717,11 @@ class Poldata
 
         CommunicationStatus Receive(const t_commrec *cr, int src);
 
+        //! \brief Make tables using std::map to prevent searching
+        void makeMappings();
+        
+        //! \brief Check internal consistency of data structures
+        void checkConsistency(FILE *fplog) const;
     private:
         std::string                           filename_;
         std::vector<Ptype>                    ptype_;
@@ -699,6 +757,11 @@ class Poldata
         {
             return (pointer - &(vector[0]));
         }
+        
+        std::map<std::string, EempropsConstIterator> mapAtypeToEempropsConstIterator_;
+        std::map<std::string, EempropsIterator> mapAtypeToEempropsIterator_;
+        std::map<std::string, EempropsConstIterator> mapZtypeToEempropsConstIterator_;
+        std::map<std::string, EempropsIterator> mapZtypeToEempropsIterator_;
 };
 
 }

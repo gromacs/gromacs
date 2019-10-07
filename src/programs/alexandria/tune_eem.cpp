@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2019
  *
@@ -80,7 +80,7 @@ class OptACM : public MolGen, Bayes
         bool       bSameZeta_;
         bool       bFitChi_;
         bool       bUseCM5_;
-        real           penalty_;
+        real       penalty_;
 
     public:
 
@@ -493,8 +493,10 @@ void OptACM::polData2TuneACM(real factor)
     {
         if (!ai->isConst())
         {
-            auto ei   = poldata()->findEem(ai->name());
-            GMX_RELEASE_ASSERT(ei != poldata()->EndEemprops(), "Cannot find eemprops");
+            auto ei   = poldata()->ztype2Eem(ai->name());
+            GMX_RELEASE_ASSERT(ei != poldata()->EndEemprops(), 
+                               gmx::formatString("Cannot find eemprops for %s", 
+                               ai->name().c_str()).c_str());
             ai->setEemProps(ei);
             if (bFitChi_)
             {
@@ -579,25 +581,25 @@ void OptACM::toPolData(const std::vector<bool> &changed)
                 std::string zstr, z_sig;
                 std::string qstr   = ei->getQstr();
                 std::string rowstr = ei->getRowstr();
-                auto nZeta  = ei->getNzeta();
+                auto   nZeta  = ei->getNzeta();
+                double zeta   = 0;
+                double sigma  = 0;
                 if (distributed)
                 {
                     if (bSameZeta_ && nZeta == 2)
                     {
                         // Same zeta will be used for both core and shell
-                        double zeta   = param[n];
-                        double sigma  = psigma[n++];
-                        zstr.assign(gmx::formatString("%g %g ",
-                                                      zeta, zeta));
-                        z_sig.assign(gmx::formatString("%g %g ",
-                                                       sigma, sigma));
+                        zeta   = param[n];
+                        sigma  = psigma[n++];
+                        zstr.assign(gmx::formatString("%g %g ", zeta, zeta));
+                        z_sig.assign(gmx::formatString("%g %g ", sigma, sigma));
                     }
                     else
                     {
                         for (auto i = 0; i < nZeta; i++)
                         {
-                            double zeta   = param[n];
-                            double sigma  = psigma[n++];
+                            zeta   = param[n];
+                            sigma  = psigma[n++];
                             zstr.assign(gmx::formatString("%g ", zeta));
                             z_sig.assign(gmx::formatString("%g ", sigma));
                         }
@@ -640,7 +642,6 @@ double OptACM::calcPenalty(AtomIndexIterator ai)
 {
     double         penalty = 0;
     const auto     pd      = poldata();
-
     auto           ei      = ai->eemProps();
     auto           ai_elem = pd->ztype2elem(ei->getName());
     auto           ai_chi  = ei->getChi0();
@@ -649,7 +650,7 @@ double OptACM::calcPenalty(AtomIndexIterator ai)
 
     if (strlen(fixchi()) != 0)
     {
-        const auto ref_eem  = pd->findEem(fixchi());
+        const auto ref_eem  = pd->atype2Eem(fixchi());
         if (ai_chi < ref_eem->getChi0())
         {
             penalty += penalty_;
@@ -982,9 +983,9 @@ int alex_tune_eem(int argc, char *argv[])
                                  opt.lot(),
                                  tabfn,
                                  opt.hwinfo(),
-                                 500, //opt.qcycle(),
+                                 opt.qcycle(),
                                  opt.maxPot(),
-                                 1e-6, //opt.qtol(),                          
+                                 opt.qtol(),                          
                                  opt2fn("-qhisto",    NFILE, fnm),
                                  opt2fn("-dipcorr",   NFILE, fnm),
                                  opt2fn("-mucorr",    NFILE, fnm),

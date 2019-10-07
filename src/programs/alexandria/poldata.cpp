@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2019 
  *
@@ -677,7 +677,7 @@ int Poldata::havePolSupport(const std::string &atype) const
 bool Poldata::haveEemSupport(const std::string &atype,
                              gmx_bool           bAllowZeroParameters) const
 {
-    auto eep = findEem(atype);
+    auto eep = atype2Eem(atype);
     return (eep != EndEemprops() &&
             (bAllowZeroParameters || ((eep->getJ0() > 0) && (eep->getChi0() > 0))));
 }
@@ -685,7 +685,7 @@ bool Poldata::haveEemSupport(const std::string &atype,
 double Poldata::getJ00(const std::string &atype) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(atype)) != EndEemprops())
+    if ((eer = atype2Eem(atype)) != EndEemprops())
     {
         return eer->getJ0();
     }
@@ -695,7 +695,7 @@ double Poldata::getJ00(const std::string &atype) const
 const char *Poldata::getQstr(const std::string       &atype) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(atype)) != EndEemprops())
+    if ((eer = atype2Eem(atype)) != EndEemprops())
     {
         return eer->getQstr();
     }
@@ -705,7 +705,7 @@ const char *Poldata::getQstr(const std::string       &atype) const
 const char *Poldata::getRowstr(const std::string &name) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(name)) != EndEemprops())
+    if ((eer = atype2Eem(name)) != EndEemprops())
     {
         return eer->getRowstr();
     }
@@ -716,7 +716,7 @@ int Poldata::getRow(const std::string       &name,
                     int                      zz) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(name)) != EndEemprops())
+    if ((eer = atype2Eem(name)) != EndEemprops())
     {
         range_check(zz, 0, eer->getNzeta());
         return eer->getRow(zz);
@@ -728,7 +728,7 @@ double Poldata::getZeta(const std::string       &name,
                         int                      zz) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(name)) != EndEemprops())
+    if ((eer = atype2Eem(name)) != EndEemprops())
     {
         if ((zz < 0) || (zz >= eer->getNzeta()))
         {
@@ -743,7 +743,7 @@ double Poldata::getZeta(const std::string       &name,
 int Poldata::getNzeta(const std::string &atype) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(atype)) != EndEemprops())
+    if ((eer = atype2Eem(atype)) != EndEemprops())
     {
         return eer->getNzeta();
     }
@@ -754,7 +754,7 @@ double Poldata::getQ(const std::string       &atype,
                      int                      zz) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(atype)) != EndEemprops())
+    if ((eer = atype2Eem(atype)) != EndEemprops())
     {
         range_check(zz, 0, eer->getNzeta());
         return eer->getQ(zz);
@@ -765,7 +765,7 @@ double Poldata::getQ(const std::string       &atype,
 double Poldata::getChi0(const  std::string &atype) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(atype)) != EndEemprops())
+    if ((eer = atype2Eem(atype)) != EndEemprops())
     {
         return eer->getChi0();
     }
@@ -1119,81 +1119,84 @@ void Poldata::broadcast(const t_commrec *cr)
             }
         }
         gmx_recv_data(cr, src);
+        makeMappings();
     }
 }
 
-EempropsConstIterator Poldata::ztype2Eem(const std::string &ztype) const
+void Poldata::makeMappings()
 {
-    return std::find_if(eep_.begin(), eep_.end(),
-                        [ztype](Eemprops const &eep)
-                        {
-                            return (strcasecmp(eep.getName(), ztype.c_str()));
-                        });
+    for (auto fa = getAtypeBegin(); fa < getAtypeEnd(); ++fa)
+    {
+        auto ztype = fa->getZtype();
+        auto atype = fa->getType();
+        auto eepC  = std::find_if(BeginEemprops(), EndEemprops(),
+                                  [ztype](Eemprops const &eepC)
+                                  { return (eepC.getName() == ztype); });
+        if (eepC == EndEemprops())
+        {
+            gmx_fatal(FARGS, "Can not find atype %s in eemprops",
+                      atype.c_str());
+        }
+        mapAtypeToEempropsConstIterator_.insert(std::pair<std::string, EempropsConstIterator>(atype, eepC));
+        mapZtypeToEempropsConstIterator_.insert(std::pair<std::string, EempropsConstIterator>(ztype, eepC));
+        auto eep = std::find_if(BeginEemprops(), EndEemprops(),
+                                [ztype](Eemprops &eep)
+                                { return (eep.getName() == ztype); });
+        if (eep == EndEemprops())
+        {
+            gmx_fatal(FARGS, "Can not find atype %s in eemprops",
+                      atype.c_str());
+        }
+        mapAtypeToEempropsIterator_.insert(std::pair<std::string, EempropsIterator>(atype, eep));
+        mapZtypeToEempropsIterator_.insert(std::pair<std::string, EempropsIterator>(ztype, eep));
+    }
 }
 
-EempropsIterator Poldata::ztype2Eem(const std::string &ztype)
+void Poldata::checkConsistency(FILE *fp) const
 {
-    return std::find_if(eep_.begin(), eep_.end(),
-                        [ztype](Eemprops const &eep)
-                        {
-                            return (strcasecmp(eep.getName(), ztype.c_str()) == 0);
-                        });
-}
-                                   
-EempropsConstIterator Poldata::findEem(const std::string &atype) const
-{
-    std::string nn;
-    auto        fa = findAtype(atype);
-    if (fa != getAtypeEnd())
+    int nerror = 0;
+    for (auto atp = getAtypeBegin(); atp < getAtypeEnd(); ++atp)
     {
-        auto eqdModel = getChargeModel();
-        if (eqdModel == eqdRappe || eqdModel == eqdBultinck ||
-            eqdModel == eqdYang)
+        std::string atype = atp->getType();
+        // Check whether zeta types are present
+        auto eem = atype2Eem(atype);
+        if (eem == EndEemprops())
         {
-            nn = fa->getElem();
+            fprintf(stderr, "ERROR: No eemprops for %s\n", atype.c_str());
+            nerror += 1;
         }
-        else
+        double chi0 = getChi0(atype);
+        double J00  = getJ00(atype);
+        if (nullptr != fp)
         {
-            nn = fa->getZtype();
+            printf("chi0 %g J00 %g", chi0, J00);
         }
-    }
-    else
-    {
-        nn = atype;
-    }
-    return std::find_if(eep_.begin(), eep_.end(),
-                        [nn](Eemprops const &eep)
-                        {
-                            return (strcasecmp(eep.getName(), nn.c_str()) == 0);
-                        });
-}
-
-EempropsIterator Poldata::findEem(const std::string &atype)
-{
-    std::string nn;
-    auto        fa = findAtype(atype);
-    if (fa != getAtypeEnd())
-    {
-        auto eqdModel = getChargeModel();
-        if (eqdModel == eqdRappe || eqdModel == eqdBultinck ||
-            eqdModel == eqdYang)
+        int nZeta = getNzeta(atype);
+        for(int i = 0; i < nZeta; i++)
         {
-            nn = fa->getElem();
+            double zeta = getZeta(atype, i);
+            int row = getRow(atype, i);
+            double q = getQ(atype, i);
+            if (nullptr != fp)
+            {
+                printf(" row %d zeta %g q %g", row, zeta, q);
+            }
         }
-        else
+        if (nullptr != fp)
         {
-            nn = fa->getZtype();
+            printf("\n");
+        }
+        // Check whether poltype is present
+        double polarizability, sigPol;
+        if (!getAtypePol(atype, &polarizability, &sigPol) && fp)
+        {
+            fprintf(fp, "WARNING: No polarizability type for %s\n", atype.c_str());
         }
     }
-    else
+    if (nerror > 0)
     {
-        nn = atype;
+        gmx_fatal(FARGS, "Poldata inconsistency. Use the -debug 1 flag to find out more");
     }
-    return std::find_if(eep_.begin(), eep_.end(),
-                        [nn](Eemprops const &eep)
-                        {
-                            return (strcasecmp(eep.getName(), nn.c_str()) == 0);
-                        });
 }
 
 } // namespace alexandria

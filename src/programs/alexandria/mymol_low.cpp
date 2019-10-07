@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2019
  *
@@ -1241,7 +1241,7 @@ void print_top_header(FILE                    *fp,
             fprintf(fp, "[ distributed_charges ]\n");
             for (auto atype = pd->getAtypeBegin(); atype != pd->getAtypeEnd(); atype++)
             {
-                auto eem = pd->findEem(atype->getType());
+                auto eem = pd->atype2Eem(atype->getType());
                 if (eem == pd->EndEemprops())
                 {
                     continue;

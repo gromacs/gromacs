@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2019
  *
@@ -923,7 +923,7 @@ void MyMol::addShells(const Poldata *pd)
             {
                 auto ztype = fa->getZtype();
                 if (pd->getAtypePol(atomtype, &pol, &sigpol) && (pol > 0) &&
-                    (pd->getNzeta(ztype) == 2))
+                    (pd->getNzeta(atomtype) == 2))
                 {
                     p.a[0] = renum[i];
                     p.a[1] = renum[i]+1;
@@ -950,9 +950,10 @@ void MyMol::addShells(const Poldata *pd)
                 }
                 else
                 {
-                    gmx_fatal(FARGS, "Polarizability is %f for %s ztype %s btype %s ptype %s.\n",
+                    gmx_fatal(FARGS, "Polarizability is %f for %s ztype %s btype %s ptype %s nzeta %d.\n",
                               pol, *atoms_->atomtype[i], ztype.c_str(),
-                              fa->getBtype().c_str(), fa->getPtype().c_str());
+                              fa->getBtype().c_str(), fa->getPtype().c_str(),
+                              pd->getNzeta(atomtype));
                 }
             }
             else
@@ -1398,7 +1399,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
 
             auto q     = Qgacm_.q();
             auto natom = Qgacm_.natom();
-
+            GMX_RELEASE_ASSERT(q.size() == natom+1, "Internal mismatch in qgen_acm");
             qq.resize(natom + 1);
             for (auto i = 0; i < natom + 1; i++)
             {
