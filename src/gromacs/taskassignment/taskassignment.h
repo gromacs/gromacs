@@ -77,7 +77,9 @@ enum class GpuTask : int
     //! Short-ranged interactions.
     Nonbonded,
     //! Long-ranged interactions.
-    Pme
+    Pme,
+    //! Number of possible tasks.
+    Count
 };
 
 /*! \libinternal

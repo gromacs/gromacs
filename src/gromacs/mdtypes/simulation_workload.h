@@ -123,19 +123,38 @@ class DomainLifetimeWorkload
  */
 class SimulationWorkload
 {
+    public:
+        //! If we have calculation of short range nonbondeds on GPU
+        bool useGpuNonbonded           = false;
+        //! If we have calculation of long range PME in GPU
+        bool usePmeGpu                 = false;
+        //! If PME FFT solving is done on GPU.
+        bool usePmeFftGpu              = false;
+        //! If bonded interactions are calculated on GPU.
+        bool useGpuBonded              = false;
+        //! If update and constraint solving is performed on GPU.
+        bool useGpuUpdate              = false;
+        //! If buffer operations are performed on GPU.
+        bool useGpuBufferOps           = false;
+        //! If domain decomposition halo exchange is performed on GPU.
+        bool useGpuHaloExchange        = false;
+        //! If direct PP-PME communication between GPU is used.
+        bool useGpuPmePPCommunication  = false;
+        //! If direct GPU-GPU communication is enabled.
+        bool useGpuDirectCommunication = false;
 };
 
 class MdrunScheduleWorkload
 {
     public:
         //! Workload descriptor for information constant for an entire run
-        gmx::SimulationWorkload     simulationWork;
+        SimulationWorkload     simulationWork;
 
         //! Workload descriptor for information constant for an nstlist range of steps
-        gmx::DomainLifetimeWorkload domainWork;
+        DomainLifetimeWorkload domainWork;
 
         //! Workload descriptor for information that may change per-step
-        gmx::StepWorkload           stepWork;
+        StepWorkload           stepWork;
 };
 
 }      // namespace gmx

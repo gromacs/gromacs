@@ -759,9 +759,8 @@ setupForceOutputs(t_forcerec                          *fr,
 
 /*! \brief Set up flags that have the lifetime of the domain indicating what type of work is there to compute.
  */
-static void
-setupDomainLifetimeWorkload(DomainLifetimeWorkload *domainWork,
-                            const t_inputrec       &inputrec,
+static DomainLifetimeWorkload
+setupDomainLifetimeWorkload(const t_inputrec       &inputrec,
                             const t_forcerec       &fr,
                             const pull_t           *pull_work,
                             const gmx_edsam        *ed,
@@ -770,36 +769,39 @@ setupDomainLifetimeWorkload(DomainLifetimeWorkload *domainWork,
                             const t_mdatoms        &mdatoms,
                             const StepWorkload     &stepWork)
 {
+    DomainLifetimeWorkload domainWork;
     // Note that haveSpecialForces is constant over the whole run
-    domainWork->haveSpecialForces      = haveSpecialForces(inputrec, *fr.forceProviders, pull_work, stepWork.computeForces, ed);
-    domainWork->haveCpuBondedWork      = haveCpuBondeds(fr);
-    domainWork->haveGpuBondedWork      = ((fr.gpuBonded != nullptr) && fr.gpuBonded->haveInteractions());
-    domainWork->haveRestraintsWork     = havePositionRestraints(idef, fcd);
-    domainWork->haveCpuListedForceWork = haveCpuListedForces(fr, idef, fcd);
+    domainWork.haveSpecialForces      = haveSpecialForces(inputrec, *fr.forceProviders, pull_work, stepWork.computeForces, ed);
+    domainWork.haveCpuBondedWork      = haveCpuBondeds(fr);
+    domainWork.haveGpuBondedWork      = ((fr.gpuBonded != nullptr) && fr.gpuBonded->haveInteractions());
+    domainWork.haveRestraintsWork     = havePositionRestraints(idef, fcd);
+    domainWork.haveCpuListedForceWork = haveCpuListedForces(fr, idef, fcd);
     // Note that haveFreeEnergyWork is constant over the whole run
-    domainWork->haveFreeEnergyWork     = (fr.efep != efepNO && mdatoms.nPerturbed != 0);
+    domainWork.haveFreeEnergyWork     = (fr.efep != efepNO && mdatoms.nPerturbed != 0);
+    return domainWork;
 }
 
 /*! \brief Set up force flag stuct from the force bitmask.
  *
- * \param[out]     flags                Force schedule flags
  * \param[in]      legacyFlags          Force bitmask flags used to construct the new flags
  * \param[in]      isNonbondedOn        Global override, if false forces to turn off all nonbonded calculation.
+ * \returns New Stepworkload description.
  */
-static void
-setupStepWorkload(StepWorkload *flags,
-                  const int     legacyFlags,
+static StepWorkload
+setupStepWorkload(const int     legacyFlags,
                   const bool    isNonbondedOn)
 {
-    flags->stateChanged           = ((legacyFlags & GMX_FORCE_STATECHANGED) != 0);
-    flags->haveDynamicBox         = ((legacyFlags & GMX_FORCE_DYNAMICBOX) != 0);
-    flags->doNeighborSearch       = ((legacyFlags & GMX_FORCE_NS) != 0);
-    flags->computeVirial          = ((legacyFlags & GMX_FORCE_VIRIAL) != 0);
-    flags->computeEnergy          = ((legacyFlags & GMX_FORCE_ENERGY) != 0);
-    flags->computeForces          = ((legacyFlags & GMX_FORCE_FORCES) != 0);
-    flags->computeListedForces    = ((legacyFlags & GMX_FORCE_LISTED) != 0);
-    flags->computeNonbondedForces = ((legacyFlags & GMX_FORCE_NONBONDED) != 0) && isNonbondedOn;
-    flags->computeDhdl            = ((legacyFlags & GMX_FORCE_DHDL) != 0);
+    StepWorkload flags;
+    flags.stateChanged           = ((legacyFlags & GMX_FORCE_STATECHANGED) != 0);
+    flags.haveDynamicBox         = ((legacyFlags & GMX_FORCE_DYNAMICBOX) != 0);
+    flags.doNeighborSearch       = ((legacyFlags & GMX_FORCE_NS) != 0);
+    flags.computeVirial          = ((legacyFlags & GMX_FORCE_VIRIAL) != 0);
+    flags.computeEnergy          = ((legacyFlags & GMX_FORCE_ENERGY) != 0);
+    flags.computeForces          = ((legacyFlags & GMX_FORCE_FORCES) != 0);
+    flags.computeListedForces    = ((legacyFlags & GMX_FORCE_LISTED) != 0);
+    flags.computeNonbondedForces = ((legacyFlags & GMX_FORCE_NONBONDED) != 0) && isNonbondedOn;
+    flags.computeDhdl            = ((legacyFlags & GMX_FORCE_DHDL) != 0);
+    return flags;
 }
 
 
@@ -900,7 +902,7 @@ void do_force(FILE                                     *fplog,
     {
         legacyFlags &= ~GMX_FORCE_NONBONDED;
     }
-    setupStepWorkload(&runScheduleWork->stepWork, legacyFlags, fr->bNonbonded);
+    runScheduleWork->stepWork = setupStepWorkload(legacyFlags, fr->bNonbonded);
 
     const gmx::StepWorkload &stepWork = runScheduleWork->stepWork;
 
@@ -1096,15 +1098,15 @@ void do_force(FILE                                     *fplog,
     {
         // Need to run after the GPU-offload bonded interaction lists
         // are set up to be able to determine whether there is bonded work.
-        setupDomainLifetimeWorkload(&runScheduleWork->domainWork,
-                                    *inputrec,
-                                    *fr,
-                                    pull_work,
-                                    ed,
-                                    top->idef,
-                                    *fcd,
-                                    *mdatoms,
-                                    stepWork);
+        runScheduleWork->domainWork =
+            setupDomainLifetimeWorkload(*inputrec,
+                                        *fr,
+                                        pull_work,
+                                        ed,
+                                        top->idef,
+                                        *fcd,
+                                        *mdatoms,
+                                        stepWork);
 
         wallcycle_start_nocount(wcycle, ewcNS);
         wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_LOCAL);

@@ -128,6 +128,7 @@
 #include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/swap/swapcoords.h"
 #include "gromacs/taskassignment/decidegpuusage.h"
+#include "gromacs/taskassignment/decidesimulationworkload.h"
 #include "gromacs/taskassignment/resourcedivision.h"
 #include "gromacs/taskassignment/taskassignment.h"
 #include "gromacs/taskassignment/usergpuids.h"
@@ -1532,6 +1533,10 @@ int Mdrunner::mdrunner()
         // this data structure, but currently it's the easiest way to
         // make it work.
         MdrunScheduleWorkload runScheduleWork;
+        // Also populates the simulation constant workload description.
+        runScheduleWork.simulationWork = createSimulationWorkload(useGpuForNonbonded,
+                                                                  useGpuForPme, (pmeRunMode == PmeRunMode::GPU), useGpuForBonded, useGpuForUpdate);
+
 
         GMX_ASSERT(stopHandlerBuilder_, "Runner must provide StopHandlerBuilder to simulator.");
         SimulatorBuilder simulatorBuilder;
@@ -1560,8 +1565,7 @@ int Mdrunner::mdrunner()
                     membed,
                     walltime_accounting,
                     std::move(stopHandlerBuilder_),
-                    doRerun,
-                    useGpuForUpdate);
+                    doRerun);
         simulator->run();
 
         if (inputrec->bPull)

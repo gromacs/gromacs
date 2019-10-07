@@ -116,6 +116,7 @@
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/pullhistory.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/modularsimulator/energyelement.h"
@@ -322,10 +323,12 @@ void gmx::LegacySimulator::do_md()
 //       1. We have the useGpuForBufferOps variable set and available here and in do_force(...)
 //       2. The proper GPU syncronization is introduced, so that the H2D and D2H data copies can be performed in the separate
 //          stream owned by the StatePropagatorDataGpu
-    bool useGpuForPme       = (fr->pmedata != nullptr) && (pme_run_mode(fr->pmedata) != PmeRunMode::CPU);
-    bool useGpuForNonbonded = fr->nbv->useGpu();
+    const auto &simulationWork     = runScheduleWork->simulationWork;
+    const bool  useGpuForPme       = simulationWork.usePmeGpu;
+    const bool  useGpuForNonbonded = simulationWork.useGpuNonbonded;
     // Temporary solution to make sure that the buffer ops are offloaded when update is offloaded
-    bool useGpuForBufferOps   = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
+    const bool  useGpuForBufferOps   = simulationWork.useGpuBufferOps;
+    const bool  useGpuForUpdate      = simulationWork.useGpuUpdate;
 
     if (useGpuForUpdate)
     {

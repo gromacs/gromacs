@@ -134,8 +134,7 @@ class ISimulator
             gmx_membed_t                       *membed,
             gmx_walltime_accounting            *walltime_accounting,
             std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder,
-            bool                                doRerun,
-            bool                                useGpuForUpdate) :
+            bool                                doRerun) :
             fplog(fplog),
             cr(cr),
             ms(ms),
@@ -170,8 +169,7 @@ class ISimulator
             membed(membed),
             walltime_accounting(walltime_accounting),
             stopHandlerBuilder(std::move(stopHandlerBuilder)),
-            doRerun(doRerun),
-            useGpuForUpdate(useGpuForUpdate)
+            doRerun(doRerun)
         {}
 
     protected:
@@ -245,9 +243,6 @@ class ISimulator
         std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder;
         //! Whether we're doing a rerun.
         bool                                doRerun;
-        //! Whether we will use the GPU for calculating the update.
-        bool                                useGpuForUpdate;
-
 };
 
 }      // namespace gmx
