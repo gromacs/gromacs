@@ -35,6 +35,8 @@
 /*! \internal \file
  * \brief
  * Declares nbnxn cuda cache and texture helper functions
+ *
+ * \ingroup module_nbnxm
  */
 #ifndef GMX_NBNXN_CUDA_NBNXN_CUDA_H
 #define GMX_NBNXN_CUDA_NBNXN_CUDA_H

@@ -39,6 +39,7 @@
  * Implements utility functions used by all nbnxm CPU kernels.
  *
  * \author Berk Hess <hess@kth.se>
+ * \ingroup module_nbnxm
  */
 
 #include "gmxpre.h"

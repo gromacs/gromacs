@@ -52,23 +52,23 @@
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
-#include "gromacs/nbnxm/nbnxm_simd.h"
-#include "gromacs/nbnxm/kernels_reference/kernel_gpu_ref.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
 #include "kernel_common.h"
+#include "nbnxm_simd.h"
 #include "pairlistset.h"
 #include "pairlistsets.h"
+#include "kernels_reference/kernel_gpu_ref.h"
 #define INCLUDE_KERNELFUNCTION_TABLES
-#include "gromacs/nbnxm/kernels_reference/kernel_ref.h"
+#include "kernels_reference/kernel_ref.h"
 #ifdef GMX_NBNXN_SIMD_2XNN
-#include "gromacs/nbnxm/kernels_simd_2xmm/kernels.h"
+#include "kernels_simd_2xmm/kernels.h"
 #endif
 #ifdef GMX_NBNXN_SIMD_4XN
-#include "gromacs/nbnxm/kernels_simd_4xm/kernels.h"
+#include "kernels_simd_4xm/kernels.h"
 #endif
 #undef INCLUDE_FUNCTION_TABLES
 

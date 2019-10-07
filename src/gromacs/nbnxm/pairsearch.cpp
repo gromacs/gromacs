@@ -45,8 +45,9 @@
 
 #include "pairsearch.h"
 
-#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "pairlist.h"
 
 
 void SearchCycleCounting::printCycles(FILE                               *fp,

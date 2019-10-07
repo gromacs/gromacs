@@ -40,7 +40,7 @@
  * \author Berk Hess <hess@kth.se>
  *
  * \inlibraryapi
- * \ingroup __module_nb_verlet
+ * \ingroup module_nbnxm
  */
 
 #ifndef NBNXM_PAIRLIST_TUNING_H

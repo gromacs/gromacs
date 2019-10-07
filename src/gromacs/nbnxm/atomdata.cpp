@@ -53,8 +53,6 @@
 #include "gromacs/mdtypes/forcerec.h" // only for GET_CGINFO_*
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/nbnxm/nbnxm.h"
-#include "gromacs/nbnxm/nbnxm_geometry.h"
-#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/exceptions.h"
@@ -67,6 +65,8 @@
 
 #include "grid.h"
 #include "gridset.h"
+#include "nbnxm_geometry.h"
+#include "pairlist.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 

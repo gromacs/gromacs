@@ -64,11 +64,11 @@
 #include "gromacs/nbnxm/grid.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/pairlist.h"
-#include "gromacs/nbnxm/cuda/nbnxm_buffer_ops_kernels.cuh"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"
 
+#include "nbnxm_buffer_ops_kernels.cuh"
 #include "nbnxm_cuda_types.h"
 
 /***** The kernel declarations/definitions come here *****/
@@ -82,33 +82,33 @@
  */
 #define FUNCTION_DECLARATION_ONLY
 /** Force only **/
-#include "gromacs/nbnxm/cuda/nbnxm_cuda_kernels.cuh"
+#include "nbnxm_cuda_kernels.cuh"
 /** Force & energy **/
 #define CALC_ENERGIES
-#include "gromacs/nbnxm/cuda/nbnxm_cuda_kernels.cuh"
+#include "nbnxm_cuda_kernels.cuh"
 #undef CALC_ENERGIES
 
 /*** Pair-list pruning kernels ***/
 /** Force only **/
 #define PRUNE_NBL
-#include "gromacs/nbnxm/cuda/nbnxm_cuda_kernels.cuh"
+#include "nbnxm_cuda_kernels.cuh"
 /** Force & energy **/
 #define CALC_ENERGIES
-#include "gromacs/nbnxm/cuda/nbnxm_cuda_kernels.cuh"
+#include "nbnxm_cuda_kernels.cuh"
 #undef CALC_ENERGIES
 #undef PRUNE_NBL
 
 /* Prune-only kernels */
-#include "gromacs/nbnxm/cuda/nbnxm_cuda_kernel_pruneonly.cuh"
+#include "nbnxm_cuda_kernel_pruneonly.cuh"
 #undef FUNCTION_DECLARATION_ONLY
 
 /* Now generate the function definitions if we are using a single compilation unit. */
 #if GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
-#include "gromacs/nbnxm/cuda/nbnxm_cuda_kernel_F_noprune.cu"
-#include "gromacs/nbnxm/cuda/nbnxm_cuda_kernel_F_prune.cu"
-#include "gromacs/nbnxm/cuda/nbnxm_cuda_kernel_VF_noprune.cu"
-#include "gromacs/nbnxm/cuda/nbnxm_cuda_kernel_VF_prune.cu"
-#include "gromacs/nbnxm/cuda/nbnxm_cuda_kernel_pruneonly.cu"
+#include "nbnxm_cuda_kernel_F_noprune.cu"
+#include "nbnxm_cuda_kernel_F_prune.cu"
+#include "nbnxm_cuda_kernel_VF_noprune.cu"
+#include "nbnxm_cuda_kernel_VF_prune.cu"
+#include "nbnxm_cuda_kernel_pruneonly.cu"
 #endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
 
 namespace Nbnxm

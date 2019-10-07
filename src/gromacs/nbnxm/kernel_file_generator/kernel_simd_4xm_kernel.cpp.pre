@@ -51,7 +51,7 @@
 {3}
 
 #ifdef {0}
-#include "gromacs/nbnxm/kernels_simd_4xm/kernel_common.h"
+#include "kernel_common.h"
 #endif /* {0} */
 
 #ifdef CALC_ENERGIES
@@ -70,7 +70,7 @@ void
 {6}nbnxn_atomdata_output_t   gmx_unused *out)
 #endif /* CALC_ENERGIES */
 #ifdef {0}
-#include "gromacs/nbnxm/kernels_simd_4xm/kernel_outer.h"
+#include "kernel_outer.h"
 #else /* {0} */
 {{
 /* No need to call gmx_incons() here, because the only function

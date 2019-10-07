@@ -49,7 +49,7 @@
 #include "gromacs/nbnxm/nbnxm_simd.h"
 
 #define GMX_SIMD_J_UNROLL_SIZE 2
-#include "gromacs/nbnxm/kernels_simd_2xmm/kernels.h"
+#include "kernels.h"
 
 #define CALC_COUL_TAB
 #define LJ_CUT
@@ -58,7 +58,7 @@
 #define ENERGY_GROUPS
 
 #ifdef GMX_NBNXN_SIMD_2XNN
-#include "gromacs/nbnxm/kernels_simd_2xmm/kernel_common.h"
+#include "kernel_common.h"
 #endif /* GMX_NBNXN_SIMD_2XNN */
 
 #ifdef CALC_ENERGIES
@@ -77,7 +77,7 @@ nbnxm_kernel_ElecQSTab_VdwLJCombGeom_VgrpF_2xmm(const NbnxnPairlistCpu    gmx_un
                                                 nbnxn_atomdata_output_t   gmx_unused *out)
 #endif /* CALC_ENERGIES */
 #ifdef GMX_NBNXN_SIMD_2XNN
-#include "gromacs/nbnxm/kernels_simd_2xmm/kernel_outer.h"
+#include "kernel_outer.h"
 #else /* GMX_NBNXN_SIMD_2XNN */
 {
 /* No need to call gmx_incons() here, because the only function

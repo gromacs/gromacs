@@ -39,7 +39,7 @@
  *
  * \author Berk Hess <hess@kth.se>
  *
- * \ingroup module_nbnxn
+ * \ingroup module_nbnxm
  */
 
 #ifndef GMX_NBNXM_PAIRLISTWORK_H
@@ -48,11 +48,11 @@
 #include <memory>
 #include <vector>
 
-#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/simd/simd.h"
 
 #include "boundingboxes.h"
 #include "grid.h"
+#include "pairlist.h"
 
 /* Working data for the actual i-supercell during pair search */
 struct NbnxnPairlistCpuWork

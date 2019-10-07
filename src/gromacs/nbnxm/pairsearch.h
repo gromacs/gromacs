@@ -55,14 +55,14 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/nbnxm/atomdata.h"
-#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
+#include "atomdata.h"
 #include "gridset.h"
+#include "pairlist.h"
 
 struct gmx_domdec_zones_t;
 struct PairsearchWork;

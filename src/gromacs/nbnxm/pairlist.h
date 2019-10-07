@@ -48,8 +48,7 @@
 
 // This file with constants is separate from this file to be able
 // to include it during OpenCL jitting without including config.h
-#include "gromacs/nbnxm/constants.h"
-
+#include "constants.h"
 #include "locality.h"
 #include "pairlistparams.h"
 

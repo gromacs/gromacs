@@ -39,6 +39,7 @@
  * Declares the nbnxm pair interaction kernel function types and kind counts, also declares utility functions used in nbnxm_kernel.cpp.
  *
  * \author Berk Hess <hess@kth.se>
+ * \ingroup module_nbnxm
  */
 
 #ifndef GMX_NBXNM_KERNEL_COMMON_H
@@ -46,9 +47,10 @@
 
 #include "gromacs/math/vectypes.h"
 /* nbnxn_atomdata_t and nbnxn_pairlist_t could be forward declared, but that requires modifications in all SIMD kernel files */
-#include "gromacs/nbnxm/atomdata.h"
-#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/utility/real.h"
+
+#include "atomdata.h"
+#include "pairlist.h"
 
 struct interaction_const_t;
 

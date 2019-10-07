@@ -48,8 +48,9 @@
 
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/updategroupscog.h"
-#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/utility/fatalerror.h"
+
+#include "atomdata.h"
 
 namespace Nbnxm
 {

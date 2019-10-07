@@ -56,13 +56,13 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/updategroupscog.h"
 #include "gromacs/mdtypes/forcerec.h" // only for GET_CGINFO_*
-#include "gromacs/nbnxm/atomdata.h"
-#include "gromacs/nbnxm/nbnxm_geometry.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
 
+#include "atomdata.h"
 #include "boundingboxes.h"
 #include "gridsetdata.h"
+#include "nbnxm_geometry.h"
 #include "pairlistparams.h"
 
 namespace Nbnxm

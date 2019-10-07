@@ -38,7 +38,7 @@
  * \brief Implements functions for tuning adjustable parameters for the nbnxn non-bonded search and interaction kernels
  *
  * \author Berk Hess <hess@kth.se>
- * \ingroup __module_nb_verlet
+ * \ingroup module_nbnxm
  */
 
 #include "gmxpre.h"
@@ -60,7 +60,6 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/state.h"
-#include "gromacs/nbnxm/nbnxm_geometry.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
@@ -70,6 +69,7 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "nbnxm_geometry.h"
 #include "pairlistsets.h"
 
 /*! \brief Returns if we can (heuristically) change nstlist and rlist

@@ -39,6 +39,7 @@
  * Declares the C reference pruning only kernel.
  *
  * \author Berk Hess <hess@kth.se>
+ * \ingroup module_nbnxm
  */
 
 #include "gromacs/math/vectypes.h"

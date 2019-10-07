@@ -49,7 +49,7 @@
 #include "gromacs/nbnxm/nbnxm_simd.h"
 
 #define GMX_SIMD_J_UNROLL_SIZE 1
-#include "gromacs/nbnxm/kernels_simd_4xm/kernels.h"
+#include "kernels.h"
 
 #define CALC_COUL_TAB
 #define VDW_CUTOFF_CHECK /* Use twin-range cut-off */
@@ -59,7 +59,7 @@
 #define ENERGY_GROUPS
 
 #ifdef GMX_NBNXN_SIMD_4XN
-#include "gromacs/nbnxm/kernels_simd_4xm/kernel_common.h"
+#include "kernel_common.h"
 #endif /* GMX_NBNXN_SIMD_4XN */
 
 #ifdef CALC_ENERGIES
@@ -78,7 +78,7 @@ nbnxm_kernel_ElecQSTabTwinCut_VdwLJFSw_VgrpF_4xm(const NbnxnPairlistCpu    gmx_u
                                                  nbnxn_atomdata_output_t   gmx_unused *out)
 #endif /* CALC_ENERGIES */
 #ifdef GMX_NBNXN_SIMD_4XN
-#include "gromacs/nbnxm/kernels_simd_4xm/kernel_outer.h"
+#include "kernel_outer.h"
 #else /* GMX_NBNXN_SIMD_4XN */
 {
 /* No need to call gmx_incons() here, because the only function

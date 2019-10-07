@@ -37,6 +37,8 @@
  *
  *  \author Dimitrios Karkoulis <dimitris.karkoulis@gmail.com>
  *  \author Mark Abraham <mark.j.abraham@gmail.com>
+ *
+ * \ingroup module_nbnxm
  */
 
 #ifndef GMX_NBNXM_GPU_JIT_SUPPORT_H

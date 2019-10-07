@@ -38,9 +38,11 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/nbnxm/nbnxm.h"
-#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
+
+#include "pairlist.h"
+
 
 /* Returns the base-2 log of n.
  * Generates a fatal error when n is not an integer power of 2.

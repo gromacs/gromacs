@@ -327,19 +327,19 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
             {
 #define CALC_COULOMB
 #define HALF_LJ
-#include "gromacs/nbnxm/kernels_reference/kernel_ref_inner.h"
+#include "kernel_ref_inner.h"
 #undef HALF_LJ
 #undef CALC_COULOMB
             }
             else if (do_coul)
             {
 #define CALC_COULOMB
-#include "gromacs/nbnxm/kernels_reference/kernel_ref_inner.h"
+#include "kernel_ref_inner.h"
 #undef CALC_COULOMB
             }
             else
             {
-#include "gromacs/nbnxm/kernels_reference/kernel_ref_inner.h"
+#include "kernel_ref_inner.h"
             }
 #undef CHECK_EXCLS
             cjind++;
@@ -351,19 +351,19 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
             {
 #define CALC_COULOMB
 #define HALF_LJ
-#include "gromacs/nbnxm/kernels_reference/kernel_ref_inner.h"
+#include "kernel_ref_inner.h"
 #undef HALF_LJ
 #undef CALC_COULOMB
             }
             else if (do_coul)
             {
 #define CALC_COULOMB
-#include "gromacs/nbnxm/kernels_reference/kernel_ref_inner.h"
+#include "kernel_ref_inner.h"
 #undef CALC_COULOMB
             }
             else
             {
-#include "gromacs/nbnxm/kernels_reference/kernel_ref_inner.h"
+#include "kernel_ref_inner.h"
             }
         }
 

@@ -44,10 +44,10 @@
 
 #include "config.h"
 
-#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
 #include "locality.h"
+#include "pairlist.h"
 
 #if GMX_GPU == GMX_GPU_OPENCL
 #include "gromacs/gpu_utils/gpuregiontimer_ocl.h"

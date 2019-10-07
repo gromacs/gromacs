@@ -53,10 +53,7 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
-#include "gromacs/nbnxm/nbnxm_geometry.h"
-#include "gromacs/nbnxm/nbnxm_simd.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
@@ -67,9 +64,12 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "atomdata.h"
 #include "boundingboxes.h"
 #include "clusterdistancekerneltype.h"
 #include "gridset.h"
+#include "nbnxm_geometry.h"
+#include "nbnxm_simd.h"
 #include "pairlistset.h"
 #include "pairlistsets.h"
 #include "pairlistwork.h"
@@ -1079,10 +1079,10 @@ makeClusterListSimple(const Grid               &jGrid,
 }
 
 #ifdef GMX_NBNXN_SIMD_4XN
-#include "gromacs/nbnxm/pairlist_simd_4xm.h"
+#include "pairlist_simd_4xm.h"
 #endif
 #ifdef GMX_NBNXN_SIMD_2XNN
-#include "gromacs/nbnxm/pairlist_simd_2xmm.h"
+#include "pairlist_simd_2xmm.h"
 #endif
 
 /* Plain C or SIMD4 code for making a pair list of super-cell sci vs scj.

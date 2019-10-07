@@ -52,11 +52,11 @@
 #include <memory>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 #include "locality.h"
+#include "pairlist.h"
 
 struct nbnxn_atomdata_t;
 struct PairlistParams;

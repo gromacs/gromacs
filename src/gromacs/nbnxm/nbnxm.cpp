@@ -46,9 +46,9 @@
 #include "nbnxm.h"
 
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/timing/wallcycle.h"
 
+#include "atomdata.h"
 #include "pairlistsets.h"
 #include "pairsearch.h"
 

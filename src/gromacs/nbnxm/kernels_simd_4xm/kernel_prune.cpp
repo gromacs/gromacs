@@ -44,7 +44,7 @@
 
 #ifdef GMX_NBNXN_SIMD_4XN
 #define GMX_SIMD_J_UNROLL_SIZE 1
-#include "gromacs/nbnxm/kernels_simd_4xm/kernel_common.h"
+#include "kernel_common.h"
 #endif
 
 /* Prune a single nbnxn_pairtlist_t entry with distance rlistInner */

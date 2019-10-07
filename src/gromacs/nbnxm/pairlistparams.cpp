@@ -46,8 +46,9 @@
 #include "pairlistparams.h"
 
 #include "gromacs/nbnxm/nbnxm.h"
-#include "gromacs/nbnxm/nbnxm_geometry.h"
 #include "gromacs/utility/gmxassert.h"
+
+#include "nbnxm_geometry.h"
 
 
 PairlistParams::PairlistParams(const Nbnxm::KernelType kernelType,

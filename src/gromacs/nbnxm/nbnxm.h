@@ -80,6 +80,18 @@
  * TODO: add more authors!
  */
 
+/*! \libinternal
+ * \defgroup module_nbnxm Non-bonded pair interactions
+ * \ingroup group_mdrun
+ * \brief
+ * Implements non-bonded pair interaction functionality for NxM atom clusters.
+ *
+ * This module provides methods to, very efficiently, compute non-bonded
+ * pair interactions on CPUs as well as accelerators. It also provides
+ * a method to construct the NxM atom-cluster pair-list required for
+ * computing these non-bonded iteractions.
+ */
+
 /*! \libinternal \file
  *
  * \brief This file contains the public interface of the nbnxm module
@@ -91,7 +103,7 @@
  * \author Szilárd Páll <pall.szilard@gmail.com>
  *
  * \inlibraryapi
- * \ingroup __module_nbnxm
+ * \ingroup module_nbnxm
  */
 
 

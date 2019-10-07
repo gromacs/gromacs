@@ -45,10 +45,10 @@
 #ifndef GMX_NBNXM_CLUSTERDISTANCEKERNELTYPE_H
 #define GMX_NBNXM_CLUSTERDISTANCEKERNELTYPE_H
 
-#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/gmxassert.h"
 
+#include "atomdata.h"
 #include "pairlistparams.h"
 
 //! The types of kernel for calculating the distance between pairs of atom clusters

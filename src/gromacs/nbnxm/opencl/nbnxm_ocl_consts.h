@@ -39,6 +39,8 @@
  * \brief Macros defining platform-dependent defaults for the prune kernel's j4 processing concurrency.
  *
  *  The GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro allows compile-time override.
+ *
+ * \ingroup module_nbnxm
  */
 /*! @{ */
 #define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT       4

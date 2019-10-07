@@ -39,6 +39,7 @@
  *  \author Dimitrios Karkoulis <dimitris.karkoulis@gmail.com>
  *  \author Teemu Virolainen <teemu@streamcomputing.eu>
  *  \author Szilárd Páll <pall.szilard@gmail.com>
+ *  \ingroup module_nbnxm
  */
 #include "gmxpre.h"
 
