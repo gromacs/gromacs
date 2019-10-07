@@ -69,15 +69,6 @@ public:
     LeapFrogCuda(CommandStream commandStream);
     ~LeapFrogCuda();
 
-    /*! \brief
-     * Update PBC data.
-     *
-     * Converts PBC data from t_pbc into the PbcAiuc format and stores the latter.
-     *
-     * \param[in] pbc The PBC data in t_pbc format.
-     */
-    void setPbc(const t_pbc* pbc);
-
     /*! \brief Integrate
      *
      * Integrates the equation of motion using Leap-Frog algorithm.
@@ -125,8 +116,6 @@ private:
     CommandStream commandStream_;
     //! CUDA kernel launch config
     KernelLaunchConfig kernelLaunchConfig_;
-    //! Periodic boundary data
-    PbcAiuc pbcAiuc_;
     //! Number of atoms
     int numAtoms_;
 

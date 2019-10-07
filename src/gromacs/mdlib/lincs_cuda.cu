@@ -40,8 +40,6 @@
  * using CUDA, including class initialization, data-structures management
  * and GPU kernel.
  *
- * \note Management of periodic boundary should be unified with SETTLE and
- *       removed from here.
  * \todo Reconsider naming, i.e. "cuda" suffics should be changed to "gpu".
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
@@ -434,7 +432,8 @@ void LincsCuda::apply(const float3* d_x,
                       float3*       d_v,
                       const real    invdt,
                       const bool    computeVirial,
-                      tensor        virialScaled)
+                      tensor        virialScaled,
+                      const PbcAiuc pbcAiuc)
 {
     ensureNoPendingCudaError("In CUDA version of LINCS");
 
@@ -477,6 +476,8 @@ void LincsCuda::apply(const float3* d_x,
         config.sharedMemorySize = c_threadsPerBlock * 3 * sizeof(float);
     }
     config.stream = commandStream_;
+
+    kernelParams_.pbcAiuc = pbcAiuc;
 
     const auto kernelArgs =
             prepareGpuKernelArguments(kernelPtr, config, &kernelParams_, &d_x, &d_xp, &d_v, &invdt);
@@ -844,11 +845,6 @@ void LincsCuda::set(const t_idef& idef, const t_mdatoms& md)
     GMX_RELEASE_ASSERT(md.invmass != nullptr, "Masses of attoms should be specified.\n");
     copyToDeviceBuffer(&kernelParams_.d_inverseMasses, md.invmass, 0, numAtoms, commandStream_,
                        GpuApiCallBehavior::Sync, nullptr);
-}
-
-void LincsCuda::setPbc(const t_pbc* pbc)
-{
-    setPbcAiuc(pbc->ndim_ePBC, pbc->box, &kernelParams_.pbcAiuc);
 }
 
 } // namespace gmx

@@ -222,6 +222,7 @@ public:
      *                                  multipliers when velocities are updated)
      * \param[in]     computeVirial     If virial should be updated.
      * \param[in,out] virialScaled      Scaled virial tensor to be updated.
+     * \param[in]     pbcAiuc           PBC data.
      */
     void apply(const float3* d_x,
                float3*       d_xp,
@@ -229,7 +230,8 @@ public:
                float3*       d_v,
                const real    invdt,
                const bool    computeVirial,
-               tensor        virialScaled);
+               tensor        virialScaled,
+               const PbcAiuc pbcAiuc);
 
     /*! \brief
      * Update data-structures (e.g. after NB search step).
@@ -246,23 +248,9 @@ public:
      */
     void set(const t_idef& idef, const t_mdatoms& md);
 
-    /*! \brief
-     * Update PBC data.
-     *
-     * Converts pbc data from t_pbc into the PbcAiuc format and stores the latter.
-     *
-     * \todo PBC should not be handled by constraints.
-     *
-     * \param[in] pbc The PBC data in t_pbc format.
-     */
-    void setPbc(const t_pbc* pbc);
-
-
 private:
     //! CUDA stream
     CommandStream commandStream_;
-    //! Periodic boundary data
-    PbcAiuc pbcAiuc_;
 
     //! Scaled virial tensor (9 reals, GPU)
     std::vector<float> h_virialScaled_;

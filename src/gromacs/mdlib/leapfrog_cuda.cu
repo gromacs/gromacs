@@ -339,11 +339,6 @@ LeapFrogCuda::~LeapFrogCuda()
     freeDeviceBuffer(&d_inverseMasses_);
 }
 
-void LeapFrogCuda::setPbc(const t_pbc* pbc)
-{
-    setPbcAiuc(pbc->ndim_ePBC, pbc->box, &pbcAiuc_);
-}
-
 void LeapFrogCuda::set(const t_mdatoms& md, const int numTempScaleValues, const unsigned short* tempScaleGroups)
 {
     numAtoms_                       = md.nr;

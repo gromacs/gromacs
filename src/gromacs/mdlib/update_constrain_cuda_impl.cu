@@ -93,8 +93,8 @@ void UpdateConstrainCuda::Impl::integrate(GpuEventSynchronizer*             fRea
     // Constraints need both coordinates before (d_x_) and after (d_xp_) update. However, after constraints
     // are applied, the d_x_ can be discarded. So we intentionally swap the d_x_ and d_xp_ here to avoid the
     // d_xp_ -> d_x_ copy after constraints. Note that the integrate saves them in the wrong order as well.
-    lincsCuda_->apply(d_xp_, d_x_, updateVelocities, d_v_, 1.0 / dt, computeVirial, virial);
-    settleCuda_->apply(d_xp_, d_x_, updateVelocities, d_v_, 1.0 / dt, computeVirial, virial);
+    lincsCuda_->apply(d_xp_, d_x_, updateVelocities, d_v_, 1.0 / dt, computeVirial, virial, pbcAiuc_);
+    settleCuda_->apply(d_xp_, d_x_, updateVelocities, d_v_, 1.0 / dt, computeVirial, virial, pbcAiuc_);
 
     // scaledVirial -> virial (methods above returns scaled values)
     float scaleFactor = 0.5f / (dt * dt);
@@ -160,9 +160,6 @@ void UpdateConstrainCuda::Impl::set(DeviceBuffer<float>       d_x,
 void UpdateConstrainCuda::Impl::setPbc(const t_pbc* pbc)
 {
     setPbcAiuc(pbc->ndim_ePBC, pbc->box, &pbcAiuc_);
-    integrator_->setPbc(pbc);
-    lincsCuda_->setPbc(pbc);
-    settleCuda_->setPbc(pbc);
 }
 
 GpuEventSynchronizer* UpdateConstrainCuda::Impl::getCoordinatesReadySync()

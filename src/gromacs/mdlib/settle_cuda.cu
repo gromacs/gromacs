@@ -40,8 +40,6 @@
  * using CUDA, including class initialization, data-structures management
  * and GPU kernel.
  *
- * \note Management of CUDA stream and periodic boundary should be unified with LINCS
- *       and removed from here once constraints are fully integrated with update module.
  * \todo Reconsider naming to use "gpu" suffix instead of "cuda".
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
@@ -89,10 +87,10 @@ constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
  * \param [in]      gm_x             Coordinates of atoms before the timestep.
  * \param [in,out]  gm_x             Coordinates of atoms after the timestep (constrained coordinates will be
  *                                   saved here).
- * \param [in]      pbcAiuc          Periodic boundary conditions data.
  * \param [in]      invdt            Reciprocal timestep.
  * \param [in]      gm_v             Velocities of the particles.
  * \param [in]      gm_virialScaled  Virial tensor.
+ * \param [in]      pbcAiuc          Periodic boundary conditions data.
  */
 template<bool updateVelocities, bool computeVirial>
 __launch_bounds__(c_maxThreadsPerBlock) __global__
@@ -101,10 +99,10 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
                            const SettleParameters pars,
                            const float3* __restrict__ gm_x,
                            float3* __restrict__ gm_xprime,
-                           const PbcAiuc pbcAiuc,
-                           float         invdt,
+                           float invdt,
                            float3* __restrict__ gm_v,
-                           float* __restrict__ gm_virialScaled)
+                           float* __restrict__ gm_virialScaled,
+                           const PbcAiuc pbcAiuc)
 {
     /* ******************************************************************* */
     /*                                                                  ** */
@@ -421,7 +419,8 @@ void SettleCuda::apply(const float3* d_x,
                        float3*       d_v,
                        const real    invdt,
                        const bool    computeVirial,
-                       tensor        virialScaled)
+                       tensor        virialScaled,
+                       const PbcAiuc pbcAiuc)
 {
 
     ensureNoPendingCudaError("In CUDA version SETTLE");
@@ -460,8 +459,8 @@ void SettleCuda::apply(const float3* d_x,
     config.stream = commandStream_;
 
     const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, &numSettles_, &d_atomIds_,
-                                                      &settleParameters_, &d_x, &d_xp, &pbcAiuc_,
-                                                      &invdt, &d_v, &d_virialScaled_);
+                                                      &settleParameters_, &d_x, &d_xp, &invdt, &d_v,
+                                                      &d_virialScaled_, &pbcAiuc);
 
     launchGpuKernel(kernelPtr, config, nullptr, "settle_kernel<updateVelocities, computeVirial>", kernelArgs);
 
@@ -625,11 +624,6 @@ void SettleCuda::set(const t_idef& idef, const t_mdatoms gmx_unused& md)
     }
     copyToDeviceBuffer(&d_atomIds_, h_atomIds_.data(), 0, numSettles_, commandStream_,
                        GpuApiCallBehavior::Sync, nullptr);
-}
-
-void SettleCuda::setPbc(const t_pbc* pbc)
-{
-    setPbcAiuc(pbc->ndim_ePBC, pbc->box, &pbcAiuc_);
 }
 
 } // namespace gmx

@@ -87,8 +87,10 @@ void applySettleGpu(SettleTestData*  testData,
     GMX_RELEASE_ASSERT(canPerformGpuDetection(), "Can't detect CUDA-capable GPUs.");
 
     auto settleCuda = std::make_unique<SettleCuda>(testData->mtop_, nullptr);
-    settleCuda->setPbc(&pbc);
+
     settleCuda->set(testData->idef_, testData->mdatoms_);
+    PbcAiuc pbcAiuc;
+    setPbcAiuc(pbc.ndim_ePBC, pbc.box, &pbcAiuc);
 
     int numAtoms = testData->mdatoms_.homenr;
 
@@ -109,7 +111,7 @@ void applySettleGpu(SettleTestData*  testData,
         copyToDeviceBuffer(&d_v, (float3*)h_v, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
     }
     settleCuda->apply(d_x, d_xp, updateVelocities, d_v, testData->reciprocalTimeStep_, calcVirial,
-                      testData->virial_);
+                      testData->virial_, pbcAiuc);
 
     copyFromDeviceBuffer((float3*)h_xp, &d_xp, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
     if (updateVelocities)

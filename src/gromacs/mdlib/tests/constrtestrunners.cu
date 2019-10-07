@@ -78,7 +78,8 @@ void applyLincsCuda(ConstraintsTestData* testData, t_pbc pbc)
     float3 *d_x, *d_xp, *d_v;
 
     lincsCuda->set(testData->idef_, testData->md_);
-    lincsCuda->setPbc(&pbc);
+    PbcAiuc pbcAiuc;
+    setPbcAiuc(pbc.ndim_ePBC, pbc.box, &pbcAiuc);
 
     allocateDeviceBuffer(&d_x, numAtoms, nullptr);
     allocateDeviceBuffer(&d_xp, numAtoms, nullptr);
@@ -94,7 +95,7 @@ void applyLincsCuda(ConstraintsTestData* testData, t_pbc pbc)
                            GpuApiCallBehavior::Sync, nullptr);
     }
     lincsCuda->apply(d_x, d_xp, updateVelocities, d_v, testData->invdt_, testData->computeVirial_,
-                     testData->virialScaled_);
+                     testData->virialScaled_, pbcAiuc);
 
     copyFromDeviceBuffer((float3*)(testData->xPrime_.data()), &d_xp, 0, numAtoms, nullptr,
                          GpuApiCallBehavior::Sync, nullptr);
