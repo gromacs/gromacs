@@ -1106,14 +1106,7 @@ void do_force(FILE                                     *fplog,
                                     *fcd,
                                     *mdatoms,
                                     stepWork);
-    }
 
-    const gmx::DomainLifetimeWorkload &domainWork = runScheduleWork->domainWork;
-
-    /* do local pair search */
-    if (stepWork.doNeighborSearch)
-    {
-        // TODO: fuse this branch with the above stepWork.doNeighborSearch block
         wallcycle_start_nocount(wcycle, ewcNS);
         wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_LOCAL);
         /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
@@ -1150,6 +1143,8 @@ void do_force(FILE                                     *fplog,
                                     x.unpaddedArrayRef());
         }
     }
+
+    const gmx::DomainLifetimeWorkload &domainWork = runScheduleWork->domainWork;
 
     if (bUseGPU)
     {
