@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="dimethyl-carbonate.pdb">12</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">12</Int>
+    <String>c3</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>os</String>
+    <String>c</String>
+    <String>o</String>
+    <String>os</String>
+    <String>c3</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
+  </Sequence>
+</ReferenceData>
