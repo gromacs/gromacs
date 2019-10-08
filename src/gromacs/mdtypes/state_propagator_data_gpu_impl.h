@@ -267,7 +267,7 @@ class StatePropagatorDataGpu::Impl
          *  \param[in]  commandStream  GPU stream to execute copy in.
          */
         void copyToDevice(DeviceBuffer<float>                   d_data,
-                          const gmx::ArrayRef<const gmx::RVec>  h_data,
+                          gmx::ArrayRef<const gmx::RVec>        h_data,
                           int                                   dataSize,
                           AtomLocality                          atomLocality,
                           CommandStream                         commandStream);
