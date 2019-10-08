@@ -244,12 +244,10 @@ do_force_lowlevel(t_forcerec                               *fr,
                          * exclusion forces) are calculated, so we can store
                          * the forces in the normal, single forceWithVirial->force_ array.
                          */
-                        ewald_LRcorrection(md->homenr, cr, nthreads, t, fr, ir,
+                        ewald_LRcorrection(md->homenr, cr, nthreads, t, *fr, *ir,
                                            md->chargeA, md->chargeB,
                                            (md->nChargePerturbed != 0),
                                            x, box, mu_tot,
-                                           ir->ewald_geometry,
-                                           ir->epsilon_surface,
                                            as_rvec_array(forceWithVirial.force_.data()),
                                            &ewc_t.Vcorr_q,
                                            lambda[efptCOUL],

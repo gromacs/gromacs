@@ -67,14 +67,13 @@
 void ewald_LRcorrection(const int numAtomsLocal,
                         const t_commrec *cr,
                         int numThreads, int thread,
-                        t_forcerec *fr,
-                        const t_inputrec *ir,
+                        const t_forcerec &fr,
+                        const t_inputrec &ir,
                         const real *chargeA, const real *chargeB,
                         gmx_bool bHaveChargePerturbed,
                         const rvec x[],
                         const matrix box,
                         const rvec mu_tot[],
-                        int ewald_geometry, real epsilon_surface,
                         rvec *f,
                         real *Vcorr_q,
                         real lambda_q,
@@ -92,16 +91,12 @@ void ewald_LRcorrection(const int numAtomsLocal,
     real        L1_q, dipole_coeff;
     real        chargecorr[2] = { 0, 0 };
 
-    GMX_ASSERT(ir, "Invalid inputrec pointer");
+    /* Scale the Ewald unit cell when dimension z is not periodic */
     matrix          scaledBox;
-    EwaldBoxZScaler boxScaler(*ir);
+    EwaldBoxZScaler boxScaler(ir);
     boxScaler.scaleBox(box, scaledBox);
 
-    /* This routine can be made faster by using tables instead of analytical interactions
-     * However, that requires a thorough verification that they are correct in all cases.
-     */
-
-    one_4pi_eps  = ONE_4PI_EPS0/fr->ic->epsilon_r;
+    one_4pi_eps  = ONE_4PI_EPS0/fr.ic->epsilon_r;
     Vexcl_q      = 0;
     dvdl_excl_q  = 0;
     Vdipole[0]   = 0;
@@ -120,13 +115,13 @@ void ewald_LRcorrection(const int numAtomsLocal,
     dipole_coeff = 0;
 
     real boxVolume = scaledBox[XX][XX]*scaledBox[YY][YY]*scaledBox[ZZ][ZZ];
-    switch (ewald_geometry)
+    switch (ir.ewald_geometry)
     {
         case eewg3D:
-            if (epsilon_surface != 0)
+            if (ir.epsilon_surface != 0)
             {
                 dipole_coeff =
-                    2*M_PI*ONE_4PI_EPS0/((2*epsilon_surface + fr->ic->epsilon_r)*boxVolume);
+                    2*M_PI*ONE_4PI_EPS0/((2*ir.epsilon_surface + fr.ic->epsilon_r)*boxVolume);
                 for (i = 0; (i < DIM); i++)
                 {
                     dipcorrA[i] = 2*dipole_coeff*mutot[0][i];
@@ -141,9 +136,9 @@ void ewald_LRcorrection(const int numAtomsLocal,
             for (int q = 0; q < (bHaveChargePerturbed ? 2 : 1); q++)
             {
                 /* Avoid charge corrections with near-zero net charge */
-                if (fabs(fr->qsum[q]) > 1e-4)
+                if (fabs(fr.qsum[q]) > 1e-4)
                 {
-                    chargecorr[q] = 2*dipole_coeff*fr->qsum[q];
+                    chargecorr[q] = 2*dipole_coeff*fr.qsum[q];
                 }
             }
             break;
@@ -203,11 +198,11 @@ void ewald_LRcorrection(const int numAtomsLocal,
              */
             if (dipole_coeff != 0)
             {
-                if (ewald_geometry == eewg3D)
+                if (ir.ewald_geometry == eewg3D)
                 {
                     Vdipole[q] = dipole_coeff*iprod(mutot[q], mutot[q]);
                 }
-                else if (ewald_geometry == eewg3DC)
+                else if (ir.ewald_geometry == eewg3DC)
                 {
                     Vdipole[q] = dipole_coeff*mutot[q][ZZ]*mutot[q][ZZ];
 
@@ -225,7 +220,7 @@ void ewald_LRcorrection(const int numAtomsLocal,
                         {
                             sumQZ2 += qPtr[i]*x[i][ZZ]*x[i][ZZ];
                         }
-                        Vdipole[q] -= dipole_coeff*fr->qsum[q]*(sumQZ2 + fr->qsum[q]*box[ZZ][ZZ]*box[ZZ][ZZ]/12);
+                        Vdipole[q] -= dipole_coeff*fr.qsum[q]*(sumQZ2 + fr.qsum[q]*box[ZZ][ZZ]*box[ZZ][ZZ]/12);
                     }
                 }
             }
@@ -248,14 +243,14 @@ void ewald_LRcorrection(const int numAtomsLocal,
     {
         fprintf(debug, "Long Range corrections for Ewald interactions:\n");
         fprintf(debug, "q2sum = %g, Vself_q=%g\n",
-                L1_q*fr->q2sum[0]+lambda_q*fr->q2sum[1], L1_q*Vself_q[0]+lambda_q*Vself_q[1]);
+                L1_q*fr.q2sum[0] + lambda_q*fr.q2sum[1], L1_q*Vself_q[0] + lambda_q*Vself_q[1]);
         fprintf(debug, "Electrostatic Long Range correction: Vexcl=%g\n", Vexcl_q);
         if (MASTER(cr) && thread == 0)
         {
-            if (epsilon_surface > 0 || ewald_geometry == eewg3DC)
+            if (ir.epsilon_surface > 0 || ir.ewald_geometry == eewg3DC)
             {
                 fprintf(debug, "Total dipole correction: Vdipole=%g\n",
-                        L1_q*Vdipole[0]+lambda_q*Vdipole[1]);
+                        L1_q*Vdipole[0] + lambda_q*Vdipole[1]);
             }
         }
     }
