@@ -1493,6 +1493,14 @@ void do_force(FILE                                     *fplog,
 
             if (useGpuFBufOps == BufferOpsUseGpu::True)
             {
+                std::vector<GpuEventSynchronizer*> dependencyList;
+                dependencyList.reserve(2);
+
+                if (useGpuPmeFReduction)
+                {
+                    dependencyList.push_back(pme_gpu_get_f_ready_synchronizer(fr->pmedata));
+                }
+
                 // TODO: move this into DomainLifetimeWorkload, including the second part of the condition
                 // The bonded and free energy CPU tasks can have non-local force contributions
                 // which are a dependency for the GPU force reduction.
@@ -1501,11 +1509,16 @@ void do_force(FILE                                     *fplog,
                 if (haveNonLocalForceContribInCpuBuffer)
                 {
                     stateGpu->copyForcesToGpu(forceOut.forceWithShiftForces().force(), gmx::StatePropagatorDataGpu::AtomLocality::NonLocal);
+                    dependencyList.push_back(stateGpu->getForcesReadyOnDeviceEvent(gmx::StatePropagatorDataGpu::AtomLocality::NonLocal));
                 }
+
+                //
+                // FIXME: are we adding a PME->nonlocal dep here?
+                //
                 nbv->atomdata_add_nbat_f_to_f_gpu(Nbnxm::AtomLocality::NonLocal,
                                                   stateGpu->getForces(),
                                                   pme_gpu_get_device_f(fr->pmedata),
-                                                  pme_gpu_get_f_ready_synchronizer(fr->pmedata),
+                                                  dependencyList,
                                                   useGpuPmeFReduction, haveNonLocalForceContribInCpuBuffer);
                 stateGpu->copyForcesFromGpu(forceOut.forceWithShiftForces().force(), gmx::StatePropagatorDataGpu::AtomLocality::NonLocal);
             }
@@ -1626,6 +1639,14 @@ void do_force(FILE                                     *fplog,
      * on the non-alternating path. */
     if (bUseOrEmulGPU && !alternateGpuWait)
     {
+        std::vector<GpuEventSynchronizer*> dependencyList;
+        dependencyList.reserve(2);
+
+        if (useGpuPmeFReduction)
+        {
+            dependencyList.push_back(pme_gpu_get_f_ready_synchronizer(fr->pmedata));
+        }
+
         gmx::ArrayRef<gmx::RVec>  forceWithShift = forceOut.forceWithShiftForces().force();
 
         if (useGpuFBufOps == BufferOpsUseGpu::True)
@@ -1646,6 +1667,7 @@ void do_force(FILE                                     *fplog,
             if (haveLocalForceContribInCpuBuffer && !useGpuForcesHaloExchange)
             {
                 stateGpu->copyForcesToGpu(forceWithShift, gmx::StatePropagatorDataGpu::AtomLocality::Local);
+                dependencyList.push_back(stateGpu->getForcesReadyOnDeviceEvent(gmx::StatePropagatorDataGpu::AtomLocality::Local));
             }
             if (useGpuForcesHaloExchange)
             {
@@ -1653,13 +1675,15 @@ void do_force(FILE                                     *fplog,
                 // for the local buffer ops on the result of GPU halo
                 // exchange, which operates in the non-local stream and
                 // writes to to local parf og the force buffer.
+                //
                 // TODO improve this through use of an event - see Redmine #3093
+                //      push the event into the dependencyList
                 nbv->stream_local_wait_for_nonlocal();
             }
             nbv->atomdata_add_nbat_f_to_f_gpu(Nbnxm::AtomLocality::Local,
                                               stateGpu->getForces(),
                                               pme_gpu_get_device_f(fr->pmedata),
-                                              pme_gpu_get_f_ready_synchronizer(fr->pmedata),
+                                              dependencyList,
                                               useGpuPmeFReduction, haveLocalForceContribInCpuBuffer);
             // This function call synchronizes the local stream
             nbv->wait_for_gpu_force_reduction(Nbnxm::AtomLocality::Local);

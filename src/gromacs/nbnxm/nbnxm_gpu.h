@@ -301,7 +301,7 @@ void nbnxn_gpu_init_add_nbat_f_to_f(const int               gmx_unused *cell,
  * \param[in]   totalForcesDevice    Device buffer to accumulate resulting force.
  * \param[in]   gpu_nbv              The NBNXM GPU data structure.
  * \param[in]   pmeForcesDevice      Device buffer with PME forces.
- * \param[in]   pmeForcesReady       Event that signals when the PME forces are ready for the reduction.
+ * \param[in]   dependencyList       List of synchronizers that represent the dependencies the reduction task needs to sync on.
  * \param[in]   atomStart            Index of the first atom to reduce forces for.
  * \param[in]   numAtoms             Number of atoms to reduce forces for.
  * \param[in]   useGpuFPmeReduction  Whether PME forces should be added.
@@ -309,15 +309,15 @@ void nbnxn_gpu_init_add_nbat_f_to_f(const int               gmx_unused *cell,
  *
  */
 CUDA_FUNC_QUALIFIER
-void nbnxn_gpu_add_nbat_f_to_f(AtomLocality                 gmx_unused  atomLocality,
-                               DeviceBuffer<float>          gmx_unused  totalForcesDevice,
-                               gmx_nbnxn_gpu_t              gmx_unused *gpu_nbv,
-                               void                         gmx_unused *pmeForcesDevice,
-                               GpuEventSynchronizer         gmx_unused *pmeForcesReady,
-                               int                          gmx_unused  atomStart,
-                               int                          gmx_unused  numAtoms,
-                               bool                         gmx_unused  useGpuFPmeReduction,
-                               bool                         gmx_unused  accumulateForce) CUDA_FUNC_TERM;
+void nbnxn_gpu_add_nbat_f_to_f(AtomLocality                               gmx_unused  atomLocality,
+                               DeviceBuffer<float>                        gmx_unused  totalForcesDevice,
+                               gmx_nbnxn_gpu_t                            gmx_unused *gpu_nbv,
+                               void                                       gmx_unused *pmeForcesDevice,
+                               gmx::ArrayRef<GpuEventSynchronizer* const> gmx_unused  dependencyList,
+                               int                                        gmx_unused  atomStart,
+                               int                                        gmx_unused  numAtoms,
+                               bool                                       gmx_unused  useGpuFPmeReduction,
+                               bool                                       gmx_unused  accumulateForce) CUDA_FUNC_TERM;
 
 /*! \brief Wait for GPU stream to complete */
 CUDA_FUNC_QUALIFIER

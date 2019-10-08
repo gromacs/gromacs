@@ -189,12 +189,12 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality          
 }
 
 void
-nonbonded_verlet_t::atomdata_add_nbat_f_to_f_gpu(const Nbnxm::AtomLocality           locality,
-                                                 DeviceBuffer<float>                 totalForcesDevice,
-                                                 void                               *forcesPmeDevice,
-                                                 GpuEventSynchronizer               *pmeForcesReady,
-                                                 bool                                useGpuFPmeReduction,
-                                                 bool                                accumulateForce)
+nonbonded_verlet_t::atomdata_add_nbat_f_to_f_gpu(const Nbnxm::AtomLocality                   locality,
+                                                 DeviceBuffer<float>                         totalForcesDevice,
+                                                 void                                       *forcesPmeDevice,
+                                                 gmx::ArrayRef<GpuEventSynchronizer* const>  dependencyList,
+                                                 bool                                        useGpuFPmeReduction,
+                                                 bool                                        accumulateForce)
 {
 
     GMX_ASSERT((useGpuFPmeReduction == (forcesPmeDevice != nullptr)),
@@ -210,7 +210,7 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f_gpu(const Nbnxm::AtomLocality      
     wallcycle_start(wcycle_, ewcNB_XF_BUF_OPS);
     wallcycle_sub_start(wcycle_, ewcsNB_F_BUF_OPS);
 
-    reduceForcesGpu(locality, totalForcesDevice, pairSearch_->gridSet(), forcesPmeDevice, pmeForcesReady, gpu_nbv, useGpuFPmeReduction, accumulateForce);
+    reduceForcesGpu(locality, totalForcesDevice, pairSearch_->gridSet(), forcesPmeDevice, dependencyList, gpu_nbv, useGpuFPmeReduction, accumulateForce);
 
     wallcycle_sub_stop(wcycle_, ewcsNB_F_BUF_OPS);
     wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);

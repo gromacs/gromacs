@@ -1492,14 +1492,14 @@ void reduceForces(nbnxn_atomdata_t                *nbat,
 }
 
 /* Add the force array(s) from nbnxn_atomdata_t to f */
-void reduceForcesGpu(const Nbnxm::AtomLocality        locality,
-                     DeviceBuffer<float>              totalForcesDevice,
-                     const Nbnxm::GridSet            &gridSet,
-                     void                            *pmeForcesDevice,
-                     GpuEventSynchronizer            *pmeForcesReady,
-                     gmx_nbnxn_gpu_t                 *gpu_nbv,
-                     bool                             useGpuFPmeReduction,
-                     bool                             accumulateForce)
+void reduceForcesGpu(const Nbnxm::AtomLocality                   locality,
+                     DeviceBuffer<float>                         totalForcesDevice,
+                     const Nbnxm::GridSet                       &gridSet,
+                     void                                       *pmeForcesDevice,
+                     gmx::ArrayRef<GpuEventSynchronizer* const>  dependencyList,
+                     gmx_nbnxn_gpu_t                            *gpu_nbv,
+                     bool                                        useGpuFPmeReduction,
+                     bool                                        accumulateForce)
 {
     int atomsStart = 0;
     int numAtoms   = 0;
@@ -1516,7 +1516,7 @@ void reduceForcesGpu(const Nbnxm::AtomLocality        locality,
                                      totalForcesDevice,
                                      gpu_nbv,
                                      pmeForcesDevice,
-                                     pmeForcesReady,
+                                     dependencyList,
                                      atomsStart, numAtoms,
                                      useGpuFPmeReduction,
                                      accumulateForce);

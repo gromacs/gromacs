@@ -346,16 +346,16 @@ struct nonbonded_verlet_t
          * \param [in]     locality             Local or non-local
          * \param [in,out] totalForcesDevice    Force to be added to
          * \param [in]     forcesPmeDevice      Device buffer with PME forces
-         * \param [in]     pmeForcesReady       Event triggered when PME force calculation has completed
+         * \param[in]      dependencyList       List of synchronizers that represent the dependencies the reduction task needs to sync on.
          * \param [in]     useGpuFPmeReduction  Whether PME forces should be added
          * \param [in]     accumulateForce      If the total force buffer already contains data
          */
-        void atomdata_add_nbat_f_to_f_gpu(Nbnxm::AtomLocality                 locality,
-                                          DeviceBuffer<float>                 totalForcesDevice,
-                                          void                               *forcesPmeDevice,
-                                          GpuEventSynchronizer               *pmeForcesReady,
-                                          bool                                useGpuFPmeReduction,
-                                          bool                                accumulateForce);
+        void atomdata_add_nbat_f_to_f_gpu(Nbnxm::AtomLocality                         locality,
+                                          DeviceBuffer<float>                         totalForcesDevice,
+                                          void                                       *forcesPmeDevice,
+                                          gmx::ArrayRef<GpuEventSynchronizer* const>  dependencyList,
+                                          bool                                        useGpuFPmeReduction,
+                                          bool                                        accumulateForce);
 
         /*! \brief Outer body of function to perform initialization for F buffer operations on GPU. */
         void atomdata_init_add_nbat_f_to_f_gpu();

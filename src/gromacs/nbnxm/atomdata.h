@@ -359,19 +359,19 @@ void reduceForces(nbnxn_atomdata_t                   *nbat,
  * \param[out] totalForcesDevice    Device buffer to accumulate resulting force.
  * \param[in]  gridSet              The grids data.
  * \param[in]  pmeForcesDevice      Device buffer with PME forces.
- * \param[in]  pmeForcesReady       Event that signals when the PME forces are ready for the reduction.
+ * \param[in]  dependencyList       List of synchronizers that represent the dependencies the reduction task needs to sync on.
  * \param[in]  gpu_nbv              The NBNXM GPU data structure.
  * \param[in]  useGpuFPmeReduction  Whether PME forces should be added.
  * \param[in]  accumulateForce      Whether there are usefull data already in the total force buffer.
  */
-void reduceForcesGpu(Nbnxm::AtomLocality                 locality,
-                     DeviceBuffer<float>                 totalForcesDevice,
-                     const Nbnxm::GridSet               &gridSet,
-                     void                               *pmeForcesDevice,
-                     GpuEventSynchronizer               *pmeForcesReady,
-                     gmx_nbnxn_gpu_t                    *gpu_nbv,
-                     bool                                useGpuFPmeReduction,
-                     bool                                accumulateForce);
+void reduceForcesGpu(Nbnxm::AtomLocality                         locality,
+                     DeviceBuffer<float>                         totalForcesDevice,
+                     const Nbnxm::GridSet                       &gridSet,
+                     void                                       *pmeForcesDevice,
+                     gmx::ArrayRef<GpuEventSynchronizer* const>  dependencyList,
+                     gmx_nbnxn_gpu_t                            *gpu_nbv,
+                     bool                                        useGpuFPmeReduction,
+                     bool                                        accumulateForce);
 
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t   &nbat,
