@@ -194,14 +194,16 @@ struct DevelopmentFeatureFlags
  * Note that some development features overrides are applied already here:
  * the GPU communication flags are set to false in non-tMPI and non-CUDA builds.
  *
- * \param[in]  mdlog        Logger object.
- * \returns                 The object populated with development feature flags.
+ * \param[in]  mdlog                Logger object.
+ * \param[in]  useGpuForNonbonded   True if the nonbonded task is offloaded in this run.
+ * \returns                         The object populated with development feature flags.
  */
-static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger &mdlog)
+static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger &mdlog,
+                                                         const bool           useGpuForNonbonded)
 {
     DevelopmentFeatureFlags devFlags;
 
-    devFlags.enableGpuBufferOps    = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
+    devFlags.enableGpuBufferOps    = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr) && (GMX_GPU == GMX_GPU_CUDA) && useGpuForNonbonded;
     devFlags.useGpuUpdateConstrain = (getenv("GMX_UPDATE_CONSTRAIN_GPU") != nullptr);
     devFlags.enableGpuHaloExchange = (getenv("GMX_GPU_DD_COMMS") != nullptr && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA));
     devFlags.enableGpuPmePPComm    = (getenv("GMX_GPU_DD_COMMS") != nullptr && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA));
@@ -683,9 +685,6 @@ int Mdrunner::mdrunner()
     gmx::LoggerOwner logOwner(buildLogger(fplog, isSimulationMasterRank));
     gmx::MDLogger    mdlog(logOwner.logger());
 
-    // report any development features that may be enabled by environment variables
-    const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(mdlog);
-
     // TODO The thread-MPI master rank makes a working
     // PhysicalNodeCommunicator here, but it gets rebuilt by all ranks
     // after the threads have been launched. This works because no use
@@ -844,6 +843,10 @@ int Mdrunner::mdrunner()
         }
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+    // Initialize development feature flags that enabled by environment variable
+    // and report those features that are enabled.
+    const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(mdlog, useGpuForNonbonded);
 
     // Build restraints.
     // TODO: hide restraint implementation details from Mdrunner.

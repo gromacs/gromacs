@@ -613,17 +613,15 @@ static int makePmeFlags(const StepWorkload &stepWork)
  * \param[in]  box                  The box matrix
  * \param[in]  stepWork             Step schedule flags
  * \param[in]  pmeFlags             PME flags
- * \param[in]  useGpuForceReduction True if GPU-based force reduction is active this step
  * \param[in]  wcycle               The wallcycle structure
  */
 static inline void launchPmeGpuSpread(gmx_pme_t          *pmedata,
                                       const matrix        box,
                                       const StepWorkload &stepWork,
                                       int                 pmeFlags,
-                                      bool                useGpuForceReduction,
                                       gmx_wallcycle_t     wcycle)
 {
-    pme_gpu_prepare_computation(pmedata, stepWork.haveDynamicBox, box, wcycle, pmeFlags, useGpuForceReduction);
+    pme_gpu_prepare_computation(pmedata, stepWork.haveDynamicBox, box, wcycle, pmeFlags, stepWork.useGpuPmeFReduction);
     pme_gpu_launch_spread(pmedata, wcycle);
 }
 
@@ -795,11 +793,16 @@ setupDomainLifetimeWorkload(const t_inputrec       &inputrec,
  *
  * \param[in]      legacyFlags          Force bitmask flags used to construct the new flags
  * \param[in]      isNonbondedOn        Global override, if false forces to turn off all nonbonded calculation.
+ * \param[in]      simulationWork       Simulation workload description.
+ * \param[in]      rankHasPmeDuty       If this rank computes PME.
+ *
  * \returns New Stepworkload description.
  */
 static StepWorkload
-setupStepWorkload(const int     legacyFlags,
-                  const bool    isNonbondedOn)
+setupStepWorkload(const int                 legacyFlags,
+                  const bool                isNonbondedOn,
+                  const SimulationWorkload &simulationWork,
+                  const bool                rankHasPmeDuty)
 {
     StepWorkload flags;
     flags.stateChanged           = ((legacyFlags & GMX_FORCE_STATECHANGED) != 0);
@@ -811,6 +814,17 @@ setupStepWorkload(const int     legacyFlags,
     flags.computeListedForces    = ((legacyFlags & GMX_FORCE_LISTED) != 0);
     flags.computeNonbondedForces = ((legacyFlags & GMX_FORCE_NONBONDED) != 0) && isNonbondedOn;
     flags.computeDhdl            = ((legacyFlags & GMX_FORCE_DHDL) != 0);
+
+    if (simulationWork.useGpuBufferOps)
+    {
+        GMX_ASSERT(simulationWork.useGpuNonbonded, "Can only offload buffer ops if nonbonded computation is also offloaded");
+    }
+    flags.useGpuXBufferOps = simulationWork.useGpuBufferOps;
+    // on virial steps the CPU reduction path is taken
+    // TODO: remove flags.computeEnergy, ref #3128
+    flags.useGpuFBufferOps    = simulationWork.useGpuBufferOps && !(flags.computeVirial || flags.computeEnergy);
+    flags.useGpuPmeFReduction = flags.useGpuFBufferOps && (simulationWork.usePmeGpu && rankHasPmeDuty);
+
     return flags;
 }
 
@@ -911,25 +925,22 @@ void do_force(FILE                                     *fplog,
         legacyFlags &= ~GMX_FORCE_NONBONDED;
     }
 
-    runScheduleWork->stepWork = setupStepWorkload(legacyFlags, fr->bNonbonded);
-    const StepWorkload       &stepWork = runScheduleWork->stepWork;
-
     const SimulationWorkload &simulationWork = runScheduleWork->simulationWork;
 
-    const bool                useGpuPmeOnThisRank = simulationWork.usePmeGpu && thisRankHasDuty(cr, DUTY_PME);
-    const int                 pmeFlags            = makePmeFlags(stepWork);
+
+    runScheduleWork->stepWork = setupStepWorkload(legacyFlags, fr->bNonbonded,
+                                                  simulationWork, thisRankHasDuty(cr, DUTY_PME));
+    const StepWorkload &stepWork = runScheduleWork->stepWork;
+
+
+    const bool useGpuPmeOnThisRank = simulationWork.usePmeGpu && thisRankHasDuty(cr, DUTY_PME);
+    const int  pmeFlags            = makePmeFlags(stepWork);
 
     // Switches on whether to use GPU for position and force buffer operations
     // TODO consider all possible combinations of triggers, and how to combine optimally in each case.
-    const BufferOpsUseGpu useGpuXBufOps = (simulationWork.useGpuBufferOps &&
-                                           simulationWork.useGpuNonbonded && (GMX_GPU == GMX_GPU_CUDA)) ? BufferOpsUseGpu::True : BufferOpsUseGpu::False;;
+    const BufferOpsUseGpu useGpuXBufOps = stepWork.useGpuXBufferOps ? BufferOpsUseGpu::True : BufferOpsUseGpu::False;
     // GPU Force buffer ops are disabled on virial steps, because the virial calc is not yet ported to GPU
-    const BufferOpsUseGpu useGpuFBufOps = ((simulationWork.useGpuBufferOps &&
-                                            simulationWork.useGpuNonbonded && (GMX_GPU == GMX_GPU_CUDA)) &&
-                                           !(stepWork.computeVirial || stepWork.computeEnergy)) ? BufferOpsUseGpu::True : BufferOpsUseGpu::False;
-    // TODO: move / add this flag to the internal PME GPU data structures
-    const bool useGpuPmeFReduction = (useGpuFBufOps == BufferOpsUseGpu::True) &&
-        useGpuPmeOnThisRank; // only supported if this rank is perfoming PME on the GPU
+    const BufferOpsUseGpu useGpuFBufOps = stepWork.useGpuFBufferOps ? BufferOpsUseGpu::True : BufferOpsUseGpu::False;
 
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
@@ -1019,7 +1030,7 @@ void do_force(FILE                                     *fplog,
 
     if (useGpuPmeOnThisRank)
     {
-        launchPmeGpuSpread(fr->pmedata, box, stepWork, pmeFlags, useGpuPmeFReduction, wcycle);
+        launchPmeGpuSpread(fr->pmedata, box, stepWork, pmeFlags, wcycle);
     }
 
     /* do gridding for pair search */
@@ -1533,7 +1544,7 @@ void do_force(FILE                                     *fplog,
     }
 
     const bool useGpuForcesHaloExchange = ddUsesGpuDirectCommunication && (useGpuFBufOps == BufferOpsUseGpu::True);
-    const bool useCpuPmeFReduction      = thisRankHasDuty(cr, DUTY_PME) && !useGpuPmeFReduction;
+    const bool useCpuPmeFReduction      = thisRankHasDuty(cr, DUTY_PME) && !stepWork.useGpuPmeFReduction;
     // TODO: move this into DomainLifetimeWorkload, including the second part of the condition
     const bool haveCpuLocalForces     = (domainWork.haveSpecialForces || domainWork.haveCpuListedForceWork || useCpuPmeFReduction ||
                                          (fr->efep != efepNO));
@@ -1636,7 +1647,7 @@ void do_force(FILE                                     *fplog,
     {
         gmx::FixedCapacityVector<GpuEventSynchronizer*, 2> dependencyList;
 
-        if (useGpuPmeFReduction)
+        if (stepWork.useGpuPmeFReduction)
         {
             dependencyList.push_back(pme_gpu_get_f_ready_synchronizer(fr->pmedata));
         }
@@ -1679,7 +1690,7 @@ void do_force(FILE                                     *fplog,
                                               stateGpu->getForces(),
                                               pme_gpu_get_device_f(fr->pmedata),
                                               dependencyList,
-                                              useGpuPmeFReduction, haveLocalForceContribInCpuBuffer);
+                                              stepWork.useGpuPmeFReduction, haveLocalForceContribInCpuBuffer);
             // This function call synchronizes the local stream
             nbv->wait_for_gpu_force_reduction(Nbnxm::AtomLocality::Local);
             stateGpu->copyForcesFromGpu(forceWithShift, gmx::StatePropagatorDataGpu::AtomLocality::Local);

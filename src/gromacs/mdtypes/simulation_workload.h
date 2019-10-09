@@ -77,6 +77,16 @@ class StepWorkload
         bool computeListedForces = false;
         //! Whether this step DHDL needs to be computed
         bool computeDhdl = false;
+        /*! \brief Whether coordinate buffer ops are done on the GPU this step
+         * \note This technically belongs to DomainLifetimeWorkload but due
+         * to needing the flag before DomainLifetimeWorkload is built we keep
+         * it here for now.
+         */
+        bool useGpuXBufferOps  = false;
+        //! Whether force buffer ops are done on the GPU this step
+        bool useGpuFBufferOps  = false;
+        //! Whether PME forces are reduced with other contributions on the GPU this step
+        bool useGpuPmeFReduction = false; // TODO: add this flag to the internal PME GPU data structures too
 };
 
 /*! \libinternal
