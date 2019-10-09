@@ -105,6 +105,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/fixedcapacityvector.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/logger.h"
@@ -1495,8 +1496,7 @@ void do_force(FILE                                     *fplog,
 
             if (useGpuFBufOps == BufferOpsUseGpu::True)
             {
-                std::vector<GpuEventSynchronizer*> dependencyList;
-                dependencyList.reserve(1);
+                gmx::FixedCapacityVector<GpuEventSynchronizer*, 1> dependencyList;
 
                 // TODO: move this into DomainLifetimeWorkload, including the second part of the condition
                 // The bonded and free energy CPU tasks can have non-local force contributions
@@ -1633,8 +1633,7 @@ void do_force(FILE                                     *fplog,
      * on the non-alternating path. */
     if (useOrEmulateGpuNb && !alternateGpuWait)
     {
-        std::vector<GpuEventSynchronizer*> dependencyList;
-        dependencyList.reserve(2);
+        gmx::FixedCapacityVector<GpuEventSynchronizer*, 2> dependencyList;
 
         if (useGpuPmeFReduction)
         {
