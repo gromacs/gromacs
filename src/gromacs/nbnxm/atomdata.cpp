@@ -1001,25 +1001,25 @@ void nbnxn_atomdata_copy_shiftvec(gmx_bool          bDynamicBox,
 // This is slightly different from nbnxn_get_atom_range(...) at the end of the file
 // TODO: Combine if possible
 static void getAtomRanges(const Nbnxm::GridSet      &gridSet,
-                          const Nbnxm::AtomLocality  locality,
+                          const gmx::AtomLocality    locality,
                           int                       *gridBegin,
                           int                       *gridEnd)
 {
     switch (locality)
     {
-        case Nbnxm::AtomLocality::All:
+        case gmx::AtomLocality::All:
             *gridBegin = 0;
             *gridEnd   = gridSet.grids().size();
             break;
-        case Nbnxm::AtomLocality::Local:
+        case gmx::AtomLocality::Local:
             *gridBegin = 0;
             *gridEnd   = 1;
             break;
-        case Nbnxm::AtomLocality::NonLocal:
+        case gmx::AtomLocality::NonLocal:
             *gridBegin = 1;
             *gridEnd   = gridSet.grids().size();
             break;
-        case Nbnxm::AtomLocality::Count:
+        case gmx::AtomLocality::Count:
             GMX_ASSERT(false, "Count is invalid locality specifier");
             break;
     }
@@ -1027,7 +1027,7 @@ static void getAtomRanges(const Nbnxm::GridSet      &gridSet,
 
 /* Copies (and reorders) the coordinates to nbnxn_atomdata_t */
 void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet     &gridSet,
-                                     const Nbnxm::AtomLocality locality,
+                                     const gmx::AtomLocality   locality,
                                      bool                      fillLocal,
                                      const rvec               *coordinates,
                                      nbnxn_atomdata_t         *nbat)
@@ -1086,7 +1086,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet     &gridSet,
 
 /* Copies (and reorders) the coordinates to nbnxn_atomdata_t on the GPU*/
 void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet       &gridSet,
-                                    const Nbnxm::AtomLocality   locality,
+                                    const gmx::AtomLocality     locality,
                                     bool                        fillLocal,
                                     gmx_nbnxn_gpu_t            *gpu_nbv,
                                     DeviceBuffer<float>         d_x,
@@ -1442,7 +1442,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbnxn_atomdata_t *nbat,
 
 /* Add the force array(s) from nbnxn_atomdata_t to f */
 void reduceForces(nbnxn_atomdata_t                *nbat,
-                  const Nbnxm::AtomLocality        locality,
+                  const gmx::AtomLocality          locality,
                   const Nbnxm::GridSet            &gridSet,
                   rvec                            *f)
 {
@@ -1461,7 +1461,7 @@ void reduceForces(nbnxn_atomdata_t                *nbat,
 
     if (nbat->out.size() > 1)
     {
-        if (locality != Nbnxm::AtomLocality::All)
+        if (locality != gmx::AtomLocality::All)
         {
             gmx_incons("add_f_to_f called with nout>1 and locality!=eatAll");
         }
@@ -1494,7 +1494,7 @@ void reduceForces(nbnxn_atomdata_t                *nbat,
 }
 
 /* Add the force array(s) from nbnxn_atomdata_t to f */
-void reduceForcesGpu(const Nbnxm::AtomLocality                   locality,
+void reduceForcesGpu(const gmx::AtomLocality                     locality,
                      DeviceBuffer<float>                         totalForcesDevice,
                      const Nbnxm::GridSet                       &gridSet,
                      void                                       *pmeForcesDevice,
@@ -1543,7 +1543,7 @@ void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t   &nbat,
     }
 }
 
-void nbnxn_get_atom_range(const Nbnxm::AtomLocality        atomLocality,
+void nbnxn_get_atom_range(const gmx::AtomLocality          atomLocality,
                           const Nbnxm::GridSet            &gridSet,
                           int                             *atomStart,
                           int                             *nAtoms)
@@ -1551,19 +1551,19 @@ void nbnxn_get_atom_range(const Nbnxm::AtomLocality        atomLocality,
 
     switch (atomLocality)
     {
-        case Nbnxm::AtomLocality::All:
+        case gmx::AtomLocality::All:
             *atomStart = 0;
             *nAtoms    = gridSet.numRealAtomsTotal();
             break;
-        case Nbnxm::AtomLocality::Local:
+        case gmx::AtomLocality::Local:
             *atomStart = 0;
             *nAtoms    = gridSet.numRealAtomsLocal();
             break;
-        case Nbnxm::AtomLocality::NonLocal:
+        case gmx::AtomLocality::NonLocal:
             *atomStart = gridSet.numRealAtomsLocal();
             *nAtoms    = gridSet.numRealAtomsTotal() - gridSet.numRealAtomsLocal();
             break;
-        case Nbnxm::AtomLocality::Count:
+        case gmx::AtomLocality::Count:
             GMX_ASSERT(false, "Count is invalid locality specifier");
             break;
     }

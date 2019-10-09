@@ -461,7 +461,7 @@ static void accountFlops(t_nrnb                           *nrnb,
 }
 
 void
-nonbonded_verlet_t::dispatchNonbondedKernel(Nbnxm::InteractionLocality iLocality,
+nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality   iLocality,
                                             const interaction_const_t &ic,
                                             const gmx::StepWorkload   &stepWork,
                                             int                        clearF,
@@ -517,7 +517,7 @@ nonbonded_verlet_t::dispatchNonbondedKernel(Nbnxm::InteractionLocality iLocality
 }
 
 void
-nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocality,
+nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality    iLocality,
                                              const t_forcerec           *fr,
                                              rvec                        x[],
                                              gmx::ForceWithShiftForces  *forceWithShiftForces,

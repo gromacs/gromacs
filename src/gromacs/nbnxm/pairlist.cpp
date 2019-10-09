@@ -83,7 +83,7 @@ using BoundingBox1D = Nbnxm::BoundingBox1D; // TODO: Remove when refactoring thi
 using Grid          = Nbnxm::Grid;          // TODO: Remove when refactoring this file
 
 // Convience alias for partial Nbnxn namespace usage
-using InteractionLocality = Nbnxm::InteractionLocality;
+using InteractionLocality = gmx::InteractionLocality;
 
 /* We shift the i-particles backward for PBC.
  * This leads to more conditionals than shifting forward.
@@ -683,8 +683,8 @@ NbnxnPairlistGpu::NbnxnPairlistGpu(gmx::PinningPolicy pinningPolicy) :
 }
 
 // TODO: Move to pairlistset.cpp
-PairlistSet::PairlistSet(const Nbnxm::InteractionLocality  locality,
-                         const PairlistParams             &pairlistParams) :
+PairlistSet::PairlistSet(const InteractionLocality  locality,
+                         const PairlistParams      &pairlistParams) :
     locality_(locality),
     params_(pairlistParams)
 {
@@ -3966,7 +3966,7 @@ static void sort_sci(NbnxnPairlistGpu *nbl)
 /* Returns the i-zone range for pairlist construction for the give locality */
 static Range<int>
 getIZoneRange(const Nbnxm::GridSet::DomainSetup &domainSetup,
-              const Nbnxm::InteractionLocality   locality)
+              const InteractionLocality          locality)
 {
     if (domainSetup.doTestParticleInsertion)
     {
@@ -3993,9 +3993,9 @@ getIZoneRange(const Nbnxm::GridSet::DomainSetup &domainSetup,
 
 /* Returns the j-zone range for pairlist construction for the give locality and i-zone */
 static Range<int>
-getJZoneRange(const gmx_domdec_zones_t          &ddZones,
-              const Nbnxm::InteractionLocality   locality,
-              const int                          iZone)
+getJZoneRange(const gmx_domdec_zones_t  &ddZones,
+              const InteractionLocality  locality,
+              const int                  iZone)
 {
     if (locality == InteractionLocality::Local)
     {
@@ -4327,7 +4327,7 @@ PairlistSets::construct(const InteractionLocality  iLocality,
                                               nbat, excl, minimumIlistCountForGpuBalancing_,
                                               nrnb, &pairSearch->cycleCounting_);
 
-    if (iLocality == Nbnxm::InteractionLocality::Local)
+    if (iLocality == InteractionLocality::Local)
     {
         outerListCreationStep_ = step;
     }
@@ -4351,10 +4351,10 @@ PairlistSets::construct(const InteractionLocality  iLocality,
 }
 
 void
-nonbonded_verlet_t::constructPairlist(const Nbnxm::InteractionLocality  iLocality,
-                                      const t_blocka                   *excl,
-                                      int64_t                           step,
-                                      t_nrnb                           *nrnb)
+nonbonded_verlet_t::constructPairlist(const InteractionLocality  iLocality,
+                                      const t_blocka            *excl,
+                                      int64_t                    step,
+                                      t_nrnb                    *nrnb)
 {
     pairlistSets_->construct(iLocality, pairSearch_.get(), nbat.get(), excl,
                              step, nrnb);

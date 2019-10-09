@@ -49,7 +49,8 @@
 
 #include <memory>
 
-#include "locality.h"
+#include "gromacs/mdtypes/locality.h"
+
 #include "pairlistparams.h"
 
 struct nbnxn_atomdata_t;
@@ -68,7 +69,7 @@ class PairlistSets
                      int                   minimumIlistCountForGpuBalancing);
 
         //! Construct the pairlist set for the given locality
-        void construct(Nbnxm::InteractionLocality  iLocality,
+        void construct(gmx::InteractionLocality    iLocality,
                        PairSearch                 *pairSearch,
                        nbnxn_atomdata_t           *nbat,
                        const t_blocka             *excl,
@@ -76,7 +77,7 @@ class PairlistSets
                        t_nrnb                     *nrnb);
 
         //! Dispatches the dynamic pruning kernel for the given locality
-        void dispatchPruneKernel(Nbnxm::InteractionLocality  iLocality,
+        void dispatchPruneKernel(gmx::InteractionLocality    iLocality,
                                  const nbnxn_atomdata_t     *nbat,
                                  const rvec                 *shift_vec);
 
@@ -119,9 +120,9 @@ class PairlistSets
         }
 
         //! Returns the pair-list set for the given locality
-        const PairlistSet &pairlistSet(Nbnxm::InteractionLocality iLocality) const
+        const PairlistSet &pairlistSet(gmx::InteractionLocality iLocality) const
         {
-            if (iLocality == Nbnxm::InteractionLocality::Local)
+            if (iLocality == gmx::InteractionLocality::Local)
             {
                 return *localSet_;
             }
@@ -134,9 +135,9 @@ class PairlistSets
 
     private:
         //! Returns the pair-list set for the given locality
-        PairlistSet &pairlistSet(Nbnxm::InteractionLocality iLocality)
+        PairlistSet &pairlistSet(gmx::InteractionLocality iLocality)
         {
-            if (iLocality == Nbnxm::InteractionLocality::Local)
+            if (iLocality == gmx::InteractionLocality::Local)
             {
                 return *localSet_;
             }

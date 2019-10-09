@@ -209,7 +209,7 @@ void pmeInitAtoms(gmx_pme_t               *pme,
             gmx_pme_reinit_atoms(pme, atomCount, charges.data());
 
             stateGpu->reinit(atomCount, atomCount);
-            stateGpu->copyCoordinatesToGpu(arrayRefFromArray(coordinates.data(), coordinates.size()), gmx::StatePropagatorDataGpu::AtomLocality::All);
+            stateGpu->copyCoordinatesToGpu(arrayRefFromArray(coordinates.data(), coordinates.size()), gmx::AtomLocality::All);
             pme_gpu_set_kernelparam_coordinates(pme->gpu, stateGpu->getCoordinates());
 
             break;

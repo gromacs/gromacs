@@ -57,6 +57,8 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 
+#include "locality.h"
+
 class GpuEventSynchronizer;
 
 namespace gmx
@@ -65,19 +67,6 @@ namespace gmx
 class StatePropagatorDataGpu
 {
     public:
-
-        /*! \brief Atom locality indicator: local, non-local, all.
-         *
-         * \todo This should be managed by a separate object, since the localities
-         *       are used here and in buffer ops.
-         */
-        enum class AtomLocality : int
-        {
-            Local    = 0, //!< Local atoms
-            NonLocal = 1, //!< Non-local atoms
-            All      = 2, //!< Both local and non-local atoms
-            Count    = 3  //!< The number of atom locality types
-        };
 
         /*! \brief Constructor
          *

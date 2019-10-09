@@ -52,10 +52,10 @@
 #include <memory>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/locality.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#include "locality.h"
 #include "pairlist.h"
 
 struct nbnxn_atomdata_t;
@@ -77,7 +77,7 @@ class PairlistSet
 {
     public:
         //! Constructor: initializes the pairlist set as empty
-        PairlistSet(Nbnxm::InteractionLocality  locality,
+        PairlistSet(gmx::InteractionLocality    locality,
                     const PairlistParams       &listParams);
 
         ~PairlistSet();
@@ -96,7 +96,7 @@ class PairlistSet
                                  const rvec             *shift_vec);
 
         //! Returns the locality
-        Nbnxm::InteractionLocality locality() const
+        gmx::InteractionLocality locality() const
         {
             return locality_;
         }
@@ -128,7 +128,7 @@ class PairlistSet
 
     private:
         //! The locality of the pairlist set
-        Nbnxm::InteractionLocality     locality_;
+        gmx::InteractionLocality       locality_;
         //! List of pairlists in CPU layout
         std::vector<NbnxnPairlistCpu>  cpuLists_;
         //! List of working list for rebalancing CPU lists

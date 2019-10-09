@@ -130,7 +130,7 @@ void nonbonded_verlet_t::setAtomProperties(const t_mdatoms          &mdatoms,
     nbnxn_atomdata_set(nbat.get(), pairSearch_->gridSet(), &mdatoms, atomInfo.data());
 }
 
-void nonbonded_verlet_t::convertCoordinates(const Nbnxm::AtomLocality       locality,
+void nonbonded_verlet_t::convertCoordinates(const gmx::AtomLocality         locality,
                                             const bool                      fillLocal,
                                             gmx::ArrayRef<const gmx::RVec>  coordinates)
 {
@@ -145,7 +145,7 @@ void nonbonded_verlet_t::convertCoordinates(const Nbnxm::AtomLocality       loca
     wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);
 }
 
-void nonbonded_verlet_t::convertCoordinatesGpu(const Nbnxm::AtomLocality        locality,
+void nonbonded_verlet_t::convertCoordinatesGpu(const gmx::AtomLocality          locality,
                                                const bool                       fillLocal,
                                                DeviceBuffer<float>              d_x,
                                                GpuEventSynchronizer            *xReadyOnDevice)
@@ -168,8 +168,8 @@ gmx::ArrayRef<const int> nonbonded_verlet_t::getGridIndices() const
 }
 
 void
-nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality           locality,
-                                             gmx::ArrayRef<gmx::RVec>            force)
+nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const gmx::AtomLocality  locality,
+                                             gmx::ArrayRef<gmx::RVec> force)
 {
 
     /* Skip the reduction if there was no short-range GPU work to do
@@ -189,7 +189,7 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality          
 }
 
 void
-nonbonded_verlet_t::atomdata_add_nbat_f_to_f_gpu(const Nbnxm::AtomLocality                   locality,
+nonbonded_verlet_t::atomdata_add_nbat_f_to_f_gpu(const gmx::AtomLocality                     locality,
                                                  DeviceBuffer<float>                         totalForcesDevice,
                                                  void                                       *forcesPmeDevice,
                                                  gmx::ArrayRef<GpuEventSynchronizer* const>  dependencyList,
@@ -256,7 +256,7 @@ nonbonded_verlet_t::atomdata_init_copy_x_to_nbat_x_gpu()
     Nbnxm::nbnxn_gpu_init_x_to_nbat_x(pairSearch_->gridSet(), gpu_nbv);
 }
 
-void nonbonded_verlet_t::insertNonlocalGpuDependency(const Nbnxm::InteractionLocality interactionLocality)
+void nonbonded_verlet_t::insertNonlocalGpuDependency(const gmx::InteractionLocality interactionLocality)
 {
     Nbnxm::nbnxnInsertNonlocalGpuDependency(gpu_nbv, interactionLocality);
 }

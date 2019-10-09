@@ -48,9 +48,9 @@
 #include "kernels_simd_4xm/kernel_prune.h"
 
 void
-PairlistSets::dispatchPruneKernel(const Nbnxm::InteractionLocality  iLocality,
-                                  const nbnxn_atomdata_t           *nbat,
-                                  const rvec                       *shift_vec)
+PairlistSets::dispatchPruneKernel(const gmx::InteractionLocality  iLocality,
+                                  const nbnxn_atomdata_t         *nbat,
+                                  const rvec                     *shift_vec)
 {
     pairlistSet(iLocality).dispatchPruneKernel(nbat, shift_vec);
 }
@@ -90,8 +90,8 @@ PairlistSet::dispatchPruneKernel(const nbnxn_atomdata_t  *nbat,
 }
 
 void
-nonbonded_verlet_t::dispatchPruneKernelCpu(const Nbnxm::InteractionLocality  iLocality,
-                                           const rvec                       *shift_vec)
+nonbonded_verlet_t::dispatchPruneKernelCpu(const gmx::InteractionLocality  iLocality,
+                                           const rvec                     *shift_vec)
 {
     pairlistSets_->dispatchPruneKernel(iLocality, nbat.get(), shift_vec);
 }
@@ -104,7 +104,7 @@ void nonbonded_verlet_t::dispatchPruneKernelGpu(int64_t step)
     const bool stepIsEven = (pairlistSets().numStepsWithPairlist(step) % 2 == 0);
 
     Nbnxm::gpu_launch_kernel_pruneonly(gpu_nbv,
-                                       stepIsEven ? Nbnxm::InteractionLocality::Local : Nbnxm::InteractionLocality::NonLocal,
+                                       stepIsEven ? gmx::InteractionLocality::Local : gmx::InteractionLocality::NonLocal,
                                        pairlistSets().params().numRollingPruningParts);
 
     wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_NONBONDED);

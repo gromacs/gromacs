@@ -1333,8 +1333,8 @@ int Mdrunner::mdrunner()
         if (havePPDomainDecomposition(cr) && prefer1DAnd1PulseDD && is1DAnd1PulseDD(*cr->dd))
         {
             GMX_RELEASE_ASSERT(devFlags.enableGpuBufferOps, "Must use GMX_GPU_BUFFER_OPS=1 to use GMX_GPU_DD_COMMS=1");
-            void *streamLocal              = Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::Local);
-            void *streamNonLocal           = Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::NonLocal);
+            void *streamLocal              = Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, InteractionLocality::Local);
+            void *streamNonLocal           = Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, InteractionLocality::NonLocal);
             void *coordinatesOnDeviceEvent = fr->nbv->get_x_on_device_event();
             GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                     "NOTE: This run uses the 'GPU halo exchange' feature, enabled by the GMX_GPU_DD_COMMS environment variable.");
@@ -1580,8 +1580,8 @@ int Mdrunner::mdrunner()
         if (gpusWereDetected && ((useGpuForPme && thisRankHasDuty(cr, DUTY_PME)) || devFlags.enableGpuBufferOps))
         {
             const void         *pmeStream      = pme_gpu_get_device_stream(fr->pmedata);
-            const void         *localStream    = fr->nbv->gpu_nbv != nullptr ? Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::Local) : nullptr;
-            const void         *nonLocalStream = fr->nbv->gpu_nbv != nullptr ? Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::NonLocal) : nullptr;
+            const void         *localStream    = fr->nbv->gpu_nbv != nullptr ? Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, InteractionLocality::Local) : nullptr;
+            const void         *nonLocalStream = fr->nbv->gpu_nbv != nullptr ? Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, InteractionLocality::NonLocal) : nullptr;
             const void         *deviceContext  = pme_gpu_get_device_context(fr->pmedata);
             const int           paddingSize    = pme_gpu_get_padding_size(fr->pmedata);
             GpuApiCallBehavior  transferKind   = (inputrec->eI == eiMD && !doRerun && !useModularSimulator) ? GpuApiCallBehavior::Async : GpuApiCallBehavior::Sync;

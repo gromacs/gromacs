@@ -114,14 +114,13 @@
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/locality.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
 
-#include "locality.h"
-
-// TODO: Remove this include and the two nbnxm includes above
+// TODO: Remove this include
 #include "nbnxm_gpu.h"
 
 struct gmx_device_info_t;
@@ -256,7 +255,7 @@ struct nonbonded_verlet_t
         gmx::ArrayRef<const int> getGridIndices() const;
 
         //! Constructs the pairlist for the given locality
-        void constructPairlist(Nbnxm::InteractionLocality  iLocality,
+        void constructPairlist(gmx::InteractionLocality    iLocality,
                                const t_blocka             *excl,
                                int64_t                     step,
                                t_nrnb                     *nrnb);
@@ -273,7 +272,7 @@ struct nonbonded_verlet_t
          * \param[in] fillLocal    If the coordinates for filler particles should be zeroed.
          * \param[in] coordinates  Coordinates in plain rvec format to be transformed.
          */
-        void convertCoordinates(Nbnxm::AtomLocality             locality,
+        void convertCoordinates(gmx::AtomLocality               locality,
                                 bool                            fillLocal,
                                 gmx::ArrayRef<const gmx::RVec>  coordinates);
 
@@ -286,7 +285,7 @@ struct nonbonded_verlet_t
          * \param[in] d_x             GPU coordinates buffer in plain rvec format to be transformed.
          * \param[in] xReadyOnDevice  Event synchronizer indicating that the coordinates are ready in the device memory.
          */
-        void convertCoordinatesGpu(Nbnxm::AtomLocality              locality,
+        void convertCoordinatesGpu(gmx::AtomLocality                locality,
                                    bool                             fillLocal,
                                    DeviceBuffer<float>              d_x,
                                    GpuEventSynchronizer            *xReadyOnDevice);
@@ -295,7 +294,7 @@ struct nonbonded_verlet_t
         void atomdata_init_copy_x_to_nbat_x_gpu();
 
         //! Sync the nonlocal GPU stream with dependent tasks in the local queue.
-        void insertNonlocalGpuDependency(Nbnxm::InteractionLocality interactionLocality);
+        void insertNonlocalGpuDependency(gmx::InteractionLocality interactionLocality);
 
         //! Returns a reference to the pairlist sets
         const PairlistSets &pairlistSets() const
@@ -310,14 +309,14 @@ struct nonbonded_verlet_t
         bool isDynamicPruningStepGpu(int64_t step) const;
 
         //! Dispatches the dynamic pruning kernel for the given locality, for CPU lists
-        void dispatchPruneKernelCpu(Nbnxm::InteractionLocality  iLocality,
+        void dispatchPruneKernelCpu(gmx::InteractionLocality    iLocality,
                                     const rvec                 *shift_vec);
 
         //! Dispatches the dynamic pruning kernel for GPU lists
         void dispatchPruneKernelGpu(int64_t step);
 
         //! \brief Executes the non-bonded kernel of the GPU or launches it on the GPU
-        void dispatchNonbondedKernel(Nbnxm::InteractionLocality  iLocality,
+        void dispatchNonbondedKernel(gmx::InteractionLocality    iLocality,
                                      const interaction_const_t  &ic,
                                      const gmx::StepWorkload    &stepWork,
                                      int                         clearF,
@@ -326,7 +325,7 @@ struct nonbonded_verlet_t
                                      t_nrnb                     *nrnb);
 
         //! Executes the non-bonded free-energy kernel, always runs on the CPU
-        void dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocality,
+        void dispatchFreeEnergyKernel(gmx::InteractionLocality    iLocality,
                                       const t_forcerec           *fr,
                                       rvec                        x[],
                                       gmx::ForceWithShiftForces  *forceWithShiftForces,
@@ -341,7 +340,7 @@ struct nonbonded_verlet_t
          * \param [in] locality         Local or non-local
          * \param [inout] force         Force to be added to
          */
-        void atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality                 locality,
+        void atomdata_add_nbat_f_to_f(gmx::AtomLocality                   locality,
                                       gmx::ArrayRef<gmx::RVec>            force);
 
         /*! \brief Add the forces stored in nbat to total force using GPU buffer opse
@@ -353,7 +352,7 @@ struct nonbonded_verlet_t
          * \param [in]     useGpuFPmeReduction  Whether PME forces should be added
          * \param [in]     accumulateForce      If the total force buffer already contains data
          */
-        void atomdata_add_nbat_f_to_f_gpu(Nbnxm::AtomLocality                         locality,
+        void atomdata_add_nbat_f_to_f_gpu(gmx::AtomLocality                           locality,
                                           DeviceBuffer<float>                         totalForcesDevice,
                                           void                                       *forcesPmeDevice,
                                           gmx::ArrayRef<GpuEventSynchronizer* const>  dependencyList,
@@ -395,8 +394,8 @@ struct nonbonded_verlet_t
                                  real rlistInner);
 
         //! Set up internal flags that indicate what type of short-range work there is.
-        void setupGpuShortRangeWork(const gmx::GpuBonded             *gpuBonded,
-                                    const Nbnxm::InteractionLocality  iLocality)
+        void setupGpuShortRangeWork(const gmx::GpuBonded           *gpuBonded,
+                                    const gmx::InteractionLocality  iLocality)
         {
             if (useGpu() && !emulateGpu())
             {
@@ -405,7 +404,7 @@ struct nonbonded_verlet_t
         }
 
         //! Returns true if there is GPU short-range work for the given atom locality.
-        bool haveGpuShortRangeWork(const Nbnxm::AtomLocality aLocality)
+        bool haveGpuShortRangeWork(const gmx::AtomLocality aLocality)
         {
             return ((useGpu() && !emulateGpu()) &&
                     Nbnxm::haveGpuShortRangeWork(gpu_nbv, aLocality));

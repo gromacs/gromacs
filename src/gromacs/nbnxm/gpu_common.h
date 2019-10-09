@@ -128,7 +128,7 @@ gpuAtomToInteractionLocality(const AtomLocality atomLocality)
 //NOLINTNEXTLINE(misc-definitions-in-headers)
 void setupGpuShortRangeWork(gmx_nbnxn_gpu_t                  *nb,
                             const gmx::GpuBonded             *gpuBonded,
-                            const Nbnxm::InteractionLocality  iLocality)
+                            const gmx::InteractionLocality    iLocality)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -151,14 +151,14 @@ void setupGpuShortRangeWork(gmx_nbnxn_gpu_t                  *nb,
  */
 static bool
 haveGpuShortRangeWork(const gmx_nbnxn_gpu_t            &nb,
-                      const Nbnxm::InteractionLocality  iLocality)
+                      const gmx::InteractionLocality    iLocality)
 {
     return nb.haveWork[iLocality];
 }
 
 //NOLINTNEXTLINE(misc-definitions-in-headers)
 bool haveGpuShortRangeWork(const gmx_nbnxn_gpu_t     *nb,
-                           const Nbnxm::AtomLocality  aLocality)
+                           const gmx::AtomLocality    aLocality)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -366,7 +366,12 @@ gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t *timings,
     }
 }
 
-//TODO: move into shared source file with gmx_compile_cpp_as_cuda
+/*! \brief Attempts to complete nonbonded GPU task.
+ *
+ * See documentation in nbnxm_gpu.h for details.
+ *
+ * \todo Move into shared source file with gmx_compile_cpp_as_cuda
+ */
 //NOLINTNEXTLINE(misc-definitions-in-headers)
 bool gpu_try_finish_task(gmx_nbnxn_gpu_t          *nb,
                          const gmx::StepWorkload  &stepWork,

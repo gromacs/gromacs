@@ -47,10 +47,9 @@
 
 #include "config.h"
 
+#include "gromacs/mdtypes/locality.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
-
-#include "locality.h"
 
 namespace Nbnxm
 {

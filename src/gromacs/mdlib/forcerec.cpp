@@ -1463,8 +1463,8 @@ void init_forcerec(FILE                             *fp,
         if (useGpuForBonded)
         {
             auto stream = DOMAINDECOMP(cr) ?
-                Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::NonLocal) :
-                Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::Local);
+                Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, gmx::InteractionLocality::NonLocal) :
+                Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, gmx::InteractionLocality::Local);
             // TODO the heap allocation is only needed while
             // t_forcerec lacks a constructor.
             fr->gpuBonded = new gmx::GpuBonded(mtop->ffparams,

@@ -34,16 +34,18 @@
  */
 
 /*! \libinternal \file
- * \brief Defines nbnxn locality enums
+ * \brief Defines atom and atom interaction locality enums
  *
  * \author Berk Hess <hess@kth.se>
- * \ingroup module_nbnxm
+ * \ingroup module_mdtypes
  */
 
-#ifndef GMX_NBNXM_LOCALITY_H
-#define GMX_NBNXM_LOCALITY_H
+#ifndef GMX_MDTYPES_LOCALITY_H
+#define GMX_MDTYPES_LOCALITY_H
 
-namespace Nbnxm
+#include "gromacs/utility/enumerationhelpers.h"
+
+namespace gmx
 {
 
 /*! \brief Atom locality indicator: local, non-local, all.
@@ -59,6 +61,9 @@ enum class AtomLocality : int
     Count    = 3  //!< The number of atom locality types
 };
 
+/*! \brief Descriptive strings for atom localities */
+static const EnumerationArray<AtomLocality, const char *> c_atomLocalityNames = { "local", "non-local", "all" };
+
 /*! \brief Interaction locality indicator: local, non-local, all.
  *
  * Used for calls to:
@@ -71,6 +76,9 @@ enum class InteractionLocality : int
     Count    = 2  //!< The number of interaction locality types
 };
 
-}      // namespace Nbnxm
+/*! \brief Descriptive strings for interaction localities */
+static const EnumerationArray<InteractionLocality, const char *> c_interactionLocalityNames = { "local", "non-local" };
 
-#endif // GMX_NBNXM_LOCALITY_H
+}      // namespace gmx
+
+#endif // GMX_MDTYPES_LOCALITY_H

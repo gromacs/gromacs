@@ -48,9 +48,9 @@
 
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/mdtypes/locality.h"
 
 #include "gpu_types.h"
-#include "locality.h"
 
 struct NbnxnPairlistGpu;
 struct nbnxn_atomdata_t;
@@ -77,7 +77,7 @@ gpu_init(const gmx_device_info_t gmx_unused     *deviceInfo,
 GPU_FUNC_QUALIFIER
 void gpu_init_pairlist(gmx_nbnxn_gpu_t gmx_unused               *nb,
                        const struct NbnxnPairlistGpu gmx_unused *h_nblist,
-                       InteractionLocality    gmx_unused         iloc) GPU_FUNC_TERM;
+                       gmx::InteractionLocality gmx_unused       iloc) GPU_FUNC_TERM;
 
 /** Initializes atom-data on the GPU, called at every pair search step. */
 GPU_FUNC_QUALIFIER
@@ -126,8 +126,8 @@ gmx_bool gpu_is_kernel_ewald_analytical(const gmx_nbnxn_gpu_t gmx_unused *nb) GP
  *  Note: CUDA only.
  */
 CUDA_FUNC_QUALIFIER
-void *gpu_get_command_stream(gmx_nbnxn_gpu_t gmx_unused     *nb,
-                             InteractionLocality gmx_unused  iloc) CUDA_FUNC_TERM_WITH_RETURN(nullptr);
+void *gpu_get_command_stream(gmx_nbnxn_gpu_t gmx_unused          *nb,
+                             gmx::InteractionLocality gmx_unused  iloc) CUDA_FUNC_TERM_WITH_RETURN(nullptr);
 
 /** Returns an opaque pointer to the GPU coordinate+charge array
  *  Note: CUDA only.

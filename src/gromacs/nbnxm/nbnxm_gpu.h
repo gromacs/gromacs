@@ -45,12 +45,12 @@
 
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/locality.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 #include "atomdata.h"
 #include "gpu_types.h"
-#include "locality.h"
 
 struct interaction_const_t;
 struct nbnxn_atomdata_t;
@@ -81,7 +81,7 @@ class Grid;
 GPU_FUNC_QUALIFIER
 void gpu_copy_xq_to_gpu(gmx_nbnxn_gpu_t gmx_unused               *nb,
                         const struct nbnxn_atomdata_t gmx_unused *nbdata,
-                        AtomLocality gmx_unused                   aloc) GPU_FUNC_TERM;
+                        gmx::AtomLocality gmx_unused              aloc) GPU_FUNC_TERM;
 
 /*! \brief
  * Launch asynchronously the nonbonded force calculations.
@@ -96,7 +96,7 @@ void gpu_copy_xq_to_gpu(gmx_nbnxn_gpu_t gmx_unused               *nb,
 GPU_FUNC_QUALIFIER
 void gpu_launch_kernel(gmx_nbnxn_gpu_t gmx_unused         *nb,
                        const gmx::StepWorkload gmx_unused &stepWork,
-                       InteractionLocality gmx_unused      iloc) GPU_FUNC_TERM;
+                       gmx::InteractionLocality gmx_unused iloc) GPU_FUNC_TERM;
 
 /*! \brief
  * Launch asynchronously the nonbonded prune-only kernel.
@@ -134,9 +134,9 @@ void gpu_launch_kernel(gmx_nbnxn_gpu_t gmx_unused         *nb,
  * \param [in]    numParts  Number of parts the pair list is split into in the rolling kernel.
  */
 GPU_FUNC_QUALIFIER
-void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t gmx_unused     *nb,
-                                 InteractionLocality gmx_unused  iloc,
-                                 int gmx_unused                  numParts) GPU_FUNC_TERM;
+void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t gmx_unused          *nb,
+                                 gmx::InteractionLocality gmx_unused  iloc,
+                                 int gmx_unused                       numParts) GPU_FUNC_TERM;
 
 /*! \brief
  * Launch asynchronously the download of short-range forces from the GPU
@@ -146,7 +146,7 @@ GPU_FUNC_QUALIFIER
 void gpu_launch_cpyback(gmx_nbnxn_gpu_t         gmx_unused *nb,
                         nbnxn_atomdata_t        gmx_unused *nbatom,
                         const gmx::StepWorkload gmx_unused &stepWork,
-                        AtomLocality            gmx_unused aloc) GPU_FUNC_TERM;
+                        gmx::AtomLocality       gmx_unused aloc) GPU_FUNC_TERM;
 
 /*! \brief Attempts to complete nonbonded GPU task.
  *
@@ -188,7 +188,7 @@ void gpu_launch_cpyback(gmx_nbnxn_gpu_t         gmx_unused *nb,
 GPU_FUNC_QUALIFIER
 bool gpu_try_finish_task(gmx_nbnxn_gpu_t gmx_unused          *nb,
                          const gmx::StepWorkload gmx_unused  &stepWork,
-                         AtomLocality    gmx_unused           aloc,
+                         gmx::AtomLocality gmx_unused         aloc,
                          real            gmx_unused          *e_lj,
                          real            gmx_unused          *e_el,
                          gmx::ArrayRef<gmx::RVec> gmx_unused  shiftForces,
@@ -208,11 +208,11 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t gmx_unused          *nb,
  * \param[out] e_lj Pointer to the LJ energy output to accumulate into
  * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
  * \param[out] shiftForces Shift forces buffer to accumulate into
- */
+ * \param[out] wcycle         Pointer to wallcycle data structure               */
 GPU_FUNC_QUALIFIER
 float gpu_wait_finish_task(gmx_nbnxn_gpu_t          gmx_unused *nb,
                            const gmx::StepWorkload  gmx_unused &stepWork,
-                           AtomLocality             gmx_unused  aloc,
+                           gmx::AtomLocality        gmx_unused  aloc,
                            real                     gmx_unused *e_lj,
                            real                     gmx_unused *e_el,
                            gmx::ArrayRef<gmx::RVec> gmx_unused  shiftForces,
@@ -245,7 +245,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid    gmx_unused &grid,
                            gmx_nbnxn_gpu_t      gmx_unused *gpu_nbv,
                            DeviceBuffer<float>  gmx_unused  d_x,
                            GpuEventSynchronizer gmx_unused *xReadyOnDevice,
-                           Nbnxm::AtomLocality  gmx_unused  locality,
+                           gmx::AtomLocality    gmx_unused  locality,
                            int                  gmx_unused  gridId,
                            int                  gmx_unused  numColumnsMax) CUDA_FUNC_TERM;
 
@@ -255,7 +255,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid    gmx_unused &grid,
  */
 CUDA_FUNC_QUALIFIER
 void nbnxnInsertNonlocalGpuDependency(const gmx_nbnxn_gpu_t gmx_unused    *nb,
-                                      InteractionLocality   gmx_unused interactionLocality) CUDA_FUNC_TERM;
+                                      gmx::InteractionLocality gmx_unused  interactionLocality) CUDA_FUNC_TERM;
 
 /*! \brief Set up internal flags that indicate what type of short-range work there is.
  *
@@ -272,7 +272,7 @@ void nbnxnInsertNonlocalGpuDependency(const gmx_nbnxn_gpu_t gmx_unused    *nb,
 GPU_FUNC_QUALIFIER
 void setupGpuShortRangeWork(gmx_nbnxn_gpu_t                  gmx_unused *nb,
                             const gmx::GpuBonded             gmx_unused *gpuBonded,
-                            Nbnxm::InteractionLocality       gmx_unused  iLocality) GPU_FUNC_TERM;
+                            gmx::InteractionLocality         gmx_unused  iLocality) GPU_FUNC_TERM;
 
 /*! \brief Returns true if there is GPU short-range work for the given atom locality.
  *
@@ -285,7 +285,7 @@ void setupGpuShortRangeWork(gmx_nbnxn_gpu_t                  gmx_unused *nb,
  */
 GPU_FUNC_QUALIFIER
 bool haveGpuShortRangeWork(const gmx_nbnxn_gpu_t     gmx_unused *nb,
-                           Nbnxm::AtomLocality       gmx_unused  aLocality) GPU_FUNC_TERM_WITH_RETURN(false);
+                           gmx::AtomLocality         gmx_unused  aLocality) GPU_FUNC_TERM_WITH_RETURN(false);
 
 /*! \brief Initialization for F buffer operations on GPU */
 CUDA_FUNC_QUALIFIER
@@ -311,7 +311,7 @@ void nbnxn_gpu_init_add_nbat_f_to_f(const int                   gmx_unused *cell
  *
  */
 CUDA_FUNC_QUALIFIER
-void nbnxn_gpu_add_nbat_f_to_f(AtomLocality                               gmx_unused  atomLocality,
+void nbnxn_gpu_add_nbat_f_to_f(gmx::AtomLocality                      gmx_unused  atomLocality,
                                DeviceBuffer<float>                        gmx_unused  totalForcesDevice,
                                gmx_nbnxn_gpu_t                            gmx_unused *gpu_nbv,
                                void                                       gmx_unused *pmeForcesDevice,

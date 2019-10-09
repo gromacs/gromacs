@@ -308,12 +308,12 @@ PairlistSets::PairlistSets(const PairlistParams &pairlistParams,
     params_(pairlistParams),
     minimumIlistCountForGpuBalancing_(minimumIlistCountForGpuBalancing)
 {
-    localSet_ = std::make_unique<PairlistSet>(Nbnxm::InteractionLocality::Local,
+    localSet_ = std::make_unique<PairlistSet>(gmx::InteractionLocality::Local,
                                               params_);
 
     if (haveMultipleDomains)
     {
-        nonlocalSet_ = std::make_unique<PairlistSet>(Nbnxm::InteractionLocality::NonLocal,
+        nonlocalSet_ = std::make_unique<PairlistSet>(gmx::InteractionLocality::NonLocal,
                                                      params_);
     }
 }

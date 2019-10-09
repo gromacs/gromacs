@@ -44,9 +44,9 @@
 
 #include "config.h"
 
+#include "gromacs/mdtypes/locality.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
-#include "locality.h"
 #include "pairlist.h"
 
 #if GMX_GPU == GMX_GPU_OPENCL
@@ -59,6 +59,9 @@
 
 namespace Nbnxm
 {
+
+using gmx::AtomLocality;
+using gmx::InteractionLocality;
 
 /*! \internal
  * \brief GPU region timers used for timing GPU kernels and H2D/D2H transfers.
