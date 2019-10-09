@@ -333,7 +333,7 @@ void gmx::LegacySimulator::do_md()
     if (useGpuForUpdate)
     {
         GMX_RELEASE_ASSERT(!DOMAINDECOMP(cr), "Domain decomposition is not supported with the GPU update.\n");
-        GMX_RELEASE_ASSERT(useGpuForPme || (useGpuForNonbonded && getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr),
+        GMX_RELEASE_ASSERT(useGpuForPme || (useGpuForNonbonded && simulationWork.useGpuBufferOps),
                            "Either PME or short-ranged non-bonded interaction tasks must run on the GPU to use GPU update.\n");
         GMX_RELEASE_ASSERT(ir->eI == eiMD, "Only the md integrator is supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(ir->etc != etcNOSEHOOVER, "Nose-Hoover temperature coupling is not supported with the GPU update.\n");

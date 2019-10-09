@@ -115,17 +115,13 @@
 using gmx::ForceOutputs;
 using gmx::StepWorkload;
 using gmx::DomainLifetimeWorkload;
+using gmx::SimulationWorkload;
 
 // TODO: this environment variable allows us to verify before release
 // that on less common architectures the total cost of polling is not larger than
 // a blocking wait (so polling does not introduce overhead when the static
 // PME-first ordering would suffice).
 static const bool c_disableAlternatingWait = (getenv("GMX_DISABLE_ALTERNATING_GPU_WAIT") != nullptr);
-
-// environment variable to enable GPU buffer ops, to allow incremental and optional
-// introduction of this functionality.
-// TODO eventially tie this in with other existing GPU flags.
-static const bool c_enableGpuBufOps = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
 
 static void sum_forces(rvec f[], gmx::ArrayRef<const gmx::RVec> forceToAdd)
 {
@@ -597,6 +593,19 @@ computeSpecialForces(FILE                          *fplog,
     }
 }
 
+/*! \brief Makes PME flags from StepWorkload data.
+ *
+ * \param[in]  stepWork     Step schedule flags
+ * \returns                 PME flags
+ */
+static int makePmeFlags(const StepWorkload &stepWork)
+{
+    return GMX_PME_SPREAD | GMX_PME_SOLVE |
+           (stepWork.computeVirial ? GMX_PME_CALC_ENER_VIR : 0) |
+           (stepWork.computeEnergy ? GMX_PME_CALC_ENER_VIR : 0) |
+           (stepWork.computeForces ? GMX_PME_CALC_F        : 0);
+}
+
 /*! \brief Launch the prepare_step and spread stages of PME GPU.
  *
  * \param[in]  pmedata              The PME structure
@@ -890,8 +899,6 @@ void do_force(FILE                                     *fplog,
 {
     int                          i, j;
     double                       mu[2*DIM];
-    gmx_bool                     bFillGrid, bCalcCGCM;
-    gmx_bool                     bUseGPU, bUseOrEmulGPU;
     nonbonded_verlet_t          *nbv      = fr->nbv.get();
     interaction_const_t         *ic       = fr->ic;
     gmx::StatePropagatorDataGpu *stateGpu = fr->stateGpu;
@@ -902,35 +909,26 @@ void do_force(FILE                                     *fplog,
     {
         legacyFlags &= ~GMX_FORCE_NONBONDED;
     }
+
     runScheduleWork->stepWork = setupStepWorkload(legacyFlags, fr->bNonbonded);
+    const StepWorkload       &stepWork = runScheduleWork->stepWork;
 
-    const gmx::StepWorkload &stepWork = runScheduleWork->stepWork;
+    const SimulationWorkload &simulationWork = runScheduleWork->simulationWork;
 
-    bFillGrid     = (stepWork.doNeighborSearch && stepWork.stateChanged);
-    bCalcCGCM     = (bFillGrid && !DOMAINDECOMP(cr));
-    bUseGPU       = fr->nbv->useGpu();
-    bUseOrEmulGPU = bUseGPU || fr->nbv->emulateGpu();
-
-    const auto pmeRunMode = fr->pmedata ? pme_run_mode(fr->pmedata) : PmeRunMode::CPU;
-    // TODO slim this conditional down - inputrec and duty checks should mean the same in proper code!
-    const bool useGpuPme  = EEL_PME(fr->ic->eeltype) && thisRankHasDuty(cr, DUTY_PME) &&
-        ((pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Mixed));
-    const int  pmeFlags = GMX_PME_SPREAD | GMX_PME_SOLVE |
-        (stepWork.computeVirial   ? GMX_PME_CALC_ENER_VIR : 0) |
-        (stepWork.computeEnergy ? GMX_PME_CALC_ENER_VIR : 0) |
-        (stepWork.computeForces   ? GMX_PME_CALC_F : 0);
+    const bool                useGpuPmeOnThisRank = simulationWork.usePmeGpu && thisRankHasDuty(cr, DUTY_PME);
+    const int                 pmeFlags            = makePmeFlags(stepWork);
 
     // Switches on whether to use GPU for position and force buffer operations
     // TODO consider all possible combinations of triggers, and how to combine optimally in each case.
-    const BufferOpsUseGpu useGpuXBufOps = (c_enableGpuBufOps && bUseGPU && (GMX_GPU == GMX_GPU_CUDA)) ?
-        BufferOpsUseGpu::True : BufferOpsUseGpu::False;;
+    const BufferOpsUseGpu useGpuXBufOps = (simulationWork.useGpuBufferOps &&
+                                           simulationWork.useGpuNonbonded && (GMX_GPU == GMX_GPU_CUDA)) ? BufferOpsUseGpu::True : BufferOpsUseGpu::False;;
     // GPU Force buffer ops are disabled on virial steps, because the virial calc is not yet ported to GPU
-    const BufferOpsUseGpu useGpuFBufOps = (c_enableGpuBufOps && bUseGPU && (GMX_GPU == GMX_GPU_CUDA))
-        && !(stepWork.computeVirial || stepWork.computeEnergy) ?
-        BufferOpsUseGpu::True : BufferOpsUseGpu::False;
+    const BufferOpsUseGpu useGpuFBufOps = ((simulationWork.useGpuBufferOps &&
+                                            simulationWork.useGpuNonbonded && (GMX_GPU == GMX_GPU_CUDA)) &&
+                                           !(stepWork.computeVirial || stepWork.computeEnergy)) ? BufferOpsUseGpu::True : BufferOpsUseGpu::False;
     // TODO: move / add this flag to the internal PME GPU data structures
     const bool useGpuPmeFReduction = (useGpuFBufOps == BufferOpsUseGpu::True) &&
-        thisRankHasDuty(cr, DUTY_PME) && useGpuPme; // only supported if this rank is perfoming PME on the GPU
+        useGpuPmeOnThisRank; // only supported if this rank is perfoming PME on the GPU
 
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
@@ -969,7 +967,9 @@ void do_force(FILE                                     *fplog,
             calc_shifts(box, fr->shift_vec);
         }
 
-        if (bCalcCGCM)
+        const bool fillGrid = (stepWork.doNeighborSearch && stepWork.stateChanged);
+        const bool calcCGCM = (fillGrid && !DOMAINDECOMP(cr));
+        if (calcCGCM)
         {
             put_atoms_in_box_omp(fr->ePBC, box, x.unpaddedArrayRef().subArray(0, homenr), gmx_omp_nthreads_get(emntDefault));
             inc_nrnb(nrnb, eNR_SHIFTX, homenr);
@@ -1002,12 +1002,12 @@ void do_force(FILE                                     *fplog,
     // The local coordinates can be copied right away.
     // NOTE: Consider moving this copy to right after they are updated and constrained,
     //       if the later is not offloaded.
-    if (useGpuPme || useGpuXBufOps == BufferOpsUseGpu::True)
+    if (useGpuPmeOnThisRank || useGpuXBufOps == BufferOpsUseGpu::True)
     {
         if (stepWork.doNeighborSearch)
         {
             stateGpu->reinit(mdatoms->homenr, cr->dd != nullptr ? dd_numAtomsZones(*cr->dd) : mdatoms->homenr);
-            if (useGpuPme)
+            if (useGpuPmeOnThisRank)
             {
                 // TODO: This should be moved into PME setup function ( pme_gpu_prepare_computation(...) )
                 pme_gpu_set_device_x(fr->pmedata, stateGpu->getCoordinates());
@@ -1016,7 +1016,7 @@ void do_force(FILE                                     *fplog,
         stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), gmx::StatePropagatorDataGpu::AtomLocality::Local);
     }
 
-    if (useGpuPme)
+    if (useGpuPmeOnThisRank)
     {
         launchPmeGpuSpread(fr->pmedata, box, stepWork, pmeFlags, useGpuPmeFReduction, wcycle);
     }
@@ -1066,7 +1066,7 @@ void do_force(FILE                                     *fplog,
         wallcycle_stop(wcycle, ewcNS);
 
         /* initialize the GPU nbnxm atom data and bonded data structures */
-        if (bUseGPU)
+        if (simulationWork.useGpuNonbonded)
         {
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
 
@@ -1126,7 +1126,7 @@ void do_force(FILE                                     *fplog,
         // For force buffer ops, we use the below conditon rather than
         // useGpuFBufOps to ensure that init is performed even if this
         // NS step is also a virial step (on which f buf ops are deactivated).
-        if (c_enableGpuBufOps && bUseGPU && (GMX_GPU == GMX_GPU_CUDA))
+        if (simulationWork.useGpuBufferOps && simulationWork.useGpuNonbonded && (GMX_GPU == GMX_GPU_CUDA))
         {
             nbv->atomdata_init_add_nbat_f_to_f_gpu();
         }
@@ -1147,7 +1147,7 @@ void do_force(FILE                                     *fplog,
 
     const gmx::DomainLifetimeWorkload &domainWork = runScheduleWork->domainWork;
 
-    if (bUseGPU)
+    if (simulationWork.useGpuNonbonded)
     {
         ddBalanceRegionHandler.openBeforeForceComputationGpu();
 
@@ -1180,7 +1180,7 @@ void do_force(FILE                                     *fplog,
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
-    if (useGpuPme)
+    if (useGpuPmeOnThisRank)
     {
         // In PME GPU and mixed mode we launch FFT / gather after the
         // X copy/transform to allow overlap as well as after the GPU NB
@@ -1242,7 +1242,7 @@ void do_force(FILE                                     *fplog,
             if (useGpuXBufOps == BufferOpsUseGpu::True)
             {
                 // The condition here was (pme != nullptr && pme_gpu_get_device_x(fr->pmedata) != nullptr)
-                if (!useGpuPme && !ddUsesGpuDirectCommunication)
+                if (!useGpuPmeOnThisRank && !ddUsesGpuDirectCommunication)
                 {
                     stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), gmx::StatePropagatorDataGpu::AtomLocality::NonLocal);
                 }
@@ -1257,7 +1257,7 @@ void do_force(FILE                                     *fplog,
 
         }
 
-        if (bUseGPU)
+        if (simulationWork.useGpuNonbonded)
         {
             wallcycle_start(wcycle, ewcLAUNCH_GPU);
 
@@ -1286,7 +1286,7 @@ void do_force(FILE                                     *fplog,
         }
     }
 
-    if (bUseGPU)
+    if (simulationWork.useGpuNonbonded)
     {
         /* launch D2H copy-back F */
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
@@ -1380,7 +1380,9 @@ void do_force(FILE                                     *fplog,
      * decomposition load balancing.
      */
 
-    if (!bUseOrEmulGPU)
+    const bool useOrEmulateGpuNb = simulationWork.useGpuNonbonded || fr->nbv->emulateGpu();
+
+    if (!useOrEmulateGpuNb)
     {
         do_nb_verlet(fr, ic, enerd, stepWork, Nbnxm::InteractionLocality::Local, enbvClearFYes,
                      step, nrnb, wcycle);
@@ -1405,7 +1407,7 @@ void do_force(FILE                                     *fplog,
         }
     }
 
-    if (!bUseOrEmulGPU)
+    if (!useOrEmulateGpuNb)
     {
         if (havePPDomainDecomposition(cr))
         {
@@ -1467,14 +1469,14 @@ void do_force(FILE                                     *fplog,
     // Will store the amount of cycles spent waiting for the GPU that
     // will be later used in the DLB accounting.
     float cycles_wait_gpu = 0;
-    if (bUseOrEmulGPU)
+    if (useOrEmulateGpuNb)
     {
         auto &forceWithShiftForces = forceOut.forceWithShiftForces();
 
         /* wait for non-local forces (or calculate in emulation mode) */
         if (havePPDomainDecomposition(cr))
         {
-            if (bUseGPU)
+            if (simulationWork.useGpuNonbonded)
             {
                 cycles_wait_gpu += Nbnxm::gpu_wait_finish_task(nbv->gpu_nbv,
                                                                stepWork, Nbnxm::AtomLocality::NonLocal,
@@ -1569,7 +1571,7 @@ void do_force(FILE                                     *fplog,
 
     // With both nonbonded and PME offloaded a GPU on the same rank, we use
     // an alternating wait/reduction scheme.
-    bool alternateGpuWait = (!c_disableAlternatingWait && useGpuPme && bUseGPU && !DOMAINDECOMP(cr) &&
+    bool alternateGpuWait = (!c_disableAlternatingWait && useGpuPmeOnThisRank && simulationWork.useGpuNonbonded && !DOMAINDECOMP(cr) &&
                              (useGpuFBufOps == BufferOpsUseGpu::False));
     if (alternateGpuWait)
     {
@@ -1577,13 +1579,13 @@ void do_force(FILE                                     *fplog,
                                     stepWork, pmeFlags, wcycle);
     }
 
-    if (!alternateGpuWait && useGpuPme)
+    if (!alternateGpuWait && useGpuPmeOnThisRank)
     {
         pme_gpu_wait_and_reduce(fr->pmedata, pmeFlags, wcycle, &forceOut.forceWithVirial(), enerd);
     }
 
     /* Wait for local GPU NB outputs on the non-alternating wait path */
-    if (!alternateGpuWait && bUseGPU)
+    if (!alternateGpuWait && simulationWork.useGpuNonbonded)
     {
         /* Measured overhead on CUDA and OpenCL with(out) GPU sharing
          * is between 0.5 and 1.5 Mcycles. So 2 MCycles is an overestimate,
@@ -1629,7 +1631,7 @@ void do_force(FILE                                     *fplog,
 
     /* Do the nonbonded GPU (or emulation) force buffer reduction
      * on the non-alternating path. */
-    if (bUseOrEmulGPU && !alternateGpuWait)
+    if (useOrEmulateGpuNb && !alternateGpuWait)
     {
         std::vector<GpuEventSynchronizer*> dependencyList;
         dependencyList.reserve(2);
@@ -1690,7 +1692,7 @@ void do_force(FILE                                     *fplog,
 
     launchGpuEndOfStepTasks(nbv, fr->gpuBonded, fr->pmedata, enerd,
                             *runScheduleWork,
-                            bUseGPU, useGpuPme,
+                            simulationWork.useGpuNonbonded, useGpuPmeOnThisRank,
                             step,
                             wcycle);
 
