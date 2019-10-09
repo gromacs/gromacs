@@ -53,7 +53,10 @@ SimulationWorkload createSimulationWorkload(bool useGpuForNonbonded,
                                             bool useGpuForPme,
                                             bool useGpuForPmeFft,
                                             bool useGpuForBonded,
-                                            bool useGpuForUpdateConstraints)
+                                            bool useGpuForUpdateConstraints,
+                                            bool useGpuForBufferOps,
+                                            bool useGpuHaloExchange,
+                                            bool useGpuPmePpComm)
 {
     SimulationWorkload simulationWorkload {
         useGpuForNonbonded,
@@ -61,10 +64,10 @@ SimulationWorkload createSimulationWorkload(bool useGpuForNonbonded,
         useGpuForPmeFft,
         useGpuForBonded,
         useGpuForUpdateConstraints,
-        (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr),
-        (getenv("GMX_GPU_DD_COMMS") != nullptr),
-        (getenv("GMX_GPU_PME_PP_COMMS") != nullptr),
-        (getenv("GMX_GPU_DD_COMMS") != nullptr) || (getenv("GMX_GPU_PME_PP_COMMS") != nullptr)
+        useGpuForBufferOps,
+        useGpuHaloExchange,
+        useGpuPmePpComm,
+        useGpuHaloExchange || useGpuPmePpComm
     };
 
     return simulationWorkload;

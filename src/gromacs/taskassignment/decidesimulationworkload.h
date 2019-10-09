@@ -60,13 +60,19 @@ namespace gmx
  * \param[in] useGpuForBonded    If bonded interactions are calculated on GPU(s).
  * \param[in] useGpuForUpdateConstraints If coordinate update and constraint solving is performed on
  *                                       GPU(s).
+ * \param[in] useGpuForBufferOps If buffer ops / reduction are calculated on GPU(s).
+ * \param[in] useGpuHaloExchange If GPU direct communication is used in halo exchange.
+ * \param[in] useGpuPmePpComm    If GPu direct communication is used in PME-PP communication.
  * \returns Simulation lifetime constant workload description.
  */
 SimulationWorkload createSimulationWorkload(bool useGpuForNonbonded,
                                             bool useGpuForPme,
                                             bool useGpuForPmeFft,
                                             bool useGpuForBonded,
-                                            bool useGpuForUpdateConstraints);
+                                            bool useGpuForUpdateConstraints,
+                                            bool useGpuForBufferOps,
+                                            bool useGpuHaloExchange,
+                                            bool useGpuPmePpComm);
 
 
 }  // namespace gmx
