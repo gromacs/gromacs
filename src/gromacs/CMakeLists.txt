@@ -154,6 +154,8 @@ gmx_configure_version_file(
     REMOTE_HASH
     EXTRA_VARS
         GMX_SOURCE_DOI
+        GMX_RELEASE_HASH
+        GMX_SOURCE_HASH
         )
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 

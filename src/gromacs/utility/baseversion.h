@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -100,5 +100,19 @@ const char *getGpuImplementationString();
  * DOI string, or empty when not a release build.
  */
 const char *gmxDOI();
+
+/*! \brief
+ * Hash of the complete source released in the tarball.
+ *
+ * Empty when not a release tarball build.
+ */
+const char *gmxReleaseSourceChecksum();
+
+/*! \brief
+ * Hash of the complete source actually used when building.
+ *
+ * Always computed when building from tarball.
+ */
+const char *gmxCurrentSourceChecksum();
 
 #endif

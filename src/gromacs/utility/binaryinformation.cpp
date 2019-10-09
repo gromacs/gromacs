@@ -238,6 +238,32 @@ void gmx_print_version_info(gmx::TextWriter *writer)
     {
         writer->writeLine(formatString("Branched from:      %s", base_hash));
     }
+    const char *const releaseSourceChecksum = gmxReleaseSourceChecksum();
+    const char *const currentSourceChecksum = gmxCurrentSourceChecksum();
+    if (releaseSourceChecksum[0] != '\0')
+    {
+        if (std::strcmp(releaseSourceChecksum, "NoChecksumFile") == 0)
+        {
+            writer->writeLine(formatString("The source code this program was compiled from has not been verified because the reference checksum was missing during compilation. This means you have an incomplete GROMACS distribution, please make sure to download an intact source distribution and compile that before proceeding."));
+            writer->writeLine(formatString("Computed checksum: %s", currentSourceChecksum));
+        }
+        else if (std::strcmp(releaseSourceChecksum, "NoPythonAvailable") == 0)
+        {
+            writer->writeLine(formatString("Build source could not be verified, because the checksum could not be computed."));
+        }
+        else if (std::strcmp(releaseSourceChecksum, currentSourceChecksum) != 0)
+        {
+            writer->writeLine(formatString("This program has been built from source code that has been altered and does not match the code released as part of the official GROMACS version %s. If you did not intend to use an altered GROMACS version, make sure to download an intact source distribution and compile that before proceeding.", gmx_version()));
+            writer->writeLine(formatString("If you have modified the source code, you are strongly encouraged to set your custom version suffix (using -DGMX_VERSION_STRING_OF_FORK) which will can help later with scientific reproducibility but also when reporting bugs."));
+            writer->writeLine(formatString("Release checksum: %s", releaseSourceChecksum));
+            writer->writeLine(formatString("Computed checksum: %s", currentSourceChecksum));
+        }
+        else
+        {
+            writer->writeLine(formatString("Verified release checksum is %s", releaseSourceChecksum));
+        }
+    }
+
 
 #if GMX_DOUBLE
     writer->writeLine("Precision:          double");
