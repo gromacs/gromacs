@@ -355,7 +355,7 @@ void gmx::LegacySimulator::do_md()
             GMX_LOG(mdlog.info).asParagraph().
                 appendText("Updating coordinates on the GPU.");
         }
-        integrator = std::make_unique<UpdateConstrainCuda>(*ir, *top_global, fr->stateGpu->getUpdateStream());
+        integrator = std::make_unique<UpdateConstrainCuda>(*ir, *top_global, fr->stateGpu->getUpdateStream(), fr->stateGpu->xUpdatedOnDevice());
     }
 
     if (useGpuForPme || (useGpuForNonbonded && useGpuForBufferOps) || useGpuForUpdate)

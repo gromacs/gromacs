@@ -57,7 +57,8 @@ class UpdateConstrainCuda::Impl
 
 UpdateConstrainCuda::UpdateConstrainCuda(gmx_unused const t_inputrec     &ir,
                                          gmx_unused const gmx_mtop_t     &mtop,
-                                         gmx_unused const void           *commandStream)
+                                         gmx_unused const void           *commandStream,
+                                         gmx_unused GpuEventSynchronizer *xUpdatedOnDevice)
     : impl_(nullptr)
 {
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
@@ -98,7 +99,7 @@ void UpdateConstrainCuda::waitCoordinatesReadyOnDevice()
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
-void* UpdateConstrainCuda::getCoordinatesReadySync()
+GpuEventSynchronizer* UpdateConstrainCuda::getCoordinatesReadySync()
 {
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
     return nullptr;

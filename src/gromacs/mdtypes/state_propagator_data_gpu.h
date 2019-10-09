@@ -53,6 +53,7 @@
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 
@@ -173,13 +174,31 @@ class StatePropagatorDataGpu
         void copyCoordinatesToGpu(gmx::ArrayRef<const gmx::RVec>  h_x,
                                   AtomLocality                    atomLocality);
 
-        /*! \brief Get the event synchronizer for the H2D coordinates copy.
+        /*! \brief Get the event synchronizer of the coordinates ready for the consumption on the device.
          *
-         *  \param[in] atomLocality  Locality of the particles to wait for.
+         * Returns the event synchronizer which indicates that the coordinates are ready for the
+         * consumption on the device. Takes into account that the producer may be different.
+         *
+         * If the update is offloaded, and the current step is not a DD/search step, the returned
+         * synchronizer indicates the completion of GPU update-constraint kernels. Otherwise, on search
+         * steps and if update is not offloaded, the coordinates are provided by the H2D copy and the
+         * returned synchronizer indicates that the copy is complete.
+         *
+         *  \param[in] atomLocality    Locality of the particles to wait for.
+         *  \param[in] simulationWork  The simulation lifetime flags.
+         *  \param[in] stepWork        The step lifetime flags.
          *
          *  \returns  The event to synchronize the stream that consumes coordinates on device.
          */
-        GpuEventSynchronizer* getCoordinatesReadyOnDeviceEvent(AtomLocality  atomLocality);
+        GpuEventSynchronizer* getCoordinatesReadyOnDeviceEvent(AtomLocality              atomLocality,
+                                                               const SimulationWorkload &simulationWork,
+                                                               const StepWorkload       &stepWork);
+
+        /*! \brief Getter for the event synchronizer for the update is done on th GPU
+         *
+         *  \returns  The event to synchronize the stream coordinates wre updated on device.
+         */
+        GpuEventSynchronizer* xUpdatedOnDevice();
 
         /*! \brief Copy positions from the GPU memory.
          *

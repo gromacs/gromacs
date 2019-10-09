@@ -88,7 +88,15 @@ DeviceBuffer<float> StatePropagatorDataGpu::getCoordinates()
     return DeviceBuffer<float> {};
 }
 
-GpuEventSynchronizer* StatePropagatorDataGpu::getCoordinatesReadyOnDeviceEvent(AtomLocality  /* atomLocality */)
+GpuEventSynchronizer* StatePropagatorDataGpu::getCoordinatesReadyOnDeviceEvent(AtomLocality              /* atomLocality   */,
+                                                                               const SimulationWorkload & /* simulationWork */,
+                                                                               const StepWorkload       & /* stepWork       */)
+{
+    GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
+    return nullptr;
+}
+
+GpuEventSynchronizer* StatePropagatorDataGpu::xUpdatedOnDevice()
 {
     GMX_ASSERT(false, "A CPU stub method from GPU state propagator data was called instead of one from GPU implementation.");
     return nullptr;

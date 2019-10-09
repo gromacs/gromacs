@@ -160,13 +160,31 @@ class StatePropagatorDataGpu::Impl
         void copyCoordinatesToGpu(gmx::ArrayRef<const gmx::RVec>  h_x,
                                   AtomLocality                    atomLocality);
 
-        /*! \brief Get the event synchronizer on the H2D coordinates copy.
+        /*! \brief Get the event synchronizer of the coordinates ready for the consumption on the device.
          *
-         *  \param[in] atomLocality  Locality of the particles to wait for.
+         * Returns the event synchronizer which indicates that the coordinates are ready for the
+         * consumption on the device. Takes into account that the producer may be different.
+         *
+         * If the update is offloaded, and the current step is not a DD/search step, the returned
+         * synchronizer indicates the completion of GPU update-constraint kernels. Otherwise, on search
+         * steps and if update is not offloaded, the coordinates are provided by the H2D copy and the
+         * returned synchronizer indicates that the copy is complete.
+         *
+         *  \param[in] atomLocality    Locality of the particles to wait for.
+         *  \param[in] simulationWork  The simulation lifetime flags.
+         *  \param[in] stepWork        The step lifetime flags.
          *
          *  \returns  The event to synchronize the stream that consumes coordinates on device.
          */
-        GpuEventSynchronizer* getCoordinatesReadyOnDeviceEvent(AtomLocality  atomLocality);
+        GpuEventSynchronizer* getCoordinatesReadyOnDeviceEvent(AtomLocality              atomLocality,
+                                                               const SimulationWorkload &simulationWork,
+                                                               const StepWorkload       &stepWork);
+
+        /*! \brief Getter for the event synchronizer for the update is done on th GPU
+         *
+         *  \returns  The event to synchronize the stream coordinates wre updated on device.
+         */
+        GpuEventSynchronizer* xUpdatedOnDevice();
 
         /*! \brief Copy positions from the GPU memory.
          *
@@ -294,8 +312,13 @@ class StatePropagatorDataGpu::Impl
         // Streams to use for forces H2D and D2H copies (one event for each atom locality)
         EnumerationArray<AtomLocality, CommandStream> fCopyStreams_ = {{nullptr}};
 
-        //! An array of events that indicate H2D copy is complete (one event for each atom locality)
+        /*! \brief An array of events that indicate H2D copy is complete (one event for each atom locality)
+         *
+         * \todo Reconsider naming. It should be xCopiedToDevice or xH2DCopyComplete, etc.
+         */
         EnumerationArray<AtomLocality, GpuEventSynchronizer> xReadyOnDevice_;
+        //! An event that the coordinates are ready after update-constraints execution
+        GpuEventSynchronizer                                 xUpdatedOnDevice_;
         //! An array of events that indicate D2H copy of coordinates is complete (one event for each atom locality)
         EnumerationArray<AtomLocality, GpuEventSynchronizer> xReadyOnHost_;
 

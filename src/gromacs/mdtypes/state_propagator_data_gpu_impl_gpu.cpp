@@ -269,9 +269,30 @@ void StatePropagatorDataGpu::Impl::copyCoordinatesToGpu(const gmx::ArrayRef<cons
     }
 }
 
-GpuEventSynchronizer* StatePropagatorDataGpu::Impl::getCoordinatesReadyOnDeviceEvent(AtomLocality  atomLocality)
+GpuEventSynchronizer* StatePropagatorDataGpu::Impl::getCoordinatesReadyOnDeviceEvent(AtomLocality              atomLocality,
+                                                                                     const SimulationWorkload &simulationWork,
+                                                                                     const StepWorkload       &stepWork)
 {
-    return &xReadyOnDevice_[atomLocality];
+    // The provider of the coordinates may be different for local atoms. If the update is offloaded
+    // and this is not a neighbor search step, then the consumer needs to wait for the update
+    // to complete. Otherwise, the coordinates are copied from the host and we need to wait for
+    // the copy event. Non-local coordinates are always provided by the H2D copy.
+    //
+    // TODO: This should be reconsidered to support the halo exchange.
+    //
+    if (atomLocality == AtomLocality::Local && simulationWork.useGpuUpdate && !stepWork.doNeighborSearch)
+    {
+        return &xUpdatedOnDevice_;
+    }
+    else
+    {
+        return &xReadyOnDevice_[atomLocality];
+    }
+}
+
+GpuEventSynchronizer* StatePropagatorDataGpu::Impl::xUpdatedOnDevice()
+{
+    return &xUpdatedOnDevice_;
 }
 
 void StatePropagatorDataGpu::Impl::copyCoordinatesFromGpu(gmx::ArrayRef<gmx::RVec>  h_x,
@@ -440,9 +461,16 @@ void StatePropagatorDataGpu::copyCoordinatesToGpu(const gmx::ArrayRef<const gmx:
     return impl_->copyCoordinatesToGpu(h_x, atomLocality);
 }
 
-GpuEventSynchronizer* StatePropagatorDataGpu::getCoordinatesReadyOnDeviceEvent(AtomLocality  atomLocality)
+GpuEventSynchronizer* StatePropagatorDataGpu::getCoordinatesReadyOnDeviceEvent(AtomLocality              atomLocality,
+                                                                               const SimulationWorkload &simulationWork,
+                                                                               const StepWorkload       &stepWork)
 {
-    return impl_->getCoordinatesReadyOnDeviceEvent(atomLocality);
+    return impl_->getCoordinatesReadyOnDeviceEvent(atomLocality, simulationWork, stepWork);
+}
+
+GpuEventSynchronizer* StatePropagatorDataGpu::xUpdatedOnDevice()
+{
+    return impl_->xUpdatedOnDevice();
 }
 
 void StatePropagatorDataGpu::copyCoordinatesFromGpu(gmx::ArrayRef<RVec>  h_x,

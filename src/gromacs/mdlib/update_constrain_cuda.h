@@ -51,6 +51,8 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 
+class GpuEventSynchronizer;
+
 struct gmx_mtop_t;
 struct t_idef;
 struct t_inputrec;
@@ -66,15 +68,23 @@ class UpdateConstrainCuda
     public:
         /*! \brief Create Update-Constrain object.
          *
-         * \param[in] ir             Input record data: LINCS takes number of iterations and order of
-         *                           projection from it.
-         * \param[in] mtop           Topology of the system: SETTLE gets the masses for O and H atoms
-         *                           and target O-H and H-H distances from this object.
-         * \param[in] commandStream  GPU stream to use. Can be nullptr.
+         * The constructor is given a non-nullptr \p commandStream, in which all the update and constrain
+         * routines are executed. \p xUpdatedOnDevice should mark the completion of all kernels that modify
+         * coordinates. The event is maintained outside this class and also passed to all (if any) consumers
+         * of the updated coordinates. The \p xUpdatedOnDevice also can not be a nullptr because the
+         * markEvent(...) method is called unconditionally.
+         *
+         * \param[in] ir                Input record data: LINCS takes number of iterations and order of
+         *                              projection from it.
+         * \param[in] mtop              Topology of the system: SETTLE gets the masses for O and H atoms
+         *                              and target O-H and H-H distances from this object.
+         * \param[in] commandStream     GPU stream to use. Can be nullptr.
+         * \param[in] xUpdatedOnDevice  The event synchronizer to use to mark that update is done on the GPU.
          */
-        UpdateConstrainCuda(const t_inputrec  &ir,
-                            const gmx_mtop_t  &mtop,
-                            const void        *commandStream);
+        UpdateConstrainCuda(const t_inputrec     &ir,
+                            const gmx_mtop_t     &mtop,
+                            const void           *commandStream,
+                            GpuEventSynchronizer *xUpdatedOnDevice);
 
         ~UpdateConstrainCuda();
 
@@ -137,7 +147,7 @@ class UpdateConstrainCuda
 
         /*! \brief Return the synchronizer associated with the event indicated that the coordinates are ready on the device.
          */
-        void *getCoordinatesReadySync();
+        GpuEventSynchronizer* getCoordinatesReadySync();
 
     private:
         class Impl;

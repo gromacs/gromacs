@@ -107,16 +107,20 @@ void UpdateConstrainCuda::Impl::integrate(const real                        dt,
         }
     }
 
-    coordinatesReady_.markEvent(commandStream_);
+    coordinatesReady_->markEvent(commandStream_);
 
     return;
 }
 
-UpdateConstrainCuda::Impl::Impl(const t_inputrec  &ir,
-                                const gmx_mtop_t  &mtop,
-                                const void        *commandStream)
+UpdateConstrainCuda::Impl::Impl(const t_inputrec     &ir,
+                                const gmx_mtop_t     &mtop,
+                                const void           *commandStream,
+                                GpuEventSynchronizer *xUpdatedOnDevice) :
+    coordinatesReady_(xUpdatedOnDevice)
 {
+    GMX_ASSERT(xUpdatedOnDevice != nullptr, "The event synchronizer can not be nullptr.");
     commandStream != nullptr ? commandStream_ = *static_cast<const CommandStream*>(commandStream) : commandStream_ = nullptr;
+
 
     integrator_ = std::make_unique<LeapFrogCuda>(commandStream_);
     lincsCuda_  = std::make_unique<LincsCuda>(ir.nLincsIter, ir.nProjOrder, commandStream_);
@@ -166,18 +170,19 @@ void UpdateConstrainCuda::Impl::setPbc(const t_pbc *pbc)
 
 void UpdateConstrainCuda::Impl::waitCoordinatesReadyOnDevice()
 {
-    coordinatesReady_.waitForEvent();
+    coordinatesReady_->waitForEvent();
 }
 
-void *UpdateConstrainCuda::Impl::getCoordinatesReadySync()
+GpuEventSynchronizer* UpdateConstrainCuda::Impl::getCoordinatesReadySync()
 {
-    return static_cast<void*> (&coordinatesReady_);
+    return coordinatesReady_;
 }
 
-UpdateConstrainCuda::UpdateConstrainCuda(const t_inputrec  &ir,
-                                         const gmx_mtop_t  &mtop,
-                                         const void        *commandStream)
-    : impl_(new Impl(ir, mtop, commandStream))
+UpdateConstrainCuda::UpdateConstrainCuda(const t_inputrec     &ir,
+                                         const gmx_mtop_t     &mtop,
+                                         const void           *commandStream,
+                                         GpuEventSynchronizer *xUpdatedOnDevice)
+    : impl_(new Impl(ir, mtop, commandStream, xUpdatedOnDevice))
 {
 }
 
@@ -218,7 +223,7 @@ void UpdateConstrainCuda::waitCoordinatesReadyOnDevice()
     impl_->waitCoordinatesReadyOnDevice();
 }
 
-void* UpdateConstrainCuda::getCoordinatesReadySync()
+GpuEventSynchronizer* UpdateConstrainCuda::getCoordinatesReadySync()
 {
     return impl_->getCoordinatesReadySync();
 }
