@@ -1494,12 +1494,7 @@ void do_force(FILE                                     *fplog,
             if (useGpuFBufOps == BufferOpsUseGpu::True)
             {
                 std::vector<GpuEventSynchronizer*> dependencyList;
-                dependencyList.reserve(2);
-
-                if (useGpuPmeFReduction)
-                {
-                    dependencyList.push_back(pme_gpu_get_f_ready_synchronizer(fr->pmedata));
-                }
+                dependencyList.reserve(1);
 
                 // TODO: move this into DomainLifetimeWorkload, including the second part of the condition
                 // The bonded and free energy CPU tasks can have non-local force contributions
@@ -1512,9 +1507,6 @@ void do_force(FILE                                     *fplog,
                     dependencyList.push_back(stateGpu->getForcesReadyOnDeviceEvent(gmx::StatePropagatorDataGpu::AtomLocality::NonLocal));
                 }
 
-                //
-                // FIXME: are we adding a PME->nonlocal dep here?
-                //
                 nbv->atomdata_add_nbat_f_to_f_gpu(Nbnxm::AtomLocality::NonLocal,
                                                   stateGpu->getForces(),
                                                   pme_gpu_get_device_f(fr->pmedata),
@@ -1684,7 +1676,7 @@ void do_force(FILE                                     *fplog,
                                               stateGpu->getForces(),
                                               pme_gpu_get_device_f(fr->pmedata),
                                               dependencyList,
-                                              useGpuPmeFReduction, haveLocalForceContribInCpuBuffer);
+                                              false, haveLocalForceContribInCpuBuffer);
             // This function call synchronizes the local stream
             nbv->wait_for_gpu_force_reduction(Nbnxm::AtomLocality::Local);
             stateGpu->copyForcesFromGpu(forceWithShift, gmx::StatePropagatorDataGpu::AtomLocality::Local);
