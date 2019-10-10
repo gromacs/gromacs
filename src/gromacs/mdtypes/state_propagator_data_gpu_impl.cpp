@@ -64,6 +64,14 @@ StatePropagatorDataGpu::StatePropagatorDataGpu(const void *       /* pmeStream  
 {
 }
 
+StatePropagatorDataGpu::StatePropagatorDataGpu(const void *       /* pmeStream       */,
+                                               const void *       /* deviceContext   */,
+                                               GpuApiCallBehavior /* transferKind    */,
+                                               int                /* paddingSize     */)
+    : impl_(nullptr)
+{
+}
+
 StatePropagatorDataGpu::StatePropagatorDataGpu(StatePropagatorDataGpu && /* other */) noexcept = default;
 
 StatePropagatorDataGpu &StatePropagatorDataGpu::operator=(StatePropagatorDataGpu && /* other */) noexcept = default;

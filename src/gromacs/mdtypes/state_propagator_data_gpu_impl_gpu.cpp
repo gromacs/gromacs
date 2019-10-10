@@ -128,6 +128,45 @@ StatePropagatorDataGpu::Impl::Impl(const void            *pmeStream,
     fCopyStreams_[AtomLocality::All]      = nullptr;
 }
 
+StatePropagatorDataGpu::Impl::Impl(const void            *pmeStream,
+                                   const void            *deviceContext,
+                                   GpuApiCallBehavior     transferKind,
+                                   int                    paddingSize) :
+    transferKind_(transferKind),
+    paddingSize_(paddingSize)
+{
+    static_assert(GMX_GPU != GMX_GPU_NONE, "This object should only be constructed on the GPU code-paths.");
+    GMX_RELEASE_ASSERT(getenv("GMX_USE_GPU_BUFFER_OPS") == nullptr, "GPU buffer ops are not supported in this build.");
+
+    if (GMX_GPU == GMX_GPU_OPENCL)
+    {
+        GMX_ASSERT(deviceContext != nullptr, "GPU context should be set in OpenCL builds.");
+        deviceContext_  = *static_cast<const DeviceContext*>(deviceContext);
+    }
+
+    GMX_ASSERT(pmeStream != nullptr, "GPU PME stream should be set.");
+    pmeStream_      = *static_cast<const CommandStream*>(pmeStream);
+
+    localStream_    = nullptr;
+    nonLocalStream_ = nullptr;
+    updateStream_   = nullptr;
+
+
+    // Only local/all coordinates are allowed to be copied in PME-only rank/ PME tests.
+    // This it temporary measure to make it safe to use this class in those cases.
+    xCopyStreams_[AtomLocality::Local]    = pmeStream_;
+    xCopyStreams_[AtomLocality::NonLocal] = nullptr;
+    xCopyStreams_[AtomLocality::All]      = pmeStream_;
+
+    vCopyStreams_[AtomLocality::Local]    = nullptr;
+    vCopyStreams_[AtomLocality::NonLocal] = nullptr;
+    vCopyStreams_[AtomLocality::All]      = nullptr;
+
+    fCopyStreams_[AtomLocality::Local]    = nullptr;
+    fCopyStreams_[AtomLocality::NonLocal] = nullptr;
+    fCopyStreams_[AtomLocality::All]      = nullptr;
+}
+
 StatePropagatorDataGpu::Impl::~Impl()
 {
 }
@@ -434,6 +473,17 @@ StatePropagatorDataGpu::StatePropagatorDataGpu(const void        *pmeStream,
     : impl_(new Impl(pmeStream,
                      localStream,
                      nonLocalStream,
+                     deviceContext,
+                     transferKind,
+                     paddingSize))
+{
+}
+
+StatePropagatorDataGpu::StatePropagatorDataGpu(const void        *pmeStream,
+                                               const void        *deviceContext,
+                                               GpuApiCallBehavior transferKind,
+                                               int                paddingSize)
+    : impl_(new Impl(pmeStream,
                      deviceContext,
                      transferKind,
                      paddingSize))

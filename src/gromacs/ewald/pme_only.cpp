@@ -559,10 +559,9 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     std::unique_ptr<gmx::StatePropagatorDataGpu> stateGpu;
     if (useGpuForPme)
     {
-        // TODO: The local and non-local nonbonded streams are passed as nullptrs, since they will be not used for the GPU buffer
-        //       management in PME only ranks. Make the constructor safer.
-        stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(commandStream, nullptr, nullptr,
-                                                                 deviceContext, GpuApiCallBehavior::Async, paddingSize);
+        // TODO: Special PME-only constructor is used here. There is no mechanism to prevent from using the other constructor here.
+        //       This should be made safer.
+        stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(commandStream, deviceContext, GpuApiCallBehavior::Async, paddingSize);
     }
 
 
