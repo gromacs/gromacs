@@ -252,13 +252,28 @@ class StatePropagatorDataGpu::Impl
         void copyForcesToGpu(gmx::ArrayRef<const gmx::RVec>  h_f,
                              AtomLocality                    atomLocality);
 
-        /*! \brief Get the event synchronizer on the H2D forces copy.
+        /*! \brief Get the event synchronizer for the forces ready on device.
          *
-         *  \param[in] atomLocality  Locality of the particles to wait for.
+         *  Returns either of the event synchronizers, depending on the offload scenario
+         *  for the current simulation timestep:
+         *  1. The forces are copied to the device (when GPU buffer ops are off)
+         *  2. The forces are reduced on the device (GPU buffer ops are on)
+         *
+         *  \todo Pass step workload instead of the useGpuFBufferOps boolean.
+         *
+         *  \param[in] atomLocality      Locality of the particles to wait for.
+         *  \param[in] useGpuFBufferOps  If the force buffer ops are offloaded to the GPU.
          *
          *  \returns  The event to synchronize the stream that consumes forces on device.
          */
-        GpuEventSynchronizer* getForcesReadyOnDeviceEvent(AtomLocality  atomLocality);
+        GpuEventSynchronizer* getForcesReadyOnDeviceEvent(AtomLocality  atomLocality,
+                                                          bool          useGpuFBufferOps);
+
+        /*! \brief Getter for the event synchronizer for the forces are reduced on the GPU.
+         *
+         *  \returns  The event to mark when forces are reduced on the GPU.
+         */
+        GpuEventSynchronizer* fReducedOnDevice();
 
         /*! \brief Copy forces from the GPU memory.
          *
@@ -329,6 +344,8 @@ class StatePropagatorDataGpu::Impl
 
         //! An array of events that indicate H2D copy of forces is complete (one event for each atom locality)
         EnumerationArray<AtomLocality, GpuEventSynchronizer> fReadyOnDevice_;
+        //! An event that the forces were reduced on the GPU
+        GpuEventSynchronizer                                 fReducedOnDevice_;
         //! An array of events that indicate D2H copy of forces is complete (one event for each atom locality)
         EnumerationArray<AtomLocality, GpuEventSynchronizer> fReadyOnHost_;
 
