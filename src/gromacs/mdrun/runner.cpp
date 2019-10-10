@@ -1530,7 +1530,7 @@ int Mdrunner::mdrunner()
         const bool useModularSimulator = inputIsCompatibleWithModularSimulator && !(getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
 
         std::unique_ptr<gmx::StatePropagatorDataGpu> stateGpu;
-        if (gpusWereDetected && ((useGpuForPme && thisRankHasDuty(cr, DUTY_PME)) || useGpuForUpdate))
+        if (gpusWereDetected && ((useGpuForPme && thisRankHasDuty(cr, DUTY_PME)) || devFlags.enableGpuBufferOps))
         {
             const void         *pmeStream      = pme_gpu_get_device_stream(fr->pmedata);
             const void         *localStream    = fr->nbv->gpu_nbv != nullptr ? Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::Local) : nullptr;
