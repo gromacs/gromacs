@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2019
  *
@@ -131,7 +131,7 @@ BabelFileIterator BabelFiles::findBabelFile(const std::string &fn)
                         });
 }
 
-static void merge_electrostatic_potential(alexandria::MolProp                             &mpt,
+static void merge_electrostatic_potential(alexandria::MolProp                             *mpt,
                                           std::vector<alexandria::ElectrostaticPotential> &espv,
                                           int                                              natom,
                                           int                                              maxPotential)
@@ -145,7 +145,7 @@ static void merge_electrostatic_potential(alexandria::MolProp                   
     {
         if ((i < natom) || (((i-natom) % mod) == 0))
         {
-            mpt.LastExperiment()->AddPotential(*esi);
+            mpt->LastExperiment()->AddPotential(*esi);
         }
     }
 }
@@ -210,8 +210,8 @@ static OpenBabel::OBConversion *readBabel(const       char *g09,
     return nullptr;
 }
 
-void readBabel(const char          *g09,
-               alexandria::MolProp &mpt,
+bool readBabel(const char          *g09,
+               alexandria::MolProp *mpt,
                const char          *molnm,
                const char          *iupac,
                const char          *conformation,
@@ -252,7 +252,7 @@ void readBabel(const char          *g09,
     if (nullptr == conv)
     {
         fprintf(stderr, "Failed reading %s\n", g09);
-        return;
+        return false;
     }
     delete conv;
     conv = new OpenBabel::OBConversion(&std::cin, &std::cout);
@@ -285,7 +285,7 @@ void readBabel(const char          *g09,
             {
                 std::string dup = category;
                 std::replace_if(dup.begin(), dup.end(), [](const char c) {return c == '_';}, ' ');
-                mpt.AddCategory(dup);
+                mpt->AddCategory(dup);
             }
         }
     }
@@ -341,14 +341,14 @@ void readBabel(const char          *g09,
     }
 
     alexandria::Experiment exp(program, method, basis, reference, conformation, g09ptr, jobtype);
-    mpt.AddExperiment(exp);
-    mpt.SetMass(mol.GetMolWt());
-    mpt.SetMultiplicity(mol.GetTotalSpinMultiplicity());
-    mpt.SetFormula(mol.GetFormula());
+    mpt->AddExperiment(exp);
+    mpt->SetMass(mol.GetMolWt());
+    mpt->SetMultiplicity(mol.GetTotalSpinMultiplicity());
+    mpt->SetFormula(mol.GetFormula());
     
     if (inputformat == einfGaussian)
     {
-        mpt.SetCharge(mol.GetTotalCharge());
+        mpt->SetCharge(mol.GetTotalCharge());
         if (debug)
         {
             fprintf(debug, "The total charge of the molecule (%0.2f) is taken from %s\n", qtot, g09);
@@ -356,7 +356,7 @@ void readBabel(const char          *g09,
     }
     else
     {
-        mpt.SetCharge(qtot);
+        mpt->SetCharge(qtot);
         if (debug)
         {
             fprintf(debug, "The total charge of the molecule (%0.2f) is assigned from the gentop command line\n", qtot);
@@ -365,20 +365,20 @@ void readBabel(const char          *g09,
 
     if (nullptr != molnm)
     {
-        mpt.SetMolname(molnm);
+        mpt->SetMolname(molnm);
     }
     else
     {
-        mpt.SetMolname(mymol);
+        mpt->SetMolname(mymol);
     }
 
     if (nullptr != iupac)
     {
-        mpt.SetIupac(iupac);
+        mpt->SetIupac(iupac);
     }
     else
     {
-        mpt.SetIupac(mymol);
+        mpt->SetIupac(mymol);
     }
 
     // Thermochemistry
@@ -407,42 +407,42 @@ void readBabel(const char          *g09,
                                             epGAS,
                                             convert2gmx(DeltaHf0, eg2cKcal_Mole),
                                             0);
-            mpt.LastExperiment()->AddEnergy(me1);
+            mpt->LastExperiment()->AddEnergy(me1);
             alexandria::MolecularEnergy me2("DeltaHform",
                                             mpo_unit[MPO_ENERGY],
                                             temperature,
                                             epGAS,
                                             convert2gmx(DeltaHfT, eg2cKcal_Mole),
                                             0);
-            mpt.LastExperiment()->AddEnergy(me2);
+            mpt->LastExperiment()->AddEnergy(me2);
             alexandria::MolecularEnergy me3("DeltaGform",
                                             mpo_unit[MPO_ENERGY],
                                             temperature,
                                             epGAS,
                                             convert2gmx(DeltaGfT, eg2cKcal_Mole),
                                             0);
-            mpt.LastExperiment()->AddEnergy(me3);
+            mpt->LastExperiment()->AddEnergy(me3);
             alexandria::MolecularEnergy me4("DeltaSform",
                                             mpo_unit[MPO_ENTROPY],
                                             temperature,
                                             epGAS,
                                             convert2gmx(DeltaSfT, eg2cCal_MolK),
                                             0);
-            mpt.LastExperiment()->AddEnergy(me4);
+            mpt->LastExperiment()->AddEnergy(me4);
             alexandria::MolecularEnergy me5("S0",
                                             mpo_unit[MPO_ENTROPY],
                                             temperature,
                                             epGAS,
                                             convert2gmx(S0T, eg2cCal_MolK),
                                             0);
-            mpt.LastExperiment()->AddEnergy(me5);
+            mpt->LastExperiment()->AddEnergy(me5);
             alexandria::MolecularEnergy me6("cp",
                                             mpo_unit[MPO_ENTROPY],
                                             temperature,
                                             epGAS,
                                             convert2gmx(CPT, eg2cCal_MolK),
                                             0);
-            mpt.LastExperiment()->AddEnergy(me6);
+            mpt->LastExperiment()->AddEnergy(me6);
             const char *scomp[3] = { "Strans", "Srot", "Svib" };
             for (int i = 0; (i < 3); i++)
             {
@@ -452,7 +452,7 @@ void readBabel(const char          *g09,
                                                 epGAS,
                                                 convert2gmx(Scomponents[i], eg2cCal_MolK),
                                                 0);
-                mpt.LastExperiment()->AddEnergy(mes);
+                mpt->LastExperiment()->AddEnergy(mes);
             }
             alexandria::MolecularEnergy me7("ZPE",
                                             mpo_unit[MPO_ENERGY],
@@ -460,13 +460,13 @@ void readBabel(const char          *g09,
                                             epGAS,
                                             convert2gmx(ZPE, eg2cKcal_Mole),
                                             0);
-            mpt.LastExperiment()->AddEnergy(me7);
+            mpt->LastExperiment()->AddEnergy(me7);
         }
     }
 
     // HF Eenergy
     alexandria::MolecularEnergy mes("HF", mpo_unit[MPO_ENERGY], 0, epGAS, convert2gmx( mol.GetEnergy(), eg2cKcal_Mole), 0);
-    mpt.LastExperiment()->AddEnergy(mes);
+    mpt->LastExperiment()->AddEnergy(mes);
 
     // Atoms
     std::string forcefield = "gaff";
@@ -479,8 +479,9 @@ void readBabel(const char          *g09,
             OpenBabel::OBPairData *type = (OpenBabel::OBPairData*) atom->GetData("FFAtomType");
             if (nullptr == type)
             {
-                gmx_fatal(FARGS, "Cannot find %s atom type for atom %d",
-                          forcefield.c_str(), static_cast<int>(atom->GetIdx()));
+                fprintf(stderr, "Cannot find %s atom type for atom %d",
+                        forcefield.c_str(), static_cast<int>(atom->GetIdx()));
+                return false;
             }
             if (nullptr != debug)
             {
@@ -518,12 +519,13 @@ void readBabel(const char          *g09,
                     ca.AddCharge(aq);
                 }
             }
-            mpt.LastExperiment()->AddAtom(ca);
+            mpt->LastExperiment()->AddAtom(ca);
         }
     }
     else
     {
-        gmx_fatal(FARGS, "Cannot read %s force field", forcefield.c_str());
+        fprintf(stderr, "Cannot read %s force field", forcefield.c_str());
+        return false;
     }
 
     // Bonds
@@ -535,12 +537,13 @@ void readBabel(const char          *g09,
             alexandria::Bond ab(1+OBb->GetBeginAtom()->GetIndex(),
                                 1+OBb->GetEndAtom()->GetIndex(),
                                 OBb->GetBondOrder());
-            mpt.AddBond(ab);
+            mpt->AddBond(ab);
         }
     }
     else
     {
-        gmx_fatal(FARGS, "No bond is found for %s\n", g09);
+        fprintf(stderr, "No bond is found for %s\n", g09);
+        return false;
     }
 
     // Dipole
@@ -556,7 +559,7 @@ void readBabel(const char          *g09,
                                          v3.GetZ(),
                                          v3.length(), 
                                          0.0);
-        mpt.LastExperiment()->AddDipole(dp);
+        mpt->LastExperiment()->AddDipole(dp);
     }
 
     // Quadrupole
@@ -571,7 +574,7 @@ void readBabel(const char          *g09,
                                            0.0,
                                            mm[0], mm[4], mm[8],
                                            mm[1], mm[2], mm[5]);
-        mpt.LastExperiment()->AddQuadrupole(mq);
+        mpt->LastExperiment()->AddQuadrupole(mq);
     }
 
     // Polarizability
@@ -595,7 +598,7 @@ void readBabel(const char          *g09,
                                                 mm[0], mm[4], mm[8],
                                                 mm[1], mm[2], mm[5],
                                                 alpha, 0);
-        mpt.LastExperiment()->AddPolar(mdp);
+        mpt->LastExperiment()->AddPolar(mdp);
     }
 
     // Electrostatic potential
@@ -620,6 +623,7 @@ void readBabel(const char          *g09,
         }
         merge_electrostatic_potential(mpt, espv, mol.NumAtoms(), maxPotential);
     }
+    return true;
 }
 
 bool SetMolpropAtomTypes(alexandria::MolProp *mmm)

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="1-butanol.pdb">15</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">15</Int>
+    <String>c3</String>
+    <String>hc</String>
+    <String>hc</String>
+    <String>hc</String>
+    <String>c3</String>
+    <String>hc</String>
+    <String>hc</String>
+    <String>c3</String>
+    <String>hc</String>
+    <String>hc</String>
+    <String>c3</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>oh</String>
+    <String>ho</String>
+  </Sequence>
+</ReferenceData>

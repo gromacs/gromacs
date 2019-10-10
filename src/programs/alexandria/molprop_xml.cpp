@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2019
  *
@@ -359,7 +359,7 @@ static void process_children(xmlNodePtr tree, std::vector<std::string> &xbuf)
 
 static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             int indent,
-                            std::vector<alexandria::MolProp> &molprops,
+                            std::vector<alexandria::MolProp> *molprops,
                             gmx_bool *bExperiment)
 {
     xmlNodePtr                   tc;
@@ -387,9 +387,9 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                 fprintf(fp, "Node type %d encountered\n", tree->type);
             }
         }
-        if (molprops.size() > 0)
+        if (molprops->size() > 0)
         {
-            mpt = &(molprops.back());
+            mpt = &(molprops->back());
         }
         else
         {
@@ -447,8 +447,8 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             {
                                 mp.SetMultiplicity(atoi(xbuf[exmlMULTIPLICITY].c_str()));
                             }
-                            molprops.push_back(mp);
-                            mpt = &(molprops.back());
+                            molprops->push_back(mp);
+                            mpt = &(molprops->back());
                         }
                         break;
                         /* The items below are handled when treating attributes */
@@ -710,7 +710,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
     }
 }
 
-void MolPropRead(const char *fn, std::vector<alexandria::MolProp> &mpt)
+void MolPropRead(const char *fn, std::vector<alexandria::MolProp> *mpt)
 {
     xmlDocPtr     doc;
     const char   *db          = "alexandria.ff/molprops.dat";
@@ -859,8 +859,8 @@ static void add_calc_properties(xmlNodePtr              exp,
     }
 }
 
-static void add_xml_molprop(xmlNodePtr                                 parent,
-                            std::vector<alexandria::MolProp>::iterator mp_it)
+static void add_xml_molprop(xmlNodePtr                                       parent,
+                            const std::vector<alexandria::MolProp>::iterator mp_it)
 {
     xmlNodePtr ptr = add_xml_child(parent, exml_names(exmlMOLECULE));
     add_xml_string(ptr, exml_names(exmlMOLNAME), mp_it->getMolname());
@@ -958,13 +958,14 @@ static void add_xml_molprop(xmlNodePtr                                 parent,
     }
 }
 
-void MolPropWrite(const char *fn, std::vector<alexandria::MolProp> mpt, gmx_bool bCompress)
+void MolPropWrite(const char                       *fn,
+                  std::vector<alexandria::MolProp> *mpt,
+                  gmx_bool                          bCompress)
 {
     xmlDocPtr                   doc;
     xmlDtdPtr                   dtd;
     xmlNodePtr                  myroot;
     xmlChar                    *libdtdname, *dtdname, *gmx;
-    alexandria::MolPropIterator mp_it;
 
     gmx        = (xmlChar *) "molecules";
     dtdname    = (xmlChar *) "molprops.dtd";
@@ -988,14 +989,13 @@ void MolPropWrite(const char *fn, std::vector<alexandria::MolProp> mpt, gmx_bool
     myroot->prev = (xmlNodePtr) dtd;
 
     /* Add molecule definitions */
-    for (mp_it = mpt.begin(); (mp_it < mpt.end()); mp_it++)
+    for (auto mp_it = mpt->begin(); (mp_it < mpt->end()); mp_it++)
     {
         if (nullptr != debug)
         {
-            fprintf(debug, "Adding %d/%d %s\n", (int)(mp_it - mpt.begin()),
-                    (int)mpt.size(), mp_it->getMolname().c_str());
+            fprintf(debug, "Adding %d/%d %s\n", (int)(mp_it - mpt->begin()),
+                    (int)mpt->size(), mp_it->getMolname().c_str());
         }
-        //mp_it->Stats();
         add_xml_molprop(myroot, mp_it);
     }
     xmlSetDocCompressMode(doc, (int)bCompress);

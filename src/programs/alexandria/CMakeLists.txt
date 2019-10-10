@@ -27,13 +27,13 @@
 
 set(ALEXANDRIA_SOURCES
            chargemodel.cpp
-	   gentop_core.cpp
-	   gentop_vsite.cpp
+	       gentop_core.cpp
+	       gentop_vsite.cpp
            qgen_acm.cpp
-	   qgen_resp.cpp
+	       qgen_resp.cpp
            qgen_resp_atom.cpp
-	   gmx_simple_comm.cpp
-	   molprop.cpp
+	       gmx_simple_comm.cpp
+      	   molprop.cpp
            molprop_util.cpp
            molprop_xml.cpp
            molselect.cpp
@@ -64,7 +64,7 @@ set(ALEXANDRIA_SOURCES
            molprop_tables.cpp
            molprop_sqlite3.cpp
            molprop_test.cpp
-           mp2csv.cpp
+           molprop_csv.cpp
            nmsimplex.c
            phase.cpp
            plistwrapper.cpp
@@ -75,8 +75,8 @@ set(ALEXANDRIA_SOURCES
            tune_fc.cpp
            tune_fc_utils.cpp
            tune_pol.cpp
-# tune_zeta.cpp
-	   optparam.cpp
+           tune_zeta.cpp
+	       optparam.cpp
            communication.cpp
            tuning_utility.cpp          
 	)

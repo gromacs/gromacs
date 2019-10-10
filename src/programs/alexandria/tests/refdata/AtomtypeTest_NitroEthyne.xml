@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="1-nitroethyne.pdb">6</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">6</Int>
+    <String>o</String>
+    <String>o</String>
+    <String>no</String>
+    <String>cg</String>
+    <String>c1</String>
+    <String>ha</String>
+  </Sequence>
+</ReferenceData>

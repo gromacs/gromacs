@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2019
  *
@@ -274,7 +274,7 @@ int alex_gentop(int argc, char *argv[])
         {
             printf("Reading molecule database.\n");
         }
-        MolPropRead(opt2fn_null("-mpdb", NFILE, fnm), mps);
+        MolPropRead(opt2fn_null("-mpdb", NFILE, fnm), &mps);
         for (mpi = mps.begin(); (mpi < mps.end()); mpi++)
         {
             if (strcasecmp(dbname, mpi->getMolname().c_str()) == 0)
@@ -308,17 +308,19 @@ int alex_gentop(int argc, char *argv[])
             for (auto &i : fns)
             {
                 alexandria::MolProp  mp;
-                readBabel(i.c_str(),
-                          mp,
-                          molnm,
-                          iupac,
-                          conf,
-                          basis,
-                          maxpot,
-                          nsymm,
-                          jobtype,
-                          qtot);
-                mps.push_back(mp);
+                if (readBabel(i.c_str(),
+                              &mp,
+                              molnm,
+                              iupac,
+                              conf,
+                              basis,
+                              maxpot,
+                              nsymm,
+                              jobtype,
+                              qtot))
+                {
+                    mps.push_back(mp);
+                }
             }
         }
         else

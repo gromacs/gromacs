@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2019
  *
@@ -623,7 +623,7 @@ int alex_analyze(int argc, char *argv[])
 
     if (bMerge)
     {
-        int nwarn = merge_xml(mpname, mp, nullptr, nullptr, nullptr, ap, pd, TRUE);
+        int nwarn = merge_xml(mpname, &mp, nullptr, nullptr, nullptr, ap, pd, TRUE);
         if (nwarn > maxwarn)
         {
             printf("Too many warnings (%d). Terminating.\n", nwarn);
@@ -632,13 +632,13 @@ int alex_analyze(int argc, char *argv[])
     }
     else if (mpname.size() > 0)
     {
-        MolPropRead(mpname[0].c_str(), mp);
+        MolPropRead(mpname[0].c_str(), &mp);
         generate_composition(mp, &pd);
         generate_formula(mp, ap);
     }
     if (mpsa != MPSA_NR)
     {
-        MolPropSort(mp, mpsa, ap, gms);
+        MolPropSort(&mp, mpsa, ap, gms);
     }
     fplog  = opt2FILE("-g", NFILE, fnm, "w");
     alexandria_molprop_analyze(fplog,

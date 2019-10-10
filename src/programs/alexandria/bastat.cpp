@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2019 
  *
@@ -673,7 +673,7 @@ int alex_bastat(int argc, char *argv[])
     pd.setChargeModel(eqdESP_p);
 
     /* Read Molprops */
-    auto nwarn = merge_xml(opt2fns("-f", NFILE, fnm), mp, nullptr, nullptr, nullptr, aps, pd, true);
+    auto nwarn = merge_xml(opt2fns("-f", NFILE, fnm), &mp, nullptr, nullptr, nullptr, aps, pd, true);
     
     if (nwarn > maxwarn)
     {

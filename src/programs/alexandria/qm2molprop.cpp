@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2019 
  *
@@ -136,7 +136,7 @@ int alex_qm2molprop(int argc, char *argv[])
         {
             alexandria::MolProp mmm;
             readBabel(i.c_str(), 
-                      mmm, 
+                      &mmm, 
                       molnm, 
                       iupac, 
                       conf, 
@@ -147,7 +147,6 @@ int alex_qm2molprop(int argc, char *argv[])
                       0.0);
             mp.push_back(std::move(mmm));
         }
-        
         printf("Succesfully read %d molprops from %d Gaussian files.\n", 
                static_cast<int>(mp.size()), static_cast<int>(gfns.size()));
     }
@@ -172,11 +171,11 @@ int alex_qm2molprop(int argc, char *argv[])
                static_cast<int>(mp.size()-mpsize), static_cast<int>(pfns.size()));
     }
     alexandria::MolSelect gms;
-    MolPropSort(mp, MPSA_MOLNAME, nullptr, gms);
-    merge_doubles(mp, nullptr, TRUE);
+    MolPropSort(&mp, MPSA_MOLNAME, nullptr, gms);
+    MergeDoubleMolprops(&mp, nullptr, TRUE);
     if (mp.size() > 0)
     {
-        MolPropWrite(opt2fn("-o", NFILE, fnm), mp, (int)compress);
+        MolPropWrite(opt2fn("-o", NFILE, fnm), &mp, (int)compress);
     }
 
     return 0;

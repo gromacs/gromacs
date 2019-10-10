@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2019 
  *
@@ -62,7 +62,7 @@ int alex_molprop_check(int argc, char*argv[])
     {
         return 0;
     }
-    MolPropRead(opt2fn("-f", NFILE, fnm), mp);
+    MolPropRead(opt2fn("-f", NFILE, fnm), &mp);
 
     for (auto &m : mp)
     {

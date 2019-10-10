@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2019 
  *
@@ -50,9 +50,9 @@
  * \param[in] bCompress  Determines whether zlib compression is used when writing
  * \ingroup module_alexandria
  */
-void MolPropWrite(const char                            *fn,
-                  const std::vector<alexandria::MolProp> mpt,
-                  gmx_bool                               bCompress);
+void MolPropWrite(const char                       *fn,
+                  std::vector<alexandria::MolProp> *mpt,
+                  gmx_bool                          bCompress);
 
 /*! \brief
  * Reads a vector of molprops from an XML file
@@ -68,6 +68,6 @@ void MolPropWrite(const char                            *fn,
  * \ingroup module_alexandria
  */
 void MolPropRead(const char                       *fn,
-                 std::vector<alexandria::MolProp> &mpt);
+                 std::vector<alexandria::MolProp> *mpt);
 
 #endif
