@@ -334,12 +334,14 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet       &gridSet,
  * \param[in]     fillLocal  Tells if the local filler particle coordinates should be zeroed.
  * \param[in,out] gpu_nbv    The NBNXM GPU data structure.
  * \param[in]     d_x        Coordinates to be copied (in plain rvec format).
+ * \param[in]     xReadyOnDevice   Event synchronizer indicating that the coordinates are ready in the device memory.
  */
-void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet     &gridSet,
-                                    Nbnxm::AtomLocality       locality,
-                                    bool                      fillLocal,
-                                    gmx_nbnxn_gpu_t          *gpu_nbv,
-                                    DeviceBuffer<float>       d_x);
+void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet      &gridSet,
+                                    Nbnxm::AtomLocality        locality,
+                                    bool                       fillLocal,
+                                    gmx_nbnxn_gpu_t           *gpu_nbv,
+                                    DeviceBuffer<float>        d_x,
+                                    GpuEventSynchronizer      *xReadyOnDevice);
 
 /*! \brief Add the computed forces to \p f, an internal reduction might be performed as well
  *

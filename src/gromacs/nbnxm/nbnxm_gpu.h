@@ -235,18 +235,20 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet gmx_unused &gridSet,
  * \param[in]     setFillerCoords  If the filler coordinates are used.
  * \param[in,out] gpu_nbv          The nonbonded data GPU structure.
  * \param[in]     d_x              Device-side coordinates in plain rvec format.
+ * \param[in]     xReadyOnDevice   Event synchronizer indicating that the coordinates are ready in the device memory.
  * \param[in]     locality         Copy coordinates for local or non-local atoms.
  * \param[in]     gridId           Index of the grid being converted.
  * \param[in]     numColumnsMax    Maximum number of columns in the grid.
  */
 CUDA_FUNC_QUALIFIER
-void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid   gmx_unused &grid,
-                           bool                gmx_unused  setFillerCoords,
-                           gmx_nbnxn_gpu_t     gmx_unused *gpu_nbv,
-                           DeviceBuffer<float> gmx_unused  d_x,
-                           Nbnxm::AtomLocality gmx_unused  locality,
-                           int                 gmx_unused  gridId,
-                           int                 gmx_unused  numColumnsMax) CUDA_FUNC_TERM;
+void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid    gmx_unused &grid,
+                           bool                 gmx_unused  setFillerCoords,
+                           gmx_nbnxn_gpu_t      gmx_unused *gpu_nbv,
+                           DeviceBuffer<float>  gmx_unused  d_x,
+                           GpuEventSynchronizer gmx_unused *xReadyOnDevice,
+                           Nbnxm::AtomLocality  gmx_unused  locality,
+                           int                  gmx_unused  gridId,
+                           int                  gmx_unused  numColumnsMax) CUDA_FUNC_TERM;
 
 /*! \brief Sync the nonlocal stream with dependent tasks in the local queue.
  * \param[in] nb                   The nonbonded data GPU structure

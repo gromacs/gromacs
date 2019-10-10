@@ -311,8 +311,12 @@ void pmePerformSplineAndSpread(gmx_pme_t *pme, CodePath mode, // TODO const qual
             break;
 
         case CodePath::GPU:
-            pme_gpu_spread(pme->gpu, gridIndex, fftgrid, computeSplines, spreadCharges);
-            break;
+        {
+            // no synchronization needed as x is transferred in the PME stream
+            GpuEventSynchronizer *xReadyOnDevice = nullptr;
+            pme_gpu_spread(pme->gpu, xReadyOnDevice, gridIndex, fftgrid, computeSplines, spreadCharges);
+        }
+        break;
 
         default:
             GMX_THROW(InternalError("Test not implemented for this mode"));

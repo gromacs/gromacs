@@ -368,10 +368,12 @@ GPU_FUNC_QUALIFIER void pme_gpu_prepare_computation(gmx_pme_t      *GPU_FUNC_ARG
  * Launches first stage of PME on GPU - spreading kernel.
  *
  * \param[in] pme                The PME data structure.
+ * \param[in] xReadyOnDevice     Event synchronizer indicating that the coordinates are ready in the device memory.
  * \param[in] wcycle             The wallclock counter.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t      *GPU_FUNC_ARGUMENT(pme),
-                                              gmx_wallcycle  *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
+GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t            *GPU_FUNC_ARGUMENT(pme),
+                                              GpuEventSynchronizer *GPU_FUNC_ARGUMENT(xReadyOnDevice),
+                                              gmx_wallcycle        *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
 
 /*! \brief
  * Launches middle stages of PME (FFT R2C, solving, FFT C2R) either on GPU or on CPU, depending on the run mode.

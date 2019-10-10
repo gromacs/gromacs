@@ -280,13 +280,15 @@ struct nonbonded_verlet_t
          *
          * The API function for the transformation of the coordinates from one layout to another in the GPU memory.
          *
-         * \param[in] locality   Whether coordinates for local or non-local atoms should be transformed.
-         * \param[in] fillLocal  If the coordinates for filler particles should be zeroed.
-         * \param[in] d_x        GPU coordinates buffer in plain rvec format to be transformed.
+         * \param[in] locality        Whether coordinates for local or non-local atoms should be transformed.
+         * \param[in] fillLocal       If the coordinates for filler particles should be zeroed.
+         * \param[in] d_x             GPU coordinates buffer in plain rvec format to be transformed.
+         * \param[in] xReadyOnDevice  Event synchronizer indicating that the coordinates are ready in the device memory.
          */
-        void convertCoordinatesGpu(Nbnxm::AtomLocality             locality,
-                                   bool                            fillLocal,
-                                   DeviceBuffer<float>             d_x);
+        void convertCoordinatesGpu(Nbnxm::AtomLocality              locality,
+                                   bool                             fillLocal,
+                                   DeviceBuffer<float>              d_x,
+                                   GpuEventSynchronizer            *xReadyOnDevice);
 
         //! Init for GPU version of setup coordinates in Nbnxm
         void atomdata_init_copy_x_to_nbat_x_gpu();

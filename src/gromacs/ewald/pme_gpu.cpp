@@ -175,6 +175,7 @@ void pme_gpu_prepare_computation(gmx_pme_t            *pme,
 }
 
 void pme_gpu_launch_spread(gmx_pme_t            *pme,
+                           GpuEventSynchronizer *xReadyOnDevice,
                            gmx_wallcycle        *wcycle)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
@@ -190,7 +191,7 @@ void pme_gpu_launch_spread(gmx_pme_t            *pme,
         const bool spreadCharges  = true;
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
-        pme_gpu_spread(pmeGpu, gridIndex, fftgrid, computeSplines, spreadCharges);
+        pme_gpu_spread(pmeGpu, xReadyOnDevice, gridIndex, fftgrid, computeSplines, spreadCharges);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }

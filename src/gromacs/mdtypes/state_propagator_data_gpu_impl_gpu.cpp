@@ -72,7 +72,6 @@ StatePropagatorDataGpu::Impl::Impl(const void            *pmeStream,
     paddingSize_(paddingSize)
 {
     static_assert(GMX_GPU != GMX_GPU_NONE, "This object should only be constructed on the GPU code-paths.");
-    GMX_RELEASE_ASSERT(getenv("GMX_USE_GPU_BUFFER_OPS") == nullptr, "GPU buffer ops are not supported in this build.");
 
     // TODO: Refactor when the StreamManager is introduced.
     if (GMX_GPU == GMX_GPU_OPENCL)
@@ -136,7 +135,6 @@ StatePropagatorDataGpu::Impl::Impl(const void            *pmeStream,
     paddingSize_(paddingSize)
 {
     static_assert(GMX_GPU != GMX_GPU_NONE, "This object should only be constructed on the GPU code-paths.");
-    GMX_RELEASE_ASSERT(getenv("GMX_USE_GPU_BUFFER_OPS") == nullptr, "GPU buffer ops are not supported in this build.");
 
     if (GMX_GPU == GMX_GPU_OPENCL)
     {
@@ -303,8 +301,6 @@ void StatePropagatorDataGpu::Impl::copyCoordinatesToGpu(const gmx::ArrayRef<cons
     if (GMX_GPU == GMX_GPU_CUDA)
     {
         xReadyOnDevice_[atomLocality].markEvent(commandStream);
-        // TODO: Remove When event-based synchronization is introduced
-        gpuStreamSynchronize(commandStream);
     }
 }
 
@@ -319,6 +315,11 @@ GpuEventSynchronizer* StatePropagatorDataGpu::Impl::getCoordinatesReadyOnDeviceE
     //
     // TODO: This should be reconsidered to support the halo exchange.
     //
+    // In OpenCL no events are used as coordinate sync is not necessary
+    if (GMX_GPU == GMX_GPU_OPENCL)
+    {
+        return nullptr;
+    }
     if (atomLocality == AtomLocality::Local && simulationWork.useGpuUpdate && !stepWork.doNeighborSearch)
     {
         return &xUpdatedOnDevice_;

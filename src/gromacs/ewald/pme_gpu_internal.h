@@ -383,17 +383,20 @@ void pme_gpu_get_timings(const PmeGpu            *pmeGpu,
  * A GPU spline computation and charge spreading function.
  *
  * \param[in]  pmeGpu          The PME GPU structure.
+ * \param[in]  xReadyOnDevice  Event synchronizer indicating that the coordinates are ready in the device memory;
+ *                             can be nullptr when invoked on a separate PME rank or from PME tests.
  * \param[in]  gridIndex       Index of the PME grid - unused, assumed to be 0.
  * \param[out] h_grid          The host-side grid buffer (used only if the result of the spread is expected on the host,
  *                             e.g. testing or host-side FFT)
  * \param[in]  computeSplines  Should the computation of spline parameters and gridline indices be performed.
  * \param[in]  spreadCharges   Should the charges/coefficients be spread on the grid.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_spread(const PmeGpu    *GPU_FUNC_ARGUMENT(pmeGpu),
-                                       int              GPU_FUNC_ARGUMENT(gridIndex),
-                                       real            *GPU_FUNC_ARGUMENT(h_grid),
-                                       bool             GPU_FUNC_ARGUMENT(computeSplines),
-                                       bool             GPU_FUNC_ARGUMENT(spreadCharges)) GPU_FUNC_TERM;
+GPU_FUNC_QUALIFIER void pme_gpu_spread(const PmeGpu         *GPU_FUNC_ARGUMENT(pmeGpu),
+                                       GpuEventSynchronizer *GPU_FUNC_ARGUMENT(xReadyOnDevice),
+                                       int                   GPU_FUNC_ARGUMENT(gridIndex),
+                                       real                 *GPU_FUNC_ARGUMENT(h_grid),
+                                       bool                  GPU_FUNC_ARGUMENT(computeSplines),
+                                       bool                  GPU_FUNC_ARGUMENT(spreadCharges)) GPU_FUNC_TERM;
 
 /*! \libinternal \brief
  * 3D FFT R2C/C2R routine.

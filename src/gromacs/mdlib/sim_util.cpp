@@ -613,16 +613,18 @@ static int makePmeFlags(const StepWorkload &stepWork)
  * \param[in]  box                  The box matrix
  * \param[in]  stepWork             Step schedule flags
  * \param[in]  pmeFlags             PME flags
+ * \param[in]  xReadyOnDevice       Event synchronizer indicating that the coordinates are ready in the device memory.
  * \param[in]  wcycle               The wallcycle structure
  */
-static inline void launchPmeGpuSpread(gmx_pme_t          *pmedata,
-                                      const matrix        box,
-                                      const StepWorkload &stepWork,
-                                      int                 pmeFlags,
-                                      gmx_wallcycle_t     wcycle)
+static inline void launchPmeGpuSpread(gmx_pme_t            *pmedata,
+                                      const matrix          box,
+                                      const StepWorkload   &stepWork,
+                                      int                   pmeFlags,
+                                      GpuEventSynchronizer *xReadyOnDevice,
+                                      gmx_wallcycle_t       wcycle)
 {
     pme_gpu_prepare_computation(pmedata, stepWork.haveDynamicBox, box, wcycle, pmeFlags, stepWork.useGpuPmeFReduction);
-    pme_gpu_launch_spread(pmedata, wcycle);
+    pme_gpu_launch_spread(pmedata, xReadyOnDevice, wcycle);
 }
 
 /*! \brief Launch the FFT and gather stages of PME GPU
@@ -1028,9 +1030,12 @@ void do_force(FILE                                     *fplog,
         stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), gmx::StatePropagatorDataGpu::AtomLocality::Local);
     }
 
+    const auto localXReadyOnDevice = (stateGpu != nullptr) ? stateGpu->getCoordinatesReadyOnDeviceEvent(gmx::StatePropagatorDataGpu::AtomLocality::Local,
+                                                                                                        simulationWork, stepWork) : nullptr;
     if (useGpuPmeOnThisRank)
     {
-        launchPmeGpuSpread(fr->pmedata, box, stepWork, pmeFlags, wcycle);
+        launchPmeGpuSpread(fr->pmedata, box, stepWork, pmeFlags,
+                           localXReadyOnDevice, wcycle);
     }
 
     /* do gridding for pair search */
@@ -1148,7 +1153,8 @@ void do_force(FILE                                     *fplog,
         if (useGpuXBufOps == BufferOpsUseGpu::True)
         {
             nbv->convertCoordinatesGpu(Nbnxm::AtomLocality::Local, false,
-                                       stateGpu->getCoordinates());
+                                       stateGpu->getCoordinates(),
+                                       localXReadyOnDevice);
         }
         else
         {
@@ -1259,7 +1265,9 @@ void do_force(FILE                                     *fplog,
                     stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), gmx::StatePropagatorDataGpu::AtomLocality::NonLocal);
                 }
                 nbv->convertCoordinatesGpu(Nbnxm::AtomLocality::NonLocal, false,
-                                           stateGpu->getCoordinates());
+                                           stateGpu->getCoordinates(),
+                                           stateGpu->getCoordinatesReadyOnDeviceEvent(gmx::StatePropagatorDataGpu::AtomLocality::NonLocal,
+                                                                                      simulationWork, stepWork));
             }
             else
             {

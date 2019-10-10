@@ -748,6 +748,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
                            bool                             setFillerCoords,
                            gmx_nbnxn_gpu_t                 *nb,
                            DeviceBuffer<float>              d_x,
+                           GpuEventSynchronizer            *xReadyOnDevice,
                            const Nbnxm::AtomLocality        locality,
                            int                              gridId,
                            int                              numColumnsMax)
@@ -769,6 +770,10 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
     {
         // TODO: This will only work with CUDA
         GMX_ASSERT(d_x, "Need a valid device pointer");
+
+        // ensure that coordinates are ready on the device before launching the kernel
+        GMX_ASSERT(xReadyOnDevice, "Need a valid GpuEventSynchronizer object");
+        xReadyOnDevice->enqueueWaitEvent(stream);
 
         KernelLaunchConfig config;
         config.blockSize[0]     = c_bufOpsThreadsPerBlock;

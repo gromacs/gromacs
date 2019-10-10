@@ -1085,11 +1085,12 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet     &gridSet,
 }
 
 /* Copies (and reorders) the coordinates to nbnxn_atomdata_t on the GPU*/
-void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet     &gridSet,
-                                    const Nbnxm::AtomLocality locality,
-                                    bool                      fillLocal,
-                                    gmx_nbnxn_gpu_t          *gpu_nbv,
-                                    DeviceBuffer<float>       d_x)
+void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet       &gridSet,
+                                    const Nbnxm::AtomLocality   locality,
+                                    bool                        fillLocal,
+                                    gmx_nbnxn_gpu_t            *gpu_nbv,
+                                    DeviceBuffer<float>         d_x,
+                                    GpuEventSynchronizer       *xReadyOnDevice)
 {
 
     int gridBegin = 0;
@@ -1102,6 +1103,7 @@ void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet     &gridSet,
                               fillLocal && g == 0,
                               gpu_nbv,
                               d_x,
+                              xReadyOnDevice,
                               locality,
                               g,
                               gridSet.numColumnsMax());
