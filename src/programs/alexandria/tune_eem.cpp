@@ -648,6 +648,10 @@ double OptACM::calcPenalty(AtomIndexIterator ai)
     auto           ai_J0   = ei->getJ0();
     auto           ai_atn  = gmx_atomprop_atomnumber(atomprop(), ai_elem.c_str());
 
+    if (penalty_ == 0.0)
+    {
+        return 0.0;
+    }
     if (strlen(fixchi()) != 0)
     {
         const auto ref_eem  = pd->atype2Eem(fixchi());
