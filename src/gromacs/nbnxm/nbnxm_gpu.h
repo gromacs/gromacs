@@ -319,11 +319,6 @@ void nbnxn_gpu_add_nbat_f_to_f(AtomLocality                               gmx_un
                                bool                                       gmx_unused  useGpuFPmeReduction,
                                bool                                       gmx_unused  accumulateForce) CUDA_FUNC_TERM;
 
-/*! \brief Wait for GPU stream to complete */
-CUDA_FUNC_QUALIFIER
-void nbnxn_wait_for_gpu_force_reduction(AtomLocality            gmx_unused  atomLocality,
-                                        gmx_nbnxn_gpu_t         gmx_unused *nb) CUDA_FUNC_TERM;
-
 /*! \brief sync CPU thread on coordinate copy to device
  * \param[in] nb                   The nonbonded data GPU structure
  */

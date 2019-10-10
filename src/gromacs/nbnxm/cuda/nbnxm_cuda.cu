@@ -876,19 +876,6 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                          atomL
 
 }
 
-void nbnxn_wait_for_gpu_force_reduction(const AtomLocality      gmx_unused atomLocality,
-                                        gmx_nbnxn_gpu_t                   *nb)
-{
-    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
-
-    const InteractionLocality iLocality = gpuAtomToInteractionLocality(atomLocality);
-
-    cudaStream_t              stream    = nb->stream[iLocality];
-
-    cudaStreamSynchronize(stream);
-
-}
-
 void* nbnxn_get_x_on_device_event(const gmx_nbnxn_cuda_t   *nb)
 {
     return static_cast<void*> (nb->xAvailableOnDevice);

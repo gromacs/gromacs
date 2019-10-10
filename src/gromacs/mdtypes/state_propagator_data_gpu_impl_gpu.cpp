@@ -371,8 +371,6 @@ void StatePropagatorDataGpu::Impl::copyForcesToGpu(const gmx::ArrayRef<const gmx
     GMX_ASSERT(commandStream != nullptr, "No stream is valid for copying forces with given atom locality.");
 
     copyToDevice(d_f_, h_f, d_fSize_, atomLocality, commandStream);
-    // TODO: Remove When event-based synchronization is introduced
-    gpuStreamSynchronize(commandStream);
     fReadyOnDevice_[atomLocality].markEvent(commandStream);
 }
 
@@ -402,8 +400,6 @@ void StatePropagatorDataGpu::Impl::copyForcesFromGpu(gmx::ArrayRef<gmx::RVec>  h
     GMX_ASSERT(commandStream != nullptr, "No stream is valid for copying forces with given atom locality.");
 
     copyFromDevice(h_f, d_f_, d_fSize_, atomLocality, commandStream);
-    // TODO: Remove When event-based synchronization is introduced
-    gpuStreamSynchronize(commandStream);
     fReadyOnHost_[atomLocality].markEvent(commandStream);
 }
 

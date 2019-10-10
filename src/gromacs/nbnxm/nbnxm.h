@@ -360,12 +360,6 @@ struct nonbonded_verlet_t
         /*! \brief Outer body of function to perform initialization for F buffer operations on GPU. */
         void atomdata_init_add_nbat_f_to_f_gpu();
 
-        /*! \brief Wait for GPU force reduction task and D2H transfer of its results to complete
-         *
-         * FIXME: need more details: when should be called / after which operation, etc.
-         */
-        void wait_for_gpu_force_reduction(Nbnxm::AtomLocality locality);
-
         /*! \brief return pointer to GPU event recorded when coordinates have been copied to device */
         void* get_x_on_device_event();
 

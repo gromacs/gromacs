@@ -1573,7 +1573,7 @@ void do_force(FILE                                     *fplog,
             {
                 if (useGpuFBufOps == BufferOpsUseGpu::True)
                 {
-                    nbv->wait_for_gpu_force_reduction(Nbnxm::AtomLocality::NonLocal);
+                    stateGpu->waitForcesReadyOnHost(gmx::StatePropagatorDataGpu::AtomLocality::NonLocal);
                 }
                 dd_move_f(cr->dd, &forceOut.forceWithShiftForces(), wcycle);
             }
@@ -1691,9 +1691,8 @@ void do_force(FILE                                     *fplog,
                                               pme_gpu_get_device_f(fr->pmedata),
                                               dependencyList,
                                               stepWork.useGpuPmeFReduction, haveLocalForceContribInCpuBuffer);
-            // This function call synchronizes the local stream
-            nbv->wait_for_gpu_force_reduction(Nbnxm::AtomLocality::Local);
             stateGpu->copyForcesFromGpu(forceWithShift, gmx::StatePropagatorDataGpu::AtomLocality::Local);
+            stateGpu->waitForcesReadyOnHost(gmx::StatePropagatorDataGpu::AtomLocality::Local);
         }
         else
         {
