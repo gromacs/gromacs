@@ -65,7 +65,6 @@ set(ALEXANDRIA_SOURCES
            molprop_sqlite3.cpp
            molprop_test.cpp
            molprop_csv.cpp
-           nmsimplex.c
            phase.cpp
            plistwrapper.cpp
            poldata_test.cpp
@@ -76,7 +75,7 @@ set(ALEXANDRIA_SOURCES
            tune_fc_utils.cpp
            tune_pol.cpp
            tune_zeta.cpp
-	       optparam.cpp
+	   optparam.cpp
            communication.cpp
            tuning_utility.cpp          
 	)

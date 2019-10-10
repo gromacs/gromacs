@@ -53,7 +53,6 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/textreader.h"
 
-#include "nmsimplex.h"
 #include "poldata.h"
 #include "regression.h"
 
