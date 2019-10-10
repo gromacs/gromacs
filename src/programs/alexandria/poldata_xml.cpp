@@ -304,24 +304,17 @@ static void sp(int n, char buf[], int maxindent)
     buf[i] = '\0';
 }
 
-static double my_atof(const char *str)
-{
-    char   *ptr = nullptr;
-    double  d   = strtod(str, &ptr);
-    GMX_RELEASE_ASSERT(ptr == nullptr || strcmp(ptr, str) != 0, "Could not read double precision number");
-    return d;
-}
-
 static double xbuf_atof(const std::string xbuf[],
                         int               xbuf_index)
 {
-    char   *ptr = nullptr;
-    double  d   = strtod(xbuf[xbuf_index].c_str(), &ptr);
-    if (ptr == nullptr)
+    char       *ptr = nullptr;
+    const char *str = xbuf[xbuf_index].c_str();
+    double      d   = strtod(str, &ptr);
+    if (ptr == nullptr || strcmp(ptr, str) != 0)
     {
         d = -1;
         fprintf(stderr, "Cannot read variable %s from string '%s'. Returning %g instead\n",
-                rmap[xbuf_index].c_str(), xbuf[xbuf_index].c_str(), d);
+                rmap[xbuf_index].c_str(), str, d);
     }
     return d;
 }

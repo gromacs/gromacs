@@ -49,6 +49,7 @@
 #include "molprop.h"
 #include "molprop_util.h"
 #include "poldata.h"
+#include "stringutil.h"
 
 namespace alexandria
 {
@@ -67,6 +68,8 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
         int         nLongLines   = 0;
         int         charge       = -6;
         int         multiplicity = 0;
+        double      energy       = 0;
+        rvec        mu           = { 0, 0, 0 };
         std::vector<CalcAtom> ca;
         while (tr.readLine(&line))
         {
@@ -90,7 +93,9 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                     auto wf = words[1].find("mol_");
                     if (wf != std::string::npos)
                     {
-                        mp->SetMolname(words[1].substr(wf+4));
+                        std::string molnm = words[1].substr(wf+4);
+                        std::replace(molnm.begin(), molnm.end(), '_', '-');
+                        mp->SetMolname(molnm);
                     }
                     else
                     {
@@ -208,12 +213,53 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                     while (cont);
                 }
             }
+            else if (jobtype == JOB_SP &&
+                     line.find("Final double-hybrid DFT total energy") != std::string::npos)
+            {
+                auto words = gmx::splitString(line);
+                if (words.size() == 7)
+                {
+                    energy = convert2gmx(my_atof(words[6].c_str()), eg2cHartree);
+                }            
+            }
+            else if (jobtype == JOB_OPT &&
+                     line.find("Final energy is") != std::string::npos)
+            {
+                auto words = gmx::splitString(line);
+                if (words.size() == 4)
+                {
+                    energy = convert2gmx(my_atof(words[3].c_str()), eg2cHartree);
+                }            
+            }
+            else if (jobtype == JOB_OPT &&
+                     line.find("Dipole Moment: [D]") != std::string::npos)
+            {
+                bool cont = tr.readLine(&line);
+                if (cont)
+                {
+                    auto words = gmx::splitString(line);
+                    if (words.size() == 8)
+                    {
+                        mu[XX] = my_atof(words[1].c_str());
+                        mu[YY] = my_atof(words[3].c_str());
+                        mu[ZZ] = my_atof(words[5].c_str());
+                    }
+                }
+            }
         }
         Experiment e(program, method, basisset, reference, conformation,
                      datafile, jobtype);
         for(auto &myatom : ca)
         {
             e.AddAtom(myatom);
+        }
+        e.AddEnergy(MolecularEnergy("HF", unit2string(eg2cKj_Mole),
+                                    0, epGAS, energy, 0.0));
+        double dip = norm(mu);
+        if (dip > 0)
+        {
+            e.AddDipole(MolecularDipole("electronic", "Debye", 0,
+                                        mu[XX], mu[YY], mu[ZZ], dip, 0));
         }
         mp->AddExperiment(std::move(e));
         mp->SetCharge(charge);

@@ -748,7 +748,7 @@ static void add_exper_properties(xmlNodePtr              exp,
     {
         me_it->get(&value, &error);
 
-        ptr   = gmx_ftoa(value).c_str();
+        ptr   = gmx_dtoa(value).c_str();
         child = add_xml_child_val(exp, exml_names(exmlENERGY), ptr);
         add_xml_string(child, exml_names(exmlTYPE), me_it->getType());
         add_xml_string(child, exml_names(exmlUNIT), me_it->getUnit());

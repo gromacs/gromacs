@@ -50,9 +50,9 @@ int get_option(const char **opts);
  * \param[in] elems A vector of substring elements
  * \returns The vector of substring elements (same as input elems)
  */
-std::vector<std::string> &split(const std::string        &s,
-                                char                      delim,
-                                std::vector<std::string> &elems);
+std::vector<std::string> split(const std::string        &s,
+                               char                      delim,
+                               std::vector<std::string> &elems);
 
 /*! \brief
  * Split a string into substrings separated by a delimiter character
@@ -64,9 +64,14 @@ std::vector<std::string> split(const std::string &s,
                                char               delim);
 
 /** return new string with f printed. */
-extern std::string gmx_ftoa(double f);
+std::string gmx_ftoa(double f);
 
 /** return new string with f printed. */
-extern std::string gmx_itoa(int f);
+std::string gmx_dtoa(double f);
+
+/** return new string with f printed. */
+std::string gmx_itoa(int f);
+
+double my_atof(const char *str);
 
 #endif

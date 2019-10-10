@@ -111,3 +111,4 @@ xmlNodePtr add_xml_comment(xmlDocPtr   doc,
 
     return comm;
 }
+

@@ -53,4 +53,6 @@ xmlNodePtr add_xml_comment(xmlDocPtr   doc,
                            xmlNodePtr  prev,
                            const char *comment);
 
+double my_atof(const char *str);
+
 #endif

@@ -42,6 +42,8 @@
 #include <sstream>
 #include <string>
 
+#include "gromacs/utility/fatalerror.h"
+
 int get_option(const char **opts)
 {
     int val = 0;
@@ -72,9 +74,9 @@ int get_option(const char **opts)
     return val;
 }
 
-std::vector<std::string> &split(const std::string        &s,
-                                char                      delim,
-                                std::vector<std::string> &elems)
+std::vector<std::string> split(const std::string        &s,
+                               char                      delim,
+                               std::vector<std::string> &elems)
 {
     std::stringstream ss(s);
     std::string       item;
@@ -84,7 +86,6 @@ std::vector<std::string> &split(const std::string        &s,
     }
     return elems;
 }
-
 
 std::vector<std::string> split(const std::string &s,
                                char               delim)
@@ -109,6 +110,21 @@ std::string gmx_ftoa(double f)
     return std::string(buf);
 }
 
+std::string gmx_dtoa(double f)
+{
+    char buf[32];
+
+    if (fabs(f) < 1e8)
+    {
+        sprintf(buf, "%.3f", f);
+    }
+    else
+    {
+        sprintf(buf, "%g", f);
+    }
+    return std::string(buf);
+}
+
 std::string gmx_itoa(int f)
 {
     char a[32];
@@ -117,3 +133,20 @@ std::string gmx_itoa(int f)
 
     return std::string(a);
 }
+
+double my_atof(const char *str)
+{
+    char   *ptr = nullptr;
+    double  d   = strtod(str, &ptr);
+    if (ptr == nullptr)
+    {
+        fprintf(stderr, "Could not read double precision number from '%s' found %f\n", str, d);
+        d = -1;
+    }
+    else if (strcmp(ptr, str) != 0 && debug)
+    {
+        fprintf(debug, "Double precision number '%s' read as %f.\n", str, d);
+    }
+    return d;
+}
+

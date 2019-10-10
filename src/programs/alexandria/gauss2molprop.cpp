@@ -162,10 +162,12 @@ int alex_gauss2molprop(int argc, char *argv[])
             alexandria::MolProp mmm;
             if (alexandria::readPsi4(i, &mmm))
             {
-                mp.push_back(std::move(mmm));
+                if (SetMolpropAtomTypes(&mmm))
+                {
+                    mp.push_back(std::move(mmm));
+                }
             }
         }
-        
         printf("Succesfully read %d molprops from %d Psi4 files.\n", 
                static_cast<int>(mp.size()-mpsize), static_cast<int>(pfns.size()));
     }

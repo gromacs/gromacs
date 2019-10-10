@@ -108,4 +108,14 @@ void readBabel(const char          *g98,
                const char          *jobtype,
                double               qtot);
 
+/*! \brief Add atomtype to a Molprop object
+ *
+ * The atom names and coordinates in the first Experiment
+ * (calculation) are used to determine atom types using
+ * OpenBabel routines.
+ * \param[inout] mmm Molprop object
+ * \return true if successful, false otherwise
+ */
+bool SetMolpropAtomTypes(alexandria::MolProp *mmm);
+
 #endif

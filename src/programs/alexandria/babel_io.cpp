@@ -37,6 +37,7 @@
 #include "config.h"
 
 #include <cstdio>
+#include <cstdlib>
 
 #include <algorithm>
 #include <fstream>
@@ -75,12 +76,13 @@
 #include <openbabel/elements.h>
 #include <openbabel/forcefield.h>
 #include <openbabel/generic.h>
+#include <openbabel/math/vector3.h>
 #include <openbabel/mol.h>
 #include <openbabel/obconversion.h>
 #include <openbabel/obiter.h>
 #include <openbabel/obmolecformat.h>
 #include <openbabel/residue.h>
-#include <openbabel/math/vector3.h>
+#include <openbabel/typer.h>
 
 #ifdef KOKO
 #ifndef HAVE_SYS_TIME_H
@@ -619,4 +621,51 @@ void readBabel(const char          *g09,
         merge_electrostatic_potential(mpt, espv, mol.NumAtoms(), maxPotential);
     }
 }
+
+bool SetMolpropAtomTypes(alexandria::MolProp *mmm)
+{
+    OpenBabel::OBMol mol;
+    mol.BeginModify();
+    mol.SetTotalCharge(mmm->getCharge());
+    mol.SetTotalSpinMultiplicity(mmm->getMultiplicity());
+    auto ei  = mmm->BeginExperiment();
+    mol.ReserveAtoms(ei->NAtom());
+    int  idx = 0;
+    for(auto ca = ei->BeginAtom(); ca < ei->EndAtom(); ca++)
+    {
+        int atomicNum = OpenBabel::OBElements::GetAtomicNum(ca->getName().c_str());
+        auto atom = mol.NewAtom(idx++);
+        atom->SetVector(ca->getX(), ca->getY(), ca->getZ());
+        atom->SetAtomicNum(atomicNum);
+    }
+    mol.ConnectTheDots();
+    mol.PerceiveBondOrders();
+    mol.EndModify();
+    mmm->SetFormula(mol.GetFormula());
+    mmm->SetMass(mol.GetMolWt());
+    const char *ff = "gaff";
+    auto pFF = OpenBabel::OBForceField::FindForceField(ff);
+    if (!pFF) {
+        fprintf(stderr, "could not find forcefield %s\n", ff);
+        return false;
+    }
+    if (debug)
+    {
+        pFF->SetLogFile(&std::cout);
+        pFF->SetLogLevel(OBFF_LOGLVL_HIGH);
+    }
+    if (!pFF->Setup(mol)) {
+        fprintf(stderr, "could not setup force field %s.\n", ff);
+        return false;
+    }
+    pFF->GetAtomTypes(mol);
+    auto ca = ei->BeginAtom();
+    for(OpenBabel::OBMolAtomIter a(mol); a; ++a, ++ca)
+    {
+        auto type = static_cast<OpenBabel::OBPairData*>(a->GetData("FFAtomType"));
+        ca->setObtype(type->GetValue());
+    }
+    return true;
+}
+
 #endif

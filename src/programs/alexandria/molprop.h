@@ -1031,6 +1031,9 @@ class CalcAtom
         //! Return the OpenBabel type of the atom
         const std::string &getObtype() const { return obType_; }
 
+        //! Set the OpenBabel type of the atom
+        void setObtype(const std::string &obtype) { obType_ = obtype; }
+
         //! Return the unit of the coordinates of the atom
         const std::string &getUnit() const { return unit_; }
         
