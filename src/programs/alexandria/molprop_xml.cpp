@@ -295,16 +295,9 @@ static char *sp(int n, char buf[], int maxindent)
     return buf;
 }
 
-static double my_atof(const std::string &ptr)
+static double xbuf_atof(std::vector<std::string> xbuf, int xbuf_index)
 {
-    if (ptr.size() > 0)
-    {
-        return atof(ptr.c_str());
-    }
-    else
-    {
-        return 0;
-    }
+    return my_atof(xbuf[xbuf_index].c_str(), rmap[xbuf_index].c_str());
 }
 
 static void get_attributes(FILE *fp, gmx_bool bZero, int indent, xmlAttrPtr attr,
@@ -444,7 +437,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             }
                             if (NN(xbuf[exmlMASS]))
                             {
-                                mp.SetMass(my_atof(xbuf[exmlMASS]));
+                                mp.SetMass(xbuf_atof(xbuf, exmlMASS));
                             }
                             if (NN(xbuf[exmlCHARGE]))
                             {
@@ -492,15 +485,15 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                  (NN(xbuf[exmlXX]) && NN(xbuf[exmlYY]) && NN(xbuf[exmlZZ]))))
                             {
                                 alexandria::MolecularPolarizability mdp(xbuf[exmlTYPE], xbuf[exmlUNIT],
-                                                                        my_atof(xbuf[exmlTEMPERATURE]),
-                                                                        my_atof(xbuf[exmlXX]),
-                                                                        my_atof(xbuf[exmlYY]),
-                                                                        my_atof(xbuf[exmlZZ]),
-                                                                        my_atof(xbuf[exmlXY]),
-                                                                        my_atof(xbuf[exmlXZ]),
-                                                                        my_atof(xbuf[exmlYZ]),
-                                                                        my_atof(xbuf[exmlAVERAGE]),
-                                                                        my_atof(xbuf[exmlERROR]));
+                                                                        xbuf_atof(xbuf, exmlTEMPERATURE),
+                                                                        xbuf_atof(xbuf, exmlXX),
+                                                                        xbuf_atof(xbuf, exmlYY),
+                                                                        xbuf_atof(xbuf, exmlZZ),
+                                                                        xbuf_atof(xbuf, exmlXY),
+                                                                        xbuf_atof(xbuf, exmlXZ),
+                                                                        xbuf_atof(xbuf, exmlYZ),
+                                                                        xbuf_atof(xbuf, exmlAVERAGE),
+                                                                        xbuf_atof(xbuf, exmlERROR));
                                 last->AddPolar(mdp);
                             }
                             break;
@@ -514,8 +507,10 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             {
                                 alexandria::ElectrostaticPotential ep(xbuf[exmlX_UNIT], xbuf[exmlV_UNIT],
                                                                       atoi(xbuf[exmlESPID].c_str()),
-                                                                      my_atof(xbuf[exmlX]), my_atof(xbuf[exmlY]),
-                                                                      my_atof(xbuf[exmlZ]), my_atof(xbuf[exmlV]));
+                                                                      xbuf_atof(xbuf, exmlX),
+                                                                      xbuf_atof(xbuf, exmlY),
+                                                                      xbuf_atof(xbuf, exmlZ),
+                                                                      xbuf_atof(xbuf, exmlV));
                                 last->AddPotential(ep);
                             }
                             break;
@@ -527,12 +522,12 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                 NN(xbuf[exmlTEMPERATURE]))
                             {
                                 alexandria::MolecularDipole mdp(xbuf[exmlTYPE], xbuf[exmlUNIT],
-                                                                my_atof(xbuf[exmlTEMPERATURE]),
-                                                                my_atof(xbuf[exmlX]),
-                                                                my_atof(xbuf[exmlY]),
-                                                                my_atof(xbuf[exmlZ]),
-                                                                my_atof(xbuf[exmlAVERAGE]),
-                                                                my_atof(xbuf[exmlERROR]));
+                                                                xbuf_atof(xbuf, exmlTEMPERATURE),
+                                                                xbuf_atof(xbuf, exmlX),
+                                                                xbuf_atof(xbuf, exmlY),
+                                                                xbuf_atof(xbuf, exmlZ),
+                                                                xbuf_atof(xbuf, exmlAVERAGE),
+                                                                xbuf_atof(xbuf, exmlERROR));
 
                                 last->AddDipole(mdp);
                             }
@@ -546,10 +541,13 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                 NN(xbuf[exmlXY]) && NN(xbuf[exmlXZ]) && NN(xbuf[exmlYZ]))
                             {
                                 alexandria::MolecularQuadrupole mq(xbuf[exmlTYPE], xbuf[exmlUNIT],
-                                                                   my_atof(xbuf[exmlTEMPERATURE]),
-                                                                   my_atof(xbuf[exmlXX]), my_atof(xbuf[exmlYY]),
-                                                                   my_atof(xbuf[exmlZZ]), my_atof(xbuf[exmlXY]),
-                                                                   my_atof(xbuf[exmlXZ]), my_atof(xbuf[exmlYZ]));
+                                                                   xbuf_atof(xbuf, exmlTEMPERATURE),
+                                                                   xbuf_atof(xbuf, exmlXX),
+                                                                   xbuf_atof(xbuf, exmlYY),
+                                                                   xbuf_atof(xbuf, exmlZZ),
+                                                                   xbuf_atof(xbuf, exmlXY),
+                                                                   xbuf_atof(xbuf, exmlXZ),
+                                                                   xbuf_atof(xbuf, exmlYZ));
                                 last->AddQuadrupole(mq);
                             }
                             break;
@@ -572,10 +570,10 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             {
                                 alexandria::MolecularEnergy me(xbuf[exmlTYPE],
                                                                xbuf[exmlUNIT],
-                                                               my_atof(xbuf[exmlTEMPERATURE]),
+                                                               xbuf_atof(xbuf, exmlTEMPERATURE),
                                                                string2phase(xbuf[exmlPHASE]),
-                                                               my_atof(xbuf[exmlENERGY]),
-                                                               my_atof(xbuf[exmlERROR]));
+                                                               xbuf_atof(xbuf, exmlENERGY),
+                                                               xbuf_atof(xbuf, exmlERROR));
                                 last->AddEnergy(me);
                             }
                             break;
@@ -624,7 +622,9 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                         && NN(xbuf[exmlUNIT]))
                                     {
                                         ca.SetUnit(xbuf[exmlUNIT]);
-                                        ca.SetCoords(my_atof(xbuf[exmlX]), my_atof(xbuf[exmlY]), my_atof(xbuf[exmlZ]));
+                                        ca.SetCoords(xbuf_atof(xbuf, exmlX),
+                                                     xbuf_atof(xbuf, exmlY),
+                                                     xbuf_atof(xbuf, exmlZ));
                                         xbuf[exmlX].clear();
                                         xbuf[exmlY].clear();
                                         xbuf[exmlZ].clear();
@@ -635,8 +635,8 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                         NN(xbuf[exmlUNIT]))
                                     {
                                         alexandria::AtomicCharge aq(xbuf[exmlTYPE], xbuf[exmlUNIT],
-                                                                    my_atof(xbuf[exmlTEMPERATURE]),
-                                                                    my_atof(xbuf[exmlQ]));
+                                                                    xbuf_atof(xbuf, exmlTEMPERATURE),
+                                                                    xbuf_atof(xbuf, exmlQ));
                                         ca.AddCharge(aq);
                                         xbuf[exmlQ].clear();
                                         xbuf[exmlUNIT].clear();

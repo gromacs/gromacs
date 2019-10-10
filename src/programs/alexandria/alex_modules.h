@@ -39,7 +39,7 @@ int alex_tune_eem(int argc, char *argv[]);
 int alex_tune_pol(int argc, char *argv[]);
 int alex_poldata_test(int argc, char *argv[]);
 int alex_fit_qs_zeta(int argc, char *argv[]);
-int alex_gauss2molprop(int argc, char *argv[]);
+int alex_qm2molprop(int argc, char *argv[]);
 int alex_bastat(int argc, char *argv[]);
 int alex_analyze(int argc, char *argv[]);
 int alex_gen_table(int argc, char *argv[]);

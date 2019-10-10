@@ -59,7 +59,7 @@
 #include "poldata_xml.h"
 #include "readpsi4.h"
 
-int alex_gauss2molprop(int argc, char *argv[])
+int alex_qm2molprop(int argc, char *argv[])
 {
     static const char               *desc[] = 
         {
@@ -100,9 +100,9 @@ int alex_gauss2molprop(int argc, char *argv[])
         { "-conf",  FALSE, etSTR, {&conf},
           "Conformation of the molecule" },
         { "-basis",  FALSE, etSTR, {&basis},
-          "Basis-set used in this calculation for those case where it is difficult to extract from a Gaussian file" },
+          "Basis-set used in this calculation for those case where it is difficult to extract from a QM file" },
         { "-jobtype",  FALSE, etSTR, {&jobtype},
-          "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." },
+          "The job type used in the QM calculation: Opt, Polar, SP, and etc." },
         { "-maxpot", FALSE, etINT, {&maxpot},
           "Maximum percent of the electrostatic potential points that will be added to the molprop file." }
     };

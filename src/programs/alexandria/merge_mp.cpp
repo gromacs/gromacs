@@ -116,7 +116,7 @@ static void add_properties(const char *fn, std::vector<alexandria::MolProp> &mp,
                                                    unit2string(eg2cKj_Mole),
                                                    temperature,
                                                    epGAS,
-                                                   atof(tpp->value), 0);
+                                                   my_atof(tpp->value, tpp->prop), 0);
                     ex.AddEnergy(me);
                     mpi->AddExperiment(ex);
                     nadd++;
@@ -172,7 +172,7 @@ static void add_charges(const char *fn, std::vector<alexandria::MolProp> &mp,
                                                    unit2string(eg2cKj_Mole),
                                                    temperature,
                                                    epGAS,
-                                                   atof(tpp->value), 0);
+                                                   my_atof(tpp->value, tpp->prop), 0);
                     ex.AddEnergy(me);
                     mpi->AddExperiment(ex);
                     nadd++;

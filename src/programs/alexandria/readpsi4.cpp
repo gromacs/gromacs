@@ -219,7 +219,8 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                 auto words = gmx::splitString(line);
                 if (words.size() == 7)
                 {
-                    energy = convert2gmx(my_atof(words[6].c_str()), eg2cHartree);
+                    energy = convert2gmx(my_atof(words[6].c_str(), "energy"),
+                                         eg2cHartree);
                 }            
             }
             else if (jobtype == JOB_OPT &&
@@ -228,7 +229,8 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                 auto words = gmx::splitString(line);
                 if (words.size() == 4)
                 {
-                    energy = convert2gmx(my_atof(words[3].c_str()), eg2cHartree);
+                    energy = convert2gmx(my_atof(words[3].c_str(), "energy"),
+                                         eg2cHartree);
                 }            
             }
             else if (jobtype == JOB_OPT &&
@@ -240,9 +242,9 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                     auto words = gmx::splitString(line);
                     if (words.size() == 8)
                     {
-                        mu[XX] = my_atof(words[1].c_str());
-                        mu[YY] = my_atof(words[3].c_str());
-                        mu[ZZ] = my_atof(words[5].c_str());
+                        mu[XX] = my_atof(words[1].c_str(), "mu[XX]");
+                        mu[YY] = my_atof(words[3].c_str(), "mu[YY]");
+                        mu[ZZ] = my_atof(words[5].c_str(), "mu[ZZ]");
                     }
                 }
             }

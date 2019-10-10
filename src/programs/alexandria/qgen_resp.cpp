@@ -573,7 +573,7 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
             std::vector<std::string> ss = gmx::splitString(tmp);
             for (const auto &s : ss)
             {
-                pot.push_back(convert2gmx(atof(s.c_str()), eg2cHartree_e));
+                pot.push_back(convert2gmx(my_atof(s.c_str(), "energy"), eg2cHartree_e));
             }
         }
 

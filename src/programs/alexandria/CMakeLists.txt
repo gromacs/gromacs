@@ -52,7 +52,7 @@ set(ALEXANDRIA_SOURCES
            categories.cpp
            composition.cpp
            fill_inputrec.cpp
-           gauss2molprop.cpp
+           qm2molprop.cpp
            babel_io.cpp
            fit_qs_zeta.cpp
            gen_table.cpp

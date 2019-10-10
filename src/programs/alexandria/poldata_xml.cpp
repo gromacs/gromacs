@@ -307,16 +307,7 @@ static void sp(int n, char buf[], int maxindent)
 static double xbuf_atof(const std::string xbuf[],
                         int               xbuf_index)
 {
-    char       *ptr = nullptr;
-    const char *str = xbuf[xbuf_index].c_str();
-    double      d   = strtod(str, &ptr);
-    if (ptr == nullptr || strcmp(ptr, str) != 0)
-    {
-        d = -1;
-        fprintf(stderr, "Cannot read variable %s from string '%s'. Returning %g instead\n",
-                rmap[xbuf_index].c_str(), str, d);
-    }
-    return d;
+    return my_atof(xbuf[xbuf_index].c_str(), rmap[xbuf_index].c_str());
 }
 
 static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
@@ -492,15 +483,16 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             {
                 pd.addMiller(xbuf[exmlMILNAME],
                              atoi(xbuf[exmlATOMNUMBER].c_str()),
-                             my_atof(xbuf[exmlTAU_AHC].c_str()),
-                             my_atof(xbuf[exmlALPHA_AHP].c_str()),
+                             xbuf_atof(xbuf, exmlTAU_AHC),
+                             xbuf_atof(xbuf, exmlALPHA_AHP),
                              xbuf[exmlALEXANDRIA_EQUIV]);
             }
             break;
         case exmlBSATOM:
             if (NN(xbuf[exmlELEM]) && NN(xbuf[exmlPOLARIZABILITY]))
             {
-                pd.addBosque( xbuf[exmlELEM], my_atof(xbuf[exmlPOLARIZABILITY].c_str()));
+                pd.addBosque(xbuf[exmlELEM],
+                             xbuf_atof(xbuf, exmlPOLARIZABILITY));
             }
             break;
         case exmlGT_VSITE:
@@ -531,8 +523,8 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
 
                 force.addForce(atoms, xbuf[exmlPARAMS].c_str(),
                                fixed,
-                               my_atof(xbuf[exmlREFVALUE].c_str()),
-                               my_atof(xbuf[exmlSIGMA].c_str()),
+                               xbuf_atof(xbuf, exmlREFVALUE),
+                               xbuf_atof(xbuf, exmlSIGMA),
                                atoi(xbuf[exmlNTRAIN].c_str()),
                                atoi(xbuf[exmlBONDORDER].c_str()));
             }
@@ -552,8 +544,8 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
 
                 force.addForce(atoms, xbuf[exmlPARAMS].c_str(),
                                fixed,
-                               my_atof(xbuf[exmlREFVALUE].c_str()),
-                               my_atof(xbuf[exmlSIGMA].c_str()),
+                               xbuf_atof(xbuf, exmlREFVALUE),
+                               xbuf_atof(xbuf, exmlSIGMA),
                                atoi(xbuf[exmlNTRAIN].c_str()));
             }
             break;
@@ -574,8 +566,8 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
 
                 force.addForce(atoms, xbuf[exmlPARAMS].c_str(),
                                fixed,
-                               my_atof(xbuf[exmlREFVALUE].c_str()),
-                               my_atof(xbuf[exmlSIGMA].c_str()),
+                               xbuf_atof(xbuf, exmlREFVALUE),
+                               xbuf_atof(xbuf, exmlSIGMA),
                                atoi(xbuf[exmlNTRAIN].c_str()));
             }
             break;
@@ -606,10 +598,10 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                              xbuf[exmlZETA],
                              xbuf[exmlZETA_SIGMA],
                              xbuf[exmlCHARGES],
-                             my_atof(xbuf[exmlJ0].c_str()),
-                             my_atof(xbuf[exmlJ0_SIGMA].c_str()),
-                             my_atof(xbuf[exmlCHI0].c_str()),
-                             my_atof(xbuf[exmlCHI0_SIGMA].c_str()));
+                             xbuf_atof(xbuf, exmlJ0),
+                             xbuf_atof(xbuf, exmlJ0_SIGMA),
+                             xbuf_atof(xbuf, exmlCHI0),
+                             xbuf_atof(xbuf, exmlCHI0_SIGMA));
                 pd.addEemprops(std::move(eep));
             }
             break;

@@ -134,13 +134,13 @@ std::string gmx_itoa(int f)
     return std::string(a);
 }
 
-double my_atof(const char *str)
+double my_atof(const char *str, const char *description)
 {
     char   *ptr = nullptr;
     double  d   = strtod(str, &ptr);
     if (ptr == nullptr)
     {
-        fprintf(stderr, "Could not read double precision number from '%s' found %f\n", str, d);
+        fprintf(stderr, "Could not read double precision number %s from '%s' found %f\n", description ? description : "", str, d);
         d = -1;
     }
     else if (strcmp(ptr, str) != 0 && debug)

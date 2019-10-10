@@ -46,6 +46,7 @@
 
 #include "gmx_simple_comm.h"
 #include "plistwrapper.h"
+#include "stringutil.h"
 
 namespace alexandria
 {
@@ -1044,7 +1045,7 @@ void Eemprops::setRowZetaQ(const std::string &rowstr,
 
     for (size_t n = 0; n < nn; n++)
     {
-        RowZetaQ rzq(atoi(sr[n].c_str()), atof(sz[n].c_str()), atof(sq[n].c_str()));
+        RowZetaQ rzq(atoi(sr[n].c_str()), my_atof(sz[n].c_str(), "zeta"), my_atof(sq[n].c_str(), "q"));
         rzq_.push_back(rzq);
     }
 }

@@ -93,7 +93,7 @@ void alexandria_poldata_eemprops_table(FILE                   *fp,
                      qDist->getJ0(),
                      qDist->getJ0_sigma() + 0.005,
                      qDist->getZeta(nzeta-1),
-                     atof(gmx::splitString(qDist->getZeta_sigma()).back().c_str()) + 0.005);
+                     my_atof(gmx::splitString(qDist->getZeta_sigma()).back().c_str(), "zeta") + 0.005);
             lt.printLine(longbuf);
         }
     }

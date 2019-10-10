@@ -88,8 +88,8 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Test the molecular property file I/O");
     registerModule(manager, &alex_molprop_check, "molprop_check",
                    "Check the molecular property file for missing hydrogens");
-    registerModule(manager, &alex_gauss2molprop, "gauss2molprop",
-                   "Convert Gaussian output to molecular property file");
+    registerModule(manager, &alex_qm2molprop, "qm2molprop",
+                   "Convert Gaussian or Psi4 output to molecular property file");
     registerModule(manager, &alex_mp2csv, "mp2csv",
                    "Utility to dump a molecular property file to a spreadsheet");
     registerModule(manager, &alex_merge_mp, "merge_mp",
@@ -107,7 +107,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
         //group.addModule("tune_zeta");
         group.addModule("tune_eem");
         group.addModule("tune_fc");
-        group.addModule("gauss2molprop");
+        group.addModule("qm2molprop");
         group.addModule("molprop_check");
     }
     {

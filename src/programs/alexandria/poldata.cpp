@@ -113,7 +113,7 @@ bool Poldata::getAtypeRefEnthalpy(const std::string &atype,
     auto fa = findAtype(atype);
     if (alexandria_.end() != fa)
     {
-        *Href = atof(fa->getRefEnthalpy().c_str());
+        *Href = my_atof(fa->getRefEnthalpy().c_str(), "Href");
         return true;
     }
     return false;
