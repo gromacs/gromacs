@@ -113,16 +113,22 @@ def test_write_tpr_file(spc_water_box):
     params = sim_input.parameters.extract()
     nsteps = params['nsteps']
     init_step = params['init-step']
+    # Choose a new nsteps to check integer parameter setting.
     new_nsteps = init_step + additional_steps
+    # Choose a new dt to check floating point parameter setting
+    new_dt = params['dt'] * 2.
 
     sim_input.parameters.set('nsteps', new_nsteps)
+    sim_input.parameters.set('dt', new_dt)
 
     _, temp_filename = tempfile.mkstemp(suffix='.tpr')
     gmxapi.simulation.fileio.write_tpr_file(temp_filename, input=sim_input)
     tprfile = TprFile(temp_filename, 'r')
     with tprfile as fh:
         params = read_tpr(fh).parameters.extract()
-        dt = params['dt']
+        # Note that we have chosen an exactly representable dt for spc_water_box.
+        # Otherwise, we would have to use pytest.approx with a suitable tolerance.
+        assert params['dt'] == new_dt
         assert params['nsteps'] != nsteps
         assert params['nsteps'] == new_nsteps
 

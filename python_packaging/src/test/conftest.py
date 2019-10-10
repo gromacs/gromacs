@@ -172,7 +172,10 @@ def spc_water_box(gmxcli):
         logging.debug(solvate.output.erroroutput.result())
         raise RuntimeError('solvate failed in spc_water_box testing fixture.')
 
+    # Choose an exactly representable dt of 2^-9 ps (approximately 0.002)
+    dt = 2.**-9.
     mdp_input = [('integrator', 'md'),
+                 ('dt', dt),
                  ('cutoff-scheme', 'Verlet'),
                  ('nsteps', 2),
                  ('nstxout', 1),
