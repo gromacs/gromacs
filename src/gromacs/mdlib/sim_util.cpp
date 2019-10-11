@@ -837,8 +837,7 @@ setupStepWorkload(const int                 legacyFlags,
     }
     flags.useGpuXBufferOps = simulationWork.useGpuBufferOps;
     // on virial steps the CPU reduction path is taken
-    // TODO: remove flags.computeEnergy, ref #3128
-    flags.useGpuFBufferOps    = simulationWork.useGpuBufferOps && !(flags.computeVirial || flags.computeEnergy);
+    flags.useGpuFBufferOps    = simulationWork.useGpuBufferOps && !flags.computeVirial;
     flags.useGpuPmeFReduction = flags.useGpuFBufferOps && (simulationWork.useGpuPme &&
                                                            (rankHasPmeDuty || simulationWork.useGpuPmePpCommunication));
 
