@@ -42,6 +42,7 @@ Attributes:
     release (bool): True if imported gmx module is an officially tagged release, else False.
 
 """
+import warnings
 
 __version__ = "0.1.0-dev3"
 
@@ -51,7 +52,7 @@ __version__ = "0.1.0-dev3"
 # minor = @PROJECT_VERSION_MINOR@
 # patch = @PROJECT_VERSION_PATCH@
 
-from gmxapi.exceptions import Error as GmxapiError
+from gmxapi.exceptions import FeatureNotAvailableError
 
 major = 0
 minor = 1
@@ -60,11 +61,23 @@ patch = 0
 # Note: this is not automatically updated. See RELEASE.txt and https://github.com/kassonlab/gmxapi/issues/152
 release = False
 
-_named_features = ['fr1', 'fr3']
-
-
-class FeatureError(GmxapiError):
-    """Module exception to indicate missing features."""
+# Features added since the initial gmxapi prototype, targeted for version 0.1.
+_named_features_0_0 = ['fr1', 'fr3']
+# Features named since the finalization of the 0.1 specification with GROMACS 2020.
+_named_features_0_1 = []
+# Named features describe functionality or behavior introduced since the last
+# major release, and should be described in gmxapi documentation or issue
+# tracking system. Note that, as features become part of the specification,
+# conditionals depending on them should be phased out of the package source. At
+# major releases, the named feature list should be reset to empty. Optionally,
+# we could raise a DeprecationWarning for calls to has_feature() for features
+# that have become part of the specification, at least for a few minor release or
+# a few years, to avoid introducing errors to client code.
+#
+# Features consisting of 'fr' and a numeric suffix are the functional requirements
+# described in roadmap.rst, as described at https://redmine.gromacs.org/issues/2893
+#
+# Bugs and bug fixes may be indicated with names consisting of tracked issue URLs.
 
 
 def api_is_at_least(major_version, minor_version=0, patch_version=0):
@@ -102,19 +115,47 @@ def has_feature(name='', enable_exception=False):
     development branches. Users should refer to the documentation for the package
     modules and API level.
 
-    The function can be used to get a boolean result or can be used to raise an
-    exception in code block by setting `enable_exception=True`
+    The primary use case is, in conjunction with api_is_at_least(), to allow
+    client code to robustly identify expected behavior and API support through
+    conditional execution and branching. Note that behavior is strongly
+    specified by the API major version number. Features that have become part of
+    the specification and bug-fixes referring to previous major versions should
+    not be checked with *has_feature()*. Using *has_feature()* with old feature
+    names will produce a DeprecationWarning for at least one major version, and
+    client code should be updated to avoid logic errors in future versions.
+
+    For convenience, setting *enable_exception=True* causes the function to
+    instead raise a gmxapi.exceptions.FeatureNotAvailableError for unrecognized feature names.
+    This allows extension code to cleanly produce a gmxapi exception instead of
+    first performing a boolean check. Also, some code may be unexecutable for
+    more than one reason, and sometimes it is cleaner to catch all
+    gmxapi.exceptions.Error exceptions for a code block, rather than to
+    construct complex conditionals.
 
     Returns:
         True if named feature is recognized by the installed package, else False.
 
     Raises:
-        gmxapi.version.FeatureError if `enable_exception == True` and feature is not found.
+        gmxapi.exceptions.FeatureNotAvailableError if `enable_exception == True` and feature is not found.
 
     """
-    if name in _named_features:
+    # First, issue a warning if the feature name is subject to removal because
+    # of the history of the API specification.
+    if api_is_at_least(0, 2):
+        # For sufficiently advanced API versions, we want to warn that old
+        # feature checks lose meaning and should no longer be checked.
+        # We provide a suggestion with the API version that absorbed their
+        # specification.
+        if name in _named_features_0_0:
+            warnings.warn(
+                'Old feature name. Use `api_is_at_least(0, 1)` instead of `has_feature({})`.'.format(name),
+                category=DeprecationWarning
+            )
+
+    # Check whether the feature is listed in the API specification amendments.
+    if name in _named_features_0_0 + _named_features_0_1:
         return True
     else:
         if enable_exception:
-            raise FeatureError('Feature {} not available.'.format(str(name)))
+            raise FeatureNotAvailableError('Feature {} not available.'.format(str(name)))
         return False
