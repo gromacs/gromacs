@@ -255,7 +255,7 @@ std::map<const std::string, int> xmlxxx =
     { "angle",                  exmlANGLE            }
 };
 
-std::map<int, const std::string> rmap;
+std::map<int, const std::string> rmap = {};
 
 static const char *exml_names(int xml)
 {
@@ -673,6 +673,7 @@ void readPoldata(const std::string &fileName,
     xmlDocPtr   doc;
     std::string fn, fn2;
 
+    rmap.clear();
     fn = fileName;
     if (fn.empty())
     {
@@ -994,6 +995,7 @@ void writePoldata(const std::string &fileName,
     xmlNodePtr  myroot;
     xmlChar    *libdtdname, *dtdname, *gmx;
 
+    rmap.clear();
     gmx        = (xmlChar *) "gentop";
     dtdname    = (xmlChar *) "gentop.dtd";
     libdtdname = dtdname;

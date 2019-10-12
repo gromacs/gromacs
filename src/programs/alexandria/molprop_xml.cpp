@@ -250,7 +250,7 @@ std::map<const std::string, int> xmlxxx =
      { "q",                exmlQ             }
     };
     
-std::map<int, const std::string> rmap;
+std::map<int, const std::string> rmap = {};
 
 static const char *exml_names(int xml)
 {
@@ -717,6 +717,7 @@ void MolPropRead(const char *fn, std::vector<alexandria::MolProp> *mpt)
     gmx_bool      bExperiment = FALSE;
     std::string   mpfile;
 
+    rmap.clear();
     xmlDoValidityCheckingDefaultValue = 0;
     mpfile = gmx::findLibraryFile(fn ? fn : db, true, false);
     if (debug)
@@ -970,7 +971,7 @@ void MolPropWrite(const char                       *fn,
     gmx        = (xmlChar *) "molecules";
     dtdname    = (xmlChar *) "molprops.dtd";
     libdtdname = dtdname;
-
+    rmap.clear();
     if ((doc = xmlNewDoc((xmlChar *)"1.0")) == nullptr)
     {
         gmx_fatal(FARGS, "Creating XML document %s", fn);
