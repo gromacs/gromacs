@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="thiazyl-fluoride-3-oep.log.pdb">3</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">3</Int>
+    <String>f</String>
+    <String>s4</String>
+    <String>n2</String>
+  </Sequence>
+</ReferenceData>

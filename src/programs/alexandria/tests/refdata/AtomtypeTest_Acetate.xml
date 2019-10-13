@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="acetate-3-oep.log.pdb">7</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">7</Int>
+    <String>c3</String>
+    <String>c</String>
+    <String>om</String>
+    <String>om</String>
+    <String>hc</String>
+    <String>hc</String>
+    <String>hc</String>
+  </Sequence>
+</ReferenceData>

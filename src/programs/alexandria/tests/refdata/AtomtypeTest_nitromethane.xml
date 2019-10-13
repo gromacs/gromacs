@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="nitromethane-3-oep.log.pdb">7</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">7</Int>
+    <String>c3</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>no</String>
+    <String>o</String>
+    <String>o</String>
+  </Sequence>
+</ReferenceData>

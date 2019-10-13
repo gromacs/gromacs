@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="acetone-3-oep.log.pdb">10</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">10</Int>
+    <String>o</String>
+    <String>c</String>
+    <String>c3</String>
+    <String>c3</String>
+    <String>hc</String>
+    <String>hc</String>
+    <String>hc</String>
+    <String>hc</String>
+    <String>hc</String>
+    <String>hc</String>
+  </Sequence>
+</ReferenceData>

@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="histidine-hdhe-3-oep.log.pdb">21</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">21</Int>
+    <String>nh</String>
+    <String>c3</String>
+    <String>c</String>
+    <String>oh</String>
+    <String>c3</String>
+    <String>cc</String>
+    <String>c2</String>
+    <String>c3</String>
+    <String>na</String>
+    <String>na</String>
+    <String>o</String>
+    <String>ho</String>
+    <String>hn</String>
+    <String>hn</String>
+    <String>h1</String>
+    <String>hc</String>
+    <String>hc</String>
+    <String>hn</String>
+    <String>h1</String>
+    <String>h2</String>
+    <String>hn</String>
+  </Sequence>
+</ReferenceData>
