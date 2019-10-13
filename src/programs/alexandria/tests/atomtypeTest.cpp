@@ -1,5 +1,5 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2019
  *
@@ -116,6 +116,81 @@ TEST_F (AtomtypeTest, Guanidine)
 TEST_F (AtomtypeTest, DimethylCarbonate)
 {
     testAtype("dimethyl-carbonate.pdb");
+}
+
+TEST_F (AtomtypeTest, 1EthoxyethylPhosphorylOxyethane)
+{
+    testAtype("1--ethoxyethylphosphoryl-oxyethane-3-oep.log.pdb");
+}
+
+TEST_F (AtomtypeTest, 1Amino1Hydroxyguanidine)
+{
+    testAtype("1-amino-1-hydroxyguanidine-3-oep.log.pdb");
+}
+
+TEST_F (AtomtypeTest, Acetate)
+{
+    testAtype("acetate-3-oep.log.pdb");
+}
+
+TEST_F (AtomtypeTest, AceticAcid)
+{
+    testAtype("acetic-acid-3-oep.log.pdb");
+}
+
+TEST_F (AtomtypeTest, acetone)
+{
+    testAtype("acetone-3-oep.log.pdb");
+}
+
+TEST_F (AtomtypeTest, DiethylSulfate)
+{
+    testAtype("diethyl-sulfate-3-oep.log.pdb");
+}
+
+TEST_F (AtomtypeTest, DisulfurMonoxide)
+{
+    testAtype("disulfur-monoxide-3-oep.log.pdb");
+}
+
+TEST_F (AtomtypeTest, EthylSulfate)
+{
+    testAtype("ethyl-sulfate-3-oep.log.pdb");
+}
+
+TEST_F (AtomtypeTest, Glutamate)
+{
+    testAtype("glutamate-3-oep.log.pdb");
+}
+
+TEST_F (AtomtypeTest, GlutamicAcid)
+{
+    testAtype("glutamic-acid-3-oep.log.pdb");
+}
+
+TEST_F (AtomtypeTest, HistidineHdHe)
+{
+    testAtype("histidine-hdhe-3-oep.log.pdb");
+}
+
+TEST_F (AtomtypeTest, nitromethane)
+{
+    testAtype("nitromethane-3-oep.log.pdb");
+}
+
+TEST_F (AtomtypeTest, SulfurDioxide)
+{
+    testAtype("sulfur-dioxide-3-oep.log.pdb");
+}
+
+TEST_F (AtomtypeTest, ThiazylFluoride)
+{
+    testAtype("thiazyl-fluoride-3-oep.log.pdb");
+}
+
+TEST_F (AtomtypeTest, Water)
+{
+    testAtype("water-3-oep.log.pdb");
 }
 
 }

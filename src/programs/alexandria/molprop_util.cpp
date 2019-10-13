@@ -235,12 +235,6 @@ int merge_xml(gmx::ArrayRef<const std::string> filens,
     int nwarn = MergeDoubleMolprops(mpout, doubles, bForceMerge);
     printf("There were %d total molecules before merging, %d after.\n",
            tmp, (int)mpout->size());
-    if (nwarn > 0)
-    {
-        char buf[256];
-        snprintf(buf, sizeof(buf), "Too many (%d) warnings.", nwarn);
-        GMX_RELEASE_ASSERT(nwarn == 0, buf);
-    }
     if (outf)
     {
         printf("There are %d entries to store in output file %s\n", npout, outf);
