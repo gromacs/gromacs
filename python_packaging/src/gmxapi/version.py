@@ -83,7 +83,7 @@ def api_is_at_least(major_version, minor_version=0, patch_version=0):
     """
     if not isinstance(major_version, int) or not isinstance(minor_version, int) or not isinstance(patch_version, int):
         raise TypeError('Version levels must be provided as integers.')
-    if major >= major_version:
+    if major > major_version:
         return True
     elif major == major_version and minor >= minor_version:
         return True
