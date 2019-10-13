@@ -203,10 +203,15 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger &md
 {
     DevelopmentFeatureFlags devFlags;
 
+    // Some builds of GCC 5 give false positive warnings that these
+    // getenv results are ignored when clearly they are used.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
     devFlags.enableGpuBufferOps    = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr) && (GMX_GPU == GMX_GPU_CUDA) && useGpuForNonbonded;
     devFlags.useGpuUpdateConstrain = (getenv("GMX_UPDATE_CONSTRAIN_GPU") != nullptr);
     devFlags.enableGpuHaloExchange = (getenv("GMX_GPU_DD_COMMS") != nullptr && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA));
     devFlags.enableGpuPmePPComm    = (getenv("GMX_GPU_DD_COMMS") != nullptr && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA));
+#pragma GCC diagnostic pop
 
     if (devFlags.enableGpuBufferOps)
     {
