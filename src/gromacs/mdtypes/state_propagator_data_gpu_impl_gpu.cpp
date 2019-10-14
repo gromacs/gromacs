@@ -124,7 +124,7 @@ StatePropagatorDataGpu::Impl::Impl(const void            *pmeStream,
 
     fCopyStreams_[AtomLocality::Local]    = localStream_;
     fCopyStreams_[AtomLocality::NonLocal] = nonLocalStream_;
-    fCopyStreams_[AtomLocality::All]      = nullptr;
+    fCopyStreams_[AtomLocality::All]      = updateStream_;
 }
 
 StatePropagatorDataGpu::Impl::Impl(const void            *pmeStream,
@@ -450,7 +450,7 @@ void StatePropagatorDataGpu::Impl::waitForcesReadyOnHost(AtomLocality  atomLocal
 
 void* StatePropagatorDataGpu::Impl::getUpdateStream()
 {
-    return updateStream_;
+    return &updateStream_;
 }
 
 int StatePropagatorDataGpu::Impl::numAtomsLocal()
