@@ -68,7 +68,8 @@
 namespace gmx
 {
 
-void UpdateConstrainCuda::Impl::integrate(const real                        dt,
+void UpdateConstrainCuda::Impl::integrate(GpuEventSynchronizer             *fReadyOnDevice,
+                                          const real                        dt,
                                           const bool                        updateVelocities,
                                           const bool                        computeVirial,
                                           tensor                            virial,
@@ -81,6 +82,9 @@ void UpdateConstrainCuda::Impl::integrate(const real                        dt,
     // Clearing virial matrix
     // TODO There is no point in having separate virial matrix for constraints
     clear_mat(virial);
+
+    // Make sure that the forces are ready on device before proceeding with the update.
+    fReadyOnDevice->enqueueWaitEvent(commandStream_);
 
     // The integrate should save a copy of the current coordinates in d_xp_ and write updated once into d_x_.
     // The d_xp_ is only needed by constraints.
@@ -188,7 +192,8 @@ UpdateConstrainCuda::UpdateConstrainCuda(const t_inputrec     &ir,
 
 UpdateConstrainCuda::~UpdateConstrainCuda() = default;
 
-void UpdateConstrainCuda::integrate(const real                        dt,
+void UpdateConstrainCuda::integrate(GpuEventSynchronizer             *fReadyOnDevice,
+                                    const real                        dt,
                                     const bool                        updateVelocities,
                                     const bool                        computeVirial,
                                     tensor                            virialScaled,
@@ -198,7 +203,8 @@ void UpdateConstrainCuda::integrate(const real                        dt,
                                     const float                       dtPressureCouple,
                                     const matrix                      velocityScalingMatrix)
 {
-    impl_->integrate(dt, updateVelocities, computeVirial, virialScaled,
+    impl_->integrate(fReadyOnDevice,
+                     dt, updateVelocities, computeVirial, virialScaled,
                      doTempCouple, tcstat,
                      doPressureCouple, dtPressureCouple, velocityScalingMatrix);
 }

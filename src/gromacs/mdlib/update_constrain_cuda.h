@@ -93,6 +93,7 @@ class UpdateConstrainCuda
          * This will extract temperature scaling factors from tcstat, transform them into the plain
          * array and call the normal integrate method.
          *
+         * \param[in]  fReadyOnDevice         Event synchronizer indicating that the forces are ready in the device memory.
          * \param[in]  dt                     Timestep.
          * \param[in]  updateVelocities       If the velocities should be constrained.
          * \param[in]  computeVirial          If virial should be updated.
@@ -103,7 +104,8 @@ class UpdateConstrainCuda
          * \param[in]  dtPressureCouple       Period between pressure coupling steps
          * \param[in]  velocityScalingMatrix  Parrinello-Rahman velocity scaling matrix
          */
-        void integrate(real                              dt,
+        void integrate(GpuEventSynchronizer             *fReadyOnDevice,
+                       real                              dt,
                        bool                              updateVelocities,
                        bool                              computeVirial,
                        tensor                            virial,

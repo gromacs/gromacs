@@ -1238,8 +1238,12 @@ void gmx::LegacySimulator::do_md()
             bool doTempCouple     = (ir->etc != etcNO && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
             bool doPressureCouple = (ir->epc == epcPARRINELLORAHMAN && do_per_step(step + ir->nstpcouple - 1, ir->nstpcouple));
 
+            // TODO: Use StepWorkload fields.
+            bool useGpuFBufferOps = simulationWork.useGpuBufferOps && !(bCalcVir || bCalcEner);
+
             // This applies Leap-Frog, LINCS and SETTLE in succession
-            integrator->integrate(ir->delta_t, true, bCalcVir, shake_vir,
+            integrator->integrate(stateGpu->getForcesReadyOnDeviceEvent(StatePropagatorDataGpu::AtomLocality::Local, useGpuFBufferOps),
+                                  ir->delta_t, true, bCalcVir, shake_vir,
                                   doTempCouple, ekind->tcstat,
                                   doPressureCouple, ir->nstpcouple*ir->delta_t, M);
             stateGpu->copyCoordinatesFromGpu(ArrayRef<RVec>(state->x), StatePropagatorDataGpu::AtomLocality::All);

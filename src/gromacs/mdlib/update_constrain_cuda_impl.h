@@ -89,13 +89,13 @@ class UpdateConstrainCuda::Impl
          *
          * Integrates the equation of motion using Leap-Frog algorithm and applies
          * LINCS and SETTLE constraints.
-         * Updates d_xp_ and d_v_ fields of this object.
          * If computeVirial is true, constraints virial is written at the provided pointer.
          * doTempCouple should be true if:
          *   1. The temperature coupling is enabled.
          *   2. This is the temperature coupling step.
          * Parameters virial/lambdas can be nullptr if computeVirial/doTempCouple are false.
          *
+         * \param[in]  fReadyOnDevice         Event synchronizer indicating that the forces are ready in the device memory.
          * \param[in]  dt                     Timestep.
          * \param[in]  updateVelocities       If the velocities should be constrained.
          * \param[in]  computeVirial          If virial should be updated.
@@ -106,7 +106,8 @@ class UpdateConstrainCuda::Impl
          * \param[in]  dtPressureCouple       Period between pressure coupling steps
          * \param[in]  velocityScalingMatrix  Parrinello-Rahman velocity scaling matrix
          */
-        void integrate(real                              dt,
+        void integrate(GpuEventSynchronizer             *fReadyOnDevice,
+                       real                              dt,
                        bool                              updateVelocities,
                        bool                              computeVirial,
                        tensor                            virial,
