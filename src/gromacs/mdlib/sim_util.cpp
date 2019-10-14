@@ -1155,7 +1155,8 @@ void do_force(FILE                                     *fplog,
         // NS step is also a virial step (on which f buf ops are deactivated).
         if (simulationWork.useGpuBufferOps && simulationWork.useGpuNonbonded && (GMX_GPU == GMX_GPU_CUDA))
         {
-            nbv->atomdata_init_add_nbat_f_to_f_gpu();
+            GMX_ASSERT(stateGpu, "stateGpu should be valid here");
+            nbv->atomdata_init_add_nbat_f_to_f_gpu(stateGpu->fReducedOnDevice());
         }
     }
     else if (!EI_TPI(inputrec->eI))
@@ -1544,6 +1545,7 @@ void do_force(FILE                                     *fplog,
                                                   pme_gpu_get_device_f(fr->pmedata),
                                                   dependencyList,
                                                   false, haveNonLocalForceContribInCpuBuffer);
+                // TODO: this should be conditional on whether GPU direct comm is used?
                 stateGpu->copyForcesFromGpu(forceOut.forceWithShiftForces().force(), gmx::StatePropagatorDataGpu::AtomLocality::NonLocal);
             }
             else

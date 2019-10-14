@@ -879,6 +879,11 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                          atomL
 
     launchGpuKernel(kernelFn, config, nullptr, "FbufferOps", kernelArgs);
 
+    if (atomLocality == AtomLocality::Local)
+    {
+        GMX_ASSERT(nb->localFReductionDone != nullptr, "localFReductionDone has to be a valid pointer");
+        nb->localFReductionDone->markEvent(stream);
+    }
 }
 
 void* nbnxn_get_x_on_device_event(const gmx_nbnxn_cuda_t   *nb)

@@ -359,8 +359,11 @@ struct nonbonded_verlet_t
                                           bool                                        useGpuFPmeReduction,
                                           bool                                        accumulateForce);
 
-        /*! \brief Outer body of function to perform initialization for F buffer operations on GPU. */
-        void atomdata_init_add_nbat_f_to_f_gpu();
+        /*! \brief Outer body of function to perform initialization for F buffer operations on GPU.
+         *
+         * \param localReductionDone     Pointer to an event synchronizer that marks the completion of the local f buffer ops kernel.
+         */
+        void atomdata_init_add_nbat_f_to_f_gpu(GpuEventSynchronizer* localReductionDone);
 
         /*! \brief return pointer to GPU event recorded when coordinates have been copied to device */
         void* get_x_on_device_event();

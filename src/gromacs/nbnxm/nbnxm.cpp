@@ -219,7 +219,7 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f_gpu(const Nbnxm::AtomLocality      
 }
 
 void
-nonbonded_verlet_t::atomdata_init_add_nbat_f_to_f_gpu()
+nonbonded_verlet_t::atomdata_init_add_nbat_f_to_f_gpu(GpuEventSynchronizer* const localReductionDone)
 {
 
     wallcycle_start(wcycle_, ewcNB_XF_BUF_OPS);
@@ -229,7 +229,8 @@ nonbonded_verlet_t::atomdata_init_add_nbat_f_to_f_gpu()
 
     Nbnxm::nbnxn_gpu_init_add_nbat_f_to_f(gridSet.cells().data(),
                                           gpu_nbv,
-                                          gridSet.numRealAtomsTotal());
+                                          gridSet.numRealAtomsTotal(),
+                                          localReductionDone);
 
     wallcycle_sub_stop(wcycle_, ewcsNB_F_BUF_OPS);
     wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);

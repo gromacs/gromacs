@@ -963,12 +963,16 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
 }
 
 /* Initialization for F buffer operations on GPU. */
-void nbnxn_gpu_init_add_nbat_f_to_f(const int                *cell,
-                                    gmx_nbnxn_gpu_t          *gpu_nbv,
-                                    int                       natoms_total)
+void nbnxn_gpu_init_add_nbat_f_to_f(const int                  *cell,
+                                    gmx_nbnxn_gpu_t            *gpu_nbv,
+                                    int                         natoms_total,
+                                    GpuEventSynchronizer* const localReductionDone)
 {
 
     cudaStream_t         stream  = gpu_nbv->stream[InteractionLocality::Local];
+
+    GMX_ASSERT(localReductionDone, "localReductionDone should be a valid pointer");
+    gpu_nbv->localFReductionDone = localReductionDone;
 
     if (natoms_total > 0)
     {

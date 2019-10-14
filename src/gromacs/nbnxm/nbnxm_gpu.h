@@ -290,9 +290,10 @@ bool haveGpuShortRangeWork(const gmx_nbnxn_gpu_t     gmx_unused *nb,
 
 /*! \brief Initialization for F buffer operations on GPU */
 CUDA_FUNC_QUALIFIER
-void nbnxn_gpu_init_add_nbat_f_to_f(const int               gmx_unused *cell,
-                                    gmx_nbnxn_gpu_t         gmx_unused *gpu_nbv,
-                                    int                     gmx_unused  natoms_total) CUDA_FUNC_TERM;
+void nbnxn_gpu_init_add_nbat_f_to_f(const int                   gmx_unused *cell,
+                                    gmx_nbnxn_gpu_t             gmx_unused *gpu_nbv,
+                                    int                         gmx_unused  natoms_total,
+                                    GpuEventSynchronizer        gmx_unused *localReductionDone) CUDA_FUNC_TERM;
 
 /*! \brief Force buffer operations on GPU.
  *
