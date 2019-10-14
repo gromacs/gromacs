@@ -141,9 +141,9 @@ getMoleculePatchDatabases(const t_atoms                         *pdba,
         auto ahptr = search_h_db(globalPatches, *pdba->resinfo[rnr].rtp);
         if (ahptr != globalPatches.end())
         {
-            if (globalPatches[rnr].name.empty())
+            if (modBlock[rnr].name.empty())
             {
-                globalPatches[rnr].name = ahptr->name;
+                modBlock[rnr].name = ahptr->name;
             }
             mergeAtomModifications(*ahptr, &modBlock[rnr]);
         }
