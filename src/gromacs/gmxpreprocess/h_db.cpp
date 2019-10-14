@@ -202,8 +202,8 @@ int read_h_db(const char *ffdir, std::vector<MoleculePatchDatabase> *globalPatch
     return globalPatches->size();
 }
 
-gmx::ArrayRef<MoleculePatchDatabase>::iterator
-search_h_db(gmx::ArrayRef<MoleculePatchDatabase> globalPatches, char *key)
+gmx::ArrayRef<const MoleculePatchDatabase>::iterator
+search_h_db(gmx::ArrayRef<const MoleculePatchDatabase> globalPatches, const char *key)
 {
     return std::find_if(globalPatches.begin(), globalPatches.end(),
                         [&key](const MoleculePatchDatabase &a)

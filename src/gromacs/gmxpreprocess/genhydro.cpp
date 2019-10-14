@@ -113,13 +113,13 @@ static void hacksearch_atom(int *ii, int *jj, const char *name,
 }
 
 static std::vector<MoleculePatchDatabase>
-getMoleculePatchDatabases(const t_atoms                         *pdba,
-                          gmx::ArrayRef<MoleculePatchDatabase>   globalPatches,
-                          int                                    nterpairs,
-                          gmx::ArrayRef<MoleculePatchDatabase *> ntdb,
-                          gmx::ArrayRef<MoleculePatchDatabase *> ctdb,
-                          gmx::ArrayRef<const int>               rN,
-                          gmx::ArrayRef<const int>               rC)
+getMoleculePatchDatabases(const t_atoms                              *pdba,
+                          gmx::ArrayRef<const MoleculePatchDatabase>  globalPatches,
+                          int                                         nterpairs,
+                          gmx::ArrayRef<MoleculePatchDatabase* const> ntdb,
+                          gmx::ArrayRef<MoleculePatchDatabase* const> ctdb,
+                          gmx::ArrayRef<const int>                    rN,
+                          gmx::ArrayRef<const int>                    rC)
 {
     std::vector<MoleculePatchDatabase> modBlock(pdba->nres);
     /* make space */
@@ -416,17 +416,17 @@ static void calc_all_pos(const t_atoms                                *pdba,
     }
 }
 
-static int add_h_low(t_atoms                            **initialAtoms,
-                     t_atoms                            **modifiedAtoms,
-                     std::vector<gmx::RVec>              *xptr,
-                     gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
-                     t_symtab                            *symtab,
-                     int                                  nterpairs,
-                     std::vector<MoleculePatchDatabase *> ntdb,
-                     std::vector<MoleculePatchDatabase *> ctdb,
-                     gmx::ArrayRef<int>                   rN,
-                     gmx::ArrayRef<int>                   rC,
-                     bool                                 bCheckMissing)
+static int add_h_low(t_atoms                                   **initialAtoms,
+                     t_atoms                                   **modifiedAtoms,
+                     std::vector<gmx::RVec>                     *xptr,
+                     gmx::ArrayRef<const MoleculePatchDatabase>  globalPatches,
+                     t_symtab                                   *symtab,
+                     const int                                   nterpairs,
+                     gmx::ArrayRef<MoleculePatchDatabase* const> ntdb,
+                     gmx::ArrayRef<MoleculePatchDatabase* const> ctdb,
+                     gmx::ArrayRef<const int>                    rN,
+                     gmx::ArrayRef<const int>                    rC,
+                     const bool                                  bCheckMissing)
 {
     int                    nadd;
     int                    newi, natoms, nalreadypresent;
@@ -560,14 +560,14 @@ static int add_h_low(t_atoms                            **initialAtoms,
 int add_h(t_atoms                                   **initialAtoms,
           t_atoms                                   **localAtoms,
           std::vector<gmx::RVec>                     *xptr,
-          gmx::ArrayRef<MoleculePatchDatabase>        globalPatches,
+          gmx::ArrayRef<const MoleculePatchDatabase>  globalPatches,
           t_symtab                                   *symtab,
-          int                                         nterpairs,
-          const std::vector<MoleculePatchDatabase *> &ntdb,
-          const std::vector<MoleculePatchDatabase *> &ctdb,
-          gmx::ArrayRef<int>                          rN,
-          gmx::ArrayRef<int>                          rC,
-          bool                                        bAllowMissing)
+          const int                                   nterpairs,
+          gmx::ArrayRef<MoleculePatchDatabase* const> ntdb,
+          gmx::ArrayRef<MoleculePatchDatabase* const> ctdb,
+          gmx::ArrayRef<const int>                    rN,
+          gmx::ArrayRef<const int>                    rC,
+          const bool                                  bAllowMissing)
 {
     int nold, nnew, niter;
 
