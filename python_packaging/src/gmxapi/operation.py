@@ -850,7 +850,7 @@ class StaticSourceManager(SourceResource[_OutputDataProxyType, _PublishingDataPr
                 dtype = datamodel.NDArray
                 data = [datamodel.ndarray(self._result)]
             elif isinstance(self._result, collections.abc.Iterable):
-                if not isinstance(self._result, (str, bytes)):
+                if not isinstance(self._result, (str, bytes, dict)):
                     raise exceptions.ValueError(
                         'Expecting width 1 but "function" produced iterable type {}.'.format(type(self._result)))
                 else:
