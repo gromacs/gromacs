@@ -790,8 +790,9 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t *pme)
     pmeGpu->common->nn.insert(pmeGpu->common->nn.end(), pme->nnx, pme->nnx + cellCount * pme->nkx);
     pmeGpu->common->nn.insert(pmeGpu->common->nn.end(), pme->nny, pme->nny + cellCount * pme->nky);
     pmeGpu->common->nn.insert(pmeGpu->common->nn.end(), pme->nnz, pme->nnz + cellCount * pme->nkz);
-    pmeGpu->common->runMode   = pme->runMode;
-    pmeGpu->common->boxScaler = pme->boxScaler;
+    pmeGpu->common->runMode       = pme->runMode;
+    pmeGpu->common->isRankPmeOnly = !pme->bPPnode;
+    pmeGpu->common->boxScaler     = pme->boxScaler;
 }
 
 /*! \libinternal \brief
@@ -1041,8 +1042,9 @@ void pme_gpu_spread(const PmeGpu         *pmeGpu,
     // Ensure that coordinates are ready on the device before launching spread;
     // only needed with CUDA on PP+PME ranks, not on separate PME ranks, in unit tests
     // nor in OpenCL as these cases use a single stream (hence xReadyOnDevice == nullptr).
-    // Note: Consider adding an assertion on xReadyOnDevice when we can detect
-    // here separate PME ranks.
+    GMX_ASSERT(xReadyOnDevice != nullptr ||
+               (GMX_GPU != GMX_GPU_CUDA) || pmeGpu->common->isRankPmeOnly || pme_gpu_is_testing(pmeGpu),
+               "Need a valid coordinate synchronizer on PP+PME ranks with CUDA.");
     if (xReadyOnDevice)
     {
         xReadyOnDevice->enqueueWaitEvent(pmeGpu->archSpecific->pmeStream);

@@ -179,6 +179,8 @@ struct PmeShared
     std::vector<real>      bsp_mod[DIM];
     /*! \brief The PME codepath being taken */
     PmeRunMode             runMode;
+    /*! \brief  Whether PME execution is happening on a PME-only rank (from gmx_pme_t.bPPnode). */
+    bool                   isRankPmeOnly;
     /*! \brief The box scaler based on inputrec - created in pme_init and managed by CPU structure */
     class EwaldBoxZScaler *boxScaler;
     /*! \brief The previous computation box to know if we even need to update the current box params.

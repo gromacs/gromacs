@@ -370,7 +370,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_prepare_computation(gmx_pme_t      *GPU_FUNC_ARG
  * Launches first stage of PME on GPU - spreading kernel.
  *
  * \param[in] pme                The PME data structure.
- * \param[in] xReadyOnDevice     Event synchronizer indicating that the coordinates are ready in the device memory.
+ * \param[in] xReadyOnDevice     Event synchronizer indicating that the coordinates are ready in the device memory; nullptr allowed only on separate PME ranks.
  * \param[in] wcycle             The wallclock counter.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t            *GPU_FUNC_ARGUMENT(pme),

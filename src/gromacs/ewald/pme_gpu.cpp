@@ -179,6 +179,7 @@ void pme_gpu_launch_spread(gmx_pme_t            *pme,
                            gmx_wallcycle        *wcycle)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
+    GMX_ASSERT(xReadyOnDevice || !pme->bPPnode || (GMX_GPU != GMX_GPU_CUDA), "Need a valid xReadyOnDevice on PP+PME ranks with CUDA.");
 
     PmeGpu            *pmeGpu = pme->gpu;
 
