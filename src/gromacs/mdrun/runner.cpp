@@ -197,10 +197,12 @@ struct DevelopmentFeatureFlags
  *
  * \param[in]  mdlog                Logger object.
  * \param[in]  useGpuForNonbonded   True if the nonbonded task is offloaded in this run.
+ * \param[in]  useGpuForPme         True if the PME task is offloaded in this run.
  * \returns                         The object populated with development feature flags.
  */
 static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger &mdlog,
-                                                         const bool           useGpuForNonbonded)
+                                                         const bool           useGpuForNonbonded,
+                                                         const bool           useGpuForPme)
 {
     DevelopmentFeatureFlags devFlags;
 
@@ -236,8 +238,17 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger &md
 
     if (devFlags.enableGpuPmePPComm)
     {
-        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                "NOTE: This run uses the 'GPU PME-PP communications' feature, enabled by the GMX_GPU_PME_PP_COMMS environment variable.");
+        if (useGpuForPme)
+        {
+            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                    "NOTE: This run uses the 'GPU PME-PP communications' feature, enabled by the GMX_GPU_PME_PP_COMMS environment variable.");
+        }
+        else
+        {
+            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                    "NOTE: GMX_GPU_PME_PP_COMMS environment variable detected, but the 'GPU PME-PP communications' feature was not enabled as PME is not offloaded to the GPU.");
+            devFlags.enableGpuPmePPComm = false;
+        }
     }
 
     return devFlags;
@@ -858,7 +869,7 @@ int Mdrunner::mdrunner()
 
     // Initialize development feature flags that enabled by environment variable
     // and report those features that are enabled.
-    const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(mdlog, useGpuForNonbonded);
+    const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(mdlog, useGpuForNonbonded, useGpuForPme);
 
     // Build restraints.
     // TODO: hide restraint implementation details from Mdrunner.
