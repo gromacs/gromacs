@@ -672,8 +672,11 @@ gmx_pme_t *gmx_pme_init(const t_commrec         *cr,
             MPI_Comm_size(pme->mpi_comm_d[1], &pme->nnodes_minor);
 #endif
         }
-        pme->bPPnode = thisRankHasDuty(cr, DUTY_PP);
     }
+    // cr is always initialized if there is a a PP rank, so we can safely assume
+    // that when it is not, like in ewald tests, we not on a PP rank.
+    pme->bPPnode = ((cr != nullptr && cr->duty != 0) &&
+                    thisRankHasDuty(cr, DUTY_PP));
 
     pme->nthread = nthread;
 
