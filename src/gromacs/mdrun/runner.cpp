@@ -223,9 +223,20 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger &md
 
     if (devFlags.enableGpuHaloExchange)
     {
-        if (!devFlags.enableGpuBufferOps)
+        if (useGpuForNonbonded)
         {
-            gmx_fatal(FARGS, "Cannot enable GPU halo exchange without GPU buffer operations, set GMX_USE_GPU_BUFFER_OPS=1\n");
+            if (!devFlags.enableGpuBufferOps)
+            {
+                gmx_fatal(FARGS, "Cannot enable GPU halo exchange without GPU buffer operations, set GMX_USE_GPU_BUFFER_OPS=1\n");
+            }
+            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                    "NOTE: This run uses the 'GPU halo exchange' feature, enabled by the GMX_GPU_DD_COMMS environment variable.");
+        }
+        else
+        {
+            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                    "NOTE: GMX_GPU_DD_COMMS environment variable detected, but the 'GPU halo exchange' feature will not be enabled as nonbonded interactions are not offloaded.");
+            devFlags.enableGpuHaloExchange = false;
         }
     }
 
