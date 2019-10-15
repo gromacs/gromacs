@@ -1227,6 +1227,7 @@ void do_force(FILE                                     *fplog,
     const bool            ddUsesGpuDirectCommunication = (gpuHaloExchange != nullptr);
     GMX_ASSERT(!ddUsesGpuDirectCommunication || (useGpuXBufOps == BufferOpsUseGpu::True),
                "Must use coordinate buffer ops with GPU halo exchange");
+    const bool useGpuForcesHaloExchange = ddUsesGpuDirectCommunication && (useGpuFBufOps == BufferOpsUseGpu::True);
 
     /* Communicate coordinates and sum dipole if necessary +
        do non-local pair search */
@@ -1543,8 +1544,11 @@ void do_force(FILE                                     *fplog,
                                                   pme_gpu_get_device_f(fr->pmedata),
                                                   dependencyList,
                                                   false, haveNonLocalForceContribInCpuBuffer);
-                // TODO: this should be conditional on whether GPU direct comm is used?
-                stateGpu->copyForcesFromGpu(forceOut.forceWithShiftForces().force(), gmx::StatePropagatorDataGpu::AtomLocality::NonLocal);
+                if (!useGpuForcesHaloExchange)
+                {
+                    // copy from GPU input for dd_move_f()
+                    stateGpu->copyForcesFromGpu(forceOut.forceWithShiftForces().force(), gmx::StatePropagatorDataGpu::AtomLocality::NonLocal);
+                }
             }
             else
             {
@@ -1561,7 +1565,7 @@ void do_force(FILE                                     *fplog,
         }
     }
 
-    const bool useGpuForcesHaloExchange = ddUsesGpuDirectCommunication && (useGpuFBufOps == BufferOpsUseGpu::True);
+    // TODO move this into StepWorkload
     const bool useCpuPmeFReduction      = thisRankHasDuty(cr, DUTY_PME) && !stepWork.useGpuPmeFReduction;
     // TODO: move this into DomainLifetimeWorkload, including the second part of the condition
     const bool haveCpuLocalForces     = (domainWork.haveSpecialForces || domainWork.haveCpuListedForceWork || useCpuPmeFReduction ||
