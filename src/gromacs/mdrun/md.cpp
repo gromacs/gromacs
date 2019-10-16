@@ -327,8 +327,11 @@ void gmx::LegacySimulator::do_md()
     const bool  useGpuForPme       = simulationWork.usePmeGpu;
     const bool  useGpuForNonbonded = simulationWork.useGpuNonbonded;
     // Temporary solution to make sure that the buffer ops are offloaded when update is offloaded
-    const bool  useGpuForBufferOps   = simulationWork.useGpuBufferOps;
-    const bool  useGpuForUpdate      = simulationWork.useGpuUpdate;
+    const bool  useGpuForBufferOps = simulationWork.useGpuBufferOps;
+    const bool  useGpuForUpdate    = simulationWork.useGpuUpdate;
+
+
+    StatePropagatorDataGpu *stateGpu = fr->stateGpu;
 
     if (useGpuForUpdate)
     {
@@ -355,7 +358,7 @@ void gmx::LegacySimulator::do_md()
             GMX_LOG(mdlog.info).asParagraph().
                 appendText("Updating coordinates on the GPU.");
         }
-        integrator = std::make_unique<UpdateConstrainCuda>(*ir, *top_global, fr->stateGpu->getUpdateStream(), fr->stateGpu->xUpdatedOnDevice());
+        integrator = std::make_unique<UpdateConstrainCuda>(*ir, *top_global, stateGpu->getUpdateStream(), stateGpu->xUpdatedOnDevice());
     }
 
     if (useGpuForPme || (useGpuForNonbonded && useGpuForBufferOps) || useGpuForUpdate)
@@ -792,6 +795,19 @@ void gmx::LegacySimulator::do_md()
         do_verbose = mdrunOptions.verbose &&
             (step % mdrunOptions.verboseStepPrintInterval == 0 || bFirstStep || bLastStep);
 
+        // Copy velocities from the GPU when needed:
+        // - On search steps to keep copy on host (device buffers are reinitialized).
+        // - When needed for the output.
+        if (useGpuForUpdate && !bFirstStep)
+        {
+            if (bNS || do_per_step(step, ir->nstvout))
+            {
+                stateGpu->copyVelocitiesFromGpu(state->v, StatePropagatorDataGpu::AtomLocality::Local);
+                stateGpu->waitVelocitiesReadyOnHost(StatePropagatorDataGpu::AtomLocality::Local);
+            }
+        }
+
+
         if (bNS && !(bFirstStep && ir->bContinuation))
         {
             bMasterState = FALSE;
@@ -1219,9 +1235,15 @@ void gmx::LegacySimulator::do_md()
             std::copy(state->x.begin(), state->x.end(), cbuf.begin());
         }
 
+        /* With leap-frog type integrators we compute the kinetic energy
+         * at a whole time step as the average of the half-time step kinetic
+         * energies of two subsequent steps. Therefore we need to compute the
+         * half step kinetic energy also if we need energies at the next step.
+         */
+        const bool needHalfStepKineticEnergy = (!EI_VV(ir->eI) && do_per_step(step+1, nstglobalcomm));
+
         if (useGpuForUpdate)
         {
-            StatePropagatorDataGpu *stateGpu = fr->stateGpu;
             if (bNS)
             {
                 integrator->set(stateGpu->getCoordinates(), stateGpu->getVelocities(), stateGpu->getForces(),
@@ -1229,25 +1251,35 @@ void gmx::LegacySimulator::do_md()
                 t_pbc pbc;
                 set_pbc(&pbc, epbcXYZ, state->box);
                 integrator->setPbc(&pbc);
+
+                // Copy data to the GPU after buffers might have being reinitialized
+                stateGpu->copyVelocitiesToGpu(state->v, StatePropagatorDataGpu::AtomLocality::Local);
             }
 
             stateGpu->copyCoordinatesToGpu(ArrayRef<RVec>(state->x), StatePropagatorDataGpu::AtomLocality::All);
-            stateGpu->copyVelocitiesToGpu(state->v, StatePropagatorDataGpu::AtomLocality::All);
             stateGpu->copyForcesToGpu(ArrayRef<RVec>(f), StatePropagatorDataGpu::AtomLocality::All);
-
-            bool doTempCouple     = (ir->etc != etcNO && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
-            bool doPressureCouple = (ir->epc == epcPARRINELLORAHMAN && do_per_step(step + ir->nstpcouple - 1, ir->nstpcouple));
 
             // TODO: Use StepWorkload fields.
             bool useGpuFBufferOps = simulationWork.useGpuBufferOps && !(bCalcVir || bCalcEner);
+
+            bool doTempCouple       = (ir->etc != etcNO && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
+            bool doParrinelloRahman = (ir->epc == epcPARRINELLORAHMAN && do_per_step(step + ir->nstpcouple - 1, ir->nstpcouple));
 
             // This applies Leap-Frog, LINCS and SETTLE in succession
             integrator->integrate(stateGpu->getForcesReadyOnDeviceEvent(StatePropagatorDataGpu::AtomLocality::Local, useGpuFBufferOps),
                                   ir->delta_t, true, bCalcVir, shake_vir,
                                   doTempCouple, ekind->tcstat,
-                                  doPressureCouple, ir->nstpcouple*ir->delta_t, M);
+                                  doParrinelloRahman, ir->nstpcouple*ir->delta_t, M);
             stateGpu->copyCoordinatesFromGpu(ArrayRef<RVec>(state->x), StatePropagatorDataGpu::AtomLocality::All);
-            stateGpu->copyVelocitiesFromGpu(state->v, StatePropagatorDataGpu::AtomLocality::All);
+
+            // Copy velocities D2H after update if:
+            // - Globals are computed this step (includes the energy output steps).
+            // - Temperature is needed for the next step.
+            if (bGStat || needHalfStepKineticEnergy)
+            {
+                stateGpu->copyVelocitiesFromGpu(state->v, StatePropagatorDataGpu::AtomLocality::Local);
+                stateGpu->waitVelocitiesReadyOnHost(StatePropagatorDataGpu::AtomLocality::Local);
+            }
 
             // TODO: replace with stateGpu->waitForCopyCoordinatesFromGpu(...)
             integrator->waitCoordinatesReadyOnDevice();
@@ -1357,7 +1389,7 @@ void gmx::LegacySimulator::do_md()
             // and when algorithms require it.
             bool doInterSimSignal = (simulationsShareState && do_per_step(step, nstSignalComm));
 
-            if (bGStat || (!EI_VV(ir->eI) && do_per_step(step+1, nstglobalcomm)) || doInterSimSignal)
+            if (bGStat || needHalfStepKineticEnergy || doInterSimSignal)
             {
                 // Since we're already communicating at this step, we
                 // can propagate intra-simulation signals. Note that

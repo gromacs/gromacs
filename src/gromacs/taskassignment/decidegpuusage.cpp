@@ -501,7 +501,8 @@ bool decideWhetherToUseGpuForUpdate(bool              isDomainDecomposition,
                                     const MDAtoms    &mdatoms,
                                     bool              useEssentialDynamics,
                                     bool              doOrientationRestraints,
-                                    bool              doDistanceRestraints)
+                                    bool              doDistanceRestraints,
+                                    bool              useReplicaExchange)
 {
     if (updateTarget == TaskTarget::Cpu)
     {
@@ -564,6 +565,10 @@ bool decideWhetherToUseGpuForUpdate(bool              isDomainDecomposition,
     if (inputrec.efep != efepNO)
     {
         errorMessage += "Free energy perturbations are not supported.\n";
+    }
+    if (useReplicaExchange)
+    {
+        errorMessage += "Replica exchange simulations are not supported.\n";
     }
     if (!errorMessage.empty())
     {

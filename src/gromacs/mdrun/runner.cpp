@@ -1547,7 +1547,8 @@ int Mdrunner::mdrunner()
                                                          *mdAtoms,
                                                          doEssentialDynamics,
                                                          fcd->orires.nr != 0,
-                                                         fcd->disres.nsystems != 0);
+                                                         fcd->disres.nsystems != 0,
+                                                         replExParams.exchangeInterval > 0);
 
         const bool inputIsCompatibleWithModularSimulator = ModularSimulator::isInputCompatible(
                     false,
