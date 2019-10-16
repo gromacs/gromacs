@@ -215,6 +215,14 @@ class StatePropagatorDataGpu
                                                                const SimulationWorkload &simulationWork,
                                                                const StepWorkload       &stepWork);
 
+        /*! \brief Blocking wait until coordinates are copied to the device.
+         *
+         * Synchronizes the stream in which the copy was executed.
+         *
+         *  \param[in] atomLocality  Locality of the particles to wait for.
+         */
+        void waitCoordinatesCopiedToDevice(AtomLocality  atomLocality);
+
         /*! \brief Getter for the event synchronizer for the update is done on th GPU
          *
          *  \returns  The event to synchronize the stream coordinates wre updated on device.

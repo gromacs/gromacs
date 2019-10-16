@@ -738,6 +738,13 @@ void gmx::LegacySimulator::do_md()
 
         if (bPMETune && bNStList)
         {
+            // This has to be here because PME load balancing is called so early.
+            // TODO: Move to after all booleans are defined.
+            if (useGpuForUpdate && !bFirstStep)
+            {
+                stateGpu->copyCoordinatesFromGpu(ArrayRef<RVec>(state->x), StatePropagatorDataGpu::AtomLocality::Local);
+                stateGpu->waitCoordinatesReadyOnHost(StatePropagatorDataGpu::AtomLocality::Local);
+            }
             /* PME grid + cut-off optimization with GPUs or PME nodes */
             pme_loadbal_do(pme_loadbal, cr,
                            (mdrunOptions.verbose && MASTER(cr)) ? stderr : nullptr,
@@ -795,18 +802,29 @@ void gmx::LegacySimulator::do_md()
         do_verbose = mdrunOptions.verbose &&
             (step % mdrunOptions.verboseStepPrintInterval == 0 || bFirstStep || bLastStep);
 
-        // Copy velocities from the GPU when needed:
-        // - On search steps to keep copy on host (device buffers are reinitialized).
-        // - When needed for the output.
         if (useGpuForUpdate && !bFirstStep)
         {
+            // Copy velocities from the GPU when needed:
+            // - On search steps to keep copy on host (device buffers are reinitialized).
+            // - When needed for the output.
             if (bNS || do_per_step(step, ir->nstvout))
             {
                 stateGpu->copyVelocitiesFromGpu(state->v, StatePropagatorDataGpu::AtomLocality::Local);
                 stateGpu->waitVelocitiesReadyOnHost(StatePropagatorDataGpu::AtomLocality::Local);
             }
-        }
 
+            // Copy coordinate from the GPU when needed:
+            // - On search steps to keep copy on host (device buffers are reinitialized).
+            // - There are CPU bonded forces that need current coordinates
+            // - When needed for the output.
+            if (bNS ||
+                (runScheduleWork->domainWork.haveCpuBondedWork || runScheduleWork->domainWork.haveFreeEnergyWork) ||
+                do_per_step(step, ir->nstxout) || do_per_step(step, ir->nstxout_compressed))
+            {
+                stateGpu->copyCoordinatesFromGpu(ArrayRef<RVec>(state->x), StatePropagatorDataGpu::AtomLocality::Local);
+                stateGpu->waitCoordinatesReadyOnHost(StatePropagatorDataGpu::AtomLocality::Local);
+            }
+        }
 
         if (bNS && !(bFirstStep && ir->bContinuation))
         {
@@ -1254,9 +1272,9 @@ void gmx::LegacySimulator::do_md()
 
                 // Copy data to the GPU after buffers might have being reinitialized
                 stateGpu->copyVelocitiesToGpu(state->v, StatePropagatorDataGpu::AtomLocality::Local);
+                stateGpu->copyCoordinatesToGpu(ArrayRef<RVec>(state->x), StatePropagatorDataGpu::AtomLocality::Local);
             }
 
-            stateGpu->copyCoordinatesToGpu(ArrayRef<RVec>(state->x), StatePropagatorDataGpu::AtomLocality::All);
             stateGpu->copyForcesToGpu(ArrayRef<RVec>(f), StatePropagatorDataGpu::AtomLocality::All);
 
             // TODO: Use StepWorkload fields.
@@ -1270,7 +1288,6 @@ void gmx::LegacySimulator::do_md()
                                   ir->delta_t, true, bCalcVir, shake_vir,
                                   doTempCouple, ekind->tcstat,
                                   doParrinelloRahman, ir->nstpcouple*ir->delta_t, M);
-            stateGpu->copyCoordinatesFromGpu(ArrayRef<RVec>(state->x), StatePropagatorDataGpu::AtomLocality::All);
 
             // Copy velocities D2H after update if:
             // - Globals are computed this step (includes the energy output steps).
@@ -1279,10 +1296,10 @@ void gmx::LegacySimulator::do_md()
             {
                 stateGpu->copyVelocitiesFromGpu(state->v, StatePropagatorDataGpu::AtomLocality::Local);
                 stateGpu->waitVelocitiesReadyOnHost(StatePropagatorDataGpu::AtomLocality::Local);
+                stateGpu->copyCoordinatesFromGpu(ArrayRef<RVec>(state->x), StatePropagatorDataGpu::AtomLocality::Local);
+                stateGpu->waitCoordinatesReadyOnHost(StatePropagatorDataGpu::AtomLocality::Local);
             }
 
-            // TODO: replace with stateGpu->waitForCopyCoordinatesFromGpu(...)
-            integrator->waitCoordinatesReadyOnDevice();
         }
         else
         {
@@ -1423,6 +1440,13 @@ void gmx::LegacySimulator::do_md()
                 {
                     process_and_stopcm_grp(fplog, &vcm, *mdatoms, state->x.rvec_array(), state->v.rvec_array());
                     inc_nrnb(nrnb, eNR_STOPCM, mdatoms->homenr);
+
+                    // TODO: The special case of removing CM motion should be dealt more gracefully
+                    if (useGpuForUpdate)
+                    {
+                        stateGpu->copyCoordinatesToGpu(ArrayRef<RVec>(state->x), StatePropagatorDataGpu::AtomLocality::Local);
+                        stateGpu->waitCoordinatesCopiedToDevice(StatePropagatorDataGpu::AtomLocality::Local);
+                    }
                 }
             }
         }

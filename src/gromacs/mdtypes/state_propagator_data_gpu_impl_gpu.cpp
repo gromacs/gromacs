@@ -330,6 +330,12 @@ GpuEventSynchronizer* StatePropagatorDataGpu::Impl::getCoordinatesReadyOnDeviceE
     }
 }
 
+void StatePropagatorDataGpu::Impl::waitCoordinatesCopiedToDevice(AtomLocality  atomLocality)
+{
+    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
+    xReadyOnDevice_[atomLocality].waitForEvent();
+}
+
 GpuEventSynchronizer* StatePropagatorDataGpu::Impl::xUpdatedOnDevice()
 {
     return &xUpdatedOnDevice_;
@@ -525,6 +531,11 @@ GpuEventSynchronizer* StatePropagatorDataGpu::getCoordinatesReadyOnDeviceEvent(A
                                                                                const StepWorkload       &stepWork)
 {
     return impl_->getCoordinatesReadyOnDeviceEvent(atomLocality, simulationWork, stepWork);
+}
+
+void StatePropagatorDataGpu::waitCoordinatesCopiedToDevice(AtomLocality  atomLocality)
+{
+    return impl_->waitCoordinatesCopiedToDevice(atomLocality);
 }
 
 GpuEventSynchronizer* StatePropagatorDataGpu::xUpdatedOnDevice()

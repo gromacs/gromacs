@@ -95,11 +95,6 @@ void UpdateConstrainCuda::setPbc(gmx_unused const t_pbc *pbc)
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
-void UpdateConstrainCuda::waitCoordinatesReadyOnDevice()
-{
-    GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
-}
-
 GpuEventSynchronizer* UpdateConstrainCuda::getCoordinatesReadySync()
 {
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called instead of the correct implementation.");

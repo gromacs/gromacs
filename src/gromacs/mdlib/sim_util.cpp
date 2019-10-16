@@ -1037,7 +1037,13 @@ void do_force(FILE                                     *fplog,
                 pme_gpu_set_device_x(fr->pmedata, stateGpu->getCoordinates());
             }
         }
-        stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), gmx::StatePropagatorDataGpu::AtomLocality::Local);
+        // We need to copy coordinates when:
+        // 1. Update is not offloaded
+        // 2. The buffers were reinitialized on search step
+        if (!simulationWork.useGpuUpdate || stepWork.doNeighborSearch)
+        {
+            stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), gmx::StatePropagatorDataGpu::AtomLocality::Local);
+        }
     }
 
     const auto localXReadyOnDevice = (stateGpu != nullptr) ? stateGpu->getCoordinatesReadyOnDeviceEvent(gmx::StatePropagatorDataGpu::AtomLocality::Local,
@@ -1155,7 +1161,7 @@ void do_force(FILE                                     *fplog,
         // NS step is also a virial step (on which f buf ops are deactivated).
         if (simulationWork.useGpuBufferOps && simulationWork.useGpuNonbonded && (GMX_GPU == GMX_GPU_CUDA))
         {
-            GMX_ASSERT(stateGpu, "stateGpu should be valid here");
+            GMX_ASSERT(stateGpu, "stateGpu should be valid when buffer ops are offloaded");
             nbv->atomdata_init_add_nbat_f_to_f_gpu(stateGpu->fReducedOnDevice());
         }
     }
@@ -1163,6 +1169,7 @@ void do_force(FILE                                     *fplog,
     {
         if (useGpuXBufOps == BufferOpsUseGpu::True)
         {
+            GMX_ASSERT(stateGpu, "stateGpu should be valid when buffer ops are offloaded");
             nbv->convertCoordinatesGpu(Nbnxm::AtomLocality::Local, false,
                                        stateGpu->getCoordinates(),
                                        localXReadyOnDevice);

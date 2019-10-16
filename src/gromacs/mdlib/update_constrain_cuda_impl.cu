@@ -172,11 +172,6 @@ void UpdateConstrainCuda::Impl::setPbc(const t_pbc *pbc)
     settleCuda_->setPbc(pbc);
 }
 
-void UpdateConstrainCuda::Impl::waitCoordinatesReadyOnDevice()
-{
-    coordinatesReady_->waitForEvent();
-}
-
 GpuEventSynchronizer* UpdateConstrainCuda::Impl::getCoordinatesReadySync()
 {
     return coordinatesReady_;
@@ -222,11 +217,6 @@ void UpdateConstrainCuda::set(DeviceBuffer<float>        d_x,
 void UpdateConstrainCuda::setPbc(const t_pbc *pbc)
 {
     impl_->setPbc(pbc);
-}
-
-void UpdateConstrainCuda::waitCoordinatesReadyOnDevice()
-{
-    impl_->waitCoordinatesReadyOnDevice();
 }
 
 GpuEventSynchronizer* UpdateConstrainCuda::getCoordinatesReadySync()

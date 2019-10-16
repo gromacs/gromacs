@@ -142,13 +142,6 @@ class UpdateConstrainCuda::Impl
          */
         void setPbc(const t_pbc *pbc);
 
-        /*! \brief Blocking wait on the update of coordinates being ready.
-         *
-         * \todo Remove when the "stitching" is done.
-         */
-        void waitCoordinatesReadyOnDevice();
-
-
         /*! \brief Return the synchronizer associated with the event indicated that the coordinates are ready on the device.
          */
         GpuEventSynchronizer* getCoordinatesReadySync();
