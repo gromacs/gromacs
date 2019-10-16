@@ -20,11 +20,11 @@ endif()
 # TODO: (#2961) Let the Python package discover required resources instead of passing GMXBIN
 get_target_property(GMXBIN gmx RUNTIME_OUTPUT_DIRECTORY)
 get_target_property(GMXAPI_PYTHON_STAGING_DIR _gmxapi staging_dir)
-get_target_property(PLUGINPATH sampleplugin LIBRARY_OUTPUT_DIRECTORY)
+get_target_property(PLUGINPATH gmxapi_extension LIBRARY_OUTPUT_DIRECTORY)
 add_custom_target(gmxapi_extension_pytest
                   COMMAND ${CMAKE_COMMAND} -E env GMXBIN=${GMXBIN} PYTHONPATH=${GMXAPI_PYTHON_STAGING_DIR}
                   ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
-                  DEPENDS sampleplugin _gmxapi
+                  DEPENDS gmxapi_extension _gmxapi
                   WORKING_DIRECTORY ${PLUGINPATH})
 # The current test fixtures require the `gmx` tool-wrapper executable.
 add_dependencies(gmxapi_extension_pytest gmx)

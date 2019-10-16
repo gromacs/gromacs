@@ -64,7 +64,7 @@ if (GMXAPI_EXTENSION_MASTER_PROJECT)
         message(WARNING "Could not download test data: ${_download_log}")
     endif()
     unset(_status)
-    add_custom_target(spc2_water_box
+    add_custom_target(gmxapi_extension_spc2_water_box
                       COMMAND cmake -E echo
                       SOURCES ${CMAKE_CURRENT_BINARY_DIR}/topol.tpr
                       )
@@ -79,7 +79,7 @@ else()
     file(APPEND ${_mdp} "nsteps = 6")
     set(_gro ${CMAKE_SOURCE_DIR}/src/testutils/simulationdatabase/spc2.gro)
     set(_top ${CMAKE_SOURCE_DIR}/src/testutils/simulationdatabase/spc2.top)
-    add_custom_target(spc2_water_box
+    add_custom_target(gmxapi_extension_spc2_water_box
                       BYPRODUCTS topol.tpr
                       COMMAND gmx -quiet grompp -f ${_mdp} -c ${_gro} -p ${_top}
                       DEPENDS gmx ${_mdp}
@@ -94,31 +94,31 @@ endif ()
 configure_file(testingconfiguration.in.h testingconfiguration.h)
 
 # Test that the library can access its dependencies and build.
-add_executable(library-test test_binding.cpp)
-add_dependencies(library-test spc2_water_box)
-target_include_directories(library-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(library-test Gromacs::gmxapi GTest::Main)
-gtest_add_tests(TARGET library-test
+add_executable(gmxapi_extension_library-test test_binding.cpp)
+add_dependencies(gmxapi_extension_library-test gmxapi_extension_spc2_water_box)
+target_include_directories(gmxapi_extension_library-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(gmxapi_extension_library-test Gromacs::gmxapi GTest::Main)
+gtest_add_tests(TARGET gmxapi_extension_library-test
                 TEST_LIST BasicPlugin)
 
 # Test the C++ force evaluation for the restrained-ensemble biasing potential.
-add_executable(histogram-test test_histogram.cpp)
-add_dependencies(histogram-test spc2_water_box)
-target_include_directories(histogram-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-set_target_properties(histogram-test PROPERTIES SKIP_BUILD_RPATH FALSE)
-target_link_libraries(histogram-test ensemblepotential Gromacs::gmxapi
+add_executable(gmxapi_extension_histogram-test test_histogram.cpp)
+add_dependencies(gmxapi_extension_histogram-test gmxapi_extension_spc2_water_box)
+target_include_directories(gmxapi_extension_histogram-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+set_target_properties(gmxapi_extension_histogram-test PROPERTIES SKIP_BUILD_RPATH FALSE)
+target_link_libraries(gmxapi_extension_histogram-test gmxapi_extension_ensemblepotential Gromacs::gmxapi
                       GTest::Main)
-gtest_add_tests(TARGET histogram-test
+gtest_add_tests(TARGET gmxapi_extension_histogram-test
                 TEST_LIST EnsembleHistogramPotentialPlugin)
 
 # Test the flat-bottom bounding potential built in to the ensemble restraint.
-add_executable(bounding-test test_bounding_restraint.cpp)
-add_dependencies(bounding-test spc2_water_box)
-target_include_directories(bounding-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-set_target_properties(bounding-test PROPERTIES SKIP_BUILD_RPATH FALSE)
-target_link_libraries(bounding-test ensemblepotential Gromacs::gmxapi
+add_executable(gmxapi_extension_bounding-test test_bounding_restraint.cpp)
+add_dependencies(gmxapi_extension_bounding-test gmxapi_extension_spc2_water_box)
+target_include_directories(gmxapi_extension_bounding-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+set_target_properties(gmxapi_extension_bounding-test PROPERTIES SKIP_BUILD_RPATH FALSE)
+target_link_libraries(gmxapi_extension_bounding-test gmxapi_extension_ensemblepotential Gromacs::gmxapi
                       GTest::Main)
-gtest_add_tests(TARGET bounding-test
+gtest_add_tests(TARGET gmxapi_extension_bounding-test
                 TEST_LIST EnsembleBoundingPotentialPlugin)
 
 if (NOT GMXAPI_EXTENSION_MASTER_PROJECT)
