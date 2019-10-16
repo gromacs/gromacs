@@ -5,7 +5,7 @@
     <File Name="-o">
       <GroFile Name="Header">
         <String Name="Title">Water and methane</String>
-        <Int Name="Number of atoms">629</Int>
+        <Int Name="Number of atoms">637</Int>
       </GroFile>
     </File>
   </OutputFiles>

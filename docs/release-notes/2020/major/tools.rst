@@ -43,3 +43,12 @@ Added a dedicated tool to extract trajectory frames corresponding to different c
 from :ref:`gmx cluster`. The new :ref:`extract-cluster <gmx extract-cluster>` tool
 generates new trajectories that contain only those frames that correspond to the correct cluster.
 The corresponding option **-sub** in :ref:`gmx trjconv` has been removed.
+
+Changed behaviour of genion
+"""""""""""""""""""""""""""
+
+Functionality of genion was altered to prevent swapping ions for solvent closer
+than -rmin from any other non-solvent atom.
+This improvement prevents situations where an ion could be placed at the core
+of a protein, which would potentially render the folded protein less stable or
+may require long equilibration times.

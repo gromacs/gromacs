@@ -43,6 +43,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <numeric>
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
@@ -64,64 +65,110 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static void insert_ion(int nsa, const int *nwater,
-                       std::vector<bool> * bSet, int repl[], gmx::ArrayRef<const int> index,
-                       rvec x[], t_pbc *pbc,
-                       int sign, int q, const char *ionname,
-                       t_atoms *atoms,
-                       real rmin,
-                       gmx::DefaultRandomEngine * rng)
+
+/*! \brief Return whether any atoms of two groups are below minimum distance.
+ *
+ * \param[in] pbc the periodic boundary conditions
+ * \param[in] x the coordinates
+ * \param[in] smallerGroupIndices the atom indices of the first group to check
+ * \param[in] largerGroupIndices the atom indices of the second group to check
+ * \param[in] minimumDistance the minimum required distance betwenn any atom in
+ *                            the first and second group
+ * \returns true if any distance between an atom from group A and group B is
+ *               smaller than a minimum distance.
+ */
+static bool groupsCloserThanCutoffWithPbc(t_pbc                   *pbc,
+                                          rvec                     x[],
+                                          gmx::ArrayRef<const int> smallerGroupIndices,
+                                          gmx::ArrayRef<const int> largerGroupIndices,
+                                          real                     minimumDistance)
 {
-    int                                i, ei, nw;
-    real                               rmin2;
-    rvec                               dx;
-    int64_t                            maxrand;
-    gmx::UniformIntDistribution<int>   dist(0, *nwater-1);
-
-    nw       = *nwater;
-    maxrand  = nw;
-    maxrand *= 1000;
-
-    do
+    const real minimumDistance2 = minimumDistance * minimumDistance;
+    for (int aIndex : largerGroupIndices)
     {
-        ei = dist(*rng);
-        maxrand--;
+        for (int bIndex : smallerGroupIndices)
+        {
+            rvec dx;
+            pbc_dx(pbc, x[aIndex], x[bIndex], dx);
+            if (norm2(dx) < minimumDistance2)
+            {
+                return true;
+            }
+        }
     }
-    while ((*bSet)[ei] && (maxrand > 0));
-    if ((*bSet)[ei])
+    return false;
+}
+
+/*! \brief Calculate the solvent molecule atom indices from molecule number.
+ *
+ * \note the solvent group index has to be continuous
+ *
+ * \param[in] solventMoleculeNumber the number of the solvent molecule
+ * \param[in] numberAtomsPerSolventMolecule how many atoms each solvent molecule contains
+ * \param[in] solventGroupIndex continuous index of solvent atoms
+ *
+ * \returns atom indices of the specified solvent molecule
+ */
+static std::vector<int>
+solventMoleculeIndices(int solventMoleculeNumber, int numberAtomsPerSolventMolecule, gmx::ArrayRef<const int> solventGroupIndex)
+{
+    std::vector<int> indices(numberAtomsPerSolventMolecule);
+    for (int solventAtomNumber = 0; solventAtomNumber < numberAtomsPerSolventMolecule; ++solventAtomNumber)
+    {
+        indices[solventAtomNumber] = solventGroupIndex[numberAtomsPerSolventMolecule * solventMoleculeNumber + solventAtomNumber];
+    }
+    return indices;
+}
+
+static void insert_ion(int                      nsa,
+                       std::vector<int>        *solventMoleculesForReplacement,
+                       int                      repl[],
+                       gmx::ArrayRef<const int> index,
+                       rvec                     x[],
+                       t_pbc                   *pbc,
+                       int                      sign,
+                       int                      q,
+                       const char              *ionname,
+                       t_atoms                 *atoms,
+                       real                     rmin,
+                       std::vector<int>        *notSolventGroup)
+{
+    std::vector<int> solventMoleculeAtomsToBeReplaced
+        = solventMoleculeIndices(solventMoleculesForReplacement->back(), nsa, index);
+
+    if (rmin > 0.0)
+    {
+        // check for proximity to non-solvent
+        while (groupsCloserThanCutoffWithPbc(pbc, x, solventMoleculeAtomsToBeReplaced, *notSolventGroup, rmin)
+               && !solventMoleculesForReplacement->empty())
+        {
+            solventMoleculesForReplacement->pop_back();
+            solventMoleculeAtomsToBeReplaced = solventMoleculeIndices(solventMoleculesForReplacement->back(), nsa, index);
+        }
+    }
+
+    if (solventMoleculesForReplacement->empty())
     {
         gmx_fatal(FARGS, "No more replaceable solvent!");
     }
 
     fprintf(stderr, "Replacing solvent molecule %d (atom %d) with %s\n",
-            ei, index[nsa*ei], ionname);
+            solventMoleculesForReplacement->back(), solventMoleculeAtomsToBeReplaced[0], ionname);
 
     /* Replace solvent molecule charges with ion charge */
-    (*bSet)[ei] = TRUE;
-    repl[ei]    = sign;
+    notSolventGroup->push_back(solventMoleculeAtomsToBeReplaced[0]);
+    repl[solventMoleculesForReplacement->back()] = sign;
 
-    atoms->atom[index[nsa*ei]].q = q;
-    for (i = 1; i < nsa; i++)
+    // The first solvent molecule atom is replaced with an ion and the respective
+    // charge while the rest of the solvent molecule atoms is set to 0 charge.
+    atoms->atom[solventMoleculeAtomsToBeReplaced.front()].q = q;
+    for (auto replacedMoleculeAtom = solventMoleculeAtomsToBeReplaced.begin()+1;
+         replacedMoleculeAtom != solventMoleculeAtomsToBeReplaced.end();
+         ++replacedMoleculeAtom)
     {
-        atoms->atom[index[nsa*ei+i]].q = 0;
+        atoms->atom[*replacedMoleculeAtom].q = 0;
     }
-
-    /* Mark all solvent molecules within rmin as unavailable for substitution */
-    if (rmin > 0)
-    {
-        rmin2 = rmin*rmin;
-        for (i = 0; (i < nw); i++)
-        {
-            if (!(*bSet)[i])
-            {
-                pbc_dx(pbc, x[index[nsa*ei]], x[index[nsa*i]], dx);
-                if (iprod(dx, dx) < rmin2)
-                {
-                    (*bSet)[i] = TRUE;
-                }
-            }
-        }
-    }
+    solventMoleculesForReplacement->pop_back();
 }
 
 
@@ -333,6 +380,37 @@ static void update_topol(const char *topinout, int p_num, int n_num,
     gmx_file_rename(temporary_filename, topinout);
 }
 
+/*! \brief Return all atom indices that do not belong to an index group.
+ * \param[in] nrAtoms the total number of atoms
+ * \param[in] indexGroup the index group to be inverted. Note that a copy is
+ *                       made in order to sort the group indices
+ * \returns the inverted group indices
+ */
+static std::vector<int> invertIndexGroup(int nrAtoms, std::vector<int> indexGroup)
+{
+    // Add the indices -1 and nrAtoms, so that all intervals 0 .. firstofIndexGroup
+    // as well as lastOfIndexGroup .. nrAtoms are covered for the inverted indexgroup
+    indexGroup.push_back(-1);
+    indexGroup.push_back(nrAtoms);
+    std::sort(indexGroup.begin(), indexGroup.end());
+
+    // construct the inverted index group by adding all indicies between two
+    // indices of indexGroup
+    std::vector<int> invertedGroup;
+    for (auto indexGroupIt = std::begin(indexGroup); indexGroupIt != std::end(indexGroup)-1; ++indexGroupIt)
+    {
+        const int firstToAddToInvertedGroup = *indexGroupIt + 1;
+        const int numIndicesToAdd           = *(indexGroupIt + 1) - firstToAddToInvertedGroup;
+        if (numIndicesToAdd > 0)
+        {
+            invertedGroup.resize(invertedGroup.size() + numIndicesToAdd);
+            std::iota(std::end(invertedGroup) - numIndicesToAdd, std::end(invertedGroup), firstToAddToInvertedGroup);
+        }
+    }
+
+    return invertedGroup;
+}
+
 int gmx_genion(int argc, char *argv[])
 {
     const char        *desc[] = {
@@ -366,7 +444,7 @@ int gmx_genion(int argc, char *argv[])
         { "-nn",    FALSE, etINT,  {&n_num}, "Number of negative ions"       },
         { "-nname", FALSE, etSTR,  {&n_name}, "Name of the negative ion"      },
         { "-nq",    FALSE, etINT,  {&n_q},   "Charge of the negative ion"    },
-        { "-rmin",  FALSE, etREAL, {&rmin},  "Minimum distance between ions" },
+        { "-rmin",  FALSE, etREAL, {&rmin},  "Minimum distance between ions and non-solvent" },
         { "-seed",  FALSE, etINT,  {&seed},  "Seed for random number generator (0 means generate)" },
         { "-conc",  FALSE, etREAL, {&conc},
           "Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input [REF].tpr[ref] file. Overrides the [TT]-np[tt] and [TT]-nn[tt] options." },
@@ -519,8 +597,6 @@ int gmx_genion(int argc, char *argv[])
         }
 
         snew(repl, nw);
-        std::vector<bool> bSet(nw);
-
         set_pbc(&pbc, ePBC, box);
 
 
@@ -531,18 +607,27 @@ int gmx_genion(int argc, char *argv[])
         }
         fprintf(stderr, "Using random seed %d.\n", seed);
 
+
+        std::vector<int> notSolventGroup = invertIndexGroup(atoms.nr, solventGroup);
+
+        std::vector<int> solventMoleculesForReplacement(nw);
+        std::iota(std::begin(solventMoleculesForReplacement), std::end(solventMoleculesForReplacement), 0);
+
+        // Randomly shuffle the solvent molecules that shall be replaced by ions
+        // then pick molecules from the back of the list as replacement candidates
         gmx::DefaultRandomEngine rng(seed);
+        std::shuffle(std::begin(solventMoleculesForReplacement), std::end(solventMoleculesForReplacement), rng);
 
         /* Now loop over the ions that have to be placed */
         while (p_num-- > 0)
         {
-            insert_ion(nsa, &nw, &bSet, repl, solventGroup, x, &pbc,
-                       1, p_q, p_name, &atoms, rmin, &rng);
+            insert_ion(nsa, &solventMoleculesForReplacement, repl, solventGroup, x, &pbc,
+                       1, p_q, p_name, &atoms, rmin, &notSolventGroup);
         }
         while (n_num-- > 0)
         {
-            insert_ion(nsa, &nw, &bSet, repl, solventGroup, x, &pbc,
-                       -1, n_q, n_name, &atoms, rmin, &rng);
+            insert_ion(nsa, &solventMoleculesForReplacement, repl, solventGroup, x, &pbc,
+                       -1, n_q, n_name, &atoms, rmin, &notSolventGroup);
         }
         fprintf(stderr, "\n");
 

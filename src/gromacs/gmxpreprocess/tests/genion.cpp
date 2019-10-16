@@ -104,7 +104,7 @@ class GenionTest : public CommandLineTestBase
 TEST_F(GenionTest, HighConcentrationIonPlacement)
 {
     const char *const cmdline[] = {
-        "genion", "-seed", "1997", "-conc", "1.5", "-rmin", "0.6"
+        "genion", "-seed", "1997", "-conc", "1.0", "-rmin", "0.6"
     };
 
     runTest(CommandLine(cmdline), "Water");
