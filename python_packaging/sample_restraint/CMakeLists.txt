@@ -173,7 +173,9 @@ set(GMXPLUGIN_INSTALL_PATH ${GMXPLUGIN_DEFAULT_SITE_PACKAGES} CACHE PATH
     GMXPLUGIN_USER_INSTALL on or off to specify the installation's site-packages directory or the 'user' site-packages \
     directory.")
 
-message(STATUS "Python module will be installed to GMXPLUGIN_INSTALL_PATH cache value ${GMXPLUGIN_INSTALL_PATH}")
+if(GMXAPI_EXTENSION_MASTER_PROJECT)
+    message(STATUS "Python module will be installed to GMXPLUGIN_INSTALL_PATH cache value ${GMXPLUGIN_INSTALL_PATH}")
+endif()
 
 # TODO: (Issue #3027) Handle Googletest sources both for forked projects and
 #  for GROMACS-project-internal testing.
