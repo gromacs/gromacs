@@ -54,7 +54,7 @@ clang-3.6 simd=sse2 thread-mpi no-openmp fftpack cmake-3.11.4 tng
 clang-8 no-openmp asan cmake-3.11.4
 
 # Test with clang-tidy (without OpenMP)
-clang-7 no-openmp cmake-3.12.1 tidy
+clang-8 no-openmp cmake-3.12.1 tidy
 
 # Test oldest supported MSVC on Windows
 # Test newest supported MSVC on Windows
