@@ -61,7 +61,7 @@
 #include "stringutil.h"
 
 // Include Open Babel classes for OBMol and OBConversion
-#if HAVE_LIBOPENBABEL2
+#if HAVE_LIBOPENBABEL3
 // Hack to make this compile!
 #undef ANGSTROM
 #ifdef HAVE_SYS_TIME_H
@@ -199,7 +199,7 @@ static OpenBabel::OBConversion *readBabel(const       char *g09,
         }
         else
         {
-            fprintf(stderr, "Could not read input file %s with OpenBabel2.\n", g09);
+            fprintf(stderr, "Could not read input file %s with OpenBabel3.\n", g09);
         }
     }
     else

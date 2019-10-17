@@ -84,18 +84,21 @@ class AtomtypeTest : public gmx::test::CommandLineTestBase
 
             dataName = gmx::test::TestFileManager::getInputFilePath(molname);
             
-            readBabel(dataName.c_str(), &molprop, molname, molname, 
-                      conf, basis, maxpot, nsymm, jobtype, 0.0);
-            std::vector<std::string> atypes;
-            auto exper = molprop.BeginExperiment();
-            for(auto ca = exper->BeginAtom(); ca < exper->EndAtom(); ++ca)
+            bool readOK = readBabel(dataName.c_str(), &molprop, molname, molname, 
+                                    conf, basis, maxpot, nsymm, jobtype, 0.0);
+            EXPECT_TRUE(readOK);
+            if (readOK)
             {
-                atypes.push_back(ca->getObtype());
+                std::vector<std::string> atypes;
+                auto exper = molprop.BeginExperiment();
+                for(auto ca = exper->BeginAtom(); ca < exper->EndAtom(); ++ca)
+                {
+                    atypes.push_back(ca->getObtype());
+                }
+                checker_.checkInteger(static_cast<int>(atypes.size()), molname);
+                checker_.checkSequence(atypes.begin(), atypes.end(), "atomtypes");
             }
-            checker_.checkInteger(static_cast<int>(atypes.size()), molname);
-            checker_.checkSequence(atypes.begin(), atypes.end(), "atomtypes");
         }
-
 };
 
 TEST_F (AtomtypeTest, Butanol)
