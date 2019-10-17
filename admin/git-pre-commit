@@ -67,10 +67,15 @@ fi
 exec 1>&2
 
 uncrustify_mode=`git config hooks.uncrustifymode`
+clangformat_mode=`git config hooks.clangformatmode`
 copyright_mode=`git config hooks.copyrightmode`
 if [ -z "$uncrustify_mode" ]
 then
     uncrustify_mode=off
+fi
+if [ -z "$clangformat_mode" ]
+then
+    clangformat_mode=off
 fi
 if [ -z "$copyright_mode" ]
 then
@@ -95,6 +100,27 @@ then
         exit 1
     elif [ $stat -ne 0 ] ; then
         echo "Source code formatting check with uncrustify failed"
+        exit 1
+    fi
+fi
+
+if [[ -f admin/clang-format.sh && \
+      ( "$clangformat_mode" != "off" ) ]]
+then
+    clangformat_path=`git config hooks.clangformatpath`
+    if [ -z "$clangformat_path" ]
+    then
+        echo "Please set the path to clang-format using 'git config hooks.clangformatpath'."
+        exit 1
+    fi
+    export CLANG_FORMAT="$clangformat_path"
+    admin/clang-format.sh check-index --rev=$against \
+        --format="$clangformat_mode"
+    stat=$?
+    if [ $stat -eq 1 ] ; then
+        exit 1
+    elif [ $stat -ne 0 ] ; then
+        echo "Source code formatting check with clang-format failed"
         exit 1
     fi
 fi

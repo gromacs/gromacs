@@ -33,7 +33,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# This script runs uncrustify, copyright header checks, or include sorter on
+# This script runs uncrustify, clang-format, copyright header checks, or include sorter on
 # all applicable files in the source tree.
 #
 # See `reformat_all.sh -h` for a brief usage, and docs/dev-manual/code-formatting.rst
@@ -41,15 +41,15 @@
 
 function usage() {
     echo "usage: reformat_all.sh [-f|--force]"
-    echo "           [--filter=(uncrustify|copyright|includesort)]"
+    echo "           [--filter=(complete_formatting|clangformat|uncrustify|copyright|includesort)]"
     echo "           [--pattern=<pattern>] [<action>] [-B=<build dir>]"
-    echo "<action>: (list-files|uncrustify*|clang-format|copyright|includesort) (*=default)"
+    echo "<action>: (list-files|uncrustify|clang-format*|copyright|includesort) (*=default)"
 }
 
 filter=default
 force=
 patterns=()
-action=uncrustify
+action=clang-format
 for arg in "$@" ; do
     if [[ "$arg" == "list-files" || "$arg" == "uncrustify" ||
           "$arg" == "clang-format" || "$arg" == "copyright" ||
@@ -126,7 +126,7 @@ esac
 
 if [[ "$filter" == "default" ]] ; then
     if [[ "$action" == "clang-format" ]] ; then
-        filter=uncrustify
+        filter=complete_formatting
     else
         filter=$action
     fi
@@ -134,13 +134,19 @@ fi
 
 case "$filter" in
     includesort)
-        filter_re="(includesort)"
+        filter_re="(complete_formatting|includesort)"
         ;;
     uncrustify)
         filter_re="(uncrustify)"
         ;;
     copyright)
-        filter_re="(copyright)"
+        filter_re="(complete_formatting|copyright)"
+        ;;
+    clangformat)
+        filter_re="(complete_formatting|clangformat)"
+        ;;
+    complete_formatting)
+        filter_re="(complete_formatting|clangformat|includesort|copyright)"
         ;;
     *)
         echo "Unknown filter mode: $filter"

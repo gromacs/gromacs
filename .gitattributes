@@ -33,8 +33,8 @@ cmake/*.cuh                             !filter
 cmake/FindCUDA/*.cmake                  !filter
 docs/doxygen/Doxyfile-*.cmakein         !filter
 docs/doxygen/*.cpp                      !filter
-docs/doxygen/examples/*.cpp             filter=uncrustify
-docs/doxygen/examples/*.c               filter=uncrustify
+docs/doxygen/examples/*.cpp             filter=clangformat
+docs/doxygen/examples/*.c               filter=clangformat
 docs/manual/UseLATEX.cmake              !filter
 scripts/GMXRC.*                         !filter
 scripts/make_gromos_rtp.py              !filter
@@ -46,8 +46,8 @@ src/gromacs/selection/parser.cpp        -filter -gmx-doxygen
 src/gromacs/selection/parser.h          -filter -gmx-doxygen
 src/gromacs/selection/scanner.cpp       -filter -gmx-doxygen
 src/gromacs/selection/scanner_flex.h    -filter
-src/api/cpp/*cpp                        filter=uncrustify
-src/api/cpp/tests/*cpp                  filter=uncrustify
+src/api/cpp/*cpp                        filter=clangformat
+src/api/cpp/tests/*cpp                  filter=clangformat
 *.eps                                   binary
 *.jpg                                   binary
 *.svg                                   binary

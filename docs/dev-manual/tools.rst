@@ -93,6 +93,11 @@ uncrustify
   with the config at ``admin/uncrustify.cfg``.  A patched version of uncrustify is
   used.  See :ref:`gmx-uncrustify` for details.
 
+clang-format
+  We use clang-format to enforce a consistent coding style, with the
+  settings recorded in ``.clang-format`` in the main tree.
+  See :ref:`gmx-clang-format` for details.
+
 ``admin/copyright.py``
   This Python script adds and formats copyright headers in source files.
   ``copyright.sh`` (see below) uses the script to check/update copyright years on
@@ -102,10 +107,7 @@ uncrustify
   This ``bash`` script runs uncrustify for all
   files that have local changes and checks that they conform to the prescribed
   style.  Optionally, the script can also apply changes to make the files
-  conform.
-  This script is automatically run by Jenkins to ensure that all commits adhere
-  to :doc:`formatting`.  If the uncrustify job does not succeed, it
-  means that this script has something to complain.
+  conform. It is included only for historical reasons.
   See :doc:`formatting` for details.
 
 ``admin/copyright.sh``
@@ -117,6 +119,12 @@ uncrustify
   This script is automatically run by Jenkins to ensure that all commits adhere
   to :doc:`formatting`.  If the copyright job does not succeed, it
   means that this script has something to complain.
+  See :doc:`code-formatting` for details.
+
+``admin/clang-format.sh``
+  This script enforces coding style using clang-format.
+  This script is automatically run by Jenkins to ensure that all commits adhere
+  to :doc:`formatting`.
 
 ``admin/git-pre-commit``
   This sample git pre-commit hook can be used if one wants to apply
@@ -139,7 +147,7 @@ include directive checker
   checkers): :doc:`gmxtree`.
 
 ``admin/reformat_all.sh``
-  This ``bash`` script runs uncrustify/``copyright.py``/include sorter
+  This ``bash`` script runs uncrustify/clang-format/``copyright.py``/include sorter
   on all relevant files in the source tree (or in a particular directory).
   The script can also produce the list of files where these scripts are applied,
   for use with other scripts.  See :doc:`code-formatting` for details.
