@@ -1758,8 +1758,17 @@ void do_force(FILE                                     *fplog,
                                               pmeForcePtr,
                                               dependencyList,
                                               stepWork.useGpuPmeFReduction, haveLocalForceContribInCpuBuffer);
-            stateGpu->copyForcesFromGpu(forceWithShift, AtomLocality::Local);
-            stateGpu->waitForcesReadyOnHost(AtomLocality::Local);
+            // Copy forces to host if they are needed for update or if virtual sites are enabled.
+            // If there are vsites, we need to copy forces every step to spread vsite forces on host.
+            // TODO: When the output flags will be included in step workload, this copy can be combined with the
+            //       copy call done in sim_utils(...) for the output.
+            // NOTE: If there are virtual sites, the forces are modified on host after this D2H copy. Hence,
+            //       they should not be copied in do_md(...) for the output.
+            if (!simulationWork.useGpuUpdate || vsite)
+            {
+                stateGpu->copyForcesFromGpu(forceWithShift, AtomLocality::Local);
+                stateGpu->waitForcesReadyOnHost(AtomLocality::Local);
+            }
         }
         else
         {

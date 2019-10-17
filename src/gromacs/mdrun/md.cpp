@@ -1170,6 +1170,22 @@ void gmx::LegacySimulator::do_md()
             stateGpu->copyCoordinatesFromGpu(state->x, AtomLocality::Local);
             stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
         }
+
+        // Copy forces for the output if the forces were reduced on the GPU (not the case on virial steps)
+        // and update is offloaded hence forces are kept on the GPU for update and have not been
+        // already transferred in do_force().
+        // TODO: There should be an improved, explicit mechanism that ensures this copy is only executed
+        //       when the forces are ready on the GPU -- the same synchronizer should be used as the one
+        //       prior to GPU update.
+        // TODO: When the output flags will be included in step workload, this copy can be combined with the
+        //       copy call in do_force(...).
+        // NOTE: The forces should not be copied here if the vsites are present, since they were modified
+        //       on host after the D2H copy in do_force(...).
+        if (runScheduleWork->stepWork.useGpuFBufferOps && (simulationWork.useGpuUpdate && !vsite) && do_per_step(step, ir->nstfout))
+        {
+            stateGpu->copyForcesFromGpu(ArrayRef<RVec>(f), AtomLocality::Local);
+            stateGpu->waitForcesReadyOnHost(AtomLocality::Local);
+        }
         /* Now we have the energies and forces corresponding to the
          * coordinates at time t. We must output all of this before
          * the update.
@@ -1293,16 +1309,17 @@ void gmx::LegacySimulator::do_md()
                 stateGpu->copyCoordinatesToGpu(state->x, AtomLocality::Local);
             }
 
-            stateGpu->copyForcesToGpu(ArrayRef<RVec>(f), AtomLocality::All);
-
-            // TODO: Use StepWorkload fields.
-            bool useGpuFBufferOps = simulationWork.useGpuBufferOps && !(bCalcVir || bCalcEner);
+            // If the buffer ops were not offloaded this step, the forces are on the host and have to be copied
+            if (!runScheduleWork->stepWork.useGpuFBufferOps)
+            {
+                stateGpu->copyForcesToGpu(ArrayRef<RVec>(f), AtomLocality::Local);
+            }
 
             bool doTempCouple       = (ir->etc != etcNO && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
             bool doParrinelloRahman = (ir->epc == epcPARRINELLORAHMAN && do_per_step(step + ir->nstpcouple - 1, ir->nstpcouple));
 
             // This applies Leap-Frog, LINCS and SETTLE in succession
-            integrator->integrate(stateGpu->getForcesReadyOnDeviceEvent(AtomLocality::Local, useGpuFBufferOps),
+            integrator->integrate(stateGpu->getForcesReadyOnDeviceEvent(AtomLocality::Local, runScheduleWork->stepWork.useGpuFBufferOps),
                                   ir->delta_t, true, bCalcVir, shake_vir,
                                   doTempCouple, ekind->tcstat,
                                   doParrinelloRahman, ir->nstpcouple*ir->delta_t, M);
