@@ -3277,6 +3277,23 @@ electron-microscopy experiments. (See the `reference manual`_ for details)
    (true) Normalize the sum of density voxel values to one for the reference
    density as well as the simulated density.
 
+.. mdp:: density-guided-simulation-adaptive-force-scaling
+
+   (false) Adapt the force constant to ensure a steady increase in similarity
+   between simulated and reference density.
+
+   .. mdp-value: false
+
+      Do not use adaptive force scaling.
+
+   .. mdp-value:: true
+
+      Use adaptive force scaling.
+
+.. mdp:: density-guided-simulation-adaptive-force-scaling-time-constant
+
+   (4) [ps] Couple force constant to increase in similarity with reference density
+   with this time constant. Larger times result in looser coupling.
 
 User defined thingies
 ^^^^^^^^^^^^^^^^^^^^^
