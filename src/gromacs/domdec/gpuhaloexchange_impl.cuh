@@ -165,9 +165,9 @@ class GpuHaloExchange::Impl
         //! number of home atoms - offset of local halo region
         int                         numHomeAtoms_             = 0;
         //! remote GPU coordinates buffer pointer for pushing data
-        void                       *remoteXPtr_               = 0;
+        void                       *remoteXPtr_               = nullptr;
         //! remote GPU force buffer pointer for pushing data
-        void                       *remoteFPtr_               = 0;
+        void                       *remoteFPtr_               = nullptr;
         //! Periodic Boundary Conditions for this rank
         bool                        usePBC_                   = false;
         //! force shift buffer on device
