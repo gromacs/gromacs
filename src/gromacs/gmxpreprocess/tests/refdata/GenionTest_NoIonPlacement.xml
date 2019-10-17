@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <GroFile Name="Header">
+        <String Name="Title">Water and methane</String>
+        <Int Name="Number of atoms">653</Int>
+      </GroFile>
+    </File>
+  </OutputFiles>
+</ReferenceData>

@@ -35,6 +35,7 @@
 gmx_add_unit_test(GmxPreprocessTests gmxpreprocess-test
     editconf.cpp
     genconf.cpp
+    genion.cpp
     gpp_atomtype.cpp
     gpp_bond_atomtype.cpp
     insert_molecules.cpp
